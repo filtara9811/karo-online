@@ -19,7 +19,7 @@ import goldSimBsnl from "@/assets/gold-sim-bsnl.png";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 
 export const Route = createFileRoute("/register")({
-  component: Index,
+  component: Register,
 });
 
 type StepKey = "name" | "phone" | "otp" | "email" | "address";
@@ -143,7 +143,7 @@ function LuxField({
   );
 }
 
-function Index() {
+function Register() {
   const [agreed, setAgreed] = useState(false);
   const [gender, setGender] = useState<string | null>(null);
   const [name, setName] = useState("");
