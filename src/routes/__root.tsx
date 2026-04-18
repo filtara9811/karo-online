@@ -1,4 +1,5 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { AppShell } from "@/components/AppShell";
 
 import appCss from "../styles.css?url";
 
@@ -67,5 +68,5 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return <AppShell />;
 }
