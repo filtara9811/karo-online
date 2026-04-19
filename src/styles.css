@@ -52,33 +52,33 @@
 :root {
   --radius: 0.875rem;
 
-  /* Deep Wine #4A0404 → Midnight Maroon #2D0101 (calibrated in oklch) */
-  --wine-deep: oklch(0.16 0.10 25);   /* #2D0101 midnight maroon */
-  --wine: oklch(0.22 0.14 25);        /* #4A0404 deep wine */
-  --wine-light: oklch(0.32 0.16 25);  /* lifted wine for layering */
+  /* Premium White & Gold Theme - replacing Wine */
+  --wine-deep: oklch(0.95 0.01 90);   /* Soft cream white */
+  --wine: oklch(0.98 0.005 90);        /* Pure white */
+  --wine-light: oklch(1 0 0);          /* Pure white */
 
   /* Antique Gold #D4AF37 + metallic shine highlights */
   --gold: oklch(0.78 0.14 82);        /* #D4AF37 antique gold */
   --gold-light: oklch(0.93 0.10 92);  /* shine highlight */
   --gold-dark: oklch(0.58 0.13 72);   /* engraved shadow */
 
-  --background: oklch(0.16 0.10 25);
-  --foreground: oklch(0.97 0.015 90); /* off-white body text */
+  --background: oklch(0.98 0.005 90);
+  --foreground: oklch(0.20 0.02 90);    /* Dark charcoal text */
 
-  --card: oklch(0.22 0.14 25 / 0.15); /* 15% transparent frosted glass */
-  --card-foreground: oklch(0.97 0.015 90);
+  --card: oklch(1 0 0 / 0.85);        /* 85% white for premium cards */
+  --card-foreground: oklch(0.20 0.02 90);
 
-  --popover: oklch(0.20 0.12 25);
-  --popover-foreground: oklch(0.97 0.015 90);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 90);
 
   --primary: oklch(0.78 0.14 82);     /* antique gold */
   --primary-foreground: oklch(0.16 0.10 25);
 
-  --secondary: oklch(0.26 0.14 25);
-  --secondary-foreground: oklch(0.97 0.015 90);
+  --secondary: oklch(0.92 0.01 90);    /* soft cream secondary */
+  --secondary-foreground: oklch(0.30 0.02 90);
 
-  --muted: oklch(0.28 0.10 25);
-  --muted-foreground: oklch(0.82 0.04 88);
+  --muted: oklch(0.88 0.01 90);
+  --muted-foreground: oklch(0.45 0.02 90);
 
   --accent: oklch(0.68 0.13 78);
   --accent-foreground: oklch(0.16 0.10 25);
@@ -98,11 +98,11 @@
   }
 
   body {
-    /* Deep Wine #4A0404 → Midnight Maroon #2D0101 velvety gradient */
+    /* Premium White with subtle cream gradient */
     background:
-      radial-gradient(ellipse at top, #5a0808 0%, transparent 55%),
-      radial-gradient(ellipse at bottom, #1a0000 0%, transparent 50%),
-      linear-gradient(160deg, #2d0101 0%, #4a0404 50%, #1f0101 100%);
+      radial-gradient(ellipse at top, #ffffff 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, #f8f6f0 0%, transparent 50%),
+      linear-gradient(160deg, #ffffff 0%, #faf9f6 50%, #f5f4f0 100%);
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -112,6 +112,7 @@
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
     letter-spacing: 0.01em;
+    color: oklch(0.25 0.05 90); /* Dark charcoal for headers */
   }
 }
 
