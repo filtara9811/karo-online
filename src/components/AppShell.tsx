@@ -59,7 +59,7 @@ export function AppShell() {
 
       <main
         key={fadeKey}
-        className="relative max-w-md mx-auto px-4 pt-3 pb-40"
+        className="relative max-w-md mx-auto px-4 pt-3 pb-36"
         style={{ animation: "lux-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <Outlet />
