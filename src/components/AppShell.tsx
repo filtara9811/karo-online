@@ -36,9 +36,9 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Ambient gold/wine glows */}
-      <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.14),transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.45_0.18_22/0.35),transparent_70%)] blur-2xl" />
+      {/* Ambient gold glows for white theme */}
+      <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
       <TopHeader />
 
@@ -57,10 +57,10 @@ export function AppShell() {
 
 function TopHeader() {
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-xl bg-[oklch(0.10_0.05_16/0.55)] border-b border-[color:oklch(0.84_0.15_85/0.18)]">
+    <header className="sticky top-0 z-30 backdrop-blur-xl bg-[oklch(0.98_0.01_90/0.85)] border-b border-[color:oklch(0.84_0.15_85/0.35)]">
       <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
         <Link to="/" className="flex flex-col leading-tight">
-          <span className="text-[9px] uppercase tracking-[0.35em] text-[color:oklch(0.84_0.15_85/0.7)]">Maison</span>
+          <span className="text-[9px] uppercase tracking-[0.35em] text-[color:oklch(0.45_0.08_85/0.8)]">Maison</span>
           <span className="font-display text-lg text-gold-gradient -mt-0.5">Karo · Online</span>
         </Link>
         <div className="flex items-center gap-2">
@@ -118,12 +118,12 @@ function BottomNav({ loading }: { loading: boolean }) {
                   <span
                     className={`relative h-11 w-11 grid place-items-center rounded-2xl transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-[oklch(0.30_0.13_22)] to-[oklch(0.12_0.05_16)] shadow-gold-glow border border-[color:oklch(0.84_0.15_85/0.6)]"
+                        ? "bg-gradient-to-br from-[oklch(0.95_0.05_90)] to-[oklch(0.98_0.02_90)] shadow-gold-glow border border-[color:oklch(0.84_0.15_85/0.8)]"
                         : "border border-transparent"
                     }`}
                   >
                     {isActive && (
-                      <span className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(245,217,122,0.25),transparent_70%)] blur-md" />
+                      <span className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(245,217,122,0.35),transparent_70%)] blur-md" />
                     )}
                     <img
                       src={item.icon}
@@ -140,7 +140,7 @@ function BottomNav({ loading }: { loading: boolean }) {
                   </span>
                   <span
                     className={`text-[10px] uppercase tracking-[0.18em] transition-colors ${
-                      isActive ? "text-gold-gradient font-medium" : "text-[color:oklch(0.78_0.06_85/0.55)]"
+                      isActive ? "text-gold-gradient font-medium" : "text-[color:oklch(0.40_0.05_85/0.6)]"
                     }`}
                   >
                     {item.label}
