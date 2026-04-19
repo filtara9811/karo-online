@@ -35,11 +35,20 @@ const RESALE_PRODUCTS = [
   { name: "Aurum Perfume", desc: "24K gold cap · Oud & amber notes", img: productPerfume, seller: "Karan · Hyderabad" },
 ];
 
-const RECOMMENDED_VENDORS = Array.from({ length: 7 }, (_, i) => ({
-  id: i,
-  name: ["Aarav", "Vihaan", "Reyansh", "Ayaan", "Krish", "Ishaan", "Kabir"][i],
-  pending: i === 1 || i === 4,
-}));
+const RECOMMENDED_VENDORS = [
+  { name: "Aarav", pending: false, cat: "Fashion" },
+  { name: "Vihaan", pending: true, cat: "Beauty" },
+  { name: "Reyansh", pending: false, cat: "Grocery" },
+  { name: "Ayaan", pending: false, cat: "Electronics" },
+  { name: "Krish", pending: true, cat: "Home" },
+  { name: "Ishaan", pending: false, cat: "Jewellery" },
+  { name: "Kabir", pending: false, cat: "Footwear" },
+  { name: "Diya", pending: false, cat: "Decor" },
+  { name: "Anaya", pending: true, cat: "Wellness" },
+  { name: "Arjun", pending: false, cat: "Sports" },
+  { name: "Myra", pending: false, cat: "Kids" },
+  { name: "Veer", pending: false, cat: "Auto" },
+].map((v, i) => ({ id: i, ...v }));
 
 function HomePage() {
   const [slide, setSlide] = useState(0);
