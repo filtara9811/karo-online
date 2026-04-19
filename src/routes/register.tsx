@@ -148,22 +148,23 @@ function Register() {
   const [operator, setOperator] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
+  const [otpOpen, setOtpOpen] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
-  const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Step progression
+  // Step progression — phone step skipped automatically once verified
   const reachedStep = useMemo<StepKey>(() => {
     if (!name.trim()) return "name";
     if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
-    if (otp.length < 6) return "otp";
+    if (!phoneVerified) return "otp";
     if (!email.trim()) return "email";
     return "address";
-  }, [name, phone, otp, email]);
+  }, [name, phone, phoneVerified, email]);
 
   const visibleSteps = useMemo(() => {
     const idx = STEP_ORDER.indexOf(reachedStep);
@@ -178,14 +179,28 @@ function Register() {
 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
 
-  // Auto-focus the name input after a gender is selected
+  // Auto-focus name after gender selection
   useEffect(() => {
     if (gender) setTimeout(() => nameInputRef.current?.focus(), 250);
   }, [gender]);
 
-  useEffect(() => {
-    if (operator) setTimeout(() => phoneInputRef.current?.focus(), 250);
-  }, [operator]);
+  // SIM picked → auto-fill phone → auto-open OTP modal
+  const handleSimSelect = (value: string) => {
+    const sim = SIM_OPTIONS.find((s) => s.value === value);
+    if (!sim) return;
+    setOperator(value);
+    setPicker(null);
+    setPhone(sim.number);
+    setTimeout(() => setOtpOpen(true), 600);
+  };
+
+  const handleOtpVerified = (code: string) => {
+    setOtp(code);
+    setPhoneVerified(true);
+    setOtpOpen(false);
+    // auto-open email picker right after
+    setTimeout(() => setPicker("email"), 500);
+  };
 
   return (
     <main className="min-h-screen relative overflow-hidden">
