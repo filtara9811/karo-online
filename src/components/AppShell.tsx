@@ -59,7 +59,7 @@ export function AppShell() {
 
       <main
         key={fadeKey}
-        className="relative max-w-md mx-auto px-4 pt-3 pb-40"
+        className="relative max-w-md mx-auto px-4 pt-3 pb-36"
         style={{ animation: "lux-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <Outlet />
@@ -157,55 +157,50 @@ function BottomActionBar({ loading }: { loading: boolean }) {
 
   return (
     <>
-      {/* Mini nav-tab strip — floats above the action bar */}
-      <nav
-        aria-label="Primary"
-        className="fixed inset-x-0 z-30 pointer-events-none"
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
-      >
-        <div className="max-w-md mx-auto px-6 flex items-center justify-center pointer-events-auto">
-          <div className="glass-wine rounded-full px-2 py-1.5 flex items-center gap-1 shadow-gold-glow">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: true }}
-                className="group rounded-full active:scale-90 transition-transform"
-              >
-                {({ isActive }) => (
-                  <span
-                    className={`relative h-9 w-9 grid place-items-center rounded-full transition-all ${
-                      isActive
-                        ? "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] shadow-gold-glow"
-                        : ""
-                    }`}
-                    title={item.label}
-                  >
-                    <img
-                      src={item.icon}
-                      alt={item.label}
-                      width={36}
-                      height={36}
-                      className={`h-7 w-7 object-contain transition-all ${
-                        isActive ? "drop-shadow-[0_3px_6px_rgba(245,217,122,0.6)] scale-110" : "opacity-55 group-hover:opacity-100"
-                      }`}
-                    />
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* Curved bottom action bar — matches the screenshot */}
+      {/* Bottom dock — nav strip glued directly on top of the action bar */}
       <div
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >
-        <div className="max-w-md mx-auto px-3 pb-3">
+        <div className="max-w-md mx-auto px-3 pb-3 flex flex-col items-stretch">
+          {/* Mini nav-tab strip — sits flush above, slightly narrower */}
+          <nav aria-label="Primary" className="self-center -mb-2 z-10">
+            <div className="rounded-full px-2 py-1.5 flex items-center gap-1 bg-white/95 backdrop-blur-xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-4px_16px_-4px_rgba(212,175,55,0.4)]">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  activeOptions={{ exact: true }}
+                  className="group rounded-full active:scale-90 transition-transform"
+                >
+                  {({ isActive }) => (
+                    <span
+                      className={`relative h-9 w-9 grid place-items-center rounded-full transition-all ${
+                        isActive
+                          ? "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] shadow-gold-glow"
+                          : ""
+                      }`}
+                      title={item.label}
+                    >
+                      <img
+                        src={item.icon}
+                        alt={item.label}
+                        width={36}
+                        height={36}
+                        className={`h-7 w-7 object-contain transition-all ${
+                          isActive ? "drop-shadow-[0_3px_6px_rgba(245,217,122,0.6)] scale-110" : "opacity-55 group-hover:opacity-100"
+                        }`}
+                      />
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </nav>
+
+          {/* Curved bottom action bar */}
           <div
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-3 py-3"
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-3 py-3 pt-5"
             style={{ borderRadius: "28px" }}
           >
             {loading && (
