@@ -133,32 +133,32 @@
       linear-gradient(135deg, #8b6508 0%, #d4af37 28%, #fff3b0 50%, #d4af37 72%, #8b6508 100%);
   }
 
-  /* Frosted glass — 15% transparency, 1px antique gold #D4AF37 border */
+  /* Frosted glass — for white background with gold border */
   .glass-wine {
-    background: linear-gradient(145deg, rgba(74, 4, 4, 0.18), rgba(45, 1, 1, 0.22));
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(250, 249, 246, 0.98));
     backdrop-filter: blur(30px) saturate(170%);
     -webkit-backdrop-filter: blur(30px) saturate(170%);
     border: 1px solid rgba(212, 175, 55, 0.55);
     box-shadow:
-      0 1px 0 rgba(255, 235, 170, 0.18) inset,
-      0 40px 100px -20px rgba(0, 0, 0, 0.85),
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 8px 32px -8px rgba(0, 0, 0, 0.1),
       0 0 0 1px rgba(212, 175, 55, 0.08);
   }
 
   .glass-sheet {
-    background: linear-gradient(180deg, rgba(74, 4, 4, 0.55), rgba(26, 0, 0, 0.78));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 246, 240, 0.98));
     backdrop-filter: blur(34px) saturate(180%);
     -webkit-backdrop-filter: blur(34px) saturate(180%);
     border-top: 1px solid rgba(212, 175, 55, 0.6);
     box-shadow:
-      0 -1px 0 rgba(255, 235, 170, 0.22) inset,
-      0 -30px 80px -10px rgba(0, 0, 0, 0.75);
+      0 -1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 -10px 40px -10px rgba(0, 0, 0, 0.08);
   }
 
   .gold-border {
     border: 1px solid transparent;
     background:
-      linear-gradient(#2d0101, #2d0101) padding-box,
+      linear-gradient(#ffffff, #ffffff) padding-box,
       linear-gradient(135deg, #b8860b, #f5d97a, #d4af37, #b8860b) border-box;
   }
 
