@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import vendorDelivery from "@/assets/vendor-delivery.png";
 import avatarUser from "@/assets/avatar-user.png";
@@ -35,48 +35,89 @@ const RESALE_PRODUCTS = [
   { name: "Aurum Perfume", desc: "24K gold cap · Oud & amber notes", img: productPerfume, seller: "Karan · Hyderabad" },
 ];
 
-const RECOMMENDED_VENDORS = Array.from({ length: 7 }, (_, i) => ({
-  id: i,
-  name: ["Aarav", "Vihaan", "Reyansh", "Ayaan", "Krish", "Ishaan", "Kabir"][i],
-  pending: i === 1 || i === 4,
-}));
+const RECOMMENDED_VENDORS = [
+  { name: "Aarav", pending: false, cat: "Fashion" },
+  { name: "Vihaan", pending: true, cat: "Beauty" },
+  { name: "Reyansh", pending: false, cat: "Grocery" },
+  { name: "Ayaan", pending: false, cat: "Electronics" },
+  { name: "Krish", pending: true, cat: "Home" },
+  { name: "Ishaan", pending: false, cat: "Jewellery" },
+  { name: "Kabir", pending: false, cat: "Footwear" },
+  { name: "Diya", pending: false, cat: "Decor" },
+  { name: "Anaya", pending: true, cat: "Wellness" },
+  { name: "Arjun", pending: false, cat: "Sports" },
+  { name: "Myra", pending: false, cat: "Kids" },
+  { name: "Veer", pending: false, cat: "Auto" },
+].map((v, i) => ({ id: i, ...v }));
 
 function HomePage() {
   const [slide, setSlide] = useState(0);
+  const productsRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % BUSINESS_SLIDES.length), 3800);
     return () => clearInterval(t);
   }, []);
 
+  // Auto-scroll for resand products
+  useEffect(() => {
+    const el = productsRef.current;
+    if (!el) return;
+    let dir = 1;
+    const t = setInterval(() => {
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 0) return;
+      const step = el.clientWidth * 0.78;
+      let next = el.scrollLeft + step * dir;
+      if (next >= max - 4) { next = max; dir = -1; }
+      else if (next <= 0) { next = 0; dir = 1; }
+      el.scrollTo({ left: next, behavior: "smooth" });
+    }, 3200);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div className="space-y-5">
-      {/* BUSINESS Carousel */}
+      {/* BUSINESS Carousel — sliding left to right */}
       <section style={{ animation: "fade-up 0.7s ease-out both" }}>
         <div className="relative rounded-3xl overflow-hidden bg-white border border-[color:oklch(0.78_0.14_82/0.45)] shadow-gold-glow">
-          <div className="relative aspect-[16/9] grid place-items-center bg-gradient-to-br from-[#fefcf6] via-white to-[#f9f5e8] overflow-hidden">
-            {/* Word-cloud decorative ring */}
-            <div className="absolute inset-0 grid place-items-center opacity-25 pointer-events-none">
-              <div className="font-display text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.08_85)] text-center leading-tight rotate-[-6deg] scale-110">
-                Partnership · Teamwork · Cooperation · Success · Business
-                <br />
-                Network · Maison · Affiliate · Reselling · Growth · Trust
-              </div>
-            </div>
-            {/* Center stage */}
-            <div className="relative text-center px-6">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-2">
-                ✦ {BUSINESS_SLIDES[slide].tag} ✦
-              </p>
-              <h2 className="font-display text-5xl text-gold-gradient font-bold tracking-wide leading-none">
-                {BUSINESS_SLIDES[slide].title}
-              </h2>
-              <p className="mt-2 text-xs text-muted-foreground italic">{BUSINESS_SLIDES[slide].sub}</p>
+          <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-[#fefcf6] via-white to-[#f9f5e8]">
+            {/* Sliding track */}
+            <div
+              className="flex h-full transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${slide * 100}%)`, width: `${BUSINESS_SLIDES.length * 100}%` }}
+            >
+              {BUSINESS_SLIDES.map((s, i) => (
+                <div
+                  key={i}
+                  className="relative h-full grid place-items-center shrink-0"
+                  style={{ width: `${100 / BUSINESS_SLIDES.length}%` }}
+                >
+                  <div className="absolute inset-0 grid place-items-center opacity-25 pointer-events-none">
+                    <div className="font-display text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.08_85)] text-center leading-tight rotate-[-6deg] scale-110">
+                      Partnership · Teamwork · Cooperation · Success · Business
+                      <br />
+                      Network · Maison · Affiliate · Reselling · Growth · Trust
+                    </div>
+                  </div>
+                  <div className="relative text-center px-6">
+                    <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-2">
+                      ✦ {s.tag} ✦
+                    </p>
+                    <h2 className="font-display text-5xl text-gold-gradient font-bold tracking-wide leading-none">
+                      {s.title}
+                    </h2>
+                    <p className="mt-2 text-xs text-muted-foreground italic">{s.sub}</p>
+                  </div>
+                </div>
+              ))}
             </div>
             {/* Floating briefcase */}
             <img
               src={goldBriefcase}
               alt=""
-              className="absolute -right-6 top-4 h-24 w-auto object-contain rotate-12 drop-shadow-[0_8px_18px_rgba(212,175,55,0.5)]"
+              className="absolute -right-6 top-4 h-24 w-auto object-contain rotate-12 drop-shadow-[0_8px_18px_rgba(212,175,55,0.5)] pointer-events-none"
               style={{ animation: "float-y 4s ease-in-out infinite" }}
             />
           </div>
@@ -106,7 +147,7 @@ function HomePage() {
       {/* Resand Products — horizontal scroll */}
       <section style={{ animation: "fade-up 0.7s ease-out 0.05s both" }}>
         <h3 className="font-display text-xl text-gold-gradient mb-2 px-1">Resand products</h3>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+        <div ref={productsRef} className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide scroll-smooth">
           {RESALE_PRODUCTS.map((p, i) => (
             <article
               key={p.name}
@@ -196,16 +237,17 @@ function HomePage() {
         </article>
       </section>
 
-      {/* Recommended Vendors — avatar row */}
+      {/* Recommended Vendors — avatar row with categories */}
       <section style={{ animation: "fade-up 0.7s ease-out 0.15s both" }}>
+        <h3 className="font-display text-xl text-gold-gradient mb-2 px-1">Categories</h3>
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
           {RECOMMENDED_VENDORS.map((v, i) => (
             <button
               key={v.id}
-              className="btn-3d flex-shrink-0 flex flex-col items-center gap-1.5"
-              style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.04}s both` }}
+              className="btn-3d flex-shrink-0 flex flex-col items-center gap-1"
+              style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.03}s both` }}
             >
-              <span className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe]">
+              <span className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
                 <img src={avatarUser} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
                 {v.pending && (
                   <span className="absolute -bottom-0.5 inset-x-0 bg-gradient-to-r from-[#d4af37] to-[#8b6508] text-white text-[7px] font-bold py-0.5 text-center uppercase tracking-wider">
@@ -213,7 +255,8 @@ function HomePage() {
                   </span>
                 )}
               </span>
-              <span className="text-[9px] text-[color:oklch(0.40_0.05_85)] font-medium">{v.name}</span>
+              <span className="text-[10px] text-[color:oklch(0.30_0.05_85)] font-semibold leading-none">{v.cat}</span>
+              <span className="text-[8px] text-[color:oklch(0.50_0.05_85)] leading-none">{v.name}</span>
             </button>
           ))}
         </div>
