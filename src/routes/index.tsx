@@ -52,40 +52,72 @@ const RECOMMENDED_VENDORS = [
 
 function HomePage() {
   const [slide, setSlide] = useState(0);
+  const productsRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % BUSINESS_SLIDES.length), 3800);
     return () => clearInterval(t);
   }, []);
 
+  // Auto-scroll for resand products
+  useEffect(() => {
+    const el = productsRef.current;
+    if (!el) return;
+    let dir = 1;
+    const t = setInterval(() => {
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 0) return;
+      const step = el.clientWidth * 0.78;
+      let next = el.scrollLeft + step * dir;
+      if (next >= max - 4) { next = max; dir = -1; }
+      else if (next <= 0) { next = 0; dir = 1; }
+      el.scrollTo({ left: next, behavior: "smooth" });
+    }, 3200);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div className="space-y-5">
-      {/* BUSINESS Carousel */}
+      {/* BUSINESS Carousel — sliding left to right */}
       <section style={{ animation: "fade-up 0.7s ease-out both" }}>
         <div className="relative rounded-3xl overflow-hidden bg-white border border-[color:oklch(0.78_0.14_82/0.45)] shadow-gold-glow">
-          <div className="relative aspect-[16/9] grid place-items-center bg-gradient-to-br from-[#fefcf6] via-white to-[#f9f5e8] overflow-hidden">
-            {/* Word-cloud decorative ring */}
-            <div className="absolute inset-0 grid place-items-center opacity-25 pointer-events-none">
-              <div className="font-display text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.08_85)] text-center leading-tight rotate-[-6deg] scale-110">
-                Partnership · Teamwork · Cooperation · Success · Business
-                <br />
-                Network · Maison · Affiliate · Reselling · Growth · Trust
-              </div>
-            </div>
-            {/* Center stage */}
-            <div className="relative text-center px-6">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-2">
-                ✦ {BUSINESS_SLIDES[slide].tag} ✦
-              </p>
-              <h2 className="font-display text-5xl text-gold-gradient font-bold tracking-wide leading-none">
-                {BUSINESS_SLIDES[slide].title}
-              </h2>
-              <p className="mt-2 text-xs text-muted-foreground italic">{BUSINESS_SLIDES[slide].sub}</p>
+          <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-[#fefcf6] via-white to-[#f9f5e8]">
+            {/* Sliding track */}
+            <div
+              className="flex h-full transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${slide * 100}%)`, width: `${BUSINESS_SLIDES.length * 100}%` }}
+            >
+              {BUSINESS_SLIDES.map((s, i) => (
+                <div
+                  key={i}
+                  className="relative h-full grid place-items-center shrink-0"
+                  style={{ width: `${100 / BUSINESS_SLIDES.length}%` }}
+                >
+                  <div className="absolute inset-0 grid place-items-center opacity-25 pointer-events-none">
+                    <div className="font-display text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.08_85)] text-center leading-tight rotate-[-6deg] scale-110">
+                      Partnership · Teamwork · Cooperation · Success · Business
+                      <br />
+                      Network · Maison · Affiliate · Reselling · Growth · Trust
+                    </div>
+                  </div>
+                  <div className="relative text-center px-6">
+                    <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-2">
+                      ✦ {s.tag} ✦
+                    </p>
+                    <h2 className="font-display text-5xl text-gold-gradient font-bold tracking-wide leading-none">
+                      {s.title}
+                    </h2>
+                    <p className="mt-2 text-xs text-muted-foreground italic">{s.sub}</p>
+                  </div>
+                </div>
+              ))}
             </div>
             {/* Floating briefcase */}
             <img
               src={goldBriefcase}
               alt=""
-              className="absolute -right-6 top-4 h-24 w-auto object-contain rotate-12 drop-shadow-[0_8px_18px_rgba(212,175,55,0.5)]"
+              className="absolute -right-6 top-4 h-24 w-auto object-contain rotate-12 drop-shadow-[0_8px_18px_rgba(212,175,55,0.5)] pointer-events-none"
               style={{ animation: "float-y 4s ease-in-out infinite" }}
             />
           </div>
