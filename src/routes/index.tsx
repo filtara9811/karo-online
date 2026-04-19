@@ -147,7 +147,7 @@ function HomePage() {
       {/* Resand Products — horizontal scroll */}
       <section style={{ animation: "fade-up 0.7s ease-out 0.05s both" }}>
         <h3 className="font-display text-xl text-gold-gradient mb-2 px-1">Resand products</h3>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+        <div ref={productsRef} className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide scroll-smooth">
           {RESALE_PRODUCTS.map((p, i) => (
             <article
               key={p.name}
