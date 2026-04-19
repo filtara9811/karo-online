@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import {
+  Shirt, Sparkles, ShoppingBasket, Tv, Home as HomeIcon, Gem,
+  Footprints, Lamp, Flower2, Trophy, Baby, Car, X,
+  type LucideIcon,
+} from "lucide-react";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import vendorDelivery from "@/assets/vendor-delivery.png";
 import avatarUser from "@/assets/avatar-user.png";
