@@ -40,20 +40,97 @@ const RESALE_PRODUCTS = [
   { name: "Aurum Perfume", desc: "24K gold cap · Oud & amber notes", img: productPerfume, seller: "Karan · Hyderabad" },
 ];
 
-const RECOMMENDED_VENDORS = [
-  { name: "Aarav", pending: false, cat: "Fashion" },
-  { name: "Vihaan", pending: true, cat: "Beauty" },
-  { name: "Reyansh", pending: false, cat: "Grocery" },
-  { name: "Ayaan", pending: false, cat: "Electronics" },
-  { name: "Krish", pending: true, cat: "Home" },
-  { name: "Ishaan", pending: false, cat: "Jewellery" },
-  { name: "Kabir", pending: false, cat: "Footwear" },
-  { name: "Diya", pending: false, cat: "Decor" },
-  { name: "Anaya", pending: true, cat: "Wellness" },
-  { name: "Arjun", pending: false, cat: "Sports" },
-  { name: "Myra", pending: false, cat: "Kids" },
-  { name: "Veer", pending: false, cat: "Auto" },
-].map((v, i) => ({ id: i, ...v }));
+type Category = { cat: string; icon: LucideIcon; tint: string };
+
+const CATEGORIES: Category[] = [
+  { cat: "Fashion", icon: Shirt, tint: "from-[#fff4d6] to-[#f5dfa0]" },
+  { cat: "Beauty", icon: Sparkles, tint: "from-[#fff8e6] to-[#f7e6b0]" },
+  { cat: "Grocery", icon: ShoppingBasket, tint: "from-[#fff5d8] to-[#f3d98c]" },
+  { cat: "Electronics", icon: Tv, tint: "from-[#fdf3c8] to-[#ecd07a]" },
+  { cat: "Home", icon: HomeIcon, tint: "from-[#fff8dc] to-[#f5e9b8]" },
+  { cat: "Jewellery", icon: Gem, tint: "from-[#fff0c8] to-[#e8c574]" },
+  { cat: "Footwear", icon: Footprints, tint: "from-[#fdf5d2] to-[#f0d68a]" },
+  { cat: "Decor", icon: Lamp, tint: "from-[#fff6d8] to-[#efd590]" },
+  { cat: "Wellness", icon: Flower2, tint: "from-[#fdf8e0] to-[#eedd9a]" },
+  { cat: "Sports", icon: Trophy, tint: "from-[#fff2c8] to-[#e8c878]" },
+  { cat: "Kids", icon: Baby, tint: "from-[#fff8e0] to-[#f3e0a4]" },
+  { cat: "Auto", icon: Car, tint: "from-[#fdf2c0] to-[#e6c270]" },
+];
+
+const CATEGORY_PRODUCTS: Record<string, { name: string; price: string; seller: string }[]> = {
+  Fashion: [
+    { name: "Silk Anarkali Suit", price: "₹4,299", seller: "Aanya · Delhi" },
+    { name: "Embroidered Lehenga", price: "₹12,500", seller: "Vihaan · Mumbai" },
+    { name: "Designer Kurti Set", price: "₹1,899", seller: "Riya · Jaipur" },
+    { name: "Cotton Saree", price: "₹2,450", seller: "Karan · Chennai" },
+  ],
+  Beauty: [
+    { name: "Maison Cosmetics Kit", price: "₹2,199", seller: "Aanya · Delhi" },
+    { name: "Aurum Perfume 100ml", price: "₹3,499", seller: "Karan · Hyderabad" },
+    { name: "24K Gold Face Serum", price: "₹1,799", seller: "Myra · Pune" },
+    { name: "Luxe Lipstick Set", price: "₹999", seller: "Diya · Goa" },
+  ],
+  Grocery: [
+    { name: "Premium Basmati 5kg", price: "₹699", seller: "Arjun · Punjab" },
+    { name: "Organic Honey 500g", price: "₹449", seller: "Veer · Kashmir" },
+    { name: "Saffron 2g", price: "₹1,299", seller: "Ishaan · Srinagar" },
+    { name: "Cold-pressed Oil 1L", price: "₹599", seller: "Anaya · Kerala" },
+  ],
+  Electronics: [
+    { name: "55\" 4K Smart TV", price: "₹38,999", seller: "Ayaan · Delhi" },
+    { name: "Wireless Earbuds Pro", price: "₹4,499", seller: "Reyansh · Bangalore" },
+    { name: "Smart Watch Gold", price: "₹6,799", seller: "Kabir · Mumbai" },
+    { name: "Bluetooth Speaker", price: "₹2,299", seller: "Krish · Pune" },
+  ],
+  Home: [
+    { name: "Eco Cleaning Kit", price: "₹899", seller: "Riya · Bangalore" },
+    { name: "Velvet Cushion Set", price: "₹1,499", seller: "Diya · Jaipur" },
+    { name: "Brass Diya Set", price: "₹699", seller: "Anaya · Varanasi" },
+    { name: "Premium Bedsheet", price: "₹2,199", seller: "Myra · Lucknow" },
+  ],
+  Jewellery: [
+    { name: "22K Gold Earrings", price: "₹18,500", seller: "Ishaan · Hyderabad" },
+    { name: "Diamond Pendant", price: "₹24,999", seller: "Aarav · Mumbai" },
+    { name: "Kundan Necklace", price: "₹8,799", seller: "Vihaan · Jaipur" },
+    { name: "Silver Anklet Pair", price: "₹3,499", seller: "Aanya · Rajkot" },
+  ],
+  Footwear: [
+    { name: "Croc Leather Loafers", price: "₹5,999", seller: "Kabir · Mumbai" },
+    { name: "Bridal Juttis", price: "₹2,499", seller: "Diya · Jaipur" },
+    { name: "Sports Sneakers", price: "₹3,799", seller: "Arjun · Delhi" },
+    { name: "Suede Heels", price: "₹4,299", seller: "Myra · Bangalore" },
+  ],
+  Decor: [
+    { name: "Marble Vase", price: "₹2,999", seller: "Anaya · Agra" },
+    { name: "Gold Wall Mirror", price: "₹4,499", seller: "Diya · Delhi" },
+    { name: "Crystal Lamp", price: "₹3,799", seller: "Veer · Mumbai" },
+    { name: "Hand-painted Tray", price: "₹1,299", seller: "Riya · Udaipur" },
+  ],
+  Wellness: [
+    { name: "Ayurvedic Spa Kit", price: "₹2,499", seller: "Anaya · Kerala" },
+    { name: "Aromatherapy Oils", price: "₹1,899", seller: "Myra · Rishikesh" },
+    { name: "Yoga Mat Premium", price: "₹1,499", seller: "Arjun · Pune" },
+    { name: "Herbal Tea Box", price: "₹799", seller: "Veer · Darjeeling" },
+  ],
+  Sports: [
+    { name: "Cricket Bat Pro", price: "₹4,999", seller: "Arjun · Mumbai" },
+    { name: "Football Match Ball", price: "₹1,799", seller: "Veer · Goa" },
+    { name: "Badminton Racket Set", price: "₹2,499", seller: "Kabir · Delhi" },
+    { name: "Gym Dumbbell Pair", price: "₹3,299", seller: "Aarav · Bangalore" },
+  ],
+  Kids: [
+    { name: "Premium Teddy Bear", price: "₹1,499", seller: "Myra · Delhi" },
+    { name: "Kids Festive Outfit", price: "₹2,299", seller: "Diya · Jaipur" },
+    { name: "Educational Toy Set", price: "₹1,799", seller: "Anaya · Pune" },
+    { name: "Baby Skincare Box", price: "₹999", seller: "Riya · Chennai" },
+  ],
+  Auto: [
+    { name: "Premium Car Cover", price: "₹3,499", seller: "Veer · Delhi" },
+    { name: "Leather Seat Covers", price: "₹8,999", seller: "Arjun · Mumbai" },
+    { name: "Dashboard Polish Kit", price: "₹699", seller: "Kabir · Pune" },
+    { name: "Tyre Care Combo", price: "₹1,299", seller: "Aarav · Bangalore" },
+  ],
+};
 
 function HomePage() {
   const [slide, setSlide] = useState(0);
