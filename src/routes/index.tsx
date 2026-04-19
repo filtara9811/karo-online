@@ -134,6 +134,7 @@ const CATEGORY_PRODUCTS: Record<string, { name: string; price: string; seller: s
 
 function HomePage() {
   const [slide, setSlide] = useState(0);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
