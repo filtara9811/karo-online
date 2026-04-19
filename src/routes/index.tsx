@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import vendorDelivery from "@/assets/vendor-delivery.png";
 import avatarUser from "@/assets/avatar-user.png";
