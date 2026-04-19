@@ -279,27 +279,22 @@ function Register() {
             {visibleSteps.includes("phone") && (
               <LuxField
                 icon={operatorMeta?.icon ?? goldPhone}
-                label={operator ? `Mobile · ${operatorMeta?.label}` : "Mobile Number"}
+                label={
+                  phoneVerified
+                    ? `Mobile · ${operatorMeta?.label} · Verified ✓`
+                    : operator
+                    ? `Mobile · ${operatorMeta?.label}`
+                    : "Mobile Number"
+                }
                 value={phone}
-                placeholder={operator ? "Enter 10-digit number" : "Tap to choose your operator"}
+                placeholder={operator ? "Auto-filled from SIM" : "Tap to choose your SIM"}
                 type="tel"
-                filled={phone.replace(/\D/g, "").length >= 10}
-                readOnly={!operator}
-                onClick={() => !operator && setPicker("sim")}
-                onChange={(v) => setPhone(v.replace(/[^\d\s+]/g, "").slice(0, 14))}
-                inputRef={phoneInputRef}
-                delay={0.1}
-              />
-            )}
-
-            {visibleSteps.includes("otp") && (
-              <LuxField
-                icon={goldOtp}
-                label="OTP Verification"
-                value={otp}
-                placeholder="6-digit secure code"
-                filled={otp.length === 6}
-                onChange={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))}
+                filled={phoneVerified}
+                readOnly
+                onClick={() => {
+                  if (!operator) setPicker("sim");
+                  else if (!phoneVerified) setOtpOpen(true);
+                }}
                 delay={0.1}
               />
             )}
