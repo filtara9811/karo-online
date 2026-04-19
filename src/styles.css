@@ -52,41 +52,44 @@
 :root {
   --radius: 0.875rem;
 
-  --wine-deep: oklch(0.13 0.06 18);
-  --wine: oklch(0.22 0.11 20);
-  --wine-light: oklch(0.34 0.14 22);
+  /* Deep Wine #4A0404 → Midnight Maroon #2D0101 (calibrated in oklch) */
+  --wine-deep: oklch(0.16 0.10 25);   /* #2D0101 midnight maroon */
+  --wine: oklch(0.22 0.14 25);        /* #4A0404 deep wine */
+  --wine-light: oklch(0.32 0.16 25);  /* lifted wine for layering */
 
-  --gold: oklch(0.84 0.15 85);
-  --gold-light: oklch(0.94 0.10 92);
-  --gold-dark: oklch(0.62 0.14 72);
+  /* Antique Gold #D4AF37 + metallic shine highlights */
+  --gold: oklch(0.78 0.14 82);        /* #D4AF37 antique gold */
+  --gold-light: oklch(0.93 0.10 92);  /* shine highlight */
+  --gold-dark: oklch(0.58 0.13 72);   /* engraved shadow */
 
-  --background: oklch(0.13 0.06 18);
-  --foreground: oklch(0.96 0.04 88);
+  --background: oklch(0.16 0.10 25);
+  --foreground: oklch(0.97 0.015 90); /* off-white body text */
 
-  --card: oklch(0.18 0.08 20 / 0.6);
-  --card-foreground: oklch(0.96 0.04 88);
+  --card: oklch(0.22 0.14 25 / 0.15); /* 15% transparent frosted glass */
+  --card-foreground: oklch(0.97 0.015 90);
 
-  --popover: oklch(0.24 0.09 20);
-  --popover-foreground: oklch(0.95 0.04 88);
+  --popover: oklch(0.20 0.12 25);
+  --popover-foreground: oklch(0.97 0.015 90);
 
-  --primary: oklch(0.82 0.14 85);
-  --primary-foreground: oklch(0.18 0.07 18);
+  --primary: oklch(0.78 0.14 82);     /* antique gold */
+  --primary-foreground: oklch(0.16 0.10 25);
 
-  --secondary: oklch(0.28 0.12 20);
-  --secondary-foreground: oklch(0.95 0.04 88);
+  --secondary: oklch(0.26 0.14 25);
+  --secondary-foreground: oklch(0.97 0.015 90);
 
-  --muted: oklch(0.30 0.08 20);
-  --muted-foreground: oklch(0.78 0.06 85);
+  --muted: oklch(0.28 0.10 25);
+  --muted-foreground: oklch(0.82 0.04 88);
 
-  --accent: oklch(0.65 0.13 75);
-  --accent-foreground: oklch(0.18 0.07 18);
+  --accent: oklch(0.68 0.13 78);
+  --accent-foreground: oklch(0.16 0.10 25);
 
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 88);
 
-  --border: oklch(0.82 0.14 85 / 0.25);
-  --input: oklch(0.82 0.14 85 / 0.18);
-  --ring: oklch(0.82 0.14 85 / 0.6);
+  /* Antique gold border #D4AF37 — thin, crisp 1px */
+  --border: oklch(0.78 0.14 82 / 0.55);
+  --input: oklch(0.78 0.14 82 / 0.22);
+  --ring: oklch(0.78 0.14 82 / 0.65);
 }
 
 @layer base {
@@ -95,10 +98,11 @@
   }
 
   body {
+    /* Deep Wine #4A0404 → Midnight Maroon #2D0101 velvety gradient */
     background:
-      radial-gradient(ellipse at top, oklch(0.26 0.13 22) 0%, transparent 55%),
-      radial-gradient(ellipse at bottom, oklch(0.16 0.09 18) 0%, transparent 50%),
-      linear-gradient(160deg, oklch(0.10 0.05 14) 0%, oklch(0.18 0.10 20) 50%, oklch(0.08 0.04 12) 100%);
+      radial-gradient(ellipse at top, #5a0808 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, #1a0000 0%, transparent 50%),
+      linear-gradient(160deg, #2d0101 0%, #4a0404 50%, #1f0101 100%);
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -112,46 +116,49 @@
 }
 
 @layer utilities {
+  /* Antique gold #D4AF37 with metallic shine for headings */
   .text-gold-gradient {
-    background: linear-gradient(135deg, #f5d97a 0%, #fff3b0 25%, #d4a946 55%, #f5d97a 80%, #b8860b 100%);
+    background: linear-gradient(135deg, #f5d97a 0%, #fff3b0 22%, #d4af37 55%, #e8c558 78%, #b8860b 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
 
+  /* 3D metallic gold bar for primary buttons (Join / Submit) */
   .bg-gold-bar {
     background:
-      linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 35%),
-      linear-gradient(135deg, #b8860b 0%, #f5d97a 30%, #fff3b0 50%, #f5d97a 70%, #8b6508 100%);
+      linear-gradient(180deg, rgba(255, 248, 200, 0.45) 0%, transparent 38%),
+      linear-gradient(135deg, #8b6508 0%, #d4af37 28%, #fff3b0 50%, #d4af37 72%, #8b6508 100%);
   }
 
+  /* Frosted glass — 15% transparency, 1px antique gold #D4AF37 border */
   .glass-wine {
-    background: linear-gradient(145deg, oklch(0.22 0.11 20 / 0.45), oklch(0.14 0.07 18 / 0.6));
-    backdrop-filter: blur(28px) saturate(160%);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1px solid oklch(0.84 0.15 85 / 0.4);
+    background: linear-gradient(145deg, rgba(74, 4, 4, 0.18), rgba(45, 1, 1, 0.22));
+    backdrop-filter: blur(30px) saturate(170%);
+    -webkit-backdrop-filter: blur(30px) saturate(170%);
+    border: 1px solid rgba(212, 175, 55, 0.55);
     box-shadow:
-      0 1px 0 oklch(0.96 0.10 88 / 0.18) inset,
-      0 40px 100px -20px oklch(0.03 0.02 18 / 0.85),
-      0 0 0 1px oklch(0.84 0.15 85 / 0.1);
+      0 1px 0 rgba(255, 235, 170, 0.18) inset,
+      0 40px 100px -20px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(212, 175, 55, 0.08);
   }
 
   .glass-sheet {
-    background: linear-gradient(180deg, oklch(0.20 0.10 20 / 0.75), oklch(0.10 0.05 16 / 0.85));
-    backdrop-filter: blur(32px) saturate(180%);
-    -webkit-backdrop-filter: blur(32px) saturate(180%);
-    border-top: 1px solid oklch(0.84 0.15 85 / 0.5);
+    background: linear-gradient(180deg, rgba(74, 4, 4, 0.55), rgba(26, 0, 0, 0.78));
+    backdrop-filter: blur(34px) saturate(180%);
+    -webkit-backdrop-filter: blur(34px) saturate(180%);
+    border-top: 1px solid rgba(212, 175, 55, 0.6);
     box-shadow:
-      0 -1px 0 oklch(0.96 0.10 88 / 0.2) inset,
-      0 -30px 80px -10px oklch(0.02 0.02 18 / 0.7);
+      0 -1px 0 rgba(255, 235, 170, 0.22) inset,
+      0 -30px 80px -10px rgba(0, 0, 0, 0.75);
   }
 
   .gold-border {
     border: 1px solid transparent;
     background:
-      linear-gradient(var(--wine-deep), var(--wine-deep)) padding-box,
-      linear-gradient(135deg, #b8860b, #f5d97a, #b8860b) border-box;
+      linear-gradient(#2d0101, #2d0101) padding-box,
+      linear-gradient(135deg, #b8860b, #f5d97a, #d4af37, #b8860b) border-box;
   }
 
   .shadow-gold-glow {
