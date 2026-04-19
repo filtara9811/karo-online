@@ -397,10 +397,10 @@ function Register() {
       />
       <LuxPicker
         open={picker === "sim"}
-        title="Select Your Operator"
-        subtitle="We'll route the verification accordingly"
+        title="Select Your SIM"
+        subtitle="Tap a SIM — we'll auto-fill & verify"
         options={SIM_OPTIONS}
-        onSelect={(v) => { setOperator(v); setPicker(null); }}
+        onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
       <LuxPicker
@@ -410,6 +410,14 @@ function Register() {
         options={EMAIL_OPTIONS}
         onSelect={(v) => { setEmail(v); setPicker(null); }}
         onClose={() => setPicker(null)}
+      />
+
+      {/* OTP modal — auto-fills + auto-verifies */}
+      <OtpModal
+        open={otpOpen}
+        phone={phone}
+        onVerified={handleOtpVerified}
+        onClose={() => setOtpOpen(false)}
       />
     </main>
   );
