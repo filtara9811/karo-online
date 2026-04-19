@@ -242,3 +242,12 @@
 .btn-3d:active {
   transform: translateY(2px) scale(0.97);
 }
+
+/* Hide scrollbars on horizontal scroll strips */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
