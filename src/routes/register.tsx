@@ -14,9 +14,8 @@ import goldOther from "@/assets/gold-other.png";
 import goldGoogle from "@/assets/gold-google.png";
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
-import goldSimVi from "@/assets/gold-sim-vi.png";
-import goldSimBsnl from "@/assets/gold-sim-bsnl.png";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { OtpModal } from "@/components/OtpModal";
 
 export const Route = createFileRoute("/register")({
   component: Register,
@@ -32,11 +31,10 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "other", label: "Other", sub: "Beyond labels", icon: goldOther },
 ];
 
-const SIM_OPTIONS: PickerOption[] = [
-  { value: "jio", label: "Jio", sub: "Reliance · +91 70/89/91", icon: goldSimJio },
-  { value: "airtel", label: "Airtel", sub: "Bharti · +91 70/96/98", icon: goldSimAirtel },
-  { value: "vi", label: "Vi", sub: "Vodafone Idea · +91 70/97", icon: goldSimVi },
-  { value: "bsnl", label: "BSNL", sub: "State carrier · +91 94/95", icon: goldSimBsnl },
+// Two preloaded SIMs with their numbers — tap to auto-fill, no typing
+const SIM_OPTIONS: (PickerOption & { number: string })[] = [
+  { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
+  { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
 ];
 
 const EMAIL_OPTIONS: PickerOption[] = [
