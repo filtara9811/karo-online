@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import goldTicket from "@/assets/gold-ticket.png";
 import goldQuestion from "@/assets/gold-question-sphere.png";
@@ -142,6 +142,7 @@ function LuxField({
 }
 
 function Register() {
+  const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [gender, setGender] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -365,7 +366,8 @@ function Register() {
         {/* CTA Button — only when address + consent */}
         {address.trim() && agreed && (
           <button
-            className="mt-8 w-full relative overflow-hidden rounded-2xl py-4 px-6 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-semibold text-base tracking-wide flex items-center justify-center gap-3"
+            onClick={() => navigate({ to: "/" })}
+            className="btn-3d mt-8 w-full relative overflow-hidden rounded-2xl py-4 px-6 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-semibold text-base tracking-wide flex items-center justify-center gap-3"
             style={{ animation: "breathe 2.6s ease-in-out infinite, step-reveal 0.6s ease-out both" }}
           >
             <span
