@@ -1,11 +1,17 @@
-import { Link, Outlet, useLocation, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import goldBell from "@/assets/gold-bell.png";
-import goldQuestion from "@/assets/gold-question-sphere.png";
+import goldQr from "@/assets/gold-qr.png";
 import goldHome from "@/assets/gold-home.png";
 import goldServices from "@/assets/gold-services.png";
 import goldOrders from "@/assets/gold-orders.png";
 import goldProfile from "@/assets/gold-profile.png";
+import goldPin from "@/assets/gold-pin.png";
+import goldRepair from "@/assets/gold-cat-repair.png";
+import goldUser from "@/assets/gold-user.png";
+import goldBriefcase from "@/assets/gold-briefcase.png";
+import avatarUser from "@/assets/avatar-user.png";
+import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: goldHome },
@@ -14,15 +20,25 @@ const NAV_ITEMS = [
   { to: "/profile", label: "Profile", icon: goldProfile },
 ] as const;
 
-// Routes that should NOT show the persistent shell (full-screen flows)
 const HIDE_SHELL_ON = ["/register"];
+
+const RESELLING_OPTIONS: ActionOption[] = [
+  { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
+  { value: "vendor", label: "Vendor", sub: "Onboard your business · sell services", icon: goldBriefcase },
+  { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
+];
+
+const VENDOR_OPTIONS: ActionOption[] = [
+  { value: "join", label: "Join as Partner", sub: "Become a Karo Online vendor", icon: goldBriefcase, badge: "NEW" },
+  { value: "lead", label: "Lead Selling Business", sub: "Earn from qualified leads", icon: goldUser },
+  { value: "refer", label: "Refer & Earn", sub: "Bring partners · earn commission", icon: goldPin },
+];
 
 export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
 
-  // Luxury-fade page transitions
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => setFadeKey(location.pathname), [location.pathname]);
 
@@ -36,7 +52,6 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Ambient gold glows for white theme */}
       <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
@@ -44,39 +59,67 @@ export function AppShell() {
 
       <main
         key={fadeKey}
-        className="relative max-w-md mx-auto px-5 pt-4 pb-28"
+        className="relative max-w-md mx-auto px-4 pt-3 pb-40"
         style={{ animation: "lux-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <Outlet />
       </main>
 
-      <BottomNav loading={isLoading} />
+      <BottomActionBar loading={isLoading} />
     </div>
   );
 }
 
 function TopHeader() {
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-xl bg-[oklch(0.98_0.01_90/0.85)] border-b border-[color:oklch(0.84_0.15_85/0.35)]">
-      <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
-        <Link to="/" className="flex flex-col leading-tight">
-          <span className="text-[9px] uppercase tracking-[0.35em] text-[color:oklch(0.45_0.08_85/0.8)]">Maison</span>
-          <span className="font-display text-lg text-gold-gradient -mt-0.5">Karo · Online</span>
+    <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
+      <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        {/* User chip */}
+        <Link to="/profile" className="flex items-center gap-2.5 flex-1 min-w-0">
+          <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow flex-shrink-0 bg-white">
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+          </span>
+          <span className="flex flex-col leading-tight min-w-0">
+            <span className="font-display text-base text-gold-gradient truncate">Ashhu Qureshi</span>
+            <span className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.45_0.08_85/0.8)]">
+              Reselling | Affiliate
+            </span>
+          </span>
         </Link>
-        <div className="flex items-center gap-2">
-          <SphereButton icon={goldBell} label="Notifications" />
-          <SphereButton icon={goldQuestion} label="Help" />
+
+        {/* Refferal Join CTA */}
+        <button className="btn-3d relative overflow-hidden rounded-xl px-4 py-2.5 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-semibold text-sm shadow-gold-glow">
+          <span
+            className="absolute inset-0 opacity-50 pointer-events-none"
+            style={{
+              backgroundImage: "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 3s linear infinite",
+            }}
+          />
+          <span className="relative">Refferal join</span>
+        </button>
+      </div>
+
+      {/* Location + search row */}
+      <div className="max-w-md mx-auto px-4 pb-3 flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 rounded-2xl bg-white/95 border border-[color:oklch(0.78_0.14_82/0.45)] px-3 py-2 shadow-sm">
+          <img src={goldPin} alt="" className="h-4 w-4 object-contain" />
+          <span className="font-display text-sm text-gold-gradient font-semibold">Delhi 6</span>
+          <span className="text-[10px] text-muted-foreground italic ml-1 truncate">· Search markets, brands…</span>
         </div>
+        <SphereButton icon={goldQr} label="Scan QR" />
+        <SphereButton icon={goldBell} label="Notifications" badge="2" />
       </div>
     </header>
   );
 }
 
-function SphereButton({ icon, label }: { icon: string; label: string }) {
+function SphereButton({ icon, label, badge }: { icon: string; label: string; badge?: string }) {
   return (
     <button
       aria-label={label}
-      className="relative h-11 w-11 grid place-items-center rounded-full active:scale-90 transition-transform"
+      className="btn-3d relative h-11 w-11 grid place-items-center rounded-full active:scale-90"
     >
       <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(245,217,122,0.3),transparent_70%)] blur-md" />
       <img
@@ -86,71 +129,138 @@ function SphereButton({ icon, label }: { icon: string; label: string }) {
         width={44}
         height={44}
         className="relative h-9 w-9 object-contain drop-shadow-[0_4px_10px_rgba(245,217,122,0.45)]"
-        style={{ animation: "float-y 3.6s ease-in-out infinite" }}
       />
+      {badge && (
+        <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8b6508] text-[9px] font-bold text-white grid place-items-center shadow">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
 
-function BottomNav({ loading }: { loading: boolean }) {
+function BottomActionBar({ loading }: { loading: boolean }) {
+  const navigate = useNavigate();
+  const [picker, setPicker] = useState<null | "reselling" | "vendor">(null);
+
+  const handleResellingSelect = (value: string) => {
+    setPicker(null);
+    if (value === "quick") setTimeout(() => navigate({ to: "/services" }), 250);
+    else if (value === "vendor") setTimeout(() => setPicker("vendor"), 350);
+    else setTimeout(() => navigate({ to: "/services" }), 250);
+  };
+
+  const handleVendorSelect = () => {
+    setPicker(null);
+    setTimeout(() => navigate({ to: "/register" }), 250);
+  };
+
   return (
-    <nav
-      aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
-    >
-      <div className="max-w-md mx-auto px-3 pb-3">
-        <div className="glass-sheet rounded-3xl px-2 py-2 flex items-center justify-around relative overflow-hidden">
-          {loading && (
-            <span
-              className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent"
-              style={{ animation: "shimmer 1.4s linear infinite" }}
-            />
-          )}
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeOptions={{ exact: true }}
-              className="group flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl active:scale-90 transition-transform"
-            >
-              {({ isActive }) => (
-                <>
+    <>
+      {/* Mini nav-tab strip — floats above the action bar */}
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 z-30 pointer-events-none"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
+      >
+        <div className="max-w-md mx-auto px-6 flex items-center justify-center pointer-events-auto">
+          <div className="glass-wine rounded-full px-2 py-1.5 flex items-center gap-1 shadow-gold-glow">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                activeOptions={{ exact: true }}
+                className="group rounded-full active:scale-90 transition-transform"
+              >
+                {({ isActive }) => (
                   <span
-                    className={`relative h-11 w-11 grid place-items-center rounded-2xl transition-all ${
+                    className={`relative h-9 w-9 grid place-items-center rounded-full transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-[oklch(0.95_0.05_90)] to-[oklch(0.98_0.02_90)] shadow-gold-glow border border-[color:oklch(0.84_0.15_85/0.8)]"
-                        : "border border-transparent"
+                        ? "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] shadow-gold-glow"
+                        : ""
                     }`}
+                    title={item.label}
                   >
-                    {isActive && (
-                      <span className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(245,217,122,0.35),transparent_70%)] blur-md" />
-                    )}
                     <img
                       src={item.icon}
-                      alt=""
-                      loading="lazy"
-                      width={44}
-                      height={44}
-                      className={`relative h-8 w-8 object-contain transition-transform ${
-                        isActive
-                          ? "drop-shadow-[0_4px_8px_rgba(245,217,122,0.6)] scale-110"
-                          : "opacity-60 group-hover:opacity-100"
+                      alt={item.label}
+                      width={36}
+                      height={36}
+                      className={`h-7 w-7 object-contain transition-all ${
+                        isActive ? "drop-shadow-[0_3px_6px_rgba(245,217,122,0.6)] scale-110" : "opacity-55 group-hover:opacity-100"
                       }`}
                     />
                   </span>
-                  <span
-                    className={`text-[10px] uppercase tracking-[0.18em] transition-colors ${
-                      isActive ? "text-gold-gradient font-medium" : "text-[color:oklch(0.40_0.05_85/0.6)]"
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </>
-              )}
-            </Link>
-          ))}
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Curved bottom action bar — matches the screenshot */}
+      <div
+        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
+        style={{ bottom: 0 }}
+      >
+        <div className="max-w-md mx-auto px-3 pb-3">
+          <div
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-3 py-3"
+            style={{ borderRadius: "28px" }}
+          >
+            {loading && (
+              <span
+                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"
+                style={{ animation: "shimmer 1.4s linear infinite" }}
+              />
+            )}
+
+            {/* Left — Join Vendor pin */}
+            <button
+              onClick={() => setPicker("vendor")}
+              className="btn-3d flex items-center gap-2.5 active:scale-95"
+              aria-label="Join as Vendor"
+            >
+              <span className="relative h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+                <img src={goldPin} alt="" className="h-7 w-7 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-[8px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)]">Join</span>
+                <span className="font-display text-sm text-gold-gradient font-semibold">Vendor</span>
+              </span>
+            </button>
+
+            {/* Right — Reselling Program */}
+            <button
+              onClick={() => setPicker("reselling")}
+              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-1.5 rounded-2xl hover:bg-white/60 transition-colors"
+              aria-label="Reselling Program"
+            >
+              <span className="font-display text-base text-gold-gradient font-bold italic tracking-wide">
+                Reselling<span className="font-light"> | </span>program
+              </span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-lg">›</span>
+            </button>
+          </div>
         </div>
       </div>
-    </nav>
+
+      <ActionPicker
+        open={picker === "reselling"}
+        title="Reselling Program"
+        subtitle="Choose how you want to engage"
+        options={RESELLING_OPTIONS}
+        onSelect={handleResellingSelect}
+        onClose={() => setPicker(null)}
+      />
+      <ActionPicker
+        open={picker === "vendor"}
+        title="Join as Vendor"
+        subtitle="Lead-selling business onboarding"
+        options={VENDOR_OPTIONS}
+        onSelect={handleVendorSelect}
+        onClose={() => setPicker(null)}
+      />
+    </>
   );
 }
