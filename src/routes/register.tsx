@@ -14,9 +14,8 @@ import goldOther from "@/assets/gold-other.png";
 import goldGoogle from "@/assets/gold-google.png";
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
-import goldSimVi from "@/assets/gold-sim-vi.png";
-import goldSimBsnl from "@/assets/gold-sim-bsnl.png";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { OtpModal } from "@/components/OtpModal";
 
 export const Route = createFileRoute("/register")({
   component: Register,
@@ -32,11 +31,10 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "other", label: "Other", sub: "Beyond labels", icon: goldOther },
 ];
 
-const SIM_OPTIONS: PickerOption[] = [
-  { value: "jio", label: "Jio", sub: "Reliance · +91 70/89/91", icon: goldSimJio },
-  { value: "airtel", label: "Airtel", sub: "Bharti · +91 70/96/98", icon: goldSimAirtel },
-  { value: "vi", label: "Vi", sub: "Vodafone Idea · +91 70/97", icon: goldSimVi },
-  { value: "bsnl", label: "BSNL", sub: "State carrier · +91 94/95", icon: goldSimBsnl },
+// Two preloaded SIMs with their numbers — tap to auto-fill, no typing
+const SIM_OPTIONS: (PickerOption & { number: string })[] = [
+  { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
+  { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
 ];
 
 const EMAIL_OPTIONS: PickerOption[] = [
@@ -150,22 +148,23 @@ function Register() {
   const [operator, setOperator] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
+  const [otpOpen, setOtpOpen] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
-  const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Step progression
+  // Step progression — phone step skipped automatically once verified
   const reachedStep = useMemo<StepKey>(() => {
     if (!name.trim()) return "name";
     if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
-    if (otp.length < 6) return "otp";
+    if (!phoneVerified) return "otp";
     if (!email.trim()) return "email";
     return "address";
-  }, [name, phone, otp, email]);
+  }, [name, phone, phoneVerified, email]);
 
   const visibleSteps = useMemo(() => {
     const idx = STEP_ORDER.indexOf(reachedStep);
@@ -180,14 +179,28 @@ function Register() {
 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
 
-  // Auto-focus the name input after a gender is selected
+  // Auto-focus name after gender selection
   useEffect(() => {
     if (gender) setTimeout(() => nameInputRef.current?.focus(), 250);
   }, [gender]);
 
-  useEffect(() => {
-    if (operator) setTimeout(() => phoneInputRef.current?.focus(), 250);
-  }, [operator]);
+  // SIM picked → auto-fill phone → auto-open OTP modal
+  const handleSimSelect = (value: string) => {
+    const sim = SIM_OPTIONS.find((s) => s.value === value);
+    if (!sim) return;
+    setOperator(value);
+    setPicker(null);
+    setPhone(sim.number);
+    setTimeout(() => setOtpOpen(true), 600);
+  };
+
+  const handleOtpVerified = (code: string) => {
+    setOtp(code);
+    setPhoneVerified(true);
+    setOtpOpen(false);
+    // auto-open email picker right after
+    setTimeout(() => setPicker("email"), 500);
+  };
 
   return (
     <main className="min-h-screen relative overflow-hidden">
@@ -266,27 +279,22 @@ function Register() {
             {visibleSteps.includes("phone") && (
               <LuxField
                 icon={operatorMeta?.icon ?? goldPhone}
-                label={operator ? `Mobile · ${operatorMeta?.label}` : "Mobile Number"}
+                label={
+                  phoneVerified
+                    ? `Mobile · ${operatorMeta?.label} · Verified ✓`
+                    : operator
+                    ? `Mobile · ${operatorMeta?.label}`
+                    : "Mobile Number"
+                }
                 value={phone}
-                placeholder={operator ? "Enter 10-digit number" : "Tap to choose your operator"}
+                placeholder={operator ? "Auto-filled from SIM" : "Tap to choose your SIM"}
                 type="tel"
-                filled={phone.replace(/\D/g, "").length >= 10}
-                readOnly={!operator}
-                onClick={() => !operator && setPicker("sim")}
-                onChange={(v) => setPhone(v.replace(/[^\d\s+]/g, "").slice(0, 14))}
-                inputRef={phoneInputRef}
-                delay={0.1}
-              />
-            )}
-
-            {visibleSteps.includes("otp") && (
-              <LuxField
-                icon={goldOtp}
-                label="OTP Verification"
-                value={otp}
-                placeholder="6-digit secure code"
-                filled={otp.length === 6}
-                onChange={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))}
+                filled={phoneVerified}
+                readOnly
+                onClick={() => {
+                  if (!operator) setPicker("sim");
+                  else if (!phoneVerified) setOtpOpen(true);
+                }}
                 delay={0.1}
               />
             )}
@@ -389,10 +397,10 @@ function Register() {
       />
       <LuxPicker
         open={picker === "sim"}
-        title="Select Your Operator"
-        subtitle="We'll route the verification accordingly"
+        title="Select Your SIM"
+        subtitle="Tap a SIM — we'll auto-fill & verify"
         options={SIM_OPTIONS}
-        onSelect={(v) => { setOperator(v); setPicker(null); }}
+        onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
       <LuxPicker
@@ -402,6 +410,14 @@ function Register() {
         options={EMAIL_OPTIONS}
         onSelect={(v) => { setEmail(v); setPicker(null); }}
         onClose={() => setPicker(null)}
+      />
+
+      {/* OTP modal — auto-fills + auto-verifies */}
+      <OtpModal
+        open={otpOpen}
+        phone={phone}
+        onVerified={handleOtpVerified}
+        onClose={() => setOtpOpen(false)}
       />
     </main>
   );
