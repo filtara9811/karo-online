@@ -237,16 +237,17 @@ function HomePage() {
         </article>
       </section>
 
-      {/* Recommended Vendors — avatar row */}
+      {/* Recommended Vendors — avatar row with categories */}
       <section style={{ animation: "fade-up 0.7s ease-out 0.15s both" }}>
+        <h3 className="font-display text-xl text-gold-gradient mb-2 px-1">Categories</h3>
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
           {RECOMMENDED_VENDORS.map((v, i) => (
             <button
               key={v.id}
-              className="btn-3d flex-shrink-0 flex flex-col items-center gap-1.5"
-              style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.04}s both` }}
+              className="btn-3d flex-shrink-0 flex flex-col items-center gap-1"
+              style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.03}s both` }}
             >
-              <span className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe]">
+              <span className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
                 <img src={avatarUser} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
                 {v.pending && (
                   <span className="absolute -bottom-0.5 inset-x-0 bg-gradient-to-r from-[#d4af37] to-[#8b6508] text-white text-[7px] font-bold py-0.5 text-center uppercase tracking-wider">
@@ -254,7 +255,8 @@ function HomePage() {
                   </span>
                 )}
               </span>
-              <span className="text-[9px] text-[color:oklch(0.40_0.05_85)] font-medium">{v.name}</span>
+              <span className="text-[10px] text-[color:oklch(0.30_0.05_85)] font-semibold leading-none">{v.cat}</span>
+              <span className="text-[8px] text-[color:oklch(0.50_0.05_85)] leading-none">{v.name}</span>
             </button>
           ))}
         </div>
