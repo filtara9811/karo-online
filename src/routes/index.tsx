@@ -320,30 +320,107 @@ function HomePage() {
         </article>
       </section>
 
-      {/* Recommended Vendors — avatar row with categories */}
+      {/* Categories — themed gold icons, click to open product sheet */}
       <section style={{ animation: "fade-up 0.7s ease-out 0.15s both" }}>
         <h3 className="font-display text-xl text-gold-gradient mb-2 px-1">Categories</h3>
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
-          {RECOMMENDED_VENDORS.map((v, i) => (
-            <button
-              key={v.id}
-              className="btn-3d flex-shrink-0 flex flex-col items-center gap-1"
-              style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.03}s both` }}
-            >
-              <span className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
-                <img src={avatarUser} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
-                {v.pending && (
-                  <span className="absolute -bottom-0.5 inset-x-0 bg-gradient-to-r from-[#d4af37] to-[#8b6508] text-white text-[7px] font-bold py-0.5 text-center uppercase tracking-wider">
-                    pending
-                  </span>
-                )}
-              </span>
-              <span className="text-[10px] text-[color:oklch(0.30_0.05_85)] font-semibold leading-none">{v.cat}</span>
-              <span className="text-[8px] text-[color:oklch(0.50_0.05_85)] leading-none">{v.name}</span>
-            </button>
-          ))}
+        <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+          {CATEGORIES.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <button
+                key={c.cat}
+                onClick={() => setActiveCat(c.cat)}
+                className="btn-3d flex-shrink-0 flex flex-col items-center gap-1.5 active:scale-95"
+                style={{ animation: `fade-up 0.5s ease-out ${0.18 + i * 0.03}s both` }}
+                aria-label={`Browse ${c.cat}`}
+              >
+                <span className={`relative h-14 w-14 rounded-2xl grid place-items-center border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br ${c.tint}`}>
+                  <Icon className="h-7 w-7 text-[color:oklch(0.42_0.10_82)] drop-shadow-[0_2px_3px_rgba(212,175,55,0.5)]" strokeWidth={2.2} />
+                </span>
+                <span className="text-[10px] text-[color:oklch(0.30_0.05_85)] font-semibold leading-none">{c.cat}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
+
+      <ProductSheet category={activeCat} onClose={() => setActiveCat(null)} />
     </div>
+  );
+}
+
+function ProductSheet({ category, onClose }: { category: string | null; onClose: () => void }) {
+  const open = !!category;
+  const products = category ? CATEGORY_PRODUCTS[category] ?? [] : [];
+  const cat = category ? CATEGORIES.find((c) => c.cat === category) : null;
+  const Icon = cat?.icon;
+
+  return (
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity ${
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`fixed inset-x-0 bottom-0 z-50 transition-transform duration-400 ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
+      >
+        <div className="max-w-md mx-auto bg-gradient-to-b from-white via-[#fffdf5] to-[#fdf8e8] border-t-2 border-[color:oklch(0.78_0.14_82/0.6)] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(212,175,55,0.4)] max-h-[85vh] flex flex-col pb-[env(safe-area-inset-bottom)]">
+          <div className="flex justify-center pt-2.5 pb-1">
+            <span className="h-1 w-12 rounded-full bg-gradient-to-r from-[#d4af37] to-[#8b6508]" />
+          </div>
+          <div className="px-5 pt-2 pb-3 flex items-center gap-3 border-b border-[color:oklch(0.78_0.14_82/0.25)]">
+            {Icon && cat && (
+              <span className={`h-12 w-12 rounded-2xl grid place-items-center border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow bg-gradient-to-br ${cat.tint}`}>
+                <Icon className="h-6 w-6 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+              </span>
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-xl text-gold-gradient font-bold leading-tight">{category}</h3>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)] mt-0.5">
+                {products.length} curated picks
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="btn-3d h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm active:scale-90"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            </button>
+          </div>
+          <div className="overflow-y-auto px-4 py-4 grid grid-cols-2 gap-3">
+            {products.map((p, i) => (
+              <article
+                key={p.name}
+                className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2.5 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.3)]"
+                style={{ animation: `fade-up 0.4s ease-out ${i * 0.05}s both` }}
+              >
+                <div className={`aspect-square rounded-xl mb-2 grid place-items-center bg-gradient-to-br ${cat?.tint ?? "from-[#fff8dc] to-[#f5e9b8]"} border border-[color:oklch(0.78_0.14_82/0.35)]`}>
+                  {Icon && <Icon className="h-10 w-10 text-[color:oklch(0.42_0.10_82)] drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" strokeWidth={1.8} />}
+                </div>
+                <h4 className="font-display text-xs text-[color:oklch(0.25_0.05_85)] font-semibold leading-tight line-clamp-2 min-h-[2rem]">
+                  {p.name}
+                </h4>
+                <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{p.seller}</p>
+                <div className="mt-1.5 flex items-center justify-between">
+                  <span className="font-display text-sm text-gold-gradient font-bold">{p.price}</span>
+                  <button className="btn-3d h-6 px-2 rounded-full bg-gold-bar text-[color:oklch(0.13_0.06_18)] text-[9px] font-bold uppercase tracking-wider shadow-gold-glow active:scale-90">
+                    Buy
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
