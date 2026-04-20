@@ -160,6 +160,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     <>
       {/* Bottom dock — nav strip glued directly on top of the action bar */}
       <div
+        data-bottom-action-bar
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >

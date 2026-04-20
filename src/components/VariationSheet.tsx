@@ -40,10 +40,12 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
+    document.body.setAttribute("data-variation-open", "true");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.body.removeAttribute("data-variation-open");
       document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
