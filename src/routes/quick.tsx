@@ -140,14 +140,67 @@ const VARIATIONS: Record<string, VariationItem[]> = {
 
 const DEFAULT_VARIATION = VARIATIONS.ac;
 
+// Filter SERVICES by category — different products per category
+const SERVICES_BY_CAT: Record<string, ServiceItem[]> = {
+  ac: [
+    { id: "ac", title: "AC | service", img: svcAc, rating: 4.3, reviews: 555, verified: true, selected: true },
+    { id: "ac-rep", title: "AC | Repairing", img: svcCarpenter, rating: 4.4, reviews: 312, verified: true },
+    { id: "ac-ins", title: "AC | Installation", img: svcElectronics, rating: 4.5, reviews: 198, verified: true },
+    { id: "ac-gas", title: "AC | Gas Refill", img: svcAc, rating: 4.2, reviews: 142, verified: true },
+  ],
+  carpenter: [
+    { id: "carpenter", title: "Carpenter | Service", img: svcCarpenter, rating: 4.5, reviews: 412, verified: true, selected: true },
+    { id: "cp-furn", title: "Furniture | Repair", img: svcCarpenter, rating: 4.3, reviews: 287, verified: true },
+    { id: "cp-door", title: "Door | Fitting", img: svcCarpenter, rating: 4.6, reviews: 156, verified: true },
+    { id: "cp-cust", title: "Custom | Wood Work", img: svcCarpenter, rating: 4.7, reviews: 98, verified: true },
+  ],
+  electronics: [
+    { id: "mubaul", title: "Mobile | Repair", img: svcElectronics, rating: 4.2, reviews: 287, verified: true, selected: true },
+    { id: "el-tv", title: "TV | Service", img: svcElectronics, rating: 4.4, reviews: 198, verified: true },
+    { id: "el-app", title: "Appliance | Fix", img: svcElectronics, rating: 4.3, reviews: 156, verified: true },
+  ],
+  paint: [
+    { id: "paint", title: "Painter | Service", img: svcCarpenter, rating: 4.4, reviews: 234, verified: true, selected: true },
+    { id: "paint-int", title: "Interior | Paint", img: svcCarpenter, rating: 4.5, reviews: 178, verified: true },
+    { id: "paint-ext", title: "Exterior | Paint", img: svcCarpenter, rating: 4.3, reviews: 134, verified: true },
+  ],
+  movers: [
+    { id: "movers", title: "Movers | Packers", img: svcCarpenter, rating: 4.3, reviews: 312, verified: true, selected: true },
+    { id: "movers-loc", title: "Local | Shifting", img: svcCarpenter, rating: 4.4, reviews: 234, verified: true },
+    { id: "movers-out", title: "Outstation | Moving", img: svcCarpenter, rating: 4.2, reviews: 156, verified: true },
+  ],
+  chef: [
+    { id: "chef", title: "Chef | Booking", img: svcCarpenter, rating: 4.6, reviews: 178, verified: true, selected: true },
+    { id: "chef-party", title: "Party | Chef", img: svcCarpenter, rating: 4.5, reviews: 124, verified: true },
+  ],
+  doc: [
+    { id: "doc", title: "Document | Service", img: svcElectronics, rating: 4.4, reviews: 198, verified: true, selected: true },
+    { id: "doc-print", title: "Printing | Service", img: svcElectronics, rating: 4.3, reviews: 145, verified: true },
+  ],
+  tools: [
+    { id: "tools", title: "Tools | Rental", img: svcCarpenter, rating: 4.2, reviews: 167, verified: true, selected: true },
+  ],
+  bank: [
+    { id: "bank", title: "Bank | Services", img: svcElectronics, rating: 4.5, reviews: 245, verified: true, selected: true },
+  ],
+  biz: [
+    { id: "biz", title: "Business | Setup", img: svcElectronics, rating: 4.4, reviews: 178, verified: true, selected: true },
+  ],
+  cloud: [
+    { id: "cloud", title: "Cloud | Service", img: svcElectronics, rating: 4.6, reviews: 134, verified: true, selected: true },
+  ],
+  blank: SERVICES,
+};
+
 function QuickPage() {
   const navigate = useNavigate();
+  // activeCat → drives MAP vendors. Only changes when a SERVICE CARD is tapped.
   const [activeCat, setActiveCat] = useState<string>("ac");
+  // categoryFilter → drives PRODUCT LIST filter. Changes when a CATEGORY chip is tapped.
+  const [categoryFilter, setCategoryFilter] = useState<string>("ac");
   const [needsOpen, setNeedsOpen] = useState(false);
   const [variationOpen, setVariationOpen] = useState(false);
   const [variationCat, setVariationCat] = useState<string>("ac");
-  // Track last tapped category — empty initially so first tap just filters
-  const [lastTapped, setLastTapped] = useState<string>("");
   const [pulseKey, setPulseKey] = useState<string>("");
 
   const filteredVendors = useMemo(
@@ -155,34 +208,41 @@ function QuickPage() {
     [activeCat]
   );
 
-  const handleCatTap = (key: string) => {
-    // Trigger pulse animation on every tap
-    setPulseKey(`${key}-${Date.now()}`);
+  const filteredServices = useMemo(
+    () => SERVICES_BY_CAT[categoryFilter] ?? SERVICES,
+    [categoryFilter]
+  );
 
-    if (activeCat === key) {
-      // Second tap on already-selected → open variation sheet
+  // Category chip tap → ONLY filter product list. Map stays untouched.
+  // Second tap on same category → open variation sheet.
+  const handleCatTap = (key: string) => {
+    setPulseKey(`${key}-${Date.now()}`);
+    if (categoryFilter === key) {
       setVariationCat(key);
       setVariationOpen(true);
     } else {
-      // First tap → just select + filter map vendors with animation
-      setActiveCat(key);
-      setLastTapped(key);
+      setCategoryFilter(key);
     }
   };
 
+  // Service CARD tap → single tap updates MAP vendors. Second tap opens variations.
   const handleServiceCardTap = (id: string) => {
-    // Map service-card id to category key
-    const key = id === "mubaul" ? "electronics" : id;
-    setActiveCat(key);
-    setLastTapped(key);
-    setVariationCat(key);
-    setVariationOpen(true);
+    const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
+    const mapKey = VENDORS_BY_CAT[key] ? key : "ac";
+    if (activeCat === mapKey) {
+      // Already showing on map → open variation
+      setVariationCat(mapKey);
+      setVariationOpen(true);
+    } else {
+      // First tap → update map vendors with animation
+      setActiveCat(mapKey);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}>
-      {/* MAP — FIXED top, does not scroll with content */}
-      <section className="relative flex-shrink-0" style={{ height: "44vh", minHeight: 320 }}>
+    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
+      {/* MAP — FIXED top, smaller so 4-5 products visible below */}
+      <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} />
 
         {/* Top status bar overlay */}
@@ -254,11 +314,12 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Vendor service cards — these scroll up/down */}
+        {/* Vendor service cards — filtered by category chip; double-click for variations */}
         <div className="space-y-2.5 pb-4">
-          {SERVICES.map((s, i) => (
+          {filteredServices.map((s, i) => (
             <button
               key={s.id}
+              onDoubleClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
               onClick={() => handleServiceCardTap(s.id)}
               className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
                 s.selected
@@ -273,37 +334,33 @@ function QuickPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-display text-lg text-[color:oklch(0.25_0.05_85)] font-bold leading-tight">{s.title}</h3>
                 <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-0.5">Basic Details</p>
-                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander</p>
-                {s.selected && (
-                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-emerald-700">{s.rating}</span>
-                    <span className="text-[10px] text-emerald-600">({s.reviews} vendor)</span>
-                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
-                  </div>
-                )}
+                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander · double-tap for variations</p>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                  <span className="text-[10px] font-bold text-emerald-700">{s.rating}</span>
+                  <span className="text-[10px] text-emerald-600">({s.reviews} vendor)</span>
+                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
+                </div>
               </div>
             </button>
           ))}
         </div>
       </section>
 
-      {/* BOTTOM — FIXED categories + action button (above app bottom bar) */}
-      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-3 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
-        <h3 className="text-center font-display text-sm text-[color:oklch(0.30_0.05_85)] mb-1.5 italic">Car | Service</h3>
-
-        {/* Categories — circular icons */}
+      {/* BOTTOM — FIXED categories only (golden hint+button strip removed) */}
+      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
+        {/* Categories — circular icons. Tap once → filter products list. Tap twice → open variations. */}
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
-            const isActive = activeCat === c.key;
+            const isActive = categoryFilter === c.key;
             const isPulsing = pulseKey.startsWith(`${c.key}-`);
             return (
               <button
                 key={c.key}
                 onClick={() => handleCatTap(c.key)}
-                className={`btn-3d relative flex-shrink-0 h-12 w-12 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
                   isActive
                     ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
                     : c.tone === "muted"
@@ -331,18 +388,6 @@ function QuickPage() {
             );
           })}
         </div>
-
-        {/* Hint + Action button */}
-        <p className="text-center text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1 italic font-display">
-          Tap again for <span className="text-[color:oklch(0.55_0.18_60)] font-bold underline">variations</span>
-        </p>
-        <button
-          onClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
-          className="btn-3d mt-1.5 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-xs py-2.5 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          View {CATS.find((c) => c.key === activeCat)?.label ?? "Service"} variations | Send Request
-        </button>
       </section>
 
       {/* Floating + button — Add | Neds */}

@@ -163,11 +163,11 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >
-        <div className="max-w-md mx-auto px-3 pb-3 flex flex-col items-stretch">
-          {/* Curved bottom action bar */}
+        <div className="max-w-md mx-auto px-6 pb-3 flex flex-col items-stretch">
+          {/* Curved bottom action bar — narrower (px-6 outer, smaller paddings) */}
           <div
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-3 py-3 pt-5"
-            style={{ borderRadius: "28px" }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-2 py-2"
+            style={{ borderRadius: "24px" }}
           >
             {loading && (
               <span
@@ -179,29 +179,29 @@ function BottomActionBar({ loading }: { loading: boolean }) {
             {/* Left — Sarvic | Products */}
             <button
               onClick={() => setPicker("browse")}
-              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-2 rounded-2xl"
+              className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
               aria-label="Sarvic Products"
             >
-              <span className="relative h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
-                <img src={goldPin} alt="" className="h-6 w-6 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
+              <span className="relative h-8 w-8 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+                <img src={goldPin} alt="" className="h-4 w-4 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
               </span>
-              <span className="font-display text-base text-gold-gradient font-bold italic tracking-wide">
+              <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
                 Sarvic<span className="font-light"> | </span>Products
               </span>
-              <span className="text-[color:oklch(0.78_0.14_82)] text-base">▾</span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
             </button>
 
             {/* Right — Quick | Sarvic */}
             <button
               onClick={() => setPicker("reselling")}
-              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-2 rounded-2xl"
+              className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
               aria-label="Quick Sarvic"
             >
-              <span className="text-[color:oklch(0.55_0.18_60)] text-lg">⚡</span>
-              <span className="font-display text-base text-gold-gradient font-bold italic tracking-wide">
+              <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
+              <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
                 Quick<span className="font-light"> | </span>Sarvic
               </span>
-              <span className="text-[color:oklch(0.78_0.14_82)] text-base">▾</span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
             </button>
           </div>
         </div>
