@@ -225,18 +225,16 @@ function QuickPage() {
     }
   };
 
-  // Service CARD tap → single tap updates MAP vendors. Second tap opens variations.
-  const handleServiceCardTap = (id: string) => {
+  // Service CARD single tap → ONLY updates MAP vendors (no variation popup).
+  // Double tap → opens variation sheet (handled by onDoubleClick).
+  const resolveMapKey = (id: string) => {
     const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
-    const mapKey = VENDORS_BY_CAT[key] ? key : "ac";
-    if (activeCat === mapKey) {
-      // Already showing on map → open variation
-      setVariationCat(mapKey);
-      setVariationOpen(true);
-    } else {
-      // First tap → update map vendors with animation
-      setActiveCat(mapKey);
-    }
+    return VENDORS_BY_CAT[key] ? key : "ac";
+  };
+  const handleServiceCardTap = (id: string) => {
+    const mapKey = resolveMapKey(id);
+    setActiveCat(mapKey);
+    setSelectedServiceId(id);
   };
 
   return (
