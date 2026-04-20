@@ -320,7 +320,7 @@ function QuickPage() {
 
         {/* Bottom action button — below categories */}
         <button
-          onClick={() => setVariationOpen(true) || setVariationCat(activeCat)}
+          onClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
           className="btn-3d mt-3 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm py-3 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <Sparkles className="h-4 w-4" />
