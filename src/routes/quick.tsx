@@ -329,7 +329,6 @@ function QuickPage() {
           {filteredServices.map((s, i) => (
             <button
               key={s.id}
-              onDoubleClick={() => { setVariationCat(resolveMapKey(s.id)); setVariationOpen(true); }}
               onClick={() => handleServiceCardTap(s.id)}
               className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
                 selectedServiceId === s.id
