@@ -240,9 +240,9 @@ function QuickPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}>
-      {/* MAP — FIXED top, does not scroll with content */}
-      <section className="relative flex-shrink-0" style={{ height: "44vh", minHeight: 320 }}>
+    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
+      {/* MAP — FIXED top, smaller so 4-5 products visible below */}
+      <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} />
 
         {/* Top status bar overlay */}
