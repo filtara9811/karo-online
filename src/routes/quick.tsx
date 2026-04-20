@@ -253,7 +253,7 @@ function QuickPage() {
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
       {/* MAP — FIXED top, smaller so 4-5 products visible below */}
       <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
         {/* Top status bar overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold text-[color:oklch(0.20_0.02_90)]">
