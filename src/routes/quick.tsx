@@ -429,37 +429,62 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
         </span>
       </div>
 
-      {/* Vendor pins with chips */}
-      {vendors.map((v, i) => (
-        <div
-          key={v.id}
-          className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-          style={{
-            left: `${v.x}%`,
-            top: `${v.y}%`,
-            animation: `fade-up 0.5s ease-out ${i * 0.06}s both`,
-          }}
-        >
-          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl pl-1 pr-2 py-1 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md">
-            <span className="relative h-7 w-7 rounded-full overflow-hidden border-2 border-white">
-              <img src={v.avatar} alt="" className="h-full w-full object-cover" />
-              <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
-                <svg viewBox="0 0 12 16" className="h-3 w-2.5 text-red-600 drop-shadow"><path d="M6 0 C2 0 0 3 0 6 C0 11 6 16 6 16 C6 16 12 11 12 6 C12 3 10 0 6 0 Z" fill="currentColor" /></svg>
-              </span>
-            </span>
-            <div className="leading-tight">
-              <p className="font-display text-[10px] font-bold text-[color:oklch(0.25_0.05_85)] whitespace-nowrap">{v.name}</p>
-              <p className="text-[7px] text-[color:oklch(0.45_0.08_85)] flex items-center gap-0.5">
-                <span>📍 {v.area}</span>
-              </p>
-              <p className="text-[7px]">
-                <span className="text-[color:oklch(0.45_0.08_85)]">{v.km} km. </span>
-                <span className={`underline ${v.status === "Online" ? "text-emerald-600" : "text-blue-600"} font-semibold`}>{v.status}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
+      {/* Vendor pins with chips — animated cross-fade + stagger on category change */}
+      <AnimatePresence mode="popLayout">
+        {vendors.map((v, i) => {
+          const CatIcon = CAT_ICON[v.cat] ?? Sparkles;
+          return (
+            <motion.div
+              key={v.id}
+              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${v.x}%`, top: `${v.y}%` }}
+              initial={{ opacity: 0, y: -24, scale: 0.6 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.7, transition: { duration: 0.22, ease: "easeIn" } }}
+              transition={{
+                type: "spring",
+                stiffness: 320,
+                damping: 22,
+                delay: i * 0.07,
+              }}
+            >
+              <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl pl-1 pr-2 py-1 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md">
+                <span className="relative h-7 w-7 rounded-full overflow-hidden border-2 border-white">
+                  <img src={v.avatar} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
+                    <svg viewBox="0 0 12 16" className="h-3 w-2.5 text-red-600 drop-shadow"><path d="M6 0 C2 0 0 3 0 6 C0 11 6 16 6 16 C6 16 12 11 12 6 C12 3 10 0 6 0 Z" fill="currentColor" /></svg>
+                  </span>
+                  {/* Category icon badge */}
+                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] border border-white grid place-items-center shadow">
+                    <CatIcon className="h-2 w-2 text-white" strokeWidth={3} />
+                  </span>
+                </span>
+                <div className="leading-tight">
+                  <p className="font-display text-[10px] font-bold text-[color:oklch(0.25_0.05_85)] whitespace-nowrap">{v.name}</p>
+                  <p className="text-[7px] text-[color:oklch(0.45_0.08_85)] flex items-center gap-0.5">
+                    <span>📍 {v.area}</span>
+                  </p>
+                  <p className="text-[7px]">
+                    <span className="text-[color:oklch(0.45_0.08_85)]">{v.km} km. </span>
+                    <span className={`underline ${v.status === "Online" ? "text-emerald-600" : "text-blue-600"} font-semibold`}>{v.status}</span>
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
+      {/* Vendor count badge — top-left corner of map */}
+      <motion.div
+        key={`count-${vendors[0]?.cat ?? "none"}`}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+        className="absolute top-20 left-3 z-10 px-2.5 py-1 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)]"
+      >
+        {vendors.length} nearby vendors
+      </motion.div>
 
       {/* Scale bar at the bottom of map */}
       <div className="absolute bottom-2 left-3 right-3 z-10">
