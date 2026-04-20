@@ -635,7 +635,6 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
         })}
       </AnimatePresence>
       </div>
-      {/* /transformable layer */}
 
       {/* Vendor count badge — fixed overlay (not zoomed) */}
       <motion.div
