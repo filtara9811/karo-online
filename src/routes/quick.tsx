@@ -668,18 +668,51 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
         )}
       </div>
 
-      {/* Scale bar — fixed overlay */}
-      <div className="absolute bottom-2 left-3 right-3 z-30 pointer-events-none">
-        <div className="flex items-center justify-between text-[8px] font-bold text-[color:oklch(0.30_0.05_85)] mb-0.5 px-1">
+      {/* Scale bar — drag left/right to zoom out/in */}
+      <div className="absolute bottom-2 left-3 right-3 z-30">
+        <div className="flex items-center justify-between text-[8px] font-bold text-[color:oklch(0.30_0.05_85)] mb-0.5 px-1 pointer-events-none">
           {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((n) => (
             <span key={n}>{n}</span>
           ))}
         </div>
-        <div className="relative h-2 bg-white/70 border border-[color:oklch(0.30_0.05_85/0.4)] rounded-sm">
-          <div className="absolute left-[40%] right-[40%] -top-3 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center">{(1 / transform.scale).toFixed(1)} km</div>
+        <div
+          className="relative h-3 bg-white/85 border border-[color:oklch(0.30_0.05_85/0.4)] rounded-sm cursor-ew-resize touch-none select-none"
+          onPointerDown={(e) => {
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+            const startX = e.clientX;
+            const startScale = transform.scale;
+            const onMove = (ev: PointerEvent) => {
+              const dx = ev.clientX - startX;
+              // Drag right → zoom IN, drag left → zoom OUT. ~140px = full range.
+              const delta = (dx / 140) * (MAX_SCALE - MIN_SCALE);
+              const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, startScale + delta));
+              const clamped = clampPan(next, transform.x, transform.y);
+              setTransform({ scale: next, x: clamped.x, y: clamped.y });
+            };
+            const onUp = () => {
+              window.removeEventListener("pointermove", onMove);
+              window.removeEventListener("pointerup", onUp);
+            };
+            window.addEventListener("pointermove", onMove);
+            window.addEventListener("pointerup", onUp);
+          }}
+        >
+          {/* Active fill showing zoom level */}
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#fbbf24] to-[#d97706] rounded-sm pointer-events-none"
+            style={{ width: `${((transform.scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100}%` }}
+          />
+          {/* Drag thumb */}
+          <div
+            className="absolute -top-1 h-5 w-5 -translate-x-1/2 rounded-full bg-white border-2 border-[#d97706] shadow-md pointer-events-none"
+            style={{ left: `${((transform.scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100}%` }}
+          />
+          <div className="absolute left-1/2 -translate-x-1/2 -top-4 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center pointer-events-none whitespace-nowrap">
+            {(1 / transform.scale).toFixed(1)} km
+          </div>
         </div>
-        <div className="text-center mt-0.5">
-          <span className="text-[8px]">⬆ N</span>
+        <div className="text-center mt-0.5 pointer-events-none">
+          <span className="text-[8px]">⬆ N · drag bar to zoom</span>
         </div>
       </div>
     </div>
