@@ -226,23 +226,34 @@ function QuickPage() {
     }
   };
 
-  // Service CARD single tap → ONLY updates MAP vendors (no variation popup).
-  // Double tap → opens variation sheet (handled by onDoubleClick).
+  // Service CARD: single tap → update map vendors. Double tap (within 320ms) → open variation sheet.
   const resolveMapKey = (id: string) => {
     const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
     return VENDORS_BY_CAT[key] ? key : "ac";
   };
+  const lastTapRef = useRef<{ id: string; time: number }>({ id: "", time: 0 });
   const handleServiceCardTap = (id: string) => {
+    const now = Date.now();
     const mapKey = resolveMapKey(id);
+    if (lastTapRef.current.id === id && now - lastTapRef.current.time < 320) {
+      // Double tap → open variations
+      setVariationCat(mapKey);
+      setVariationOpen(true);
+      lastTapRef.current = { id: "", time: 0 };
+      return;
+    }
+    lastTapRef.current = { id, time: now };
+    // Single tap → update map vendors (force re-render even if same key, to re-animate)
     setActiveCat(mapKey);
     setSelectedServiceId(id);
+    setPulseKey(`${mapKey}-${now}`);
   };
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
       {/* MAP — FIXED top, smaller so 4-5 products visible below */}
       <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
         {/* Top status bar overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold text-[color:oklch(0.20_0.02_90)]">
@@ -318,7 +329,6 @@ function QuickPage() {
           {filteredServices.map((s, i) => (
             <button
               key={s.id}
-              onDoubleClick={() => { setVariationCat(resolveMapKey(s.id)); setVariationOpen(true); }}
               onClick={() => handleServiceCardTap(s.id)}
               className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
                 selectedServiceId === s.id
@@ -426,7 +436,7 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors }: { vendors: Vendor[] }) {
+function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
@@ -594,7 +604,7 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
           const CatIcon = CAT_ICON[v.cat] ?? Sparkles;
           return (
             <motion.div
-              key={v.id}
+              key={`${pulseKey ?? "static"}-${v.id}`}
               className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${v.x}%`, top: `${v.y}%` }}
               initial={{ opacity: 0, y: -24, scale: 0.6 }}
