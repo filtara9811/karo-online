@@ -263,3 +263,8 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Hide the bottom action bar (Sarvic|Products / Quick|Sarvic) when the variation sheet is open */
+body[data-variation-open="true"] [data-bottom-action-bar] {
+  display: none !important;
+}
