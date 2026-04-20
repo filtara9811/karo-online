@@ -129,8 +129,9 @@ function QuickPage() {
   const [needsOpen, setNeedsOpen] = useState(false);
   const [variationOpen, setVariationOpen] = useState(false);
   const [variationCat, setVariationCat] = useState<string>("ac");
-  // Track previous cat to know if user re-tapped same category
-  const [tapTracker, setTapTracker] = useState<{ key: string; count: number }>({ key: "ac", count: 1 });
+  // Track last tapped category — empty initially so first tap just filters
+  const [lastTapped, setLastTapped] = useState<string>("");
+  const [pulseKey, setPulseKey] = useState<string>("");
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
@@ -138,15 +139,17 @@ function QuickPage() {
   );
 
   const handleCatTap = (key: string) => {
-    if (tapTracker.key === key) {
-      // Re-tap → open variation sheet
+    // Trigger pulse animation on every tap
+    setPulseKey(`${key}-${Date.now()}`);
+
+    if (lastTapped === key && activeCat === key) {
+      // Re-tap same selected category → open variation sheet
       setVariationCat(key);
       setVariationOpen(true);
-      setTapTracker({ key, count: tapTracker.count + 1 });
     } else {
-      // First tap → just filter map vendors
+      // First tap (or switching) → filter map vendors with animation
       setActiveCat(key);
-      setTapTracker({ key, count: 1 });
+      setLastTapped(key);
     }
   };
 
@@ -154,6 +157,7 @@ function QuickPage() {
     // Map service-card id to category key
     const key = id === "mubaul" ? "electronics" : id;
     setActiveCat(key);
+    setLastTapped(key);
     setVariationCat(key);
     setVariationOpen(true);
   };
@@ -275,28 +279,53 @@ function QuickPage() {
           {CATS.map((c, i) => {
             const Icon = c.Icon;
             const isActive = activeCat === c.key;
+            const isPulsing = pulseKey.startsWith(`${c.key}-`);
             return (
               <button
                 key={c.key}
                 onClick={() => handleCatTap(c.key)}
-                className={`btn-3d flex-shrink-0 h-14 w-14 rounded-full grid place-items-center border-2 transition-all ${
+                className={`btn-3d relative flex-shrink-0 h-14 w-14 rounded-full grid place-items-center border-2 transition-all duration-300 ${
                   isActive
-                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.5)] scale-110"
+                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
                     : c.tone === "muted"
-                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm hover:scale-105"
                     : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
                 }`}
                 style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
                 aria-label={c.label}
               >
+                {isPulsing && (
+                  <span
+                    key={pulseKey}
+                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                  />
+                )}
                 <Icon
-                  className={`h-6 w-6 ${isActive ? "text-white" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                  className={`relative h-6 w-6 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
                   strokeWidth={2.2}
                 />
+                {isActive && (
+                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                )}
               </button>
             );
           })}
         </div>
+
+        {/* Hint — tap again to see variations */}
+        <p className="text-center text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1 italic font-display">
+          Tap again on selected category for <span className="text-[color:oklch(0.55_0.18_60)] font-bold underline">variations</span>
+        </p>
+
+        {/* Bottom action button — below categories */}
+        <button
+          onClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
+          className="btn-3d mt-3 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm py-3 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <Sparkles className="h-4 w-4" />
+          View {CATS.find((c) => c.key === activeCat)?.label ?? "Service"} variations | Send Request
+        </button>
       </section>
 
       {/* Floating + button — Add | Neds */}
