@@ -5,6 +5,7 @@ import {
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
 import avatarUser from "@/assets/avatar-user.png";
