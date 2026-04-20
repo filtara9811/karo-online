@@ -180,9 +180,9 @@ function QuickPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white relative">
-      {/* MAP — top half */}
-      <section className="relative" style={{ height: "52vh", minHeight: 380 }}>
+    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden">
+      {/* MAP — FIXED top, does not scroll with content */}
+      <section className="relative flex-shrink-0" style={{ height: "44vh", minHeight: 320 }}>
         <FakeMap vendors={filteredVendors} />
 
         {/* Top status bar overlay */}
@@ -218,8 +218,8 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* BOTTOM HALF — search + tabs + vendor cards + categories + bottom bar */}
-      <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 pb-32 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]">
+      {/* MIDDLE — scrollable white container with search + tabs + service cards */}
+      <section className="relative bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]">
         {/* Search bar with profile */}
         <div className="flex items-center gap-2 mb-3">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5">
@@ -254,8 +254,8 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Vendor service cards */}
-        <div className="space-y-2.5">
+        {/* Vendor service cards — these scroll up/down */}
+        <div className="space-y-2.5 pb-4">
           {SERVICES.map((s, i) => (
             <button
               key={s.id}
@@ -287,12 +287,14 @@ function QuickPage() {
             </button>
           ))}
         </div>
+      </section>
 
-        {/* Service categories label */}
-        <h3 className="text-center font-display text-base text-[color:oklch(0.30_0.05_85)] mt-4 mb-2 italic">Car | Service</h3>
+      {/* BOTTOM — FIXED categories + action button (above app bottom bar) */}
+      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-3 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
+        <h3 className="text-center font-display text-sm text-[color:oklch(0.30_0.05_85)] mb-1.5 italic">Car | Service</h3>
 
         {/* Categories — circular icons */}
-        <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
             const isActive = activeCat === c.key;
@@ -301,7 +303,7 @@ function QuickPage() {
               <button
                 key={c.key}
                 onClick={() => handleCatTap(c.key)}
-                className={`btn-3d relative flex-shrink-0 h-14 w-14 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                className={`btn-3d relative flex-shrink-0 h-12 w-12 rounded-full grid place-items-center border-2 transition-all duration-300 ${
                   isActive
                     ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
                     : c.tone === "muted"
@@ -319,7 +321,7 @@ function QuickPage() {
                   />
                 )}
                 <Icon
-                  className={`relative h-6 w-6 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                  className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
                   strokeWidth={2.2}
                 />
                 {isActive && (
@@ -330,17 +332,15 @@ function QuickPage() {
           })}
         </div>
 
-        {/* Hint — tap again to see variations */}
+        {/* Hint + Action button */}
         <p className="text-center text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1 italic font-display">
-          Tap again on selected category for <span className="text-[color:oklch(0.55_0.18_60)] font-bold underline">variations</span>
+          Tap again for <span className="text-[color:oklch(0.55_0.18_60)] font-bold underline">variations</span>
         </p>
-
-        {/* Bottom action button — below categories */}
         <button
           onClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
-          className="btn-3d mt-3 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm py-3 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
+          className="btn-3d mt-1.5 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-xs py-2.5 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-3.5 w-3.5" />
           View {CATS.find((c) => c.key === activeCat)?.label ?? "Service"} variations | Send Request
         </button>
       </section>
