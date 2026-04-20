@@ -174,31 +174,32 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* Left — Browse Products / Services */}
+            {/* Left — Sarvic | Products */}
             <button
               onClick={() => setPicker("browse")}
-              className="btn-3d flex items-center gap-2.5 active:scale-95"
-              aria-label="Browse Products or Services"
+              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-2 rounded-2xl"
+              aria-label="Sarvic Products"
             >
-              <span className="relative h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
-                <img src={goldPin} alt="" className="h-7 w-7 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
+              <span className="relative h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+                <img src={goldPin} alt="" className="h-6 w-6 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
               </span>
-              <span className="flex flex-col items-start leading-tight">
-                <span className="text-[8px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)]">Browse</span>
-                <span className="font-display text-sm text-gold-gradient font-semibold">Catalogue</span>
+              <span className="font-display text-base text-gold-gradient font-bold italic tracking-wide">
+                Sarvic<span className="font-light"> | </span>Products
               </span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-base">▾</span>
             </button>
 
-            {/* Right — Reselling Program */}
+            {/* Right — Quick | Sarvic */}
             <button
               onClick={() => setPicker("reselling")}
-              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-1.5 rounded-2xl hover:bg-white/60 transition-colors"
-              aria-label="Reselling Program"
+              className="btn-3d flex items-center gap-2 active:scale-95 px-3 py-2 rounded-2xl"
+              aria-label="Quick Sarvic"
             >
+              <span className="text-[color:oklch(0.55_0.18_60)] text-lg">⚡</span>
               <span className="font-display text-base text-gold-gradient font-bold italic tracking-wide">
-                Reselling<span className="font-light"> | </span>program
+                Quick<span className="font-light"> | </span>Sarvic
               </span>
-              <span className="text-[color:oklch(0.78_0.14_82)] text-lg">›</span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-base">▾</span>
             </button>
           </div>
         </div>
