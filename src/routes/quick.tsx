@@ -314,11 +314,12 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Vendor service cards — these scroll up/down */}
+        {/* Vendor service cards — filtered by category chip; double-click for variations */}
         <div className="space-y-2.5 pb-4">
-          {SERVICES.map((s, i) => (
+          {filteredServices.map((s, i) => (
             <button
               key={s.id}
+              onDoubleClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
               onClick={() => handleServiceCardTap(s.id)}
               className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
                 s.selected
@@ -333,37 +334,33 @@ function QuickPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-display text-lg text-[color:oklch(0.25_0.05_85)] font-bold leading-tight">{s.title}</h3>
                 <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-0.5">Basic Details</p>
-                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander</p>
-                {s.selected && (
-                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-emerald-700">{s.rating}</span>
-                    <span className="text-[10px] text-emerald-600">({s.reviews} vendor)</span>
-                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
-                  </div>
-                )}
+                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander · double-tap for variations</p>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                  <span className="text-[10px] font-bold text-emerald-700">{s.rating}</span>
+                  <span className="text-[10px] text-emerald-600">({s.reviews} vendor)</span>
+                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
+                </div>
               </div>
             </button>
           ))}
         </div>
       </section>
 
-      {/* BOTTOM — FIXED categories + action button (above app bottom bar) */}
-      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-3 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
-        <h3 className="text-center font-display text-sm text-[color:oklch(0.30_0.05_85)] mb-1.5 italic">Car | Service</h3>
-
-        {/* Categories — circular icons */}
+      {/* BOTTOM — FIXED categories only (golden hint+button strip removed) */}
+      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
+        {/* Categories — circular icons. Tap once → filter products list. Tap twice → open variations. */}
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
-            const isActive = activeCat === c.key;
+            const isActive = categoryFilter === c.key;
             const isPulsing = pulseKey.startsWith(`${c.key}-`);
             return (
               <button
                 key={c.key}
                 onClick={() => handleCatTap(c.key)}
-                className={`btn-3d relative flex-shrink-0 h-12 w-12 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
                   isActive
                     ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
                     : c.tone === "muted"
@@ -391,18 +388,6 @@ function QuickPage() {
             );
           })}
         </div>
-
-        {/* Hint + Action button */}
-        <p className="text-center text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1 italic font-display">
-          Tap again for <span className="text-[color:oklch(0.55_0.18_60)] font-bold underline">variations</span>
-        </p>
-        <button
-          onClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
-          className="btn-3d mt-1.5 w-full rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-xs py-2.5 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          View {CATS.find((c) => c.key === activeCat)?.label ?? "Service"} variations | Send Request
-        </button>
       </section>
 
       {/* Floating + button — Add | Neds */}
