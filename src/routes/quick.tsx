@@ -10,6 +10,7 @@ import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
+import { SearchOverlay } from "@/components/SearchOverlay";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -207,6 +208,7 @@ function QuickPage() {
   const [selectedServiceId, setSelectedServiceId] = useState<string>("ac");
   const [findingOpen, setFindingOpen] = useState(false);
   const [vendorListOpen, setVendorListOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
@@ -286,14 +288,19 @@ function QuickPage() {
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]">
         {/* Search bar with profile */}
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5">
-            <input
-              placeholder="Search......."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]"
-            />
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
+            aria-label="Open search"
+          >
+            <span className="flex-1 text-left text-sm text-[#9ca3af]">Search.......</span>
             <Mic className="h-4 w-4 text-[#9ca3af]" />
-          </div>
-          <button className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm" aria-label="Scan QR">
+          </button>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm"
+            aria-label="Scan QR"
+          >
             <QrCode className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
           </button>
           <button
@@ -432,6 +439,15 @@ function QuickPage() {
         open={vendorListOpen}
         category={CATS.find((c) => c.key === variationCat)?.label ?? "Ac"}
         onClose={() => setVendorListOpen(false)}
+      />
+
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSubmit={(q) => {
+          // Could route to a search results page later; for now log
+          console.log("Search:", q);
+        }}
       />
     </div>
   );
