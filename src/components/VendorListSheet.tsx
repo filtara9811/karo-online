@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "@tanstack/react-router";
 import { X, Star, Phone, MessageCircle, MoreVertical, Check, ShieldCheck } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -38,6 +39,7 @@ type Props = {
 };
 
 export function VendorListSheet({ open, category, onClose }: Props) {
+  const navigate = useNavigate();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set(["v1"]));
   const [activeContact, setActiveContact] = useState<MatchedVendor | null>(null);
 
