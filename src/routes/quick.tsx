@@ -225,27 +225,22 @@ function QuickPage() {
     setPulseKey(`${key}-${Date.now()}`);
   };
 
-  // Service CARD: single tap → update map vendors. Double tap (within 320ms) → open variation sheet.
+  // Service CARD: first tap → select + update map vendors. Second tap on same selected card → open variation sheet.
   const resolveMapKey = (id: string) => {
     const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
     return VENDORS_BY_CAT[key] ? key : "ac";
   };
-  const lastTapRef = useRef<{ id: string; time: number }>({ id: "", time: 0 });
   const handleServiceCardTap = (id: string) => {
-    const now = Date.now();
     const mapKey = resolveMapKey(id);
-    if (lastTapRef.current.id === id && now - lastTapRef.current.time < 320) {
-      // Double tap → open variations
+    if (selectedServiceId === id) {
       setVariationCat(mapKey);
       setVariationOpen(true);
-      lastTapRef.current = { id: "", time: 0 };
       return;
     }
-    lastTapRef.current = { id, time: now };
-    // Single tap → update map vendors (force re-render even if same key, to re-animate)
+    // First tap → update map vendors and select the card.
     setActiveCat(mapKey);
     setSelectedServiceId(id);
-    setPulseKey(`${mapKey}-${now}`);
+    setPulseKey(`${mapKey}-${Date.now()}`);
   };
 
   return (
@@ -323,7 +318,7 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Vendor service cards — filtered by category chip; double-click for variations */}
+        {/* Vendor service cards — filtered by category chip; tap once to select, tap same card again for variations */}
         <div className="space-y-2.5 pb-4">
           {filteredServices.map((s, i) => (
             <button
@@ -342,7 +337,7 @@ function QuickPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-display text-lg text-[color:oklch(0.25_0.05_85)] font-bold leading-tight">{s.title}</h3>
                 <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-0.5">Basic Details</p>
-                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander · double-tap for variations</p>
+                <p className="text-xs text-[color:oklch(0.45_0.08_85)]">Available | Vander · tap again for variations</p>
                 <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
                   <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
                   <span className="text-[10px] font-bold text-emerald-700">{s.rating}</span>
@@ -358,7 +353,7 @@ function QuickPage() {
 
       {/* BOTTOM — FIXED categories only (golden hint+button strip removed) */}
       <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
-        {/* Categories — circular icons. Tap once → filter products list. Tap twice → open variations. */}
+        {/* Categories — circular icons. Tap once → filter products list only. */}
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
