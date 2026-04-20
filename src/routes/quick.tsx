@@ -202,6 +202,7 @@ function QuickPage() {
   const [variationOpen, setVariationOpen] = useState(false);
   const [variationCat, setVariationCat] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("ac");
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
