@@ -226,16 +226,27 @@ function QuickPage() {
     }
   };
 
-  // Service CARD single tap → ONLY updates MAP vendors (no variation popup).
-  // Double tap → opens variation sheet (handled by onDoubleClick).
+  // Service CARD: single tap → update map vendors. Double tap (within 320ms) → open variation sheet.
   const resolveMapKey = (id: string) => {
     const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
     return VENDORS_BY_CAT[key] ? key : "ac";
   };
+  const lastTapRef = useRef<{ id: string; time: number }>({ id: "", time: 0 });
   const handleServiceCardTap = (id: string) => {
+    const now = Date.now();
     const mapKey = resolveMapKey(id);
+    if (lastTapRef.current.id === id && now - lastTapRef.current.time < 320) {
+      // Double tap → open variations
+      setVariationCat(mapKey);
+      setVariationOpen(true);
+      lastTapRef.current = { id: "", time: 0 };
+      return;
+    }
+    lastTapRef.current = { id, time: now };
+    // Single tap → update map vendors (force re-render even if same key, to re-animate)
     setActiveCat(mapKey);
     setSelectedServiceId(id);
+    setPulseKey(`${mapKey}-${now}`);
   };
 
   return (
