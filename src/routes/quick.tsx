@@ -129,8 +129,9 @@ function QuickPage() {
   const [needsOpen, setNeedsOpen] = useState(false);
   const [variationOpen, setVariationOpen] = useState(false);
   const [variationCat, setVariationCat] = useState<string>("ac");
-  // Track previous cat to know if user re-tapped same category
-  const [tapTracker, setTapTracker] = useState<{ key: string; count: number }>({ key: "ac", count: 1 });
+  // Track last tapped category — empty initially so first tap just filters
+  const [lastTapped, setLastTapped] = useState<string>("");
+  const [pulseKey, setPulseKey] = useState<string>("");
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
@@ -138,15 +139,17 @@ function QuickPage() {
   );
 
   const handleCatTap = (key: string) => {
-    if (tapTracker.key === key) {
-      // Re-tap → open variation sheet
+    // Trigger pulse animation on every tap
+    setPulseKey(`${key}-${Date.now()}`);
+
+    if (lastTapped === key && activeCat === key) {
+      // Re-tap same selected category → open variation sheet
       setVariationCat(key);
       setVariationOpen(true);
-      setTapTracker({ key, count: tapTracker.count + 1 });
     } else {
-      // First tap → just filter map vendors
+      // First tap (or switching) → filter map vendors with animation
       setActiveCat(key);
-      setTapTracker({ key, count: 1 });
+      setLastTapped(key);
     }
   };
 
@@ -154,6 +157,7 @@ function QuickPage() {
     // Map service-card id to category key
     const key = id === "mubaul" ? "electronics" : id;
     setActiveCat(key);
+    setLastTapped(key);
     setVariationCat(key);
     setVariationOpen(true);
   };
