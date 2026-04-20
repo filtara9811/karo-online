@@ -207,12 +207,12 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
           style={{ animation: "fade-up 0.4s ease-out 0.2s both" }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Quick nots......"
-              className="flex-1 bg-transparent border-b-2 border-white/50 text-white placeholder:text-white/70 text-sm py-1 outline-none font-display italic"
-            />
+            <button
+              onClick={() => setNotesPopupOpen(true)}
+              className="flex-1 text-left bg-transparent border-b-2 border-white/50 text-white text-sm py-1 outline-none font-display italic active:opacity-80"
+            >
+              {note ? <span className="text-white">{note}</span> : <span className="text-white/70">Quick nots......</span>}
+            </button>
             <button
               onClick={() => setRecording((r) => !r)}
               aria-label="Record"
@@ -261,6 +261,17 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
           </div>
         </div>
       </div>
+
+      <QuickNotesPopup
+        open={notesPopupOpen}
+        initialNote={note}
+        onClose={() => setNotesPopupOpen(false)}
+        onSubmit={({ note: n, images: imgs }) => {
+          setNote(n);
+          setImages((prev) => [...prev, ...imgs].slice(0, 4));
+          setNotesPopupOpen(false);
+        }}
+      />
     </div>
   );
 }
