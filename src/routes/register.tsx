@@ -14,6 +14,7 @@ import goldOther from "@/assets/gold-other.png";
 import goldGoogle from "@/assets/gold-google.png";
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
+import mascotConcierge from "@/assets/mascot-concierge.png";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { OtpModal } from "@/components/OtpModal";
 
