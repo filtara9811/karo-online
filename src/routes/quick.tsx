@@ -436,7 +436,7 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors }: { vendors: Vendor[] }) {
+function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
