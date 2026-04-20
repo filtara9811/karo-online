@@ -440,6 +440,15 @@ function QuickPage() {
         category={CATS.find((c) => c.key === variationCat)?.label ?? "Ac"}
         onClose={() => setVendorListOpen(false)}
       />
+
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSubmit={(q) => {
+          // Could route to a search results page later; for now log
+          console.log("Search:", q);
+        }}
+      />
     </div>
   );
 }
