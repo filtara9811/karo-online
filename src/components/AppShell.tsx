@@ -2,23 +2,13 @@ import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstac
 import { useEffect, useState } from "react";
 import goldBell from "@/assets/gold-bell.png";
 import goldQr from "@/assets/gold-qr.png";
-import goldHome from "@/assets/gold-home.png";
 import goldServices from "@/assets/gold-services.png";
-import goldOrders from "@/assets/gold-orders.png";
-import goldProfile from "@/assets/gold-profile.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-
-const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: goldHome },
-  { to: "/services", label: "Services", icon: goldServices },
-  { to: "/orders", label: "Orders", icon: goldOrders },
-  { to: "/profile", label: "Profile", icon: goldProfile },
-] as const;
 
 const HIDE_SHELL_ON = ["/register"];
 
