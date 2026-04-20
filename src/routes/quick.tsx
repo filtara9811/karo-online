@@ -6,6 +6,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NeedsSheet } from "@/components/NeedsSheet";
+import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -35,13 +36,49 @@ type Vendor = {
   cat: string;
 };
 
-const VENDORS: Vendor[] = [
-  { id: "v1", name: "Aryan | Bansal", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarAryan, x: 28, y: 28, cat: "ac" },
-  { id: "v2", name: "Raj | kumar", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarRaj, x: 70, y: 22, cat: "carpenter" },
-  { id: "v3", name: "Rani | kumari", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarRani, x: 78, y: 50, cat: "ac" },
-  { id: "v4", name: "Ashu | Qureshi", area: "Delhi sadar bazar", km: 3.5, status: "Online", avatar: avatarUser, x: 22, y: 55, cat: "electronics" },
-  { id: "v5", name: "Aryan | Bansal", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarAryan, x: 50, y: 78, cat: "carpenter" },
-];
+// Different vendor sets per category — count varies (5 for AC, 6 for carpenter, 4 for electronics, etc.)
+const VENDORS_BY_CAT: Record<string, Vendor[]> = {
+  ac: [
+    { id: "ac1", name: "Aryan | Bansal", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarAryan, x: 28, y: 28, cat: "ac" },
+    { id: "ac2", name: "Rani | kumari", area: "Delhi sadar bazar", km: 2.8, status: "Office", avatar: avatarRani, x: 78, y: 32, cat: "ac" },
+    { id: "ac3", name: "Ashu | Qureshi", area: "Karol Bagh", km: 4.2, status: "Online", avatar: avatarUser, x: 22, y: 60, cat: "ac" },
+    { id: "ac4", name: "Raj | kumar", area: "Old Delhi", km: 1.9, status: "Office", avatar: avatarRaj, x: 65, y: 65, cat: "ac" },
+    { id: "ac5", name: "Aryan | Bansal", area: "CP Market", km: 3.1, status: "Online", avatar: avatarAryan, x: 50, y: 80, cat: "ac" },
+  ],
+  carpenter: [
+    { id: "c1", name: "Raj | kumar", area: "Delhi sadar bazar", km: 2.1, status: "Office", avatar: avatarRaj, x: 25, y: 22, cat: "carpenter" },
+    { id: "c2", name: "Aryan | Bansal", area: "Karol Bagh", km: 3.8, status: "Office", avatar: avatarAryan, x: 72, y: 25, cat: "carpenter" },
+    { id: "c3", name: "Ashu | Qureshi", area: "Old Delhi", km: 2.5, status: "Online", avatar: avatarUser, x: 18, y: 50, cat: "carpenter" },
+    { id: "c4", name: "Rani | kumari", area: "CP Market", km: 4.0, status: "Office", avatar: avatarRani, x: 80, y: 55, cat: "carpenter" },
+    { id: "c5", name: "Raj | kumar", area: "Sadar Bazar", km: 1.5, status: "Office", avatar: avatarRaj, x: 35, y: 75, cat: "carpenter" },
+    { id: "c6", name: "Aryan | Bansal", area: "Chandni Chowk", km: 3.2, status: "Online", avatar: avatarAryan, x: 65, y: 80, cat: "carpenter" },
+  ],
+  electronics: [
+    { id: "e1", name: "Ashu | Qureshi", area: "Nehru Place", km: 5.1, status: "Online", avatar: avatarUser, x: 30, y: 30, cat: "electronics" },
+    { id: "e2", name: "Aryan | Bansal", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarAryan, x: 70, y: 35, cat: "electronics" },
+    { id: "e3", name: "Raj | kumar", area: "Lajpat Nagar", km: 4.4, status: "Office", avatar: avatarRaj, x: 25, y: 65, cat: "electronics" },
+    { id: "e4", name: "Rani | kumari", area: "Karol Bagh", km: 2.9, status: "Online", avatar: avatarRani, x: 75, y: 70, cat: "electronics" },
+  ],
+  paint: [
+    { id: "p1", name: "Aryan | Bansal", area: "Delhi sadar bazar", km: 3.5, status: "Office", avatar: avatarAryan, x: 30, y: 28, cat: "paint" },
+    { id: "p2", name: "Raj | kumar", area: "Karol Bagh", km: 2.7, status: "Online", avatar: avatarRaj, x: 70, y: 35, cat: "paint" },
+    { id: "p3", name: "Rani | kumari", area: "Old Delhi", km: 4.1, status: "Office", avatar: avatarRani, x: 50, y: 75, cat: "paint" },
+  ],
+  movers: [
+    { id: "m1", name: "Raj | kumar", area: "Sadar Bazar", km: 2.3, status: "Office", avatar: avatarRaj, x: 25, y: 30, cat: "movers" },
+    { id: "m2", name: "Ashu | Qureshi", area: "Karol Bagh", km: 3.6, status: "Online", avatar: avatarUser, x: 70, y: 28, cat: "movers" },
+    { id: "m3", name: "Aryan | Bansal", area: "CP Market", km: 4.5, status: "Office", avatar: avatarAryan, x: 35, y: 70, cat: "movers" },
+    { id: "m4", name: "Rani | kumari", area: "Old Delhi", km: 1.9, status: "Office", avatar: avatarRani, x: 75, y: 75, cat: "movers" },
+    { id: "m5", name: "Raj | kumar", area: "Chandni Chowk", km: 3.0, status: "Online", avatar: avatarRaj, x: 55, y: 50, cat: "movers" },
+  ],
+  chef: [
+    { id: "ch1", name: "Rani | kumari", area: "Delhi sadar bazar", km: 2.6, status: "Office", avatar: avatarRani, x: 28, y: 30, cat: "chef" },
+    { id: "ch2", name: "Aryan | Bansal", area: "Karol Bagh", km: 3.9, status: "Online", avatar: avatarAryan, x: 72, y: 35, cat: "chef" },
+    { id: "ch3", name: "Raj | kumar", area: "CP Market", km: 4.2, status: "Office", avatar: avatarRaj, x: 50, y: 75, cat: "chef" },
+  ],
+};
+
+const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
@@ -65,15 +102,64 @@ const SERVICES: ServiceItem[] = [
   { id: "mubaul", title: "Mubaul | Service", img: svcElectronics, rating: 4.2, reviews: 287, verified: true },
 ];
 
+// Variation items per category
+const VARIATIONS: Record<string, VariationItem[]> = {
+  ac: [
+    { id: "ac-svc", title: "AC | service", sub: "Filter | wholesaler", price: "₹499 – 999", img: svcAc },
+    { id: "ac-rep", title: "AC | Repairing", sub: "Filter | wholesaler", price: "₹699 – 1,499", img: svcCarpenter, tone: "green" },
+    { id: "ac-ins", title: "AC | installation", sub: "Filter | wholesaler", price: "₹1,299 – 2,499", img: svcElectronics },
+  ],
+  carpenter: [
+    { id: "cp-furn", title: "Furniture | Repair", sub: "Filter | wholesaler", price: "₹399 – 899", img: svcCarpenter },
+    { id: "cp-door", title: "Door | Fitting", sub: "Filter | wholesaler", price: "₹599 – 1,299", img: svcCarpenter, tone: "green" },
+    { id: "cp-cust", title: "Custom | Wood Work", sub: "Filter | wholesaler", price: "₹1,499 – 4,999", img: svcCarpenter },
+  ],
+  electronics: [
+    { id: "el-mob", title: "Mobile | Repair", sub: "Filter | wholesaler", price: "₹299 – 1,999", img: svcElectronics },
+    { id: "el-tv", title: "TV | Service", sub: "Filter | wholesaler", price: "₹499 – 2,499", img: svcElectronics, tone: "green" },
+    { id: "el-app", title: "Appliance | Fix", sub: "Filter | wholesaler", price: "₹399 – 1,499", img: svcElectronics },
+  ],
+};
+
+const DEFAULT_VARIATION = VARIATIONS.ac;
+
 function QuickPage() {
   const navigate = useNavigate();
-  const [activeCat, setActiveCat] = useState<string>("tools");
+  const [activeCat, setActiveCat] = useState<string>("ac");
   const [needsOpen, setNeedsOpen] = useState(false);
+  const [variationOpen, setVariationOpen] = useState(false);
+  const [variationCat, setVariationCat] = useState<string>("ac");
+  // Track previous cat to know if user re-tapped same category
+  const [tapTracker, setTapTracker] = useState<{ key: string; count: number }>({ key: "ac", count: 1 });
 
-  const filteredVendors = useMemo(() => VENDORS, []);
+  const filteredVendors = useMemo(
+    () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
+    [activeCat]
+  );
+
+  const handleCatTap = (key: string) => {
+    if (tapTracker.key === key) {
+      // Re-tap → open variation sheet
+      setVariationCat(key);
+      setVariationOpen(true);
+      setTapTracker({ key, count: tapTracker.count + 1 });
+    } else {
+      // First tap → just filter map vendors
+      setActiveCat(key);
+      setTapTracker({ key, count: 1 });
+    }
+  };
+
+  const handleServiceCardTap = (id: string) => {
+    // Map service-card id to category key
+    const key = id === "mubaul" ? "electronics" : id;
+    setActiveCat(key);
+    setVariationCat(key);
+    setVariationOpen(true);
+  };
 
   return (
-    <div className="-mx-4 -mt-3 -mb-32">
+    <div className="min-h-screen bg-white relative">
       {/* MAP — top half */}
       <section className="relative" style={{ height: "52vh", minHeight: 380 }}>
         <FakeMap vendors={filteredVendors} />
@@ -113,7 +199,7 @@ function QuickPage() {
 
       {/* BOTTOM HALF — search + tabs + vendor cards + categories + bottom bar */}
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 pb-32 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]">
-        {/* Search bar */}
+        {/* Search bar with profile */}
         <div className="flex items-center gap-2 mb-3">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5">
             <input
@@ -122,12 +208,16 @@ function QuickPage() {
             />
             <Mic className="h-4 w-4 text-[#9ca3af]" />
           </div>
-          <button className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm">
+          <button className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm" aria-label="Scan QR">
             <QrCode className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
           </button>
-          <span className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm">
-            <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
-          </span>
+          <button
+            onClick={() => navigate({ to: "/profile" })}
+            className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
+            aria-label="Profile"
+          >
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+          </button>
         </div>
 
         {/* Tabs */}
@@ -146,9 +236,10 @@ function QuickPage() {
         {/* Vendor service cards */}
         <div className="space-y-2.5">
           {SERVICES.map((s, i) => (
-            <article
+            <button
               key={s.id}
-              className={`relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all ${
+              onClick={() => handleServiceCardTap(s.id)}
+              className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
                 s.selected
                   ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                   : "border-[color:oklch(0.78_0.14_82/0.25)]"
@@ -172,7 +263,7 @@ function QuickPage() {
                   </div>
                 )}
               </div>
-            </article>
+            </button>
           ))}
         </div>
 
@@ -187,7 +278,7 @@ function QuickPage() {
             return (
               <button
                 key={c.key}
-                onClick={() => setActiveCat(c.key)}
+                onClick={() => handleCatTap(c.key)}
                 className={`btn-3d flex-shrink-0 h-14 w-14 rounded-full grid place-items-center border-2 transition-all ${
                   isActive
                     ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.5)] scale-110"
@@ -214,7 +305,7 @@ function QuickPage() {
         aria-label="Add need"
         className="btn-3d fixed z-40 right-5 grid place-items-center"
         style={{
-          bottom: "calc(160px + env(safe-area-inset-bottom))",
+          bottom: "calc(120px + env(safe-area-inset-bottom))",
         }}
       >
         <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
@@ -231,6 +322,15 @@ function QuickPage() {
         category={CATS.find((c) => c.key === activeCat)?.label ?? null}
         onClose={() => setNeedsOpen(false)}
         onSubmit={() => setNeedsOpen(false)}
+      />
+
+      <VariationSheet
+        open={variationOpen}
+        category={CATS.find((c) => c.key === variationCat)?.label ?? "Service"}
+        vendorLabel="Filter | wholesaler"
+        items={VARIATIONS[variationCat] ?? DEFAULT_VARIATION}
+        onClose={() => setVariationOpen(false)}
+        onSubmit={() => setVariationOpen(false)}
       />
     </div>
   );
