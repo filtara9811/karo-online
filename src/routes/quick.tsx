@@ -180,7 +180,7 @@ function QuickPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}>
       {/* MAP — FIXED top, does not scroll with content */}
       <section className="relative flex-shrink-0" style={{ height: "44vh", minHeight: 320 }}>
         <FakeMap vendors={filteredVendors} />
