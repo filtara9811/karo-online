@@ -37,6 +37,22 @@ type Vendor = {
   cat: string;
 };
 
+// Map category key → Lucide icon for map pin badge
+const CAT_ICON: Record<string, LucideIcon> = {
+  ac: Zap,
+  carpenter: Hammer,
+  electronics: Sparkles,
+  paint: Paintbrush2,
+  movers: Truck,
+  chef: ChefHat,
+  doc: FileText,
+  tools: Wrench,
+  bank: Building2,
+  biz: Building,
+  cloud: Cloud,
+  blank: Sparkles,
+};
+
 // Different vendor sets per category — count varies (5 for AC, 6 for carpenter, 4 for electronics, etc.)
 const VENDORS_BY_CAT: Record<string, Vendor[]> = {
   ac: [
