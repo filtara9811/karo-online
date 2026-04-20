@@ -221,6 +221,33 @@ function ChatPage() {
         )}
       </div>
 
+      {/* Quick reply chips */}
+      <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-1.5 w-max">
+          {[
+            { label: "When can you come?", emoji: "⏰" },
+            { label: "Send price", emoji: "💰" },
+            { label: "Share location", emoji: "📍" },
+            { label: "Send photo", emoji: "📷" },
+            { label: "Confirm booking", emoji: "✅" },
+          ].map((chip, i) => (
+            <motion.button
+              key={chip.label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              onClick={() => setDraft(chip.label)}
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-95 transition"
+            >
+              <span className="text-xs">{chip.emoji}</span>
+              <span className="text-[11px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap">
+                {chip.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
       {/* Composer */}
       <div className="flex-shrink-0 px-3 pt-2 pb-2 bg-transparent">
         <div className="flex items-center gap-2">
