@@ -202,6 +202,7 @@ function QuickPage() {
   const [variationOpen, setVariationOpen] = useState(false);
   const [variationCat, setVariationCat] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("ac");
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
@@ -225,18 +226,16 @@ function QuickPage() {
     }
   };
 
-  // Service CARD tap → single tap updates MAP vendors. Second tap opens variations.
-  const handleServiceCardTap = (id: string) => {
+  // Service CARD single tap → ONLY updates MAP vendors (no variation popup).
+  // Double tap → opens variation sheet (handled by onDoubleClick).
+  const resolveMapKey = (id: string) => {
     const key = id === "mubaul" ? "electronics" : (id.split("-")[0] === "cp" ? "carpenter" : id.split("-")[0] === "el" ? "electronics" : id.split("-")[0]);
-    const mapKey = VENDORS_BY_CAT[key] ? key : "ac";
-    if (activeCat === mapKey) {
-      // Already showing on map → open variation
-      setVariationCat(mapKey);
-      setVariationOpen(true);
-    } else {
-      // First tap → update map vendors with animation
-      setActiveCat(mapKey);
-    }
+    return VENDORS_BY_CAT[key] ? key : "ac";
+  };
+  const handleServiceCardTap = (id: string) => {
+    const mapKey = resolveMapKey(id);
+    setActiveCat(mapKey);
+    setSelectedServiceId(id);
   };
 
   return (
@@ -319,10 +318,10 @@ function QuickPage() {
           {filteredServices.map((s, i) => (
             <button
               key={s.id}
-              onDoubleClick={() => { setVariationCat(activeCat); setVariationOpen(true); }}
+              onDoubleClick={() => { setVariationCat(resolveMapKey(s.id)); setVariationOpen(true); }}
               onClick={() => handleServiceCardTap(s.id)}
               className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
-                s.selected
+                selectedServiceId === s.id
                   ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                   : "border-[color:oklch(0.78_0.14_82/0.25)]"
               }`}
