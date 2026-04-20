@@ -209,8 +209,36 @@ function Register() {
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.16),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.45_0.18_22/0.4),transparent_70%)] blur-2xl" />
 
-      <div className="relative max-w-md mx-auto px-5 pt-10 pb-32">
-        <header className="flex items-center justify-between mb-8">
+      <div className="relative max-w-md mx-auto px-5 pt-6 pb-32">
+        {/* Concierge mascot — animated welcome popup */}
+        <div
+          className="relative mb-3 rounded-3xl overflow-hidden bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-gold-glow p-3 pl-32 min-h-[124px] flex items-center"
+          style={{ animation: "step-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+        >
+          <img
+            src={mascotConcierge}
+            alt="Concierge welcoming you"
+            className="absolute -left-3 -bottom-1 h-36 w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.45)]"
+            style={{ animation: "mascot-wave 2.4s ease-in-out infinite", transformOrigin: "60% 90%" }}
+          />
+          <div className="relative">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)] mb-1">
+              ✦ Khushaamadeed ✦
+            </p>
+            <p className="font-display text-base text-[color:oklch(0.25_0.05_85)] font-semibold leading-tight">
+              Aap ka swagat hai!
+            </p>
+            <p className="text-[10px] text-[color:oklch(0.40_0.05_85)] mt-1 leading-snug italic">
+              Mobile, naam aur address bhariye — sab auto ho jayega.
+            </p>
+            <div className="mt-2 flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" style={{ animation: "pulse-dot 1.4s ease-in-out infinite" }} />
+              <span className="text-[8px] uppercase tracking-[0.25em] text-[color:oklch(0.45_0.08_85)]">Live concierge</span>
+            </div>
+          </div>
+        </div>
+
+        <header className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.7)]">Maison</p>
             <p className="font-display text-lg text-gold-gradient -mt-1">Karo · Online</p>
