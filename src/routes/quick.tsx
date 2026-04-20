@@ -305,19 +305,6 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center justify-between mb-3 px-1">
-          <button className="px-4 py-2 rounded-full bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-semibold text-xs underline underline-offset-2 shadow-gold-glow">
-            Filter | service
-          </button>
-          <button className="text-[color:oklch(0.45_0.08_85)] font-display font-semibold text-xs underline underline-offset-2">
-            All | saler
-          </button>
-          <button className="text-[color:oklch(0.45_0.08_85)] font-display font-semibold text-xs underline underline-offset-2">
-            Resalig | program
-          </button>
-        </div>
-
         {/* Vendor service cards — filtered by category chip; tap once to select, tap same card again for variations */}
         <div className="space-y-2.5 pb-4">
           {filteredServices.map((s, i) => (

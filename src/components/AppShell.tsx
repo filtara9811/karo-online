@@ -11,7 +11,7 @@ import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
 
-const HIDE_SHELL_ON = ["/register", "/quick", "/chat", "/status"];
+const HIDE_SHELL_ON = ["/register", "/chat", "/status"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
