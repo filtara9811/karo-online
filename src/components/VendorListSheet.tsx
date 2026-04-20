@@ -58,13 +58,24 @@ export function VendorListSheet({ open, category, onClose }: Props) {
 
   if (!open) return null;
 
-  const toggleApprove = (id: string) =>
+  const toggleApprove = (id: string) => {
     setApprovedIds((p) => {
       const n = new Set(p);
       if (n.has(id)) n.delete(id);
       else n.add(id);
       return n;
     });
+    // After approving, navigate to status tracking screen
+    setTimeout(() => {
+      onClose();
+      navigate({ to: "/status" });
+    }, 350);
+  };
+
+  const goToChat = () => {
+    onClose();
+    navigate({ to: "/chat" });
+  };
 
   return (
     <div className="fixed inset-0 z-[85] flex items-end justify-center">
