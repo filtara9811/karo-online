@@ -159,12 +159,12 @@ function QuickPage() {
     // Trigger pulse animation on every tap
     setPulseKey(`${key}-${Date.now()}`);
 
-    if (lastTapped === key && activeCat === key) {
-      // Re-tap same selected category → open variation sheet
+    if (activeCat === key) {
+      // Second tap on already-selected → open variation sheet
       setVariationCat(key);
       setVariationOpen(true);
     } else {
-      // First tap (or switching) → filter map vendors with animation
+      // First tap → just select + filter map vendors with animation
       setActiveCat(key);
       setLastTapped(key);
     }
