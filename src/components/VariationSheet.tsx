@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Mic, Camera, ShoppingCart, Check, Star } from "lucide-react";
+import { QuickNotesPopup } from "./QuickNotesPopup";
 
 export type VariationItem = {
   id: string;
@@ -35,6 +36,7 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
   const [note, setNote] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [recording, setRecording] = useState(false);
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
