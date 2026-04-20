@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, Languages, Sun, Bell, Mic, QrCode, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
@@ -428,8 +428,123 @@ function QuickPage() {
 }
 
 function FakeMap({ vendors }: { vendors: Vendor[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
+  const gestureRef = useRef<{
+    mode: "none" | "pinch" | "pan";
+    startDist: number;
+    startScale: number;
+    startMidX: number;
+    startMidY: number;
+    startTx: number;
+    startTy: number;
+    lastTap: number;
+  }>({ mode: "none", startDist: 0, startScale: 1, startMidX: 0, startMidY: 0, startTx: 0, startTy: 0, lastTap: 0 });
+
+  const MIN_SCALE = 1;
+  const MAX_SCALE = 3.5;
+
+  const clampPan = (scale: number, x: number, y: number) => {
+    const el = containerRef.current;
+    if (!el) return { x, y };
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const maxX = ((scale - 1) * w) / 2;
+    const maxY = ((scale - 1) * h) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const [a, b] = [e.touches[0], e.touches[1]];
+      const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+      gestureRef.current = {
+        ...gestureRef.current,
+        mode: "pinch",
+        startDist: dist,
+        startScale: transform.scale,
+        startMidX: (a.clientX + b.clientX) / 2,
+        startMidY: (a.clientY + b.clientY) / 2,
+        startTx: transform.x,
+        startTy: transform.y,
+      };
+    } else if (e.touches.length === 1 && transform.scale > 1) {
+      gestureRef.current = {
+        ...gestureRef.current,
+        mode: "pan",
+        startMidX: e.touches[0].clientX,
+        startMidY: e.touches[0].clientY,
+        startTx: transform.x,
+        startTy: transform.y,
+      };
+    }
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    const g = gestureRef.current;
+    if (g.mode === "pinch" && e.touches.length === 2) {
+      const [a, b] = [e.touches[0], e.touches[1]];
+      const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, g.startScale * (dist / g.startDist)));
+      const clamped = clampPan(newScale, g.startTx, g.startTy);
+      setTransform({ scale: newScale, x: clamped.x, y: clamped.y });
+    } else if (g.mode === "pan" && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - g.startMidX;
+      const dy = e.touches[0].clientY - g.startMidY;
+      const clamped = clampPan(transform.scale, g.startTx + dx, g.startTy + dy);
+      setTransform({ scale: transform.scale, x: clamped.x, y: clamped.y });
+    }
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      const now = Date.now();
+      if (now - gestureRef.current.lastTap < 300 && gestureRef.current.mode !== "pinch") {
+        const next = transform.scale > 1.2 ? { scale: 1, x: 0, y: 0 } : { scale: 2.2, x: 0, y: 0 };
+        setTransform(next);
+        gestureRef.current.lastTap = 0;
+      } else {
+        gestureRef.current.lastTap = now;
+      }
+      gestureRef.current.mode = "none";
+    }
+  };
+
+  const resetZoom = () => setTransform({ scale: 1, x: 0, y: 0 });
+  const zoomIn = () => {
+    const s = Math.min(MAX_SCALE, transform.scale + 0.5);
+    setTransform({ scale: s, x: transform.x, y: transform.y });
+  };
+  const zoomOut = () => {
+    const s = Math.max(MIN_SCALE, transform.scale - 0.5);
+    const clamped = clampPan(s, transform.x, transform.y);
+    setTransform({ scale: s, x: clamped.x, y: clamped.y });
+  };
+
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div
+      ref={containerRef}
+      className="absolute inset-0 overflow-hidden select-none"
+      style={{ touchAction: "none" }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onDoubleClick={() => {
+        const next = transform.scale > 1.2 ? { scale: 1, x: 0, y: 0 } : { scale: 2.2, x: 0, y: 0 };
+        setTransform(next);
+      }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+          transformOrigin: "center center",
+          transition: gestureRef.current.mode === "none" ? "transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+        }}
+      >
       {/* Map background — pinkish like screenshot */}
       <div
         className="absolute inset-0"
@@ -519,27 +634,50 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
           );
         })}
       </AnimatePresence>
+      </div>
+      {/* /transformable layer */}
 
-      {/* Vendor count badge — top-left corner of map */}
+      {/* Vendor count badge — fixed overlay (not zoomed) */}
       <motion.div
         key={`count-${vendors[0]?.cat ?? "none"}`}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
-        className="absolute top-20 left-3 z-10 px-2.5 py-1 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)]"
+        className="absolute top-20 left-3 z-30 px-2.5 py-1 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)]"
       >
         {vendors.length} nearby vendors
       </motion.div>
 
-      {/* Scale bar at the bottom of map */}
-      <div className="absolute bottom-2 left-3 right-3 z-10">
+      {/* Zoom controls — fixed overlay */}
+      <div className="absolute right-2 top-20 z-30 flex flex-col gap-1.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); zoomIn(); }}
+          aria-label="Zoom in"
+          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+        >+</button>
+        <button
+          onClick={(e) => { e.stopPropagation(); zoomOut(); }}
+          aria-label="Zoom out"
+          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+        >−</button>
+        {transform.scale > 1.05 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); resetZoom(); }}
+            aria-label="Reset zoom"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+          >1:1</button>
+        )}
+      </div>
+
+      {/* Scale bar — fixed overlay */}
+      <div className="absolute bottom-2 left-3 right-3 z-30 pointer-events-none">
         <div className="flex items-center justify-between text-[8px] font-bold text-[color:oklch(0.30_0.05_85)] mb-0.5 px-1">
           {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((n) => (
             <span key={n}>{n}</span>
           ))}
         </div>
         <div className="relative h-2 bg-white/70 border border-[color:oklch(0.30_0.05_85/0.4)] rounded-sm">
-          <div className="absolute left-[40%] right-[40%] -top-3 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center">1 km</div>
+          <div className="absolute left-[40%] right-[40%] -top-3 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center">{(1 / transform.scale).toFixed(1)} km</div>
         </div>
         <div className="text-center mt-0.5">
           <span className="text-[8px]">⬆ N</span>
