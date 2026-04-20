@@ -604,7 +604,7 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
           const CatIcon = CAT_ICON[v.cat] ?? Sparkles;
           return (
             <motion.div
-              key={v.id}
+              key={`${pulseKey ?? "static"}-${v.id}`}
               className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${v.x}%`, top: `${v.y}%` }}
               initial={{ opacity: 0, y: -24, scale: 0.6 }}
