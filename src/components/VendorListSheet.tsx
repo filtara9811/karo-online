@@ -207,7 +207,7 @@ export function VendorListSheet({ open, category, onClose }: Props) {
                     <Phone className="h-4 w-4 text-white" strokeWidth={2.4} />
                   </button>
                   <button
-                    onClick={() => setActiveContact(v)}
+                    onClick={goToChat}
                     aria-label="Chat"
                     className="px-4 grid place-items-center border-l border-white/10 active:scale-95"
                   >
