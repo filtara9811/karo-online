@@ -9,6 +9,7 @@ import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { ProductServicePicker } from "@/components/ProductServicePicker";
 
 const HIDE_SHELL_ON = ["/register"];
 
@@ -78,7 +79,10 @@ function TopHeader() {
         </Link>
 
         {/* Refferal Join CTA */}
-        <button className="btn-3d relative overflow-hidden rounded-xl px-4 py-2.5 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-semibold text-sm shadow-gold-glow">
+        <Link
+          to="/register"
+          className="btn-3d relative overflow-hidden rounded-xl px-4 py-2.5 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-semibold text-sm shadow-gold-glow"
+        >
           <span
             className="absolute inset-0 opacity-50 pointer-events-none"
             style={{
@@ -88,7 +92,7 @@ function TopHeader() {
             }}
           />
           <span className="relative">Refferal join</span>
-        </button>
+        </Link>
       </div>
 
       {/* Location + search row */}
@@ -131,18 +135,23 @@ function SphereButton({ icon, label, badge }: { icon: string; label: string; bad
 
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
-  const [picker, setPicker] = useState<null | "reselling" | "vendor">(null);
+  const [picker, setPicker] = useState<null | "reselling" | "vendor" | "browse">(null);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
-    if (value === "quick") setTimeout(() => navigate({ to: "/services" }), 250);
+    if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
     else if (value === "vendor") setTimeout(() => setPicker("vendor"), 350);
-    else setTimeout(() => navigate({ to: "/services" }), 250);
+    else setTimeout(() => navigate({ to: "/" }), 250);
   };
 
   const handleVendorSelect = () => {
     setPicker(null);
     setTimeout(() => navigate({ to: "/register" }), 250);
+  };
+
+  const handleBrowsePick = (mode: "products" | "services") => {
+    setPicker(null);
+    setTimeout(() => navigate({ to: mode === "services" ? "/quick" : "/" }), 250);
   };
 
   return (
@@ -165,18 +174,18 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* Left — Join Vendor pin */}
+            {/* Left — Browse Products / Services */}
             <button
-              onClick={() => setPicker("vendor")}
+              onClick={() => setPicker("browse")}
               className="btn-3d flex items-center gap-2.5 active:scale-95"
-              aria-label="Join as Vendor"
+              aria-label="Browse Products or Services"
             >
               <span className="relative h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
                 <img src={goldPin} alt="" className="h-7 w-7 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
               </span>
               <span className="flex flex-col items-start leading-tight">
-                <span className="text-[8px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)]">Join</span>
-                <span className="font-display text-sm text-gold-gradient font-semibold">Vendor</span>
+                <span className="text-[8px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)]">Browse</span>
+                <span className="font-display text-sm text-gold-gradient font-semibold">Catalogue</span>
               </span>
             </button>
 
@@ -210,6 +219,11 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         options={VENDOR_OPTIONS}
         onSelect={handleVendorSelect}
         onClose={() => setPicker(null)}
+      />
+      <ProductServicePicker
+        open={picker === "browse"}
+        onClose={() => setPicker(null)}
+        onCategoryPick={(mode) => handleBrowsePick(mode)}
       />
     </>
   );
