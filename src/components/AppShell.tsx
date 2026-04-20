@@ -30,6 +30,7 @@ export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
+  const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => setFadeKey(location.pathname), [location.pathname]);
@@ -47,11 +48,11 @@ export function AppShell() {
       <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
-      <TopHeader />
+      {!hideTopHeader && <TopHeader />}
 
       <main
         key={fadeKey}
-        className="relative max-w-md mx-auto px-4 pt-3 pb-36"
+        className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} pb-36`}
         style={{ animation: "lux-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <Outlet />
