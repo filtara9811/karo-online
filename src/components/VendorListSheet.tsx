@@ -230,14 +230,29 @@ export function VendorListSheet({ open, category, onClose }: Props) {
       {/* Contact action popup */}
       <AnimatePresence>
         {activeContact && (
-          <ContactActionPopup vendor={activeContact} onClose={() => setActiveContact(null)} />
+          <ContactActionPopup
+            vendor={activeContact}
+            onClose={() => setActiveContact(null)}
+            onChat={() => { setActiveContact(null); goToChat(); }}
+            onApprove={() => { setActiveContact(null); toggleApprove(activeContact.id); }}
+          />
         )}
       </AnimatePresence>
     </div>
   );
 }
 
-function ContactActionPopup({ vendor, onClose }: { vendor: MatchedVendor; onClose: () => void }) {
+function ContactActionPopup({
+  vendor,
+  onClose,
+  onChat,
+  onApprove,
+}: {
+  vendor: MatchedVendor;
+  onClose: () => void;
+  onChat: () => void;
+  onApprove: () => void;
+}) {
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
       <motion.button
@@ -299,7 +314,7 @@ function ContactActionPopup({ vendor, onClose }: { vendor: MatchedVendor; onClos
             icon={<MessageCircle className="h-5 w-5" strokeWidth={2.4} />}
             label="Chat"
             tone="sky"
-            onClick={onClose}
+            onClick={onChat}
           />
           <ActionTile
             icon={<ShieldCheck className="h-5 w-5" strokeWidth={2.4} />}
@@ -311,7 +326,7 @@ function ContactActionPopup({ vendor, onClose }: { vendor: MatchedVendor; onClos
 
         <div className="px-4 pb-4">
           <button
-            onClick={onClose}
+            onClick={onApprove}
             className="w-full py-2.5 rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)] active:scale-95 underline underline-offset-2"
           >
             Approve | Vendor
