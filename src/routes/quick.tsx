@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, Languages, Sun, Bell, Mic, QrCode, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
@@ -634,27 +634,50 @@ function FakeMap({ vendors }: { vendors: Vendor[] }) {
           );
         })}
       </AnimatePresence>
+      </div>
+      {/* /transformable layer */}
 
-      {/* Vendor count badge — top-left corner of map */}
+      {/* Vendor count badge — fixed overlay (not zoomed) */}
       <motion.div
         key={`count-${vendors[0]?.cat ?? "none"}`}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
-        className="absolute top-20 left-3 z-10 px-2.5 py-1 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)]"
+        className="absolute top-20 left-3 z-30 px-2.5 py-1 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)]"
       >
         {vendors.length} nearby vendors
       </motion.div>
 
-      {/* Scale bar at the bottom of map */}
-      <div className="absolute bottom-2 left-3 right-3 z-10">
+      {/* Zoom controls — fixed overlay */}
+      <div className="absolute right-2 top-20 z-30 flex flex-col gap-1.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); zoomIn(); }}
+          aria-label="Zoom in"
+          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+        >+</button>
+        <button
+          onClick={(e) => { e.stopPropagation(); zoomOut(); }}
+          aria-label="Zoom out"
+          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+        >−</button>
+        {transform.scale > 1.05 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); resetZoom(); }}
+            aria-label="Reset zoom"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
+          >1:1</button>
+        )}
+      </div>
+
+      {/* Scale bar — fixed overlay */}
+      <div className="absolute bottom-2 left-3 right-3 z-30 pointer-events-none">
         <div className="flex items-center justify-between text-[8px] font-bold text-[color:oklch(0.30_0.05_85)] mb-0.5 px-1">
           {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((n) => (
             <span key={n}>{n}</span>
           ))}
         </div>
         <div className="relative h-2 bg-white/70 border border-[color:oklch(0.30_0.05_85/0.4)] rounded-sm">
-          <div className="absolute left-[40%] right-[40%] -top-3 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center">1 km</div>
+          <div className="absolute left-[40%] right-[40%] -top-3 px-1.5 py-0.5 bg-white border border-[color:oklch(0.30_0.05_85/0.4)] rounded text-[9px] font-bold text-center">{(1 / transform.scale).toFixed(1)} km</div>
         </div>
         <div className="text-center mt-0.5">
           <span className="text-[8px]">⬆ N</span>
