@@ -8,6 +8,8 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
+import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
+import { VendorListSheet } from "@/components/VendorListSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -203,6 +205,8 @@ function QuickPage() {
   const [variationCat, setVariationCat] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("ac");
+  const [findingOpen, setFindingOpen] = useState(false);
+  const [vendorListOpen, setVendorListOpen] = useState(false);
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
@@ -430,7 +434,27 @@ function QuickPage() {
         vendorLabel="Filter | wholesaler"
         items={VARIATIONS[variationCat] ?? DEFAULT_VARIATION}
         onClose={() => setVariationOpen(false)}
-        onSubmit={() => setVariationOpen(false)}
+        onSubmit={() => {
+          setVariationOpen(false);
+          // Tiny delay so sheet animates out before overlay covers the screen
+          setTimeout(() => setFindingOpen(true), 200);
+        }}
+      />
+
+      <FindingVendorOverlay
+        open={findingOpen}
+        category={CATS.find((c) => c.key === variationCat)?.label ?? "Service"}
+        onClose={() => setFindingOpen(false)}
+        onComplete={() => {
+          setFindingOpen(false);
+          setVendorListOpen(true);
+        }}
+      />
+
+      <VendorListSheet
+        open={vendorListOpen}
+        category={CATS.find((c) => c.key === variationCat)?.label ?? "Ac"}
+        onClose={() => setVendorListOpen(false)}
       />
     </div>
   );
