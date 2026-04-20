@@ -2,23 +2,13 @@ import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstac
 import { useEffect, useState } from "react";
 import goldBell from "@/assets/gold-bell.png";
 import goldQr from "@/assets/gold-qr.png";
-import goldHome from "@/assets/gold-home.png";
 import goldServices from "@/assets/gold-services.png";
-import goldOrders from "@/assets/gold-orders.png";
-import goldProfile from "@/assets/gold-profile.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-
-const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: goldHome },
-  { to: "/services", label: "Services", icon: goldServices },
-  { to: "/orders", label: "Orders", icon: goldOrders },
-  { to: "/profile", label: "Profile", icon: goldProfile },
-] as const;
 
 const HIDE_SHELL_ON = ["/register"];
 
@@ -163,41 +153,6 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         style={{ bottom: 0 }}
       >
         <div className="max-w-md mx-auto px-3 pb-3 flex flex-col items-stretch">
-          {/* Mini nav-tab strip — sits flush above, slightly narrower */}
-          <nav aria-label="Primary" className="self-center -mb-2 z-10">
-            <div className="rounded-full px-2 py-1.5 flex items-center gap-1 bg-white/95 backdrop-blur-xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-4px_16px_-4px_rgba(212,175,55,0.4)]">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  activeOptions={{ exact: true }}
-                  className="group rounded-full active:scale-90 transition-transform"
-                >
-                  {({ isActive }) => (
-                    <span
-                      className={`relative h-9 w-9 grid place-items-center rounded-full transition-all ${
-                        isActive
-                          ? "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] shadow-gold-glow"
-                          : ""
-                      }`}
-                      title={item.label}
-                    >
-                      <img
-                        src={item.icon}
-                        alt={item.label}
-                        width={36}
-                        height={36}
-                        className={`h-7 w-7 object-contain transition-all ${
-                          isActive ? "drop-shadow-[0_3px_6px_rgba(245,217,122,0.6)] scale-110" : "opacity-55 group-hover:opacity-100"
-                        }`}
-                      />
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </nav>
-
           {/* Curved bottom action bar */}
           <div
             className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-3 py-3 pt-5"
