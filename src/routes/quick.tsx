@@ -218,16 +218,11 @@ function QuickPage() {
     [categoryFilter]
   );
 
-  // Category chip tap → ONLY filter product list. Map stays untouched.
-  // Second tap on same category → open variation sheet.
+  // Category chip tap → ONLY filter product list. NEVER opens variations.
+  // Map stays untouched. Variations only open from double-tapping a SERVICE CARD above.
   const handleCatTap = (key: string) => {
+    setCategoryFilter(key);
     setPulseKey(`${key}-${Date.now()}`);
-    if (categoryFilter === key) {
-      setVariationCat(key);
-      setVariationOpen(true);
-    } else {
-      setCategoryFilter(key);
-    }
   };
 
   // Service CARD: single tap → update map vendors. Double tap (within 320ms) → open variation sheet.
