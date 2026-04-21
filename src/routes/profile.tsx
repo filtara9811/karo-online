@@ -6,10 +6,11 @@ import {
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
   IdCard, Wallet, PackageCheck, FileCheck2, Building2,
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
-  TrendingUp, Users, Gift, ArrowDownToLine, ArrowUpToLine,
-  Clock, CircleDollarSign, Truck, Star, ChevronRight, X,
+  Users, Truck, ChevronRight, X,
+  Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
