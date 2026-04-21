@@ -216,9 +216,25 @@ function VendorsPage() {
       </section>
 
       {/* SCROLLABLE BODY */}
-      <section className="relative bg-white rounded-t-3xl -mt-5 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]">
+      <section
+        className="relative bg-white rounded-t-3xl -mt-5 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]"
+        onTouchStart={(e) => {
+          (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
+          (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
+        }}
+        onTouchEnd={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          const sx = Number(el.dataset.sx ?? 0);
+          const sy = Number(el.dataset.sy ?? 0);
+          const dx = e.changedTouches[0].clientX - sx;
+          const dy = e.changedTouches[0].clientY - sy;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4 && dx < 0) {
+            navigate({ to: "/quick" });
+          }
+        }}
+      >
         {/* Search bar */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5">
             <input
               value={query}
@@ -238,7 +254,20 @@ function VendorsPage() {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Section tabs — All | Digital shop  ↔  Quick | sarvic (swipe left to go to /quick) */}
+        <div className="flex items-center justify-between px-2 mb-3">
+          <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
+            All | Digital shop
+          </span>
+          <button
+            onClick={() => navigate({ to: "/quick" })}
+            className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82/0.5)] text-[color:oklch(0.55_0.10_82)] active:scale-95"
+          >
+            Quick | sarvic
+          </button>
+        </div>
+
+        {/* Inner tab row (Retail / All / Filter) */}
         <div className="flex items-center justify-between text-[12px] font-display mb-3 border-b border-[color:oklch(0.78_0.14_82/0.25)]">
           {([
             { k: "retail", label: "Retail | wolsale | manufacture" },
