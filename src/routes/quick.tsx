@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Languages, Sun, Bell, Mic, QrCode, Plus, Star, ShieldCheck,
+  ArrowLeft, Mic, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
