@@ -645,27 +645,6 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
         {vendors.length} nearby vendors
       </motion.div>
 
-      {/* Zoom controls — fixed overlay */}
-      <div className="absolute right-2 top-20 z-30 flex flex-col gap-1.5">
-        <button
-          onClick={(e) => { e.stopPropagation(); zoomIn(); }}
-          aria-label="Zoom in"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-        >+</button>
-        <button
-          onClick={(e) => { e.stopPropagation(); zoomOut(); }}
-          aria-label="Zoom out"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-        >−</button>
-        {transform.scale > 1.05 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); resetZoom(); }}
-            aria-label="Reset zoom"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-          >1:1</button>
-        )}
-      </div>
-
       {/* Scale bar — drag left/right to zoom out/in */}
       <div className="absolute bottom-2 left-3 right-3 z-30">
         <div className="flex items-center justify-between text-[8px] font-bold text-[color:oklch(0.30_0.05_85)] mb-0.5 px-1 pointer-events-none">
