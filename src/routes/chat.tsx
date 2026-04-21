@@ -1,13 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Phone, Camera, Mic, Paperclip, Eye, Send, Plus } from "lucide-react";
+import { ArrowLeft, Phone, Camera, Mic, Paperclip, Eye, Send, Plus, X } from "lucide-react";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
 
+const chatSearchSchema = z.object({
+  productId: fallback(z.string(), "").default(""),
+  productName: fallback(z.string(), "").default(""),
+  productImage: fallback(z.string(), "").default(""),
+  productPrice: fallback(z.number(), 0).default(0),
+  mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+});
+
 export const Route = createFileRoute("/chat")({
+  validateSearch: zodValidator(chatSearchSchema),
   head: () => ({
     meta: [
       { title: "Live Chat — Karo Online" },
