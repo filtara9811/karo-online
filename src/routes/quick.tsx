@@ -300,6 +300,19 @@ function QuickPage() {
           </button>
         </div>
 
+        {/* Section tabs — All | Digital shop  ↔  Quick | sarvic (swipe right to go to /vendors) */}
+        <div className="flex items-center justify-between px-2 mb-3">
+          <button
+            onClick={() => navigate({ to: "/vendors" })}
+            className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82/0.5)] text-[color:oklch(0.55_0.10_82)] active:scale-95"
+          >
+            All | Digital shop
+          </button>
+          <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
+            Quick | sarvic
+          </span>
+        </div>
+
         {/* Vendor service cards — filtered by category chip; tap once to select, tap same card again for variations */}
         <div className="space-y-2.5 pb-4">
           {filteredServices.map((s, i) => (
