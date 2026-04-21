@@ -276,13 +276,6 @@ function QuickPage() {
             <Mic className="h-4 w-4 text-[#9ca3af]" />
           </button>
           <button
-            onClick={() => setSearchOpen(true)}
-            className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm"
-            aria-label="Scan QR"
-          >
-            <QrCode className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
-          </button>
-          <button
             onClick={() => navigate({ to: "/profile" })}
             className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
             aria-label="Profile"
