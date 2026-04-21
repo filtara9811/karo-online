@@ -92,12 +92,6 @@ function ChatPage() {
 
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee] flex flex-col overflow-hidden">
-      {/* Status bar */}
-      <div className="flex-shrink-0 px-4 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold text-[color:oklch(0.20_0.02_90)]">
-        <span>07:00 AM</span>
-        <span className="flex items-center gap-1"><span>📶</span><span>🔋</span></span>
-      </div>
-
       {/* Top vendor strip — approved vendors */}
       <div className="flex-shrink-0 bg-white border-b border-[color:oklch(0.78_0.14_82/0.25)] px-3 py-2.5">
         <div className="flex items-center gap-3">

@@ -53,12 +53,6 @@ function StatusPage() {
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden">
-      {/* Status bar */}
-      <div className="flex-shrink-0 px-4 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold text-[color:oklch(0.20_0.02_90)]">
-        <span>07:00 AM</span>
-        <span className="flex items-center gap-1"><span>📶</span><span>🔋</span></span>
-      </div>
-
       {/* Top vendor strip */}
       <div className="flex-shrink-0 px-3 pb-2 flex items-center justify-end gap-2.5 relative">
         {VENDORS.map((v) => (

@@ -251,17 +251,8 @@ function QuickPage() {
       <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
-        {/* Top status bar overlay */}
-        <div className="absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold text-[color:oklch(0.20_0.02_90)]">
-          <span>07:00 AM</span>
-          <span className="font-display text-xs italic underline underline-offset-2">Home | screen 1</span>
-          <span className="flex items-center gap-1">
-            <span>📶</span><span>📊</span><span>🔋</span>
-          </span>
-        </div>
-
         {/* Header — back + icons */}
-        <div className="absolute top-7 left-0 right-0 z-10 px-3 flex items-center justify-between">
+        <div className="absolute top-2 left-0 right-0 z-10 px-3 flex items-center justify-between">
           <button
             onClick={() => navigate({ to: "/" })}
             aria-label="Back"
