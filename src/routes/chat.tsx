@@ -41,6 +41,8 @@ type Msg = {
   text: string;
   time: string;
   read?: boolean;
+  product?: { name: string; image: string; price: number };
+  kind?: "inquiry" | "chat";
 };
 
 const VENDORS: Vendor[] = [
