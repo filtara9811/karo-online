@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Star, Heart, Share2, ShieldCheck, Truck, RotateCcw, ShoppingBasket, X, Check } from "lucide-react";
-import { getProduct, PRODUCTS } from "@/lib/products";
-import { useCart } from "@/hooks/use-cart";
+import { ArrowLeft, Star, Heart, Search, ShoppingBasket, MoreHorizontal, Camera, Share2, ChevronDown, Award, ShieldCheck, Truck } from "lucide-react";
+import { getProduct, PRODUCTS, type Product } from "@/lib/products";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }) => {
@@ -32,261 +31,244 @@ export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
 });
 
+function buildBulkTiers(price: number) {
+  // Alibaba-style 3-tier bulk pricing
+  return [
+    { qty: "Min. order: 20 pieces", price: Math.round(price * 1.0) },
+    { qty: "200-999 pieces", price: Math.round(price * 0.95) },
+    { qty: "1,000-9,999 pieces", price: Math.round(price * 0.90) },
+  ];
+}
+
 function ProductPage() {
   const { product } = Route.useLoaderData();
   const navigate = useNavigate();
-  const cart = useCart();
-  const [variation, setVariation] = useState(product.variations?.[0]?.label ?? "");
-  const [showBookSheet, setShowBookSheet] = useState(false);
-  const [bookingDone, setBookingDone] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState<"photos" | "reviews" | "highlights" | "specs">("photos");
 
-  const recommended = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
+  const tiers = buildBulkTiers(product.price);
+  const recommended: Product[] = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
 
-  const handleAdd = () => {
-    setAdding(true);
-    cart.add({ id: product.id, name: product.name, price: product.price, image: product.image, variation });
-    cart.triggerFly();
-    setTimeout(() => setAdding(false), 700);
-  };
-
-  const handleBook = (mode: "request" | "now") => {
-    setBookingDone(true);
-    if (mode === "now") {
-      cart.add({ id: product.id, name: product.name, price: product.price, image: product.image, variation });
-    }
-    setTimeout(() => {
-      setShowBookSheet(false);
-      setBookingDone(false);
-    }, 1600);
+  const goChat = (mode: "chat" | "inquiry") => {
+    navigate({
+      to: "/chat",
+      search: {
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        productPrice: product.price,
+        mode,
+      } as never,
+    });
   };
 
   return (
-    <div className="min-h-screen pb-28" style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
-      {/* Header overlay */}
-      <header className="absolute left-0 right-0 z-20 px-4 flex items-center justify-between" style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}>
-        <button
-          onClick={() => navigate({ to: "/home" })}
-          aria-label="Back"
-          className="h-10 w-10 grid place-items-center rounded-full bg-white/90 backdrop-blur border border-[color:oklch(0.78_0.14_82/0.5)] shadow"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div className="flex gap-2">
-          <button aria-label="Share" className="h-10 w-10 grid place-items-center rounded-full bg-white/90 backdrop-blur border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
-            <Share2 className="h-4 w-4" />
+    <div className="min-h-screen bg-white pb-32" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      {/* Top search header */}
+      <header className="sticky top-0 z-30 bg-white border-b border-black/5">
+        <div className="px-3 py-2.5 flex items-center gap-2">
+          <button
+            onClick={() => navigate({ to: "/home" })}
+            aria-label="Back"
+            className="h-9 w-9 grid place-items-center -ml-1 active:scale-90"
+          >
+            <ArrowLeft className="h-5 w-5 text-[#1f2937]" strokeWidth={2.4} />
           </button>
-          <button aria-label="Wishlist" className="h-10 w-10 grid place-items-center rounded-full bg-white/90 backdrop-blur border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
-            <Heart className="h-4 w-4" />
+          <label className="flex-1 flex items-center gap-2 rounded-full bg-[#f3f4f6] px-3.5 py-2">
+            <Search className="h-4 w-4 text-[#6b7280]" strokeWidth={2.4} />
+            <input
+              defaultValue={product.name.toLowerCase()}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#9ca3af] text-[#1f2937]"
+              placeholder="Search"
+            />
+          </label>
+          <button aria-label="Visual search" className="h-9 w-9 grid place-items-center active:scale-90">
+            <Camera className="h-5 w-5 text-[#1f2937]" strokeWidth={2.2} />
+          </button>
+          <Link to="/cart" aria-label="Cart" className="h-9 w-9 grid place-items-center active:scale-90">
+            <ShoppingBasket className="h-5 w-5 text-[#1f2937]" strokeWidth={2.2} />
+          </Link>
+          <button aria-label="More" className="h-9 w-9 grid place-items-center active:scale-90">
+            <MoreHorizontal className="h-5 w-5 text-[#1f2937]" strokeWidth={2.2} />
           </button>
         </div>
       </header>
 
-      {/* Hero image */}
-      <div className="relative aspect-square w-full overflow-hidden bg-gradient-to-br from-[#fff8e6] to-[#f5e9b8]">
+      {/* Hero image with floating actions */}
+      <div className="relative w-full aspect-square bg-gradient-to-br from-[#cfe7ee] to-[#a8d4e0]">
         <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-        {product.badge && (
-          <span className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-gold-bar text-[10px] uppercase tracking-[0.2em] font-bold text-[color:oklch(0.13_0.06_18)] shadow-gold-glow">
-            {product.badge}
-          </span>
-        )}
+        <div className="absolute right-3 top-3 flex flex-col gap-2">
+          <button aria-label="Wishlist" className="h-10 w-10 grid place-items-center rounded-full bg-white shadow-md active:scale-90">
+            <Heart className="h-4 w-4 text-[#1f2937]" strokeWidth={2.2} />
+          </button>
+          <button aria-label="Visual" className="h-10 w-10 grid place-items-center rounded-full bg-white shadow-md active:scale-90">
+            <Search className="h-4 w-4 text-[#1f2937]" strokeWidth={2.2} />
+          </button>
+        </div>
+
+        {/* Tab strip overlay */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {[
+            { id: "photos", label: "Photos 1/6" },
+            { id: "reviews", label: "Reviews" },
+            { id: "highlights", label: "Highlights" },
+            { id: "specs", label: "Dimension Diagram" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id as typeof tab)}
+              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+                tab === t.id ? "bg-black/85 text-white" : "bg-black/40 text-white"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-5">
-        {/* Title block */}
-        <section style={{ animation: "fade-up 0.5s ease-out both" }}>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">{product.category}</p>
-          <h1 className="font-display text-3xl text-gold-gradient font-bold mt-1 leading-tight">{product.name}</h1>
-          <p className="text-sm text-muted-foreground italic mt-1">{product.tagline}</p>
-          <div className="mt-2 flex items-center gap-3">
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[color:oklch(0.55_0.15_140/0.12)] border border-[color:oklch(0.55_0.15_140/0.3)]">
-              <Star className="h-3 w-3 fill-[color:oklch(0.55_0.15_140)] text-[color:oklch(0.55_0.15_140)]" />
-              <span className="text-xs font-semibold text-[color:oklch(0.45_0.13_140)]">{product.rating}</span>
-            </span>
-            <span className="text-xs text-muted-foreground">{product.reviews} reviews</span>
-            <span className="text-xs text-muted-foreground">· by {product.seller}</span>
-          </div>
-        </section>
-
-        {/* Price */}
-        <section className="flex items-baseline gap-3">
-          <span className="font-display text-3xl text-gold-gradient font-bold">₹{product.price.toLocaleString()}</span>
-          <span className="text-sm text-muted-foreground line-through">₹{product.mrp.toLocaleString()}</span>
-          <span className="text-xs font-bold text-[color:oklch(0.55_0.15_140)]">
-            {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% off
-          </span>
-        </section>
-
-        {/* Variations */}
-        {product.variations && (
-          <section>
-            <h3 className="font-display text-sm uppercase tracking-[0.18em] text-[color:oklch(0.45_0.05_85)] mb-2">
-              Variation
-            </h3>
-            <div className="flex gap-2 flex-wrap">
-              {product.variations.map((v) => (
-                <button
-                  key={v.value}
-                  onClick={() => setVariation(v.label)}
-                  className={`px-4 py-2 rounded-full border text-xs font-semibold transition ${
-                    variation === v.label
-                      ? "bg-gold-bar text-[color:oklch(0.13_0.06_18)] border-transparent shadow-gold-glow"
-                      : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] text-[color:oklch(0.42_0.10_82)]"
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Description */}
-        <section>
-          <h3 className="font-display text-sm uppercase tracking-[0.18em] text-[color:oklch(0.45_0.05_85)] mb-2">
-            Description
-          </h3>
-          <p className="text-sm text-foreground/85 leading-relaxed">{product.description}</p>
-        </section>
-
-        {/* Trust badges */}
-        <section className="grid grid-cols-3 gap-2">
-          {[
-            { icon: ShieldCheck, label: "Authentic" },
-            { icon: Truck, label: "Free delivery" },
-            { icon: RotateCcw, label: "7-day return" },
-          ].map(({ icon: Icon, label }) => (
+      {/* Bulk pricing tiers — Alibaba style */}
+      <section className="mx-3 mt-3 rounded-xl bg-[#f3f4f6] overflow-hidden">
+        <div className="grid grid-cols-3">
+          {tiers.map((t, i) => (
             <div
-              key={label}
-              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)]"
+              key={i}
+              className={`px-3 py-3.5 ${i < 2 ? "border-r border-white" : ""} ${i === 0 ? "bg-[#eef0f3]" : ""}`}
             >
-              <Icon className="h-5 w-5 text-[color:oklch(0.55_0.10_82)]" />
-              <span className="text-[10px] font-semibold text-center">{label}</span>
+              <p className="font-bold text-[#1f2937] text-lg leading-tight">₹{t.price.toLocaleString()}</p>
+              <p className="text-[11px] text-[#6b7280] mt-1 leading-tight">{t.qty}</p>
             </div>
           ))}
-        </section>
+        </div>
+      </section>
 
-        {/* Recommended */}
-        <section>
-          <h3 className="font-display text-xl text-gold-gradient mb-2">You may also like</h3>
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
-            {recommended.map((p) => (
-              <Link
-                to="/product/$id"
-                params={{ id: p.id }}
-                key={p.id}
-                className="flex-shrink-0 w-36 rounded-2xl overflow-hidden bg-white border border-[color:oklch(0.78_0.14_82/0.45)]"
-              >
-                <div className="aspect-square overflow-hidden">
-                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-semibold truncate">{p.name}</p>
-                  <p className="font-display text-sm text-gold-gradient font-bold">₹{p.price.toLocaleString()}</p>
-                </div>
-              </Link>
+      {/* Title + rating */}
+      <section className="px-4 mt-4">
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[15px] font-semibold text-[#1f2937] leading-snug flex-1">
+            {product.name} · {product.tagline}
+            <ChevronDown className="inline h-4 w-4 ml-1 text-[#6b7280]" />
+          </h1>
+          <button aria-label="Share" className="h-8 w-8 grid place-items-center active:scale-90 flex-shrink-0">
+            <Share2 className="h-5 w-5 text-[#1f2937]" />
+          </button>
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <span className="flex items-center gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
             ))}
-          </div>
-        </section>
-      </main>
+          </span>
+          <span className="font-bold text-[#1f2937]">{product.rating.toFixed(1)}</span>
+          <span className="underline text-[#6b7280]">({product.reviews})</span>
+          <span className="text-[#6b7280]">· {Math.round(product.reviews * 0.6)} sold</span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <span className="px-2 py-1 rounded bg-[#fef3c7] text-[11px] text-[#92400e] font-medium">
+            Certificates: CE, …
+          </span>
+          <span className="px-2 py-1 rounded bg-[#fef3c7] text-[11px] text-[#92400e] font-medium flex items-center gap-1">
+            <Award className="h-3 w-3" /> #3 most popular in {product.category}
+          </span>
+        </div>
+      </section>
 
-      {/* Sticky bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl bg-white/95 border-t border-[color:oklch(0.78_0.14_82/0.4)]">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-2">
+      <div className="my-3 h-2 bg-[#f3f4f6]" />
+
+      {/* Verified Supplier card */}
+      <section className="px-4">
+        <div className="flex items-start gap-3">
+          <div className="h-12 w-12 rounded-lg border border-[#e5e7eb] grid place-items-center bg-white text-[10px] font-bold text-[#1f2937] flex-shrink-0">
+            KARO
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm">
+              <span className="text-[#3b82f6] font-bold">V</span>
+              <span className="font-bold text-[#1f2937]">erified Supplier:</span>{" "}
+              <span className="text-[#1f2937] font-medium">{product.seller} </span>
+              <ChevronDown className="inline h-4 w-4 -rotate-90 text-[#6b7280]" />
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[#6b7280]">
+              <span>Minor customization</span>
+              <span>Drawing-based customization</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="px-2 py-1 rounded bg-[#dbeafe] text-[11px] text-[#1e40af] font-medium">
+                Multispecialty Supplier
+              </span>
+              <span className="px-2 py-1 rounded bg-[#dbeafe] text-[11px] text-[#1e40af] font-medium">
+                #1 most popular in {product.category}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="my-3 h-2 bg-[#f3f4f6]" />
+
+      {/* Description */}
+      <section className="px-4">
+        <h3 className="text-sm font-bold text-[#1f2937] mb-2">Description</h3>
+        <p className="text-[13px] text-[#374151] leading-relaxed">{product.description}</p>
+      </section>
+
+      {/* Trust row */}
+      <section className="px-4 mt-4 grid grid-cols-3 gap-2">
+        {[
+          { icon: ShieldCheck, label: "Trade Assurance" },
+          { icon: Truck, label: "Fast shipping" },
+          { icon: Award, label: "Quality verified" },
+        ].map(({ icon: Icon, label }) => (
+          <div key={label} className="flex flex-col items-center gap-1 p-2.5 rounded-lg bg-[#f9fafb] border border-[#e5e7eb]">
+            <Icon className="h-4 w-4 text-[#f59e0b]" />
+            <span className="text-[10px] font-medium text-[#374151] text-center leading-tight">{label}</span>
+          </div>
+        ))}
+      </section>
+
+      {/* Recommended */}
+      <section className="px-4 mt-5">
+        <h3 className="text-sm font-bold text-[#1f2937] mb-2">You may also like</h3>
+        <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+          {recommended.map((p) => (
+            <Link
+              to="/product/$id"
+              params={{ id: p.id }}
+              key={p.id}
+              className="flex-shrink-0 w-36 rounded-xl overflow-hidden bg-white border border-[#e5e7eb]"
+            >
+              <div className="aspect-square overflow-hidden bg-[#f3f4f6]">
+                <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+              </div>
+              <div className="p-2">
+                <p className="text-xs text-[#1f2937] truncate">{p.name}</p>
+                <p className="text-sm font-bold text-[#1f2937]">₹{p.price.toLocaleString()}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Sticky bottom action bar — Chat now + Send Inquiry */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white border-t border-[#e5e7eb] pb-[env(safe-area-inset-bottom)]">
+        <div className="px-3 py-2.5 flex items-center gap-2">
+          <span className="flex flex-col items-center text-[10px] text-[#6b7280] font-medium px-1">
+            <span className="h-5 w-5 rounded-full bg-[#f3f4f6] grid place-items-center text-[10px]">🏬</span>
+            Store
+          </span>
           <button
-            onClick={handleAdd}
-            className={`btn-3d flex-1 py-3 rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.7)] bg-white text-[color:oklch(0.42_0.10_82)] font-display font-bold text-sm flex items-center justify-center gap-2 ${
-              adding ? "scale-95" : ""
-            }`}
+            onClick={() => goChat("chat")}
+            className="flex-1 py-3 rounded-full border-2 border-[#1f2937] text-[#1f2937] font-bold text-sm active:scale-[0.98] transition"
           >
-            <ShoppingBasket className={`h-4 w-4 ${adding ? "animate-bounce" : ""}`} />
-            Add to Cart
+            Chat now
           </button>
           <button
-            onClick={() => setShowBookSheet(true)}
-            className="btn-3d flex-1 py-3 rounded-2xl bg-gold-bar font-display font-bold text-sm text-[color:oklch(0.13_0.06_18)] shadow-gold-glow"
+            onClick={() => goChat("inquiry")}
+            className="flex-1 py-3 rounded-full bg-gradient-to-b from-[#fb923c] to-[#ea580c] text-white font-bold text-sm shadow-md active:scale-[0.98] transition"
           >
-            Book Now
+            Send inquiry
           </button>
         </div>
       </div>
-
-      {/* Flying cart pellet animation */}
-      {cart.flying && (
-        <div
-          className="pointer-events-none fixed z-50 h-8 w-8 rounded-full bg-gradient-to-br from-[#fff3b0] to-[#d4af37] shadow-gold-glow"
-          style={{
-            left: "50%",
-            top: "60%",
-            animation: "fly-to-cart 0.85s cubic-bezier(0.5, -0.3, 0.7, 1) forwards",
-          }}
-        />
-      )}
-      <style>{`
-        @keyframes fly-to-cart {
-          0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
-          70% { opacity: 0.9; }
-          100% { transform: translate(120px, -60vh) scale(0.2); opacity: 0; }
-        }
-      `}</style>
-
-      {/* Book Now bottom sheet */}
-      {showBookSheet && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/50" onClick={() => setShowBookSheet(false)}>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md mx-auto rounded-t-3xl bg-white border-t border-[color:oklch(0.78_0.14_82/0.5)] p-5 pb-8"
-            style={{ animation: "sheet-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)" }}
-          >
-            <div className="flex justify-center mb-3">
-              <span className="h-1 w-12 rounded-full bg-[color:oklch(0.78_0.14_82/0.5)]" />
-            </div>
-            {bookingDone ? (
-              <div className="text-center py-8">
-                <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-[#fff3b0] to-[#d4af37] grid place-items-center shadow-gold-glow mb-3">
-                  <Check className="h-8 w-8 text-white" strokeWidth={3} />
-                </div>
-                <h3 className="font-display text-2xl text-gold-gradient">Request Raised!</h3>
-                <p className="text-sm text-muted-foreground mt-1">We'll confirm your booking shortly.</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-display text-2xl text-gold-gradient">Book {product.name}</h3>
-                    <p className="text-sm text-muted-foreground italic">Choose how you'd like to proceed</p>
-                  </div>
-                  <button onClick={() => setShowBookSheet(false)} aria-label="Close">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="mt-5 space-y-3">
-                  <button
-                    onClick={() => handleBook("request")}
-                    className="btn-3d w-full p-4 rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.6)] bg-white flex items-center gap-3 text-left"
-                  >
-                    <span className="h-10 w-10 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] grid place-items-center text-lg">📩</span>
-                    <span className="flex-1">
-                      <span className="block font-display font-bold text-base">Request Now</span>
-                      <span className="block text-xs text-muted-foreground">Vendor confirms · pay later</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handleBook("now")}
-                    className="btn-3d w-full p-4 rounded-2xl bg-gold-bar text-[color:oklch(0.13_0.06_18)] flex items-center gap-3 text-left shadow-gold-glow"
-                  >
-                    <span className="h-10 w-10 rounded-full bg-white/40 grid place-items-center text-lg">⚡</span>
-                    <span className="flex-1">
-                      <span className="block font-display font-bold text-base">Book Now</span>
-                      <span className="block text-xs opacity-80">Instant confirm · ₹{product.price.toLocaleString()}</span>
-                    </span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

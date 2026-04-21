@@ -1,13 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Phone, Camera, Mic, Paperclip, Eye, Send, Plus } from "lucide-react";
+import { ArrowLeft, Phone, Camera, Mic, Paperclip, Eye, Send, Plus, X } from "lucide-react";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
 
+const chatSearchSchema = z.object({
+  productId: fallback(z.string(), "").default(""),
+  productName: fallback(z.string(), "").default(""),
+  productImage: fallback(z.string(), "").default(""),
+  productPrice: fallback(z.number(), 0).default(0),
+  mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+});
+
 export const Route = createFileRoute("/chat")({
+  validateSearch: zodValidator(chatSearchSchema),
   head: () => ({
     meta: [
       { title: "Live Chat — Karo Online" },
@@ -30,6 +41,8 @@ type Msg = {
   text: string;
   time: string;
   read?: boolean;
+  product?: { name: string; image: string; price: number };
+  kind?: "inquiry" | "chat";
 };
 
 const VENDORS: Vendor[] = [
@@ -55,30 +68,64 @@ const SEED: Record<string, Msg[]> = {
 
 function ChatPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [activeId, setActiveId] = useState<string>("v1");
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
+  const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const active = VENDORS.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
+
+  // Handle incoming product from /product/:id
+  useEffect(() => {
+    if (!search.productId || !search.productImage) return;
+    const product = { name: search.productName, image: search.productImage, price: search.productPrice };
+    if (search.mode === "inquiry") {
+      const inquiryMsg: Msg = {
+        id: `${Date.now()}-inq`,
+        from: "me",
+        text: `Hi, I'm interested in this item and would like more details.`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        read: true,
+        product,
+        kind: "inquiry",
+      };
+      setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), inquiryMsg] }));
+      setTimeout(() => {
+        const reply: Msg = {
+          id: `${Date.now()}-r`,
+          from: "them",
+          text: "Thank you for your inquiry! I'll share full details shortly. 🙏",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), reply] }));
+      }, 1400);
+    } else {
+      setPendingProduct(product);
+    }
+    navigate({ to: "/chat", search: {} as never, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.productId, search.mode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [activeId, msgs.length]);
 
   const send = () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() && !pendingProduct) return;
     const newMsg: Msg = {
       id: `${Date.now()}`,
       from: "me",
-      text: draft.trim(),
+      text: draft.trim() || "Interested in this product",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       read: true,
+      product: pendingProduct ?? undefined,
     };
     setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), newMsg] }));
     setDraft("");
-    // Fake reply
+    setPendingProduct(null);
     setTimeout(() => {
       const reply: Msg = {
         id: `${Date.now()}-r`,
@@ -186,6 +233,20 @@ function ChatPage() {
                     : "bg-[#fde6dd] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
                 }`}
               >
+                {m.product && (
+                  <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
+                    <div className="flex items-center gap-2 p-2">
+                      <img src={m.product.image} alt={m.product.name} className="h-14 w-14 rounded-lg object-cover flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {m.kind === "inquiry" && (
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-[#ea580c] mb-0.5">Inquiry</p>
+                        )}
+                        <p className="text-xs font-semibold text-[#1f2937] truncate">{m.product.name}</p>
+                        <p className="text-sm font-bold text-[#1f2937] mt-0.5">₹{m.product.price.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <p className="text-sm leading-snug whitespace-pre-wrap">{m.text}</p>
                 <div className="mt-0.5 flex items-center justify-end gap-1">
                   <span className="text-[9px] text-[color:oklch(0.45_0.05_30/0.7)]">{m.time}</span>
@@ -241,6 +302,22 @@ function ChatPage() {
           ))}
         </div>
       </div>
+
+      {/* Pending product attachment chip */}
+      {pendingProduct && (
+        <div className="flex-shrink-0 px-3 pt-1">
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-white border border-[#fb923c]/40 shadow-sm">
+            <img src={pendingProduct.image} alt="" className="h-10 w-10 rounded-lg object-cover" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-[#ea580c]">Inquire about this product:</p>
+              <p className="text-xs font-semibold text-[#1f2937] truncate">{pendingProduct.name} — ₹{pendingProduct.price.toLocaleString()}</p>
+            </div>
+            <button onClick={() => setPendingProduct(null)} aria-label="Remove" className="h-7 w-7 grid place-items-center text-[#6b7280] active:scale-90">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Composer */}
       <div className="flex-shrink-0 px-3 pt-2 pb-2 bg-transparent">
