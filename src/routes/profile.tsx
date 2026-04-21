@@ -128,89 +128,92 @@ function ProfilePage() {
         </div>
       </header>
 
-      {/* Swipeable business cards */}
-      <section className="pt-4">
+      {/* Swipeable business cards (credit-card proportions ~1.586:1) */}
+      <section className="pt-5">
         <div
           ref={scrollerRef}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-2 scrollbar-hide"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-6 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {cards.map((card, idx) => (
+          {cards.map((card) => (
             <motion.button
               key={card.id}
               whileTap={{ scale: 0.97 }}
               onClick={() => setEditing(card)}
-              className="relative snap-center flex-shrink-0 w-[88%] text-left"
+              className="relative snap-center flex-shrink-0 w-[78%] max-w-[320px] text-left"
+              style={{ aspectRatio: "1.586 / 1" }}
             >
-              <div className="relative rounded-3xl overflow-hidden border-2 border-amber-300/70 bg-gradient-to-br from-amber-50 via-white to-amber-50 shadow-[0_10px_30px_-10px_rgba(212,175,55,0.5)]">
-                {/* Diagonal accent strips */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-400/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 w-32 h-20 bg-gradient-to-tr from-amber-300/40 to-transparent" />
+              <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
+                {/* Gold corner accents */}
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
+                <div className="absolute bottom-0 left-0 w-20 h-12 bg-gradient-to-tr from-[oklch(0.88_0.12_88/0.4)] to-transparent" />
 
-                <div className="relative px-4 pt-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-amber-700/80 italic">Personal | card</span>
-                  <h3 className={`font-display text-xl font-bold mt-1 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent text-center leading-tight`}>
+                {/* Top label */}
+                <div className="relative px-3 pt-2.5">
+                  <span className="text-[8px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.12_82)] italic font-semibold">
+                    Personal | card
+                  </span>
+                  <h3 className={`font-display text-[13px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
                     {card.name}
                   </h3>
+                </div>
 
-                  <div className="mt-3 flex items-start gap-3">
-                    <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-amber-400/60 bg-gradient-to-br from-sky-200 to-emerald-200 flex-shrink-0 shadow-md">
-                      <img src={avatarUser} alt="" className="h-full w-full object-cover" />
-                    </div>
-                    <div className="flex-1 space-y-1.5 text-[12px] text-slate-700">
-                      <Row Icon={User} text="Name" />
-                      <Row Icon={Phone} text="Contact" />
-                      <Row Icon={Mail} text="Gmail" />
-                      <Row Icon={MapPin} text="Address" />
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="h-16 w-16 grid place-items-center rounded-lg bg-white border border-slate-300">
-                        <QrCode className="h-12 w-12 text-slate-800" strokeWidth={1.5} />
-                      </div>
-                    </div>
+                {/* Middle: avatar + details + QR */}
+                <div className="relative px-3 mt-1.5 flex items-start gap-2">
+                  <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] bg-gradient-to-br from-sky-200 to-emerald-200 flex-shrink-0 shadow-sm">
+                    <img src={avatarUser} alt="" className="h-full w-full object-cover" />
                   </div>
-
-                  {/* Mini socials */}
-                  <div className="mt-2 flex items-center justify-center gap-2.5 pb-2">
-                    {SOCIALS.slice(0, 6).map(({ Icon, color }, i) => (
-                      <Icon key={i} className="h-3.5 w-3.5" style={{ color }} />
-                    ))}
+                  <div className="flex-1 min-w-0 space-y-[3px] text-[8.5px] text-slate-700">
+                    <Row Icon={User} text="Name" />
+                    <Row Icon={Phone} text="Contact" />
+                    <Row Icon={Mail} text="Gmail" />
+                    <Row Icon={MapPin} text="Address" />
+                  </div>
+                  <div className="h-11 w-11 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+                    <QrCode className="h-9 w-9 text-slate-800" strokeWidth={1.5} />
                   </div>
                 </div>
 
-                {/* Footer band */}
-                <div className="relative bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-4 py-2 flex items-center justify-between text-white">
-                  <div className="flex items-center gap-2">
-                    <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-white/70 bg-white">
+                {/* Mini socials */}
+                <div className="relative mt-1 flex items-center justify-center gap-2 px-3">
+                  {SOCIALS.map(({ Icon, color }, i) => (
+                    <Icon key={i} className="h-2.5 w-2.5" style={{ color }} />
+                  ))}
+                </div>
+
+                {/* Footer band — gold theme */}
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] px-3 py-1.5 flex items-center justify-between text-white">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="h-6 w-6 rounded-full overflow-hidden border border-white/80 bg-white flex-shrink-0">
                       <img src={avatarUser} alt="" className="h-full w-full object-cover" />
                     </div>
-                    <div className="leading-tight">
-                      <p className="text-[11px] font-bold">Personal | Details</p>
-                      <p className="text-[9px] opacity-90">Code : {card.code}</p>
+                    <div className="leading-tight min-w-0">
+                      <p className="text-[9px] font-bold truncate">Personal | Details</p>
+                      <p className="text-[7px] opacity-90 truncate">Code : {card.code}</p>
                     </div>
                   </div>
-                  <div className="text-right leading-tight">
-                    <Check className="h-4 w-4 ml-auto" strokeWidth={3} />
-                    <p className="text-[9px] mt-0.5">Shre | {card.shre}</p>
+                  <div className="text-right leading-tight flex-shrink-0">
+                    <Check className="h-3 w-3 ml-auto" strokeWidth={3} />
+                    <p className="text-[7px] mt-0.5">Shre | {card.shre}</p>
                   </div>
                 </div>
               </div>
 
               {/* Edit hint */}
-              <span className="absolute top-3 right-3 h-7 w-7 grid place-items-center rounded-full bg-white/90 border border-amber-300 shadow">
-                <Pencil className="h-3.5 w-3.5 text-amber-700" />
+              <span className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                <Pencil className="h-3 w-3 text-[#b45309]" />
               </span>
             </motion.button>
           ))}
         </div>
 
         {/* Dot indicators */}
-        <div className="flex justify-center gap-1.5 mt-2">
+        <div className="flex justify-center gap-1.5 mt-1">
           {cards.map((_, i) => (
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                i === activeIdx ? "w-6 bg-amber-500" : "w-1.5 bg-amber-300/50"
+                i === activeIdx ? "w-6 bg-[#d4af37]" : "w-1.5 bg-[color:oklch(0.78_0.14_82/0.4)]"
               }`}
             />
           ))}
