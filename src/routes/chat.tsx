@@ -233,6 +233,20 @@ function ChatPage() {
                     : "bg-[#fde6dd] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
                 }`}
               >
+                {m.product && (
+                  <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
+                    <div className="flex items-center gap-2 p-2">
+                      <img src={m.product.image} alt={m.product.name} className="h-14 w-14 rounded-lg object-cover flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {m.kind === "inquiry" && (
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-[#ea580c] mb-0.5">Inquiry</p>
+                        )}
+                        <p className="text-xs font-semibold text-[#1f2937] truncate">{m.product.name}</p>
+                        <p className="text-sm font-bold text-[#1f2937] mt-0.5">₹{m.product.price.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <p className="text-sm leading-snug whitespace-pre-wrap">{m.text}</p>
                 <div className="mt-0.5 flex items-center justify-end gap-1">
                   <span className="text-[9px] text-[color:oklch(0.45_0.05_30/0.7)]">{m.time}</span>
