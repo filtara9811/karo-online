@@ -110,7 +110,7 @@ function TopHeader() {
         <ChipIcon label="Notifications" badge="2">
           <Bell className="h-5 w-5" strokeWidth={2.2} />
         </ChipIcon>
-        <Link to="/cart" aria-label="Cart" className="contents">
+        <Link to="/cart" aria-label="Cart">
           <ChipIcon label="Cart" badge="3">
             <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
           </ChipIcon>
