@@ -68,13 +68,46 @@ const SEED: Record<string, Msg[]> = {
 
 function ChatPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [activeId, setActiveId] = useState<string>("v1");
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
+  const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const active = VENDORS.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
+
+  // Handle incoming product from /product/:id
+  useEffect(() => {
+    if (!search.productId || !search.productImage) return;
+    const product = { name: search.productName, image: search.productImage, price: search.productPrice };
+    if (search.mode === "inquiry") {
+      const inquiryMsg: Msg = {
+        id: `${Date.now()}-inq`,
+        from: "me",
+        text: `Hi, I'm interested in this item and would like more details.`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        read: true,
+        product,
+        kind: "inquiry",
+      };
+      setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), inquiryMsg] }));
+      setTimeout(() => {
+        const reply: Msg = {
+          id: `${Date.now()}-r`,
+          from: "them",
+          text: "Thank you for your inquiry! I'll share full details shortly. 🙏",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), reply] }));
+      }, 1400);
+    } else {
+      setPendingProduct(product);
+    }
+    navigate({ to: "/chat", search: {} as never, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.productId, search.mode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
