@@ -507,6 +507,7 @@ function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void 
 
 /* -------------------- Row Detail Sheet -------------------- */
 function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
+  const { t } = useAppPrefs();
   if (rowId === "kyc") return <KycSheet onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
@@ -515,16 +516,115 @@ function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void
       <div className="flex items-center gap-3 mb-4">
         {row && <row.Icon className="h-7 w-7 text-amber-700" />}
         <h3 className="font-display text-xl text-amber-700 font-bold">
-          {row?.label} | {row?.sub}
+          {row && t(row.labelKey)} | {row && t(row.subKey)}
         </h3>
       </div>
       <p className="text-sm text-slate-600">
-        Detailed form for <strong>{row?.label}</strong> will appear here.
+        Detailed form for <strong>{row && t(row.labelKey)}</strong> will appear here.
       </p>
       <SheetActions onClose={onClose} onSave={onClose} />
     </SheetWrap>
   );
 }
+
+/* -------------------- Support Sheet -------------------- */
+function SupportSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useAppPrefs();
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-2xl grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg">
+          <LifeBuoy className="h-7 w-7" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-amber-700 font-bold">{t("customer_support")}</h3>
+          <p className="text-xs text-slate-500">We're here to help — 24×7</p>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        <SupportRow Icon={PhoneCall} label={t("call_us")} value="+91 1800-123-456" tone="emerald" />
+        <SupportRow Icon={AtSign} label={t("email_us")} value="support@karo.online" tone="amber" />
+        <SupportRow Icon={Ticket} label={t("raise_ticket")} value="Open a new support ticket" tone="rose" />
+      </div>
+    </SheetWrap>
+  );
+}
+
+function SupportRow({
+  Icon, label, value, tone,
+}: { Icon: typeof User; label: string; value: string; tone: "emerald" | "amber" | "rose" }) {
+  const tones: Record<string, string> = {
+    emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
+    amber: "from-amber-50 to-amber-100 border-amber-200 text-amber-700",
+    rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
+  };
+  return (
+    <button className={`w-full rounded-2xl bg-gradient-to-br ${tones[tone]} border px-4 py-3 flex items-center gap-3 active:scale-98 transition`}>
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-white/80">
+        <Icon className="h-5 w-5" strokeWidth={1.8} />
+      </div>
+      <div className="flex-1 text-left min-w-0">
+        <p className="text-[10px] uppercase tracking-wider opacity-70">{label}</p>
+        <p className="text-sm font-semibold truncate">{value}</p>
+      </div>
+      <ChevronRight className="h-4 w-4 opacity-60" />
+    </button>
+  );
+}
+
+/* -------------------- Language Sheet -------------------- */
+function LanguageSheet({ onClose }: { onClose: () => void }) {
+  const { t, lang, setLang } = useAppPrefs();
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-2xl grid place-items-center bg-gradient-to-br from-[#d4af37] to-[#b45309] text-white shadow-lg">
+          <Languages className="h-7 w-7" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-amber-700 font-bold">{t("select_language")}</h3>
+          <p className="text-xs text-slate-500">App will switch instantly</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {LANGS.map((L) => {
+          const active = lang === L.code;
+          return (
+            <motion.button
+              key={L.code}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setLang(L.code as Lang);
+                setTimeout(onClose, 250);
+              }}
+              className={`w-full rounded-2xl px-4 py-3 flex items-center gap-3 border transition ${
+                active
+                  ? "bg-gradient-to-r from-amber-100 to-amber-50 border-amber-400 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.55)]"
+                  : "bg-white border-amber-200/70"
+              }`}
+            >
+              <span className="text-2xl">{L.flag}</span>
+              <div className="flex-1 text-left">
+                <p className="font-display text-base text-slate-800 font-semibold leading-tight">
+                  {L.native}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{L.label}</p>
+              </div>
+              {active && (
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 grid place-items-center text-white shadow">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </div>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+    </SheetWrap>
+  );
+}
+
 
 /* -------------------- KYC Sheet -------------------- */
 function KycSheet({ onClose }: { onClose: () => void }) {
