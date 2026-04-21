@@ -247,12 +247,12 @@ function QuickPage() {
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
-      {/* MAP — FIXED top, smaller so 4-5 products visible below */}
-      <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
+      {/* MAP — extends under device status bar (transparent) */}
+      <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
-        {/* Header — back + icons */}
-        <div className="absolute top-2 left-0 right-0 z-10 px-3 flex items-center justify-between">
+        {/* Header — back button only */}
+        <div className="absolute left-0 right-0 z-10 px-3 flex items-center justify-between" style={{ top: "calc(env(safe-area-inset-top) + 8px)" }}>
           <button
             onClick={() => navigate({ to: "/" })}
             aria-label="Back"
@@ -260,18 +260,6 @@ function QuickPage() {
           >
             <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.5} />
           </button>
-          <div className="flex items-center gap-1.5">
-            <button className="h-8 w-8 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#7dd3fc] grid place-items-center border border-white shadow">
-              <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-            </button>
-            <button className="h-8 w-8 rounded-full bg-white grid place-items-center border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
-              <Sun className="h-4 w-4 text-[color:oklch(0.55_0.18_60)]" strokeWidth={2.4} />
-            </button>
-            <button className="relative h-8 w-8 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#7c3aed] grid place-items-center border border-white shadow">
-              <Bell className="h-4 w-4 text-white" strokeWidth={2.4} fill="currentColor" />
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-600 text-white text-[8px] font-bold grid place-items-center">21</span>
-            </button>
-          </div>
         </div>
       </section>
 
