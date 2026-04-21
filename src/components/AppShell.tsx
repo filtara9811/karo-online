@@ -12,6 +12,7 @@ import { ProductServicePicker } from "@/components/ProductServicePicker";
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product"];
+const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
@@ -30,6 +31,7 @@ export function AppShell() {
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
+  const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => setFadeKey(location.pathname), [location.pathname]);
@@ -57,7 +59,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <BottomActionBar loading={isLoading} />
+      {!hideBottomBar && <BottomActionBar loading={isLoading} />}
     </div>
   );
 }
