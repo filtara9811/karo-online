@@ -74,11 +74,11 @@ const CARDS: DashCard[] = [
 ];
 
 const ROWS = [
-  { id: "profile", label: "Profile", sub: "Details", Icon: User },
-  { id: "kyc", label: "KYC", sub: "image upload GST", Icon: FileCheck2 },
-  { id: "bank", label: "Bank", sub: "Details", Icon: Building2 },
-  { id: "business", label: "Business", sub: "Details", Icon: Store },
-  { id: "logout", label: "Account", sub: "Logout", Icon: LogOut },
+  { id: "profile", labelKey: "profile", subKey: "details", Icon: User },
+  { id: "kyc", labelKey: "kyc", subKey: "details", Icon: FileCheck2 },
+  { id: "bank", labelKey: "bank", subKey: "details", Icon: Building2 },
+  { id: "business", labelKey: "business", subKey: "details", Icon: Store },
+  { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
 const SOCIALS = [
@@ -294,14 +294,14 @@ function ProfilePage() {
 }
 
 function TopIconButton({
-  children, onClick, ...props
-}: { children: React.ReactNode; onClick?: () => void } & React.HTMLAttributes<HTMLButtonElement>) {
+  children, onClick, ...rest
+}: { children: React.ReactNode; onClick?: () => void; "aria-label"?: string }) {
   return (
     <motion.button
       whileTap={{ scale: 0.88 }}
       onClick={onClick}
+      aria-label={rest["aria-label"]}
       className="relative h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.5)] active:shadow-sm"
-      {...props}
     >
       {children}
     </motion.button>
