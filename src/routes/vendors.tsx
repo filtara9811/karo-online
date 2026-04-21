@@ -288,8 +288,14 @@ function VendorsPage() {
           ))}
         </div>
 
-        {/* HERO MEDIA STRIP — gallery + video */}
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] mb-4 p-2">
+        {/* HERO MEDIA STRIP — gallery + video (vendor digital shop) */}
+        <div
+          onClick={() => navigate({ to: "/home" })}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: "/home" }); }}
+          className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] mb-4 p-2 cursor-pointer active:scale-[0.98] transition-transform"
+        >
           <div className="grid grid-cols-5 gap-1.5 h-32">
             <img src={productCosmetics} alt="" className="rounded-xl object-cover h-full w-full col-span-1" />
             <img src={productPerfume} alt="" className="rounded-xl object-cover h-full w-full col-span-1" />
