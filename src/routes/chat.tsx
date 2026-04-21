@@ -303,6 +303,22 @@ function ChatPage() {
         </div>
       </div>
 
+      {/* Pending product attachment chip */}
+      {pendingProduct && (
+        <div className="flex-shrink-0 px-3 pt-1">
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-white border border-[#fb923c]/40 shadow-sm">
+            <img src={pendingProduct.image} alt="" className="h-10 w-10 rounded-lg object-cover" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-[#ea580c]">Inquire about this product:</p>
+              <p className="text-xs font-semibold text-[#1f2937] truncate">{pendingProduct.name} — ₹{pendingProduct.price.toLocaleString()}</p>
+            </div>
+            <button onClick={() => setPendingProduct(null)} aria-label="Remove" className="h-7 w-7 grid place-items-center text-[#6b7280] active:scale-90">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Composer */}
       <div className="flex-shrink-0 px-3 pt-2 pb-2 bg-transparent">
         <div className="flex items-center gap-2">
