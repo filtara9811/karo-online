@@ -114,17 +114,18 @@ function ChatPage() {
   }, [activeId, msgs.length]);
 
   const send = () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() && !pendingProduct) return;
     const newMsg: Msg = {
       id: `${Date.now()}`,
       from: "me",
-      text: draft.trim(),
+      text: draft.trim() || "Interested in this product",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       read: true,
+      product: pendingProduct ?? undefined,
     };
     setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), newMsg] }));
     setDraft("");
-    // Fake reply
+    setPendingProduct(null);
     setTimeout(() => {
       const reply: Msg = {
         id: `${Date.now()}-r`,
