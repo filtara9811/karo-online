@@ -11,8 +11,8 @@ import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
 
-const HIDE_SHELL_ON = ["/register", "/chat", "/status"];
-const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status"];
+const HIDE_SHELL_ON = ["/register", "/chat", "/status", "/vendors"];
+const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
@@ -143,6 +143,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setPicker(null);
     if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
     else if (value === "vendor") setTimeout(() => setPicker("vendor"), 350);
+    else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
   };
 
