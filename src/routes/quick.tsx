@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Languages, Sun, Bell, Mic, QrCode, Plus, Star, ShieldCheck,
+  ArrowLeft, Mic, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
@@ -247,12 +247,12 @@ function QuickPage() {
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
-      {/* MAP — FIXED top, smaller so 4-5 products visible below */}
-      <section className="relative flex-shrink-0" style={{ height: "30vh", minHeight: 230 }}>
+      {/* MAP — extends under device status bar (transparent) */}
+      <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
-        {/* Header — back + icons */}
-        <div className="absolute top-2 left-0 right-0 z-10 px-3 flex items-center justify-between">
+        {/* Header — back button only */}
+        <div className="absolute left-0 right-0 z-10 px-3 flex items-center justify-between" style={{ top: "calc(env(safe-area-inset-top) + 8px)" }}>
           <button
             onClick={() => navigate({ to: "/" })}
             aria-label="Back"
@@ -260,18 +260,6 @@ function QuickPage() {
           >
             <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.5} />
           </button>
-          <div className="flex items-center gap-1.5">
-            <button className="h-8 w-8 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#7dd3fc] grid place-items-center border border-white shadow">
-              <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-            </button>
-            <button className="h-8 w-8 rounded-full bg-white grid place-items-center border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
-              <Sun className="h-4 w-4 text-[color:oklch(0.55_0.18_60)]" strokeWidth={2.4} />
-            </button>
-            <button className="relative h-8 w-8 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#7c3aed] grid place-items-center border border-white shadow">
-              <Bell className="h-4 w-4 text-white" strokeWidth={2.4} fill="currentColor" />
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-600 text-white text-[8px] font-bold grid place-items-center">21</span>
-            </button>
-          </div>
         </div>
       </section>
 
@@ -286,13 +274,6 @@ function QuickPage() {
           >
             <span className="flex-1 text-left text-sm text-[#9ca3af]">Search.......</span>
             <Mic className="h-4 w-4 text-[#9ca3af]" />
-          </button>
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="btn-3d h-11 w-11 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-sm"
-            aria-label="Scan QR"
-          >
-            <QrCode className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
           </button>
           <button
             onClick={() => navigate({ to: "/profile" })}
@@ -531,15 +512,8 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
   };
 
   const resetZoom = () => setTransform({ scale: 1, x: 0, y: 0 });
-  const zoomIn = () => {
-    const s = Math.min(MAX_SCALE, transform.scale + 0.5);
-    setTransform({ scale: s, x: transform.x, y: transform.y });
-  };
-  const zoomOut = () => {
-    const s = Math.max(MIN_SCALE, transform.scale - 0.5);
-    const clamped = clampPan(s, transform.x, transform.y);
-    setTransform({ scale: s, x: clamped.x, y: clamped.y });
-  };
+  void resetZoom;
+
 
   return (
     <div
@@ -663,27 +637,6 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
       >
         {vendors.length} nearby vendors
       </motion.div>
-
-      {/* Zoom controls — fixed overlay */}
-      <div className="absolute right-2 top-20 z-30 flex flex-col gap-1.5">
-        <button
-          onClick={(e) => { e.stopPropagation(); zoomIn(); }}
-          aria-label="Zoom in"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-        >+</button>
-        <button
-          onClick={(e) => { e.stopPropagation(); zoomOut(); }}
-          aria-label="Zoom out"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-base font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-        >−</button>
-        {transform.scale > 1.05 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); resetZoom(); }}
-            aria-label="Reset zoom"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] active:scale-90"
-          >1:1</button>
-        )}
-      </div>
 
       {/* Scale bar — drag left/right to zoom out/in */}
       <div className="absolute bottom-2 left-3 right-3 z-30">
