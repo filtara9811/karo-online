@@ -92,9 +92,11 @@ const SOCIALS = [
 
 function ProfilePage() {
   const router = useRouter();
+  const { t, theme, toggleTheme } = useAppPrefs();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
+  const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,20 +115,42 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.25)]">
-        <button
-          onClick={() => router.history.back()}
-          className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-5 w-5 text-[#b45309]" />
-        </button>
-        <h1 className="font-display text-lg bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold">
-          My Account
-        </h1>
-        <div className="h-10 w-10 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.5)]">
-          <span className="text-[#b45309] text-xs font-bold">{activeCard.badge}</span>
+      {/* Premium Top bar with 3 icons */}
+      <header className="sticky top-0 z-30 px-4 py-3 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.3)]">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => router.history.back()}
+            className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5 text-[#b45309]" />
+          </button>
+
+          <h1 className="font-display text-lg bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
+            {t("my_account")}
+          </h1>
+
+          <div className="flex items-center gap-1.5">
+            <TopIconButton
+              onClick={() => setTopSheet("support")}
+              aria-label={t("customer_support")}
+            >
+              <LifeBuoy className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+            <TopIconButton onClick={toggleTheme} aria-label={t("theme")}>
+              {theme === "light" ? (
+                <Moon className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              ) : (
+                <Sun className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              )}
+            </TopIconButton>
+            <TopIconButton
+              onClick={() => setTopSheet("language")}
+              aria-label={t("language")}
+            >
+              <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+          </div>
         </div>
       </header>
 
@@ -166,20 +190,21 @@ function ProfilePage() {
         </div>
       </section>
 
-      {/* Dynamic detail section based on active card */}
-      <section className="px-4 mt-5">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeCard.type}
+      {/* Personal details only — shown when personal card is active */}
+      <AnimatePresence mode="wait">
+        {activeCard.type === "personal" && (
+          <motion.section
+            key="personal-details"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
+            className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} />
-          </motion.div>
-        </AnimatePresence>
-      </section>
+            <CardDetails type={activeCard.type} t={t} />
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* List rows */}
       <section className="px-4 mt-5 space-y-3">
@@ -198,7 +223,7 @@ function ProfilePage() {
             </div>
             <div className="flex-1 text-left">
               <p className="font-display text-lg text-slate-500 font-light">
-                {r.label} <span className="text-amber-600">|</span> {r.sub}
+                {t(r.labelKey)} <span className="text-amber-600">|</span> {t(r.subKey)}
               </p>
             </div>
             <ChevronRight className="h-5 w-5 text-amber-400" />
@@ -230,6 +255,7 @@ function ProfilePage() {
 
           <motion.button
             whileTap={{ scale: 0.9 }}
+            onClick={() => setTopSheet("support")}
             className="h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
             aria-label="Help"
           >
@@ -238,11 +264,11 @@ function ProfilePage() {
         </div>
 
         <div className="flex justify-center gap-4 mt-3 text-[10px] text-slate-500">
-          <button className="hover:text-amber-700">Terms & Conditions</button>
+          <button className="hover:text-amber-700">{t("terms")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">Privacy Policy</button>
+          <button className="hover:text-amber-700">{t("privacy")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">Refund</button>
+          <button className="hover:text-amber-700">{t("refund")}</button>
         </div>
       </section>
 
@@ -257,7 +283,28 @@ function ProfilePage() {
           <RowDetailSheet rowId={activeRow} onClose={() => setActiveRow(null)} />
         )}
       </AnimatePresence>
+
+      {/* Top bar sheets */}
+      <AnimatePresence>
+        {topSheet === "support" && <SupportSheet onClose={() => setTopSheet(null)} />}
+        {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function TopIconButton({
+  children, onClick, ...props
+}: { children: React.ReactNode; onClick?: () => void } & React.HTMLAttributes<HTMLButtonElement>) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      onClick={onClick}
+      className="relative h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.5)] active:shadow-sm"
+      {...props}
+    >
+      {children}
+    </motion.button>
   );
 }
 
