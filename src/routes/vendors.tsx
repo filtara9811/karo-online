@@ -288,8 +288,14 @@ function VendorsPage() {
           ))}
         </div>
 
-        {/* HERO MEDIA STRIP — gallery + video */}
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] mb-4 p-2">
+        {/* HERO MEDIA STRIP — gallery + video (vendor digital shop) */}
+        <div
+          onClick={() => navigate({ to: "/home" })}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: "/home" }); }}
+          className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] mb-4 p-2 cursor-pointer active:scale-[0.98] transition-transform"
+        >
           <div className="grid grid-cols-5 gap-1.5 h-32">
             <img src={productCosmetics} alt="" className="rounded-xl object-cover h-full w-full col-span-1" />
             <img src={productPerfume} alt="" className="rounded-xl object-cover h-full w-full col-span-1" />
@@ -325,7 +331,11 @@ function VendorsPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] p-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)]"
+              onClick={() => navigate({ to: "/home" })}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: "/home" }); }}
+              className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] p-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] cursor-pointer active:scale-[0.98] transition-transform"
             >
               <div className="flex items-start gap-3">
                 <div className="relative h-24 w-24 rounded-2xl overflow-hidden bg-gradient-to-br from-[#fef3c7] to-[#fde68a] border border-amber-300 flex-shrink-0">
