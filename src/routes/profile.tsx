@@ -6,10 +6,11 @@ import {
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
   IdCard, Wallet, PackageCheck, FileCheck2, Building2,
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
-  TrendingUp, Users, Gift, ArrowDownToLine, ArrowUpToLine,
-  Clock, CircleDollarSign, Truck, Star, ChevronRight, X,
+  Users, Truck, ChevronRight, X,
+  Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -73,11 +74,11 @@ const CARDS: DashCard[] = [
 ];
 
 const ROWS = [
-  { id: "profile", label: "Profile", sub: "Details", Icon: User },
-  { id: "kyc", label: "KYC", sub: "image upload GST", Icon: FileCheck2 },
-  { id: "bank", label: "Bank", sub: "Details", Icon: Building2 },
-  { id: "business", label: "Business", sub: "Details", Icon: Store },
-  { id: "logout", label: "Account", sub: "Logout", Icon: LogOut },
+  { id: "profile", labelKey: "profile", subKey: "details", Icon: User },
+  { id: "kyc", labelKey: "kyc", subKey: "details", Icon: FileCheck2 },
+  { id: "bank", labelKey: "bank", subKey: "details", Icon: Building2 },
+  { id: "business", labelKey: "business", subKey: "details", Icon: Store },
+  { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
 const SOCIALS = [
@@ -91,9 +92,11 @@ const SOCIALS = [
 
 function ProfilePage() {
   const router = useRouter();
+  const { t, theme, toggleTheme } = useAppPrefs();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
+  const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -112,20 +115,42 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.25)]">
-        <button
-          onClick={() => router.history.back()}
-          className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-5 w-5 text-[#b45309]" />
-        </button>
-        <h1 className="font-display text-lg bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold">
-          My Account
-        </h1>
-        <div className="h-10 w-10 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.5)]">
-          <span className="text-[#b45309] text-xs font-bold">{activeCard.badge}</span>
+      {/* Premium Top bar with 3 icons */}
+      <header className="sticky top-0 z-30 px-4 py-3 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.3)]">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => router.history.back()}
+            className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5 text-[#b45309]" />
+          </button>
+
+          <h1 className="font-display text-lg bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
+            {t("my_account")}
+          </h1>
+
+          <div className="flex items-center gap-1.5">
+            <TopIconButton
+              onClick={() => setTopSheet("support")}
+              aria-label={t("customer_support")}
+            >
+              <LifeBuoy className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+            <TopIconButton onClick={toggleTheme} aria-label={t("theme")}>
+              {theme === "light" ? (
+                <Moon className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              ) : (
+                <Sun className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              )}
+            </TopIconButton>
+            <TopIconButton
+              onClick={() => setTopSheet("language")}
+              aria-label={t("language")}
+            >
+              <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+          </div>
         </div>
       </header>
 
@@ -165,20 +190,21 @@ function ProfilePage() {
         </div>
       </section>
 
-      {/* Dynamic detail section based on active card */}
-      <section className="px-4 mt-5">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeCard.type}
+      {/* Personal details only — shown when personal card is active */}
+      <AnimatePresence mode="wait">
+        {activeCard.type === "personal" && (
+          <motion.section
+            key="personal-details"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
+            className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} />
-          </motion.div>
-        </AnimatePresence>
-      </section>
+            <CardDetails type={activeCard.type} t={t} />
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* List rows */}
       <section className="px-4 mt-5 space-y-3">
@@ -197,7 +223,7 @@ function ProfilePage() {
             </div>
             <div className="flex-1 text-left">
               <p className="font-display text-lg text-slate-500 font-light">
-                {r.label} <span className="text-amber-600">|</span> {r.sub}
+                {t(r.labelKey)} <span className="text-amber-600">|</span> {t(r.subKey)}
               </p>
             </div>
             <ChevronRight className="h-5 w-5 text-amber-400" />
@@ -229,6 +255,7 @@ function ProfilePage() {
 
           <motion.button
             whileTap={{ scale: 0.9 }}
+            onClick={() => setTopSheet("support")}
             className="h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
             aria-label="Help"
           >
@@ -237,11 +264,11 @@ function ProfilePage() {
         </div>
 
         <div className="flex justify-center gap-4 mt-3 text-[10px] text-slate-500">
-          <button className="hover:text-amber-700">Terms & Conditions</button>
+          <button className="hover:text-amber-700">{t("terms")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">Privacy Policy</button>
+          <button className="hover:text-amber-700">{t("privacy")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">Refund</button>
+          <button className="hover:text-amber-700">{t("refund")}</button>
         </div>
       </section>
 
@@ -256,7 +283,28 @@ function ProfilePage() {
           <RowDetailSheet rowId={activeRow} onClose={() => setActiveRow(null)} />
         )}
       </AnimatePresence>
+
+      {/* Top bar sheets */}
+      <AnimatePresence>
+        {topSheet === "support" && <SupportSheet onClose={() => setTopSheet(null)} />}
+        {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function TopIconButton({
+  children, onClick, ...rest
+}: { children: React.ReactNode; onClick?: () => void; "aria-label"?: string }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      onClick={onClick}
+      aria-label={rest["aria-label"]}
+      className="relative h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.5)] active:shadow-sm"
+    >
+      {children}
+    </motion.button>
   );
 }
 
@@ -404,54 +452,16 @@ function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
 }
 
 /* -------------------- Dynamic Card Details -------------------- */
-function CardDetails({ type }: { type: CardType }) {
-  if (type === "personal") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Personal Details</SectionTitle>
-        <DetailRow Icon={User} label="Full Name" value="Ashutosh Sharma" />
-        <DetailRow Icon={Phone} label="Contact" value="+91 98xxx xxxxx" />
-        <DetailRow Icon={Mail} label="Email" value="filipra@karo.online" />
-        <DetailRow Icon={MapPin} label="Address" value="Delhi 6, India" />
-        <DetailRow Icon={IdCard} label="Member Code" value="Ashu 9811" />
-      </div>
-    );
-  }
-  if (type === "wallet") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Wallet Activity</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatTile Icon={ArrowDownToLine} label="Withdrawal" value="₹ 666" tone="rose" />
-          <StatTile Icon={ArrowUpToLine} label="Add Funds" value="₹ 666" tone="emerald" />
-          <StatTile Icon={CircleDollarSign} label="Transfers" value="₹ 666" tone="amber" />
-          <StatTile Icon={Clock} label="Pending" value="₹ 102" tone="sky" />
-        </div>
-      </div>
-    );
-  }
-  if (type === "reselling") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Reselling Performance</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatTile Icon={Users} label="Referrals" value="245" tone="rose" />
-          <StatTile Icon={TrendingUp} label="Conversion" value="38%" tone="emerald" />
-          <StatTile Icon={Gift} label="Rewards" value="₹ 1,240" tone="amber" />
-          <StatTile Icon={CircleDollarSign} label="Earned" value="₹ 8,210" tone="sky" />
-        </div>
-      </div>
-    );
-  }
+function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+  if (type !== "personal") return null;
   return (
     <div className="space-y-2.5">
-      <SectionTitle>Order Summary</SectionTitle>
-      <div className="grid grid-cols-2 gap-2.5">
-        <StatTile Icon={PackageCheck} label="Delivered" value="68" tone="emerald" />
-        <StatTile Icon={Truck} label="In Transit" value="12" tone="sky" />
-        <StatTile Icon={Clock} label="Pending" value="3" tone="amber" />
-        <StatTile Icon={Star} label="Reviews" value="4.8" tone="rose" />
-      </div>
+      <SectionTitle>{t("personal_details")}</SectionTitle>
+      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
+      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
+      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
+      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
+      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
     </div>
   );
 }
@@ -471,29 +481,6 @@ function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; v
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
         <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-const TONES = {
-  emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
-  amber: "from-amber-50 to-amber-100 border-amber-200 text-amber-700",
-  rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
-  sky: "from-sky-50 to-sky-100 border-sky-200 text-sky-700",
-} as const;
-
-function StatTile({
-  Icon, label, value, tone,
-}: { Icon: typeof User; label: string; value: string; tone: keyof typeof TONES }) {
-  return (
-    <div className={`rounded-2xl bg-gradient-to-br ${TONES[tone]} border px-3 py-3 flex items-center gap-3 shadow-sm`}>
-      <div className="h-10 w-10 rounded-xl grid place-items-center bg-white/80">
-        <Icon className="h-5 w-5" strokeWidth={1.8} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider opacity-70">{label}</p>
-        <p className="text-base font-bold truncate">{value}</p>
       </div>
     </div>
   );
@@ -520,6 +507,7 @@ function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void 
 
 /* -------------------- Row Detail Sheet -------------------- */
 function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
+  const { t } = useAppPrefs();
   if (rowId === "kyc") return <KycSheet onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
@@ -528,16 +516,115 @@ function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void
       <div className="flex items-center gap-3 mb-4">
         {row && <row.Icon className="h-7 w-7 text-amber-700" />}
         <h3 className="font-display text-xl text-amber-700 font-bold">
-          {row?.label} | {row?.sub}
+          {row && t(row.labelKey)} | {row && t(row.subKey)}
         </h3>
       </div>
       <p className="text-sm text-slate-600">
-        Detailed form for <strong>{row?.label}</strong> will appear here.
+        Detailed form for <strong>{row && t(row.labelKey)}</strong> will appear here.
       </p>
       <SheetActions onClose={onClose} onSave={onClose} />
     </SheetWrap>
   );
 }
+
+/* -------------------- Support Sheet -------------------- */
+function SupportSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useAppPrefs();
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-2xl grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg">
+          <LifeBuoy className="h-7 w-7" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-amber-700 font-bold">{t("customer_support")}</h3>
+          <p className="text-xs text-slate-500">We're here to help — 24×7</p>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        <SupportRow Icon={PhoneCall} label={t("call_us")} value="+91 1800-123-456" tone="emerald" />
+        <SupportRow Icon={AtSign} label={t("email_us")} value="support@karo.online" tone="amber" />
+        <SupportRow Icon={Ticket} label={t("raise_ticket")} value="Open a new support ticket" tone="rose" />
+      </div>
+    </SheetWrap>
+  );
+}
+
+function SupportRow({
+  Icon, label, value, tone,
+}: { Icon: typeof User; label: string; value: string; tone: "emerald" | "amber" | "rose" }) {
+  const tones: Record<string, string> = {
+    emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
+    amber: "from-amber-50 to-amber-100 border-amber-200 text-amber-700",
+    rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
+  };
+  return (
+    <button className={`w-full rounded-2xl bg-gradient-to-br ${tones[tone]} border px-4 py-3 flex items-center gap-3 active:scale-98 transition`}>
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-white/80">
+        <Icon className="h-5 w-5" strokeWidth={1.8} />
+      </div>
+      <div className="flex-1 text-left min-w-0">
+        <p className="text-[10px] uppercase tracking-wider opacity-70">{label}</p>
+        <p className="text-sm font-semibold truncate">{value}</p>
+      </div>
+      <ChevronRight className="h-4 w-4 opacity-60" />
+    </button>
+  );
+}
+
+/* -------------------- Language Sheet -------------------- */
+function LanguageSheet({ onClose }: { onClose: () => void }) {
+  const { t, lang, setLang } = useAppPrefs();
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-2xl grid place-items-center bg-gradient-to-br from-[#d4af37] to-[#b45309] text-white shadow-lg">
+          <Languages className="h-7 w-7" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-amber-700 font-bold">{t("select_language")}</h3>
+          <p className="text-xs text-slate-500">App will switch instantly</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {LANGS.map((L) => {
+          const active = lang === L.code;
+          return (
+            <motion.button
+              key={L.code}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setLang(L.code as Lang);
+                setTimeout(onClose, 250);
+              }}
+              className={`w-full rounded-2xl px-4 py-3 flex items-center gap-3 border transition ${
+                active
+                  ? "bg-gradient-to-r from-amber-100 to-amber-50 border-amber-400 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.55)]"
+                  : "bg-white border-amber-200/70"
+              }`}
+            >
+              <span className="text-2xl">{L.flag}</span>
+              <div className="flex-1 text-left">
+                <p className="font-display text-base text-slate-800 font-semibold leading-tight">
+                  {L.native}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{L.label}</p>
+              </div>
+              {active && (
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 grid place-items-center text-white shadow">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </div>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+    </SheetWrap>
+  );
+}
+
 
 /* -------------------- KYC Sheet -------------------- */
 function KycSheet({ onClose }: { onClose: () => void }) {
