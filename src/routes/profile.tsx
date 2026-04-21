@@ -405,54 +405,16 @@ function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
 }
 
 /* -------------------- Dynamic Card Details -------------------- */
-function CardDetails({ type }: { type: CardType }) {
-  if (type === "personal") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Personal Details</SectionTitle>
-        <DetailRow Icon={User} label="Full Name" value="Ashutosh Sharma" />
-        <DetailRow Icon={Phone} label="Contact" value="+91 98xxx xxxxx" />
-        <DetailRow Icon={Mail} label="Email" value="filipra@karo.online" />
-        <DetailRow Icon={MapPin} label="Address" value="Delhi 6, India" />
-        <DetailRow Icon={IdCard} label="Member Code" value="Ashu 9811" />
-      </div>
-    );
-  }
-  if (type === "wallet") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Wallet Activity</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatTile Icon={ArrowDownToLine} label="Withdrawal" value="₹ 666" tone="rose" />
-          <StatTile Icon={ArrowUpToLine} label="Add Funds" value="₹ 666" tone="emerald" />
-          <StatTile Icon={CircleDollarSign} label="Transfers" value="₹ 666" tone="amber" />
-          <StatTile Icon={Clock} label="Pending" value="₹ 102" tone="sky" />
-        </div>
-      </div>
-    );
-  }
-  if (type === "reselling") {
-    return (
-      <div className="space-y-2.5">
-        <SectionTitle>Reselling Performance</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatTile Icon={Users} label="Referrals" value="245" tone="rose" />
-          <StatTile Icon={TrendingUp} label="Conversion" value="38%" tone="emerald" />
-          <StatTile Icon={Gift} label="Rewards" value="₹ 1,240" tone="amber" />
-          <StatTile Icon={CircleDollarSign} label="Earned" value="₹ 8,210" tone="sky" />
-        </div>
-      </div>
-    );
-  }
+function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+  if (type !== "personal") return null;
   return (
     <div className="space-y-2.5">
-      <SectionTitle>Order Summary</SectionTitle>
-      <div className="grid grid-cols-2 gap-2.5">
-        <StatTile Icon={PackageCheck} label="Delivered" value="68" tone="emerald" />
-        <StatTile Icon={Truck} label="In Transit" value="12" tone="sky" />
-        <StatTile Icon={Clock} label="Pending" value="3" tone="amber" />
-        <StatTile Icon={Star} label="Reviews" value="4.8" tone="rose" />
-      </div>
+      <SectionTitle>{t("personal_details")}</SectionTitle>
+      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
+      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
+      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
+      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
+      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
     </div>
   );
 }
@@ -472,29 +434,6 @@ function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; v
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
         <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-const TONES = {
-  emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
-  amber: "from-amber-50 to-amber-100 border-amber-200 text-amber-700",
-  rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
-  sky: "from-sky-50 to-sky-100 border-sky-200 text-sky-700",
-} as const;
-
-function StatTile({
-  Icon, label, value, tone,
-}: { Icon: typeof User; label: string; value: string; tone: keyof typeof TONES }) {
-  return (
-    <div className={`rounded-2xl bg-gradient-to-br ${TONES[tone]} border px-3 py-3 flex items-center gap-3 shadow-sm`}>
-      <div className="h-10 w-10 rounded-xl grid place-items-center bg-white/80">
-        <Icon className="h-5 w-5" strokeWidth={1.8} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider opacity-70">{label}</p>
-        <p className="text-base font-bold truncate">{value}</p>
       </div>
     </div>
   );
