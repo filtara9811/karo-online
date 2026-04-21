@@ -1,7 +1,11 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Star, Heart, Search, ShoppingBasket, MoreHorizontal, Camera, Share2, ChevronDown, Award, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, Star, Heart, Search, ShoppingBasket, MoreHorizontal, Camera, Share2, ChevronDown, Award, ShieldCheck, Truck, MessageCircle, Zap, Check } from "lucide-react";
 import { getProduct, PRODUCTS, type Product } from "@/lib/products";
+import avatarAryan from "@/assets/avatar-aryan.png";
+import avatarRani from "@/assets/avatar-rani.png";
+import avatarRaj from "@/assets/avatar-raj.png";
+import avatarUser from "@/assets/avatar-user.png";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }) => {
@@ -32,7 +36,6 @@ export const Route = createFileRoute("/product/$id")({
 });
 
 function buildBulkTiers(price: number) {
-  // Alibaba-style 3-tier bulk pricing
   return [
     { qty: "Min. order: 20 pieces", price: Math.round(price * 1.0) },
     { qty: "200-999 pieces", price: Math.round(price * 0.95) },
@@ -40,10 +43,29 @@ function buildBulkTiers(price: number) {
   ];
 }
 
+const COLOR_VARIATIONS = [
+  { id: "red", label: "Red", swatch: "#dc2626" },
+  { id: "white", label: "White", swatch: "#f8fafc" },
+  { id: "gold", label: "Gold", swatch: "#d4af37" },
+  { id: "black", label: "Black", swatch: "#111827" },
+];
+
+const SIZE_VARIATIONS = ["S", "M", "L", "XL"];
+
+const REVIEWS = [
+  { name: "Aryan Bansal", avatar: avatarAryan, rating: 5, text: "Premium quality! Packaging was elegant and delivery was super fast. Worth every rupee.", time: "2 days ago" },
+  { name: "Rani Kumari", avatar: avatarRani, rating: 5, text: "Loved the finish and the gold tones. Exactly as shown in photos. Will reorder for my store.", time: "1 week ago" },
+  { name: "Raj Kumar", avatar: avatarRaj, rating: 4, text: "Solid product, vendor was responsive on chat. Bulk pricing is competitive.", time: "2 weeks ago" },
+  { name: "Ashu Qureshi", avatar: avatarUser, rating: 5, text: "Best in class. The maison really delivers on the premium promise.", time: "3 weeks ago" },
+];
+
 function ProductPage() {
   const { product } = Route.useLoaderData();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"photos" | "reviews" | "highlights" | "specs">("photos");
+  const [color, setColor] = useState(COLOR_VARIATIONS[0].id);
+  const [size, setSize] = useState(SIZE_VARIATIONS[1]);
+  const [qty, setQty] = useState(20);
 
   const tiers = buildBulkTiers(product.price);
   const recommended: Product[] = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
@@ -61,8 +83,13 @@ function ProductPage() {
     });
   };
 
+  const goBook = () => {
+    // Send to cart for payment / checkout flow
+    navigate({ to: "/cart" });
+  };
+
   return (
-    <div className="min-h-screen bg-white pb-32" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+    <div className="min-h-screen bg-white pb-36" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Top search header */}
       <header className="sticky top-0 z-30 bg-white border-b border-black/5">
         <div className="px-3 py-2.5 flex items-center gap-2">
@@ -105,7 +132,6 @@ function ProductPage() {
           </button>
         </div>
 
-        {/* Tab strip overlay */}
         <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {[
             { id: "photos", label: "Photos 1/6" },
@@ -126,7 +152,7 @@ function ProductPage() {
         </div>
       </div>
 
-      {/* Bulk pricing tiers — Alibaba style */}
+      {/* Bulk pricing tiers */}
       <section className="mx-3 mt-3 rounded-xl bg-[#f3f4f6] overflow-hidden">
         <div className="grid grid-cols-3">
           {tiers.map((t, i) => (
@@ -169,6 +195,70 @@ function ProductPage() {
           <span className="px-2 py-1 rounded bg-[#fef3c7] text-[11px] text-[#92400e] font-medium flex items-center gap-1">
             <Award className="h-3 w-3" /> #3 most popular in {product.category}
           </span>
+        </div>
+      </section>
+
+      <div className="my-3 h-2 bg-[#f3f4f6]" />
+
+      {/* Variations — color */}
+      <section className="px-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-[#1f2937]">Color</h3>
+          <span className="text-[11px] text-[#6b7280]">Selected: <span className="font-semibold text-[#1f2937]">{COLOR_VARIATIONS.find(c => c.id === color)?.label}</span></span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {COLOR_VARIATIONS.map((c) => {
+            const active = color === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setColor(c.id)}
+                className={`flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 rounded-full border transition ${
+                  active
+                    ? "border-[#d4af37] bg-gradient-to-b from-[#fff8dc] to-[#fdf3c8] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.5)]"
+                    : "border-[#e5e7eb] bg-white"
+                }`}
+              >
+                <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: c.swatch }} />
+                <span className="text-xs font-semibold text-[#1f2937]">{c.label}</span>
+                {active && <Check className="h-3 w-3 text-[#92400e]" strokeWidth={3} />}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Size */}
+        <div className="mt-4 flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-[#1f2937]">Size / Pack</h3>
+          <span className="text-[11px] text-[#6b7280]">Selected: <span className="font-semibold text-[#1f2937]">{size}</span></span>
+        </div>
+        <div className="flex gap-2">
+          {SIZE_VARIATIONS.map((s) => {
+            const active = size === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setSize(s)}
+                className={`flex-1 py-2 rounded-lg border text-sm font-bold transition ${
+                  active
+                    ? "border-[#d4af37] bg-gradient-to-b from-[#fff8dc] to-[#fdf3c8] text-[#92400e] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.5)]"
+                    : "border-[#e5e7eb] bg-white text-[#374151]"
+                }`}
+              >
+                {s}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Qty */}
+        <div className="mt-4 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#1f2937]">Quantity</h3>
+          <div className="flex items-center gap-2 rounded-full border border-[#e5e7eb] overflow-hidden">
+            <button onClick={() => setQty(Math.max(1, qty - 1))} className="h-9 w-9 grid place-items-center active:scale-90 text-lg font-bold">−</button>
+            <span className="text-sm font-bold text-[#1f2937] w-10 text-center">{qty}</span>
+            <button onClick={() => setQty(qty + 1)} className="h-9 w-9 grid place-items-center active:scale-90 text-lg font-bold">+</button>
+          </div>
         </div>
       </section>
 
@@ -225,6 +315,60 @@ function ProductPage() {
         ))}
       </section>
 
+      <div className="my-3 h-2 bg-[#f3f4f6]" />
+
+      {/* Reviews */}
+      <section className="px-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-[#1f2937]">Customer Reviews</h3>
+          <span className="text-[11px] font-semibold text-[#92400e]">See all ›</span>
+        </div>
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 mb-3">
+          <div className="text-center">
+            <p className="font-display text-3xl font-bold text-gold-gradient leading-none">{product.rating.toFixed(1)}</p>
+            <div className="flex items-center justify-center gap-0.5 mt-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-3 w-3 fill-[#d4af37] text-[#d4af37]" />
+              ))}
+            </div>
+            <p className="text-[10px] text-[#6b7280] mt-0.5">{product.reviews} reviews</p>
+          </div>
+          <div className="flex-1 space-y-1">
+            {[5, 4, 3, 2, 1].map((s) => (
+              <div key={s} className="flex items-center gap-2">
+                <span className="text-[10px] text-[#6b7280] w-3">{s}</span>
+                <div className="flex-1 h-1.5 rounded-full bg-white/70 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#d4af37] to-[#fbbf24]"
+                    style={{ width: `${s === 5 ? 78 : s === 4 ? 15 : s === 3 ? 5 : 1}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-[#6b7280] w-6 text-right">{s === 5 ? "78%" : s === 4 ? "15%" : s === 3 ? "5%" : "1%"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          {REVIEWS.map((r, i) => (
+            <article key={i} className="rounded-xl border border-[#e5e7eb] p-3 bg-white">
+              <div className="flex items-center gap-2.5">
+                <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover border border-[#e5e7eb]" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[#1f2937]">{r.name}</p>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className={`h-2.5 w-2.5 ${j < r.rating ? "fill-[#f59e0b] text-[#f59e0b]" : "fill-[#e5e7eb] text-[#e5e7eb]"}`} />
+                    ))}
+                    <span className="text-[10px] text-[#6b7280] ml-1">· {r.time}</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[12px] text-[#374151] mt-2 leading-relaxed">{r.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* Recommended */}
       <section className="px-4 mt-5">
         <h3 className="text-sm font-bold text-[#1f2937] mb-2">You may also like</h3>
@@ -248,25 +392,48 @@ function ProductPage() {
         </div>
       </section>
 
-      {/* Sticky bottom action bar — Chat now + Send Inquiry */}
-      <div className="fixed inset-x-0 bottom-0 z-40 bg-white border-t border-[#e5e7eb] pb-[env(safe-area-inset-bottom)]">
-        <div className="px-3 py-2.5 flex items-center gap-2">
-          <span className="flex flex-col items-center text-[10px] text-[#6b7280] font-medium px-1">
-            <span className="h-5 w-5 rounded-full bg-[#f3f4f6] grid place-items-center text-[10px]">🏬</span>
-            Store
-          </span>
-          <button
-            onClick={() => goChat("chat")}
-            className="flex-1 py-3 rounded-full border-2 border-[#1f2937] text-[#1f2937] font-bold text-sm active:scale-[0.98] transition"
+      {/* Sticky golden bottom action bar */}
+      <div
+        className="fixed inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]"
+        style={{ bottom: 0, animation: "fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
+      >
+        <div className="max-w-md mx-auto px-4 pb-3">
+          <div
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.45)] p-2.5 flex items-center gap-2"
+            style={{ borderRadius: "24px" }}
           >
-            Chat now
-          </button>
-          <button
-            onClick={() => goChat("inquiry")}
-            className="flex-1 py-3 rounded-full bg-gradient-to-b from-[#fb923c] to-[#ea580c] text-white font-bold text-sm shadow-md active:scale-[0.98] transition"
-          >
-            Send inquiry
-          </button>
+            <span
+              className="absolute inset-0 opacity-40 pointer-events-none"
+              style={{
+                backgroundImage: "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 4s linear infinite",
+              }}
+            />
+            {/* Inquiry now */}
+            <button
+              onClick={() => goChat("inquiry")}
+              className="btn-3d relative flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-br from-white to-[#fdf6dd] border border-[color:oklch(0.78_0.14_82/0.55)] active:scale-95"
+              aria-label="Send inquiry"
+            >
+              <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.4} />
+              <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
+                Enquiry now
+              </span>
+            </button>
+
+            {/* Book now */}
+            <button
+              onClick={goBook}
+              className="btn-3d relative flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-gold-bar text-[color:oklch(0.13_0.06_18)] shadow-gold-glow active:scale-95"
+              aria-label="Book now"
+            >
+              <Zap className="h-4 w-4" strokeWidth={2.6} />
+              <span className="font-display text-[13px] font-bold italic tracking-tight">
+                Book now
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
