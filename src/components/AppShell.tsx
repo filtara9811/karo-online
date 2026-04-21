@@ -1,7 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import goldBell from "@/assets/gold-bell.png";
-import goldQr from "@/assets/gold-qr.png";
+import { Bell, ShoppingBasket, Search, Star } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
@@ -98,40 +97,64 @@ function TopHeader() {
       </div>
 
       {/* Location + search row */}
-      <div className="max-w-md mx-auto px-4 pb-3 flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 rounded-2xl bg-white/95 border border-[color:oklch(0.78_0.14_82/0.45)] px-3 py-2 shadow-sm">
-          <img src={goldPin} alt="" className="h-4 w-4 object-contain" />
-          <span className="font-display text-sm text-gold-gradient font-semibold">Delhi 6</span>
-          <span className="text-[10px] text-muted-foreground italic ml-1 truncate">· Search markets, brands…</span>
+      {/* Premium search row */}
+      <div className="max-w-md mx-auto px-4 pb-2.5 flex items-center gap-2">
+        <label className="flex-1 group flex items-center gap-2 rounded-full bg-gradient-to-b from-white to-[#fdfaf0] border border-[color:oklch(0.78_0.14_82/0.5)] px-3.5 py-2.5 shadow-[0_2px_10px_-3px_rgba(212,175,55,0.25),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:shadow-gold-glow transition-shadow">
+          <Search className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0" strokeWidth={2.4} />
+          <input
+            type="search"
+            placeholder="Search markets, brands…"
+            className="flex-1 bg-transparent outline-none text-sm placeholder:text-[color:oklch(0.55_0.05_85/0.7)] placeholder:italic min-w-0"
+          />
+        </label>
+        <ChipIcon label="Notifications" badge="2">
+          <Bell className="h-5 w-5" strokeWidth={2.2} />
+        </ChipIcon>
+        <Link to="/cart" aria-label="Cart">
+          <ChipIcon label="Cart" badge="3">
+            <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
+          </ChipIcon>
+        </Link>
+      </div>
+
+      {/* Premium shop rating strip */}
+      <div className="max-w-md mx-auto px-4 pb-2.5">
+        <div className="flex items-stretch rounded-full bg-gradient-to-r from-[#fff8dc]/80 via-white to-[#fff3c8]/70 border border-[color:oklch(0.78_0.14_82/0.4)] px-3 py-1.5 shadow-[0_1px_8px_-2px_rgba(212,175,55,0.25)] divide-x divide-[color:oklch(0.78_0.14_82/0.25)]">
+          <RatingChip icon={<Star className="h-3 w-3 fill-[#d4af37] text-[#d4af37]" />} value="4.9" label="Rating" />
+          <RatingChip value="1.2k" label="Reviews" />
+          <RatingChip value="98%" label="Happy" />
+          <RatingChip value="A+" label="Service" />
         </div>
-        <SphereButton icon={goldQr} label="Scan QR" />
-        <SphereButton icon={goldBell} label="Notifications" badge="2" />
       </div>
     </header>
   );
 }
 
-function SphereButton({ icon, label, badge }: { icon: string; label: string; badge?: string }) {
+function ChipIcon({ children, label, badge }: { children: React.ReactNode; label: string; badge?: string }) {
   return (
     <button
       aria-label={label}
-      className="btn-3d relative h-11 w-11 grid place-items-center rounded-full active:scale-90"
+      className="btn-3d relative h-10 w-10 grid place-items-center rounded-full bg-gradient-to-br from-white to-[#fdf6dd] border border-[color:oklch(0.78_0.14_82/0.55)] text-[color:oklch(0.42_0.10_82)] shadow-[0_2px_8px_-2px_rgba(212,175,55,0.4),inset_0_1px_0_rgba(255,255,255,0.9)] active:scale-90 flex-shrink-0"
     >
-      <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(245,217,122,0.3),transparent_70%)] blur-md" />
-      <img
-        src={icon}
-        alt=""
-        loading="lazy"
-        width={44}
-        height={44}
-        className="relative h-9 w-9 object-contain drop-shadow-[0_4px_10px_rgba(245,217,122,0.45)]"
-      />
+      {children}
       {badge && (
-        <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8b6508] text-[9px] font-bold text-white grid place-items-center shadow">
+        <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#f5d97a] via-[#d4af37] to-[#8b6508] text-[9px] font-bold text-white grid place-items-center shadow-[0_2px_6px_rgba(212,175,55,0.6)] animate-pulse">
           {badge}
         </span>
       )}
     </button>
+  );
+}
+
+function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: string; label: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-1">
+      <span className="flex items-center gap-1 font-display text-[13px] text-gold-gradient font-bold leading-none">
+        {icon}
+        {value}
+      </span>
+      <span className="text-[8px] uppercase tracking-[0.18em] text-[color:oklch(0.45_0.05_85)] mt-0.5">{label}</span>
+    </div>
   );
 }
 
