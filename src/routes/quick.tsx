@@ -512,15 +512,8 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
   };
 
   const resetZoom = () => setTransform({ scale: 1, x: 0, y: 0 });
-  const zoomIn = () => {
-    const s = Math.min(MAX_SCALE, transform.scale + 0.5);
-    setTransform({ scale: s, x: transform.x, y: transform.y });
-  };
-  const zoomOut = () => {
-    const s = Math.max(MIN_SCALE, transform.scale - 0.5);
-    const clamped = clampPan(s, transform.x, transform.y);
-    setTransform({ scale: s, x: clamped.x, y: clamped.y });
-  };
+  void resetZoom;
+
 
   return (
     <div
