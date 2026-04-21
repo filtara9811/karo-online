@@ -1,11 +1,13 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, QrCode, Pencil, Check,
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
-  IdCard, Users, Wallet, PackageCheck, FileCheck2, Building2,
-  Store, LogOut, ShieldCheck, FileText, Headphones,
+  IdCard, Wallet, PackageCheck, FileCheck2, Building2,
+  Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
+  TrendingUp, Users, Gift, ArrowDownToLine, ArrowUpToLine,
+  Clock, CircleDollarSign, Truck, Star, ChevronRight, X,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 
@@ -19,56 +21,56 @@ export const Route = createFileRoute("/profile")({
   component: ProfilePage,
 });
 
-type BizCard = {
+type CardType = "personal" | "wallet" | "reselling" | "orders";
+
+type DashCard = {
   id: string;
-  name: string;
-  contact: string;
-  email: string;
-  address: string;
+  type: CardType;
+  title: string;
+  subtitle: string;
   code: string;
-  shre: string;
+  badge: string;
   accent: string;
 };
 
-const INITIAL_CARDS: BizCard[] = [
+const CARDS: DashCard[] = [
   {
-    id: "c1",
-    name: "Filipra Private Limited",
-    contact: "+91 98xxx xxxxx",
-    email: "filipra@karo.online",
-    address: "Delhi 6, India",
+    id: "personal",
+    type: "personal",
+    title: "Filipra Private Limited",
+    subtitle: "Personal | Card",
     code: "Ashu 9811",
-    shre: "8766",
+    badge: "8766",
     accent: "from-[#f59e0b] to-[#b45309]",
   },
   {
-    id: "c2",
-    name: "Karo Online Services",
-    contact: "+91 88xxx xxxxx",
-    email: "hello@karo.online",
-    address: "Bandra W, Mumbai",
-    code: "Karo 4521",
-    shre: "5421",
-    accent: "from-[#d4af37] to-[#7a5a0d]",
+    id: "wallet",
+    type: "wallet",
+    title: "My E-Wallet",
+    subtitle: "Wallet | Card",
+    code: "₹ 6,666",
+    badge: "102",
+    accent: "from-emerald-500 to-emerald-700",
   },
   {
-    id: "c3",
-    name: "+ Add new business",
-    contact: "Tap to create",
-    email: "—",
-    address: "—",
-    code: "New",
-    shre: "0",
-    accent: "from-[#e2e8f0] to-[#94a3b8]",
+    id: "reselling",
+    type: "reselling",
+    title: "Reselling | Affiliate",
+    subtitle: "Referral | Card",
+    code: "REF-AS9811",
+    badge: "245",
+    accent: "from-rose-500 to-rose-700",
+  },
+  {
+    id: "orders",
+    type: "orders",
+    title: "My Orders",
+    subtitle: "Orders | Card",
+    code: "12 Active",
+    badge: "84",
+    accent: "from-sky-500 to-sky-700",
   },
 ];
-
-const TILES = [
-  { id: "personal", label: "Personal", sub: "Details", Icon: IdCard, tone: "emerald" },
-  { id: "refferal", label: "Refferal | program", sub: "Resaling. | Affiliate", Icon: Users, tone: "amber" },
-  { id: "wallet", label: "MY", sub: "E-walit", Icon: Wallet, tone: "amber" },
-  { id: "order", label: "My", sub: "order", Icon: PackageCheck, tone: "amber" },
-] as const;
 
 const ROWS = [
   { id: "profile", label: "Profile", sub: "Details", Icon: User },
@@ -89,14 +91,11 @@ const SOCIALS = [
 
 function ProfilePage() {
   const router = useRouter();
-  const [cards, setCards] = useState<BizCard[]>(INITIAL_CARDS);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [editing, setEditing] = useState<BizCard | null>(null);
-  const [activeTile, setActiveTile] = useState<string>("personal");
+  const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Track which card is centered
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -108,6 +107,8 @@ function ProfilePage() {
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  const activeCard = CARDS[activeIdx] ?? CARDS[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
@@ -124,84 +125,28 @@ function ProfilePage() {
           My Account
         </h1>
         <div className="h-10 w-10 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.5)]">
-          <span className="text-[#b45309] text-xs font-bold">{cards[activeIdx]?.shre}</span>
+          <span className="text-[#b45309] text-xs font-bold">{activeCard.badge}</span>
         </div>
       </header>
 
-      {/* Swipeable business cards (credit-card proportions ~1.586:1) */}
+      {/* Swipeable dashboard cards — wider, credit-card-ish */}
       <section className="pt-5">
         <div
           ref={scrollerRef}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-6 pb-3 scrollbar-hide"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {cards.map((card) => (
+          {CARDS.map((card) => (
             <motion.button
               key={card.id}
-              whileTap={{ scale: 0.97 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setEditing(card)}
-              className="relative snap-center flex-shrink-0 w-[78%] max-w-[320px] text-left"
-              style={{ aspectRatio: "1.586 / 1" }}
+              className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+              style={{ aspectRatio: "1.7 / 1" }}
             >
-              <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
-                {/* Gold corner accents */}
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
-                <div className="absolute bottom-0 left-0 w-20 h-12 bg-gradient-to-tr from-[oklch(0.88_0.12_88/0.4)] to-transparent" />
-
-                {/* Top label */}
-                <div className="relative px-3 pt-2.5">
-                  <span className="text-[8px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.12_82)] italic font-semibold">
-                    Personal | card
-                  </span>
-                  <h3 className={`font-display text-[13px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
-                    {card.name}
-                  </h3>
-                </div>
-
-                {/* Middle: avatar + details + QR */}
-                <div className="relative px-3 mt-1.5 flex items-start gap-2">
-                  <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] bg-gradient-to-br from-sky-200 to-emerald-200 flex-shrink-0 shadow-sm">
-                    <img src={avatarUser} alt="" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-[3px] text-[8.5px] text-slate-700">
-                    <Row Icon={User} text="Name" />
-                    <Row Icon={Phone} text="Contact" />
-                    <Row Icon={Mail} text="Gmail" />
-                    <Row Icon={MapPin} text="Address" />
-                  </div>
-                  <div className="h-11 w-11 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
-                    <QrCode className="h-9 w-9 text-slate-800" strokeWidth={1.5} />
-                  </div>
-                </div>
-
-                {/* Mini socials */}
-                <div className="relative mt-1 flex items-center justify-center gap-2 px-3">
-                  {SOCIALS.map(({ Icon, color }, i) => (
-                    <Icon key={i} className="h-2.5 w-2.5" style={{ color }} />
-                  ))}
-                </div>
-
-                {/* Footer band — gold theme */}
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] px-3 py-1.5 flex items-center justify-between text-white">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="h-6 w-6 rounded-full overflow-hidden border border-white/80 bg-white flex-shrink-0">
-                      <img src={avatarUser} alt="" className="h-full w-full object-cover" />
-                    </div>
-                    <div className="leading-tight min-w-0">
-                      <p className="text-[9px] font-bold truncate">Personal | Details</p>
-                      <p className="text-[7px] opacity-90 truncate">Code : {card.code}</p>
-                    </div>
-                  </div>
-                  <div className="text-right leading-tight flex-shrink-0">
-                    <Check className="h-3 w-3 ml-auto" strokeWidth={3} />
-                    <p className="text-[7px] mt-0.5">Shre | {card.shre}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Edit hint */}
-              <span className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
-                <Pencil className="h-3 w-3 text-[#b45309]" />
+              <DashboardCardVisual card={card} />
+              <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
               </span>
             </motion.button>
           ))}
@@ -209,7 +154,7 @@ function ProfilePage() {
 
         {/* Dot indicators */}
         <div className="flex justify-center gap-1.5 mt-1">
-          {cards.map((_, i) => (
+          {CARDS.map((_, i) => (
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all ${
@@ -220,44 +165,19 @@ function ProfilePage() {
         </div>
       </section>
 
-      {/* 4 Tile strip */}
-      <section className="px-4 mt-4">
-        <div className="rounded-3xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 p-3 flex items-center justify-between shadow-lg">
-          {TILES.map((t) => {
-            const active = activeTile === t.id;
-            return (
-              <motion.button
-                key={t.id}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => setActiveTile(t.id)}
-                className="flex flex-col items-center gap-1 flex-1 min-w-0"
-              >
-                <div
-                  className={`h-14 w-14 rounded-2xl grid place-items-center border-2 shadow-md transition-all ${
-                    active
-                      ? "bg-emerald-500 border-emerald-300 scale-105"
-                      : "bg-white border-white/60"
-                  }`}
-                >
-                  <t.Icon
-                    className={`h-7 w-7 ${active ? "text-white" : "text-amber-700"}`}
-                    strokeWidth={1.8}
-                  />
-                  {active && (
-                    <span className="absolute mt-7 ml-7 h-4 w-4 rounded-full bg-emerald-600 border-2 border-white grid place-items-center">
-                      <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
-                    </span>
-                  )}
-                </div>
-                <p className="text-[9px] text-white text-center leading-tight font-medium">
-                  {t.label}
-                  <br />
-                  <span className="opacity-90">{t.sub}</span>
-                </p>
-              </motion.button>
-            );
-          })}
-        </div>
+      {/* Dynamic detail section based on active card */}
+      <section className="px-4 mt-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeCard.type}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+          >
+            <CardDetails type={activeCard.type} />
+          </motion.div>
+        </AnimatePresence>
       </section>
 
       {/* List rows */}
@@ -276,11 +196,11 @@ function ProfilePage() {
               <r.Icon className="h-6 w-6 text-amber-700" strokeWidth={1.8} />
             </div>
             <div className="flex-1 text-left">
-              <p className="font-display text-lg text-slate-400 font-light">
+              <p className="font-display text-lg text-slate-500 font-light">
                 {r.label} <span className="text-amber-600">|</span> {r.sub}
               </p>
             </div>
-            <span className="text-amber-400 text-xl">›</span>
+            <ChevronRight className="h-5 w-5 text-amber-400" />
           </motion.button>
         ))}
       </section>
@@ -288,13 +208,10 @@ function ProfilePage() {
       {/* Bottom: T&C + Socials + Help FAB */}
       <section className="mt-8 px-4">
         <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-200 px-3 py-3 flex items-center gap-2 shadow-inner">
-          <Link
-            to="/profile"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition"
-          >
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition">
             <FileText className="h-4 w-4 text-amber-700" />
             <ShieldCheck className="h-4 w-4 text-amber-700" />
-          </Link>
+          </button>
 
           <div className="flex-1 flex items-center justify-around">
             {SOCIALS.map(({ Icon, color }, i) => (
@@ -330,16 +247,7 @@ function ProfilePage() {
 
       {/* Edit card sheet */}
       <AnimatePresence>
-        {editing && (
-          <EditCardSheet
-            card={editing}
-            onClose={() => setEditing(null)}
-            onSave={(updated) => {
-              setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-              setEditing(null);
-            }}
-          />
-        )}
+        {editing && <EditCardSheet card={editing} onClose={() => setEditing(null)} />}
       </AnimatePresence>
 
       {/* Row detail sheet */}
@@ -352,7 +260,141 @@ function ProfilePage() {
   );
 }
 
-function Row({ Icon, text }: { Icon: typeof User; text: string }) {
+/* -------------------- Card Visual -------------------- */
+function DashboardCardVisual({ card }: { card: DashCard }) {
+  if (card.type === "personal") {
+    return (
+      <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
+        <div className="absolute bottom-0 left-0 w-24 h-14 bg-gradient-to-tr from-[oklch(0.88_0.12_88/0.4)] to-transparent" />
+        <div className="relative px-4 pt-3">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.12_82)] italic font-semibold">
+            {card.subtitle}
+          </span>
+          <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
+            {card.title}
+          </h3>
+        </div>
+        <div className="relative px-4 mt-2 flex items-start gap-3">
+          <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] flex-shrink-0 shadow-sm">
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
+            <MiniRow Icon={User} text="Name" />
+            <MiniRow Icon={Phone} text="Contact" />
+            <MiniRow Icon={Mail} text="Gmail" />
+          </div>
+          <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+            <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
+          </div>
+        </div>
+        <FooterBand card={card} />
+      </div>
+    );
+  }
+
+  if (card.type === "wallet") {
+    return (
+      <div className="relative h-full w-full rounded-2xl overflow-hidden border border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-emerald-100 shadow-[0_8px_24px_-8px_rgba(16,185,129,0.55)]">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-300/40 to-transparent" />
+        <div className="relative px-4 pt-3">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-emerald-700 italic font-semibold">
+            {card.subtitle}
+          </span>
+          <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight`}>
+            {card.title}
+          </h3>
+        </div>
+        <div className="relative px-4 mt-2 flex items-end justify-between">
+          <div>
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider">Balance</p>
+            <p className="font-display text-2xl font-bold text-emerald-700">{card.code}</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">Available · Leds {card.badge}</p>
+          </div>
+          <div className="h-14 w-14 rounded-full bg-emerald-500 grid place-items-center text-white shadow-lg">
+            <Wallet className="h-7 w-7" />
+          </div>
+        </div>
+        <FooterBand card={card} />
+      </div>
+    );
+  }
+
+  if (card.type === "reselling") {
+    return (
+      <div className="relative h-full w-full rounded-2xl overflow-hidden border border-rose-300 bg-gradient-to-br from-rose-50 via-white to-rose-100 shadow-[0_8px_24px_-8px_rgba(244,63,94,0.55)]">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-300/40 to-transparent" />
+        <div className="relative px-4 pt-3">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-rose-700 italic font-semibold">
+            {card.subtitle}
+          </span>
+          <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight`}>
+            {card.title}
+          </h3>
+        </div>
+        <div className="relative px-4 mt-2 flex items-end justify-between">
+          <div>
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider">Referrals</p>
+            <p className="font-display text-2xl font-bold text-rose-700">{card.badge}</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">Code · {card.code}</p>
+          </div>
+          <div className="h-14 w-14 rounded-full bg-rose-500 grid place-items-center text-white shadow-lg">
+            <Users className="h-7 w-7" />
+          </div>
+        </div>
+        <FooterBand card={card} />
+      </div>
+    );
+  }
+
+  // orders
+  return (
+    <div className="relative h-full w-full rounded-2xl overflow-hidden border border-sky-300 bg-gradient-to-br from-sky-50 via-white to-sky-100 shadow-[0_8px_24px_-8px_rgba(14,165,233,0.55)]">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-300/40 to-transparent" />
+      <div className="relative px-4 pt-3">
+        <span className="text-[9px] uppercase tracking-[0.22em] text-sky-700 italic font-semibold">
+          {card.subtitle}
+        </span>
+        <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight`}>
+          {card.title}
+        </h3>
+      </div>
+      <div className="relative px-4 mt-2 flex items-end justify-between">
+        <div>
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider">Total Orders</p>
+          <p className="font-display text-2xl font-bold text-sky-700">{card.badge}</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">{card.code}</p>
+        </div>
+        <div className="h-14 w-14 rounded-full bg-sky-500 grid place-items-center text-white shadow-lg">
+          <PackageCheck className="h-7 w-7" />
+        </div>
+      </div>
+      <FooterBand card={card} />
+    </div>
+  );
+}
+
+function FooterBand({ card }: { card: DashCard }) {
+  return (
+    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-3 py-2 flex items-center justify-between text-white`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="h-7 w-7 rounded-full overflow-hidden border border-white/80 bg-white flex-shrink-0">
+          <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="leading-tight min-w-0">
+          <p className="text-[10px] font-bold truncate">{card.subtitle}</p>
+          <p className="text-[8px] opacity-90 truncate">Code : {card.code}</p>
+        </div>
+      </div>
+      <div className="text-right leading-tight flex-shrink-0">
+        <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
+        <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
   return (
     <div className="flex items-center gap-2">
       <Icon className="h-3.5 w-3.5 text-slate-700" strokeWidth={2} />
@@ -361,16 +403,243 @@ function Row({ Icon, text }: { Icon: typeof User; text: string }) {
   );
 }
 
-function EditCardSheet({
-  card,
-  onClose,
-  onSave,
-}: {
-  card: BizCard;
-  onClose: () => void;
-  onSave: (c: BizCard) => void;
-}) {
-  const [draft, setDraft] = useState(card);
+/* -------------------- Dynamic Card Details -------------------- */
+function CardDetails({ type }: { type: CardType }) {
+  if (type === "personal") {
+    return (
+      <div className="space-y-2.5">
+        <SectionTitle>Personal Details</SectionTitle>
+        <DetailRow Icon={User} label="Full Name" value="Ashutosh Sharma" />
+        <DetailRow Icon={Phone} label="Contact" value="+91 98xxx xxxxx" />
+        <DetailRow Icon={Mail} label="Email" value="filipra@karo.online" />
+        <DetailRow Icon={MapPin} label="Address" value="Delhi 6, India" />
+        <DetailRow Icon={IdCard} label="Member Code" value="Ashu 9811" />
+      </div>
+    );
+  }
+  if (type === "wallet") {
+    return (
+      <div className="space-y-2.5">
+        <SectionTitle>Wallet Activity</SectionTitle>
+        <div className="grid grid-cols-2 gap-2.5">
+          <StatTile Icon={ArrowDownToLine} label="Withdrawal" value="₹ 666" tone="rose" />
+          <StatTile Icon={ArrowUpToLine} label="Add Funds" value="₹ 666" tone="emerald" />
+          <StatTile Icon={CircleDollarSign} label="Transfers" value="₹ 666" tone="amber" />
+          <StatTile Icon={Clock} label="Pending" value="₹ 102" tone="sky" />
+        </div>
+      </div>
+    );
+  }
+  if (type === "reselling") {
+    return (
+      <div className="space-y-2.5">
+        <SectionTitle>Reselling Performance</SectionTitle>
+        <div className="grid grid-cols-2 gap-2.5">
+          <StatTile Icon={Users} label="Referrals" value="245" tone="rose" />
+          <StatTile Icon={TrendingUp} label="Conversion" value="38%" tone="emerald" />
+          <StatTile Icon={Gift} label="Rewards" value="₹ 1,240" tone="amber" />
+          <StatTile Icon={CircleDollarSign} label="Earned" value="₹ 8,210" tone="sky" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      <SectionTitle>Order Summary</SectionTitle>
+      <div className="grid grid-cols-2 gap-2.5">
+        <StatTile Icon={PackageCheck} label="Delivered" value="68" tone="emerald" />
+        <StatTile Icon={Truck} label="In Transit" value="12" tone="sky" />
+        <StatTile Icon={Clock} label="Pending" value="3" tone="amber" />
+        <StatTile Icon={Star} label="Reviews" value="4.8" tone="rose" />
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="font-display text-base text-amber-800 font-bold px-1">{children}</h2>
+  );
+}
+
+function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-center gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+        <Icon className="h-5 w-5 text-amber-700" strokeWidth={1.8} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+const TONES = {
+  emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
+  amber: "from-amber-50 to-amber-100 border-amber-200 text-amber-700",
+  rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
+  sky: "from-sky-50 to-sky-100 border-sky-200 text-sky-700",
+} as const;
+
+function StatTile({
+  Icon, label, value, tone,
+}: { Icon: typeof User; label: string; value: string; tone: keyof typeof TONES }) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br ${TONES[tone]} border px-3 py-3 flex items-center gap-3 shadow-sm`}>
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-white/80">
+        <Icon className="h-5 w-5" strokeWidth={1.8} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider opacity-70">{label}</p>
+        <p className="text-base font-bold truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Edit Card Sheet -------------------- */
+function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void }) {
+  return (
+    <SheetWrap onClose={onClose}>
+      <h3 className="font-display text-xl text-amber-700 font-bold mb-4">
+        Edit {card.subtitle}
+      </h3>
+      <p className="text-sm text-slate-500 mb-4">
+        Update the details displayed on your <strong>{card.title}</strong> card.
+      </p>
+      <div className="space-y-3">
+        <FormField Icon={Store} placeholder="Title" defaultValue={card.title} />
+        <FormField Icon={IdCard} placeholder="Code" defaultValue={card.code} />
+      </div>
+      <SheetActions onClose={onClose} onSave={onClose} />
+    </SheetWrap>
+  );
+}
+
+/* -------------------- Row Detail Sheet -------------------- */
+function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
+  if (rowId === "kyc") return <KycSheet onClose={onClose} />;
+
+  const row = ROWS.find((r) => r.id === rowId);
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        {row && <row.Icon className="h-7 w-7 text-amber-700" />}
+        <h3 className="font-display text-xl text-amber-700 font-bold">
+          {row?.label} | {row?.sub}
+        </h3>
+      </div>
+      <p className="text-sm text-slate-600">
+        Detailed form for <strong>{row?.label}</strong> will appear here.
+      </p>
+      <SheetActions onClose={onClose} onSave={onClose} />
+    </SheetWrap>
+  );
+}
+
+/* -------------------- KYC Sheet -------------------- */
+function KycSheet({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<"aadhaar" | "pan" | "gst">("aadhaar");
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-1">
+        <FileCheck2 className="h-7 w-7 text-amber-700" />
+        <h3 className="font-display text-xl text-amber-700 font-bold">KYC Verification</h3>
+      </div>
+      <p className="text-xs text-slate-500 mb-4">
+        Upload documents to verify your business identity.
+      </p>
+
+      {/* Tabs */}
+      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
+        {(["aadhaar", "pan", "gst"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`py-2 rounded-xl text-xs font-semibold capitalize transition ${
+              tab === t
+                ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow"
+                : "text-amber-700"
+            }`}
+          >
+            {t === "gst" ? "GST" : t}
+          </button>
+        ))}
+      </div>
+
+      {tab === "aadhaar" && (
+        <KycForm
+          numberLabel="Aadhaar Number"
+          placeholder="XXXX XXXX XXXX"
+          maxLength={14}
+          uploadLabel="Upload Aadhaar (front & back)"
+        />
+      )}
+      {tab === "pan" && (
+        <KycForm
+          numberLabel="PAN Number"
+          placeholder="ABCDE1234F"
+          maxLength={10}
+          uploadLabel="Upload PAN Card"
+        />
+      )}
+      {tab === "gst" && (
+        <KycForm
+          numberLabel="GSTIN"
+          placeholder="22AAAAA0000A1Z5"
+          maxLength={15}
+          uploadLabel="Upload GST Certificate"
+        />
+      )}
+
+      <SheetActions onClose={onClose} onSave={onClose} saveLabel="Submit for Review" />
+    </SheetWrap>
+  );
+}
+
+function KycForm({
+  numberLabel, placeholder, maxLength, uploadLabel,
+}: { numberLabel: string; placeholder: string; maxLength: number; uploadLabel: string }) {
+  const [val, setVal] = useState("");
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-[11px] uppercase tracking-wider text-slate-500 ml-1">
+          {numberLabel}
+        </label>
+        <div className="relative mt-1">
+          <IdCard className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+          <input
+            value={val}
+            maxLength={maxLength}
+            onChange={(e) => setVal(e.target.value.toUpperCase())}
+            placeholder={placeholder}
+            className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50/60 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition tracking-wider font-mono text-sm"
+          />
+        </div>
+      </div>
+
+      <label className="block">
+        <span className="text-[11px] uppercase tracking-wider text-slate-500 ml-1">
+          {uploadLabel}
+        </span>
+        <div className="mt-1 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/40 px-4 py-6 flex flex-col items-center justify-center gap-2 active:bg-amber-100/60 transition cursor-pointer">
+          <div className="h-12 w-12 rounded-full bg-amber-100 grid place-items-center">
+            <Upload className="h-6 w-6 text-amber-700" />
+          </div>
+          <p className="text-xs text-slate-600">Tap to upload or drag image</p>
+          <p className="text-[10px] text-slate-400">JPG, PNG up to 5MB</p>
+          <input type="file" accept="image/*" className="hidden" />
+        </div>
+      </label>
+    </div>
+  );
+}
+
+/* -------------------- Sheet Primitives -------------------- */
+function SheetWrap({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -385,85 +654,56 @@ function EditCardSheet({
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md mx-auto bg-white rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto"
+        className="w-full max-w-md mx-auto bg-white rounded-t-3xl p-5 max-h-[88vh] overflow-y-auto"
       >
-        <div className="h-1.5 w-12 rounded-full bg-amber-200 mx-auto mb-4" />
-        <h3 className="font-display text-xl text-amber-700 font-bold mb-4">Edit Business Card</h3>
-
-        <div className="space-y-3">
-          {[
-            { key: "name", label: "Business Name", Icon: Store },
-            { key: "contact", label: "Contact", Icon: Phone },
-            { key: "email", label: "Email", Icon: Mail },
-            { key: "address", label: "Address", Icon: MapPin },
-            { key: "code", label: "Code", Icon: IdCard },
-          ].map(({ key, label, Icon }) => (
-            <div key={key} className="relative">
-              <Icon className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
-              <input
-                value={draft[key as keyof BizCard]}
-                onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
-                placeholder={label}
-                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 mt-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="h-1.5 w-12 rounded-full bg-amber-200 mx-auto" />
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold active:scale-95 transition"
+            className="absolute right-5 top-5 h-8 w-8 grid place-items-center rounded-full bg-slate-100 active:scale-90 transition"
+            aria-label="Close"
           >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(draft)}
-            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-white font-semibold shadow-lg active:scale-95 transition"
-          >
-            Save
+            <X className="h-4 w-4 text-slate-600" />
           </button>
         </div>
+        {children}
       </motion.div>
     </motion.div>
   );
 }
 
-function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
-  const row = ROWS.find((r) => r.id === rowId);
+function FormField({
+  Icon, placeholder, defaultValue,
+}: { Icon: typeof User; placeholder: string; defaultValue?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 28, stiffness: 280 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md mx-auto bg-white rounded-t-3xl p-5 max-h-[70vh] overflow-y-auto"
+    <div className="relative">
+      <Icon className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+      <input
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+        className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
+      />
+    </div>
+  );
+}
+
+function SheetActions({
+  onClose, onSave, saveLabel = "Save",
+}: { onClose: () => void; onSave: () => void; saveLabel?: string }) {
+  return (
+    <div className="flex gap-2 mt-5">
+      <button
+        onClick={onClose}
+        className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold active:scale-95 transition"
       >
-        <div className="h-1.5 w-12 rounded-full bg-amber-200 mx-auto mb-4" />
-        <div className="flex items-center gap-3 mb-4">
-          {row && <row.Icon className="h-7 w-7 text-amber-700" />}
-          <h3 className="font-display text-xl text-amber-700 font-bold">
-            {row?.label} | {row?.sub}
-          </h3>
-        </div>
-        <p className="text-sm text-slate-600">
-          Detailed form for <strong>{row?.label}</strong> will appear here. Tap save once filled.
-        </p>
-        <button
-          onClick={onClose}
-          className="mt-5 w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-white font-semibold shadow-lg active:scale-95"
-        >
-          Close
-        </button>
-      </motion.div>
-    </motion.div>
+        Cancel
+      </button>
+      <button
+        onClick={onSave}
+        className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-white font-semibold shadow-lg active:scale-95 transition"
+      >
+        {saveLabel}
+      </button>
+    </div>
   );
 }
