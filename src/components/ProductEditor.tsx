@@ -830,7 +830,70 @@ export function ProductEditor({
   );
 }
 
-function Field({
+function CategoryChip({
+  cat,
+  selected,
+  isPrimary,
+  onToggle,
+  onMakePrimary,
+}: {
+  cat: string;
+  selected: boolean;
+  isPrimary: boolean;
+  onToggle: () => void;
+  onMakePrimary: () => void;
+}) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  const startLong = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      onMakePrimary();
+    }, 420);
+  };
+  const cancelLong = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+  const handleClick = () => {
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    onToggle();
+  };
+
+  return (
+    <button
+      onMouseDown={startLong}
+      onMouseUp={cancelLong}
+      onMouseLeave={cancelLong}
+      onTouchStart={startLong}
+      onTouchEnd={cancelLong}
+      onClick={handleClick}
+      className={`px-2.5 py-1.5 rounded-full text-[11px] font-display font-bold border-2 transition flex items-center gap-1 ${
+        selected
+          ? "text-[color:oklch(0.18_0.06_18)] border-[#d4af37] shadow-sm"
+          : "text-[color:oklch(0.55_0.10_82)] border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+      }`}
+      style={
+        selected
+          ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a)" }
+          : undefined
+      }
+    >
+      {isPrimary && <StarIcon className="h-2.5 w-2.5 fill-[#8b6508] text-[#8b6508]" />}
+      {cat}
+      {selected && !isPrimary && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+    </button>
+  );
+}
+
+
   label,
   value,
   onChange,
