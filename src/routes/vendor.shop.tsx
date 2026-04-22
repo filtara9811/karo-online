@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
 import type { Product } from "@/lib/products";
+import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/vendor/shop")({
   component: VendorShop,
 });
 
-type VendorProduct = Product & { theme?: "classic" | "minimal" | "bold" | "luxe" };
+type VendorProduct = EditorProduct;
 
 function VendorShop() {
   const navigate = useNavigate();
@@ -253,178 +254,19 @@ function ProductTile({
   );
 }
 
-const THEMES: { value: NonNullable<VendorProduct["theme"]>; label: string }[] = [
-  { value: "classic", label: "Classic" },
-  { value: "minimal", label: "Minimal" },
-  { value: "bold", label: "Bold" },
-  { value: "luxe", label: "Luxe" },
-];
-
-function ProductEditor({
-  product,
-  onSave,
-  onClose,
-}: {
-  product: VendorProduct;
-  onSave: (p: VendorProduct) => void;
-  onClose: () => void;
-}) {
-  const [draft, setDraft] = useState<VendorProduct>(product);
-  const fileRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
-
-  const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setDraft((d) => ({ ...d, image: String(reader.result) }));
-    reader.readAsDataURL(f);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center">
-      <button
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.55)] backdrop-blur-md"
-        style={{ animation: "overlay-in 0.3s ease-out" }}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-w-md rounded-t-3xl pb-[env(safe-area-inset-bottom)] max-h-[92vh] flex flex-col"
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 35%, #fbf3d9 100%)",
-          boxShadow: "0 -20px 60px -12px rgba(212,175,55,0.45)",
-          animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-      >
-        <div className="pt-3 pb-1 grid place-items-center">
-          <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
-        </div>
-        <div className="px-5 pb-2 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ Edit Product ✦</p>
-            <h3 className="font-display text-lg text-gold-gradient font-bold">
-              {product.name ? "Update Listing" : "New Listing"}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
-          >
-            <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-3">
-          {/* Image */}
-          <div>
-            <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
-              Cover Image
-            </label>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="mt-1 w-full aspect-video rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center overflow-hidden bg-white/60 relative"
-            >
-              {draft.image ? (
-                <>
-                  <img src={draft.image} alt="" className="h-full w-full object-cover" />
-                  <span className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-white/95 text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] flex items-center gap-1 shadow">
-                    <Camera className="h-3 w-3" /> Change
-                  </span>
-                </>
-              ) : (
-                <div className="flex flex-col items-center gap-1 text-[color:oklch(0.42_0.10_82)]">
-                  <Camera className="h-8 w-8" />
-                  <span className="text-xs font-bold">Tap to upload</span>
-                </div>
-              )}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
-          </div>
-
-          <Field label="Product Name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} placeholder="e.g. Maison Cosmetics" />
-          <Field label="Tagline" value={draft.tagline} onChange={(v) => setDraft({ ...draft, tagline: v })} placeholder="Short catchy line" />
-          <Field
-            label="Description"
-            value={draft.description}
-            onChange={(v) => setDraft({ ...draft, description: v })}
-            placeholder="Detailed description"
-            multiline
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Price (₹)" value={String(draft.price || "")} onChange={(v) => setDraft({ ...draft, price: Number(v) || 0 })} placeholder="2199" type="number" />
-            <Field label="MRP (₹)" value={String(draft.mrp || "")} onChange={(v) => setDraft({ ...draft, mrp: Number(v) || 0 })} placeholder="3499" type="number" />
-          </div>
-          <Field label="Category" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} placeholder="Beauty / Fashion / Home" />
-          <Field label="Badge (optional)" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} placeholder="Bestseller" />
-
-          {/* Theme picker */}
-          <div>
-            <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
-              <Layers className="h-3 w-3" /> Display Theme
-            </label>
-            <div className="mt-1 grid grid-cols-4 gap-2">
-              {THEMES.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setDraft({ ...draft, theme: t.value })}
-                  className={`px-2 py-2 rounded-xl text-[10px] font-display font-bold border-2 transition ${
-                    draft.theme === t.value
-                      ? "text-[color:oklch(0.18_0.06_18)] border-[#d4af37] shadow-md"
-                      : "text-[color:oklch(0.55_0.10_82)] border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
-                  }`}
-                  style={
-                    draft.theme === t.value
-                      ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a)" }
-                      : undefined
-                  }
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="px-5 pt-2 pb-3 border-t border-[color:oklch(0.78_0.14_82/0.3)]">
-          <button
-            onClick={() => onSave(draft)}
-            disabled={!draft.name || !draft.price}
-            className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-base text-[color:oklch(0.18_0.06_18)] shadow-gold-glow disabled:opacity-50"
-            style={{
-              background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
-            }}
-          >
-            <Check className="inline h-4 w-4 mr-1" strokeWidth={3} /> Save Product
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ProductEditor is imported from @/components/ProductEditor
 
 function Field({
   label,
   value,
   onChange,
   placeholder,
-  multiline,
   type,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  multiline?: boolean;
   type?: string;
 }) {
   return (
@@ -432,24 +274,14 @@ function Field({
       <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
         {label}
       </label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={3}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
-        />
-      ) : (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          type={type ?? "text"}
-          inputMode={type === "number" ? "numeric" : undefined}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
-        />
-      )}
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        type={type ?? "text"}
+        inputMode={type === "number" ? "numeric" : undefined}
+        className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+      />
     </div>
   );
 }
