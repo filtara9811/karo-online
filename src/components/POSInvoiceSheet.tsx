@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   Check,
@@ -17,12 +17,16 @@ import {
   Percent,
   Truck,
   Receipt,
+  Tag,
 } from "lucide-react";
 import type { EditorProduct } from "@/components/ProductEditor";
 import { CustomerPickerSheet, type Customer } from "@/components/CustomerPickerSheet";
 import { PaymentModeSheet, type PayMode } from "@/components/PaymentModeSheet";
 import { PrintOptionsSheet } from "@/components/PrintOptionsSheet";
-import { ValuePickerSheet } from "@/components/ValuePickerSheet";
+import { ValuePickerSheet, type ValueMode } from "@/components/ValuePickerSheet";
+import { CouponSheet, type Coupon } from "@/components/CouponSheet";
+import { InvoiceImage } from "@/components/InvoiceImage";
+import { captureInvoicePng, shareInvoicePng } from "@/lib/invoice-image";
 
 export type CartLine = {
   product: EditorProduct;
