@@ -29,8 +29,6 @@ type VendorProduct = EditorProduct;
 
 type FlyEffect = { id: number; src: string; from: DOMRect; to: DOMRect };
 
-type CartLine = { product: VendorProduct; qty: number };
-
 function VendorShop() {
   const navigate = useNavigate();
   const [items, setItems] = useState<VendorProduct[]>(
@@ -261,7 +259,7 @@ function VendorShop() {
 
       {/* POS sheet */}
       {posOpen && (
-        <POSSheet
+        <POSInvoiceSheet
           products={items}
           initialCart={cart}
           onCartChange={setCart}
