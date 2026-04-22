@@ -23,7 +23,6 @@ const RANGES: { key: Range; label: string }[] = [
 export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
   const [range, setRange] = useState<Range>("day");
   const [showStock, setShowStock] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const stats = useMemo(() => {
     const multiplier =
@@ -97,7 +96,6 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
             </p>
           </div>
           <button
-            onClick={() => setFilterOpen((v) => !v)}
             aria-label="Filter"
             className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
           >
@@ -114,9 +112,8 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
           </button>
         </header>
 
-        {/* Range filter strip — appears when filter tapped, default visible */}
-        {(filterOpen || true) && (
-          <div className="relative px-3 pb-2">
+        {/* Range filter strip */}
+        <div className="relative px-3 pb-2">
             <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/70 backdrop-blur-sm p-1 border border-[color:oklch(0.78_0.14_82/0.35)]">
               {RANGES.map((r) => (
                 <button
