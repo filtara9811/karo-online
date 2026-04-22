@@ -51,12 +51,27 @@ const CATEGORIES: Category[] = [
 function HomePage() {
   const [slide, setSlide] = useState(0);
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [flying, setFlying] = useState<FlyingItem[]>([]);
   const productsRef = useRef<HTMLDivElement>(null);
+  const { add, triggerFly } = useCart();
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % BUSINESS_SLIDES.length), 3800);
     return () => clearInterval(t);
   }, []);
+
+  const handleAdd = (p: Product, fromEl: HTMLElement) => {
+    const target = document.querySelector<HTMLElement>("[data-cart-target]");
+    if (target) {
+      const from = fromEl.getBoundingClientRect();
+      const to = target.getBoundingClientRect();
+      const id = Date.now() + Math.random();
+      setFlying((prev) => [...prev, { id, src: p.image, from, to }]);
+      setTimeout(() => setFlying((prev) => prev.filter((f) => f.id !== id)), 850);
+    }
+    add({ id: p.id, name: p.name, price: p.price, image: p.image });
+    triggerFly();
+  };
 
   const recommended = PRODUCTS;
   const featured = [...PRODUCTS].reverse();
