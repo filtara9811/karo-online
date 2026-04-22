@@ -674,6 +674,33 @@ export function ProductEditor({
         </div>
       </div>
 
+      {/* Bottom sheets */}
+      {sheet === "category" && (
+        <CategoryBottomSheet
+          tags={draft.categoryTags ?? []}
+          primary={draft.primaryCategory ?? ""}
+          customCat={customCat}
+          setCustomCat={setCustomCat}
+          onClose={() => setSheet(null)}
+          onChange={(tags, primary) =>
+            setDraft((d) => ({
+              ...d,
+              categoryTags: tags,
+              primaryCategory: primary,
+              category: primary || d.category,
+            }))
+          }
+        />
+      )}
+      {sheet === "variation" && (
+        <VariationBottomSheet
+          variations={draft.variationsList ?? []}
+          defaultPrice={draft.sellingPrice ?? 0}
+          onClose={() => setSheet(null)}
+          onChange={(list) => setDraft((d) => ({ ...d, variationsList: list }))}
+        />
+      )}
+
       {/* Crop overlay */}
       {cropOpen && (
         <CropOverlay
