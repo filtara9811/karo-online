@@ -460,21 +460,34 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                     "linear-gradient(180deg, #fffdf5 0%, #fff8dc 50%, #fbf3d9 100%)",
                 }}
               >
-                {/* Integrated tap chips */}
-                <div className="flex items-center gap-1.5 mb-3">
+                {/* Integrated horizontally-scrollable chip strip */}
+                <div className="flex items-center gap-1.5 mb-3 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
                   <ChipTrigger
                     icon={<Percent className="h-3 w-3" />}
                     label="Disc"
-                    value={`${discountPct}%`}
+                    value={
+                      discountValue === 0
+                        ? "Add"
+                        : discountMode === "flat-off"
+                          ? `−₹${discountValue}`
+                          : `${discountMode === "pct-add" ? "+" : "−"}${discountValue}%`
+                    }
                     onClick={() => setPicker("discount")}
-                    tone={discountPct > 0 ? "rose-active" : "neutral"}
+                    tone={discountValue !== 0 ? "rose-active" : "neutral"}
                   />
                   <ChipTrigger
                     icon={<Receipt className="h-3 w-3" />}
                     label="GST"
-                    value={`${taxPct}%`}
+                    value={taxPct === 0 ? "0%" : `${taxPct}% ${gstMode === "include" ? "incl" : ""}`.trim()}
                     onClick={() => setPicker("gst")}
                     tone={taxPct > 0 ? "gold-active" : "neutral"}
+                  />
+                  <ChipTrigger
+                    icon={<Tag className="h-3 w-3" />}
+                    label="Coupon"
+                    value={coupon ? coupon.code : "Apply"}
+                    onClick={() => setPicker("coupon")}
+                    tone={coupon ? "rose-active" : "neutral"}
                   />
                   <ChipTrigger
                     icon={<Truck className="h-3 w-3" />}
@@ -490,12 +503,21 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   <Row label="Subtotal" value={`₹${subtotal.toLocaleString()}`} />
                   {discountAmt > 0 && (
                     <Row
-                      label={`Discount (${discountPct}%)`}
+                      label={`Discount (${discountPctLabel}${coupon ? ` · ${coupon.code}` : ""})`}
                       value={`-₹${discountAmt.toFixed(0)}`}
                     />
                   )}
-                  {taxAmt > 0 && (
+                  {surcharge > 0 && (
+                    <Row label={`Surcharge (${discountValue}%)`} value={`+₹${surcharge.toFixed(0)}`} />
+                  )}
+                  {gstMode === "add" && taxAmt > 0 && (
                     <Row label={`GST (${taxPct}%)`} value={`+₹${taxAmt.toFixed(0)}`} />
+                  )}
+                  {gstMode === "include" && taxPct > 0 && (
+                    <Row
+                      label={`GST (${taxPct}% incl)`}
+                      value={`incl ₹${Math.abs(taxAmt).toFixed(0)}`}
+                    />
                   )}
                   {deliveryFee > 0 && <Row label="Delivery" value={`+₹${deliveryFee}`} />}
                   <div className="border-t border-dashed border-[color:oklch(0.78_0.14_82/0.5)] pt-1.5 mt-1.5 flex items-center justify-between">
