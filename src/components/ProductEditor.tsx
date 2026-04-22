@@ -403,6 +403,128 @@ export function ProductEditor({
             />
           </section>
 
+          {/* === SHOP CATEGORY MAPPING === */}
+          <section className="rounded-2xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <Tags className="h-3 w-3" /> Shop Category Mapping
+              </p>
+              <span className="text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+                visible in customer dukan
+              </span>
+            </div>
+            <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-snug">
+              Tap to map this product.{" "}
+              <StarIcon className="inline h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37] mx-0.5" />{" "}
+              = primary section (long-press to set).
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(
+                new Set([...SHOP_CATEGORIES, ...(draft.categoryTags ?? [])])
+              ).map((cat) => {
+                const selected = (draft.categoryTags ?? []).includes(cat);
+                const isPrimary = draft.primaryCategory === cat;
+                return (
+                  <CategoryChip
+                    key={cat}
+                    cat={cat}
+                    selected={selected}
+                    isPrimary={isPrimary}
+                    onToggle={() => {
+                      setDraft((d) => {
+                        const tags = d.categoryTags ?? [];
+                        const next = tags.includes(cat)
+                          ? tags.filter((t) => t !== cat)
+                          : [...tags, cat];
+                        let primary = d.primaryCategory ?? "";
+                        if (!next.includes(primary)) primary = next[0] ?? "";
+                        return {
+                          ...d,
+                          categoryTags: next,
+                          primaryCategory: primary,
+                          category: primary || d.category,
+                        };
+                      });
+                    }}
+                    onMakePrimary={() => {
+                      setDraft((d) => ({
+                        ...d,
+                        primaryCategory: cat,
+                        category: cat,
+                        categoryTags: Array.from(
+                          new Set([...(d.categoryTags ?? []), cat])
+                        ),
+                      }));
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Custom add */}
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                value={customCat}
+                onChange={(e) => setCustomCat(e.target.value)}
+                placeholder="+ Add custom category"
+                className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2.5 py-1.5 text-xs outline-none focus:border-[#d4af37]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && customCat.trim()) {
+                    const tag = customCat.trim();
+                    setDraft((d) => ({
+                      ...d,
+                      categoryTags: Array.from(
+                        new Set([...(d.categoryTags ?? []), tag])
+                      ),
+                      primaryCategory: d.primaryCategory || tag,
+                      category: d.category || tag,
+                    }));
+                    setCustomCat("");
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const tag = customCat.trim();
+                  if (!tag) return;
+                  setDraft((d) => ({
+                    ...d,
+                    categoryTags: Array.from(
+                      new Set([...(d.categoryTags ?? []), tag])
+                    ),
+                    primaryCategory: d.primaryCategory || tag,
+                    category: d.category || tag,
+                  }));
+                  setCustomCat("");
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold text-[color:oklch(0.18_0.06_18)] active:scale-95"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)",
+                }}
+              >
+                <Plus className="inline h-3 w-3 mr-0.5" strokeWidth={3} /> Add
+              </button>
+            </div>
+
+            {/* Summary */}
+            {(draft.categoryTags ?? []).length > 0 && (
+              <div className="rounded-xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 text-[10px] text-[color:oklch(0.42_0.10_82)]">
+                <span className="font-bold">Mapped to:</span>{" "}
+                {(draft.categoryTags ?? []).join(" · ")}
+                {draft.primaryCategory && (
+                  <>
+                    {" · "}
+                    <span className="font-bold text-[color:oklch(0.30_0.05_85)]">
+                      Primary: {draft.primaryCategory}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* === BASIC === */}
           <Field
             label="Product Name"
