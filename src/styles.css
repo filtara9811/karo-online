@@ -308,3 +308,57 @@ body[data-variation-open="true"] [data-bottom-action-bar] {
   from { width: 0%; }
   to { width: 100%; }
 }
+
+/* === Visiting-card 3D flip === */
+.flip-3d {
+  perspective: 1400px;
+}
+.flip-3d-inner {
+  position: relative;
+  width: 100%;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+}
+.flip-3d-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-3d-face {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.flip-3d-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* Marquee infinite scroll for top products */
+@keyframes marquee-x {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-x {
+  animation: marquee-x 28s linear infinite;
+  will-change: transform;
+}
+.marquee-x.paused,
+.marquee-x:active {
+  animation-play-state: paused;
+}
+
+/* Banner crossfade dots */
+@keyframes banner-fade {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Scanner laser line */
+@keyframes scanner-laser {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(180px); }
+  100% { transform: translateY(0); }
+}
+.scanner-laser {
+  animation: scanner-laser 1.8s ease-in-out infinite;
+  box-shadow: 0 0 14px 2px #34d399, 0 0 30px 4px rgba(52, 211, 153, 0.55);
+}

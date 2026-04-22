@@ -17,6 +17,8 @@ export type Product = {
   category: string;
   variations?: { label: string; value: string }[];
   badge?: string;
+  /** Optional wholesale price; falls back to price * 0.85 */
+  wholesalePrice?: number;
 };
 
 export const PRODUCTS: Product[] = [
