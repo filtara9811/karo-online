@@ -20,12 +20,6 @@ const RESELLING_OPTIONS: ActionOption[] = [
   { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
 ];
 
-const VENDOR_OPTIONS: ActionOption[] = [
-  { value: "join", label: "Join as Partner", sub: "Become a Karo Online vendor", icon: goldBriefcase, badge: "NEW" },
-  { value: "lead", label: "Lead Selling Business", sub: "Earn from qualified leads", icon: goldUser },
-  { value: "refer", label: "Refer & Earn", sub: "Bring partners · earn commission", icon: goldPin },
-];
-
 export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
