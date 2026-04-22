@@ -156,19 +156,14 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
-  const [picker, setPicker] = useState<null | "reselling" | "vendor" | "browse">(null);
+  const [picker, setPicker] = useState<null | "reselling" | "browse">(null);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
     if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
-    else if (value === "vendor") setTimeout(() => setPicker("vendor"), 350);
+    else if (value === "vendor") setTimeout(() => navigate({ to: "/register" }), 250);
     else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
-  };
-
-  const handleVendorSelect = () => {
-    setPicker(null);
-    setTimeout(() => navigate({ to: "/register" }), 250);
   };
 
   const handleBrowsePick = (mode: "products" | "services") => {
@@ -234,14 +229,6 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         subtitle="Choose how you want to engage"
         options={RESELLING_OPTIONS}
         onSelect={handleResellingSelect}
-        onClose={() => setPicker(null)}
-      />
-      <ActionPicker
-        open={picker === "vendor"}
-        title="Join as Vendor"
-        subtitle="Lead-selling business onboarding"
-        options={VENDOR_OPTIONS}
-        onSelect={handleVendorSelect}
         onClose={() => setPicker(null)}
       />
       <ProductServicePicker
