@@ -13,7 +13,8 @@ import {
   Check,
   ImagePlus,
 } from "lucide-react";
-import { PRODUCTS, type Product } from "@/lib/products";
+import { PRODUCTS } from "@/lib/products";
+import type { Product } from "@/lib/products";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
