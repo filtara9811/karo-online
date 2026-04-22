@@ -17,6 +17,7 @@ import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
@@ -62,6 +63,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
+  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
+  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
+  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cart'
     | '/chat'
+    | '/checkout'
     | '/home'
     | '/orders'
     | '/profile'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cart'
     | '/chat'
+    | '/checkout'
     | '/home'
     | '/orders'
     | '/profile'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cart'
     | '/chat'
+    | '/checkout'
     | '/home'
     | '/orders'
     | '/profile'
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CartRoute: typeof CartRoute
   ChatRoute: typeof ChatRoute
+  CheckoutRoute: typeof CheckoutRoute
   HomeRoute: typeof HomeRoute
   OrdersRoute: typeof OrdersRoute
   ProfileRoute: typeof ProfileRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -279,6 +299,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CartRoute: CartRoute,
   ChatRoute: ChatRoute,
+  CheckoutRoute: CheckoutRoute,
   HomeRoute: HomeRoute,
   OrdersRoute: OrdersRoute,
   ProfileRoute: ProfileRoute,
