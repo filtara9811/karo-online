@@ -981,3 +981,404 @@ function CropOverlay({
     </div>
   );
 }
+
+// ================== SHEET TRIGGER ROW ==================
+
+function SheetTriggerRow({
+  icon,
+  title,
+  hint,
+  value,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint?: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 rounded-2xl bg-white/85 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 text-left active:scale-[0.99] transition shadow-sm"
+    >
+      <span
+        className="h-9 w-9 rounded-xl grid place-items-center text-[color:oklch(0.18_0.06_18)] shadow-sm flex-shrink-0"
+        style={{ background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37)" }}
+      >
+        {icon}
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
+            {title}
+          </span>
+          {hint && (
+            <span className="text-[9px] italic text-[color:oklch(0.55_0.10_82)]">· {hint}</span>
+          )}
+        </span>
+        <span className="block mt-0.5 text-xs font-display font-bold text-[color:oklch(0.30_0.05_85)] truncate">
+          {value}
+        </span>
+      </span>
+      <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0" />
+    </button>
+  );
+}
+
+// ================== BOTTOM SHEET SHELL ==================
+
+function BottomSheetShell({
+  title,
+  subtitle,
+  onClose,
+  footer,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+  return (
+    <div className="fixed inset-0 z-[95] flex items-end justify-center">
+      <button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.55)] backdrop-blur-md"
+        style={{ animation: "overlay-in 0.25s ease-out" }}
+      />
+      <div
+        className="relative w-full max-w-md rounded-t-3xl pb-[env(safe-area-inset-bottom)] max-h-[88vh] flex flex-col"
+        style={{
+          background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 35%, #fbf3d9 100%)",
+          boxShadow: "0 -20px 60px -12px rgba(212,175,55,0.45)",
+          animation: "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      >
+        <div className="pt-3 pb-1 grid place-items-center">
+          <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
+        </div>
+        <div className="px-5 pb-2 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ Picker ✦</p>
+            <h3 className="font-display text-lg text-gold-gradient font-bold">{title}</h3>
+            {subtitle && (
+              <p className="text-[10px] text-[color:oklch(0.45_0.08_85)]">{subtitle}</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+          >
+            <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-3">{children}</div>
+        {footer && (
+          <div className="px-5 pt-2 pb-3 border-t border-[color:oklch(0.78_0.14_82/0.3)]">{footer}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ================== CATEGORY BOTTOM SHEET ==================
+
+function CategoryBottomSheet({
+  tags,
+  primary,
+  customCat,
+  setCustomCat,
+  onClose,
+  onChange,
+}: {
+  tags: string[];
+  primary: string;
+  customCat: string;
+  setCustomCat: (v: string) => void;
+  onClose: () => void;
+  onChange: (tags: string[], primary: string) => void;
+}) {
+  const toggle = (cat: string) => {
+    const next = tags.includes(cat) ? tags.filter((t) => t !== cat) : [...tags, cat];
+    let p = primary;
+    if (!next.includes(p)) p = next[0] ?? "";
+    onChange(next, p);
+  };
+  const makePrimary = (cat: string) => {
+    const next = Array.from(new Set([...tags, cat]));
+    onChange(next, cat);
+  };
+  const addCustom = () => {
+    const tag = customCat.trim();
+    if (!tag) return;
+    const next = Array.from(new Set([...tags, tag]));
+    onChange(next, primary || tag);
+    setCustomCat("");
+  };
+
+  return (
+    <BottomSheetShell
+      title="Map to categories"
+      subtitle="Helps customers find this product in the right section."
+      onClose={onClose}
+      footer={
+        <button
+          onClick={onClose}
+          className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow"
+          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+        >
+          <Check className="inline h-4 w-4 mr-1" strokeWidth={3} /> Done
+        </button>
+      }
+    >
+      <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-snug">
+        Tap to map ·{" "}
+        <StarIcon className="inline h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37] mx-0.5" /> long-press
+        for primary.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {Array.from(new Set([...SHOP_CATEGORIES, ...tags])).map((cat) => (
+          <CategoryChip
+            key={cat}
+            cat={cat}
+            selected={tags.includes(cat)}
+            isPrimary={primary === cat}
+            onToggle={() => toggle(cat)}
+            onMakePrimary={() => makePrimary(cat)}
+          />
+        ))}
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <input
+          value={customCat}
+          onChange={(e) => setCustomCat(e.target.value)}
+          placeholder="+ Add custom category"
+          className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2.5 py-1.5 text-xs outline-none focus:border-[#d4af37]"
+          onKeyDown={(e) => e.key === "Enter" && addCustom()}
+        />
+        <button
+          onClick={addCustom}
+          className="px-3 py-1.5 rounded-lg text-xs font-display font-bold text-[color:oklch(0.18_0.06_18)] active:scale-95"
+          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+        >
+          <Plus className="inline h-3 w-3 mr-0.5" strokeWidth={3} /> Add
+        </button>
+      </div>
+      {tags.length > 0 && (
+        <div className="rounded-xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 text-[11px] text-[color:oklch(0.42_0.10_82)]">
+          <span className="font-bold">Mapped:</span> {tags.join(" · ")}
+          {primary && (
+            <>
+              {" · "}
+              <span className="font-bold text-[color:oklch(0.30_0.05_85)]">Primary: {primary}</span>
+            </>
+          )}
+        </div>
+      )}
+    </BottomSheetShell>
+  );
+}
+
+// ================== VARIATION BOTTOM SHEET ==================
+
+const COLOR_PRESETS = [
+  { name: "Red", hex: "#dc2626" },
+  { name: "Black", hex: "#111827" },
+  { name: "White", hex: "#f8fafc" },
+  { name: "Gold", hex: "#d4af37" },
+  { name: "Blue", hex: "#2563eb" },
+  { name: "Green", hex: "#16a34a" },
+  { name: "Pink", hex: "#ec4899" },
+  { name: "Beige", hex: "#d6c2a4" },
+];
+
+const SIZE_PRESETS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
+
+function VariationBottomSheet({
+  variations,
+  defaultPrice,
+  onClose,
+  onChange,
+}: {
+  variations: Variation[];
+  defaultPrice: number;
+  onClose: () => void;
+  onChange: (list: Variation[]) => void;
+}) {
+  const update = (id: string, patch: Partial<Variation>) =>
+    onChange(variations.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  const remove = (id: string) => onChange(variations.filter((v) => v.id !== id));
+  const add = () =>
+    onChange([
+      ...variations,
+      { id: `v-${Date.now()}`, label: "", price: defaultPrice, size: "", color: "" },
+    ]);
+
+  return (
+    <BottomSheetShell
+      title="Attributes & Variations"
+      subtitle="Add image, size and color for each variation."
+      onClose={onClose}
+      footer={
+        <button
+          onClick={onClose}
+          className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow"
+          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+        >
+          <Check className="inline h-4 w-4 mr-1" strokeWidth={3} /> Done
+        </button>
+      }
+    >
+      {variations.length === 0 && (
+        <p className="text-[12px] text-center py-3 italic text-[color:oklch(0.55_0.10_82)]">
+          No variations yet · tap "Add Variation" below.
+        </p>
+      )}
+
+      {variations.map((v) => (
+        <VariationRow
+          key={v.id}
+          v={v}
+          onChange={(patch) => update(v.id, patch)}
+          onRemove={() => remove(v.id)}
+        />
+      ))}
+
+      <button
+        onClick={add}
+        className="w-full py-2.5 rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] flex items-center justify-center gap-1 text-[12px] font-display font-bold text-[color:oklch(0.42_0.10_82)] bg-white/70 active:scale-[0.99]"
+      >
+        <Plus className="h-4 w-4" strokeWidth={3} /> Add Variation
+      </button>
+    </BottomSheetShell>
+  );
+}
+
+function VariationRow({
+  v,
+  onChange,
+  onRemove,
+}: {
+  v: Variation;
+  onChange: (patch: Partial<Variation>) => void;
+  onRemove: () => void;
+}) {
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => onChange({ image: String(r.result) });
+    r.readAsDataURL(f);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] p-2.5 space-y-2">
+      <div className="flex items-start gap-2">
+        {/* Image */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="h-16 w-16 flex-shrink-0 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center bg-[color:oklch(0.97_0.02_85)] overflow-hidden"
+        >
+          {v.image ? (
+            <img src={v.image} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center text-[color:oklch(0.55_0.10_82)]">
+              <ImageIcon className="h-4 w-4" />
+              <span className="text-[8px] font-bold">Add Pic</span>
+            </div>
+          )}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <input
+            value={v.label}
+            onChange={(e) => onChange({ label: e.target.value })}
+            placeholder="Label · e.g. Red XL"
+            className="w-full rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2 py-1.5 text-xs font-bold outline-none focus:border-[#d4af37]"
+          />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[color:oklch(0.55_0.10_82)]">₹</span>
+              <input
+                value={v.price || ""}
+                onChange={(e) => onChange({ price: Number(e.target.value) || 0 })}
+                type="number"
+                placeholder="0"
+                className="w-full rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] pl-5 pr-2 py-1.5 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
+              />
+            </div>
+            <button
+              onClick={onRemove}
+              className="h-7 w-7 grid place-items-center rounded-full bg-rose-50 text-rose-500 active:scale-90 flex-shrink-0"
+              aria-label="Remove variation"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Size presets */}
+      <div>
+        <p className="text-[9px] uppercase tracking-wider text-[color:oklch(0.55_0.10_82)] font-bold mb-1">
+          Size
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {SIZE_PRESETS.map((s) => (
+            <button
+              key={s}
+              onClick={() => onChange({ size: v.size === s ? "" : s })}
+              className={`px-2 py-1 rounded-full text-[10px] font-bold border transition ${
+                v.size === s
+                  ? "border-[#d4af37] text-[color:oklch(0.18_0.06_18)] bg-gradient-to-b from-[#fff3c8] to-[#f5d97a]"
+                  : "border-[color:oklch(0.78_0.14_82/0.4)] text-[color:oklch(0.55_0.10_82)] bg-white"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Color presets */}
+      <div>
+        <p className="text-[9px] uppercase tracking-wider text-[color:oklch(0.55_0.10_82)] font-bold mb-1">
+          Color
+        </p>
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {COLOR_PRESETS.map((c) => (
+            <button
+              key={c.hex}
+              onClick={() => onChange({ color: v.color === c.hex ? "" : c.hex })}
+              aria-label={c.name}
+              className={`h-6 w-6 rounded-full border-2 transition ${
+                v.color === c.hex ? "border-[#d4af37] scale-110 shadow" : "border-white shadow-sm"
+              }`}
+              style={{ background: c.hex }}
+            />
+          ))}
+          <input
+            value={v.color ?? ""}
+            onChange={(e) => onChange({ color: e.target.value })}
+            placeholder="#hex"
+            className="w-20 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.4)] px-2 py-1 text-[10px] outline-none focus:border-[#d4af37]"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
