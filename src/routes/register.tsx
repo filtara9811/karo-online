@@ -4,7 +4,7 @@ import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin } from "lucide-r
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { OtpModal } from "@/components/OtpModal";
-import { AddressPicker } from "@/components/AddressPicker";
+import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
