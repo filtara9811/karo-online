@@ -1,18 +1,41 @@
 import { useEffect, useState } from "react";
 import { X, Check, Minus, Plus } from "lucide-react";
 
+export type ValueMode = {
+  /** unit/key id for outer state — caller decides what to do with it */
+  id: string;
+  /** label shown in the toggle pill */
+  label: string;
+  /** unit applied to the value when this mode is active */
+  unit: "%" | "₹";
+  /** sign — positive adds, negative subtracts */
+  sign?: 1 | -1;
+};
+
 type Props = {
   title: string;
   subtitle?: string;
-  unit: "%" | "₹";
+  /** Current value (sign of value reflects sign of mode) */
   value: number;
   presets: number[];
   min?: number;
   max?: number;
   step?: number;
-  onPick: (v: number) => void;
+  /** Picker tone */
+  tone?: "gold" | "rose" | "emerald" | "indigo";
+  /**
+   * Optional set of modes (flat/percent, include/add gst, +/- discount).
+   * When provided the sheet shows a segmented mode switcher and returns mode id.
+   */
+  modes?: ValueMode[];
+  /** Currently active mode id (must match one of `modes`) */
+  modeId?: string;
+  /**
+   * Single-mode shortcut — used when modes is omitted.
+   */
+  unit?: "%" | "₹";
+  onPick: (v: number, modeId?: string) => void;
   onClose: () => void;
-  tone?: "gold" | "rose" | "emerald";
 };
 
 const TONES = {
@@ -31,22 +54,33 @@ const TONES = {
     bg: "linear-gradient(180deg, #d1fae5, #6ee7b7)",
     text: "oklch(0.30 0.12 160)",
   },
+  indigo: {
+    accent: "#4f46e5",
+    bg: "linear-gradient(180deg, #e0e7ff, #a5b4fc)",
+    text: "oklch(0.30 0.15 270)",
+  },
 };
 
 export function ValuePickerSheet({
   title,
   subtitle,
-  unit,
   value,
   presets,
   min = 0,
   max = 100,
   step = 1,
+  tone = "gold",
+  modes,
+  modeId,
+  unit,
   onPick,
   onClose,
-  tone = "gold",
 }: Props) {
-  const [v, setV] = useState(value);
+  const initialMode = modes?.find((m) => m.id === modeId) ?? modes?.[0];
+  const [activeId, setActiveId] = useState<string | undefined>(initialMode?.id);
+  const active = modes?.find((m) => m.id === activeId);
+  const effectiveUnit = (active?.unit ?? unit ?? "%") as "%" | "₹";
+  const [v, setV] = useState(Math.abs(value));
   const t = TONES[tone];
 
   useEffect(() => {
@@ -57,6 +91,12 @@ export function ValuePickerSheet({
   }, []);
 
   const clamp = (n: number) => Math.max(min, Math.min(max, n));
+
+  const apply = () => {
+    const sign = active?.sign ?? 1;
+    onPick(v * sign, active?.id);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center">
@@ -95,20 +135,55 @@ export function ValuePickerSheet({
           </button>
         </div>
 
+        {/* Mode segmented switcher */}
+        {modes && modes.length > 1 && (
+          <div className="px-5 pb-3">
+            <div className="grid gap-1 p-1 rounded-xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.4)]"
+              style={{ gridTemplateColumns: `repeat(${modes.length}, minmax(0, 1fr))` }}
+            >
+              {modes.map((m) => {
+                const isActive = activeId === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setActiveId(m.id)}
+                    className={`py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 ${
+                      isActive
+                        ? "text-[color:oklch(0.18_0.06_18)] shadow"
+                        : "text-[color:oklch(0.55_0.10_82)]"
+                    }`}
+                    style={
+                      isActive
+                        ? { background: t.bg, border: `1px solid ${t.accent}` }
+                        : undefined
+                    }
+                  >
+                    {m.sign === -1 && <Minus className="h-3 w-3" strokeWidth={3} />}
+                    {m.sign === 1 && <Plus className="h-3 w-3" strokeWidth={3} />}
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Big value display */}
         <div className="px-5 pb-3 grid place-items-center">
           <div
             className="rounded-3xl px-8 py-4 border-2 shadow-md flex items-baseline gap-1"
             style={{ borderColor: t.accent, background: t.bg }}
           >
-            <span
-              className="font-display font-bold text-4xl"
-              style={{ color: t.text }}
-            >
-              {unit === "₹" ? "₹" : ""}
+            {active?.sign === -1 && (
+              <span className="font-display font-bold text-2xl" style={{ color: t.text }}>
+                −
+              </span>
+            )}
+            <span className="font-display font-bold text-4xl" style={{ color: t.text }}>
+              {effectiveUnit === "₹" ? "₹" : ""}
               {v}
             </span>
-            {unit === "%" && (
+            {effectiveUnit === "%" && (
               <span className="font-display font-bold text-xl" style={{ color: t.text }}>
                 %
               </span>
@@ -147,41 +222,34 @@ export function ValuePickerSheet({
           </p>
           <div className="grid grid-cols-4 gap-2">
             {presets.map((p) => {
-              const active = v === p;
+              const isActive = v === p;
               return (
                 <button
                   key={p}
                   onClick={() => setV(p)}
                   className={`py-2 rounded-xl font-display font-bold text-sm border-2 transition active:scale-95 ${
-                    active
+                    isActive
                       ? "shadow-gold-glow text-[color:oklch(0.18_0.06_18)]"
                       : "bg-white text-[color:oklch(0.42_0.10_82)] border-[color:oklch(0.78_0.14_82/0.4)]"
                   }`}
                   style={
-                    active
-                      ? {
-                          background: t.bg,
-                          borderColor: t.accent,
-                        }
+                    isActive
+                      ? { background: t.bg, borderColor: t.accent }
                       : undefined
                   }
                 >
-                  {unit === "₹" ? "₹" : ""}
+                  {effectiveUnit === "₹" ? "₹" : ""}
                   {p}
-                  {unit === "%" ? "%" : ""}
+                  {effectiveUnit === "%" ? "%" : ""}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Confirm */}
         <div className="px-5 pb-5">
           <button
-            onClick={() => {
-              onPick(v);
-              onClose();
-            }}
+            onClick={apply}
             className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-base text-[color:oklch(0.18_0.06_18)] shadow-gold-glow flex items-center justify-center gap-2"
             style={{
               background:
@@ -189,9 +257,11 @@ export function ValuePickerSheet({
             }}
           >
             <Check className="h-5 w-5" strokeWidth={3} />
-            Apply {unit === "₹" ? "₹" : ""}
+            Apply {active?.sign === -1 ? "−" : ""}
+            {effectiveUnit === "₹" ? "₹" : ""}
             {v}
-            {unit === "%" ? "%" : ""}
+            {effectiveUnit === "%" ? "%" : ""}
+            {active ? ` · ${active.label}` : ""}
           </button>
         </div>
       </div>
