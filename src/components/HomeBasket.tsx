@@ -50,7 +50,7 @@ export function HomeBasket() {
       <div
         data-home-basket
         className="fixed inset-x-0 z-30 pointer-events-none"
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 78px)" }}
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       >
         <div className="max-w-md mx-auto px-4">
           <button
