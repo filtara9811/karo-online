@@ -36,7 +36,7 @@ export function LuxPicker({ open, title, subtitle, options, onSelect, onClose }:
       <button
         aria-label="Close picker"
         onClick={onClose}
-        className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.75)] backdrop-blur-sm"
+        className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.55)] backdrop-blur-md"
         style={{ animation: "overlay-in 0.3s ease-out" }}
       />
 
@@ -67,10 +67,10 @@ export function LuxPicker({ open, title, subtitle, options, onSelect, onClose }:
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className="group w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 bg-gradient-to-br from-[oklch(0.22_0.11_20/0.55)] to-[oklch(0.13_0.06_18/0.7)] border border-[color:oklch(0.84_0.15_85/0.25)] hover:border-[color:oklch(0.84_0.15_85/0.7)] hover:shadow-gold-glow transition-all"
+              className="btn-3d group w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 bg-gradient-to-br from-white to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.45)] hover:border-[color:oklch(0.78_0.14_82)] hover:shadow-gold-glow transition-all"
               style={{ animation: `fade-up 0.5s ease-out ${i * 0.06}s both` }}
             >
-              <div className="relative h-14 w-14 rounded-xl grid place-items-center bg-gradient-to-br from-[oklch(0.26_0.13_22/0.7)] to-[oklch(0.10_0.04_14/0.8)] border border-[color:oklch(0.84_0.15_85/0.35)] shadow-gold-glow flex-shrink-0">
+              <div className="relative h-14 w-14 rounded-xl grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.5)] shadow-gold-glow flex-shrink-0">
                 <img
                   src={opt.icon}
                   alt=""
