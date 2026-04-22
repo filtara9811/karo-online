@@ -4,7 +4,6 @@ import { Bell, ShoppingBasket, Search, Star } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
-import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
