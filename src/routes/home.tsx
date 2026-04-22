@@ -53,6 +53,7 @@ function HomePage() {
   const [slide, setSlide] = useState(0);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [flying, setFlying] = useState<FlyingItem[]>([]);
+  const [pickerProduct, setPickerProduct] = useState<{ p: Product; el: HTMLElement } | null>(null);
   const productsRef = useRef<HTMLDivElement>(null);
   const { add, triggerFly } = useCart();
 
@@ -61,7 +62,7 @@ function HomePage() {
     return () => clearInterval(t);
   }, []);
 
-  const handleAdd = (p: Product, fromEl: HTMLElement) => {
+  const flyAndAdd = (p: Product, fromEl: HTMLElement, qty: number, variation?: string) => {
     const target = document.querySelector<HTMLElement>("[data-cart-target]");
     if (target) {
       const from = fromEl.getBoundingClientRect();
@@ -70,8 +71,18 @@ function HomePage() {
       setFlying((prev) => [...prev, { id, src: p.image, from, to }]);
       setTimeout(() => setFlying((prev) => prev.filter((f) => f.id !== id)), 850);
     }
-    add({ id: p.id, name: p.name, price: p.price, image: p.image });
+    for (let i = 0; i < qty; i++) {
+      add({ id: p.id, name: p.name, price: p.price, image: p.image, variation });
+    }
     triggerFly();
+  };
+
+  const handleAdd = (p: Product, fromEl: HTMLElement) => {
+    if ((p.variations?.length ?? 0) > 0) {
+      setPickerProduct({ p, el: fromEl });
+      return;
+    }
+    flyAndAdd(p, fromEl, 1);
   };
 
   const recommended = PRODUCTS;
