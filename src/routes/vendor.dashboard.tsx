@@ -18,6 +18,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import { LEADS as SHARED_LEADS } from "@/lib/leads";
+import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -29,28 +31,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
   component: VendorDashboard,
 });
 
-type LeadSource = "whatsapp" | "call" | "digital" | "quick";
-type LeadStatus = "new" | "process" | "success" | "rejected";
-
-type Lead = {
-  id: string;
-  name: string;
-  phone: string;
-  service: string;
-  amount: number;
-  source: LeadSource;
-  status: LeadStatus;
-  time: string;
-  note: string;
-};
-
-const LEADS: Lead[] = [
-  { id: "L-1042", name: "Aarav Kapoor", phone: "9250179030", service: "AC Service · Split", amount: 2100, source: "whatsapp", status: "new", time: "2 min ago", note: "Urgent · Same-day visit" },
-  { id: "L-1041", name: "Riya Sharma", phone: "9871156720", service: "Deep Cleaning · 3BHK", amount: 3499, source: "digital", status: "new", time: "18 min ago", note: "Weekend slot preferred" },
-  { id: "L-1039", name: "Karan Mehta", phone: "8287545843", service: "Plumbing Repair", amount: 899, source: "call", status: "process", time: "1 hr ago", note: "Bathroom leak" },
-  { id: "L-1037", name: "Ananya Verma", phone: "9988776655", service: "Salon at Home", amount: 1499, source: "quick", status: "success", time: "Yesterday", note: "Payout released" },
-  { id: "L-1031", name: "Vikram Singh", phone: "9123456780", service: "Pest Control", amount: 1899, source: "whatsapp", status: "rejected", time: "2 days ago", note: "Out of service area" },
-];
+const LEADS: Lead[] = SHARED_LEADS;
 
 const POTENTIAL = [
   { id: "P-01", title: "Kotak 811 Savings Account", earn: 2400, customers: 12, chance: "High" },
@@ -336,43 +317,50 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   const st = STATUS_META[lead.status];
   return (
     <article className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] overflow-hidden shadow-sm">
-      <div className="p-3 flex items-start gap-3">
-        <span
-          className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.18_0.06_18)] flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a)" }}
-        >
-          {lead.name.charAt(0)}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">{lead.name}</p>
-            <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
-          </div>
-          <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] truncate">{lead.service} · {lead.phone}</p>
-          {/* Source badge */}
+      <Link
+        to="/vendor/lead/$id"
+        params={{ id: lead.id }}
+        className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
+      >
+        <div className="flex items-start gap-3">
           <span
-            className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.78_0.14_82/0.4)]"
-            style={{ background: src.bg, color: src.text }}
+            className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.18_0.06_18)] flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a)" }}
           >
-            {src.icon}
-            via {src.label}
+            {lead.name.charAt(0)}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">{lead.name}</p>
+              <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
+            </div>
+            <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] truncate">{lead.service} · {lead.phone}</p>
+            {/* Source badge */}
+            <span
+              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.78_0.14_82/0.4)]"
+              style={{ background: src.bg, color: src.text }}
+            >
+              {src.icon}
+              via {src.label}
+            </span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0 mt-1" />
+        </div>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${st.tint}`}>
+            {st.icon}
+            {st.label}
+          </span>
+          <span className="font-display text-sm font-bold text-gold-gradient">
+            ₹{lead.amount.toLocaleString()}
           </span>
         </div>
-      </div>
 
-      <div className="px-3 pb-2 flex items-center justify-between gap-2">
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${st.tint}`}>
-          {st.icon}
-          {st.label}
-        </span>
-        <span className="font-display text-sm font-bold text-gold-gradient">
-          ₹{lead.amount.toLocaleString()}
-        </span>
-      </div>
-
-      <p className="px-3 pb-2 text-[11px] italic text-[color:oklch(0.45_0.08_85)] truncate">
-        “{lead.note}”
-      </p>
+        <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.08_85)] truncate">
+          “{lead.note}”
+        </p>
+      </Link>
 
       {/* Action bar */}
       <div className="flex items-stretch border-t border-[color:oklch(0.78_0.14_82/0.3)]">
