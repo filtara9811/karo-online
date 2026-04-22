@@ -2,13 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Shirt, Sparkles, ShoppingBasket, Tv, Home as HomeIcon, Gem,
-  Footprints, Lamp, Flower2, Trophy, Baby, Car, X, Flame, Crown, Star,
+  Footprints, Lamp, Flower2, Trophy, Baby, Car, X, Flame, Crown, Star, Plus, Check,
   type LucideIcon,
 } from "lucide-react";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import vendorDelivery from "@/assets/vendor-delivery.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { PRODUCTS, type Product } from "@/lib/products";
+import { useCart } from "@/hooks/use-cart";
+import { HomeBasket } from "@/components/HomeBasket";
+
+type FlyingItem = { id: number; src: string; from: DOMRect; to: DOMRect };
 
 export const Route = createFileRoute("/home")({
   head: () => ({
