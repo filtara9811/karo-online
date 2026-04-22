@@ -245,14 +245,31 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     setShowBillsSheet(false);
   };
 
-  const sendVia = (mode: "whatsapp" | "thermal" | "email" | "pdf") => {
+  const formatDate = (d = new Date()) =>
+    `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${d.getFullYear()} · ${d
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+
+  const sendVia = async (mode: "whatsapp" | "thermal" | "email" | "pdf") => {
     if (!cart.length && !done) return;
     const invoice = done?.invoice ?? "INV-" + Math.floor(100000 + Math.random() * 900000);
-    if (mode === "whatsapp" && customer?.phone) {
-      const msg = encodeURIComponent(
-        `Hi ${customer.name}, your invoice ${invoice} for ₹${total.toFixed(0)} from Ashhu's Digital Shop is ready. Thank you!`,
-      );
-      window.open(`https://wa.me/${customer.phone.replace(/\D/g, "")}?text=${msg}`, "_blank");
+    const tracking = done?.trackingId ?? "TRK-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+    if (mode === "whatsapp") {
+      const el = invoiceImgRef.current;
+      const phone = customer?.phone ?? "";
+      const caption = `Hi ${customer?.name ?? "there"}, here is your invoice ${invoice} (Tracking #${tracking}) for ₹${total.toFixed(0)} from Ashhu's Digital Shop. Thank you!`;
+      if (el) {
+        const png = await captureInvoicePng(el);
+        await shareInvoicePng(png, `${invoice}.png`, { phone, caption });
+      } else if (phone) {
+        window.open(
+          `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(caption)}`,
+          "_blank",
+        );
+      }
     } else if (mode === "thermal" || mode === "pdf") {
       window.print();
     }
@@ -261,8 +278,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const generate = () => {
     if (!cart.length) return;
     const invoice = "INV-" + Math.floor(100000 + Math.random() * 900000);
-    setDone({ invoice, total });
-    setCart([]);
+    const trackingId = "TRK-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+    setDone({ invoice, trackingId, total, date: formatDate() });
+    // Keep cart so the off-screen InvoiceImage can still render the items;
+    // it will be reset when user closes / starts a new bill.
   };
 
   const totalHeld = held.length + (cart.length || customer ? 1 : 0);
