@@ -758,6 +758,38 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           onClose={() => setPicker(null)}
         />
       )}
+
+      {/* Off-screen invoice for WhatsApp/PNG capture */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <InvoiceImage
+          ref={invoiceImgRef}
+          invoice={done?.invoice ?? "INV-PREVIEW"}
+          trackingId={done?.trackingId ?? "TRK-PREVIEW"}
+          date={done?.date ?? formatDate()}
+          shopName="Ashhu's Digital Shop"
+          shopTagline="Premium digital dukan"
+          customer={customer}
+          cart={cart}
+          subtotal={subtotal}
+          discountAmt={discountAmt}
+          discountLabel={discountValue ? discountPctLabel : undefined}
+          taxAmt={taxAmt}
+          taxLabel={taxPct ? `${taxPct}% ${gstMode}` : undefined}
+          deliveryFee={deliveryFee}
+          couponCode={coupon?.code}
+          total={total}
+          payMode={PAY_LABEL[payMode]}
+        />
+      </div>
     </div>
   );
 }
