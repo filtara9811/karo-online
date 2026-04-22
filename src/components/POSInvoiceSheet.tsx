@@ -534,10 +534,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                 <button
                   onClick={() => setShowBillsSheet(true)}
                   aria-label="Manage bills & customers"
-                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-white active:scale-90 transition"
+                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-[color:oklch(0.18_0.06_18)] active:scale-90 transition"
                   style={{
                     background:
-                      "linear-gradient(180deg, oklch(0.55 0.22 320), oklch(0.35 0.18 320))",
+                      "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
                   }}
                 >
                   <Plus className="h-5 w-5" strokeWidth={3} />
@@ -559,7 +559,7 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   style={{
                     background: customer
                       ? "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)"
-                      : "linear-gradient(180deg, oklch(0.45 0.18 320), oklch(0.30 0.15 320))",
+                      : "linear-gradient(180deg, oklch(0.62 0.16 165), oklch(0.42 0.14 165))",
                   }}
                 >
                   {customer ? (
