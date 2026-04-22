@@ -4,7 +4,6 @@ import { Bell, ShoppingBasket, Search, Star } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
-import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
@@ -18,12 +17,6 @@ const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
   { value: "vendor", label: "Vendor", sub: "Onboard your business · sell services", icon: goldBriefcase },
   { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
-];
-
-const VENDOR_OPTIONS: ActionOption[] = [
-  { value: "join", label: "Join as Partner", sub: "Become a Karo Online vendor", icon: goldBriefcase, badge: "NEW" },
-  { value: "lead", label: "Lead Selling Business", sub: "Earn from qualified leads", icon: goldUser },
-  { value: "refer", label: "Refer & Earn", sub: "Bring partners · earn commission", icon: goldPin },
 ];
 
 export function AppShell() {
@@ -162,19 +155,14 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
-  const [picker, setPicker] = useState<null | "reselling" | "vendor" | "browse">(null);
+  const [picker, setPicker] = useState<null | "reselling" | "browse">(null);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
     if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
-    else if (value === "vendor") setTimeout(() => setPicker("vendor"), 350);
+    else if (value === "vendor") setTimeout(() => navigate({ to: "/register" }), 250);
     else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
-  };
-
-  const handleVendorSelect = () => {
-    setPicker(null);
-    setTimeout(() => navigate({ to: "/register" }), 250);
   };
 
   const handleBrowsePick = (mode: "products" | "services") => {
@@ -240,14 +228,6 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         subtitle="Choose how you want to engage"
         options={RESELLING_OPTIONS}
         onSelect={handleResellingSelect}
-        onClose={() => setPicker(null)}
-      />
-      <ActionPicker
-        open={picker === "vendor"}
-        title="Join as Vendor"
-        subtitle="Lead-selling business onboarding"
-        options={VENDOR_OPTIONS}
-        onSelect={handleVendorSelect}
         onClose={() => setPicker(null)}
       />
       <ProductServicePicker

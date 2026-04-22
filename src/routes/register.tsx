@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin } from "lucide-react";
-import mascotHolding from "@/assets/mascot-holding.png";
+import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { OtpModal } from "@/components/OtpModal";
 import goldMale from "@/assets/gold-male.png";
@@ -51,6 +51,25 @@ function Register() {
   const [otpOpen, setOtpOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Bottom-sheet drag setup — three snap points based on viewport height
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  // Snap positions: y = translateY of the sheet (smaller = taller open)
+  const SNAP_FULL = vh * 0.06;   // ~94% open
+  const SNAP_HALF = vh * 0.30;   // ~70% open
+  const SNAP_PEEK = vh * 0.55;   // ~45% open
+  const SNAPS = useMemo(() => [SNAP_FULL, SNAP_HALF, SNAP_PEEK], [SNAP_FULL, SNAP_HALF, SNAP_PEEK]);
+  const y = useMotionValue(SNAP_HALF);
+
+  useEffect(() => {
+    // Open with a slide-up entrance to the half snap
+    animate(y, SNAP_HALF, { type: "spring", stiffness: 220, damping: 28 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const snapTo = (target: number) => {
+    animate(y, target, { type: "spring", stiffness: 260, damping: 30 });
+  };
+
   const reachedStep = useMemo<StepKey>(() => {
     if (!name.trim()) return "name";
     if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
@@ -63,6 +82,13 @@ function Register() {
     const idx = STEP_ORDER.indexOf(reachedStep);
     return STEP_ORDER.slice(0, idx + 1);
   }, [reachedStep]);
+
+  // As more steps reveal, auto-snap upward so the user can see them
+  useEffect(() => {
+    if (visibleSteps.length >= 4) snapTo(SNAP_FULL);
+    else if (visibleSteps.length >= 2) snapTo(SNAP_HALF);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleSteps.length]);
 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
 
@@ -86,65 +112,129 @@ function Register() {
     setTimeout(() => setPicker("email"), 500);
   };
 
+  const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
+    const current = y.get();
+    const v = info.velocity.y;
+
+    // Velocity-based snapping
+    if (v < -500) return snapTo(SNAP_FULL);
+    if (v > 500) return snapTo(SNAP_PEEK);
+
+    // Snap to nearest
+    let nearest = SNAPS[0];
+    let minDist = Math.abs(current - SNAPS[0]);
+    for (const s of SNAPS) {
+      const d = Math.abs(current - s);
+      if (d < minDist) {
+        minDist = d;
+        nearest = s;
+      }
+    }
+    snapTo(nearest);
+  };
+
   return (
     <main
-      className="min-h-screen relative overflow-hidden"
+      className="fixed inset-0 overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at top, #fff5f0 0%, transparent 55%), radial-gradient(ellipse at bottom, #fce0d4 0%, transparent 50%), linear-gradient(160deg, #fff8f3 0%, #fbe4d6 50%, #f7d6c2 100%)",
+          "radial-gradient(ellipse at top, #fffaf0 0%, transparent 55%), radial-gradient(ellipse at bottom, #fdf6dd 0%, transparent 60%), linear-gradient(160deg, #fffdf5 0%, #fbf3d9 60%, #f5e9b8 100%)",
       }}
     >
-      <div className="relative max-w-md mx-auto px-5 pt-8 pb-32">
-        {/* Mascot — peeking from behind the card, holding it */}
-        <div className="relative mx-auto" style={{ width: "min(100%, 380px)" }}>
-          <img
-            src={mascotHolding}
-            alt="Welcome concierge"
-            className="absolute left-1/2 -translate-x-1/2 -top-4 w-[78%] pointer-events-none drop-shadow-[0_8px_18px_rgba(0,0,0,0.15)] z-10"
-            style={{ animation: "mascot-wave 3s ease-in-out infinite", transformOrigin: "50% 90%" }}
-          />
+      {/* Decorative gold orbs in background */}
+      <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.30),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.10_92/0.35),transparent_70%)] blur-2xl" />
 
-          {/* Pink card — mascot's hands appear to be holding it */}
-          <section
-            className="relative rounded-[28px] mt-[210px] px-6 pt-6 pb-7 z-20"
-            style={{
-              background: "linear-gradient(170deg, #fde2da 0%, #fbd4c5 50%, #f8c4b1 100%)",
-              boxShadow: "0 20px 60px -12px rgba(214, 102, 78, 0.35), 0 0 0 1.5px rgba(255,255,255,0.6) inset",
-              animation: "step-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both",
-            }}
+      {/* Back button */}
+      <button
+        onClick={() => navigate({ to: "/" })}
+        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-white/80 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-md"
+        aria-label="Close"
+      >
+        <svg className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+          <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {/* Mascot hint badge — peeking from the top */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <span className="font-display text-2xl text-gold-gradient font-bold tracking-tight">
+          Karo <span className="font-light">|</span> Online
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.45_0.08_85/0.85)]">
+          Premium Onboarding
+        </span>
+      </div>
+
+      {/* Draggable bottom sheet */}
+      <motion.section
+        drag="y"
+        dragConstraints={{ top: SNAP_FULL, bottom: SNAP_PEEK }}
+        dragElastic={0.08}
+        dragMomentum={false}
+        onDragEnd={handleDragEnd}
+        style={{ y, height: vh }}
+        className="absolute inset-x-0 top-0 z-20 will-change-transform"
+      >
+        <div
+          className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, #ffffff 0%, #fffdf5 35%, #fbf3d9 100%)",
+            boxShadow:
+              "0 -20px 60px -12px rgba(212,175,55,0.45), 0 0 0 1.5px rgba(255,255,255,0.7) inset",
+          }}
+        >
+          {/* Drag handle area — wider tappable region */}
+          <div className="pt-3 pb-1 grid place-items-center cursor-grab active:cursor-grabbing">
+            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37] shadow-[0_1px_4px_rgba(212,175,55,0.5)]" />
+          </div>
+
+          {/* Scrollable content (so when fully open, fields are reachable) */}
+          <div
+            className="h-[calc(100%-1.5rem)] overflow-y-auto overscroll-contain px-6 pb-32"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             {/* Top icons row */}
-            <div className="absolute top-3 right-4 flex items-center gap-2">
-              <button className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-white/70 grid place-items-center shadow-md">
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center shadow-md"
+                aria-label="Language"
+              >
                 <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
               </button>
-              <button className="h-9 w-9 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-md">
-                <Sun className="h-4 w-4 text-[color:oklch(0.55_0.18_60)]" strokeWidth={2.4} />
+              <button
+                className="h-9 w-9 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center shadow-md"
+                aria-label="Theme"
+              >
+                <Sun className="h-4 w-4 text-[color:oklch(0.55_0.15_82)]" strokeWidth={2.4} />
               </button>
             </div>
 
             {/* Heading */}
-            <div className="text-center mb-7 pt-1">
+            <div className="text-center mb-6 pt-1">
               <h1
-                className="font-display font-bold text-[34px] leading-none"
-                style={{ color: "#c2410c", textDecoration: "underline", textDecorationThickness: "2px", textUnderlineOffset: "5px" }}
+                className="font-display font-bold text-[34px] leading-none text-gold-gradient"
+                style={{
+                  textDecoration: "underline",
+                  textDecorationColor: "rgba(212,175,55,0.6)",
+                  textDecorationThickness: "2px",
+                  textUnderlineOffset: "5px",
+                }}
               >
                 Karo <span className="font-light">|</span> Online
               </h1>
-              <p
-                className="mt-2 text-base font-display italic"
-                style={{ color: "#9a3412", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "3px" }}
-              >
-                Sign - up
+              <p className="mt-2 text-base font-display italic text-[color:oklch(0.45_0.10_85)]">
+                <span style={{ borderBottom: "1px solid rgba(212,175,55,0.5)" }}>Sign - up</span>
               </p>
             </div>
 
             {/* Form fields with timeline */}
             <div className="space-y-1 relative">
-              <PinkField
+              <GoldField
                 Icon={User}
                 label="Enter full name"
-                hint={gender ? `Choose · ${gender}` : "Choe gander"}
+                hint={gender ? `Choose · ${gender}` : "Choose gender"}
                 value={name}
                 placeholder=""
                 filled={!!name.trim()}
@@ -155,10 +245,10 @@ function Register() {
               />
 
               {visibleSteps.includes("phone") && (
-                <PinkField
+                <GoldField
                   Icon={Phone}
-                  label="Enter  number choice"
-                  hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choe Number"}
+                  label="Enter number choice"
+                  hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choose number"}
                   value={phone}
                   placeholder=""
                   filled={phoneVerified}
@@ -171,10 +261,10 @@ function Register() {
               )}
 
               {visibleSteps.includes("otp") && (
-                <PinkField
+                <GoldField
                   Icon={ShieldCheck}
                   label="Enter your OTP"
-                  hint={phoneVerified ? "Verified ✓" : "Ato | otp"}
+                  hint={phoneVerified ? "Verified ✓" : "Auto · OTP"}
                   value={phoneVerified ? "● ● ● ● ● ●" : ""}
                   placeholder=""
                   filled={phoneVerified}
@@ -184,10 +274,10 @@ function Register() {
               )}
 
               {visibleSteps.includes("email") && (
-                <PinkField
+                <GoldField
                   Icon={Mail}
                   label="Gmail account choice"
-                  hint="Choe gmail"
+                  hint="Choose gmail"
                   value={email}
                   placeholder=""
                   filled={!!email.trim()}
@@ -197,10 +287,10 @@ function Register() {
               )}
 
               {visibleSteps.includes("address") && (
-                <PinkField
+                <GoldField
                   Icon={MapPin}
                   label="Address | location"
-                  hint="Choe | address"
+                  hint="Choose address"
                   value={address}
                   placeholder=""
                   filled={!!address.trim()}
@@ -220,8 +310,8 @@ function Register() {
                   onClick={() => setAgreed(!agreed)}
                   className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
                     agreed
-                      ? "bg-[#c2410c] border-[#c2410c]"
-                      : "border-[#9a3412]/40 bg-white/60"
+                      ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
+                      : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
                   }`}
                 >
                   {agreed && (
@@ -231,32 +321,34 @@ function Register() {
                   )}
                 </span>
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
-                <span className="text-sm text-[#7c2d12] leading-snug">
-                  Public condition except<br />privacy policy
+                <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
+                  I accept the public terms<br />and the privacy policy
                 </span>
               </label>
             )}
 
-            {/* CTA — Join | watsapp */}
+            {/* CTA — Join | whatsapp */}
             {address.trim() && agreed && (
               <button
                 onClick={() => navigate({ to: "/" })}
-                className="btn-3d mt-5 w-full rounded-2xl py-3.5 text-white font-display font-bold text-xl tracking-wide grid place-items-center"
+                className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide grid place-items-center text-[color:oklch(0.18_0.06_18)]"
                 style={{
-                  background: "linear-gradient(180deg, #d97706 0%, #c2410c 100%)",
-                  boxShadow: "0 8px 24px -6px rgba(194, 65, 12, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)",
+                  background:
+                    "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
+                  boxShadow:
+                    "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
                   textDecoration: "underline",
                   textDecorationThickness: "2px",
                   textUnderlineOffset: "4px",
                   animation: "breathe 2.6s ease-in-out infinite",
                 }}
               >
-                Join | watsapp
+                Join | Whatsapp
               </button>
             )}
-          </section>
+          </div>
         </div>
-      </div>
+      </motion.section>
 
       {/* Pickers */}
       <LuxPicker
@@ -294,7 +386,7 @@ function Register() {
   );
 }
 
-type PinkFieldProps = {
+type GoldFieldProps = {
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   hint: string;
@@ -308,7 +400,7 @@ type PinkFieldProps = {
   inputRef?: React.RefObject<HTMLInputElement | null>;
 };
 
-function PinkField({ Icon, label, hint, value, filled, isLast, readOnly, onClick, onChange, inputRef }: PinkFieldProps) {
+function GoldField({ Icon, label, hint, value, filled, isLast, readOnly, onClick, onChange, inputRef }: GoldFieldProps) {
   return (
     <div
       className="relative flex items-start gap-3"
@@ -319,11 +411,22 @@ function PinkField({ Icon, label, hint, value, filled, isLast, readOnly, onClick
         <div
           className={`relative h-9 w-9 rounded-full grid place-items-center border-2 transition-all ${
             filled
-              ? "bg-[#7c2d12] border-[#fef3c7]"
-              : "bg-[#7c2d12]/85 border-[#9a3412]/30"
+              ? "border-white"
+              : "border-[color:oklch(0.78_0.14_82/0.4)]"
           }`}
+          style={{
+            background: filled
+              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+            boxShadow: filled
+              ? "0 4px 12px -2px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.6)"
+              : "inset 0 1px 0 rgba(255,255,255,0.8)",
+          }}
         >
-          <Icon className="h-4 w-4 text-[#fdba74]" strokeWidth={2.4} />
+          <Icon
+            className={filled ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+            strokeWidth={2.4}
+          />
           {filled && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#16a34a] grid place-items-center border border-white">
               <svg viewBox="0 0 16 16" className="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5">
@@ -333,7 +436,7 @@ function PinkField({ Icon, label, hint, value, filled, isLast, readOnly, onClick
           )}
         </div>
         {!isLast && (
-          <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[#c2410c]/50 to-transparent min-h-[44px]" />
+          <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.78_0.14_82/0.6)] to-transparent min-h-[44px]" />
         )}
       </div>
 
@@ -346,10 +449,16 @@ function PinkField({ Icon, label, hint, value, filled, isLast, readOnly, onClick
             readOnly={readOnly}
             onChange={(e) => onChange?.(e.target.value)}
             placeholder={label}
-            className="w-full bg-transparent border-0 text-[15px] font-medium text-[#7c2d12] placeholder:text-[#9a3412]/70 outline-none py-0.5"
+            className="w-full bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.7)] outline-none py-0.5"
           />
-          <div className="h-px w-full bg-[#c2410c]/60" />
-          <p className="text-[10px] text-[#9a3412]/70 mt-1 italic">{hint}</p>
+          <div
+            className="h-px w-full"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(212,175,55,0.7) 0%, rgba(212,175,55,0.3) 100%)",
+            }}
+          />
+          <p className="text-[10px] text-[color:oklch(0.50_0.08_85/0.85)] mt-1 italic">{hint}</p>
         </div>
       </div>
     </div>
