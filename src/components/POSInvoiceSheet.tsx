@@ -39,8 +39,11 @@ export type HeldBill = {
   id: string;
   customer: Customer | null;
   cart: CartLine[];
-  discountPct: number;
+  discountValue: number;
+  discountMode: "pct-off" | "flat-off" | "pct-add";
+  coupon: Coupon | null;
   taxPct: number;
+  gstMode: "add" | "include";
   deliveryFee: number;
   createdAt: number;
 };
@@ -185,8 +188,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const resetForm = () => {
     setCart([]);
     setCustomer(null);
-    setDiscountPct(0);
+    setDiscountValue(0);
+    setDiscountMode("pct-off");
+    setCoupon(null);
     setTaxPct(5);
+    setGstMode("add");
     setDeliveryFee(0);
     setPayMode("cash");
     setActiveHeldId(null);
@@ -199,8 +205,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       id,
       customer,
       cart,
-      discountPct,
+      discountValue,
+      discountMode,
+      coupon,
       taxPct,
+      gstMode,
       deliveryFee,
       createdAt: Date.now(),
     };
@@ -219,8 +228,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     }
     setCart(h.cart);
     setCustomer(h.customer);
-    setDiscountPct(h.discountPct);
+    setDiscountValue(h.discountValue ?? 0);
+    setDiscountMode(h.discountMode ?? "pct-off");
+    setCoupon(h.coupon ?? null);
     setTaxPct(h.taxPct);
+    setGstMode(h.gstMode ?? "add");
     setDeliveryFee(h.deliveryFee ?? 0);
     setActiveHeldId(id);
     setHeld((prev) => prev.filter((x) => x.id !== id));
