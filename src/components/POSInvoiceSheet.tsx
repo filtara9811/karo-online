@@ -8,17 +8,21 @@ import {
   Pause,
   Printer,
   ImagePlus,
-  Trash2,
   Sparkles,
   UserPlus,
   ChevronDown,
   Store,
   User,
+  Users,
+  Percent,
+  Truck,
+  Receipt,
 } from "lucide-react";
 import type { EditorProduct } from "@/components/ProductEditor";
 import { CustomerPickerSheet, type Customer } from "@/components/CustomerPickerSheet";
 import { PaymentModeSheet, type PayMode } from "@/components/PaymentModeSheet";
 import { PrintOptionsSheet } from "@/components/PrintOptionsSheet";
+import { ValuePickerSheet } from "@/components/ValuePickerSheet";
 
 export type CartLine = {
   product: EditorProduct;
@@ -33,6 +37,7 @@ export type HeldBill = {
   cart: CartLine[];
   discountPct: number;
   taxPct: number;
+  deliveryFee: number;
   createdAt: number;
 };
 
@@ -51,6 +56,8 @@ const PAY_LABEL: Record<PayMode, string> = {
   "card-debit": "Debit Card",
 };
 
+type PickerKind = null | "discount" | "gst" | "delivery";
+
 export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }: Props) {
   const [cart, setCart] = useState<CartLine[]>(initialCart);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -65,8 +72,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
 
   // sub sheets
   const [showCustomerSheet, setShowCustomerSheet] = useState(false);
+  const [showBillsSheet, setShowBillsSheet] = useState(false);
   const [showPaySheet, setShowPaySheet] = useState(false);
   const [showPrintSheet, setShowPrintSheet] = useState(false);
+  const [picker, setPicker] = useState<PickerKind>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -113,8 +122,6 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     setCart((prev) => prev.map((l) => (l.product.id === id ? { ...l, priceOverride: price } : l)));
   };
 
-  const removeLine = (id: string) => setCart((prev) => prev.filter((l) => l.product.id !== id));
-
   const resetForm = () => {
     setCart([]);
     setCustomer(null);
@@ -126,7 +133,7 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   };
 
   const holdCurrent = () => {
-    if (!cart.length && !customer) return;
+    if (!cart.length && !customer) return null;
     const id = activeHeldId ?? `hold-${Date.now()}`;
     const snapshot: HeldBill = {
       id,
@@ -134,13 +141,14 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       cart,
       discountPct,
       taxPct,
+      deliveryFee,
       createdAt: Date.now(),
     };
     setHeld((prev) => {
       const without = prev.filter((h) => h.id !== id);
       return [snapshot, ...without];
     });
-    resetForm();
+    return id;
   };
 
   const resumeHeld = (id: string) => {
@@ -153,18 +161,21 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     setCustomer(h.customer);
     setDiscountPct(h.discountPct);
     setTaxPct(h.taxPct);
+    setDeliveryFee(h.deliveryFee ?? 0);
     setActiveHeldId(id);
     setHeld((prev) => prev.filter((x) => x.id !== id));
+    setShowBillsSheet(false);
   };
 
   const newBill = () => {
     if (cart.length || customer) holdCurrent();
     resetForm();
+    setShowBillsSheet(false);
   };
 
   const sendVia = (mode: "whatsapp" | "thermal" | "email" | "pdf") => {
-    if (!cart.length) return;
-    const invoice = "INV-" + Math.floor(100000 + Math.random() * 900000);
+    if (!cart.length && !done) return;
+    const invoice = done?.invoice ?? "INV-" + Math.floor(100000 + Math.random() * 900000);
     if (mode === "whatsapp" && customer?.phone) {
       const msg = encodeURIComponent(
         `Hi ${customer.name}, your invoice ${invoice} for ₹${total.toFixed(0)} from Ashhu's Digital Shop is ready. Thank you!`,
@@ -181,6 +192,8 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     setDone({ invoice, total });
     setCart([]);
   };
+
+  const totalHeld = held.length + (cart.length || customer ? 1 : 0);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center">
@@ -203,10 +216,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
         </div>
 
         {/* === Logo + Shop Name Header === */}
-        <div className="px-5 pb-2 flex items-center justify-between">
+        <div className="px-5 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <span
-              className="h-10 w-10 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
+              className="h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
               style={{ background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)" }}
             >
               <Store className="h-5 w-5 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
@@ -218,6 +231,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
               <h3 className="font-display text-base text-gold-gradient font-bold leading-tight truncate">
                 Ashhu's Digital Shop
               </h3>
+              {customer && (
+                <p className="text-[9px] text-[color:oklch(0.45_0.08_85)] truncate mt-0.5">
+                  Bill for · <span className="font-bold">{customer.name}</span>
+                </p>
+              )}
             </div>
           </div>
           <button
@@ -240,34 +258,9 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           />
         ) : (
           <>
-            {/* Held bills strip */}
-            {(held.length > 0 || cart.length > 0 || customer) && (
-              <div className="px-5 pb-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                <button
-                  onClick={newBill}
-                  className="flex-shrink-0 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[#d4af37] flex items-center gap-1 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow-sm active:scale-95"
-                >
-                  <span className="h-5 w-5 rounded-full grid place-items-center bg-white">
-                    <UserPlus className="h-3 w-3 text-[#92400e]" />
-                  </span>
-                  New
-                </button>
-                {held.map((h) => (
-                  <button
-                    key={h.id}
-                    onClick={() => resumeHeld(h.id)}
-                    className="flex-shrink-0 h-8 px-2.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex items-center gap-1 text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] active:scale-95"
-                  >
-                    <Pause className="h-2.5 w-2.5" />
-                    {h.customer?.name || "Walk-in"} · {h.cart.reduce((s, l) => s + l.qty, 0)}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-3">
               {/* === Invoice items === */}
-              <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2">
+              <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 shadow-sm">
                 {cart.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-[12px] text-[color:oklch(0.55_0.10_82)] italic">
@@ -355,17 +348,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                               <Plus className="h-3 w-3" />
                             </button>
                           </div>
-                          <div className="flex flex-col items-end gap-0.5">
+                          <div className="flex flex-col items-end gap-0.5 min-w-[58px]">
                             <span className="font-display text-[12px] font-bold text-gold-gradient">
                               ₹{(price * l.qty).toLocaleString()}
                             </span>
-                            <button
-                              onClick={() => removeLine(l.product.id)}
-                              className="text-[color:oklch(0.55_0.10_82)] active:scale-90"
-                              aria-label="Remove"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
                           </div>
                         </li>
                       );
@@ -374,61 +360,86 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                 )}
               </div>
 
-              {/* === Discount + Tax + Delivery steppers === */}
-              <div className="grid grid-cols-3 gap-2">
-                <Stepper
-                  label="Disc %"
-                  value={discountPct}
-                  onChange={setDiscountPct}
-                  step={5}
-                  min={0}
-                  max={90}
-                  tone="rose"
-                />
-                <Stepper
-                  label="GST %"
-                  value={taxPct}
-                  onChange={setTaxPct}
-                  step={1}
-                  min={0}
-                  max={28}
-                  tone="gold"
-                />
-                <Stepper
-                  label="Deliv ₹"
-                  value={deliveryFee}
-                  onChange={setDeliveryFee}
-                  step={10}
-                  min={0}
-                  max={2000}
-                  tone="gold"
-                />
-              </div>
-
-              {/* === Totals === */}
-              <div className="rounded-2xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.5)] p-3 text-sm space-y-1">
-                <Row label="Subtotal" value={`₹${subtotal.toLocaleString()}`} />
-                {discountAmt > 0 && (
-                  <Row label={`Discount (${discountPct}%)`} value={`-₹${discountAmt.toFixed(0)}`} />
-                )}
-                {taxAmt > 0 && (
-                  <Row label={`GST (${taxPct}%)`} value={`+₹${taxAmt.toFixed(0)}`} />
-                )}
-                {deliveryFee > 0 && <Row label="Delivery" value={`+₹${deliveryFee}`} />}
-                <div className="border-t border-dashed border-[color:oklch(0.78_0.14_82/0.5)] pt-1 mt-1 flex items-center justify-between">
-                  <span className="font-display font-bold text-[color:oklch(0.25_0.05_85)]">
-                    Total
-                  </span>
-                  <span className="font-display font-bold text-lg text-gold-gradient">
-                    ₹{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  </span>
+              {/* === Totals + integrated Disc/GST/Deliv chips === */}
+              <div
+                className="relative rounded-2xl border-2 p-3.5 shadow-md"
+                style={{
+                  borderColor: "oklch(0.78 0.14 82 / 0.55)",
+                  background:
+                    "linear-gradient(180deg, #fffdf5 0%, #fff8dc 50%, #fbf3d9 100%)",
+                }}
+              >
+                {/* Integrated tap chips */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  <ChipTrigger
+                    icon={<Percent className="h-3 w-3" />}
+                    label="Disc"
+                    value={`${discountPct}%`}
+                    onClick={() => setPicker("discount")}
+                    tone={discountPct > 0 ? "rose-active" : "neutral"}
+                  />
+                  <ChipTrigger
+                    icon={<Receipt className="h-3 w-3" />}
+                    label="GST"
+                    value={`${taxPct}%`}
+                    onClick={() => setPicker("gst")}
+                    tone={taxPct > 0 ? "gold-active" : "neutral"}
+                  />
+                  <ChipTrigger
+                    icon={<Truck className="h-3 w-3" />}
+                    label="Deliv"
+                    value={`₹${deliveryFee}`}
+                    onClick={() => setPicker("delivery")}
+                    tone={deliveryFee > 0 ? "gold-active" : "neutral"}
+                  />
                 </div>
+
+                {/* Totals rows */}
+                <div className="text-sm space-y-1">
+                  <Row label="Subtotal" value={`₹${subtotal.toLocaleString()}`} />
+                  {discountAmt > 0 && (
+                    <Row
+                      label={`Discount (${discountPct}%)`}
+                      value={`-₹${discountAmt.toFixed(0)}`}
+                    />
+                  )}
+                  {taxAmt > 0 && (
+                    <Row label={`GST (${taxPct}%)`} value={`+₹${taxAmt.toFixed(0)}`} />
+                  )}
+                  {deliveryFee > 0 && <Row label="Delivery" value={`+₹${deliveryFee}`} />}
+                  <div className="border-t border-dashed border-[color:oklch(0.78_0.14_82/0.5)] pt-1.5 mt-1.5 flex items-center justify-between">
+                    <span className="font-display font-bold text-[color:oklch(0.25_0.05_85)]">
+                      Total
+                    </span>
+                    <span className="font-display font-bold text-xl text-gold-gradient">
+                      ₹{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Floating + button → bills/customers manager */}
+                <button
+                  onClick={() => setShowBillsSheet(true)}
+                  aria-label="Manage bills & customers"
+                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-white active:scale-90 transition"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, oklch(0.55 0.22 320), oklch(0.35 0.18 320))",
+                  }}
+                >
+                  <Plus className="h-5 w-5" strokeWidth={3} />
+                  {totalHeld > 1 && (
+                    <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[10px] font-bold text-[color:oklch(0.18_0.06_18)] grid place-items-center border border-white">
+                      {totalHeld}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* === Customer add button (just below subtotal) === */}
+              {/* === Customer add button === */}
               <button
                 onClick={() => setShowCustomerSheet(true)}
-                className="w-full flex items-center gap-3 rounded-2xl bg-white border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] p-3 active:scale-[0.99] transition"
+                className="mt-3 w-full flex items-center gap-3 rounded-2xl bg-white border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] p-3 active:scale-[0.99] transition"
               >
                 <span
                   className="h-10 w-10 rounded-full grid place-items-center text-white shadow-md flex-shrink-0"
@@ -438,7 +449,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                       : "linear-gradient(180deg, oklch(0.45 0.18 320), oklch(0.30 0.15 320))",
                   }}
                 >
-                  {customer ? <User className="h-5 w-5" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
+                  {customer ? (
+                    <User className="h-5 w-5" />
+                  ) : (
+                    <Plus className="h-5 w-5" strokeWidth={3} />
+                  )}
                 </span>
                 <div className="flex-1 min-w-0 text-left">
                   {customer ? (
@@ -463,7 +478,7 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                 </div>
               </button>
 
-              {/* === Recommended (just below subtotal/customer area) === */}
+              {/* === Recommended === */}
               {recommended.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
@@ -500,10 +515,9 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
               )}
             </div>
 
-            {/* === Combined footer button: Pay-mode dropdown + Pay Now + Print === */}
+            {/* === Footer: Pay-mode dropdown + Pay Now (printer removed) === */}
             <div className="px-5 pt-2 pb-3 border-t border-[color:oklch(0.78_0.14_82/0.3)]">
               <div className="flex items-stretch gap-2 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] p-1.5 shadow-md">
-                {/* Left: pay mode dropdown */}
                 <button
                   onClick={() => setShowPaySheet(true)}
                   className="flex-1 flex items-center justify-between gap-1 px-3 py-2 rounded-xl bg-[#fffaeb] active:scale-95"
@@ -512,18 +526,17 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                     <span className="block text-[8px] uppercase tracking-wider text-[color:oklch(0.55_0.10_82)] font-bold">
                       Pay via
                     </span>
-                    <span className="block font-display text-[12px] font-bold text-[color:oklch(0.25_0.05_85)] truncate max-w-[90px]">
+                    <span className="block font-display text-[12px] font-bold text-[color:oklch(0.25_0.05_85)] truncate max-w-[100px]">
                       {PAY_LABEL[payMode]}
                     </span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0" />
                 </button>
 
-                {/* Center: Pay Now */}
                 <button
                   onClick={generate}
                   disabled={!cart.length}
-                  className="btn-3d flex-[1.4] py-2 rounded-xl font-display font-bold text-[13px] text-[color:oklch(0.18_0.06_18)] shadow-gold-glow disabled:opacity-50 active:scale-95 flex flex-col items-center justify-center"
+                  className="btn-3d flex-[1.6] py-2 rounded-xl font-display font-bold text-[14px] text-[color:oklch(0.18_0.06_18)] shadow-gold-glow disabled:opacity-50 active:scale-95 flex flex-col items-center justify-center"
                   style={{
                     background:
                       "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
@@ -534,27 +547,7 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                     ₹{total.toFixed(0)}
                   </span>
                 </button>
-
-                {/* Right: Print icon */}
-                <button
-                  onClick={() => setShowPrintSheet(true)}
-                  disabled={!cart.length}
-                  aria-label="Print or send"
-                  className="h-auto w-11 rounded-xl bg-[color:oklch(0.30_0.05_85)] grid place-items-center text-white active:scale-95 disabled:opacity-40"
-                >
-                  <Printer className="h-4 w-4" />
-                </button>
               </div>
-
-              {/* Hold link */}
-              {cart.length > 0 && (
-                <button
-                  onClick={holdCurrent}
-                  className="mt-2 mx-auto block text-[10px] font-bold uppercase tracking-wider text-[color:oklch(0.55_0.10_82)] underline"
-                >
-                  Hold this bill
-                </button>
-              )}
             </div>
           </>
         )}
@@ -581,63 +574,279 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       {showPrintSheet && (
         <PrintOptionsSheet onPick={sendVia} onClose={() => setShowPrintSheet(false)} />
       )}
+      {showBillsSheet && (
+        <BillsManagerSheet
+          held={held}
+          activeCart={cart}
+          activeCustomer={customer}
+          activeId={activeHeldId}
+          onResume={resumeHeld}
+          onNew={newBill}
+          onClose={() => setShowBillsSheet(false)}
+        />
+      )}
+      {picker === "discount" && (
+        <ValuePickerSheet
+          title="Discount"
+          subtitle="Apply % off the subtotal"
+          unit="%"
+          value={discountPct}
+          presets={[0, 5, 10, 15, 20, 25, 30, 50]}
+          min={0}
+          max={90}
+          step={5}
+          tone="rose"
+          onPick={setDiscountPct}
+          onClose={() => setPicker(null)}
+        />
+      )}
+      {picker === "gst" && (
+        <ValuePickerSheet
+          title="GST Slab"
+          subtitle="Pick the GST % to apply"
+          unit="%"
+          value={taxPct}
+          presets={[0, 3, 5, 12, 18, 28]}
+          min={0}
+          max={28}
+          step={1}
+          tone="gold"
+          onPick={setTaxPct}
+          onClose={() => setPicker(null)}
+        />
+      )}
+      {picker === "delivery" && (
+        <ValuePickerSheet
+          title="Delivery Fee"
+          subtitle="Add delivery / shipping charge"
+          unit="₹"
+          value={deliveryFee}
+          presets={[0, 50, 100, 150, 200, 300, 500, 1000]}
+          min={0}
+          max={5000}
+          step={10}
+          tone="emerald"
+          onPick={setDeliveryFee}
+          onClose={() => setPicker(null)}
+        />
+      )}
     </div>
   );
 }
 
-function Stepper({
+function ChipTrigger({
+  icon,
   label,
   value,
-  onChange,
-  step,
-  min,
-  max,
+  onClick,
   tone,
 }: {
+  icon: React.ReactNode;
   label: string;
-  value: number;
-  onChange: (v: number) => void;
-  step: number;
-  min: number;
-  max: number;
-  tone: "gold" | "rose";
+  value: string;
+  onClick: () => void;
+  tone: "neutral" | "gold-active" | "rose-active";
 }) {
-  const accent =
-    tone === "gold"
-      ? "from-[#fff8dc] to-[#f5d97a] border-[#d4af37]"
-      : "from-[#fde7eb] to-[#f9c4cc] border-[#e11d48]";
-  const clamp = (n: number) => Math.max(min, Math.min(max, n));
+  const styles =
+    tone === "gold-active"
+      ? "border-[#d4af37] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.25_0.05_85)] shadow-sm"
+      : tone === "rose-active"
+        ? "border-[#e11d48] bg-gradient-to-br from-[#fde7eb] to-[#f9c4cc] text-[color:oklch(0.30_0.18_18)] shadow-sm"
+        : "border-[color:oklch(0.78_0.14_82/0.5)] bg-white/80 text-[color:oklch(0.45_0.08_85)]";
   return (
-    <div>
-      <label className="text-[9px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">
-        {label}
-      </label>
+    <button
+      onClick={onClick}
+      className={`flex-1 flex items-center justify-between gap-1 px-2 py-1.5 rounded-full border-2 active:scale-95 transition ${styles}`}
+    >
+      <span className="flex items-center gap-1">
+        {icon}
+        <span className="text-[9px] uppercase tracking-wider font-bold">{label}</span>
+      </span>
+      <span className="font-display font-bold text-[12px]">{value}</span>
+    </button>
+  );
+}
+
+function BillsManagerSheet({
+  held,
+  activeCart,
+  activeCustomer,
+  activeId,
+  onResume,
+  onNew,
+  onClose,
+}: {
+  held: HeldBill[];
+  activeCart: CartLine[];
+  activeCustomer: Customer | null;
+  activeId: string | null;
+  onResume: (id: string) => void;
+  onNew: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  const activeSnapshot =
+    activeCart.length || activeCustomer
+      ? {
+          id: activeId ?? "current",
+          customer: activeCustomer,
+          items: activeCart.reduce((s, l) => s + l.qty, 0),
+          total: activeCart.reduce(
+            (s, l) => s + (l.priceOverride ?? l.product.price) * l.qty,
+            0,
+          ),
+        }
+      : null;
+
+  return (
+    <div className="fixed inset-0 z-[105] flex items-end justify-center">
+      <button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.55)] backdrop-blur-md"
+        style={{ animation: "overlay-in 0.3s ease-out" }}
+      />
       <div
-        className={`mt-1 flex items-center justify-between rounded-xl bg-gradient-to-br ${accent} border px-1 py-1 shadow-sm`}
+        className="relative w-full max-w-md rounded-t-3xl pb-[env(safe-area-inset-bottom)] flex flex-col max-h-[85vh]"
+        style={{
+          background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 50%, #fbf3d9 100%)",
+          boxShadow: "0 -20px 60px -12px rgba(212,175,55,0.45)",
+          animation: "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
       >
-        <button
-          onClick={() => onChange(clamp(value - step))}
-          className="h-6 w-6 rounded-lg bg-white grid place-items-center active:scale-90 shadow-sm"
-          aria-label="decrease"
-        >
-          <Minus className="h-3 w-3" />
-        </button>
-        <input
-          value={value}
-          onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
-          inputMode="numeric"
-          className="w-10 text-center bg-transparent text-xs font-display font-bold outline-none"
-        />
-        <button
-          onClick={() => onChange(clamp(value + step))}
-          className="h-6 w-6 rounded-lg bg-white grid place-items-center active:scale-90 shadow-sm"
-          aria-label="increase"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
+        <div className="pt-3 pb-1 grid place-items-center">
+          <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
+        </div>
+
+        <div className="px-5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span
+              className="h-9 w-9 rounded-full grid place-items-center text-white shadow-gold-glow"
+              style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+            >
+              <Users className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
+                ✦ Active Bills ✦
+              </p>
+              <h3 className="font-display text-base text-gold-gradient font-bold">
+                Multi-customer Queue
+              </h3>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-5 pb-4 flex-1 overflow-y-auto space-y-2">
+          {/* Start new bill */}
+          <button
+            onClick={onNew}
+            className="w-full flex items-center gap-3 rounded-2xl p-3 border-2 border-dashed border-[#d4af37] bg-gradient-to-br from-[#fff8dc] to-white active:scale-[0.99]"
+          >
+            <span
+              className="h-11 w-11 rounded-full grid place-items-center text-[color:oklch(0.18_0.06_18)] shadow-gold-glow"
+              style={{ background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37)" }}
+            >
+              <UserPlus className="h-5 w-5" strokeWidth={2.4} />
+            </span>
+            <span className="text-left flex-1">
+              <span className="block font-display text-sm font-bold text-gold-gradient">
+                + Start New Bill
+              </span>
+              <span className="block text-[10px] text-[color:oklch(0.45_0.08_85)]">
+                Hold current bill & start a fresh one for next customer
+              </span>
+            </span>
+          </button>
+
+          {/* Active bill row */}
+          {activeSnapshot && (
+            <div className="rounded-2xl p-3 border-2 border-[#d4af37] bg-gradient-to-br from-[#fffaeb] to-white shadow-gold-glow flex items-center gap-3">
+              <span
+                className="h-11 w-11 rounded-full grid place-items-center text-white shadow-md"
+                style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+              >
+                <User className="h-5 w-5" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">
+                  {activeSnapshot.customer?.name ?? "Walk-in (current)"}
+                </p>
+                <p className="text-[10px] text-[color:oklch(0.55_0.10_82)]">
+                  {activeSnapshot.items} item{activeSnapshot.items !== 1 ? "s" : ""} · ₹
+                  {activeSnapshot.total.toLocaleString()} · being edited
+                </p>
+              </div>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[color:oklch(0.42_0.10_82)] bg-white px-2 py-1 rounded-full border border-[#d4af37]">
+                Live
+              </span>
+            </div>
+          )}
+
+          {/* Held bills */}
+          {held.length === 0 && !activeSnapshot && (
+            <div className="text-center py-6">
+              <p className="text-[12px] text-[color:oklch(0.55_0.10_82)] italic">
+                No bills in queue yet
+              </p>
+            </div>
+          )}
+
+          {held.map((h) => {
+            const items = h.cart.reduce((s, l) => s + l.qty, 0);
+            const total = h.cart.reduce(
+              (s, l) => s + (l.priceOverride ?? l.product.price) * l.qty,
+              0,
+            );
+            return (
+              <button
+                key={h.id}
+                onClick={() => onResume(h.id)}
+                className="w-full rounded-2xl p-3 border border-[color:oklch(0.78_0.14_82/0.5)] bg-white shadow-sm flex items-center gap-3 active:scale-[0.99]"
+              >
+                <span className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[#d4af37]">
+                  <Pause className="h-4 w-4 text-[#92400e]" />
+                </span>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">
+                    {h.customer?.name ?? "Walk-in"}
+                  </p>
+                  <p className="text-[10px] text-[color:oklch(0.55_0.10_82)]">
+                    {items} item{items !== 1 ? "s" : ""} · ₹{total.toLocaleString()} · held{" "}
+                    {timeAgo(h.createdAt)}
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-[color:oklch(0.42_0.10_82)]">
+                  Resume →
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
+}
+
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ago`;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
