@@ -115,6 +115,7 @@ export function ProductEditor({
   }));
 
   const [customCat, setCustomCat] = useState("");
+  const [sheet, setSheet] = useState<null | "category" | "variation" | "pricing">(null);
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cropOpen, setCropOpen] = useState<MediaItem | null>(null);
