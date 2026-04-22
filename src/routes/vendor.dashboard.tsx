@@ -31,28 +31,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
   component: VendorDashboard,
 });
 
-type LeadSource = "whatsapp" | "call" | "digital" | "quick";
-type LeadStatus = "new" | "process" | "success" | "rejected";
-
-type Lead = {
-  id: string;
-  name: string;
-  phone: string;
-  service: string;
-  amount: number;
-  source: LeadSource;
-  status: LeadStatus;
-  time: string;
-  note: string;
-};
-
-const LEADS: Lead[] = [
-  { id: "L-1042", name: "Aarav Kapoor", phone: "9250179030", service: "AC Service · Split", amount: 2100, source: "whatsapp", status: "new", time: "2 min ago", note: "Urgent · Same-day visit" },
-  { id: "L-1041", name: "Riya Sharma", phone: "9871156720", service: "Deep Cleaning · 3BHK", amount: 3499, source: "digital", status: "new", time: "18 min ago", note: "Weekend slot preferred" },
-  { id: "L-1039", name: "Karan Mehta", phone: "8287545843", service: "Plumbing Repair", amount: 899, source: "call", status: "process", time: "1 hr ago", note: "Bathroom leak" },
-  { id: "L-1037", name: "Ananya Verma", phone: "9988776655", service: "Salon at Home", amount: 1499, source: "quick", status: "success", time: "Yesterday", note: "Payout released" },
-  { id: "L-1031", name: "Vikram Singh", phone: "9123456780", service: "Pest Control", amount: 1899, source: "whatsapp", status: "rejected", time: "2 days ago", note: "Out of service area" },
-];
+const LEADS: Lead[] = SHARED_LEADS;
 
 const POTENTIAL = [
   { id: "P-01", title: "Kotak 811 Savings Account", earn: 2400, customers: 12, chance: "High" },
