@@ -4,12 +4,15 @@ import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin } from "lucide-r
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { OtpModal } from "@/components/OtpModal";
+import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
+import { SuccessOverlay } from "@/components/SuccessOverlay";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
 import goldGoogle from "@/assets/gold-google.png";
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
+import goldWhatsapp from "@/assets/gold-whatsapp.png";
 
 export const Route = createFileRoute("/register")({
   component: Register,
@@ -49,6 +52,8 @@ function Register() {
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
   const [otpOpen, setOtpOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // Bottom-sheet drag setup — three snap points based on viewport height
@@ -290,12 +295,13 @@ function Register() {
                 <GoldField
                   Icon={MapPin}
                   label="Address | location"
-                  hint="Choose address"
+                  hint={address ? "Tap to change" : "Choose address"}
                   value={address}
                   placeholder=""
                   filled={!!address.trim()}
                   isLast
-                  onChange={setAddress}
+                  readOnly
+                  onClick={() => setAddressOpen(true)}
                 />
               )}
             </div>
@@ -330,8 +336,8 @@ function Register() {
             {/* CTA — Join | whatsapp */}
             {address.trim() && agreed && (
               <button
-                onClick={() => navigate({ to: "/vendor/dashboard" })}
-                className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide grid place-items-center text-[color:oklch(0.18_0.06_18)]"
+                onClick={() => setSuccessOpen(true)}
+                className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
                 style={{
                   background:
                     "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
@@ -343,7 +349,8 @@ function Register() {
                   animation: "breathe 2.6s ease-in-out infinite",
                 }}
               >
-                Join | Open Dashboard
+                <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
+                <span>WhatsApp Join</span>
               </button>
             )}
           </div>
@@ -381,6 +388,24 @@ function Register() {
         phone={phone}
         onVerified={handleOtpVerified}
         onClose={() => setOtpOpen(false)}
+      />
+
+      <AddressPicker
+        open={addressOpen}
+        onClose={() => setAddressOpen(false)}
+        onSelect={(a: AddressResult) => {
+          setAddress(a.full);
+          setAddressOpen(false);
+        }}
+      />
+
+      <SuccessOverlay
+        open={successOpen}
+        name={name}
+        onDone={() => {
+          setSuccessOpen(false);
+          navigate({ to: "/vendor/dashboard" });
+        }}
       />
     </main>
   );
@@ -428,7 +453,13 @@ function GoldField({ Icon, label, hint, value, filled, isLast, readOnly, onClick
             strokeWidth={2.4}
           />
           {filled && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#16a34a] grid place-items-center border border-white">
+            <span
+              className="absolute -top-1 -right-1 h-4 w-4 rounded-full grid place-items-center border border-white"
+              style={{
+                background: "linear-gradient(135deg,#fff3c8 0%,#d4af37 60%,#8b6508 100%)",
+                boxShadow: "0 2px 6px -1px rgba(212,175,55,0.6)",
+              }}
+            >
               <svg viewBox="0 0 16 16" className="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5">
                 <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
