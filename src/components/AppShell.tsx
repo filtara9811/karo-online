@@ -60,14 +60,30 @@ export function AppShell() {
 function TopHeader() {
   return (
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
-      <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+      <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+        {/* Sign-up / Login icon (top-left) */}
+        <Link
+          to="/register"
+          aria-label="Sign up or Login"
+          className="btn-3d relative h-10 w-10 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-gold-glow active:scale-90 flex-shrink-0"
+          style={{
+            background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 50%, #d4af37 100%)",
+            border: "1.5px solid rgba(255,255,255,0.7)",
+          }}
+        >
+          <UserPlus className="h-4 w-4" strokeWidth={2.4} />
+          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-white border border-[#d4af37] grid place-items-center text-[8px] font-bold text-[#8b6508]">
+            +
+          </span>
+        </Link>
+
         {/* User chip */}
-        <Link to="/profile" className="flex items-center gap-2.5 flex-1 min-w-0">
-          <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow flex-shrink-0 bg-white">
+        <Link to="/profile" className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow flex-shrink-0 bg-white">
             <img src={avatarUser} alt="" className="h-full w-full object-cover" />
           </span>
           <span className="flex flex-col leading-tight min-w-0">
-            <span className="font-display text-base text-gold-gradient truncate">Ashhu Qureshi</span>
+            <span className="font-display text-sm text-gold-gradient truncate">Ashhu Qureshi</span>
             <span className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.45_0.08_85/0.8)]">
               Reselling | Affiliate
             </span>
