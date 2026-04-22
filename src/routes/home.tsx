@@ -236,14 +236,17 @@ const ProductRail = ({
   icon,
   products,
   accent,
+  onAdd,
 }: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   products: Product[];
   accent?: boolean;
+  onAdd?: (p: Product, fromEl: HTMLElement) => void;
   ref?: React.Ref<HTMLDivElement>;
 }) => {
+  const { items } = useCart();
   return (
     <section>
       <div className="flex items-center justify-between mb-2 px-1">
@@ -254,42 +257,72 @@ const ProductRail = ({
         <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">See all ›</span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
-        {products.map((p) => (
-          <Link
-            to="/product/$id"
-            params={{ id: p.id }}
-            key={p.id}
-            className="snap-start flex-shrink-0 w-[58%] rounded-2xl overflow-hidden bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.97] transition"
-          >
-            <div className="relative aspect-square overflow-hidden">
-              <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-              {accent && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-[9px] font-bold text-white uppercase tracking-wider shadow">
-                  -{Math.round(((p.mrp - p.price) / p.mrp) * 100)}%
-                </span>
-              )}
-              {p.badge && !accent && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/90 text-[9px] font-bold text-[color:oklch(0.42_0.10_82)] uppercase tracking-wider shadow">
-                  {p.badge}
-                </span>
-              )}
-            </div>
-            <div className="p-2.5">
-              <h4 className="font-display text-sm font-semibold truncate">{p.name}</h4>
-              <p className="text-[10px] text-muted-foreground truncate">{p.tagline}</p>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-display text-base text-gold-gradient font-bold">₹{p.price.toLocaleString()}</span>
-                <span className="text-[10px] text-muted-foreground line-through">₹{p.mrp.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Star className="h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37]" />
-                <span className="text-[10px] font-semibold">{p.rating}</span>
-                <span className="text-[10px] text-muted-foreground">({p.reviews})</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+        {products.map((p) => {
+          const inCart = items.find((i) => i.id === p.id);
+          return (
+            <article
+              key={p.id}
+              className="snap-start flex-shrink-0 w-[58%] rounded-2xl overflow-hidden bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] transition relative"
+            >
+              <Link to="/product/$id" params={{ id: p.id }} className="block active:scale-[0.97]">
+                <div className="relative aspect-square overflow-hidden" data-product-image={p.id}>
+                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                  {accent && (
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-[9px] font-bold text-white uppercase tracking-wider shadow">
+                      -{Math.round(((p.mrp - p.price) / p.mrp) * 100)}%
+                    </span>
+                  )}
+                  {p.badge && !accent && (
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/90 text-[9px] font-bold text-[color:oklch(0.42_0.10_82)] uppercase tracking-wider shadow">
+                      {p.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="p-2.5 pr-12">
+                  <h4 className="font-display text-sm font-semibold truncate">{p.name}</h4>
+                  <p className="text-[10px] text-muted-foreground truncate">{p.tagline}</p>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="font-display text-base text-gold-gradient font-bold">₹{p.price.toLocaleString()}</span>
+                    <span className="text-[10px] text-muted-foreground line-through">₹{p.mrp.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37]" />
+                    <span className="text-[10px] font-semibold">{p.rating}</span>
+                    <span className="text-[10px] text-muted-foreground">({p.reviews})</span>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Add to cart button — bottom-right */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const card = e.currentTarget.closest("article");
+                  const img = card?.querySelector<HTMLElement>(`[data-product-image="${p.id}"]`);
+                  if (img && onAdd) onAdd(p, img);
+                }}
+                aria-label={`Add ${p.name} to cart`}
+                className={`btn-3d absolute bottom-2 right-2 h-9 w-9 rounded-full grid place-items-center shadow-gold-glow active:scale-90 transition ${
+                  inCart
+                    ? "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white"
+                    : "bg-gold-bar text-[color:oklch(0.13_0.06_18)]"
+                }`}
+              >
+                {inCart ? (
+                  <span className="flex items-center gap-0.5">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                    <span className="text-[10px] font-bold">{inCart.qty}</span>
+                  </span>
+                ) : (
+                  <Plus className="h-4 w-4" strokeWidth={3} />
+                )}
+              </button>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
 };
+
