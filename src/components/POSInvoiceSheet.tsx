@@ -341,11 +341,17 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
         {done ? (
           <DoneView
             invoice={done.invoice}
+            trackingId={done.trackingId}
             total={done.total}
             customer={customer}
             payMode={payMode}
-            onClose={onClose}
+            onClose={() => {
+              resetForm();
+              setDone(null);
+              onClose();
+            }}
             onPrint={() => setShowPrintSheet(true)}
+            onWhatsApp={() => sendVia("whatsapp")}
           />
         ) : (
           <>
