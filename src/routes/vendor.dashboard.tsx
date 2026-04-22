@@ -317,43 +317,50 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   const st = STATUS_META[lead.status];
   return (
     <article className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] overflow-hidden shadow-sm">
-      <div className="p-3 flex items-start gap-3">
-        <span
-          className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.18_0.06_18)] flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a)" }}
-        >
-          {lead.name.charAt(0)}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">{lead.name}</p>
-            <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
-          </div>
-          <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] truncate">{lead.service} · {lead.phone}</p>
-          {/* Source badge */}
+      <Link
+        to="/vendor/lead/$id"
+        params={{ id: lead.id }}
+        className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
+      >
+        <div className="flex items-start gap-3">
           <span
-            className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.78_0.14_82/0.4)]"
-            style={{ background: src.bg, color: src.text }}
+            className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.18_0.06_18)] flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a)" }}
           >
-            {src.icon}
-            via {src.label}
+            {lead.name.charAt(0)}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">{lead.name}</p>
+              <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
+            </div>
+            <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] truncate">{lead.service} · {lead.phone}</p>
+            {/* Source badge */}
+            <span
+              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.78_0.14_82/0.4)]"
+              style={{ background: src.bg, color: src.text }}
+            >
+              {src.icon}
+              via {src.label}
+            </span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0 mt-1" />
+        </div>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${st.tint}`}>
+            {st.icon}
+            {st.label}
+          </span>
+          <span className="font-display text-sm font-bold text-gold-gradient">
+            ₹{lead.amount.toLocaleString()}
           </span>
         </div>
-      </div>
 
-      <div className="px-3 pb-2 flex items-center justify-between gap-2">
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${st.tint}`}>
-          {st.icon}
-          {st.label}
-        </span>
-        <span className="font-display text-sm font-bold text-gold-gradient">
-          ₹{lead.amount.toLocaleString()}
-        </span>
-      </div>
-
-      <p className="px-3 pb-2 text-[11px] italic text-[color:oklch(0.45_0.08_85)] truncate">
-        “{lead.note}”
-      </p>
+        <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.08_85)] truncate">
+          “{lead.note}”
+        </p>
+      </Link>
 
       {/* Action bar */}
       <div className="flex items-stretch border-t border-[color:oklch(0.78_0.14_82/0.3)]">
