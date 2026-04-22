@@ -11,6 +11,7 @@ import avatarUser from "@/assets/avatar-user.png";
 import { PRODUCTS, type Product } from "@/lib/products";
 import { useCart } from "@/hooks/use-cart";
 import { HomeBasket } from "@/components/HomeBasket";
+import { VariationPickerSheet } from "@/components/VariationPickerSheet";
 
 type FlyingItem = { id: number; src: string; from: DOMRect; to: DOMRect };
 
