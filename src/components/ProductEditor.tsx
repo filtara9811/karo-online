@@ -14,11 +14,13 @@ import {
   ZoomOut,
   RotateCw,
   Tag,
+  Tags,
   Percent,
   FileText,
   ShieldCheck,
   Pencil,
   GripVertical,
+  Star as StarIcon,
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 
@@ -98,8 +100,14 @@ export function ProductEditor({
     terms: product.terms ?? "",
     policy: product.policy ?? "",
     priceLabels: product.priceLabels ?? DEFAULT_LABELS,
+    categoryTags:
+      product.categoryTags ??
+      (product.category ? [product.category] : []),
+    primaryCategory: product.primaryCategory ?? product.category ?? "",
     ...product,
   }));
+
+  const [customCat, setCustomCat] = useState("");
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cropOpen, setCropOpen] = useState<MediaItem | null>(null);
