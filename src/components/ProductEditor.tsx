@@ -572,57 +572,20 @@ export function ProductEditor({
             </div>
           </section>
 
-          {/* === VARIATIONS === */}
-          <section className="rounded-2xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
-                <Layers className="h-3 w-3" /> Variations
-              </p>
-              <button
-                onClick={addVariation}
-                className="text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-b from-[#fff3c8] to-[#f5d97a]"
-              >
-                <Plus className="h-3 w-3" /> Add
-              </button>
-            </div>
-            {(draft.variationsList ?? []).length === 0 && (
-              <p className="text-[11px] text-center py-2 italic text-[color:oklch(0.55_0.10_82)]">
-                No variations · tap Add
-              </p>
-            )}
-            {(draft.variationsList ?? []).map((v) => (
-              <div key={v.id} className="flex items-center gap-2">
-                <GripVertical className="h-3 w-3 text-[color:oklch(0.55_0.10_82)] flex-shrink-0" />
-                <input
-                  value={v.label}
-                  onChange={(e) => updateVariation(v.id, { label: e.target.value })}
-                  placeholder="e.g. 50ml / Red"
-                  className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2 py-1.5 text-xs outline-none focus:border-[#d4af37]"
-                />
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[color:oklch(0.55_0.10_82)]">
-                    ₹
-                  </span>
-                  <input
-                    value={v.price || ""}
-                    onChange={(e) =>
-                      updateVariation(v.id, { price: Number(e.target.value) || 0 })
-                    }
-                    type="number"
-                    placeholder="0"
-                    className="w-20 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] pl-5 pr-1.5 py-1.5 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-                <button
-                  onClick={() => removeVariation(v.id)}
-                  className="h-7 w-7 grid place-items-center rounded-full bg-rose-50 text-rose-500 active:scale-90"
-                  aria-label="Remove"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </section>
+          {/* === VARIATIONS TRIGGER === */}
+          <SheetTriggerRow
+            icon={<Layers className="h-3.5 w-3.5" />}
+            title="Attributes & Variations"
+            hint="size · color · image"
+            value={
+              (draft.variationsList ?? []).length
+                ? `${(draft.variationsList ?? []).length} variation${
+                    (draft.variationsList ?? []).length > 1 ? "s" : ""
+                  }`
+                : "Tap to add (size, color, image)"
+            }
+            onClick={() => setSheet("variation")}
+          />
 
           {/* === META === */}
           <div className="grid grid-cols-2 gap-3">
