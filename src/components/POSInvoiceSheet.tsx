@@ -60,18 +60,41 @@ const PAY_LABEL: Record<PayMode, string> = {
   "card-debit": "Debit Card",
 };
 
-type PickerKind = null | "discount" | "gst" | "delivery";
+type PickerKind = null | "discount" | "gst" | "delivery" | "coupon";
+
+/** Discount mode: percent off, flat ₹ off, or surcharge (rare) */
+type DiscountMode = "pct-off" | "flat-off" | "pct-add";
+/** GST mode: add GST on top, or include GST inside the subtotal */
+type GstMode = "add" | "include";
+
+const DISCOUNT_MODES: ValueMode[] = [
+  { id: "pct-off", label: "% Off", unit: "%", sign: -1 },
+  { id: "flat-off", label: "Flat ₹", unit: "₹", sign: -1 },
+  { id: "pct-add", label: "% Add", unit: "%", sign: 1 },
+];
+const GST_MODES: ValueMode[] = [
+  { id: "add", label: "Add GST", unit: "%", sign: 1 },
+  { id: "include", label: "Inclusive", unit: "%", sign: -1 },
+];
 
 export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }: Props) {
   const [cart, setCart] = useState<CartLine[]>(initialCart);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [discountPct, setDiscountPct] = useState(0);
+  const [discountValue, setDiscountValue] = useState(0); // raw positive value
+  const [discountMode, setDiscountMode] = useState<DiscountMode>("pct-off");
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [taxPct, setTaxPct] = useState(5);
+  const [gstMode, setGstMode] = useState<GstMode>("add");
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [payMode, setPayMode] = useState<PayMode>("cash");
   const [held, setHeld] = useState<HeldBill[]>([]);
   const [activeHeldId, setActiveHeldId] = useState<string | null>(null);
-  const [done, setDone] = useState<null | { invoice: string; total: number }>(null);
+  const [done, setDone] = useState<null | {
+    invoice: string;
+    trackingId: string;
+    total: number;
+    date: string;
+  }>(null);
   const [editingPriceFor, setEditingPriceFor] = useState<string | null>(null);
 
   // sub sheets
@@ -80,6 +103,9 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const [showPaySheet, setShowPaySheet] = useState(false);
   const [showPrintSheet, setShowPrintSheet] = useState(false);
   const [picker, setPicker] = useState<PickerKind>(null);
+
+  // off-screen invoice capture target
+  const invoiceImgRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -96,9 +122,39 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     () => cart.reduce((s, l) => s + (l.priceOverride ?? l.product.price) * l.qty, 0),
     [cart],
   );
-  const discountAmt = (subtotal * discountPct) / 100;
-  const taxAmt = ((subtotal - discountAmt) * taxPct) / 100;
-  const total = Math.max(0, subtotal - discountAmt + taxAmt + deliveryFee);
+
+  // Discount: combine slider value + active coupon
+  const manualDiscount =
+    discountMode === "pct-off"
+      ? (subtotal * discountValue) / 100
+      : discountMode === "flat-off"
+        ? discountValue
+        : -((subtotal * discountValue) / 100); // pct-add → adds (negative discount)
+  const couponDiscount = coupon
+    ? coupon.percent
+      ? (subtotal * coupon.percent) / 100
+      : (coupon.flat ?? 0)
+    : 0;
+  const discountAmt = Math.max(0, manualDiscount + couponDiscount);
+  const surcharge = manualDiscount < 0 ? -manualDiscount : 0;
+
+  // GST: add or include
+  const taxableBase = Math.max(0, subtotal - discountAmt + surcharge);
+  const taxAmt =
+    gstMode === "add"
+      ? (taxableBase * taxPct) / 100
+      : -(taxableBase - taxableBase / (1 + taxPct / 100)); // included → shown as informational negative
+  const total = Math.max(
+    0,
+    gstMode === "add"
+      ? taxableBase + taxAmt + deliveryFee
+      : taxableBase + deliveryFee, // inclusive: total stays as base
+  );
+  const discountPctLabel =
+    discountMode === "flat-off"
+      ? `₹${discountValue}`
+      : `${discountValue}%${discountMode === "pct-add" ? " add" : ""}`;
+  const taxLabel = `${taxPct}% ${gstMode === "add" ? "add" : "incl"}`;
 
   // recommended = products NOT in cart, top 8
   const recommended = useMemo(() => {
