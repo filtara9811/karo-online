@@ -22,7 +22,7 @@ export const Route = createFileRoute("/vendor/shop")({
       { name: "description", content: "Manage your digital shop products and create POS invoices." },
     ],
   }),
-  component: VendorShop;
+  component: VendorShop,
 });
 
 type VendorProduct = Product & { theme?: "classic" | "minimal" | "bold" | "luxe" };
