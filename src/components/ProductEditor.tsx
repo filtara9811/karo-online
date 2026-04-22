@@ -36,6 +36,8 @@ export type EditorProduct = Product & {
   terms?: string;
   policy?: string;
   priceLabels?: { buying: string; selling: string; mrp: string };
+  categoryTags?: string[];
+  primaryCategory?: string;
 };
 
 const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = [
@@ -45,7 +47,26 @@ const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = 
   { value: "luxe", label: "Luxe" },
 ];
 
+export const SHOP_CATEGORIES = [
+  "Beauty",
+  "Fashion",
+  "Home",
+  "Kitchen",
+  "Electronics",
+  "Grocery",
+  "Wellness",
+  "Jewellery",
+  "Accessories",
+  "Stationery",
+  "Toys",
+  "Festive",
+  "Premium",
+  "Bestseller",
+  "New Arrival",
+];
+
 const DEFAULT_LABELS = { buying: "Buying Price", selling: "Selling Price", mrp: "MRP" };
+
 
 export function ProductEditor({
   product,
