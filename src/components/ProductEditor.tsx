@@ -14,11 +14,13 @@ import {
   ZoomOut,
   RotateCw,
   Tag,
+  Tags,
   Percent,
   FileText,
   ShieldCheck,
   Pencil,
   GripVertical,
+  Star as StarIcon,
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 
@@ -36,6 +38,8 @@ export type EditorProduct = Product & {
   terms?: string;
   policy?: string;
   priceLabels?: { buying: string; selling: string; mrp: string };
+  categoryTags?: string[];
+  primaryCategory?: string;
 };
 
 const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = [
@@ -45,7 +49,26 @@ const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = 
   { value: "luxe", label: "Luxe" },
 ];
 
+export const SHOP_CATEGORIES = [
+  "Beauty",
+  "Fashion",
+  "Home",
+  "Kitchen",
+  "Electronics",
+  "Grocery",
+  "Wellness",
+  "Jewellery",
+  "Accessories",
+  "Stationery",
+  "Toys",
+  "Festive",
+  "Premium",
+  "Bestseller",
+  "New Arrival",
+];
+
 const DEFAULT_LABELS = { buying: "Buying Price", selling: "Selling Price", mrp: "MRP" };
+
 
 export function ProductEditor({
   product,
@@ -77,8 +100,14 @@ export function ProductEditor({
     terms: product.terms ?? "",
     policy: product.policy ?? "",
     priceLabels: product.priceLabels ?? DEFAULT_LABELS,
+    categoryTags:
+      product.categoryTags ??
+      (product.category ? [product.category] : []),
+    primaryCategory: product.primaryCategory ?? product.category ?? "",
     ...product,
   }));
+
+  const [customCat, setCustomCat] = useState("");
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cropOpen, setCropOpen] = useState<MediaItem | null>(null);
@@ -372,6 +401,128 @@ export function ProductEditor({
               className="hidden"
               onChange={(e) => addMedia("video", e)}
             />
+          </section>
+
+          {/* === SHOP CATEGORY MAPPING === */}
+          <section className="rounded-2xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <Tags className="h-3 w-3" /> Shop Category Mapping
+              </p>
+              <span className="text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+                visible in customer dukan
+              </span>
+            </div>
+            <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-snug">
+              Tap to map this product.{" "}
+              <StarIcon className="inline h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37] mx-0.5" />{" "}
+              = primary section (long-press to set).
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(
+                new Set([...SHOP_CATEGORIES, ...(draft.categoryTags ?? [])])
+              ).map((cat) => {
+                const selected = (draft.categoryTags ?? []).includes(cat);
+                const isPrimary = draft.primaryCategory === cat;
+                return (
+                  <CategoryChip
+                    key={cat}
+                    cat={cat}
+                    selected={selected}
+                    isPrimary={isPrimary}
+                    onToggle={() => {
+                      setDraft((d) => {
+                        const tags = d.categoryTags ?? [];
+                        const next = tags.includes(cat)
+                          ? tags.filter((t) => t !== cat)
+                          : [...tags, cat];
+                        let primary = d.primaryCategory ?? "";
+                        if (!next.includes(primary)) primary = next[0] ?? "";
+                        return {
+                          ...d,
+                          categoryTags: next,
+                          primaryCategory: primary,
+                          category: primary || d.category,
+                        };
+                      });
+                    }}
+                    onMakePrimary={() => {
+                      setDraft((d) => ({
+                        ...d,
+                        primaryCategory: cat,
+                        category: cat,
+                        categoryTags: Array.from(
+                          new Set([...(d.categoryTags ?? []), cat])
+                        ),
+                      }));
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Custom add */}
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                value={customCat}
+                onChange={(e) => setCustomCat(e.target.value)}
+                placeholder="+ Add custom category"
+                className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2.5 py-1.5 text-xs outline-none focus:border-[#d4af37]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && customCat.trim()) {
+                    const tag = customCat.trim();
+                    setDraft((d) => ({
+                      ...d,
+                      categoryTags: Array.from(
+                        new Set([...(d.categoryTags ?? []), tag])
+                      ),
+                      primaryCategory: d.primaryCategory || tag,
+                      category: d.category || tag,
+                    }));
+                    setCustomCat("");
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const tag = customCat.trim();
+                  if (!tag) return;
+                  setDraft((d) => ({
+                    ...d,
+                    categoryTags: Array.from(
+                      new Set([...(d.categoryTags ?? []), tag])
+                    ),
+                    primaryCategory: d.primaryCategory || tag,
+                    category: d.category || tag,
+                  }));
+                  setCustomCat("");
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold text-[color:oklch(0.18_0.06_18)] active:scale-95"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)",
+                }}
+              >
+                <Plus className="inline h-3 w-3 mr-0.5" strokeWidth={3} /> Add
+              </button>
+            </div>
+
+            {/* Summary */}
+            {(draft.categoryTags ?? []).length > 0 && (
+              <div className="rounded-xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 text-[10px] text-[color:oklch(0.42_0.10_82)]">
+                <span className="font-bold">Mapped to:</span>{" "}
+                {(draft.categoryTags ?? []).join(" · ")}
+                {draft.primaryCategory && (
+                  <>
+                    {" · "}
+                    <span className="font-bold text-[color:oklch(0.30_0.05_85)]">
+                      Primary: {draft.primaryCategory}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </section>
 
           {/* === BASIC === */}
@@ -676,6 +827,69 @@ export function ProductEditor({
         />
       )}
     </div>
+  );
+}
+
+function CategoryChip({
+  cat,
+  selected,
+  isPrimary,
+  onToggle,
+  onMakePrimary,
+}: {
+  cat: string;
+  selected: boolean;
+  isPrimary: boolean;
+  onToggle: () => void;
+  onMakePrimary: () => void;
+}) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  const startLong = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      onMakePrimary();
+    }, 420);
+  };
+  const cancelLong = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+  const handleClick = () => {
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    onToggle();
+  };
+
+  return (
+    <button
+      onMouseDown={startLong}
+      onMouseUp={cancelLong}
+      onMouseLeave={cancelLong}
+      onTouchStart={startLong}
+      onTouchEnd={cancelLong}
+      onClick={handleClick}
+      className={`px-2.5 py-1.5 rounded-full text-[11px] font-display font-bold border-2 transition flex items-center gap-1 ${
+        selected
+          ? "text-[color:oklch(0.18_0.06_18)] border-[#d4af37] shadow-sm"
+          : "text-[color:oklch(0.55_0.10_82)] border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+      }`}
+      style={
+        selected
+          ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a)" }
+          : undefined
+      }
+    >
+      {isPrimary && <StarIcon className="h-2.5 w-2.5 fill-[#8b6508] text-[#8b6508]" />}
+      {cat}
+      {selected && !isPrimary && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+    </button>
   );
 }
 
