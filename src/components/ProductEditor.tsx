@@ -24,7 +24,14 @@ import {
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 
-export type Variation = { id: string; label: string; price: number };
+export type Variation = {
+  id: string;
+  label: string;
+  price: number;
+  image?: string;
+  color?: string;
+  size?: string;
+};
 export type MediaItem = { id: string; type: "image" | "video"; url: string };
 
 export type EditorProduct = Product & {
