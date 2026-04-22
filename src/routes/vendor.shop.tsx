@@ -254,15 +254,37 @@ function ProductTile({
   );
 }
 
-const THEMES: { value: NonNullable<VendorProduct["theme"]>; label: string }[] = [
-  { value: "classic", label: "Classic" },
-  { value: "minimal", label: "Minimal" },
-  { value: "bold", label: "Bold" },
-  { value: "luxe", label: "Luxe" },
-];
-
 // ProductEditor is imported from @/components/ProductEditor
 
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
+        {label}
+      </label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        type={type ?? "text"}
+        inputMode={type === "number" ? "numeric" : undefined}
+        className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+      />
+    </div>
+  );
+}
 
 type CartLine = { product: VendorProduct; qty: number };
 
