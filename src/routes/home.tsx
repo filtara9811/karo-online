@@ -216,6 +216,17 @@ function HomePage() {
 
       {/* Floating golden basket */}
       <HomeBasket />
+
+      {/* Variation picker bottom sheet */}
+      {pickerProduct && (
+        <VariationPickerSheet
+          product={pickerProduct.p}
+          onClose={() => setPickerProduct(null)}
+          onConfirm={({ variation, qty }) => {
+            flyAndAdd(pickerProduct.p, pickerProduct.el, qty, variation);
+          }}
+        />
+      )}
     </div>
   );
 }
