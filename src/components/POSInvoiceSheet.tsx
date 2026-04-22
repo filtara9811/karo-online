@@ -701,30 +701,45 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       {picker === "discount" && (
         <ValuePickerSheet
           title="Discount"
-          subtitle="Apply % off the subtotal"
-          unit="%"
-          value={discountPct}
+          subtitle="Choose how to apply discount"
+          value={discountValue}
           presets={[0, 5, 10, 15, 20, 25, 30, 50]}
           min={0}
-          max={90}
-          step={5}
+          max={discountMode === "flat-off" ? 99999 : 90}
+          step={discountMode === "flat-off" ? 10 : 5}
           tone="rose"
-          onPick={setDiscountPct}
+          modes={DISCOUNT_MODES}
+          modeId={discountMode}
+          onPick={(v, modeId) => {
+            setDiscountValue(Math.abs(v));
+            if (modeId) setDiscountMode(modeId as DiscountMode);
+          }}
           onClose={() => setPicker(null)}
         />
       )}
       {picker === "gst" && (
         <ValuePickerSheet
           title="GST Slab"
-          subtitle="Pick the GST % to apply"
-          unit="%"
+          subtitle="Add GST on top, or treat price as inclusive"
           value={taxPct}
           presets={[0, 3, 5, 12, 18, 28]}
           min={0}
           max={28}
           step={1}
           tone="gold"
-          onPick={setTaxPct}
+          modes={GST_MODES}
+          modeId={gstMode}
+          onPick={(v, modeId) => {
+            setTaxPct(Math.abs(v));
+            if (modeId) setGstMode(modeId as GstMode);
+          }}
+          onClose={() => setPicker(null)}
+        />
+      )}
+      {picker === "coupon" && (
+        <CouponSheet
+          current={coupon}
+          onApply={setCoupon}
           onClose={() => setPicker(null)}
         />
       )}
