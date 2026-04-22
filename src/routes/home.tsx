@@ -129,7 +129,7 @@ function HomePage() {
       </section>
 
       {/* Recommended Products */}
-      <ProductRail title="Recommended" subtitle="for you" icon={<Crown className="h-3.5 w-3.5 text-[#d4af37]" />} products={recommended} ref={productsRef} />
+      <ProductRail title="Recommended" subtitle="for you" icon={<Crown className="h-3.5 w-3.5 text-[#d4af37]" />} products={recommended} onAdd={handleAdd} ref={productsRef} />
 
       {/* Featured vendor card */}
       <section>
@@ -156,10 +156,10 @@ function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <ProductRail title="Featured" subtitle="maison picks" icon={<Star className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />} products={featured} />
+      <ProductRail title="Featured" subtitle="maison picks" icon={<Star className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />} products={featured} onAdd={handleAdd} />
 
       {/* Hot Deals */}
-      <ProductRail title="Hot Deals" subtitle="limited time" icon={<Flame className="h-3.5 w-3.5 text-[#e08820]" />} products={hotDeals} accent />
+      <ProductRail title="Hot Deals" subtitle="limited time" icon={<Flame className="h-3.5 w-3.5 text-[#e08820]" />} products={hotDeals} onAdd={handleAdd} accent />
 
       {activeCat && (
         <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end" onClick={() => setActiveCat(null)} style={{ animation: "overlay-in 0.25s ease-out" }}>
@@ -197,7 +197,36 @@ function HomePage() {
           </div>
         </div>
       )}
+      {/* Flying-to-cart images */}
+      {flying.map((f) => (
+        <FlyingImage key={f.id} item={f} />
+      ))}
+
+      {/* Floating golden basket */}
+      <HomeBasket />
     </div>
+  );
+}
+
+function FlyingImage({ item }: { item: FlyingItem }) {
+  const dx = item.to.left + item.to.width / 2 - (item.from.left + item.from.width / 2);
+  const dy = item.to.top + item.to.height / 2 - (item.from.top + item.from.height / 2);
+  return (
+    <img
+      src={item.src}
+      alt=""
+      className="fixed z-[90] rounded-xl object-cover pointer-events-none shadow-gold-glow border-2 border-[#d4af37]"
+      style={{
+        left: item.from.left,
+        top: item.from.top,
+        width: item.from.width,
+        height: item.from.height,
+        // @ts-expect-error custom CSS vars
+        "--dx": `${dx}px`,
+        "--dy": `${dy}px`,
+        animation: "fly-to-cart 0.8s cubic-bezier(0.5, 0, 0.75, 0) forwards",
+      }}
+    />
   );
 }
 
