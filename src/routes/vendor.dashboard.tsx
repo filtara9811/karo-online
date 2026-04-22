@@ -18,6 +18,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import { LEADS as SHARED_LEADS } from "@/lib/leads";
+import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
