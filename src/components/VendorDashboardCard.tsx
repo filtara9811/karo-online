@@ -136,7 +136,6 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
                   {r.label}
                 </button>
               ))}
-            </div>
           </div>
         </div>
 
