@@ -1026,18 +1026,22 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function DoneView({
   invoice,
+  trackingId,
   total,
   customer,
   payMode,
   onClose,
   onPrint,
+  onWhatsApp,
 }: {
   invoice: string;
+  trackingId: string;
   total: number;
   customer: Customer | null;
   payMode: PayMode;
   onClose: () => void;
   onPrint: () => void;
+  onWhatsApp: () => void;
 }) {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 text-center">
@@ -1049,7 +1053,7 @@ function DoneView({
       </div>
       <h4 className="mt-3 font-display text-xl text-gold-gradient font-bold">Invoice Generated</h4>
       <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-1">
-        {invoice}
+        {invoice} · #{trackingId}
         {customer ? ` · ${customer.name}` : ""}
       </p>
       <div className="mt-4 mx-auto max-w-[280px] rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] p-4 text-left shadow">
@@ -1062,13 +1066,24 @@ function DoneView({
         <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1">
           Payment: {PAY_LABEL[payMode]}
         </p>
+        <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] mt-0.5">
+          Tracking: <span className="font-bold">{trackingId}</span>
+        </p>
       </div>
-      <button
-        onClick={onPrint}
-        className="mt-4 w-full py-2.5 rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] font-display font-bold text-sm text-[color:oklch(0.42_0.10_82)] flex items-center justify-center gap-1.5 active:scale-95"
-      >
-        <Printer className="h-4 w-4" /> Send / Print Invoice
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={onWhatsApp}
+          className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-display font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95 shadow"
+        >
+          WhatsApp
+        </button>
+        <button
+          onClick={onPrint}
+          className="flex-1 py-2.5 rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] font-display font-bold text-sm text-[color:oklch(0.42_0.10_82)] flex items-center justify-center gap-1.5 active:scale-95"
+        >
+          <Printer className="h-4 w-4" /> Print
+        </button>
+      </div>
       <button
         onClick={onClose}
         className="btn-3d mt-3 w-full py-2.5 rounded-xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow"
