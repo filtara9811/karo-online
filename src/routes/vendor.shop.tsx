@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, useEffect } from "react";
 import {
   ArrowLeft,
@@ -6,16 +6,15 @@ import {
   Receipt,
   Star,
   Sparkles,
-  Camera,
   Edit3,
-  Layers,
   X,
   Check,
   ImagePlus,
+  ShoppingBasket,
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
-import type { Product } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
+import { VendorDashboardCard } from "@/components/VendorDashboardCard";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
@@ -29,6 +28,10 @@ export const Route = createFileRoute("/vendor/shop")({
 
 type VendorProduct = EditorProduct;
 
+type FlyEffect = { id: number; src: string; from: DOMRect; to: DOMRect };
+
+type CartLine = { product: VendorProduct; qty: number };
+
 function VendorShop() {
   const navigate = useNavigate();
   const [items, setItems] = useState<VendorProduct[]>(
@@ -37,6 +40,11 @@ function VendorShop() {
   const [editing, setEditing] = useState<VendorProduct | null>(null);
   const [posOpen, setPosOpen] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
+
+  // POS billing cart (persists across openings)
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [flying, setFlying] = useState<FlyEffect[]>([]);
+  const basketRef = useRef<HTMLDivElement | null>(null);
 
   // long-press handler
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +67,25 @@ function VendorShop() {
     setEditing(null);
     setAddingNew(false);
   };
+
+  const addToBilling = (p: VendorProduct, fromEl: HTMLElement) => {
+    const target = basketRef.current;
+    if (target && p.image) {
+      const from = fromEl.getBoundingClientRect();
+      const to = target.getBoundingClientRect();
+      const id = Date.now() + Math.random();
+      setFlying((prev) => [...prev, { id, src: p.image, from, to }]);
+      setTimeout(() => setFlying((prev) => prev.filter((f) => f.id !== id)), 850);
+    }
+    setCart((prev) => {
+      const ex = prev.find((l) => l.product.id === p.id);
+      if (ex) return prev.map((l) => (l === ex ? { ...l, qty: l.qty + 1 } : l));
+      return [...prev, { product: p, qty: 1 }];
+    });
+  };
+
+  const cartCount = cart.reduce((s, l) => s + l.qty, 0);
+  const cartTotal = cart.reduce((s, l) => s + l.product.price * l.qty, 0);
 
   return (
     <div
@@ -89,24 +116,32 @@ function VendorShop() {
           <button
             onClick={() => setPosOpen(true)}
             aria-label="Create Invoice"
-            className="h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-md active:scale-90"
+            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-md active:scale-90"
             style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
           >
             <Receipt className="h-4 w-4" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center">
+                {cartCount}
+              </span>
+            )}
           </button>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
+        {/* === Visiting-card live dashboard === */}
+        <VendorDashboardCard items={items} />
+
         {/* Hint banner */}
         <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] px-3 py-2 flex items-center gap-2 shadow-sm">
           <Sparkles className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
           <p className="text-[11px] text-[color:oklch(0.42_0.10_82)] leading-snug">
-            <span className="font-bold">Long-press</span> any product to edit · Add new from the
-            <span className="mx-1 inline-grid h-4 w-4 place-items-center rounded-full bg-gold-bar text-white align-middle">
-              <Plus className="h-2.5 w-2.5" />
-            </span>
-            below.
+            Tap the gold{" "}
+            <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-gold-bar text-white align-middle">
+              <Plus className="h-2.5 w-2.5" strokeWidth={3} />
+            </span>{" "}
+            to add to billing · <span className="font-bold">long-press</span> any card to edit.
           </p>
         </div>
 
@@ -130,6 +165,7 @@ function VendorShop() {
                 product={p}
                 onPressStart={() => onPressStart(p)}
                 onPressEnd={onPressEnd}
+                onQuickAdd={(el) => addToBilling(p, el)}
               />
             ))}
 
@@ -151,6 +187,51 @@ function VendorShop() {
           </div>
         </section>
       </div>
+
+      {/* Floating quick-billing basket bar */}
+      {cartCount > 0 && !posOpen && (
+        <div
+          className="fixed inset-x-0 z-40 pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 14px)" }}
+        >
+          <div className="max-w-md mx-auto px-4">
+            <button
+              onClick={() => setPosOpen(true)}
+              className="pointer-events-auto w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_10px_28px_-10px_rgba(212,175,55,0.6)] active:scale-[0.99]"
+              style={{
+                background: "linear-gradient(180deg, #fffaeb, #fdf3c8)",
+                animation: "fade-up 0.4s cubic-bezier(0.22,1,0.36,1) both",
+              }}
+            >
+              <span
+                ref={basketRef}
+                className="relative h-11 w-11 rounded-full grid place-items-center bg-white border-2 border-[#d4af37] shadow-gold-glow"
+              >
+                <ShoppingBasket className="h-5 w-5 text-[#92400e]" strokeWidth={2.4} />
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-gradient-to-br from-[#f5d97a] via-[#d4af37] to-[#8b6508] text-[10px] font-bold text-white grid place-items-center shadow">
+                  {cartCount}
+                </span>
+              </span>
+              <span className="flex-1 text-left min-w-0">
+                <span className="block font-display text-[13px] text-gold-gradient font-bold leading-tight">
+                  {cartCount} item{cartCount > 1 ? "s" : ""} · Bill ready
+                </span>
+                <span className="block text-[10px] text-[color:oklch(0.45_0.08_85)]">
+                  ₹{cartTotal.toLocaleString()} · tap to checkout
+                </span>
+              </span>
+              <span className="px-3 py-2 rounded-full bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-bold text-[11px] shadow-gold-glow">
+                Bill Now
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Flying images */}
+      {flying.map((f) => (
+        <FlyImage key={f.id} fly={f} />
+      ))}
 
       {/* Edit / Create sheet */}
       {(editing || addingNew) && (
@@ -181,7 +262,12 @@ function VendorShop() {
 
       {/* POS sheet */}
       {posOpen && (
-        <POSSheet products={items} onClose={() => setPosOpen(false)} />
+        <POSSheet
+          products={items}
+          initialCart={cart}
+          onCartChange={setCart}
+          onClose={() => setPosOpen(false)}
+        />
       )}
     </div>
   );
@@ -191,10 +277,12 @@ function ProductTile({
   product,
   onPressStart,
   onPressEnd,
+  onQuickAdd,
 }: {
   product: VendorProduct;
   onPressStart: () => void;
   onPressEnd: () => void;
+  onQuickAdd: (sourceEl: HTMLElement) => void;
 }) {
   const themeStyles: Record<NonNullable<VendorProduct["theme"]>, string> = {
     classic: "bg-white",
@@ -203,6 +291,9 @@ function ProductTile({
     luxe: "bg-gradient-to-b from-[#fff8dc] to-[#f5e9b8]",
   };
   const t = product.theme ?? "classic";
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const fallbackRef = useRef<HTMLDivElement | null>(null);
+
   return (
     <article
       onMouseDown={onPressStart}
@@ -211,12 +302,13 @@ function ProductTile({
       onTouchStart={onPressStart}
       onTouchEnd={onPressEnd}
       className={`relative aspect-[3/4] rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.97] transition select-none ${themeStyles[t]}`}
+      style={{ animation: "float-soft 6s ease-in-out infinite" }}
     >
       <div className="relative h-3/5 overflow-hidden">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+          <img ref={imgRef} src={product.image} alt={product.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
+          <div ref={fallbackRef} className="h-full w-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
             <ImagePlus className="h-8 w-8 text-[#d4af37]" />
           </div>
         )}
@@ -228,8 +320,24 @@ function ProductTile({
         <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white/90 grid place-items-center shadow">
           <Edit3 className="h-3 w-3 text-[color:oklch(0.42_0.10_82)]" />
         </span>
+
+        {/* Round + Quick-add to billing */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const src = imgRef.current ?? fallbackRef.current;
+            if (src) onQuickAdd(src);
+          }}
+          aria-label={`Add ${product.name} to billing`}
+          className="absolute -bottom-3 right-2 h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-gold-glow border-2 border-white active:scale-90 transition"
+          style={{
+            background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+          }}
+        >
+          <Plus className="h-4 w-4" strokeWidth={3.2} />
+        </button>
       </div>
-      <div className="p-2">
+      <div className="p-2 pt-3">
         <h4 className="font-display text-xs font-bold text-[color:oklch(0.25_0.05_85)] truncate">
           {product.name || "Untitled"}
         </h4>
@@ -254,7 +362,31 @@ function ProductTile({
   );
 }
 
-// ProductEditor is imported from @/components/ProductEditor
+function FlyImage({ fly }: { fly: FlyEffect }) {
+  const dx = fly.to.left + fly.to.width / 2 - (fly.from.left + fly.from.width / 2);
+  const dy = fly.to.top + fly.to.height / 2 - (fly.from.top + fly.from.height / 2);
+
+  return (
+    <div
+      className="fixed z-[200] pointer-events-none"
+      style={{
+        left: fly.from.left,
+        top: fly.from.top,
+        width: fly.from.width,
+        height: fly.from.height,
+        ["--dx" as never]: `${dx}px`,
+        ["--dy" as never]: `${dy}px`,
+        animation: "fly-to-cart 0.85s cubic-bezier(0.5, 0, 0.75, 0) forwards",
+      }}
+    >
+      <img
+        src={fly.src}
+        alt=""
+        className="h-full w-full object-cover rounded-2xl border-2 border-[#d4af37] shadow-2xl"
+      />
+    </div>
+  );
+}
 
 function Field({
   label,
@@ -286,10 +418,18 @@ function Field({
   );
 }
 
-type CartLine = { product: VendorProduct; qty: number };
-
-function POSSheet({ products, onClose }: { products: VendorProduct[]; onClose: () => void }) {
-  const [cart, setCart] = useState<CartLine[]>([]);
+function POSSheet({
+  products,
+  initialCart,
+  onCartChange,
+  onClose,
+}: {
+  products: VendorProduct[];
+  initialCart: CartLine[];
+  onCartChange: (lines: CartLine[]) => void;
+  onClose: () => void;
+}) {
+  const [cart, setCart] = useState<CartLine[]>(initialCart);
   const [customer, setCustomer] = useState({ name: "", phone: "" });
   const [discount, setDiscount] = useState(0);
   const [taxRate, setTaxRate] = useState(5);
@@ -302,6 +442,10 @@ function POSSheet({ products, onClose }: { products: VendorProduct[]; onClose: (
       document.body.style.overflow = "";
     };
   }, []);
+
+  useEffect(() => {
+    onCartChange(cart);
+  }, [cart, onCartChange]);
 
   const addLine = (p: VendorProduct) => {
     setCart((prev) => {
@@ -326,6 +470,7 @@ function POSSheet({ products, onClose }: { products: VendorProduct[]; onClose: (
     if (!cart.length || !customer.name) return;
     const invoice = "INV-" + Math.floor(100000 + Math.random() * 900000);
     setDone({ invoice, total });
+    setCart([]);
   };
 
   const printInvoice = () => {
