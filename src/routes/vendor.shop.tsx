@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -7,14 +7,13 @@ import {
   Star,
   Sparkles,
   Edit3,
-  X,
-  Check,
   ImagePlus,
   ShoppingBasket,
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 import { VendorDashboardCard } from "@/components/VendorDashboardCard";
+import { POSInvoiceSheet, type CartLine } from "@/components/POSInvoiceSheet";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
