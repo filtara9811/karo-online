@@ -1,18 +1,28 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Plus,
   Receipt,
   Star,
-  Sparkles,
   Edit3,
   ImagePlus,
   ShoppingBasket,
+  ScanBarcode,
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
-import { VendorDashboardCard } from "@/components/VendorDashboardCard";
+import { DashboardFlipCard } from "@/components/DashboardFlipCard";
+import { ShopSearchBar } from "@/components/ShopSearchBar";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { TopProductsMarquee } from "@/components/TopProductsMarquee";
+import { CategorySections } from "@/components/CategorySections";
+import {
+  QuickAddVariationSheet,
+  type PricingMode,
+  type QuickAddSelection,
+} from "@/components/QuickAddVariationSheet";
+import { BarcodeScannerOverlay } from "@/components/BarcodeScannerOverlay";
 import { POSInvoiceSheet, type CartLine } from "@/components/POSInvoiceSheet";
 
 export const Route = createFileRoute("/vendor/shop")({
@@ -26,7 +36,6 @@ export const Route = createFileRoute("/vendor/shop")({
 });
 
 type VendorProduct = EditorProduct;
-
 type FlyEffect = { id: number; src: string; from: DOMRect; to: DOMRect };
 
 function VendorShop() {
@@ -37,13 +46,17 @@ function VendorShop() {
   const [editing, setEditing] = useState<VendorProduct | null>(null);
   const [posOpen, setPosOpen] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
+  const [search, setSearch] = useState("");
+  const [pricingMode, setPricingMode] = useState<PricingMode>("retail");
+  const [scanOpen, setScanOpen] = useState(false);
+  const [quickAdd, setQuickAdd] = useState<{ product: VendorProduct; sourceEl: HTMLElement | null } | null>(null);
 
-  // POS billing cart (persists across openings)
+  // POS billing cart
   const [cart, setCart] = useState<CartLine[]>([]);
   const [flying, setFlying] = useState<FlyEffect[]>([]);
   const basketRef = useRef<HTMLDivElement | null>(null);
 
-  // long-press handler
+  // long-press for tile edit
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onPressStart = (p: VendorProduct) => {
     pressTimer.current = setTimeout(() => setEditing(p), 450);
@@ -65,9 +78,13 @@ function VendorShop() {
     setAddingNew(false);
   };
 
-  const addToBilling = (p: VendorProduct, fromEl: HTMLElement) => {
+  const flyAndAdd = (
+    p: VendorProduct,
+    fromEl: HTMLElement | null,
+    line: CartLine
+  ) => {
     const target = basketRef.current;
-    if (target && p.image) {
+    if (target && p.image && fromEl) {
       const from = fromEl.getBoundingClientRect();
       const to = target.getBoundingClientRect();
       const id = Date.now() + Math.random();
@@ -75,14 +92,68 @@ function VendorShop() {
       setTimeout(() => setFlying((prev) => prev.filter((f) => f.id !== id)), 850);
     }
     setCart((prev) => {
-      const ex = prev.find((l) => l.product.id === p.id);
-      if (ex) return prev.map((l) => (l === ex ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { product: p, qty: 1 }];
+      const sameKey = (l: CartLine) =>
+        l.product.id === line.product.id && l.priceOverride === line.priceOverride;
+      const ex = prev.find(sameKey);
+      if (ex) return prev.map((l) => (l === ex ? { ...l, qty: l.qty + line.qty } : l));
+      return [...prev, line];
     });
   };
 
+  // Quick-add entry — opens variation sheet if product has variations, else direct add
+  const onQuickAdd = (p: VendorProduct, sourceEl: HTMLElement) => {
+    const hasVariations =
+      (p.variationsList && p.variationsList.length > 0) ||
+      (p.variations && p.variations.length > 0);
+    if (hasVariations) {
+      setQuickAdd({ product: p, sourceEl });
+    } else {
+      const unit =
+        pricingMode === "wholesale"
+          ? p.wholesalePrice ??
+            (p.buyingPrice ? Math.round(p.buyingPrice * 1.15) : Math.round(p.price * 0.85))
+          : p.price;
+      flyAndAdd(p, sourceEl, { product: p, qty: 1, priceOverride: unit });
+    }
+  };
+
+  const confirmQuickAdd = (sel: QuickAddSelection) => {
+    if (!quickAdd) return;
+    const product = quickAdd.product;
+    const enriched: VendorProduct = sel.variationLabel
+      ? { ...product, name: `${product.name} · ${sel.variationLabel}` }
+      : product;
+    flyAndAdd(product, quickAdd.sourceEl, {
+      product: enriched,
+      qty: sel.qty,
+      priceOverride: sel.unitPrice,
+    });
+    setQuickAdd(null);
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.tagline?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.primaryCategory?.toLowerCase().includes(q)
+    );
+  }, [items, search]);
+
+  // Top products = first 6 by rating
+  const topProducts = useMemo(
+    () => [...items].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 6),
+    [items]
+  );
+
   const cartCount = cart.reduce((s, l) => s + l.qty, 0);
-  const cartTotal = cart.reduce((s, l) => s + l.product.price * l.qty, 0);
+  const cartTotal = cart.reduce(
+    (s, l) => s + (l.priceOverride ?? l.product.price) * l.qty,
+    0
+  );
 
   return (
     <div
@@ -127,26 +198,44 @@ function VendorShop() {
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
-        {/* === Visiting-card live dashboard === */}
-        <VendorDashboardCard items={items} />
+        {/* === Visiting-card flippable dashboard === */}
+        <DashboardFlipCard items={items} />
 
-        {/* Hint banner */}
-        <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] px-3 py-2 flex items-center gap-2 shadow-sm">
-          <Sparkles className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
-          <p className="text-[11px] text-[color:oklch(0.42_0.10_82)] leading-snug">
-            Tap the gold{" "}
-            <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-gold-bar text-white align-middle">
-              <Plus className="h-2.5 w-2.5" strokeWidth={3} />
-            </span>{" "}
-            to add to billing · <span className="font-bold">long-press</span> any card to edit.
-          </p>
+        {/* Search */}
+        <ShopSearchBar value={search} onChange={setSearch} />
+
+        {/* Banners */}
+        <BannerCarousel />
+
+        {/* Pricing mode toggle */}
+        <div className="flex items-center justify-between rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-1 shadow-sm">
+          <ModePill
+            active={pricingMode === "retail"}
+            label="Retail Pricing"
+            onClick={() => setPricingMode("retail")}
+          />
+          <ModePill
+            active={pricingMode === "wholesale"}
+            label="Wholesale Pricing"
+            onClick={() => setPricingMode("wholesale")}
+          />
         </div>
 
-        {/* Section: All products */}
+        {/* Top products marquee */}
+        <TopProductsMarquee items={topProducts} onQuickAdd={onQuickAdd} />
+
+        {/* Category sections */}
+        <CategorySections
+          items={filtered}
+          onQuickAdd={onQuickAdd}
+          onTileLongPress={(p) => setEditing(p)}
+        />
+
+        {/* Section: All products grid */}
         <section>
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="font-display text-base text-gold-gradient font-bold">
-              All Products <span className="font-light">| {items.length}</span>
+              All Products <span className="font-light">| {filtered.length}</span>
             </h3>
             <button
               onClick={() => setAddingNew(true)}
@@ -156,13 +245,13 @@ function VendorShop() {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {items.map((p) => (
+            {filtered.map((p) => (
               <ProductTile
                 key={p.id}
                 product={p}
                 onPressStart={() => onPressStart(p)}
                 onPressEnd={onPressEnd}
-                onQuickAdd={(el) => addToBilling(p, el)}
+                onQuickAdd={(el) => onQuickAdd(p, el)}
               />
             ))}
 
@@ -185,42 +274,70 @@ function VendorShop() {
         </section>
       </div>
 
-      {/* Floating quick-billing basket bar */}
-      {cartCount > 0 && !posOpen && (
+      {/* === Floating 3-button bottom bar === */}
+      {!posOpen && (
         <div
           className="fixed inset-x-0 z-40 pointer-events-none"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 14px)" }}
         >
           <div className="max-w-md mx-auto px-4">
-            <button
-              onClick={() => setPosOpen(true)}
-              className="pointer-events-auto w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_10px_28px_-10px_rgba(212,175,55,0.6)] active:scale-[0.99]"
+            <div
+              className="pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-2 border border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_10px_28px_-10px_rgba(212,175,55,0.6)]"
               style={{
                 background: "linear-gradient(180deg, #fffaeb, #fdf3c8)",
                 animation: "fade-up 0.4s cubic-bezier(0.22,1,0.36,1) both",
               }}
             >
-              <span
-                ref={basketRef}
-                className="relative h-11 w-11 rounded-full grid place-items-center bg-white border-2 border-[#d4af37] shadow-gold-glow"
+              {/* Basket pill */}
+              <button
+                onClick={() => cartCount > 0 && setPosOpen(true)}
+                disabled={cartCount === 0}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 active:scale-[0.97] disabled:opacity-60"
               >
-                <ShoppingBasket className="h-5 w-5 text-[#92400e]" strokeWidth={2.4} />
-                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-gradient-to-br from-[#f5d97a] via-[#d4af37] to-[#8b6508] text-[10px] font-bold text-white grid place-items-center shadow">
-                  {cartCount}
+                <span
+                  ref={basketRef}
+                  className="relative h-10 w-10 rounded-full grid place-items-center bg-white border-2 border-[#d4af37] shadow-gold-glow"
+                >
+                  <ShoppingBasket className="h-4 w-4 text-[#92400e]" strokeWidth={2.4} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#f5d97a] via-[#d4af37] to-[#8b6508] text-[9px] font-bold text-white grid place-items-center shadow">
+                      {cartCount}
+                    </span>
+                  )}
                 </span>
-              </span>
-              <span className="flex-1 text-left min-w-0">
-                <span className="block font-display text-[13px] text-gold-gradient font-bold leading-tight">
-                  {cartCount} item{cartCount > 1 ? "s" : ""} · Bill ready
+                <span className="text-left">
+                  <span className="block font-display text-[11px] text-gold-gradient font-bold leading-tight">
+                    {cartCount} {cartCount === 1 ? "item" : "items"}
+                  </span>
+                  <span className="block text-[9px] text-[color:oklch(0.45_0.08_85)] tabular-nums">
+                    ₹{cartTotal.toLocaleString()}
+                  </span>
                 </span>
-                <span className="block text-[10px] text-[color:oklch(0.45_0.08_85)]">
-                  ₹{cartTotal.toLocaleString()} · tap to checkout
-                </span>
-              </span>
-              <span className="px-3 py-2 rounded-full bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-bold text-[11px] shadow-gold-glow">
-                Bill Now
-              </span>
-            </button>
+              </button>
+
+              {/* Scan */}
+              <button
+                onClick={() => setScanOpen(true)}
+                aria-label="Scan barcode"
+                className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-gold-glow border-2 border-white active:scale-90"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+                }}
+              >
+                <ScanBarcode className="h-5 w-5" strokeWidth={2.4} />
+              </button>
+
+              {/* Bill Now */}
+              <button
+                onClick={() => setPosOpen(true)}
+                disabled={cartCount === 0}
+                className="flex-1 h-12 rounded-xl font-display font-bold text-[12px] text-[color:oklch(0.13_0.06_18)] shadow-gold-glow active:scale-[0.98] disabled:opacity-60"
+                style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37, #8b6508)" }}
+              >
+                Bill Now →
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -257,6 +374,38 @@ function VendorShop() {
         />
       )}
 
+      {/* Quick-add variation sheet */}
+      {quickAdd && (
+        <QuickAddVariationSheet
+          product={quickAdd.product}
+          defaultMode={pricingMode}
+          onConfirm={confirmQuickAdd}
+          onClose={() => setQuickAdd(null)}
+        />
+      )}
+
+      {/* Barcode scanner overlay */}
+      {scanOpen && (
+        <BarcodeScannerOverlay
+          products={items}
+          onScan={(p) => {
+            const unit =
+              pricingMode === "wholesale"
+                ? p.wholesalePrice ??
+                  (p.buyingPrice
+                    ? Math.round(p.buyingPrice * 1.15)
+                    : Math.round(p.price * 0.85))
+                : p.price;
+            flyAndAdd(p, basketRef.current, {
+              product: p,
+              qty: 1,
+              priceOverride: unit,
+            });
+          }}
+          onClose={() => setScanOpen(false)}
+        />
+      )}
+
       {/* POS sheet */}
       {posOpen && (
         <POSInvoiceSheet
@@ -267,6 +416,34 @@ function VendorShop() {
         />
       )}
     </div>
+  );
+}
+
+function ModePill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 py-2 rounded-xl text-[11px] font-display font-bold uppercase tracking-wider transition ${
+        active
+          ? "text-[color:oklch(0.18_0.06_18)] shadow"
+          : "text-[color:oklch(0.55_0.10_82)]"
+      }`}
+      style={
+        active
+          ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
+          : undefined
+      }
+    >
+      {label}
+    </button>
   );
 }
 
@@ -318,7 +495,6 @@ function ProductTile({
           <Edit3 className="h-3 w-3 text-[color:oklch(0.42_0.10_82)]" />
         </span>
 
-        {/* Round + Quick-add to billing */}
         <button
           onClick={(e) => {
             e.stopPropagation();
