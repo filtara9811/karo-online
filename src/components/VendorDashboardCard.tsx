@@ -138,7 +138,7 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
               ))}
             </div>
           </div>
-        )}
+        </div>
 
         {/* === "Live | Sales Desbord" caption === */}
         <div className="relative px-4 text-center">
