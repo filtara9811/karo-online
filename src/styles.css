@@ -219,6 +219,12 @@
   to { opacity: 1; }
 }
 
+@keyframes fly-to-cart {
+  0% { transform: translate(0, 0) scale(1) rotate(0); opacity: 1; }
+  60% { transform: translate(calc(var(--dx) * 0.7), calc(var(--dy) * 0.4)) scale(0.55) rotate(140deg); opacity: 0.95; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.18) rotate(360deg); opacity: 0; }
+}
+
 @keyframes step-reveal {
   0% { opacity: 0; transform: translateY(24px) scale(0.96); filter: blur(4px); }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
