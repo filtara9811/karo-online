@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrendingUp, Filter, BookOpenCheck, Box } from "lucide-react";
 import type { EditorProduct } from "@/components/ProductEditor";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -52,14 +52,21 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
     };
   }, [items, range]);
 
-  const stamp = useMemo(() => {
-    const d = new Date();
-    const day = d.getDate();
-    const month = d.toLocaleString("en-US", { month: "long" });
-    const year = d.getFullYear();
-    const hh = d.getHours().toString().padStart(2, "0");
-    const mm = d.getMinutes().toString().padStart(2, "0");
-    return `${day} ${month} ${year} · ${hh}:${mm}`;
+  // Compute timestamp client-side only to avoid SSR/CSR hydration mismatch
+  const [stamp, setStamp] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      const day = d.getDate();
+      const month = d.toLocaleString("en-US", { month: "long" });
+      const year = d.getFullYear();
+      const hh = d.getHours().toString().padStart(2, "0");
+      const mm = d.getMinutes().toString().padStart(2, "0");
+      setStamp(`${day} ${month} ${year} · ${hh}:${mm}`);
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   return (

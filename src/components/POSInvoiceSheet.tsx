@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   Check,
@@ -17,12 +17,16 @@ import {
   Percent,
   Truck,
   Receipt,
+  Tag,
 } from "lucide-react";
 import type { EditorProduct } from "@/components/ProductEditor";
 import { CustomerPickerSheet, type Customer } from "@/components/CustomerPickerSheet";
 import { PaymentModeSheet, type PayMode } from "@/components/PaymentModeSheet";
 import { PrintOptionsSheet } from "@/components/PrintOptionsSheet";
-import { ValuePickerSheet } from "@/components/ValuePickerSheet";
+import { ValuePickerSheet, type ValueMode } from "@/components/ValuePickerSheet";
+import { CouponSheet, type Coupon } from "@/components/CouponSheet";
+import { InvoiceImage } from "@/components/InvoiceImage";
+import { captureInvoicePng, shareInvoicePng } from "@/lib/invoice-image";
 
 export type CartLine = {
   product: EditorProduct;
@@ -35,8 +39,11 @@ export type HeldBill = {
   id: string;
   customer: Customer | null;
   cart: CartLine[];
-  discountPct: number;
+  discountValue: number;
+  discountMode: "pct-off" | "flat-off" | "pct-add";
+  coupon: Coupon | null;
   taxPct: number;
+  gstMode: "add" | "include";
   deliveryFee: number;
   createdAt: number;
 };
@@ -56,18 +63,41 @@ const PAY_LABEL: Record<PayMode, string> = {
   "card-debit": "Debit Card",
 };
 
-type PickerKind = null | "discount" | "gst" | "delivery";
+type PickerKind = null | "discount" | "gst" | "delivery" | "coupon";
+
+/** Discount mode: percent off, flat ₹ off, or surcharge (rare) */
+type DiscountMode = "pct-off" | "flat-off" | "pct-add";
+/** GST mode: add GST on top, or include GST inside the subtotal */
+type GstMode = "add" | "include";
+
+const DISCOUNT_MODES: ValueMode[] = [
+  { id: "pct-off", label: "% Off", unit: "%", sign: -1 },
+  { id: "flat-off", label: "Flat ₹", unit: "₹", sign: -1 },
+  { id: "pct-add", label: "% Add", unit: "%", sign: 1 },
+];
+const GST_MODES: ValueMode[] = [
+  { id: "add", label: "Add GST", unit: "%", sign: 1 },
+  { id: "include", label: "Inclusive", unit: "%", sign: -1 },
+];
 
 export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }: Props) {
   const [cart, setCart] = useState<CartLine[]>(initialCart);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [discountPct, setDiscountPct] = useState(0);
+  const [discountValue, setDiscountValue] = useState(0); // raw positive value
+  const [discountMode, setDiscountMode] = useState<DiscountMode>("pct-off");
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [taxPct, setTaxPct] = useState(5);
+  const [gstMode, setGstMode] = useState<GstMode>("add");
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [payMode, setPayMode] = useState<PayMode>("cash");
   const [held, setHeld] = useState<HeldBill[]>([]);
   const [activeHeldId, setActiveHeldId] = useState<string | null>(null);
-  const [done, setDone] = useState<null | { invoice: string; total: number }>(null);
+  const [done, setDone] = useState<null | {
+    invoice: string;
+    trackingId: string;
+    total: number;
+    date: string;
+  }>(null);
   const [editingPriceFor, setEditingPriceFor] = useState<string | null>(null);
 
   // sub sheets
@@ -76,6 +106,9 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const [showPaySheet, setShowPaySheet] = useState(false);
   const [showPrintSheet, setShowPrintSheet] = useState(false);
   const [picker, setPicker] = useState<PickerKind>(null);
+
+  // off-screen invoice capture target
+  const invoiceImgRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -92,9 +125,39 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     () => cart.reduce((s, l) => s + (l.priceOverride ?? l.product.price) * l.qty, 0),
     [cart],
   );
-  const discountAmt = (subtotal * discountPct) / 100;
-  const taxAmt = ((subtotal - discountAmt) * taxPct) / 100;
-  const total = Math.max(0, subtotal - discountAmt + taxAmt + deliveryFee);
+
+  // Discount: combine slider value + active coupon
+  const manualDiscount =
+    discountMode === "pct-off"
+      ? (subtotal * discountValue) / 100
+      : discountMode === "flat-off"
+        ? discountValue
+        : -((subtotal * discountValue) / 100); // pct-add → adds (negative discount)
+  const couponDiscount = coupon
+    ? coupon.percent
+      ? (subtotal * coupon.percent) / 100
+      : (coupon.flat ?? 0)
+    : 0;
+  const discountAmt = Math.max(0, manualDiscount + couponDiscount);
+  const surcharge = manualDiscount < 0 ? -manualDiscount : 0;
+
+  // GST: add or include
+  const taxableBase = Math.max(0, subtotal - discountAmt + surcharge);
+  const taxAmt =
+    gstMode === "add"
+      ? (taxableBase * taxPct) / 100
+      : -(taxableBase - taxableBase / (1 + taxPct / 100)); // included → shown as informational negative
+  const total = Math.max(
+    0,
+    gstMode === "add"
+      ? taxableBase + taxAmt + deliveryFee
+      : taxableBase + deliveryFee, // inclusive: total stays as base
+  );
+  const discountPctLabel =
+    discountMode === "flat-off"
+      ? `₹${discountValue}`
+      : `${discountValue}%${discountMode === "pct-add" ? " add" : ""}`;
+  const taxLabel = `${taxPct}% ${gstMode === "add" ? "add" : "incl"}`;
 
   // recommended = products NOT in cart, top 8
   const recommended = useMemo(() => {
@@ -125,8 +188,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const resetForm = () => {
     setCart([]);
     setCustomer(null);
-    setDiscountPct(0);
+    setDiscountValue(0);
+    setDiscountMode("pct-off");
+    setCoupon(null);
     setTaxPct(5);
+    setGstMode("add");
     setDeliveryFee(0);
     setPayMode("cash");
     setActiveHeldId(null);
@@ -139,8 +205,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       id,
       customer,
       cart,
-      discountPct,
+      discountValue,
+      discountMode,
+      coupon,
       taxPct,
+      gstMode,
       deliveryFee,
       createdAt: Date.now(),
     };
@@ -159,8 +228,11 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     }
     setCart(h.cart);
     setCustomer(h.customer);
-    setDiscountPct(h.discountPct);
+    setDiscountValue(h.discountValue ?? 0);
+    setDiscountMode(h.discountMode ?? "pct-off");
+    setCoupon(h.coupon ?? null);
     setTaxPct(h.taxPct);
+    setGstMode(h.gstMode ?? "add");
     setDeliveryFee(h.deliveryFee ?? 0);
     setActiveHeldId(id);
     setHeld((prev) => prev.filter((x) => x.id !== id));
@@ -173,14 +245,31 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
     setShowBillsSheet(false);
   };
 
-  const sendVia = (mode: "whatsapp" | "thermal" | "email" | "pdf") => {
+  const formatDate = (d = new Date()) =>
+    `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${d.getFullYear()} · ${d
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+
+  const sendVia = async (mode: "whatsapp" | "thermal" | "email" | "pdf") => {
     if (!cart.length && !done) return;
     const invoice = done?.invoice ?? "INV-" + Math.floor(100000 + Math.random() * 900000);
-    if (mode === "whatsapp" && customer?.phone) {
-      const msg = encodeURIComponent(
-        `Hi ${customer.name}, your invoice ${invoice} for ₹${total.toFixed(0)} from Ashhu's Digital Shop is ready. Thank you!`,
-      );
-      window.open(`https://wa.me/${customer.phone.replace(/\D/g, "")}?text=${msg}`, "_blank");
+    const tracking = done?.trackingId ?? "TRK-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+    if (mode === "whatsapp") {
+      const el = invoiceImgRef.current;
+      const phone = customer?.phone ?? "";
+      const caption = `Hi ${customer?.name ?? "there"}, here is your invoice ${invoice} (Tracking #${tracking}) for ₹${total.toFixed(0)} from Ashhu's Digital Shop. Thank you!`;
+      if (el) {
+        const png = await captureInvoicePng(el);
+        await shareInvoicePng(png, `${invoice}.png`, { phone, caption });
+      } else if (phone) {
+        window.open(
+          `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(caption)}`,
+          "_blank",
+        );
+      }
     } else if (mode === "thermal" || mode === "pdf") {
       window.print();
     }
@@ -189,8 +278,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const generate = () => {
     if (!cart.length) return;
     const invoice = "INV-" + Math.floor(100000 + Math.random() * 900000);
-    setDone({ invoice, total });
-    setCart([]);
+    const trackingId = "TRK-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+    setDone({ invoice, trackingId, total, date: formatDate() });
+    // Keep cart so the off-screen InvoiceImage can still render the items;
+    // it will be reset when user closes / starts a new bill.
   };
 
   const totalHeld = held.length + (cart.length || customer ? 1 : 0);
@@ -250,11 +341,17 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
         {done ? (
           <DoneView
             invoice={done.invoice}
+            trackingId={done.trackingId}
             total={done.total}
             customer={customer}
             payMode={payMode}
-            onClose={onClose}
+            onClose={() => {
+              resetForm();
+              setDone(null);
+              onClose();
+            }}
             onPrint={() => setShowPrintSheet(true)}
+            onWhatsApp={() => sendVia("whatsapp")}
           />
         ) : (
           <>
@@ -369,21 +466,34 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                     "linear-gradient(180deg, #fffdf5 0%, #fff8dc 50%, #fbf3d9 100%)",
                 }}
               >
-                {/* Integrated tap chips */}
-                <div className="flex items-center gap-1.5 mb-3">
+                {/* Integrated horizontally-scrollable chip strip */}
+                <div className="flex items-center gap-1.5 mb-3 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
                   <ChipTrigger
                     icon={<Percent className="h-3 w-3" />}
                     label="Disc"
-                    value={`${discountPct}%`}
+                    value={
+                      discountValue === 0
+                        ? "Add"
+                        : discountMode === "flat-off"
+                          ? `−₹${discountValue}`
+                          : `${discountMode === "pct-add" ? "+" : "−"}${discountValue}%`
+                    }
                     onClick={() => setPicker("discount")}
-                    tone={discountPct > 0 ? "rose-active" : "neutral"}
+                    tone={discountValue !== 0 ? "rose-active" : "neutral"}
                   />
                   <ChipTrigger
                     icon={<Receipt className="h-3 w-3" />}
                     label="GST"
-                    value={`${taxPct}%`}
+                    value={taxPct === 0 ? "0%" : `${taxPct}% ${gstMode === "include" ? "incl" : ""}`.trim()}
                     onClick={() => setPicker("gst")}
                     tone={taxPct > 0 ? "gold-active" : "neutral"}
+                  />
+                  <ChipTrigger
+                    icon={<Tag className="h-3 w-3" />}
+                    label="Coupon"
+                    value={coupon ? coupon.code : "Apply"}
+                    onClick={() => setPicker("coupon")}
+                    tone={coupon ? "rose-active" : "neutral"}
                   />
                   <ChipTrigger
                     icon={<Truck className="h-3 w-3" />}
@@ -399,12 +509,21 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   <Row label="Subtotal" value={`₹${subtotal.toLocaleString()}`} />
                   {discountAmt > 0 && (
                     <Row
-                      label={`Discount (${discountPct}%)`}
+                      label={`Discount (${discountPctLabel}${coupon ? ` · ${coupon.code}` : ""})`}
                       value={`-₹${discountAmt.toFixed(0)}`}
                     />
                   )}
-                  {taxAmt > 0 && (
+                  {surcharge > 0 && (
+                    <Row label={`Surcharge (${discountValue}%)`} value={`+₹${surcharge.toFixed(0)}`} />
+                  )}
+                  {gstMode === "add" && taxAmt > 0 && (
                     <Row label={`GST (${taxPct}%)`} value={`+₹${taxAmt.toFixed(0)}`} />
+                  )}
+                  {gstMode === "include" && taxPct > 0 && (
+                    <Row
+                      label={`GST (${taxPct}% incl)`}
+                      value={`incl ₹${Math.abs(taxAmt).toFixed(0)}`}
+                    />
                   )}
                   {deliveryFee > 0 && <Row label="Delivery" value={`+₹${deliveryFee}`} />}
                   <div className="border-t border-dashed border-[color:oklch(0.78_0.14_82/0.5)] pt-1.5 mt-1.5 flex items-center justify-between">
@@ -421,10 +540,10 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                 <button
                   onClick={() => setShowBillsSheet(true)}
                   aria-label="Manage bills & customers"
-                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-white active:scale-90 transition"
+                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-[color:oklch(0.18_0.06_18)] active:scale-90 transition"
                   style={{
                     background:
-                      "linear-gradient(180deg, oklch(0.55 0.22 320), oklch(0.35 0.18 320))",
+                      "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
                   }}
                 >
                   <Plus className="h-5 w-5" strokeWidth={3} />
@@ -446,7 +565,7 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   style={{
                     background: customer
                       ? "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)"
-                      : "linear-gradient(180deg, oklch(0.45 0.18 320), oklch(0.30 0.15 320))",
+                      : "linear-gradient(180deg, oklch(0.62 0.16 165), oklch(0.42 0.14 165))",
                   }}
                 >
                   {customer ? (
@@ -588,30 +707,45 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       {picker === "discount" && (
         <ValuePickerSheet
           title="Discount"
-          subtitle="Apply % off the subtotal"
-          unit="%"
-          value={discountPct}
+          subtitle="Choose how to apply discount"
+          value={discountValue}
           presets={[0, 5, 10, 15, 20, 25, 30, 50]}
           min={0}
-          max={90}
-          step={5}
+          max={discountMode === "flat-off" ? 99999 : 90}
+          step={discountMode === "flat-off" ? 10 : 5}
           tone="rose"
-          onPick={setDiscountPct}
+          modes={DISCOUNT_MODES}
+          modeId={discountMode}
+          onPick={(v, modeId) => {
+            setDiscountValue(Math.abs(v));
+            if (modeId) setDiscountMode(modeId as DiscountMode);
+          }}
           onClose={() => setPicker(null)}
         />
       )}
       {picker === "gst" && (
         <ValuePickerSheet
           title="GST Slab"
-          subtitle="Pick the GST % to apply"
-          unit="%"
+          subtitle="Add GST on top, or treat price as inclusive"
           value={taxPct}
           presets={[0, 3, 5, 12, 18, 28]}
           min={0}
           max={28}
           step={1}
           tone="gold"
-          onPick={setTaxPct}
+          modes={GST_MODES}
+          modeId={gstMode}
+          onPick={(v, modeId) => {
+            setTaxPct(Math.abs(v));
+            if (modeId) setGstMode(modeId as GstMode);
+          }}
+          onClose={() => setPicker(null)}
+        />
+      )}
+      {picker === "coupon" && (
+        <CouponSheet
+          current={coupon}
+          onApply={setCoupon}
           onClose={() => setPicker(null)}
         />
       )}
@@ -630,6 +764,38 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           onClose={() => setPicker(null)}
         />
       )}
+
+      {/* Off-screen invoice for WhatsApp/PNG capture */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <InvoiceImage
+          ref={invoiceImgRef}
+          invoice={done?.invoice ?? "INV-PREVIEW"}
+          trackingId={done?.trackingId ?? "TRK-PREVIEW"}
+          date={done?.date ?? formatDate()}
+          shopName="Ashhu's Digital Shop"
+          shopTagline="Premium digital dukan"
+          customer={customer}
+          cart={cart}
+          subtotal={subtotal}
+          discountAmt={discountAmt}
+          discountLabel={discountValue ? discountPctLabel : undefined}
+          taxAmt={taxAmt}
+          taxLabel={taxPct ? `${taxPct}% ${gstMode}` : undefined}
+          deliveryFee={deliveryFee}
+          couponCode={coupon?.code}
+          total={total}
+          payMode={PAY_LABEL[payMode]}
+        />
+      </div>
     </div>
   );
 }
@@ -860,18 +1026,22 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function DoneView({
   invoice,
+  trackingId,
   total,
   customer,
   payMode,
   onClose,
   onPrint,
+  onWhatsApp,
 }: {
   invoice: string;
+  trackingId: string;
   total: number;
   customer: Customer | null;
   payMode: PayMode;
   onClose: () => void;
   onPrint: () => void;
+  onWhatsApp: () => void;
 }) {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 text-center">
@@ -883,7 +1053,7 @@ function DoneView({
       </div>
       <h4 className="mt-3 font-display text-xl text-gold-gradient font-bold">Invoice Generated</h4>
       <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-1">
-        {invoice}
+        {invoice} · #{trackingId}
         {customer ? ` · ${customer.name}` : ""}
       </p>
       <div className="mt-4 mx-auto max-w-[280px] rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] p-4 text-left shadow">
@@ -896,13 +1066,24 @@ function DoneView({
         <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] mt-1">
           Payment: {PAY_LABEL[payMode]}
         </p>
+        <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] mt-0.5">
+          Tracking: <span className="font-bold">{trackingId}</span>
+        </p>
       </div>
-      <button
-        onClick={onPrint}
-        className="mt-4 w-full py-2.5 rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] font-display font-bold text-sm text-[color:oklch(0.42_0.10_82)] flex items-center justify-center gap-1.5 active:scale-95"
-      >
-        <Printer className="h-4 w-4" /> Send / Print Invoice
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={onWhatsApp}
+          className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-display font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95 shadow"
+        >
+          WhatsApp
+        </button>
+        <button
+          onClick={onPrint}
+          className="flex-1 py-2.5 rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] font-display font-bold text-sm text-[color:oklch(0.42_0.10_82)] flex items-center justify-center gap-1.5 active:scale-95"
+        >
+          <Printer className="h-4 w-4" /> Print
+        </button>
+      </div>
       <button
         onClick={onClose}
         className="btn-3d mt-3 w-full py-2.5 rounded-xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow"
