@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
 import type { Product } from "@/lib/products";
+import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/vendor/shop")({
   component: VendorShop,
 });
 
-type VendorProduct = Product & { theme?: "classic" | "minimal" | "bold" | "luxe" };
+type VendorProduct = EditorProduct;
 
 function VendorShop() {
   const navigate = useNavigate();
