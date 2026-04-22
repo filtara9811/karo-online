@@ -330,7 +330,7 @@ function Register() {
             {/* CTA — Join | whatsapp */}
             {address.trim() && agreed && (
               <button
-                onClick={() => navigate({ to: "/" })}
+                onClick={() => navigate({ to: "/vendor/dashboard" })}
                 className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide grid place-items-center text-[color:oklch(0.18_0.06_18)]"
                 style={{
                   background:
@@ -343,7 +343,7 @@ function Register() {
                   animation: "breathe 2.6s ease-in-out infinite",
                 }}
               >
-                Join | Whatsapp
+                Join | Open Dashboard
               </button>
             )}
           </div>

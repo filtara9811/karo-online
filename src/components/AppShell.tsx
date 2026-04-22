@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, ShoppingBasket, Search, Star } from "lucide-react";
+import { Bell, ShoppingBasket, Search, Star, UserPlus } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
 import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
@@ -9,8 +9,8 @@ import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
 
-const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product"];
-const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product"];
+const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/"];
+const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/"];
 const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
