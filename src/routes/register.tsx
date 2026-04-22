@@ -52,6 +52,8 @@ function Register() {
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
   const [otpOpen, setOtpOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // Bottom-sheet drag setup — three snap points based on viewport height
