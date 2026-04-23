@@ -31,7 +31,10 @@ export function AppShell() {
 
   if (hideShell) {
     return (
-      <div key={fadeKey} style={{ animation: "lux-fade 0.6s ease-out" }}>
+      <div
+        key={fadeKey}
+        style={{ animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
+      >
         <Outlet />
       </div>
     );
@@ -47,7 +50,7 @@ export function AppShell() {
       <main
         key={fadeKey}
         className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} pb-36`}
-        style={{ animation: "lux-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1)" }}
+        style={{ animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
       >
         <Outlet />
       </main>
