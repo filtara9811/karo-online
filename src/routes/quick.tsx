@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, Mic, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
@@ -197,6 +197,7 @@ const SERVICES_BY_CAT: Record<string, ServiceItem[]> = {
 
 function QuickPage() {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLElement | null>(null);
   // activeCat → drives MAP vendors. Only changes when a SERVICE CARD is tapped.
   const [activeCat, setActiveCat] = useState<string>("ac");
   // categoryFilter → drives PRODUCT LIST filter. Changes when a CATEGORY chip is tapped.
@@ -245,6 +246,13 @@ function QuickPage() {
     setPulseKey(`${mapKey}-${Date.now()}`);
   };
 
+  useEffect(() => {
+    const resetScroll = () => contentRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    resetScroll();
+    const id = requestAnimationFrame(resetScroll);
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
       {/* MAP — extends under device status bar (transparent) */}
@@ -265,6 +273,7 @@ function QuickPage() {
 
       {/* MIDDLE — scrollable white container with search + tabs + service cards */}
       <section
+          ref={contentRef}
         className="relative bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]"
         onTouchStart={(e) => {
           (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
