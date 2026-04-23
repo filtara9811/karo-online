@@ -467,10 +467,10 @@ function ShopCard3D({
   const [muted, setMuted] = useState(true);
   const len = vendor.gallery.length;
 
-  // Auto-slide for carousel/gallery/spotlight kinds
+  // Auto-slide for carousel/gallery/spotlight kinds — calm 2.6s cadence
   useEffect(() => {
     if (vendor.kind === "video") return;
-    const id = setInterval(() => setIdx((i) => (i + 1) % len), 3200);
+    const id = setInterval(() => setIdx((i) => (i + 1) % len), 2600);
     return () => clearInterval(id);
   }, [vendor.kind, len]);
 
@@ -512,27 +512,36 @@ function ShopCard3D({
         {vendor.km} km
       </div>
 
-      {/* Media stage with 3D depth */}
+      {/* Media stage — calm, smooth, no metallic shimmer */}
       <div className={`relative ${featured ? "h-52" : "h-40"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 1.06, rotateY: vendor.kind === "carousel" ? 12 : 0 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            exit={{ opacity: 0, scale: 0.96, rotateY: vendor.kind === "carousel" ? -12 : 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0"
-          >
-            <img
-              src={vendor.gallery[idx]}
-              alt={vendor.title}
-              className="h-full w-full object-cover"
-            />
-            {/* Premium gold tint overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[color:oklch(0.78_0.14_82/0.25)] mix-blend-overlay" />
-          </motion.div>
-        </AnimatePresence>
+        {/* Horizontal sliding image track — banner style, ~700ms ease */}
+        <div
+          className="absolute inset-0 flex h-full"
+          style={{
+            width: `${len * 100}%`,
+            transform: `translate3d(-${(idx * 100) / len}%, 0, 0)`,
+            transition: "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
+            willChange: "transform",
+          }}
+        >
+          {vendor.gallery.map((src, i) => (
+            <div
+              key={i}
+              className="relative h-full flex-shrink-0"
+              style={{ width: `${100 / len}%` }}
+            >
+              <img
+                src={src}
+                alt={vendor.title}
+                loading="lazy"
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+              {/* Soft static bottom gradient for legibility — no mix-blend, no shimmer */}
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+            </div>
+          ))}
+        </div>
 
         {/* Video play overlay */}
         {vendor.kind === "video" && (
@@ -640,19 +649,11 @@ function ShopCard3D({
           </span>
         </div>
 
-        {/* Inquiry CTA — single golden button (no chat) */}
+        {/* Inquiry CTA — calm gold button (no sweeping reflection) */}
         <button
           onClick={(e) => { e.stopPropagation(); onInquiry(vendor); }}
           className="btn-3d mt-3 w-full relative overflow-hidden flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.6),inset_0_1px_0_rgba(255,255,255,0.7)] active:scale-[0.97]"
         >
-          <span
-            className="absolute inset-0 opacity-50 pointer-events-none"
-            style={{
-              backgroundImage: "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.6) 50%, transparent 70%)",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 3s linear infinite",
-            }}
-          />
           <MessageCircle className="h-4 w-4 relative" strokeWidth={2.4} />
           <span className="font-display text-[13px] font-bold italic tracking-tight relative">
             Send Inquiry now
