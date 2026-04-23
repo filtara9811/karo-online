@@ -184,7 +184,7 @@ function VendorsPage() {
   }, [query]);
 
   return (
-    <div className="fixed inset-0 bg-white overflow-hidden">
+    <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
       {/* MAP — fills entire screen, sheet sits on top */}
       <section className="absolute inset-0">
         <MapBg />
@@ -335,14 +335,14 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <motion.aside
+      <motion.aside
       drag="y"
       dragConstraints={{ top: SNAPS[0], bottom: SNAPS[2] }}
       dragElastic={0.04}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       style={{ y, top: 0, height: vh }}
-      className="absolute left-0 right-0 z-20 will-change-transform"
+        className="absolute inset-x-0 top-0 z-20 will-change-transform"
     >
       <div
         className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
