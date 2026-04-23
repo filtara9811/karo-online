@@ -221,7 +221,7 @@ function Register() {
             </div>
 
             {/* Heading */}
-            <div className="text-center mb-6 pt-1">
+            <div className="text-center mb-4 pt-1">
               <h1
                 className="font-display font-bold text-[34px] leading-none text-gold-gradient"
                 style={{
@@ -234,128 +234,175 @@ function Register() {
                 Karo <span className="font-light">|</span> Online
               </h1>
               <p className="mt-2 text-base font-display italic text-[color:oklch(0.45_0.10_85)]">
-                <span style={{ borderBottom: "1px solid rgba(212,175,55,0.5)" }}>Sign - up</span>
+                <span style={{ borderBottom: "1px solid rgba(212,175,55,0.5)" }}>
+                  {mode === "login" ? "Welcome | back" : "Sign - up"}
+                </span>
               </p>
             </div>
 
-            {/* Form fields with timeline */}
-            <div className="space-y-1 relative">
-              <GoldField
-                Icon={User}
-                label="Enter full name"
-                hint={gender ? `Choose · ${gender}` : "Choose gender"}
-                value={name}
-                placeholder=""
-                filled={!!name.trim()}
-                readOnly={!gender}
-                onClick={() => !gender && setPicker("gender")}
-                onChange={setName}
-                inputRef={nameInputRef}
-              />
-
-              {visibleSteps.includes("phone") && (
-                <GoldField
-                  Icon={Phone}
-                  label="Enter number choice"
-                  hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choose number"}
-                  value={phone}
-                  placeholder=""
-                  filled={phoneVerified}
-                  readOnly
-                  onClick={() => {
-                    if (!operator) setPicker("sim");
-                    else if (!phoneVerified) setOtpOpen(true);
-                  }}
-                />
-              )}
-
-              {visibleSteps.includes("otp") && (
-                <GoldField
-                  Icon={ShieldCheck}
-                  label="Enter your OTP"
-                  hint={phoneVerified ? "Verified ✓" : "Auto · OTP"}
-                  value={phoneVerified ? "● ● ● ● ● ●" : ""}
-                  placeholder=""
-                  filled={phoneVerified}
-                  readOnly
-                  onClick={() => !phoneVerified && setOtpOpen(true)}
-                />
-              )}
-
-              {visibleSteps.includes("email") && (
-                <GoldField
-                  Icon={Mail}
-                  label="Gmail account choice"
-                  hint="Choose gmail"
-                  value={email}
-                  placeholder=""
-                  filled={!!email.trim()}
-                  readOnly
-                  onClick={() => setPicker("email")}
-                />
-              )}
-
-              {visibleSteps.includes("address") && (
-                <GoldField
-                  Icon={MapPin}
-                  label="Address | location"
-                  hint={address ? "Tap to change" : "Choose address"}
-                  value={address}
-                  placeholder=""
-                  filled={!!address.trim()}
-                  isLast
-                  readOnly
-                  onClick={() => setAddressOpen(true)}
-                />
-              )}
+            {/* Login / Sign-up tab toggle */}
+            <div className="mx-auto max-w-[280px] grid grid-cols-2 gap-1 p-1 rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/70 mb-5">
+              <button
+                onClick={() => setMode("login")}
+                className={`py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition ${
+                  mode === "login"
+                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
+                    : "text-[color:oklch(0.55_0.10_82)]"
+                }`}
+                style={
+                  mode === "login"
+                    ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
+                    : undefined
+                }
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setMode("signup")}
+                className={`py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition ${
+                  mode === "signup"
+                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
+                    : "text-[color:oklch(0.55_0.10_82)]"
+                }`}
+                style={
+                  mode === "signup"
+                    ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
+                    : undefined
+                }
+              >
+                Sign-up
+              </button>
             </div>
 
-            {/* Consent */}
-            {visibleSteps.includes("address") && (
-              <label
-                className="mt-6 flex items-start gap-3 cursor-pointer"
-                style={{ animation: "step-reveal 0.55s ease-out 0.15s both" }}
-              >
-                <span
-                  onClick={() => setAgreed(!agreed)}
-                  className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
-                    agreed
-                      ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
-                      : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
-                  }`}
-                >
-                  {agreed && (
-                    <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
-                <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
-                  I accept the public terms<br />and the privacy policy
-                </span>
-              </label>
-            )}
-
-            {/* CTA — Join | whatsapp */}
-            {address.trim() && agreed && (
-              <button
-                onClick={() => setSuccessOpen(true)}
-                className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
-                  boxShadow:
-                    "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
-                  textDecoration: "underline",
-                  textDecorationThickness: "2px",
-                  textUnderlineOffset: "4px",
-                  animation: "breathe 2.6s ease-in-out infinite",
+            {mode === "login" ? (
+              <MpinLogin
+                onSuccess={() => {
+                  /* future: persist auth */
                 }}
-              >
-                <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
-                <span>WhatsApp Join</span>
-              </button>
+                onSwitchToSignup={() => setMode("signup")}
+              />
+            ) : (
+              <>
+                {/* Form fields with timeline */}
+                <div className="space-y-1 relative">
+                  <GoldField
+                    Icon={User}
+                    label="Enter full name"
+                    hint={gender ? `Choose · ${gender}` : "Choose gender"}
+                    value={name}
+                    placeholder=""
+                    filled={!!name.trim()}
+                    readOnly={!gender}
+                    onClick={() => !gender && setPicker("gender")}
+                    onChange={setName}
+                    inputRef={nameInputRef}
+                  />
+
+                  {visibleSteps.includes("phone") && (
+                    <GoldField
+                      Icon={Phone}
+                      label="Enter number choice"
+                      hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choose number"}
+                      value={phone}
+                      placeholder=""
+                      filled={phoneVerified}
+                      readOnly
+                      onClick={() => {
+                        if (!operator) setPicker("sim");
+                        else if (!phoneVerified) setOtpOpen(true);
+                      }}
+                    />
+                  )}
+
+                  {visibleSteps.includes("otp") && (
+                    <GoldField
+                      Icon={ShieldCheck}
+                      label="Enter your OTP"
+                      hint={phoneVerified ? "Verified ✓" : "Auto · OTP"}
+                      value={phoneVerified ? "● ● ● ● ● ●" : ""}
+                      placeholder=""
+                      filled={phoneVerified}
+                      readOnly
+                      onClick={() => !phoneVerified && setOtpOpen(true)}
+                    />
+                  )}
+
+                  {visibleSteps.includes("email") && (
+                    <GoldField
+                      Icon={Mail}
+                      label="Gmail account choice"
+                      hint="Choose gmail"
+                      value={email}
+                      placeholder=""
+                      filled={!!email.trim()}
+                      readOnly
+                      onClick={() => setPicker("email")}
+                    />
+                  )}
+
+                  {visibleSteps.includes("address") && (
+                    <GoldField
+                      Icon={MapPin}
+                      label="Address | location"
+                      hint={address ? "Tap to change" : "Choose address"}
+                      value={address}
+                      placeholder=""
+                      filled={!!address.trim()}
+                      isLast
+                      readOnly
+                      onClick={() => setAddressOpen(true)}
+                    />
+                  )}
+                </div>
+
+                {/* Consent */}
+                {visibleSteps.includes("address") && (
+                  <label
+                    className="mt-6 flex items-start gap-3 cursor-pointer"
+                    style={{ animation: "step-reveal 0.55s ease-out 0.15s both" }}
+                  >
+                    <span
+                      onClick={() => setAgreed(!agreed)}
+                      className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
+                        agreed
+                          ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
+                          : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
+                      }`}
+                    >
+                      {agreed && (
+                        <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
+                    <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
+                      I accept the public terms<br />and the privacy policy
+                    </span>
+                  </label>
+                )}
+
+                {/* CTA — Join | whatsapp */}
+                {address.trim() && agreed && (
+                  <button
+                    onClick={() => setSuccessOpen(true)}
+                    className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
+                      boxShadow:
+                        "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
+                      textDecoration: "underline",
+                      textDecorationThickness: "2px",
+                      textUnderlineOffset: "4px",
+                      animation: "breathe 2.6s ease-in-out infinite",
+                    }}
+                  >
+                    <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
+                    <span>WhatsApp Join</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
