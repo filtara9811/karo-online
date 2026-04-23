@@ -6,6 +6,7 @@ import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { OtpModal } from "@/components/OtpModal";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
+import { MpinLogin } from "@/components/MpinLogin";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
@@ -17,6 +18,8 @@ import goldWhatsapp from "@/assets/gold-whatsapp.png";
 export const Route = createFileRoute("/register")({
   component: Register,
 });
+
+type AuthMode = "signup" | "login";
 
 type StepKey = "name" | "phone" | "otp" | "email" | "address";
 const STEP_ORDER: StepKey[] = ["name", "phone", "otp", "email", "address"];
