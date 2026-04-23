@@ -285,6 +285,7 @@ function VendorsPage() {
 
 function DraggableSheet({ children }: { children: React.ReactNode }) {
   const [vh, setVh] = useState(800);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onResize = () => setVh(window.innerHeight);
@@ -307,6 +308,13 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
     animate(y, SNAPS[2], { type: "spring", stiffness: 300, damping: 30 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [SNAPS[2]]);
+
+  useEffect(() => {
+    const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    resetScroll();
+    const id = requestAnimationFrame(resetScroll);
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const snapTo = (target: number) => {
     animate(y, target, { type: "spring", stiffness: 320, damping: 32 });
@@ -349,6 +357,7 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
 
         {/* Scrollable content — only scrolls when sheet at full height */}
         <div
+          ref={scrollRef}
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
           onPointerDown={(e) => e.stopPropagation()}

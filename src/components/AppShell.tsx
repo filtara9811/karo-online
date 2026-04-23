@@ -27,7 +27,10 @@ export function AppShell() {
   const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
-  useEffect(() => setFadeKey(location.pathname), [location.pathname]);
+  useEffect(() => {
+    setFadeKey(location.pathname);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [location.pathname]);
 
   if (hideShell) {
     return (
