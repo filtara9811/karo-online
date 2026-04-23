@@ -43,6 +43,7 @@ const EMAIL_OPTIONS: PickerOption[] = [
 
 function Register() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<AuthMode>("signup");
   const [agreed, setAgreed] = useState(false);
   const [gender, setGender] = useState<string | null>(null);
   const [name, setName] = useState("");
