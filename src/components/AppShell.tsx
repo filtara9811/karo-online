@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bell, ShoppingBasket, Search, Star, UserPlus } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
 import goldPin from "@/assets/gold-pin.png";
@@ -26,15 +26,15 @@ export function AppShell() {
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
 
-  const [fadeKey, setFadeKey] = useState(location.pathname);
-  useEffect(() => setFadeKey(location.pathname), [location.pathname]);
+  // No keyed remount on path change — TanStack Router already swaps the
+  // matched route component instantly. Forcing a key={pathname} unmount caused
+  // a brief blank flash between routes that looked like a "loading error".
+  // We keep a single subtle fade-in via CSS attached to the Outlet wrapper
+  // (no will-change blur, no opacity:0 hold) so transitions feel offline-smooth.
 
   if (hideShell) {
     return (
-      <div
-        key={fadeKey}
-        style={{ animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
-      >
+      <div className="route-fade-in">
         <Outlet />
       </div>
     );
@@ -48,9 +48,7 @@ export function AppShell() {
       {!hideTopHeader && <TopHeader />}
 
       <main
-        key={fadeKey}
-        className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} pb-36`}
-        style={{ animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
+        className={`route-fade-in relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} pb-36`}
       >
         <Outlet />
       </main>
