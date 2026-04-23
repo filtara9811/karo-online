@@ -61,7 +61,7 @@ function Register() {
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // Bottom-sheet drag setup — three snap points based on viewport height
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const [vh, setVh] = useState(800);
   // Snap positions: y = translateY of the sheet (smaller = taller open)
   const SNAP_FULL = vh * 0.06;   // ~94% open
   const SNAP_HALF = vh * 0.30;   // ~70% open
@@ -70,10 +70,16 @@ function Register() {
   const y = useMotionValue(SNAP_HALF);
 
   useEffect(() => {
-    // Open with a slide-up entrance to the half snap
+    const onResize = () => setVh(window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
     animate(y, SNAP_HALF, { type: "spring", stiffness: 220, damping: 28 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [SNAP_HALF]);
 
   const snapTo = (target: number) => {
     animate(y, target, { type: "spring", stiffness: 260, damping: 30 });
