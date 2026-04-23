@@ -235,6 +235,17 @@
   100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
+/* Route fade-in: ultra-light, runs only on initial mount of the route subtree.
+   Uses a short opacity-only animation so users never see a blank flash and the
+   transition feels native/offline-smooth. No transform, no will-change. */
+.route-fade-in {
+  animation: route-fade-keyframes 180ms ease-out;
+}
+@keyframes route-fade-keyframes {
+  0% { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+
 @keyframes pulse-dot {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.25); }
