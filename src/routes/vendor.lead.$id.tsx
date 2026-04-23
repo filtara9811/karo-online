@@ -124,14 +124,14 @@ function LeadDetailPage() {
 
   return (
     <div
-      className="fixed inset-0 overflow-y-auto pb-40"
+      className="relative min-h-dvh overflow-x-hidden overflow-y-auto pb-40 isolate"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaf0 0%, transparent 55%), linear-gradient(160deg, #fffdf5 0%, #fbf3d9 60%, #f5e9b8 100%)",
       }}
     >
-      <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
       {/* Top bar */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
