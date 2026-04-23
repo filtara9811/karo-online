@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TrendingUp, Filter, BookOpenCheck, Box } from "lucide-react";
 import type { EditorProduct } from "@/components/ProductEditor";
-import { useCountUp } from "@/hooks/use-count-up";
 import { StockActionsSheet, type StockAction } from "@/components/StockActionsSheet";
 
 type Range = "day" | "week" | "month" | "year";
@@ -15,10 +14,11 @@ const RANGES: { key: Range; label: string }[] = [
 
 /**
  * Premium "visiting-card" live dashboard for the vendor's digital shop.
- * - Brand header (logo · shop name · timestamp · order book pill)
- * - 5 metric tiles: Stock|value, SALES|Profit, Sales|quit, Expans|shop, Invest
- * - Each metric counts up from 0 → target on mount and range change
- * - Tapping the Stock tile opens a StockActionsSheet
+ *
+ * Calm version:
+ * - Static cream background (no metallic reflection / shimmer).
+ * - Stable, formatted numbers (no per-frame count-up flicker).
+ * - A smooth horizontal product strip slides quietly inside the card.
  */
 export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
   const [range, setRange] = useState<Range>("day");
@@ -32,7 +32,6 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
       (s, p) => s + (p.buyingPrice ?? Math.round((p.price ?? 0) * 0.6)) * 8,
       0
     );
-    const stockUnits = items.length * 12 + 36467 - items.length * 12; // visually rich baseline
     const sales = Math.round(
       items.reduce((s, p) => s + (p.price ?? 0) * 1.2, 0) * multiplier
     );
@@ -72,16 +71,14 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
   return (
     <>
       <article
-        className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)]"
+        className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.78_0.14_82/0.45)]"
         style={{
-          background:
-            "linear-gradient(135deg, #fffdf5 0%, #fdf3c8 45%, #f5d97a 100%)",
+          /* Calm cream — no metallic gradient reflection */
+          background: "linear-gradient(180deg, #fffefb 0%, #fdfaf0 100%)",
+          boxShadow:
+            "0 10px 30px -14px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
       >
-        {/* Decorative gold rings */}
-        <div className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full border border-[color:oklch(0.78_0.14_82/0.35)]" />
-        <div className="pointer-events-none absolute -bottom-16 -left-10 h-48 w-48 rounded-full border border-[color:oklch(0.78_0.14_82/0.25)]" />
-
         {/* === Brand identity header === */}
         <header className="relative px-4 pt-3.5 pb-2 flex items-start gap-3">
           <span
@@ -98,7 +95,7 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
               Ashhu&apos;s | Dukan
             </h2>
             <p className="text-[10px] text-[color:oklch(0.45_0.10_82)] font-bold flex items-center gap-1 leading-tight">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {stamp}
             </p>
           </div>
@@ -121,33 +118,36 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
 
         {/* Range filter strip */}
         <div className="relative px-3 pb-2">
-            <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/70 backdrop-blur-sm p-1 border border-[color:oklch(0.78_0.14_82/0.35)]">
-              {RANGES.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setRange(r.key)}
-                  className={`py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition ${
-                    range === r.key
-                      ? "text-[color:oklch(0.18_0.06_18)] shadow"
-                      : "text-[color:oklch(0.55_0.10_82)]"
-                  }`}
-                  style={
-                    range === r.key
-                      ? {
-                          background:
-                            "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)",
-                        }
-                      : undefined
-                  }
-                >
-                  {r.label}
-                </button>
-              ))}
+          <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/80 p-1 border border-[color:oklch(0.78_0.14_82/0.3)]">
+            {RANGES.map((r) => (
+              <button
+                key={r.key}
+                onClick={() => setRange(r.key)}
+                className={`py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition ${
+                  range === r.key
+                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
+                    : "text-[color:oklch(0.55_0.10_82)]"
+                }`}
+                style={
+                  range === r.key
+                    ? {
+                        background:
+                          "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)",
+                      }
+                    : undefined
+                }
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* === Inner sliding product strip — calm, smooth, just images === */}
+        <InnerProductStrip items={items} />
+
         {/* === "Live | Sales Desbord" caption === */}
-        <div className="relative px-4 text-center">
+        <div className="relative px-4 text-center pt-1">
           <p className="font-display text-base font-bold text-[color:oklch(0.40_0.10_82)] tracking-wide">
             Live | Sales Desbord
           </p>
@@ -218,8 +218,43 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
 }
 
 /**
- * One stat tile — bold animated count, label above and below the number.
- * Optional tap handler opens a sheet (e.g. Stock).
+ * Slow, calm, infinite horizontal slider of product images inside the
+ * dashboard card — pure CSS marquee, no JS rAF, no flicker.
+ */
+function InnerProductStrip({ items }: { items: EditorProduct[] }) {
+  const withImages = items.filter((p) => p.image).slice(0, 8);
+  if (withImages.length === 0) return null;
+  const loop = [...withImages, ...withImages];
+
+  return (
+    <div className="relative px-3 pb-1">
+      <div
+        className="overflow-hidden rounded-xl border border-[color:oklch(0.78_0.14_82/0.25)] bg-white/60"
+        style={{ maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)" }}
+      >
+        <div className="marquee-x flex gap-2 w-max py-1.5 px-1.5" style={{ animationDuration: "42s" }}>
+          {loop.map((p, i) => (
+            <div
+              key={`${p.id}-${i}`}
+              className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] bg-white flex-shrink-0"
+            >
+              <img
+                src={p.image}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One stat tile — STATIC formatted number (no count-up flicker), label
+ * above and below the number. Optional tap handler opens a sheet (e.g. Stock).
  */
 function MetricTile({
   top,
@@ -238,7 +273,6 @@ function MetricTile({
   tappable?: boolean;
   onTap?: () => void;
 }) {
-  const animated = useCountUp(value, 1100);
   const numberColor: Record<typeof tone, string> = {
     gold: "text-gold-gradient",
     emerald: "text-emerald-700",
@@ -251,7 +285,7 @@ function MetricTile({
       type="button"
       onClick={onTap}
       disabled={!tappable}
-      className={`group relative rounded-xl bg-white/85 backdrop-blur-sm border border-[color:oklch(0.78_0.14_82/0.4)] py-2 px-1 flex flex-col items-center text-center ${
+      className={`group relative rounded-xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] py-2 px-1 flex flex-col items-center text-center ${
         tappable ? "active:scale-[0.96] transition cursor-pointer" : ""
       }`}
       style={{
@@ -271,7 +305,7 @@ function MetricTile({
         style={{ fontSize: "13px", letterSpacing: "-0.02em" }}
       >
         {prefix}
-        {animated.toLocaleString()}
+        {value.toLocaleString()}
       </p>
       <p className="text-[9px] uppercase tracking-wider font-bold text-[color:oklch(0.30_0.05_85)] mt-1 leading-tight">
         {top}
@@ -282,7 +316,7 @@ function MetricTile({
         </p>
       )}
       {tappable && (
-        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
       )}
     </button>
   );
