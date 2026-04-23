@@ -649,19 +649,11 @@ function ShopCard3D({
           </span>
         </div>
 
-        {/* Inquiry CTA — single golden button (no chat) */}
+        {/* Inquiry CTA — calm gold button (no sweeping reflection) */}
         <button
           onClick={(e) => { e.stopPropagation(); onInquiry(vendor); }}
           className="btn-3d mt-3 w-full relative overflow-hidden flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.6),inset_0_1px_0_rgba(255,255,255,0.7)] active:scale-[0.97]"
         >
-          <span
-            className="absolute inset-0 opacity-50 pointer-events-none"
-            style={{
-              backgroundImage: "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.6) 50%, transparent 70%)",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 3s linear infinite",
-            }}
-          />
           <MessageCircle className="h-4 w-4 relative" strokeWidth={2.4} />
           <span className="font-display text-[13px] font-bold italic tracking-tight relative">
             Send Inquiry now
