@@ -467,10 +467,10 @@ function ShopCard3D({
   const [muted, setMuted] = useState(true);
   const len = vendor.gallery.length;
 
-  // Auto-slide for carousel/gallery/spotlight kinds
+  // Auto-slide for carousel/gallery/spotlight kinds — calm 2.6s cadence
   useEffect(() => {
     if (vendor.kind === "video") return;
-    const id = setInterval(() => setIdx((i) => (i + 1) % len), 3200);
+    const id = setInterval(() => setIdx((i) => (i + 1) % len), 2600);
     return () => clearInterval(id);
   }, [vendor.kind, len]);
 
