@@ -284,9 +284,11 @@ function VendorsPage() {
 /* -------- Draggable Sheet (peek / half / 90%) -------- */
 
 function DraggableSheet({ children }: { children: React.ReactNode }) {
-  const [vh, setVh] = useState<number>(typeof window !== "undefined" ? window.innerHeight : 720);
+  const [vh, setVh] = useState(800);
+
   useEffect(() => {
     const onResize = () => setVh(window.innerHeight);
+    onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
