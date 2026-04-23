@@ -512,27 +512,36 @@ function ShopCard3D({
         {vendor.km} km
       </div>
 
-      {/* Media stage with 3D depth */}
+      {/* Media stage — calm, smooth, no metallic shimmer */}
       <div className={`relative ${featured ? "h-52" : "h-40"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 1.06, rotateY: vendor.kind === "carousel" ? 12 : 0 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            exit={{ opacity: 0, scale: 0.96, rotateY: vendor.kind === "carousel" ? -12 : 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0"
-          >
-            <img
-              src={vendor.gallery[idx]}
-              alt={vendor.title}
-              className="h-full w-full object-cover"
-            />
-            {/* Premium gold tint overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[color:oklch(0.78_0.14_82/0.25)] mix-blend-overlay" />
-          </motion.div>
-        </AnimatePresence>
+        {/* Horizontal sliding image track — banner style, ~700ms ease */}
+        <div
+          className="absolute inset-0 flex h-full"
+          style={{
+            width: `${len * 100}%`,
+            transform: `translate3d(-${(idx * 100) / len}%, 0, 0)`,
+            transition: "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
+            willChange: "transform",
+          }}
+        >
+          {vendor.gallery.map((src, i) => (
+            <div
+              key={i}
+              className="relative h-full flex-shrink-0"
+              style={{ width: `${100 / len}%` }}
+            >
+              <img
+                src={src}
+                alt={vendor.title}
+                loading="lazy"
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+              {/* Soft static bottom gradient for legibility — no mix-blend, no shimmer */}
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+            </div>
+          ))}
+        </div>
 
         {/* Video play overlay */}
         {vendor.kind === "video" && (
