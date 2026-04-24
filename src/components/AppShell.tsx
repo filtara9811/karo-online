@@ -25,6 +25,7 @@ export function AppShell() {
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
+  const isQuickRoute = location.pathname.startsWith("/quick");
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => {
@@ -45,8 +46,8 @@ export function AppShell() {
 
       <main
         key={fadeKey}
-        className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} pb-36`}
-        style={{ animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
+        className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} ${isQuickRoute ? "pb-0" : "pb-36"}`}
+        style={isQuickRoute ? undefined : { animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
       >
         <Outlet />
       </main>
