@@ -254,7 +254,10 @@ function QuickPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col overflow-hidden" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}>
+    <div
+      className="relative min-h-dvh bg-white flex flex-col overflow-hidden isolate"
+      style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }}
+    >
       {/* MAP — extends under device status bar (transparent) */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
@@ -273,8 +276,8 @@ function QuickPage() {
 
       {/* MIDDLE — scrollable white container with search + tabs + service cards */}
       <section
-          ref={contentRef}
-        className="relative bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]"
+        ref={contentRef}
+        className="relative min-h-0 bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]"
         onTouchStart={(e) => {
           (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
           (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
