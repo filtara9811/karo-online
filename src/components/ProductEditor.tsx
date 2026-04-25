@@ -21,8 +21,15 @@ import {
   Pencil,
   GripVertical,
   Star as StarIcon,
+  Mic,
+  MicOff,
+  Store,
+  Package,
+  TrendingDown,
+  Smile,
 } from "lucide-react";
 import type { Product } from "@/lib/products";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 export type Variation = {
   id: string;
@@ -33,6 +40,20 @@ export type Variation = {
   size?: string;
 };
 export type MediaItem = { id: string; type: "image" | "video"; url: string };
+
+export type SaleType = "wholesale" | "retail" | "both";
+
+export type BulkTier = {
+  id: string;
+  minQty: number;
+  price: number;
+};
+
+export type CategoryItem = {
+  name: string;
+  icon?: string; // emoji
+  image?: string; // dataURL
+};
 
 export type EditorProduct = Product & {
   theme?: "classic" | "minimal" | "bold" | "luxe";
@@ -47,6 +68,9 @@ export type EditorProduct = Product & {
   priceLabels?: { buying: string; selling: string; mrp: string };
   categoryTags?: string[];
   primaryCategory?: string;
+  saleType?: SaleType;
+  bulkTiers?: BulkTier[];
+  customCategories?: CategoryItem[];
 };
 
 const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = [
