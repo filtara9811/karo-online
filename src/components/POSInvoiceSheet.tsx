@@ -26,6 +26,7 @@ import { PrintOptionsSheet } from "@/components/PrintOptionsSheet";
 import { ValuePickerSheet, type ValueMode } from "@/components/ValuePickerSheet";
 import { CouponSheet, type Coupon } from "@/components/CouponSheet";
 import { InvoiceImage } from "@/components/InvoiceImage";
+import { StaffPickerSheet, type Staff } from "@/components/StaffPickerSheet";
 import { captureInvoicePng, shareInvoicePng } from "@/lib/invoice-image";
 
 export type CartLine = {
@@ -105,6 +106,13 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const [showBillsSheet, setShowBillsSheet] = useState(false);
   const [showPaySheet, setShowPaySheet] = useState(false);
   const [showPrintSheet, setShowPrintSheet] = useState(false);
+  const [showStaffSheet, setShowStaffSheet] = useState(false);
+  const [staff, setStaff] = useState<Staff | null>({
+    id: "owner",
+    name: "Ashhu (Owner)",
+    role: "Owner",
+    color: "#d4af37",
+  });
   const [picker, setPicker] = useState<PickerKind>(null);
 
   // off-screen invoice capture target
@@ -306,27 +314,22 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
         </div>
 
-        {/* === Logo + Shop Name Header === */}
-        <div className="px-5 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+        {/* === Compact title strip === */}
+        <div className="px-5 pb-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
             <span
-              className="h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
+              className="h-8 w-8 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
               style={{ background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)" }}
             >
-              <Store className="h-5 w-5 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
+              <Store className="h-4 w-4 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
             </span>
             <div className="min-w-0">
-              <p className="text-[8px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
+              <p className="text-[7px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)] leading-tight">
                 ✦ Tax Invoice ✦
               </p>
-              <h3 className="font-display text-base text-gold-gradient font-bold leading-tight truncate">
+              <h3 className="font-display text-[13px] text-gold-gradient font-bold leading-tight truncate">
                 Ashhu's Digital Shop
               </h3>
-              {customer && (
-                <p className="text-[9px] text-[color:oklch(0.45_0.08_85)] truncate mt-0.5">
-                  Bill for · <span className="font-bold">{customer.name}</span>
-                </p>
-              )}
             </div>
           </div>
           <button
@@ -338,19 +341,19 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           </button>
         </div>
 
-        {/* === Multi-customer avatar strip (like chat) === */}
+        {/* === Multi-customer avatar strip in header (chat-like, no inner box) === */}
         <MultiCustomerStrip
           held={held}
           activeCart={cart}
           activeCustomer={customer}
           activeId={activeHeldId}
           onSwitch={(id) => {
-            // save current then resume target (resumeHeld already handles holdCurrent)
             resumeHeld(id);
           }}
           onNew={() => {
+            // "+" → close sheet so user lands on add-to-cart (shop) screen
             if (cart.length || customer) holdCurrent();
-            resetForm();
+            onClose();
           }}
           onPickCustomer={() => setShowCustomerSheet(true)}
           onOpenAll={() => setShowBillsSheet(true)}
@@ -554,22 +557,26 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   </div>
                 </div>
 
-                {/* Floating + button → bills/customers manager */}
+                {/* Floating Staff selector → who created this invoice */}
                 <button
-                  onClick={() => setShowBillsSheet(true)}
-                  aria-label="Manage bills & customers"
-                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-[color:oklch(0.18_0.06_18)] active:scale-90 transition"
+                  onClick={() => setShowStaffSheet(true)}
+                  aria-label="Choose staff who made this bill"
+                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white active:scale-90 transition overflow-hidden font-display font-bold text-base text-white"
                   style={{
-                    background:
-                      "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+                    background: staff?.color ?? "#d4af37",
                   }}
+                  title={staff ? `Bill by ${staff.name}` : "Pick staff"}
                 >
-                  <Plus className="h-5 w-5" strokeWidth={3} />
-                  {totalHeld > 1 && (
-                    <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[10px] font-bold text-[color:oklch(0.18_0.06_18)] grid place-items-center border border-white">
-                      {totalHeld}
-                    </span>
+                  {staff?.avatar ? (
+                    <img src={staff.avatar} alt={staff.name} className="h-full w-full object-cover" />
+                  ) : staff ? (
+                    <span>{staff.name.trim().charAt(0).toUpperCase()}</span>
+                  ) : (
+                    <Users className="h-5 w-5" />
                   )}
+                  <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-white text-[8px] font-bold text-[color:oklch(0.18_0.06_18)] grid place-items-center border border-[#d4af37] uppercase tracking-wider">
+                    Staff
+                  </span>
                 </button>
               </div>
 
@@ -710,6 +717,13 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       )}
       {showPrintSheet && (
         <PrintOptionsSheet onPick={sendVia} onClose={() => setShowPrintSheet(false)} />
+      )}
+      {showStaffSheet && (
+        <StaffPickerSheet
+          current={staff}
+          onPick={setStaff}
+          onClose={() => setShowStaffSheet(false)}
+        />
       )}
       {showBillsSheet && (
         <BillsManagerSheet
@@ -1172,22 +1186,16 @@ function MultiCustomerStrip({
   const overflow = items.length - visible.length;
 
   return (
-    <div className="px-3 pb-2">
-      <div
-        className="flex items-center gap-2 overflow-x-auto scrollbar-hide rounded-2xl px-2 py-2 border"
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #fffaeb 100%)",
-          borderColor: "oklch(0.78 0.14 82 / 0.4)",
-          boxShadow: "0 2px 10px -4px rgba(212,175,55,0.35)",
-        }}
-      >
+    <div className="px-3 pb-2 pt-1">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         {visible.length === 0 && (
-          <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] italic px-2">
+          <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] italic px-2 flex-1">
             No active bills · tap + to start
           </span>
         )}
         {visible.map((it) => {
           const initial = (it.customer?.name ?? "G").trim().charAt(0).toUpperCase();
+          const firstName = it.customer?.name?.split(" ")[0] ?? "Walk-in";
           return (
             <button
               key={it.id}
@@ -1199,7 +1207,7 @@ function MultiCustomerStrip({
               title={it.customer?.name ?? "Walk-in"}
             >
               <span
-                className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden border-2 ${
+                className={`relative h-12 w-12 rounded-full grid place-items-center overflow-hidden border-2 ${
                   it.isActive ? "border-[#d4af37] shadow-gold-glow" : "border-white shadow-sm"
                 }`}
                 style={{
@@ -1215,7 +1223,7 @@ function MultiCustomerStrip({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)]">
+                  <span className="font-display font-bold text-base text-[color:oklch(0.18_0.06_18)]">
                     {initial}
                   </span>
                 )}
@@ -1229,7 +1237,7 @@ function MultiCustomerStrip({
                 )}
               </span>
               <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] max-w-[52px] truncate">
-                {it.customer?.name?.split(" ")[0] ?? "Walk-in"}
+                {firstName}
               </span>
             </button>
           );
@@ -1240,7 +1248,7 @@ function MultiCustomerStrip({
             onClick={onOpenAll}
             className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95"
           >
-            <span className="h-11 w-11 rounded-full grid place-items-center bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
+            <span className="h-12 w-12 rounded-full grid place-items-center bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
               <span className="font-display font-bold text-[11px] text-[color:oklch(0.42_0.10_82)]">
                 +{overflow}
               </span>
@@ -1251,14 +1259,14 @@ function MultiCustomerStrip({
 
         <button
           onClick={onNew}
-          aria-label="Start new invoice"
+          aria-label="Add product to new bill"
           className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95 ml-auto"
         >
           <span
-            className="h-11 w-11 rounded-full grid place-items-center text-white border-2 border-white shadow-md"
+            className="h-12 w-12 rounded-full grid place-items-center text-white border-2 border-white shadow-md"
             style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
           >
-            <Plus className="h-5 w-5" strokeWidth={3} />
+            <Plus className="h-6 w-6" strokeWidth={3} />
           </span>
           <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)]">New</span>
         </button>
