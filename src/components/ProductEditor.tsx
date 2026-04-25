@@ -135,6 +135,9 @@ export function ProductEditor({
       product.categoryTags ??
       (product.category ? [product.category] : []),
     primaryCategory: product.primaryCategory ?? product.category ?? "",
+    saleType: product.saleType ?? "retail",
+    bulkTiers: product.bulkTiers ?? [],
+    customCategories: product.customCategories ?? [],
     ...product,
   }));
 
@@ -156,6 +159,32 @@ export function ProductEditor({
   }, []);
 
   const media = draft.media ?? [];
+
+  // Bulk tier helpers
+  const addBulkTier = () => {
+    const lastQty = (draft.bulkTiers ?? []).slice(-1)[0]?.minQty ?? 0;
+    setDraft((d) => ({
+      ...d,
+      bulkTiers: [
+        ...(d.bulkTiers ?? []),
+        {
+          id: `bt-${Date.now()}`,
+          minQty: lastQty ? lastQty * 2 : 10,
+          price: Math.max(0, (d.sellingPrice ?? 0) - 50),
+        },
+      ],
+    }));
+  };
+  const updateBulkTier = (id: string, patch: Partial<BulkTier>) => {
+    setDraft((d) => ({
+      ...d,
+      bulkTiers: (d.bulkTiers ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    }));
+  };
+  const removeBulkTier = (id: string) => {
+    setDraft((d) => ({ ...d, bulkTiers: (d.bulkTiers ?? []).filter((t) => t.id !== id) }));
+  };
+
 
   const addMedia = (kind: "image" | "video", e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
