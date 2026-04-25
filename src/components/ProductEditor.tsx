@@ -1317,18 +1317,29 @@ function BottomSheetShell({
 function CategoryBottomSheet({
   tags,
   primary,
+  customItems,
   customCat,
   setCustomCat,
   onClose,
   onChange,
+  onAddCustomItem,
+  onRemoveCustomItem,
 }: {
   tags: string[];
   primary: string;
+  customItems: CategoryItem[];
   customCat: string;
   setCustomCat: (v: string) => void;
   onClose: () => void;
   onChange: (tags: string[], primary: string) => void;
+  onAddCustomItem: (item: CategoryItem) => void;
+  onRemoveCustomItem: (name: string) => void;
 }) {
+  const [creator, setCreator] = useState<{ name: string; icon: string; image?: string } | null>(
+    null
+  );
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
   const toggle = (cat: string) => {
     const next = tags.includes(cat) ? tags.filter((t) => t !== cat) : [...tags, cat];
     let p = primary;
@@ -1339,13 +1350,22 @@ function CategoryBottomSheet({
     const next = Array.from(new Set([...tags, cat]));
     onChange(next, cat);
   };
-  const addCustom = () => {
-    const tag = customCat.trim();
-    if (!tag) return;
-    const next = Array.from(new Set([...tags, tag]));
-    onChange(next, primary || tag);
-    setCustomCat("");
+  const openCreator = () => {
+    setCreator({ name: customCat.trim(), icon: "🏷️", image: undefined });
   };
+  const saveCreator = () => {
+    if (!creator) return;
+    const name = creator.name.trim();
+    if (!name) return;
+    onAddCustomItem({ name, icon: creator.icon, image: creator.image });
+    setCustomCat("");
+    setCreator(null);
+  };
+
+  const customByName = new Map(customItems.map((c) => [c.name, c]));
+  const allCats = Array.from(new Set([...SHOP_CATEGORIES, ...customItems.map((c) => c.name), ...tags]));
+
+  const EMOJI_PRESETS = ["🏷️", "💄", "👗", "🏠", "🍳", "📱", "🛒", "💎", "🧸", "🎁", "✨", "🪔"];
 
   return (
     <BottomSheetShell
@@ -1367,34 +1387,39 @@ function CategoryBottomSheet({
         <StarIcon className="inline h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37] mx-0.5" /> long-press
         for primary.
       </p>
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from(new Set([...SHOP_CATEGORIES, ...tags])).map((cat) => (
-          <CategoryChip
-            key={cat}
-            cat={cat}
-            selected={tags.includes(cat)}
-            isPrimary={primary === cat}
-            onToggle={() => toggle(cat)}
-            onMakePrimary={() => makePrimary(cat)}
-          />
-        ))}
-      </div>
-      <div className="flex items-center gap-2 pt-1">
-        <input
-          value={customCat}
-          onChange={(e) => setCustomCat(e.target.value)}
-          placeholder="+ Add custom category"
-          className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2.5 py-1.5 text-xs outline-none focus:border-[#d4af37]"
-          onKeyDown={(e) => e.key === "Enter" && addCustom()}
-        />
+
+      {/* Grid of categories with icons/images */}
+      <div className="grid grid-cols-3 gap-2">
+        {allCats.map((cat) => {
+          const ci = customByName.get(cat);
+          const selected = tags.includes(cat);
+          const isPrimary = primary === cat;
+          return (
+            <CategoryGridCard
+              key={cat}
+              name={cat}
+              icon={ci?.icon}
+              image={ci?.image}
+              selected={selected}
+              isPrimary={isPrimary}
+              onToggle={() => toggle(cat)}
+              onMakePrimary={() => makePrimary(cat)}
+              onRemove={ci ? () => onRemoveCustomItem(cat) : undefined}
+            />
+          );
+        })}
+        {/* Plus tile to create new */}
         <button
-          onClick={addCustom}
-          className="px-3 py-1.5 rounded-lg text-xs font-display font-bold text-[color:oklch(0.18_0.06_18)] active:scale-95"
-          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+          onClick={openCreator}
+          className="aspect-square rounded-2xl border-2 border-dashed border-[#d4af37] grid place-items-center bg-gradient-to-b from-white to-[#fff8dc] active:scale-95"
         >
-          <Plus className="inline h-3 w-3 mr-0.5" strokeWidth={3} /> Add
+          <div className="flex flex-col items-center gap-1 text-[color:oklch(0.42_0.10_82)]">
+            <Plus className="h-5 w-5" strokeWidth={3} />
+            <span className="text-[9px] font-bold uppercase tracking-wider">New</span>
+          </div>
         </button>
       </div>
+
       {tags.length > 0 && (
         <div className="rounded-xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 text-[11px] text-[color:oklch(0.42_0.10_82)]">
           <span className="font-bold">Mapped:</span> {tags.join(" · ")}
@@ -1404,6 +1429,123 @@ function CategoryBottomSheet({
               <span className="font-bold text-[color:oklch(0.30_0.05_85)]">Primary: {primary}</span>
             </>
           )}
+        </div>
+      )}
+
+      {/* Inline creator modal */}
+      {creator && (
+        <div className="fixed inset-0 z-[110] grid place-items-center bg-black/60 backdrop-blur-md p-4">
+          <div
+            className="w-full max-w-sm rounded-3xl p-4 space-y-3"
+            style={{ background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 100%)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
+                  ✦ Create Category ✦
+                </p>
+                <h4 className="font-display text-base text-gold-gradient font-bold">
+                  New Custom Category
+                </h4>
+              </div>
+              <button
+                onClick={() => setCreator(null)}
+                className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Preview */}
+            <div className="grid place-items-center py-2">
+              <div className="relative h-20 w-20 rounded-2xl border-2 border-[#d4af37] overflow-hidden grid place-items-center bg-gradient-to-b from-[#fff8dc] to-[#f5d97a]">
+                {creator.image ? (
+                  <img src={creator.image} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-3xl">{creator.icon}</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
+                Name
+              </label>
+              <input
+                autoFocus
+                value={creator.name}
+                onChange={(e) => setCreator({ ...creator, name: e.target.value })}
+                placeholder="e.g. Mehendi, Perfume Set"
+                className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37]"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <Smile className="h-3 w-3" /> Pick Icon
+              </label>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {EMOJI_PRESETS.map((em) => (
+                  <button
+                    key={em}
+                    onClick={() => setCreator({ ...creator, icon: em, image: undefined })}
+                    className={`h-9 w-9 rounded-xl text-lg grid place-items-center border-2 transition ${
+                      creator.icon === em && !creator.image
+                        ? "border-[#d4af37] bg-gradient-to-b from-[#fff3c8] to-[#f5d97a]"
+                        : "border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+                    }`}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" /> Or Upload Image
+              </label>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="flex-1 py-2 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] text-[11px] font-bold text-[color:oklch(0.42_0.10_82)] bg-white/70"
+                >
+                  {creator.image ? "Change image" : "Choose image"}
+                </button>
+                {creator.image && (
+                  <button
+                    onClick={() => setCreator({ ...creator, image: undefined })}
+                    className="h-9 w-9 grid place-items-center rounded-full bg-rose-50 text-rose-500"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = () => setCreator({ ...creator, image: String(r.result) });
+                    r.readAsDataURL(f);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveCreator}
+              disabled={!creator.name.trim()}
+              className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow disabled:opacity-50"
+              style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+            >
+              <Check className="inline h-4 w-4 mr-1" strokeWidth={3} /> Create & Map
+            </button>
+          </div>
         </div>
       )}
     </BottomSheetShell>
