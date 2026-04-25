@@ -1167,22 +1167,16 @@ function MultiCustomerStrip({
   const overflow = items.length - visible.length;
 
   return (
-    <div className="px-3 pb-2">
-      <div
-        className="flex items-center gap-2 overflow-x-auto scrollbar-hide rounded-2xl px-2 py-2 border"
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #fffaeb 100%)",
-          borderColor: "oklch(0.78 0.14 82 / 0.4)",
-          boxShadow: "0 2px 10px -4px rgba(212,175,55,0.35)",
-        }}
-      >
+    <div className="px-3 pb-2 pt-1">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         {visible.length === 0 && (
-          <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] italic px-2">
+          <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] italic px-2 flex-1">
             No active bills · tap + to start
           </span>
         )}
         {visible.map((it) => {
           const initial = (it.customer?.name ?? "G").trim().charAt(0).toUpperCase();
+          const firstName = it.customer?.name?.split(" ")[0] ?? "Walk-in";
           return (
             <button
               key={it.id}
@@ -1194,7 +1188,7 @@ function MultiCustomerStrip({
               title={it.customer?.name ?? "Walk-in"}
             >
               <span
-                className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden border-2 ${
+                className={`relative h-12 w-12 rounded-full grid place-items-center overflow-hidden border-2 ${
                   it.isActive ? "border-[#d4af37] shadow-gold-glow" : "border-white shadow-sm"
                 }`}
                 style={{
@@ -1210,7 +1204,7 @@ function MultiCustomerStrip({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)]">
+                  <span className="font-display font-bold text-base text-[color:oklch(0.18_0.06_18)]">
                     {initial}
                   </span>
                 )}
@@ -1224,7 +1218,7 @@ function MultiCustomerStrip({
                 )}
               </span>
               <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] max-w-[52px] truncate">
-                {it.customer?.name?.split(" ")[0] ?? "Walk-in"}
+                {firstName}
               </span>
             </button>
           );
@@ -1235,7 +1229,7 @@ function MultiCustomerStrip({
             onClick={onOpenAll}
             className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95"
           >
-            <span className="h-11 w-11 rounded-full grid place-items-center bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
+            <span className="h-12 w-12 rounded-full grid place-items-center bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
               <span className="font-display font-bold text-[11px] text-[color:oklch(0.42_0.10_82)]">
                 +{overflow}
               </span>
@@ -1246,14 +1240,14 @@ function MultiCustomerStrip({
 
         <button
           onClick={onNew}
-          aria-label="Start new invoice"
+          aria-label="Add product to new bill"
           className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95 ml-auto"
         >
           <span
-            className="h-11 w-11 rounded-full grid place-items-center text-white border-2 border-white shadow-md"
+            className="h-12 w-12 rounded-full grid place-items-center text-white border-2 border-white shadow-md"
             style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
           >
-            <Plus className="h-5 w-5" strokeWidth={3} />
+            <Plus className="h-6 w-6" strokeWidth={3} />
           </span>
           <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)]">New</span>
         </button>
