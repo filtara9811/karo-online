@@ -557,22 +557,26 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
                   </div>
                 </div>
 
-                {/* Floating + button → bills/customers manager */}
+                {/* Floating Staff selector → who created this invoice */}
                 <button
-                  onClick={() => setShowBillsSheet(true)}
-                  aria-label="Manage bills & customers"
-                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white text-[color:oklch(0.18_0.06_18)] active:scale-90 transition"
+                  onClick={() => setShowStaffSheet(true)}
+                  aria-label="Choose staff who made this bill"
+                  className="absolute -bottom-4 right-4 h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white active:scale-90 transition overflow-hidden font-display font-bold text-base text-white"
                   style={{
-                    background:
-                      "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+                    background: staff?.color ?? "#d4af37",
                   }}
+                  title={staff ? `Bill by ${staff.name}` : "Pick staff"}
                 >
-                  <Plus className="h-5 w-5" strokeWidth={3} />
-                  {totalHeld > 1 && (
-                    <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[10px] font-bold text-[color:oklch(0.18_0.06_18)] grid place-items-center border border-white">
-                      {totalHeld}
-                    </span>
+                  {staff?.avatar ? (
+                    <img src={staff.avatar} alt={staff.name} className="h-full w-full object-cover" />
+                  ) : staff ? (
+                    <span>{staff.name.trim().charAt(0).toUpperCase()}</span>
+                  ) : (
+                    <Users className="h-5 w-5" />
                   )}
+                  <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-white text-[8px] font-bold text-[color:oklch(0.18_0.06_18)] grid place-items-center border border-[#d4af37] uppercase tracking-wider">
+                    Staff
+                  </span>
                 </button>
               </div>
 
