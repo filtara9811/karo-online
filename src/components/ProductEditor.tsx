@@ -308,6 +308,48 @@ export function ProductEditor({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+          {/* === SALE TYPE TOGGLE (above media) === */}
+          <section>
+            <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+              <Store className="h-3 w-3" /> Sale Type
+            </label>
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-2xl bg-white/70 border border-[color:oklch(0.78_0.14_82/0.4)] p-1">
+              {([
+                { v: "wholesale", label: "Wholesale", icon: <Package className="h-3 w-3" /> },
+                { v: "retail", label: "Retail", icon: <Tag className="h-3 w-3" /> },
+                { v: "both", label: "Both", icon: <Layers className="h-3 w-3" /> },
+              ] as const).map((opt) => {
+                const active = (draft.saleType ?? "retail") === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    onClick={() => setDraft({ ...draft, saleType: opt.v })}
+                    className={`flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-display font-bold transition ${
+                      active
+                        ? "text-[color:oklch(0.18_0.06_18)] shadow-md border-2 border-[#d4af37]"
+                        : "text-[color:oklch(0.55_0.10_82)] border-2 border-transparent"
+                    }`}
+                    style={
+                      active
+                        ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a)" }
+                        : undefined
+                    }
+                  >
+                    {opt.icon}
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+              {draft.saleType === "wholesale"
+                ? "Bulk pricing tiers will appear below."
+                : draft.saleType === "both"
+                  ? "Retail price + bulk tiers for wholesale buyers."
+                  : "Single retail price per unit."}
+            </p>
+          </section>
+
           {/* === MEDIA GALLERY === */}
           <section>
             <div className="flex items-center justify-between">
