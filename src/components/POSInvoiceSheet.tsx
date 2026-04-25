@@ -306,27 +306,22 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
         </div>
 
-        {/* === Logo + Shop Name Header === */}
-        <div className="px-5 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+        {/* === Compact title strip === */}
+        <div className="px-5 pb-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
             <span
-              className="h-11 w-11 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
+              className="h-8 w-8 rounded-full grid place-items-center shadow-gold-glow border-2 border-white flex-shrink-0"
               style={{ background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)" }}
             >
-              <Store className="h-5 w-5 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
+              <Store className="h-4 w-4 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
             </span>
             <div className="min-w-0">
-              <p className="text-[8px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
+              <p className="text-[7px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)] leading-tight">
                 ✦ Tax Invoice ✦
               </p>
-              <h3 className="font-display text-base text-gold-gradient font-bold leading-tight truncate">
+              <h3 className="font-display text-[13px] text-gold-gradient font-bold leading-tight truncate">
                 Ashhu's Digital Shop
               </h3>
-              {customer && (
-                <p className="text-[9px] text-[color:oklch(0.45_0.08_85)] truncate mt-0.5">
-                  Bill for · <span className="font-bold">{customer.name}</span>
-                </p>
-              )}
             </div>
           </div>
           <button
@@ -338,19 +333,19 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           </button>
         </div>
 
-        {/* === Multi-customer avatar strip (like chat) === */}
+        {/* === Multi-customer avatar strip in header (chat-like, no inner box) === */}
         <MultiCustomerStrip
           held={held}
           activeCart={cart}
           activeCustomer={customer}
           activeId={activeHeldId}
           onSwitch={(id) => {
-            // save current then resume target (resumeHeld already handles holdCurrent)
             resumeHeld(id);
           }}
           onNew={() => {
+            // "+" → close sheet so user lands on add-to-cart (shop) screen
             if (cart.length || customer) holdCurrent();
-            resetForm();
+            onClose();
           }}
           onPickCustomer={() => setShowCustomerSheet(true)}
           onOpenAll={() => setShowBillsSheet(true)}
