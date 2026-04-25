@@ -26,6 +26,7 @@ import { PrintOptionsSheet } from "@/components/PrintOptionsSheet";
 import { ValuePickerSheet, type ValueMode } from "@/components/ValuePickerSheet";
 import { CouponSheet, type Coupon } from "@/components/CouponSheet";
 import { InvoiceImage } from "@/components/InvoiceImage";
+import { StaffPickerSheet, type Staff } from "@/components/StaffPickerSheet";
 import { captureInvoicePng, shareInvoicePng } from "@/lib/invoice-image";
 
 export type CartLine = {
