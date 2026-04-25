@@ -338,6 +338,24 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           </button>
         </div>
 
+        {/* === Multi-customer avatar strip (like chat) === */}
+        <MultiCustomerStrip
+          held={held}
+          activeCart={cart}
+          activeCustomer={customer}
+          activeId={activeHeldId}
+          onSwitch={(id) => {
+            // save current then resume target (resumeHeld already handles holdCurrent)
+            resumeHeld(id);
+          }}
+          onNew={() => {
+            if (cart.length || customer) holdCurrent();
+            resetForm();
+          }}
+          onPickCustomer={() => setShowCustomerSheet(true)}
+          onOpenAll={() => setShowBillsSheet(true)}
+        />
+
         {done ? (
           <DoneView
             invoice={done.invoice}
