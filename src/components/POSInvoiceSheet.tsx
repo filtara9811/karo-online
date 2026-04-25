@@ -338,6 +338,24 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
           </button>
         </div>
 
+        {/* === Multi-customer avatar strip (like chat) === */}
+        <MultiCustomerStrip
+          held={held}
+          activeCart={cart}
+          activeCustomer={customer}
+          activeId={activeHeldId}
+          onSwitch={(id) => {
+            // save current then resume target (resumeHeld already handles holdCurrent)
+            resumeHeld(id);
+          }}
+          onNew={() => {
+            if (cart.length || customer) holdCurrent();
+            resetForm();
+          }}
+          onPickCustomer={() => setShowCustomerSheet(true)}
+          onOpenAll={() => setShowBillsSheet(true)}
+        />
+
         {done ? (
           <DoneView
             invoice={done.invoice}
@@ -1091,6 +1109,160 @@ function DoneView({
       >
         Done
       </button>
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/* === Multi-Customer top strip (chat-like avatars for active+held bills) */
+/* ====================================================================== */
+function MultiCustomerStrip({
+  held,
+  activeCart,
+  activeCustomer,
+  activeId,
+  onSwitch,
+  onNew,
+  onPickCustomer,
+  onOpenAll,
+}: {
+  held: HeldBill[];
+  activeCart: CartLine[];
+  activeCustomer: Customer | null;
+  activeId: string | null;
+  onSwitch: (id: string) => void;
+  onNew: () => void;
+  onPickCustomer: () => void;
+  onOpenAll: () => void;
+}) {
+  const hasActive = activeCart.length > 0 || activeCustomer !== null;
+  const items: Array<{
+    id: string;
+    customer: Customer | null;
+    items: number;
+    total: number;
+    isActive: boolean;
+  }> = [];
+  if (hasActive) {
+    items.push({
+      id: activeId ?? "current",
+      customer: activeCustomer,
+      items: activeCart.reduce((s, l) => s + l.qty, 0),
+      total: activeCart.reduce(
+        (s, l) => s + (l.priceOverride ?? l.product.price) * l.qty,
+        0,
+      ),
+      isActive: true,
+    });
+  }
+  for (const h of held) {
+    items.push({
+      id: h.id,
+      customer: h.customer,
+      items: h.cart.reduce((s, l) => s + l.qty, 0),
+      total: h.cart.reduce(
+        (s, l) => s + (l.priceOverride ?? l.product.price) * l.qty,
+        0,
+      ),
+      isActive: false,
+    });
+  }
+
+  const visible = items.slice(0, 4);
+  const overflow = items.length - visible.length;
+
+  return (
+    <div className="px-3 pb-2">
+      <div
+        className="flex items-center gap-2 overflow-x-auto scrollbar-hide rounded-2xl px-2 py-2 border"
+        style={{
+          background: "linear-gradient(180deg, #ffffff 0%, #fffaeb 100%)",
+          borderColor: "oklch(0.78 0.14 82 / 0.4)",
+          boxShadow: "0 2px 10px -4px rgba(212,175,55,0.35)",
+        }}
+      >
+        {visible.length === 0 && (
+          <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] italic px-2">
+            No active bills · tap + to start
+          </span>
+        )}
+        {visible.map((it) => {
+          const initial = (it.customer?.name ?? "G").trim().charAt(0).toUpperCase();
+          return (
+            <button
+              key={it.id}
+              onClick={() => {
+                if (it.isActive) onPickCustomer();
+                else onSwitch(it.id);
+              }}
+              className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95 transition"
+              title={it.customer?.name ?? "Walk-in"}
+            >
+              <span
+                className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden border-2 ${
+                  it.isActive ? "border-[#d4af37] shadow-gold-glow" : "border-white shadow-sm"
+                }`}
+                style={{
+                  background: it.customer?.avatar
+                    ? "transparent"
+                    : "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37)",
+                }}
+              >
+                {it.customer?.avatar ? (
+                  <img
+                    src={it.customer.avatar}
+                    alt={it.customer.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)]">
+                    {initial}
+                  </span>
+                )}
+                {it.items > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-[#22c55e] text-[9px] font-bold text-white grid place-items-center border border-white">
+                    {it.items}
+                  </span>
+                )}
+                {it.isActive && (
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                )}
+              </span>
+              <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] max-w-[52px] truncate">
+                {it.customer?.name?.split(" ")[0] ?? "Walk-in"}
+              </span>
+            </button>
+          );
+        })}
+
+        {overflow > 0 && (
+          <button
+            onClick={onOpenAll}
+            className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95"
+          >
+            <span className="h-11 w-11 rounded-full grid place-items-center bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
+              <span className="font-display font-bold text-[11px] text-[color:oklch(0.42_0.10_82)]">
+                +{overflow}
+              </span>
+            </span>
+            <span className="text-[9px] font-bold text-[color:oklch(0.55_0.10_82)]">More</span>
+          </button>
+        )}
+
+        <button
+          onClick={onNew}
+          aria-label="Start new invoice"
+          className="flex-shrink-0 flex flex-col items-center gap-0.5 active:scale-95 ml-auto"
+        >
+          <span
+            className="h-11 w-11 rounded-full grid place-items-center text-white border-2 border-white shadow-md"
+            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+          >
+            <Plus className="h-5 w-5" strokeWidth={3} />
+          </span>
+          <span className="text-[9px] font-bold text-[color:oklch(0.30_0.05_85)]">New</span>
+        </button>
+      </div>
     </div>
   );
 }
