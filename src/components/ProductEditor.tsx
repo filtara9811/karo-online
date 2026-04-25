@@ -980,7 +980,103 @@ function CategoryChip({
   );
 }
 
-function Field({
+function CategoryGridCard({
+  name,
+  icon,
+  image,
+  selected,
+  isPrimary,
+  onToggle,
+  onMakePrimary,
+  onRemove,
+}: {
+  name: string;
+  icon?: string;
+  image?: string;
+  selected: boolean;
+  isPrimary: boolean;
+  onToggle: () => void;
+  onMakePrimary: () => void;
+  onRemove?: () => void;
+}) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  const startLong = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      onMakePrimary();
+    }, 420);
+  };
+  const cancelLong = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
+  const handleClick = () => {
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    onToggle();
+  };
+
+  return (
+    <button
+      onMouseDown={startLong}
+      onMouseUp={cancelLong}
+      onMouseLeave={cancelLong}
+      onTouchStart={startLong}
+      onTouchEnd={cancelLong}
+      onClick={handleClick}
+      className={`relative aspect-square rounded-2xl border-2 p-1.5 flex flex-col items-center justify-center gap-1 transition ${
+        selected
+          ? "border-[#d4af37] shadow-md"
+          : "border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+      }`}
+      style={
+        selected ? { background: "linear-gradient(180deg, #fff8dc, #f5d97a)" } : undefined
+      }
+    >
+      {isPrimary && (
+        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full grid place-items-center bg-gradient-to-b from-[#fff3c8] to-[#d4af37] shadow">
+          <StarIcon className="h-3 w-3 fill-[#8b6508] text-[#8b6508]" />
+        </span>
+      )}
+      {selected && !isPrimary && (
+        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full grid place-items-center bg-emerald-500 text-white shadow">
+          <Check className="h-3 w-3" strokeWidth={3} />
+        </span>
+      )}
+      {onRemove && (
+        <span
+          role="button"
+          aria-label="Remove"
+          onClick={(e) => {
+            e.stopPropagation();
+            cancelLong();
+            onRemove();
+          }}
+          className="absolute -top-1 -left-1 h-5 w-5 rounded-full grid place-items-center bg-rose-500 text-white shadow"
+        >
+          <X className="h-2.5 w-2.5" strokeWidth={3} />
+        </span>
+      )}
+      <div className="h-10 w-10 rounded-xl overflow-hidden grid place-items-center bg-white/70">
+        {image ? (
+          <img src={image} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-2xl">{icon ?? "🏷️"}</span>
+        )}
+      </div>
+      <span className="text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)] leading-tight text-center line-clamp-2">
+        {name}
+      </span>
+    </button>
+  );
+}
+
+
   label,
   value,
   onChange,
