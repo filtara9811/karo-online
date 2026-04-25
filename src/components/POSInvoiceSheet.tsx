@@ -106,6 +106,13 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
   const [showBillsSheet, setShowBillsSheet] = useState(false);
   const [showPaySheet, setShowPaySheet] = useState(false);
   const [showPrintSheet, setShowPrintSheet] = useState(false);
+  const [showStaffSheet, setShowStaffSheet] = useState(false);
+  const [staff, setStaff] = useState<Staff | null>({
+    id: "owner",
+    name: "Ashhu (Owner)",
+    role: "Owner",
+    color: "#d4af37",
+  });
   const [picker, setPicker] = useState<PickerKind>(null);
 
   // off-screen invoice capture target
