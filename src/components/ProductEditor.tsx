@@ -854,6 +854,7 @@ export function ProductEditor({
         <CategoryBottomSheet
           tags={draft.categoryTags ?? []}
           primary={draft.primaryCategory ?? ""}
+          customItems={draft.customCategories ?? []}
           customCat={customCat}
           setCustomCat={setCustomCat}
           onClose={() => setSheet(null)}
@@ -863,6 +864,26 @@ export function ProductEditor({
               categoryTags: tags,
               primaryCategory: primary,
               category: primary || d.category,
+            }))
+          }
+          onAddCustomItem={(item) =>
+            setDraft((d) => ({
+              ...d,
+              customCategories: [
+                ...(d.customCategories ?? []).filter((c) => c.name !== item.name),
+                item,
+              ],
+              categoryTags: Array.from(new Set([...(d.categoryTags ?? []), item.name])),
+              primaryCategory: d.primaryCategory || item.name,
+              category: d.primaryCategory || item.name,
+            }))
+          }
+          onRemoveCustomItem={(name) =>
+            setDraft((d) => ({
+              ...d,
+              customCategories: (d.customCategories ?? []).filter((c) => c.name !== name),
+              categoryTags: (d.categoryTags ?? []).filter((t) => t !== name),
+              primaryCategory: d.primaryCategory === name ? "" : d.primaryCategory,
             }))
           }
         />
