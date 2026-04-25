@@ -966,6 +966,7 @@ function Field({
   placeholder,
   multiline,
   type,
+  voice = true,
 }: {
   label: string;
   value: string;
@@ -973,28 +974,52 @@ function Field({
   placeholder?: string;
   multiline?: boolean;
   type?: string;
+  voice?: boolean;
 }) {
+  const enableVoice = voice && type !== "number";
+  const { listening, supported, toggle } = useVoiceInput((text) => {
+    onChange(value ? `${value} ${text}` : text);
+  });
+
   return (
     <div>
-      <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
-        {label}
+      <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center justify-between">
+        <span>{label}</span>
+        {enableVoice && supported && (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={listening ? "Stop dictation" : "Start dictation"}
+            className={`h-6 w-6 grid place-items-center rounded-full transition ${
+              listening
+                ? "bg-rose-500 text-white animate-pulse shadow-[0_0_0_3px_rgba(244,63,94,0.25)]"
+                : "bg-gradient-to-b from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.18_0.06_18)] shadow-sm"
+            }`}
+          >
+            {listening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+          </button>
+        )}
       </label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={listening ? "Listening… speak now" : placeholder}
           rows={3}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+          className={`mt-1 w-full rounded-xl bg-white border px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition ${
+            listening ? "border-rose-400" : "border-[color:oklch(0.78_0.14_82/0.5)]"
+          }`}
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={listening ? "Listening… speak now" : placeholder}
           type={type ?? "text"}
           inputMode={type === "number" ? "numeric" : undefined}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+          className={`mt-1 w-full rounded-xl bg-white border px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition ${
+            listening ? "border-rose-400" : "border-[color:oklch(0.78_0.14_82/0.5)]"
+          }`}
         />
       )}
     </div>
