@@ -21,8 +21,15 @@ import {
   Pencil,
   GripVertical,
   Star as StarIcon,
+  Mic,
+  MicOff,
+  Store,
+  Package,
+  TrendingDown,
+  Smile,
 } from "lucide-react";
 import type { Product } from "@/lib/products";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 export type Variation = {
   id: string;
@@ -33,6 +40,20 @@ export type Variation = {
   size?: string;
 };
 export type MediaItem = { id: string; type: "image" | "video"; url: string };
+
+export type SaleType = "wholesale" | "retail" | "both";
+
+export type BulkTier = {
+  id: string;
+  minQty: number;
+  price: number;
+};
+
+export type CategoryItem = {
+  name: string;
+  icon?: string; // emoji
+  image?: string; // dataURL
+};
 
 export type EditorProduct = Product & {
   theme?: "classic" | "minimal" | "bold" | "luxe";
@@ -47,6 +68,9 @@ export type EditorProduct = Product & {
   priceLabels?: { buying: string; selling: string; mrp: string };
   categoryTags?: string[];
   primaryCategory?: string;
+  saleType?: SaleType;
+  bulkTiers?: BulkTier[];
+  customCategories?: CategoryItem[];
 };
 
 const THEMES: { value: NonNullable<EditorProduct["theme"]>; label: string }[] = [
@@ -111,6 +135,9 @@ export function ProductEditor({
       product.categoryTags ??
       (product.category ? [product.category] : []),
     primaryCategory: product.primaryCategory ?? product.category ?? "",
+    saleType: product.saleType ?? "retail",
+    bulkTiers: product.bulkTiers ?? [],
+    customCategories: product.customCategories ?? [],
     ...product,
   }));
 
@@ -132,6 +159,32 @@ export function ProductEditor({
   }, []);
 
   const media = draft.media ?? [];
+
+  // Bulk tier helpers
+  const addBulkTier = () => {
+    const lastQty = (draft.bulkTiers ?? []).slice(-1)[0]?.minQty ?? 0;
+    setDraft((d) => ({
+      ...d,
+      bulkTiers: [
+        ...(d.bulkTiers ?? []),
+        {
+          id: `bt-${Date.now()}`,
+          minQty: lastQty ? lastQty * 2 : 10,
+          price: Math.max(0, (d.sellingPrice ?? 0) - 50),
+        },
+      ],
+    }));
+  };
+  const updateBulkTier = (id: string, patch: Partial<BulkTier>) => {
+    setDraft((d) => ({
+      ...d,
+      bulkTiers: (d.bulkTiers ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    }));
+  };
+  const removeBulkTier = (id: string) => {
+    setDraft((d) => ({ ...d, bulkTiers: (d.bulkTiers ?? []).filter((t) => t.id !== id) }));
+  };
+
 
   const addMedia = (kind: "image" | "video", e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -255,6 +308,48 @@ export function ProductEditor({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+          {/* === SALE TYPE TOGGLE (above media) === */}
+          <section>
+            <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+              <Store className="h-3 w-3" /> Sale Type
+            </label>
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-2xl bg-white/70 border border-[color:oklch(0.78_0.14_82/0.4)] p-1">
+              {([
+                { v: "wholesale", label: "Wholesale", icon: <Package className="h-3 w-3" /> },
+                { v: "retail", label: "Retail", icon: <Tag className="h-3 w-3" /> },
+                { v: "both", label: "Both", icon: <Layers className="h-3 w-3" /> },
+              ] as const).map((opt) => {
+                const active = (draft.saleType ?? "retail") === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    onClick={() => setDraft({ ...draft, saleType: opt.v })}
+                    className={`flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-display font-bold transition ${
+                      active
+                        ? "text-[color:oklch(0.18_0.06_18)] shadow-md border-2 border-[#d4af37]"
+                        : "text-[color:oklch(0.55_0.10_82)] border-2 border-transparent"
+                    }`}
+                    style={
+                      active
+                        ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a)" }
+                        : undefined
+                    }
+                  >
+                    {opt.icon}
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+              {draft.saleType === "wholesale"
+                ? "Bulk pricing tiers will appear below."
+                : draft.saleType === "both"
+                  ? "Retail price + bulk tiers for wholesale buyers."
+                  : "Single retail price per unit."}
+            </p>
+          </section>
+
           {/* === MEDIA GALLERY === */}
           <section>
             <div className="flex items-center justify-between">
@@ -572,6 +667,86 @@ export function ProductEditor({
             </div>
           </section>
 
+          {/* === BULK PRICING TIERS === */}
+          {(draft.saleType === "wholesale" || draft.saleType === "both") && (
+            <section className="rounded-2xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3" /> Bulk Pricing
+                </p>
+                <span className="text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+                  more qty → lower price
+                </span>
+              </div>
+
+              {(draft.bulkTiers ?? []).length === 0 && (
+                <p className="text-[11px] italic text-center text-[color:oklch(0.55_0.10_82)] py-2">
+                  No tiers yet · tap + below to add
+                </p>
+              )}
+
+              {(draft.bulkTiers ?? []).map((tier, i) => (
+                <div
+                  key={tier.id}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
+                >
+                  <span className="text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] w-5">
+                    #{i + 1}
+                  </span>
+                  <div className="flex-1 flex items-center gap-1">
+                    <span className="text-[10px] text-[color:oklch(0.55_0.10_82)]">≥</span>
+                    <input
+                      value={tier.minQty || ""}
+                      onChange={(e) =>
+                        updateBulkTier(tier.id, { minQty: Number(e.target.value) || 0 })
+                      }
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="10"
+                      className="w-14 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2 py-1 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
+                    />
+                    <span className="text-[10px] text-[color:oklch(0.55_0.10_82)]">pcs</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[color:oklch(0.55_0.10_82)]">
+                      ₹
+                    </span>
+                    <input
+                      value={tier.price || ""}
+                      onChange={(e) =>
+                        updateBulkTier(tier.id, { price: Number(e.target.value) || 0 })
+                      }
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="0"
+                      className="w-20 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] pl-5 pr-2 py-1 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => removeBulkTier(tier.id)}
+                    aria-label="Remove tier"
+                    className="h-7 w-7 grid place-items-center rounded-full bg-rose-50 text-rose-500 active:scale-90"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={addBulkTier}
+                className="w-full py-2 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] flex items-center justify-center gap-1 text-[11px] font-display font-bold text-[color:oklch(0.42_0.10_82)] bg-white/70 active:scale-[0.99]"
+              >
+                <Plus className="h-4 w-4" strokeWidth={3} /> Add Bulk Tier
+              </button>
+
+              {(draft.bulkTiers ?? []).length > 0 && (
+                <div className="rounded-xl bg-[color:oklch(0.97_0.02_85)] p-2 text-[10px] text-[color:oklch(0.42_0.10_82)] leading-snug">
+                  e.g. 10 pcs → ₹500 each · 20 pcs → ₹400 each · 50 pcs → ₹300 each
+                </div>
+              )}
+            </section>
+          )}
+
           {/* === VARIATIONS TRIGGER === */}
           <SheetTriggerRow
             icon={<Layers className="h-3.5 w-3.5" />}
@@ -679,6 +854,7 @@ export function ProductEditor({
         <CategoryBottomSheet
           tags={draft.categoryTags ?? []}
           primary={draft.primaryCategory ?? ""}
+          customItems={draft.customCategories ?? []}
           customCat={customCat}
           setCustomCat={setCustomCat}
           onClose={() => setSheet(null)}
@@ -688,6 +864,26 @@ export function ProductEditor({
               categoryTags: tags,
               primaryCategory: primary,
               category: primary || d.category,
+            }))
+          }
+          onAddCustomItem={(item) =>
+            setDraft((d) => ({
+              ...d,
+              customCategories: [
+                ...(d.customCategories ?? []).filter((c) => c.name !== item.name),
+                item,
+              ],
+              categoryTags: Array.from(new Set([...(d.categoryTags ?? []), item.name])),
+              primaryCategory: d.primaryCategory || item.name,
+              category: d.primaryCategory || item.name,
+            }))
+          }
+          onRemoveCustomItem={(name) =>
+            setDraft((d) => ({
+              ...d,
+              customCategories: (d.customCategories ?? []).filter((c) => c.name !== name),
+              categoryTags: (d.categoryTags ?? []).filter((t) => t !== name),
+              primaryCategory: d.primaryCategory === name ? "" : d.primaryCategory,
             }))
           }
         />
@@ -784,6 +980,103 @@ function CategoryChip({
   );
 }
 
+function CategoryGridCard({
+  name,
+  icon,
+  image,
+  selected,
+  isPrimary,
+  onToggle,
+  onMakePrimary,
+  onRemove,
+}: {
+  name: string;
+  icon?: string;
+  image?: string;
+  selected: boolean;
+  isPrimary: boolean;
+  onToggle: () => void;
+  onMakePrimary: () => void;
+  onRemove?: () => void;
+}) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  const startLong = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      onMakePrimary();
+    }, 420);
+  };
+  const cancelLong = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
+  const handleClick = () => {
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    onToggle();
+  };
+
+  return (
+    <button
+      onMouseDown={startLong}
+      onMouseUp={cancelLong}
+      onMouseLeave={cancelLong}
+      onTouchStart={startLong}
+      onTouchEnd={cancelLong}
+      onClick={handleClick}
+      className={`relative aspect-square rounded-2xl border-2 p-1.5 flex flex-col items-center justify-center gap-1 transition ${
+        selected
+          ? "border-[#d4af37] shadow-md"
+          : "border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+      }`}
+      style={
+        selected ? { background: "linear-gradient(180deg, #fff8dc, #f5d97a)" } : undefined
+      }
+    >
+      {isPrimary && (
+        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full grid place-items-center bg-gradient-to-b from-[#fff3c8] to-[#d4af37] shadow">
+          <StarIcon className="h-3 w-3 fill-[#8b6508] text-[#8b6508]" />
+        </span>
+      )}
+      {selected && !isPrimary && (
+        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full grid place-items-center bg-emerald-500 text-white shadow">
+          <Check className="h-3 w-3" strokeWidth={3} />
+        </span>
+      )}
+      {onRemove && (
+        <span
+          role="button"
+          aria-label="Remove"
+          onClick={(e) => {
+            e.stopPropagation();
+            cancelLong();
+            onRemove();
+          }}
+          className="absolute -top-1 -left-1 h-5 w-5 rounded-full grid place-items-center bg-rose-500 text-white shadow"
+        >
+          <X className="h-2.5 w-2.5" strokeWidth={3} />
+        </span>
+      )}
+      <div className="h-10 w-10 rounded-xl overflow-hidden grid place-items-center bg-white/70">
+        {image ? (
+          <img src={image} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-2xl">{icon ?? "🏷️"}</span>
+        )}
+      </div>
+      <span className="text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)] leading-tight text-center line-clamp-2">
+        {name}
+      </span>
+    </button>
+  );
+}
+
+
 function Field({
   label,
   value,
@@ -791,6 +1084,7 @@ function Field({
   placeholder,
   multiline,
   type,
+  voice = true,
 }: {
   label: string;
   value: string;
@@ -798,28 +1092,52 @@ function Field({
   placeholder?: string;
   multiline?: boolean;
   type?: string;
+  voice?: boolean;
 }) {
+  const enableVoice = voice && type !== "number";
+  const { listening, supported, toggle } = useVoiceInput((text) => {
+    onChange(value ? `${value} ${text}` : text);
+  });
+
   return (
     <div>
-      <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
-        {label}
+      <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center justify-between">
+        <span>{label}</span>
+        {enableVoice && supported && (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={listening ? "Stop dictation" : "Start dictation"}
+            className={`h-6 w-6 grid place-items-center rounded-full transition ${
+              listening
+                ? "bg-rose-500 text-white animate-pulse shadow-[0_0_0_3px_rgba(244,63,94,0.25)]"
+                : "bg-gradient-to-b from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.18_0.06_18)] shadow-sm"
+            }`}
+          >
+            {listening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+          </button>
+        )}
       </label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={listening ? "Listening… speak now" : placeholder}
           rows={3}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+          className={`mt-1 w-full rounded-xl bg-white border px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition ${
+            listening ? "border-rose-400" : "border-[color:oklch(0.78_0.14_82/0.5)]"
+          }`}
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={listening ? "Listening… speak now" : placeholder}
           type={type ?? "text"}
           inputMode={type === "number" ? "numeric" : undefined}
-          className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition"
+          className={`mt-1 w-full rounded-xl bg-white border px-3 py-2 text-sm outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.2)] transition ${
+            listening ? "border-rose-400" : "border-[color:oklch(0.78_0.14_82/0.5)]"
+          }`}
         />
       )}
     </div>
@@ -1096,18 +1414,29 @@ function BottomSheetShell({
 function CategoryBottomSheet({
   tags,
   primary,
+  customItems,
   customCat,
   setCustomCat,
   onClose,
   onChange,
+  onAddCustomItem,
+  onRemoveCustomItem,
 }: {
   tags: string[];
   primary: string;
+  customItems: CategoryItem[];
   customCat: string;
   setCustomCat: (v: string) => void;
   onClose: () => void;
   onChange: (tags: string[], primary: string) => void;
+  onAddCustomItem: (item: CategoryItem) => void;
+  onRemoveCustomItem: (name: string) => void;
 }) {
+  const [creator, setCreator] = useState<{ name: string; icon: string; image?: string } | null>(
+    null
+  );
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
   const toggle = (cat: string) => {
     const next = tags.includes(cat) ? tags.filter((t) => t !== cat) : [...tags, cat];
     let p = primary;
@@ -1118,13 +1447,22 @@ function CategoryBottomSheet({
     const next = Array.from(new Set([...tags, cat]));
     onChange(next, cat);
   };
-  const addCustom = () => {
-    const tag = customCat.trim();
-    if (!tag) return;
-    const next = Array.from(new Set([...tags, tag]));
-    onChange(next, primary || tag);
-    setCustomCat("");
+  const openCreator = () => {
+    setCreator({ name: customCat.trim(), icon: "🏷️", image: undefined });
   };
+  const saveCreator = () => {
+    if (!creator) return;
+    const name = creator.name.trim();
+    if (!name) return;
+    onAddCustomItem({ name, icon: creator.icon, image: creator.image });
+    setCustomCat("");
+    setCreator(null);
+  };
+
+  const customByName = new Map(customItems.map((c) => [c.name, c]));
+  const allCats = Array.from(new Set([...SHOP_CATEGORIES, ...customItems.map((c) => c.name), ...tags]));
+
+  const EMOJI_PRESETS = ["🏷️", "💄", "👗", "🏠", "🍳", "📱", "🛒", "💎", "🧸", "🎁", "✨", "🪔"];
 
   return (
     <BottomSheetShell
@@ -1146,34 +1484,39 @@ function CategoryBottomSheet({
         <StarIcon className="inline h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37] mx-0.5" /> long-press
         for primary.
       </p>
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from(new Set([...SHOP_CATEGORIES, ...tags])).map((cat) => (
-          <CategoryChip
-            key={cat}
-            cat={cat}
-            selected={tags.includes(cat)}
-            isPrimary={primary === cat}
-            onToggle={() => toggle(cat)}
-            onMakePrimary={() => makePrimary(cat)}
-          />
-        ))}
-      </div>
-      <div className="flex items-center gap-2 pt-1">
-        <input
-          value={customCat}
-          onChange={(e) => setCustomCat(e.target.value)}
-          placeholder="+ Add custom category"
-          className="flex-1 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2.5 py-1.5 text-xs outline-none focus:border-[#d4af37]"
-          onKeyDown={(e) => e.key === "Enter" && addCustom()}
-        />
+
+      {/* Grid of categories with icons/images */}
+      <div className="grid grid-cols-3 gap-2">
+        {allCats.map((cat) => {
+          const ci = customByName.get(cat);
+          const selected = tags.includes(cat);
+          const isPrimary = primary === cat;
+          return (
+            <CategoryGridCard
+              key={cat}
+              name={cat}
+              icon={ci?.icon}
+              image={ci?.image}
+              selected={selected}
+              isPrimary={isPrimary}
+              onToggle={() => toggle(cat)}
+              onMakePrimary={() => makePrimary(cat)}
+              onRemove={ci ? () => onRemoveCustomItem(cat) : undefined}
+            />
+          );
+        })}
+        {/* Plus tile to create new */}
         <button
-          onClick={addCustom}
-          className="px-3 py-1.5 rounded-lg text-xs font-display font-bold text-[color:oklch(0.18_0.06_18)] active:scale-95"
-          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+          onClick={openCreator}
+          className="aspect-square rounded-2xl border-2 border-dashed border-[#d4af37] grid place-items-center bg-gradient-to-b from-white to-[#fff8dc] active:scale-95"
         >
-          <Plus className="inline h-3 w-3 mr-0.5" strokeWidth={3} /> Add
+          <div className="flex flex-col items-center gap-1 text-[color:oklch(0.42_0.10_82)]">
+            <Plus className="h-5 w-5" strokeWidth={3} />
+            <span className="text-[9px] font-bold uppercase tracking-wider">New</span>
+          </div>
         </button>
       </div>
+
       {tags.length > 0 && (
         <div className="rounded-xl bg-gradient-to-b from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2 text-[11px] text-[color:oklch(0.42_0.10_82)]">
           <span className="font-bold">Mapped:</span> {tags.join(" · ")}
@@ -1183,6 +1526,123 @@ function CategoryBottomSheet({
               <span className="font-bold text-[color:oklch(0.30_0.05_85)]">Primary: {primary}</span>
             </>
           )}
+        </div>
+      )}
+
+      {/* Inline creator modal */}
+      {creator && (
+        <div className="fixed inset-0 z-[110] grid place-items-center bg-black/60 backdrop-blur-md p-4">
+          <div
+            className="w-full max-w-sm rounded-3xl p-4 space-y-3"
+            style={{ background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 100%)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
+                  ✦ Create Category ✦
+                </p>
+                <h4 className="font-display text-base text-gold-gradient font-bold">
+                  New Custom Category
+                </h4>
+              </div>
+              <button
+                onClick={() => setCreator(null)}
+                className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Preview */}
+            <div className="grid place-items-center py-2">
+              <div className="relative h-20 w-20 rounded-2xl border-2 border-[#d4af37] overflow-hidden grid place-items-center bg-gradient-to-b from-[#fff8dc] to-[#f5d97a]">
+                {creator.image ? (
+                  <img src={creator.image} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-3xl">{creator.icon}</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
+                Name
+              </label>
+              <input
+                autoFocus
+                value={creator.name}
+                onChange={(e) => setCreator({ ...creator, name: e.target.value })}
+                placeholder="e.g. Mehendi, Perfume Set"
+                className="mt-1 w-full rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-3 py-2 text-sm outline-none focus:border-[#d4af37]"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <Smile className="h-3 w-3" /> Pick Icon
+              </label>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {EMOJI_PRESETS.map((em) => (
+                  <button
+                    key={em}
+                    onClick={() => setCreator({ ...creator, icon: em, image: undefined })}
+                    className={`h-9 w-9 rounded-xl text-lg grid place-items-center border-2 transition ${
+                      creator.icon === em && !creator.image
+                        ? "border-[#d4af37] bg-gradient-to-b from-[#fff3c8] to-[#f5d97a]"
+                        : "border-[color:oklch(0.78_0.14_82/0.3)] bg-white"
+                    }`}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" /> Or Upload Image
+              </label>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="flex-1 py-2 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] text-[11px] font-bold text-[color:oklch(0.42_0.10_82)] bg-white/70"
+                >
+                  {creator.image ? "Change image" : "Choose image"}
+                </button>
+                {creator.image && (
+                  <button
+                    onClick={() => setCreator({ ...creator, image: undefined })}
+                    className="h-9 w-9 grid place-items-center rounded-full bg-rose-50 text-rose-500"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = () => setCreator({ ...creator, image: String(r.result) });
+                    r.readAsDataURL(f);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveCreator}
+              disabled={!creator.name.trim()}
+              className="btn-3d w-full py-3 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow disabled:opacity-50"
+              style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+            >
+              <Check className="inline h-4 w-4 mr-1" strokeWidth={3} /> Create & Map
+            </button>
+          </div>
         </div>
       )}
     </BottomSheetShell>
