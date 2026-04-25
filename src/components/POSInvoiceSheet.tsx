@@ -718,6 +718,13 @@ export function POSInvoiceSheet({ products, initialCart, onCartChange, onClose }
       {showPrintSheet && (
         <PrintOptionsSheet onPick={sendVia} onClose={() => setShowPrintSheet(false)} />
       )}
+      {showStaffSheet && (
+        <StaffPickerSheet
+          current={staff}
+          onPick={setStaff}
+          onClose={() => setShowStaffSheet(false)}
+        />
+      )}
       {showBillsSheet && (
         <BillsManagerSheet
           held={held}
