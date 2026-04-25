@@ -667,6 +667,86 @@ export function ProductEditor({
             </div>
           </section>
 
+          {/* === BULK PRICING TIERS === */}
+          {(draft.saleType === "wholesale" || draft.saleType === "both") && (
+            <section className="rounded-2xl bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)] p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3" /> Bulk Pricing
+                </p>
+                <span className="text-[9px] italic text-[color:oklch(0.55_0.10_82)]">
+                  more qty → lower price
+                </span>
+              </div>
+
+              {(draft.bulkTiers ?? []).length === 0 && (
+                <p className="text-[11px] italic text-center text-[color:oklch(0.55_0.10_82)] py-2">
+                  No tiers yet · tap + below to add
+                </p>
+              )}
+
+              {(draft.bulkTiers ?? []).map((tier, i) => (
+                <div
+                  key={tier.id}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fff8dc] to-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
+                >
+                  <span className="text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] w-5">
+                    #{i + 1}
+                  </span>
+                  <div className="flex-1 flex items-center gap-1">
+                    <span className="text-[10px] text-[color:oklch(0.55_0.10_82)]">≥</span>
+                    <input
+                      value={tier.minQty || ""}
+                      onChange={(e) =>
+                        updateBulkTier(tier.id, { minQty: Number(e.target.value) || 0 })
+                      }
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="10"
+                      className="w-14 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] px-2 py-1 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
+                    />
+                    <span className="text-[10px] text-[color:oklch(0.55_0.10_82)]">pcs</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[color:oklch(0.55_0.10_82)]">
+                      ₹
+                    </span>
+                    <input
+                      value={tier.price || ""}
+                      onChange={(e) =>
+                        updateBulkTier(tier.id, { price: Number(e.target.value) || 0 })
+                      }
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="0"
+                      className="w-20 rounded-lg bg-white border border-[color:oklch(0.78_0.14_82/0.5)] pl-5 pr-2 py-1 text-xs font-bold text-right outline-none focus:border-[#d4af37]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => removeBulkTier(tier.id)}
+                    aria-label="Remove tier"
+                    className="h-7 w-7 grid place-items-center rounded-full bg-rose-50 text-rose-500 active:scale-90"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={addBulkTier}
+                className="w-full py-2 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.5)] flex items-center justify-center gap-1 text-[11px] font-display font-bold text-[color:oklch(0.42_0.10_82)] bg-white/70 active:scale-[0.99]"
+              >
+                <Plus className="h-4 w-4" strokeWidth={3} /> Add Bulk Tier
+              </button>
+
+              {(draft.bulkTiers ?? []).length > 0 && (
+                <div className="rounded-xl bg-[color:oklch(0.97_0.02_85)] p-2 text-[10px] text-[color:oklch(0.42_0.10_82)] leading-snug">
+                  e.g. 10 pcs → ₹500 each · 20 pcs → ₹400 each · 50 pcs → ₹300 each
+                </div>
+              )}
+            </section>
+          )}
+
           {/* === VARIATIONS TRIGGER === */}
           <SheetTriggerRow
             icon={<Layers className="h-3.5 w-3.5" />}
