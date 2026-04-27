@@ -11,6 +11,7 @@ import { VariationSheet, type VariationItem } from "@/components/VariationSheet"
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
