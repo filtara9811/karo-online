@@ -177,6 +177,7 @@ function VendorsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [activePin, setActivePin] = useState<string | null>(null);
+  const geo = useGeolocation();
 
   const filtered = useMemo(() => {
     if (!query.trim()) return VENDORS;
