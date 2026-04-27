@@ -12,6 +12,7 @@ import avatarRaj from "@/assets/avatar-raj.png";
 import svcAc from "@/assets/svc-ac.png";
 import svcCarpenter from "@/assets/svc-carpenter.png";
 import svcElectronics from "@/assets/svc-electronics.png";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import productCosmetics from "@/assets/product-cosmetics.jpg";
 import productCleaning from "@/assets/product-cleaning.jpg";
 import productPerfume from "@/assets/product-perfume.jpg";
@@ -176,6 +177,7 @@ function VendorsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [activePin, setActivePin] = useState<string | null>(null);
+  const geo = useGeolocation();
 
   const filtered = useMemo(() => {
     if (!query.trim()) return VENDORS;
@@ -252,8 +254,11 @@ function VendorsPage() {
               <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
             </span>
           </div>
-          <span className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap">
-            My current location
+          <span
+            className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap max-w-[200px] truncate"
+            title={geo.label}
+          >
+            📍 {geo.status === "loading" || geo.status === "idle" ? "Detecting your location…" : geo.label}
           </span>
         </div>
       </section>

@@ -11,6 +11,7 @@ import { VariationSheet, type VariationItem } from "@/components/VariationSheet"
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -468,6 +469,7 @@ function QuickPage() {
 
 function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const geo = useGeolocation();
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
     mode: "none" | "pinch" | "pan";
@@ -616,8 +618,11 @@ function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }
             </span>
           </div>
         </div>
-        <span className="mt-1 px-2 py-0.5 rounded bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap">
-          My current location
+        <span
+          className="mt-1 px-2 py-0.5 rounded bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap max-w-[180px] truncate"
+          title={geo.label}
+        >
+          📍 {geo.status === "loading" || geo.status === "idle" ? "Detecting your location…" : geo.label}
         </span>
       </div>
 

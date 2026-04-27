@@ -172,6 +172,12 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
   const [picker, setPicker] = useState<null | "reselling" | "browse">(null);
+  const [defaultHome, setDefaultHome] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setDefaultHome(localStorage.getItem("ko-default-home"));
+  }, [picker]);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
@@ -179,6 +185,13 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     else if (value === "vendor") setTimeout(() => navigate({ to: "/register" }), 250);
     else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
+  };
+
+  const handleSetDefault = (value: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ko-default-home", value);
+    }
+    setDefaultHome(value);
   };
 
   const handleBrowsePick = (mode: "products" | "services") => {
@@ -245,6 +258,8 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         options={RESELLING_OPTIONS}
         onSelect={handleResellingSelect}
         onClose={() => setPicker(null)}
+        defaultValue={defaultHome ?? undefined}
+        onSetDefault={handleSetDefault}
       />
       <ProductServicePicker
         open={picker === "browse"}

@@ -219,6 +219,27 @@
   to { opacity: 1; }
 }
 
+@keyframes longpress-fill {
+  from { width: 0%; opacity: 0.4; }
+  to   { width: 100%; opacity: 0.9; }
+}
+
+@keyframes finder-orbit {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes finder-radar {
+  0%   { transform: scale(0.4); opacity: 0.85; }
+  80%  { opacity: 0.05; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes finder-ping-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.25); opacity: 0.7; }
+}
+
 @keyframes fly-to-cart {
   0% { transform: translate(0, 0) scale(1) rotate(0); opacity: 1; }
   60% { transform: translate(calc(var(--dx) * 0.7), calc(var(--dy) * 0.4)) scale(0.55) rotate(140deg); opacity: 0.95; }
@@ -368,4 +389,12 @@ body[data-variation-open="true"] [data-bottom-action-bar] {
 .scanner-laser {
   animation: scanner-laser 1.8s ease-in-out infinite;
   box-shadow: 0 0 14px 2px #34d399, 0 0 30px 4px rgba(52, 211, 153, 0.55);
+}
+
+/* Hide global bottom action bar while the Finding overlay is open */
+body[data-finder-open] [data-bottom-action-bar] {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(120%);
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
