@@ -12,6 +12,7 @@ import avatarRaj from "@/assets/avatar-raj.png";
 import svcAc from "@/assets/svc-ac.png";
 import svcCarpenter from "@/assets/svc-carpenter.png";
 import svcElectronics from "@/assets/svc-electronics.png";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import productCosmetics from "@/assets/product-cosmetics.jpg";
 import productCleaning from "@/assets/product-cleaning.jpg";
 import productPerfume from "@/assets/product-perfume.jpg";
