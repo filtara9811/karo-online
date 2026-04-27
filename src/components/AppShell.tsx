@@ -258,6 +258,8 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         options={RESELLING_OPTIONS}
         onSelect={handleResellingSelect}
         onClose={() => setPicker(null)}
+        defaultValue={defaultHome ?? undefined}
+        onSetDefault={handleSetDefault}
       />
       <ProductServicePicker
         open={picker === "browse"}
