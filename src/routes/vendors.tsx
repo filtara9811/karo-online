@@ -254,8 +254,11 @@ function VendorsPage() {
               <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
             </span>
           </div>
-          <span className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap">
-            My current location
+          <span
+            className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap max-w-[200px] truncate"
+            title={geo.label}
+          >
+            📍 {geo.status === "loading" || geo.status === "idle" ? "Detecting your location…" : geo.label}
           </span>
         </div>
       </section>
