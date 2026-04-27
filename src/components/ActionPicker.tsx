@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Home as HomeIcon, Pin } from "lucide-react";
 
 export type ActionOption = {
   value: string;
@@ -16,9 +17,26 @@ type Props = {
   onSelect: (value: string) => void;
   onClose: () => void;
   accent?: "gold" | "wine";
+  /** Currently-pinned default home value (shows a badge). */
+  defaultValue?: string;
+  /** Fires when the user long-presses an option to pin it as default home. */
+  onSetDefault?: (value: string) => void;
 };
 
-export function ActionPicker({ open, title, subtitle, options, onSelect, onClose }: Props) {
+export function ActionPicker({
+  open,
+  title,
+  subtitle,
+  options,
+  onSelect,
+  onClose,
+  defaultValue,
+  onSetDefault,
+}: Props) {
+  const [pressing, setPressing] = useState<string | null>(null);
+  const longPressFiredRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -31,6 +49,30 @@ export function ActionPicker({ open, title, subtitle, options, onSelect, onClose
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const startPress = (value: string) => {
+    if (!onSetDefault) return;
+    longPressFiredRef.current = false;
+    setPressing(value);
+    timerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      onSetDefault(value);
+      setPressing(null);
+      // haptic feedback if available
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try { navigator.vibrate?.(40); } catch { /* noop */ }
+      }
+    }, 650);
+  };
+
+  const cancelPress = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setPressing(null);
+  };
+
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center">
