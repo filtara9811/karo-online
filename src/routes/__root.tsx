@@ -41,6 +41,10 @@ export const Route = createRootRoute({
       { property: "og:description", content: "Join Karo Online — premium wine & gold registration experience." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Karo Online — Luxury Registration" },
+      { name: "twitter:description", content: "Join Karo Online — premium wine & gold registration experience." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b6c58009-aed3-4f10-8b1d-c9bf371df617" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b6c58009-aed3-4f10-8b1d-c9bf371df617" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
