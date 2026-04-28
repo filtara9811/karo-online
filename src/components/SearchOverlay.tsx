@@ -48,15 +48,17 @@ export function SearchOverlay({ open, onClose, onSubmit }: Props) {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 12))); } catch {}
   }, [history]);
 
-  // Body lock + ESC
+  // Body lock + ESC + hide bottom action bar
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
+    document.body.classList.add("search-overlay-open");
     setTimeout(() => inputRef.current?.focus(), 80);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("search-overlay-open");
       document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
