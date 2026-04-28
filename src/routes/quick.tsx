@@ -263,16 +263,6 @@ function QuickPage() {
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
 
-        {/* Header — back button only */}
-        <div className="absolute left-0 right-0 z-10 px-3 flex items-center justify-between" style={{ top: "calc(env(safe-area-inset-top) + 8px)" }}>
-          <button
-            onClick={() => navigate({ to: "/" })}
-            aria-label="Back"
-            className="btn-3d h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.5} />
-          </button>
-        </div>
       </section>
 
       {/* MIDDLE — scrollable white container with search + tabs + service cards */}
@@ -313,14 +303,8 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* Section tabs — All | Digital shop  ↔  Quick | sarvic (swipe right to go to /vendors) */}
-        <div className="flex items-center justify-between px-2 mb-3">
-          <button
-            onClick={() => navigate({ to: "/vendors" })}
-            className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82/0.5)] text-[color:oklch(0.55_0.10_82)] active:scale-95"
-          >
-            All | Digital shop
-          </button>
+        {/* Section heading — Quick | sarvic only (swipe right to go to /vendors) */}
+        <div className="flex items-center justify-end px-2 mb-3">
           <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
             Quick | sarvic
           </span>
