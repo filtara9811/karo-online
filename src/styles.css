@@ -398,3 +398,11 @@ body[data-finder-open] [data-bottom-action-bar] {
   transform: translateY(120%);
   transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Hide global bottom action bar while the Search overlay is open */
+body.search-overlay-open [data-bottom-action-bar] {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(120%);
+  transition: opacity 0.2s ease, transform 0.25s ease;
+}
