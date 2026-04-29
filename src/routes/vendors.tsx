@@ -2,9 +2,40 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import {
-  ArrowLeft, Languages, Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
+  Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
+  FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
+  type LucideIcon,
 } from "lucide-react";
+import goldPin from "@/assets/gold-pin.png";
+import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { ProductServicePicker } from "@/components/ProductServicePicker";
+import goldServices from "@/assets/gold-services.png";
+import goldRepair from "@/assets/gold-cat-repair.png";
+import goldBriefcase from "@/assets/gold-briefcase.png";
+import { NeedsSheet } from "@/components/NeedsSheet";
+import { SearchOverlay } from "@/components/SearchOverlay";
+
+type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
+const CATS: Cat[] = [
+  { key: "doc", label: "Docs", Icon: FileText, tone: "muted" },
+  { key: "tools", label: "Tools", Icon: Wrench, tone: "active" },
+  { key: "blank", label: "More", Icon: Sparkles, tone: "dim" },
+  { key: "bank", label: "Bank", Icon: Building2, tone: "muted" },
+  { key: "biz", label: "Business", Icon: Building, tone: "muted" },
+  { key: "cloud", label: "Cloud", Icon: Cloud, tone: "muted" },
+  { key: "ac", label: "AC", Icon: Zap, tone: "muted" },
+  { key: "carpenter", label: "Carpentry", Icon: Hammer, tone: "muted" },
+  { key: "paint", label: "Painter", Icon: Paintbrush2, tone: "muted" },
+  { key: "movers", label: "Movers", Icon: Truck, tone: "muted" },
+  { key: "chef", label: "Chef", Icon: ChefHat, tone: "muted" },
+];
+
+const RESELLING_OPTIONS: ActionOption[] = [
+  { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
+  { value: "vendor", label: "Vendor", sub: "Onboard your business · sell services", icon: goldBriefcase },
+  { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
+];
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -191,24 +222,7 @@ function VendorsPage() {
       <section className="absolute inset-0">
         <MapBg />
 
-        {/* Header */}
-        <div className="absolute top-2 left-0 right-0 z-10 px-3 flex items-center justify-between" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-          <button
-            onClick={() => navigate({ to: "/" })}
-            aria-label="Back"
-            className="h-10 w-10 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md active:scale-90"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.5} />
-          </button>
-          <div className="flex items-center gap-1.5">
-            <button className="h-9 w-9 rounded-full bg-gradient-to-br from-[#fef3c7] to-[#fde68a] grid place-items-center border border-white shadow-md">
-              <span className="text-xs">💡</span>
-            </button>
-            <button className="h-9 w-9 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] grid place-items-center border border-white shadow-md">
-              <Languages className="h-4 w-4 text-[color:oklch(0.45_0.18_55)]" strokeWidth={2.4} />
-            </button>
-          </div>
-        </div>
+        {/* Header removed (back, bulb, language) per user request */}
 
         {/* Pins */}
         <AnimatePresence>
@@ -307,12 +321,12 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
     return [full, half, peek];
   }, [vh]);
 
-  const y = useMotionValue(SNAPS[2]);
+  const y = useMotionValue(SNAPS[0]);
 
   useEffect(() => {
-    animate(y, SNAPS[2], { type: "spring", stiffness: 300, damping: 30 });
+    animate(y, SNAPS[0], { type: "spring", stiffness: 300, damping: 30 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAPS[2]]);
+  }, [SNAPS[0]]);
 
   useEffect(() => {
     const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
@@ -385,73 +399,65 @@ function SheetBody({
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
 }) {
+  const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [needsOpen, setNeedsOpen] = useState(false);
+  const [picker, setPicker] = useState<null | "reselling" | "browse">(null);
+  const [defaultHome, setDefaultHome] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("ac");
+  const [pulseKey, setPulseKey] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setDefaultHome(localStorage.getItem("ko-default-home"));
+  }, [picker]);
+
+  const handleResellingSelect = (value: string) => {
+    setPicker(null);
+    if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
+    else if (value === "vendor") setTimeout(() => navigate({ to: "/register" }), 250);
+    else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
+    else setTimeout(() => navigate({ to: "/" }), 250);
+  };
+  const handleSetDefault = (value: string) => {
+    if (typeof window !== "undefined") localStorage.setItem("ko-default-home", value);
+    setDefaultHome(value);
+  };
+  const handleBrowsePick = (mode: "products" | "services") => {
+    setPicker(null);
+    setTimeout(() => navigate({ to: mode === "services" ? "/quick" : "/" }), 250);
+  };
+
   return (
-    <div className="px-4 pt-2">
-      {/* Search */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex-1 flex items-center gap-2 rounded-full bg-gradient-to-b from-white to-[#fdfaf0] border border-[color:oklch(0.78_0.14_82/0.45)] px-4 py-2.5 shadow-[0_2px_10px_-3px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(255,255,255,0.9)]">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search digital shops…"
-            className="flex-1 bg-transparent text-sm placeholder:text-[color:oklch(0.55_0.05_85/0.7)] placeholder:italic outline-none"
-          />
-          <Mic className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
+    <div className="flex flex-col h-full">
+      {/* SCROLLABLE TOP — search + product cards */}
+      <div className="flex-1 overflow-y-auto px-4 pt-2" style={{ paddingBottom: "16px" }}>
+        {/* Search bar — same shape as Quick page */}
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
+            aria-label="Open search"
+          >
+            <span className="flex-1 text-left text-sm text-[#9ca3af]">Search.......</span>
+            <Mic className="h-4 w-4 text-[#9ca3af]" />
+          </button>
+          <button
+            onClick={() => navigate({ to: "/profile" })}
+            className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_2px_10px_-2px_rgba(212,175,55,0.5)] flex-shrink-0 relative"
+            aria-label="Profile"
+          >
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 px-1 rounded bg-gradient-to-r from-[#e7c764] to-[#d4af37] text-white text-[7px] font-bold whitespace-nowrap">★ 4.9</span>
+          </button>
         </div>
-        <button
-          className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_2px_10px_-2px_rgba(212,175,55,0.5)] flex-shrink-0 relative"
-          aria-label="Profile"
-        >
-          <img src={avatarUser} alt="" className="h-full w-full object-cover" />
-          <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 px-1 rounded bg-gradient-to-r from-[#e7c764] to-[#d4af37] text-white text-[7px] font-bold whitespace-nowrap">★ 4.9</span>
-        </button>
-      </div>
 
-      {/* All | Digital shop label */}
-      <div className="flex items-center justify-between px-1 mb-3">
-        <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
-          All | Digital Shops
-        </span>
-        <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold">
-          {filtered.length} stores nearby
-        </span>
-      </div>
-
-      {/* Featured 3D card (first vendor, large) */}
-      {filtered[0] && (
-        <ShopCard3D vendor={filtered[0]} onOpen={onOpen} onInquiry={onInquiry} featured />
-      )}
-
-      {/* Section rails */}
-      {SECTION_RAILS.map((rail) => (
-        <section key={rail.id} className="mt-5">
-          <div className="flex items-center justify-between mb-2 px-0.5">
-            <h3 className="flex items-center gap-1.5 font-display text-[15px] text-gold-gradient font-bold">
-              <rail.icon className="h-4 w-4 text-[color:oklch(0.55_0.18_60)]" />
-              {rail.title}
-            </h3>
-            <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold">See all ›</span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide snap-x snap-mandatory">
-            {rail.vendors.map((v) => (
-              <div key={v.id + rail.id} className="snap-start flex-shrink-0 w-[78%]">
-                <ShopCard3D vendor={v} onOpen={onOpen} onInquiry={onInquiry} />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {/* All shops grid (vertical stream) */}
-      <section className="mt-6">
-        <div className="flex items-center justify-between mb-2 px-0.5">
-          <h3 className="font-display text-[15px] text-gold-gradient font-bold">All Digital Shops</h3>
-        </div>
+        {/* Compact uniform vendor cards — 3-4 visible */}
         <div className="space-y-3">
-          {filtered.slice(1).map((v, i) => (
+          {filtered.map((v, i) => (
             <motion.div
-              key={v.id + "-all"}
-              initial={{ opacity: 0, y: 14 }}
+              key={v.id}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ delay: i * 0.04 }}
@@ -460,11 +466,118 @@ function SheetBody({
             </motion.div>
           ))}
         </div>
-      </section>
 
-      <p className="text-center text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold mt-6 mb-2 italic">
-        ✦ End of digital marketplace ✦
-      </p>
+        <p className="text-center text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold mt-6 mb-2 italic">
+          ✦ End of digital marketplace ✦
+        </p>
+      </div>
+
+      {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
+      <div className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
+        {/* Floating + button — Add | Neds */}
+        <button
+          onClick={() => setNeedsOpen(true)}
+          aria-label="Add need"
+          className="btn-3d absolute z-40 right-5 grid place-items-center"
+          style={{ bottom: "calc(100% + 4px)" }}
+        >
+          <span className="relative h-14 w-14 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
+            <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
+            <Plus className="relative h-7 w-7 text-[color:oklch(0.30_0.05_85)]" strokeWidth={3} />
+          </span>
+        </button>
+
+        {/* Categories — same as Quick page */}
+        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+          {CATS.map((c, i) => {
+            const Icon = c.Icon;
+            const isActive = categoryFilter === c.key;
+            const isPulsing = pulseKey.startsWith(`${c.key}-`);
+            return (
+              <button
+                key={c.key}
+                onClick={() => { setCategoryFilter(c.key); setPulseKey(`${c.key}-${Date.now()}`); }}
+                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                  isActive
+                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
+                    : c.tone === "muted"
+                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                    : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
+                }`}
+                style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                aria-label={c.label}
+              >
+                {isPulsing && (
+                  <span
+                    key={pulseKey}
+                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                  />
+                )}
+                <Icon className={`relative h-5 w-5 ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`} strokeWidth={2.2} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sarvic|Products  /  Quick|Sarvic bar */}
+        <div className="mt-2 relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-4px_18px_-6px_rgba(212,175,55,0.35)] flex items-center justify-between px-2 py-2">
+          <button
+            onClick={() => setPicker("browse")}
+            className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
+            aria-label="Sarvic Products"
+          >
+            <span className="relative h-8 w-8 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+              <img src={goldPin} alt="" className="h-4 w-4 object-contain" />
+            </span>
+            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
+              Sarvic<span className="font-light"> | </span>Products
+            </span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
+          </button>
+
+          <button
+            onClick={() => setPicker("reselling")}
+            className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
+            aria-label="Quick Sarvic"
+          >
+            <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
+            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
+              Quick<span className="font-light"> | </span>Sarvic
+            </span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSubmit={(q: string) => { setQuery(q); }}
+      />
+      <NeedsSheet
+        open={needsOpen}
+        category={CATS.find((c) => c.key === categoryFilter)?.label ?? null}
+        onClose={() => setNeedsOpen(false)}
+        onSubmit={() => setNeedsOpen(false)}
+      />
+      <ActionPicker
+        open={picker === "reselling"}
+        title="Reselling Program"
+        subtitle="Choose how you want to engage"
+        options={RESELLING_OPTIONS}
+        onSelect={handleResellingSelect}
+        onClose={() => setPicker(null)}
+        defaultValue={defaultHome ?? undefined}
+        onSetDefault={handleSetDefault}
+      />
+      <ProductServicePicker
+        open={picker === "browse"}
+        onClose={() => setPicker(null)}
+        onCategoryPick={(mode) => handleBrowsePick(mode)}
+      />
+      {/* Suppress unused warning */}
+      <span className="hidden" data-q={query} />
     </div>
   );
 }
@@ -529,7 +642,7 @@ function ShopCard3D({
       </div>
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
-      <div className={`relative ${featured ? "h-52" : "h-40"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
+      <div className={`relative ${featured ? "h-44" : "h-28"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
         {/* Horizontal sliding image track — banner style, ~700ms ease */}
         <div
           className="absolute inset-0 flex h-full"
