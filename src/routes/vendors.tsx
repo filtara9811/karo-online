@@ -642,7 +642,7 @@ function ShopCard3D({
       </div>
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
-      <div className={`relative ${featured ? "h-52" : "h-40"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
+      <div className={`relative ${featured ? "h-44" : "h-28"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
         {/* Horizontal sliding image track — banner style, ~700ms ease */}
         <div
           className="absolute inset-0 flex h-full"
