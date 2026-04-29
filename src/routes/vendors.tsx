@@ -2,9 +2,39 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import {
-  ArrowLeft, Languages, Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
+  Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
+  FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
+  type LucideIcon,
 } from "lucide-react";
+import goldPin from "@/assets/gold-pin.png";
+import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { ProductServicePicker } from "@/components/ProductServicePicker";
+import goldServices from "@/assets/gold-services.png";
+import goldRepair from "@/assets/gold-cat-repair.png";
+import goldBriefcase from "@/assets/gold-briefcase.png";
+import { NeedsSheet } from "@/components/NeedsSheet";
+
+type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
+const CATS: Cat[] = [
+  { key: "doc", label: "Docs", Icon: FileText, tone: "muted" },
+  { key: "tools", label: "Tools", Icon: Wrench, tone: "active" },
+  { key: "blank", label: "More", Icon: Sparkles, tone: "dim" },
+  { key: "bank", label: "Bank", Icon: Building2, tone: "muted" },
+  { key: "biz", label: "Business", Icon: Building, tone: "muted" },
+  { key: "cloud", label: "Cloud", Icon: Cloud, tone: "muted" },
+  { key: "ac", label: "AC", Icon: Zap, tone: "muted" },
+  { key: "carpenter", label: "Carpentry", Icon: Hammer, tone: "muted" },
+  { key: "paint", label: "Painter", Icon: Paintbrush2, tone: "muted" },
+  { key: "movers", label: "Movers", Icon: Truck, tone: "muted" },
+  { key: "chef", label: "Chef", Icon: ChefHat, tone: "muted" },
+];
+
+const RESELLING_OPTIONS: ActionOption[] = [
+  { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
+  { value: "vendor", label: "Vendor", sub: "Onboard your business · sell services", icon: goldBriefcase },
+  { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
+];
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
