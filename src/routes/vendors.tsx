@@ -221,24 +221,7 @@ function VendorsPage() {
       <section className="absolute inset-0">
         <MapBg />
 
-        {/* Header */}
-        <div className="absolute top-2 left-0 right-0 z-10 px-3 flex items-center justify-between" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-          <button
-            onClick={() => navigate({ to: "/" })}
-            aria-label="Back"
-            className="h-10 w-10 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md active:scale-90"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.5} />
-          </button>
-          <div className="flex items-center gap-1.5">
-            <button className="h-9 w-9 rounded-full bg-gradient-to-br from-[#fef3c7] to-[#fde68a] grid place-items-center border border-white shadow-md">
-              <span className="text-xs">💡</span>
-            </button>
-            <button className="h-9 w-9 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] grid place-items-center border border-white shadow-md">
-              <Languages className="h-4 w-4 text-[color:oklch(0.45_0.18_55)]" strokeWidth={2.4} />
-            </button>
-          </div>
-        </div>
+        {/* Header removed (back, bulb, language) per user request */}
 
         {/* Pins */}
         <AnimatePresence>
