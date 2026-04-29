@@ -320,12 +320,12 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
     return [full, half, peek];
   }, [vh]);
 
-  const y = useMotionValue(SNAPS[2]);
+  const y = useMotionValue(SNAPS[0]);
 
   useEffect(() => {
-    animate(y, SNAPS[2], { type: "spring", stiffness: 300, damping: 30 });
+    animate(y, SNAPS[0], { type: "spring", stiffness: 300, damping: 30 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAPS[2]]);
+  }, [SNAPS[0]]);
 
   useEffect(() => {
     const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
