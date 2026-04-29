@@ -14,6 +14,7 @@ import goldServices from "@/assets/gold-services.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import { NeedsSheet } from "@/components/NeedsSheet";
+import { SearchOverlay } from "@/components/SearchOverlay";
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
@@ -552,7 +553,7 @@ function SheetBody({
       <SearchOverlay
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        onSubmit={(q) => { setQuery(q); }}
+        onSubmit={(q: string) => { setQuery(q); }}
       />
       <NeedsSheet
         open={needsOpen}
