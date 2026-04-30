@@ -129,9 +129,9 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AdminRouteRoute,
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/admin/customers',
@@ -318,6 +318,7 @@ export interface RootRouteChildren {
   VendorsRoute: typeof VendorsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
@@ -465,10 +466,10 @@ declare module '@tanstack/react-router' {
     }
     '/admin/login': {
       id: '/admin/login'
-      path: '/login'
+      path: '/admin/login'
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRouteRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/customers': {
       id: '/admin/customers'
@@ -509,6 +510,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorsRoute: VendorsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminVendorsRoute: AdminVendorsRoute,
