@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2,
   Image as ImageIcon, FileText, MapPin, QrCode, Store, CreditCard, User as UserIcon, Pencil,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
