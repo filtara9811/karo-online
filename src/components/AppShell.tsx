@@ -256,44 +256,36 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* Inline type pills — Product / Service / Other from DB */}
+            {/* Inline type pills — Product / Service / Other (static) */}
             <div className="flex-1 flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
-              {types.length === 0 ? (
-                <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] px-2">Loading…</span>
-              ) : (
-                types.map((t) => {
-                  const Fallback = FALLBACK_TYPE_ICON[t.code] ?? Sparkles;
-                  const isActive = activeTypeId === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => handleTypePick(t)}
-                      aria-pressed={isActive}
-                      aria-label={t.name}
-                      className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
-                        isActive
-                          ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
-                          : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
+              {STATIC_TYPES.map((t) => {
+                const Icon = t.Icon;
+                const isActive = activeTypeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => handleTypePick(t)}
+                    aria-pressed={isActive}
+                    aria-label={t.name}
+                    className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
+                      isActive
+                        ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
+                        : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
+                    }`}
+                  >
+                    <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+                      <Icon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                    </span>
+                    <span
+                      className={`font-display text-[11px] font-bold tracking-tight ${
+                        isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
                       }`}
                     >
-                      <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] overflow-hidden flex-shrink-0">
-                        {t.icon ? (
-                          <IconImage url={t.icon} size={22} />
-                        ) : (
-                          <Fallback className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
-                        )}
-                      </span>
-                      <span
-                        className={`font-display text-[11px] font-bold tracking-tight ${
-                          isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
-                        }`}
-                      >
-                        {t.name}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
+                      {t.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right — Quick | Sarvic (kept) */}
