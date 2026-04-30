@@ -194,9 +194,9 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
-  const handleBrowsePick = (mode: "products" | "services") => {
+  const handleBrowsePick = (mode: string) => {
     setPicker(null);
-    setTimeout(() => navigate({ to: mode === "services" ? "/quick" : "/" }), 250);
+    setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
   };
 
   return (
