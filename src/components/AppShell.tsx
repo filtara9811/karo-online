@@ -191,7 +191,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
   const [picker, setPicker] = useState<null | "reselling" | "types">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [activeTypeId, setActiveTypeId] = useActiveTypeId();
-  const [pressingId, setPressingId] = useState<string | null>(null);
+  
 
   useEffect(() => {
     if (typeof window === "undefined") return;
