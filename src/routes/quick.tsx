@@ -259,7 +259,7 @@ function QuickPage() {
   return (
     <div
       className="relative min-h-dvh bg-white flex flex-col overflow-hidden isolate"
-      style={{ paddingBottom: "calc(190px + env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "calc(160px + env(safe-area-inset-bottom))" }}
     >
       {/* MAP — extends under device status bar (transparent) */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
@@ -350,7 +350,7 @@ function QuickPage() {
           We position this strip directly on top of it so it feels glued. */}
       <section
         className="fixed left-0 right-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]"
-        style={{ bottom: "calc(108px + env(safe-area-inset-bottom))" }}
+        style={{ bottom: "calc(78px + env(safe-area-inset-bottom))" }}
       >
         <div className="max-w-md mx-auto">
           {/* Circular icons + tiny label below each. Tap → filter list + lift animation. */}
@@ -415,7 +415,7 @@ function QuickPage() {
         aria-label="Add need"
         className="btn-3d fixed z-40 right-5 grid place-items-center"
         style={{
-          bottom: "calc(190px + env(safe-area-inset-bottom))",
+          bottom: "calc(160px + env(safe-area-inset-bottom))",
         }}
       >
         <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">

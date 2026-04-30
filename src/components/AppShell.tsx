@@ -230,32 +230,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >
-        <div className="max-w-md mx-auto px-4 pb-3 flex flex-col items-stretch gap-2">
-          {/* Premium Admin pill (top, small) */}
-          <div className="flex justify-center">
-            <Link
-              to="/admin"
-              className="group inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1 rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-r from-[#1a1208] via-[#2a1d0a] to-[#1a1208] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.5)] active:scale-95"
-              aria-label="Open Admin"
-            >
-              <span
-                className="h-4 w-4 rounded-full grid place-items-center"
-                style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37 60%,#8b6508)" }}
-              >
-                <Crown className="h-2.5 w-2.5 text-[#1a1208]" strokeWidth={2.5} />
-              </span>
-              <span
-                className="text-[8px] font-bold uppercase tracking-[0.22em]"
-                style={{
-                  background: "linear-gradient(180deg,#fff8dc,#f5d97a 40%,#d4af37)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Admin
-              </span>
-            </Link>
-          </div>
+        <div className="max-w-md mx-auto px-4 pb-3 flex flex-col items-stretch">
 
           {/* Single segmented pill — left half opens TYPES picker, right half opens RESELLING picker */}
           <div
@@ -328,6 +303,31 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         onClose={() => setPicker(null)}
         defaultValue={activeTypeId ?? undefined}
         onSetDefault={(value) => setActiveTypeId(value)}
+        topRightAction={
+          <Link
+            to="/admin"
+            onClick={() => setPicker(null)}
+            className="group inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-r from-[#1a1208] via-[#2a1d0a] to-[#1a1208] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.5)] active:scale-95"
+            aria-label="Open Admin"
+          >
+            <span
+              className="h-4 w-4 rounded-full grid place-items-center"
+              style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37 60%,#8b6508)" }}
+            >
+              <Crown className="h-2.5 w-2.5 text-[#1a1208]" strokeWidth={2.5} />
+            </span>
+            <span
+              className="text-[8px] font-bold uppercase tracking-[0.22em]"
+              style={{
+                background: "linear-gradient(180deg,#fff8dc,#f5d97a 40%,#d4af37)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Admin
+            </span>
+          </Link>
+        }
       />
     </>
   );

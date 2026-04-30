@@ -21,6 +21,8 @@ type Props = {
   defaultValue?: string;
   /** Fires when the user long-presses an option to pin it as default home. */
   onSetDefault?: (value: string) => void;
+  /** Optional element rendered in the top-right corner of the sheet (e.g. Admin chip). */
+  topRightAction?: React.ReactNode;
 };
 
 export function ActionPicker({
@@ -32,6 +34,7 @@ export function ActionPicker({
   onClose,
   defaultValue,
   onSetDefault,
+  topRightAction,
 }: Props) {
   const [pressing, setPressing] = useState<string | null>(null);
   const longPressFiredRef = useRef(false);
@@ -93,6 +96,9 @@ export function ActionPicker({
         <div className="absolute top-5 left-4 h-5 w-5 border-t border-l border-[color:oklch(0.78_0.14_82/0.6)] rounded-tl-lg" />
         <div className="absolute top-5 right-4 h-5 w-5 border-t border-r border-[color:oklch(0.78_0.14_82/0.6)] rounded-tr-lg" />
 
+        {topRightAction && (
+          <div className="absolute top-3 right-3 z-10">{topRightAction}</div>
+        )}
         <div className="text-center mb-5">
           <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-1">
             ✦ Select ✦
