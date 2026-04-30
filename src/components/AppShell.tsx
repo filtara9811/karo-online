@@ -6,16 +6,15 @@ import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-import { supabase } from "@/integrations/supabase/client";
-import { IconImage } from "@/components/admin/ImageUpload";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 
-type CatalogType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
-const FALLBACK_TYPE_ICON: Record<string, LucideIcon> = {
-  product: Package,
-  service: Wrench,
-  other: Sparkles,
-};
+/** Static 3 catalog types — no DB fetch (avoids loading delays). */
+type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon };
+const STATIC_TYPES: StaticType[] = [
+  { id: "product", code: "product", name: "Product", Icon: Package },
+  { id: "service", code: "service", name: "Service", Icon: Wrench },
+  { id: "other", code: "other", name: "Other", Icon: Sparkles },
+];
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
