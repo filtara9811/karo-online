@@ -21,7 +21,7 @@ const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/vendors", label: "Vendors", icon: Store },
-  { to: "/admin/categories", label: "Categories", icon: FolderTree },
+  { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
 ];
