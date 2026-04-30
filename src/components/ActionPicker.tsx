@@ -34,6 +34,7 @@ export function ActionPicker({
   onClose,
   defaultValue,
   onSetDefault,
+  topRightAction,
 }: Props) {
   const [pressing, setPressing] = useState<string | null>(null);
   const longPressFiredRef = useRef(false);
