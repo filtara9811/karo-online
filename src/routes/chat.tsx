@@ -107,11 +107,14 @@ function ChatPage() {
   const [vendorActionFor, setVendorActionFor] = useState<string | null>(null);
   const [editedInfoFor, setEditedInfoFor] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const [chips, setChips] = useState<QuickChip[]>(DEFAULT_CHIPS);
+  const [editingChip, setEditingChip] = useState<{ index: number | null; label: string; emoji: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const longPressTimer = useRef<number | null>(null);
+  const chipPressTimer = useRef<number | null>(null);
 
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
