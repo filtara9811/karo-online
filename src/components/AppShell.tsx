@@ -223,6 +223,8 @@ function BottomActionBar({ loading }: { loading: boolean }) {
   };
 
 
+  const activeType = STATIC_TYPES.find((x) => x.id === activeTypeId);
+
   return (
     <>
       <div
@@ -230,11 +232,14 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >
-        <div className="max-w-md mx-auto px-4 pb-3 flex flex-col items-stretch">
+        <div className="max-w-md mx-auto px-4 pb-2 pt-0 flex flex-col items-stretch">
 
-          {/* Single segmented pill — left half opens TYPES picker, right half opens RESELLING picker */}
+          {/* Single segmented pill — glassy/translucent so it merges with the categories panel above */}
           <div
-            className="relative overflow-hidden rounded-full bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-stretch"
+            className="relative overflow-hidden rounded-full border border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-stretch backdrop-blur-md"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,248,220,0.7) 100%)",
+            }}
           >
             {loading && (
               <span
@@ -243,24 +248,23 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* LEFT — opens Product/Service/Other picker. Shows currently-pinned type. */}
+            {/* LEFT — opens Product/Service/Other picker. Shows pinned type's GOLD ICON + name. */}
             <button
               onClick={() => setPicker("types")}
               className="btn-3d flex-1 flex items-center justify-center gap-2 px-4 py-3 active:scale-[0.97] transition-transform"
               aria-label="Choose catalog type"
             >
               <span
-                className="h-3.5 w-3.5 rounded-full grid place-items-center"
-                style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37)" }}
+                className="h-6 w-6 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm overflow-hidden flex-shrink-0"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#8b1a1a]" />
+                <img
+                  src={(activeType ?? STATIC_TYPES[1]).iconImg}
+                  alt=""
+                  className="h-5 w-5 object-contain drop-shadow-[0_1px_2px_rgba(212,175,55,0.5)]"
+                />
               </span>
               <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight">
-                {(() => {
-                  const t = STATIC_TYPES.find((x) => x.id === activeTypeId);
-                  if (t) return `${t.name === "Service" ? "Sarvic" : t.name} | Products`;
-                  return "Sarvic | Products";
-                })()}
+                {activeType ? `${activeType.name === "Service" ? "Sarvic" : activeType.name} | Products` : "Sarvic | Products"}
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
             </button>
