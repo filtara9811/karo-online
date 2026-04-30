@@ -282,7 +282,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => handleTypePick(t)}
+                    onClick={() => setPicker("types")}
                     aria-pressed={isActive}
                     aria-label={t.name}
                     className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
