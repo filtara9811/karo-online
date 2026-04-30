@@ -1,13 +1,21 @@
 import { Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, ShoppingBasket, Search, Star, UserPlus } from "lucide-react";
+import { Bell, ShoppingBasket, Search, Star, UserPlus, Package, Wrench, Sparkles, Crown, type LucideIcon } from "lucide-react";
 import goldServices from "@/assets/gold-services.png";
-import goldPin from "@/assets/gold-pin.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-import { ProductServicePicker } from "@/components/ProductServicePicker";
+import { supabase } from "@/integrations/supabase/client";
+import { IconImage } from "@/components/admin/ImageUpload";
+import { useActiveTypeId } from "@/hooks/use-active-type";
+
+type CatalogType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
+const FALLBACK_TYPE_ICON: Record<string, LucideIcon> = {
+  product: Package,
+  service: Wrench,
+  other: Sparkles,
+};
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
