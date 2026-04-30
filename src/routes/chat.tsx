@@ -727,14 +727,63 @@ function ChatPage() {
         })()}
       </AnimatePresence>
 
-      {/* Quick nav button */}
-      <button
-        onClick={() => navigate({ to: "/status" })}
-        className="fixed bottom-24 right-4 z-40 h-12 w-12 rounded-full bg-gradient-to-b from-[#fbbf24] to-[#d97706] grid place-items-center shadow-[0_6px_18px_-4px_rgba(217,119,6,0.6)] active:scale-90"
-        aria-label="View order status"
-      >
-        <Plus className="h-5 w-5 text-white" strokeWidth={3} />
-      </button>
+      {/* ===== Quick reply chip editor ===== */}
+      <AnimatePresence>
+        {editingChip && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setEditingChip(null)} className="fixed inset-0 bg-black/50 z-[75]" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="fixed left-4 right-4 top-1/3 z-[75] bg-white rounded-2xl p-5 shadow-2xl">
+              <h3 className="font-bold text-base mb-3">{editingChip.index === null ? "Add quick reply" : "Edit quick reply"}</h3>
+              <div className="flex gap-2 mb-3">
+                <input
+                  value={editingChip.emoji}
+                  onChange={(e) => setEditingChip({ ...editingChip, emoji: e.target.value })}
+                  className="w-14 p-3 text-center rounded-xl border border-gray-200 text-lg outline-none focus:border-[#d97706]"
+                  maxLength={2}
+                />
+                <input
+                  value={editingChip.label}
+                  onChange={(e) => setEditingChip({ ...editingChip, label: e.target.value })}
+                  placeholder="Quick reply text…"
+                  className="flex-1 p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-[#d97706]"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-between gap-2">
+                {editingChip.index !== null && (
+                  <button
+                    onClick={() => {
+                      const idx = editingChip.index;
+                      setChips((cs) => cs.filter((_, i) => i !== idx));
+                      setEditingChip(null);
+                    }}
+                    className="px-4 py-2 rounded-full text-sm font-semibold text-red-500"
+                  >
+                    Delete
+                  </button>
+                )}
+                <div className="flex gap-2 ml-auto">
+                  <button onClick={() => setEditingChip(null)} className="px-4 py-2 rounded-full text-sm font-semibold text-gray-600">Cancel</button>
+                  <button
+                    onClick={() => {
+                      if (!editingChip.label.trim()) return;
+                      const next: QuickChip = { label: editingChip.label.trim(), emoji: editingChip.emoji || "✨" };
+                      const idx = editingChip.index;
+                      setChips((cs) => idx === null ? [...cs, next] : cs.map((c, i) => (i === idx ? next : c)));
+                      setEditingChip(null);
+                    }}
+                    className="px-4 py-2 rounded-full bg-[#d97706] text-white text-sm font-bold"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
