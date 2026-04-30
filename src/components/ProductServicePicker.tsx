@@ -106,31 +106,61 @@ export function ProductServicePicker({ open, onClose, onCategoryPick }: Props) {
         className="glass-sheet relative w-full max-w-md rounded-t-3xl px-4 pt-3 pb-8 max-h-[85vh] flex flex-col"
         style={{ animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
-        <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-70" />
+        <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-70" />
 
-        <div className="flex items-center gap-2 mb-4">
-          {step !== "choose" && (
+        {/* Premium top bar with Admin access */}
+        <div className="flex items-center justify-between gap-2 mb-3 px-0.5">
+          <Link
+            to="/admin"
+            onClick={onClose}
+            className="group inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1.5 rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-r from-[#1a1208] via-[#2a1d0a] to-[#1a1208] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.5)] active:scale-95 transition"
+            aria-label="Open Admin Panel"
+          >
+            <span
+              className="h-5 w-5 rounded-full grid place-items-center"
+              style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37 60%,#8b6508)" }}
+            >
+              <Crown className="h-3 w-3 text-[#1a1208]" strokeWidth={2.5} />
+            </span>
+            <span
+              className="text-[9px] font-bold uppercase tracking-[0.22em]"
+              style={{
+                background: "linear-gradient(180deg,#fff8dc,#f5d97a 40%,#d4af37)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Admin
+            </span>
+          </Link>
+
+          {step !== "choose" ? (
             <button
               onClick={() => setStep("choose")}
-              className="text-[color:oklch(0.55_0.10_82)] text-sm font-semibold"
+              className="text-[color:oklch(0.55_0.10_82)] text-xs font-semibold px-2"
             >
               ‹ Back
             </button>
+          ) : (
+            <span />
           )}
-          <div className="flex-1 text-center">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)]">
-              ✦ {step === "choose" ? "Browse" : currentType?.name ?? ""} ✦
-            </p>
-            <h2 className="font-display text-xl text-gold-gradient leading-tight">
-              {step === "choose" ? "Kya dhundh rahe ho?" : `${currentType?.name} categories`}
-            </h2>
-          </div>
+
           <button
             onClick={onClose}
             className="btn-3d h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+            aria-label="Close"
           >
             <X className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
           </button>
+        </div>
+
+        <div className="text-center mb-4">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)]">
+            ✦ {step === "choose" ? "Browse" : currentType?.name ?? ""} ✦
+          </p>
+          <h2 className="font-display text-xl text-gold-gradient leading-tight">
+            {step === "choose" ? "Kya dhundh rahe ho?" : `${currentType?.name} categories`}
+          </h2>
         </div>
 
         {loading ? (
