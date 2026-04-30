@@ -332,6 +332,16 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         defaultValue={defaultHome ?? undefined}
         onSetDefault={handleSetDefault}
       />
+      <ActionPicker
+        open={picker === "types"}
+        title="What you want?"
+        subtitle="Choose a catalog to browse"
+        options={TYPE_OPTIONS}
+        onSelect={handleTypeSelect}
+        onClose={() => setPicker(null)}
+        defaultValue={activeTypeId ?? undefined}
+        onSetDefault={(value) => setActiveTypeId(value)}
+      />
     </>
   );
 }
