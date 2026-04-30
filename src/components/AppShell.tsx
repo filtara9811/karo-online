@@ -181,35 +181,12 @@ function BottomActionBar({ loading }: { loading: boolean }) {
   const location = useLocation();
   const [picker, setPicker] = useState<null | "reselling">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
-  const [types, setTypes] = useState<CatalogType[]>([]);
   const [activeTypeId, setActiveTypeId] = useActiveTypeId();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setDefaultHome(localStorage.getItem("ko-default-home"));
   }, [picker]);
-
-  // Load catalog types + live updates
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data } = await supabase
-        .from("catalog_types")
-        .select("id,code,name,icon,sort_order")
-        .eq("is_active", true)
-        .order("sort_order");
-      if (mounted) setTypes((data ?? []) as CatalogType[]);
-    };
-    load();
-    const ch = supabase
-      .channel("appshell-types-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_types" }, () => load())
-      .subscribe();
-    return () => {
-      mounted = false;
-      supabase.removeChannel(ch);
-    };
-  }, []);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
@@ -226,7 +203,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
-  const handleTypePick = (t: CatalogType) => {
+  const handleTypePick = (t: StaticType) => {
     setActiveTypeId(t.id);
     // Service → /quick (live map flow). Product/Other → home grid.
     const target = t.code === "service" ? "/quick" : "/";
