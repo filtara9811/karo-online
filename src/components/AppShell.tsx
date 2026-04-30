@@ -6,16 +6,15 @@ import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-import { supabase } from "@/integrations/supabase/client";
-import { IconImage } from "@/components/admin/ImageUpload";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 
-type CatalogType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
-const FALLBACK_TYPE_ICON: Record<string, LucideIcon> = {
-  product: Package,
-  service: Wrench,
-  other: Sparkles,
-};
+/** Static 3 catalog types — no DB fetch (avoids loading delays). */
+type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon };
+const STATIC_TYPES: StaticType[] = [
+  { id: "product", code: "product", name: "Product", Icon: Package },
+  { id: "service", code: "service", name: "Service", Icon: Wrench },
+  { id: "other", code: "other", name: "Other", Icon: Sparkles },
+];
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
@@ -182,35 +181,12 @@ function BottomActionBar({ loading }: { loading: boolean }) {
   const location = useLocation();
   const [picker, setPicker] = useState<null | "reselling">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
-  const [types, setTypes] = useState<CatalogType[]>([]);
   const [activeTypeId, setActiveTypeId] = useActiveTypeId();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setDefaultHome(localStorage.getItem("ko-default-home"));
   }, [picker]);
-
-  // Load catalog types + live updates
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data } = await supabase
-        .from("catalog_types")
-        .select("id,code,name,icon,sort_order")
-        .eq("is_active", true)
-        .order("sort_order");
-      if (mounted) setTypes((data ?? []) as CatalogType[]);
-    };
-    load();
-    const ch = supabase
-      .channel("appshell-types-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_types" }, () => load())
-      .subscribe();
-    return () => {
-      mounted = false;
-      supabase.removeChannel(ch);
-    };
-  }, []);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
@@ -227,7 +203,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
-  const handleTypePick = (t: CatalogType) => {
+  const handleTypePick = (t: StaticType) => {
     setActiveTypeId(t.id);
     // Service → /quick (live map flow). Product/Other → home grid.
     const target = t.code === "service" ? "/quick" : "/";
@@ -280,44 +256,36 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* Inline type pills — Product / Service / Other from DB */}
+            {/* Inline type pills — Product / Service / Other (static) */}
             <div className="flex-1 flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
-              {types.length === 0 ? (
-                <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] px-2">Loading…</span>
-              ) : (
-                types.map((t) => {
-                  const Fallback = FALLBACK_TYPE_ICON[t.code] ?? Sparkles;
-                  const isActive = activeTypeId === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => handleTypePick(t)}
-                      aria-pressed={isActive}
-                      aria-label={t.name}
-                      className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
-                        isActive
-                          ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
-                          : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
+              {STATIC_TYPES.map((t) => {
+                const Icon = t.Icon;
+                const isActive = activeTypeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => handleTypePick(t)}
+                    aria-pressed={isActive}
+                    aria-label={t.name}
+                    className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
+                      isActive
+                        ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
+                        : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
+                    }`}
+                  >
+                    <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+                      <Icon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                    </span>
+                    <span
+                      className={`font-display text-[11px] font-bold tracking-tight ${
+                        isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
                       }`}
                     >
-                      <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] overflow-hidden flex-shrink-0">
-                        {t.icon ? (
-                          <IconImage url={t.icon} size={22} />
-                        ) : (
-                          <Fallback className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
-                        )}
-                      </span>
-                      <span
-                        className={`font-display text-[11px] font-bold tracking-tight ${
-                          isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
-                        }`}
-                      >
-                        {t.name}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
+                      {t.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right — Quick | Sarvic (kept) */}
