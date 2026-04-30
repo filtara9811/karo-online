@@ -188,9 +188,10 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [picker, setPicker] = useState<null | "reselling">(null);
+  const [picker, setPicker] = useState<null | "reselling" | "types">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [activeTypeId, setActiveTypeId] = useActiveTypeId();
+  const [pressingId, setPressingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -212,9 +213,17 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
+  const handleTypeSelect = (value: string) => {
+    const t = STATIC_TYPES.find((x) => x.id === value);
+    if (!t) return;
+    setActiveTypeId(t.id);
+    setPicker(null);
+    const target = t.code === "service" ? "/quick" : "/";
+    if (location.pathname !== target) setTimeout(() => navigate({ to: target }), 220);
+  };
+
   const handleTypePick = (t: StaticType) => {
     setActiveTypeId(t.id);
-    // Service → /quick (live map flow). Product/Other → home grid.
     const target = t.code === "service" ? "/quick" : "/";
     if (location.pathname !== target) navigate({ to: target });
   };
