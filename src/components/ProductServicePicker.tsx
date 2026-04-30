@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Package, Wrench, Sparkles, X, Loader2, type LucideIcon } from "lucide-react";
+import { Package, Wrench, Sparkles, X, Loader2, Crown, type LucideIcon } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
 
