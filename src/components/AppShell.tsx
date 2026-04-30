@@ -280,7 +280,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
             >
               <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
               <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight rounded-2xl">
-                Quick | Sarvic
+                Basic | Sarvice
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
             </button>
