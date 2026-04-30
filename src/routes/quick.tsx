@@ -8,6 +8,9 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
+import { supabase } from "@/integrations/supabase/client";
+import { IconImage } from "@/components/admin/ImageUpload";
+import { useActiveTypeId } from "@/hooks/use-active-type";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
