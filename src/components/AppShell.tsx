@@ -31,7 +31,7 @@ const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
-  { value: "vendor", label: "Seller | Panel Join", sub: "Onboard your business · sell services", icon: goldBriefcase },
+  { value: "vendor", label: "All | Digital | Partner", sub: "Onboard your business · sell services", icon: goldBriefcase },
   { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
 ];
 
