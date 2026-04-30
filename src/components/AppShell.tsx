@@ -222,11 +222,6 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     if (location.pathname !== target) setTimeout(() => navigate({ to: target }), 220);
   };
 
-  const handleTypePick = (t: StaticType) => {
-    setActiveTypeId(t.id);
-    const target = t.code === "service" ? "/quick" : "/";
-    if (location.pathname !== target) navigate({ to: target });
-  };
 
   return (
     <>
