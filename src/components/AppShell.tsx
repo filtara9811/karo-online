@@ -9,8 +9,8 @@ import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
 
-const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/"];
-const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/"];
+const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
+const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
