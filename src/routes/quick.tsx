@@ -215,6 +215,40 @@ function QuickPage() {
   const [vendorListOpen, setVendorListOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // Active catalog type (Product/Service/Other) chosen from the bottom bar pills.
+  const [activeTypeId] = useActiveTypeId();
+  type DbCategory = { id: string; name: string; icon: string | null; image_url: string | null };
+  const [dbCats, setDbCats] = useState<DbCategory[]>([]);
+
+  // Load categories for the active type + live updates.
+  useEffect(() => {
+    if (!activeTypeId) {
+      setDbCats([]);
+      return;
+    }
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id,name,icon,image_url")
+        .eq("is_active", true)
+        .eq("type_id", activeTypeId)
+        .is("parent_id", null)
+        .order("sort_order")
+        .order("name");
+      if (mounted) setDbCats((data ?? []) as DbCategory[]);
+    };
+    load();
+    const ch = supabase
+      .channel(`quick-cats-${activeTypeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => load())
+      .subscribe();
+    return () => {
+      mounted = false;
+      supabase.removeChannel(ch);
+    };
+  }, [activeTypeId]);
+
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
     [activeCat]
