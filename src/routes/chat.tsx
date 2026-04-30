@@ -51,7 +51,17 @@ type Msg = {
   image?: string;
   kind?: "inquiry" | "chat";
   edited?: { at: string; original: string } | null;
+  deleted?: { at: string; original: string } | null;
 };
+
+type QuickChip = { label: string; emoji: string };
+const DEFAULT_CHIPS: QuickChip[] = [
+  { label: "When can you come?", emoji: "⏰" },
+  { label: "Send price", emoji: "💰" },
+  { label: "Share location", emoji: "📍" },
+  { label: "Send photo", emoji: "📷" },
+  { label: "Confirm booking", emoji: "✅" },
+];
 
 const INITIAL_VENDORS: Vendor[] = [
   { id: "v1", name: "Aryan | Bansal", status: "Online", avatar: avatarAryan, pinned: true },
