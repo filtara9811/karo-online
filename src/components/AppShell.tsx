@@ -4,17 +4,26 @@ import { Bell, ShoppingBasket, Search, Star, UserPlus, Package, Wrench, Sparkles
 import goldServices from "@/assets/gold-services.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
+import goldOrders from "@/assets/gold-orders.png";
+import goldOther from "@/assets/gold-other.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
-type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon };
+type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
 const STATIC_TYPES: StaticType[] = [
-  { id: "product", code: "product", name: "Product", Icon: Package },
-  { id: "service", code: "service", name: "Service", Icon: Wrench },
-  { id: "other", code: "other", name: "Other", Icon: Sparkles },
+  { id: "product", code: "product", name: "Product", Icon: Package, iconImg: goldOrders, sub: "Browse products & shop categories" },
+  { id: "service", code: "service", name: "Service", Icon: Wrench, iconImg: goldRepair, sub: "Book trusted services nearby" },
+  { id: "other", code: "other", name: "Other", Icon: Sparkles, iconImg: goldOther, sub: "Everything else · special needs" },
 ];
+
+const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
+  value: t.id,
+  label: t.name,
+  sub: t.sub,
+  icon: t.iconImg,
+}));
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
@@ -179,9 +188,10 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [picker, setPicker] = useState<null | "reselling">(null);
+  const [picker, setPicker] = useState<null | "reselling" | "types">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [activeTypeId, setActiveTypeId] = useActiveTypeId();
+  
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -203,12 +213,15 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
-  const handleTypePick = (t: StaticType) => {
+  const handleTypeSelect = (value: string) => {
+    const t = STATIC_TYPES.find((x) => x.id === value);
+    if (!t) return;
     setActiveTypeId(t.id);
-    // Service → /quick (live map flow). Product/Other → home grid.
+    setPicker(null);
     const target = t.code === "service" ? "/quick" : "/";
-    if (location.pathname !== target) navigate({ to: target });
+    if (location.pathname !== target) setTimeout(() => navigate({ to: target }), 220);
   };
+
 
   return (
     <>
@@ -264,7 +277,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => handleTypePick(t)}
+                    onClick={() => setPicker("types")}
                     aria-pressed={isActive}
                     aria-label={t.name}
                     className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
@@ -313,6 +326,16 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         onClose={() => setPicker(null)}
         defaultValue={defaultHome ?? undefined}
         onSetDefault={handleSetDefault}
+      />
+      <ActionPicker
+        open={picker === "types"}
+        title="What you want?"
+        subtitle="Choose a catalog to browse"
+        options={TYPE_OPTIONS}
+        onSelect={handleTypeSelect}
+        onClose={() => setPicker(null)}
+        defaultValue={activeTypeId ?? undefined}
+        onSetDefault={(value) => setActiveTypeId(value)}
       />
     </>
   );
