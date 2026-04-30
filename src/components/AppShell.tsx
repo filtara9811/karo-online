@@ -179,13 +179,38 @@ function RatingChip({ icon, value, label }: { icon?: React.ReactNode; value: str
 
 function BottomActionBar({ loading }: { loading: boolean }) {
   const navigate = useNavigate();
-  const [picker, setPicker] = useState<null | "reselling" | "browse">(null);
+  const location = useLocation();
+  const [picker, setPicker] = useState<null | "reselling">(null);
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
+  const [types, setTypes] = useState<CatalogType[]>([]);
+  const [activeTypeId, setActiveTypeId] = useActiveTypeId();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setDefaultHome(localStorage.getItem("ko-default-home"));
   }, [picker]);
+
+  // Load catalog types + live updates
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("catalog_types")
+        .select("id,code,name,icon,sort_order")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (mounted) setTypes((data ?? []) as CatalogType[]);
+    };
+    load();
+    const ch = supabase
+      .channel("appshell-types-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_types" }, () => load())
+      .subscribe();
+    return () => {
+      mounted = false;
+      supabase.removeChannel(ch);
+    };
+  }, []);
 
   const handleResellingSelect = (value: string) => {
     setPicker(null);
@@ -202,23 +227,50 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(value);
   };
 
-  const handleBrowsePick = (mode: string) => {
-    setPicker(null);
-    setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
+  const handleTypePick = (t: CatalogType) => {
+    setActiveTypeId(t.id);
+    // Service → /quick (live map flow). Product/Other → home grid.
+    const target = t.code === "service" ? "/quick" : "/";
+    if (location.pathname !== target) navigate({ to: target });
   };
 
   return (
     <>
-      {/* Bottom dock — nav strip glued directly on top of the action bar */}
       <div
         data-bottom-action-bar
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
         style={{ bottom: 0 }}
       >
-        <div className="max-w-md mx-auto px-6 pb-3 flex flex-col items-stretch">
-          {/* Curved bottom action bar — narrower (px-6 outer, smaller paddings) */}
+        <div className="max-w-md mx-auto px-4 pb-3 flex flex-col items-stretch gap-2">
+          {/* Premium Admin pill (top, small) */}
+          <div className="flex justify-center">
+            <Link
+              to="/admin"
+              className="group inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1 rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-r from-[#1a1208] via-[#2a1d0a] to-[#1a1208] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.5)] active:scale-95"
+              aria-label="Open Admin"
+            >
+              <span
+                className="h-4 w-4 rounded-full grid place-items-center"
+                style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37 60%,#8b6508)" }}
+              >
+                <Crown className="h-2.5 w-2.5 text-[#1a1208]" strokeWidth={2.5} />
+              </span>
+              <span
+                className="text-[8px] font-bold uppercase tracking-[0.22em]"
+                style={{
+                  background: "linear-gradient(180deg,#fff8dc,#f5d97a 40%,#d4af37)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Admin
+              </span>
+            </Link>
+          </div>
+
+          {/* Curved bottom action bar with inline type pills + Quick | Sarvic */}
           <div
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center justify-between px-2 py-2"
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center gap-1.5 px-2 py-2"
             style={{ borderRadius: "24px" }}
           >
             {loading && (
@@ -228,32 +280,57 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               />
             )}
 
-            {/* Left — Sarvic | Products */}
-            <button
-              onClick={() => setPicker("browse")}
-              className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
-              aria-label="Sarvic Products"
-            >
-              <span className="relative h-8 w-8 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
-                <img src={goldPin} alt="" className="h-4 w-4 object-contain drop-shadow-[0_2px_4px_rgba(212,175,55,0.5)]" />
-              </span>
-              <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
-                Sarvic<span className="font-light"> | </span>Products
-              </span>
-              <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
-            </button>
+            {/* Inline type pills — Product / Service / Other from DB */}
+            <div className="flex-1 flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
+              {types.length === 0 ? (
+                <span className="text-[10px] text-[color:oklch(0.55_0.10_82)] px-2">Loading…</span>
+              ) : (
+                types.map((t) => {
+                  const Fallback = FALLBACK_TYPE_ICON[t.code] ?? Sparkles;
+                  const isActive = activeTypeId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => handleTypePick(t)}
+                      aria-pressed={isActive}
+                      aria-label={t.name}
+                      className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
+                        isActive
+                          ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
+                          : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
+                      }`}
+                    >
+                      <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] overflow-hidden flex-shrink-0">
+                        {t.icon ? (
+                          <IconImage url={t.icon} size={22} />
+                        ) : (
+                          <Fallback className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                        )}
+                      </span>
+                      <span
+                        className={`font-display text-[11px] font-bold tracking-tight ${
+                          isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
+                        }`}
+                      >
+                        {t.name}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
 
-            {/* Right — Quick | Sarvic */}
+            {/* Right — Quick | Sarvic (kept) */}
             <button
               onClick={() => setPicker("reselling")}
-              className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
+              className="btn-3d flex items-center gap-1 active:scale-95 px-2 py-1.5 rounded-2xl flex-shrink-0 border border-[color:oklch(0.78_0.14_82/0.4)] bg-white"
               aria-label="Quick Sarvic"
             >
-              <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
-              <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
+              <span className="text-[color:oklch(0.55_0.18_60)] text-sm">⚡</span>
+              <span className="font-display text-[11px] text-gold-gradient font-bold italic tracking-tight">
                 Quick<span className="font-light"> | </span>Sarvic
               </span>
-              <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
             </button>
           </div>
         </div>
@@ -268,11 +345,6 @@ function BottomActionBar({ loading }: { loading: boolean }) {
         onClose={() => setPicker(null)}
         defaultValue={defaultHome ?? undefined}
         onSetDefault={handleSetDefault}
-      />
-      <ProductServicePicker
-        open={picker === "browse"}
-        onClose={() => setPicker(null)}
-        onCategoryPick={(mode) => handleBrowsePick(mode)}
       />
     </>
   );
