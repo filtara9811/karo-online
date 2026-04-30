@@ -21,6 +21,8 @@ type Props = {
   defaultValue?: string;
   /** Fires when the user long-presses an option to pin it as default home. */
   onSetDefault?: (value: string) => void;
+  /** Optional element rendered in the top-right corner of the sheet (e.g. Admin chip). */
+  topRightAction?: React.ReactNode;
 };
 
 export function ActionPicker({
