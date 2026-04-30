@@ -259,7 +259,7 @@ function QuickPage() {
   return (
     <div
       className="relative min-h-dvh bg-white flex flex-col overflow-hidden isolate"
-      style={{ paddingBottom: "calc(160px + env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "calc(150px + env(safe-area-inset-bottom))" }}
     >
       {/* MAP — extends under device status bar (transparent) */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
