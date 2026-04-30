@@ -257,59 +257,51 @@ function BottomActionBar({ loading }: { loading: boolean }) {
             </Link>
           </div>
 
-          {/* Curved bottom action bar with inline type pills + Quick | Sarvic */}
+          {/* Single segmented pill — left half opens TYPES picker, right half opens RESELLING picker */}
           <div
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-center gap-1.5 px-2 py-2"
-            style={{ borderRadius: "24px" }}
+            className="relative overflow-hidden rounded-full bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] flex items-stretch"
           >
             {loading && (
               <span
-                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"
+                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d4af37] to-transparent z-10"
                 style={{ animation: "shimmer 1.4s linear infinite" }}
               />
             )}
 
-            {/* Inline type pills — Product / Service / Other (static) */}
-            <div className="flex-1 flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
-              {STATIC_TYPES.map((t) => {
-                const Icon = t.Icon;
-                const isActive = activeTypeId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setPicker("types")}
-                    aria-pressed={isActive}
-                    aria-label={t.name}
-                    className={`btn-3d flex items-center gap-1 px-2 py-1.5 rounded-2xl border transition-all flex-shrink-0 active:scale-95 ${
-                      isActive
-                        ? "bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
-                        : "bg-white border-[color:oklch(0.78_0.14_82/0.4)]"
-                    }`}
-                  >
-                    <span className="h-6 w-6 rounded-lg grid place-items-center bg-gradient-to-br from-white to-[#fdf8e8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
-                      <Icon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
-                    </span>
-                    <span
-                      className={`font-display text-[11px] font-bold tracking-tight ${
-                        isActive ? "text-gold-gradient" : "text-[color:oklch(0.35_0.06_85)]"
-                      }`}
-                    >
-                      {t.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* LEFT — opens Product/Service/Other picker. Shows currently-pinned type. */}
+            <button
+              onClick={() => setPicker("types")}
+              className="btn-3d flex-1 flex items-center justify-center gap-2 px-4 py-3 active:scale-[0.97] transition-transform"
+              aria-label="Choose catalog type"
+            >
+              <span
+                className="h-3.5 w-3.5 rounded-full grid place-items-center"
+                style={{ background: "linear-gradient(180deg,#fff8dc,#d4af37)" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[#8b1a1a]" />
+              </span>
+              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight">
+                {(() => {
+                  const t = STATIC_TYPES.find((x) => x.id === activeTypeId);
+                  if (t) return `${t.name === "Service" ? "Sarvic" : t.name} | Products`;
+                  return "Sarvic | Products";
+                })()}
+              </span>
+              <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
+            </button>
 
-            {/* Right — Quick | Sarvic (kept) */}
+            {/* Divider */}
+            <span className="w-px self-stretch my-2 bg-[color:oklch(0.78_0.14_82/0.35)]" />
+
+            {/* RIGHT — opens Quick | Sarvic / Vendor / All picker */}
             <button
               onClick={() => setPicker("reselling")}
-              className="btn-3d flex items-center gap-1 active:scale-95 px-2 py-1.5 rounded-2xl flex-shrink-0 border border-[color:oklch(0.78_0.14_82/0.4)] bg-white"
+              className="btn-3d flex-1 flex items-center justify-center gap-2 px-4 py-3 active:scale-[0.97] transition-transform"
               aria-label="Quick Sarvic"
             >
-              <span className="text-[color:oklch(0.55_0.18_60)] text-sm">⚡</span>
-              <span className="font-display text-[11px] text-gold-gradient font-bold italic tracking-tight">
-                Quick<span className="font-light"> | </span>Sarvic
+              <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
+              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight">
+                Quick | Sarvic
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
             </button>
