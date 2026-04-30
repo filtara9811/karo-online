@@ -66,24 +66,12 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 export function useGeolocation(): GeoState {
-  const [state, setState] = useState<GeoState>(() => {
-    const cached = readCache();
-    if (cached) {
-      return {
-        status: "ready",
-        lat: cached.lat,
-        lng: cached.lng,
-        label: cached.label,
-        accuracyKm: null,
-      };
-    }
-    return {
-      status: "idle",
-      lat: null,
-      lng: null,
-      label: "Detecting your location…",
-      accuracyKm: null,
-    };
+  const [state, setState] = useState<GeoState>({
+    status: "idle",
+    lat: null,
+    lng: null,
+    label: "Detecting your location…",
+    accuracyKm: null,
   });
 
   useEffect(() => {
