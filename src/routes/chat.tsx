@@ -415,27 +415,44 @@ function ChatPage() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {active.status === "Typing…" && (
+          <div className="flex justify-start pl-2">
+            <span className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <motion.span key={i} animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} className="h-1.5 w-1.5 rounded-full bg-[color:oklch(0.45_0.05_30)]" />
+              ))}
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Quick reply chips */}
+      {/* Quick reply chips — long-press to edit, + to add */}
       <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1.5 w-max">
-          {[
-            { label: "When can you come?", emoji: "⏰" },
-            { label: "Send price", emoji: "💰" },
-            { label: "Share location", emoji: "📍" },
-            { label: "Send photo", emoji: "📷" },
-            { label: "Confirm booking", emoji: "✅" },
-          ].map((chip, i) => (
+          {chips.map((chip, i) => (
             <motion.button
-              key={chip.label}
+              key={`${chip.label}-${i}`}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
               onClick={() => setDraft(chip.label)}
+              onContextMenu={(e) => { e.preventDefault(); setEditingChip({ index: i, label: chip.label, emoji: chip.emoji }); }}
+              onTouchStart={() => { chipPressTimer.current = window.setTimeout(() => setEditingChip({ index: i, label: chip.label, emoji: chip.emoji }), 500); }}
+              onTouchEnd={() => { if (chipPressTimer.current) { clearTimeout(chipPressTimer.current); chipPressTimer.current = null; } }}
               className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-95 transition"
             >
               <span className="text-xs">{chip.emoji}</span>
               <span className="text-[11px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap">{chip.label}</span>
             </motion.button>
           ))}
+          <button
+            onClick={() => setEditingChip({ index: null, label: "", emoji: "✨" })}
+            aria-label="Add quick reply"
+            className="flex-shrink-0 h-7 w-7 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 shadow-sm active:scale-90"
+          >
+            <Plus className="h-3.5 w-3.5 text-[#92400e]" strokeWidth={2.6} />
+          </button>
         </div>
       </div>
 
