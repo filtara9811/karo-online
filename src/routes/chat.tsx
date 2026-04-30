@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2,
   Image as ImageIcon, FileText, MapPin, QrCode, Store, CreditCard, User as UserIcon, Pencil,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -51,7 +51,17 @@ type Msg = {
   image?: string;
   kind?: "inquiry" | "chat";
   edited?: { at: string; original: string } | null;
+  deleted?: { at: string; original: string } | null;
 };
+
+type QuickChip = { label: string; emoji: string };
+const DEFAULT_CHIPS: QuickChip[] = [
+  { label: "When can you come?", emoji: "⏰" },
+  { label: "Send price", emoji: "💰" },
+  { label: "Share location", emoji: "📍" },
+  { label: "Send photo", emoji: "📷" },
+  { label: "Confirm booking", emoji: "✅" },
+];
 
 const INITIAL_VENDORS: Vendor[] = [
   { id: "v1", name: "Aryan | Bansal", status: "Online", avatar: avatarAryan, pinned: true },
@@ -97,11 +107,14 @@ function ChatPage() {
   const [vendorActionFor, setVendorActionFor] = useState<string | null>(null);
   const [editedInfoFor, setEditedInfoFor] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const [chips, setChips] = useState<QuickChip[]>(DEFAULT_CHIPS);
+  const [editingChip, setEditingChip] = useState<{ index: number | null; label: string; emoji: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const longPressTimer = useRef<number | null>(null);
+  const chipPressTimer = useRef<number | null>(null);
 
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
@@ -234,8 +247,15 @@ function ChatPage() {
     }));
     setEditing(null);
   };
-
-  // ===== Vendor pin/tag =====
+  const deleteMessage = (msgId: string) => {
+    setThreads((p) => ({
+      ...p,
+      [activeId]: (p[activeId] ?? []).map((m) =>
+        m.id === msgId ? { ...m, deleted: { at: new Date().toLocaleString(), original: m.text }, text: "🗑 Message deleted" } : m
+      ),
+    }));
+    setLongPressMsg(null);
+  };
   const togglePin = (id: string) => {
     setVendors((vs) => vs.map((v) => (v.id === id ? { ...v, pinned: !v.pinned } : v)));
   };
@@ -326,19 +346,19 @@ function ChatPage() {
               className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}
             >
               <div
-                onTouchStart={() => m.from === "me" && startLongPress(m.id)}
+                onTouchStart={() => m.from === "me" && !m.deleted && startLongPress(m.id)}
                 onTouchEnd={cancelLongPress}
-                onContextMenu={(e) => { if (m.from === "me") { e.preventDefault(); setLongPressMsg(m.id); } }}
+                onContextMenu={(e) => { if (m.from === "me" && !m.deleted) { e.preventDefault(); setLongPressMsg(m.id); } }}
                 className={`relative max-w-[78%] px-3.5 py-2 rounded-2xl shadow-sm ${
                   m.from === "me"
-                    ? "bg-gradient-to-br from-[#fde2d8] to-[#fbcdbe] text-[color:oklch(0.22_0.05_30)] rounded-br-sm"
-                    : "bg-[#fde6dd] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
-                } ${m.edited ? "opacity-80" : ""}`}
+                    ? "bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] text-[color:oklch(0.22_0.05_240)] rounded-br-sm"
+                    : "bg-white border border-[color:oklch(0.78_0.14_82/0.25)] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
+                } ${m.edited ? "opacity-90" : ""} ${m.deleted ? "opacity-60" : ""}`}
               >
-                {m.image && (
+                {m.image && !m.deleted && (
                   <img src={m.image} alt="attachment" className="mb-1.5 -mx-1 rounded-xl max-h-48 object-cover" />
                 )}
-                {m.product && (
+                {m.product && !m.deleted && (
                   <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
                     <div className="flex items-center gap-2 p-2">
                       <img src={m.product.image} alt={m.product.name} className="h-14 w-14 rounded-lg object-cover flex-shrink-0" />
@@ -352,16 +372,18 @@ function ChatPage() {
                     </div>
                   </div>
                 )}
-                <p className={`text-sm leading-snug whitespace-pre-wrap ${m.edited ? "italic blur-[0.3px]" : ""}`}>{m.text}</p>
+                <p className={`text-sm leading-snug whitespace-pre-wrap ${m.edited ? "italic" : ""} ${m.deleted ? "italic blur-[1.2px] text-gray-500" : ""}`}>{m.text}</p>
                 <div className="mt-0.5 flex items-center justify-end gap-1.5">
-                  <button
-                    onClick={() => speakMessage(m.text)}
-                    aria-label="Read aloud"
-                    className="h-5 w-5 grid place-items-center rounded-full bg-white/60 active:scale-90"
-                  >
-                    <Volume2 className="h-3 w-3 text-[color:oklch(0.40_0.05_30)]" />
-                  </button>
-                  {m.edited && (
+                  {!m.deleted && (
+                    <button
+                      onClick={() => speakMessage(m.text)}
+                      aria-label="Read aloud"
+                      className="h-5 w-5 grid place-items-center rounded-full bg-white/60 active:scale-90"
+                    >
+                      <Volume2 className="h-3 w-3 text-[color:oklch(0.40_0.05_30)]" />
+                    </button>
+                  )}
+                  {m.edited && !m.deleted && (
                     <button
                       onClick={() => setEditedInfoFor(m.id)}
                       className="text-[9px] italic text-[color:oklch(0.45_0.05_30/0.8)] underline"
@@ -369,19 +391,25 @@ function ChatPage() {
                       edited
                     </button>
                   )}
+                  {m.deleted && (
+                    <span className="text-[9px] italic text-red-500">deleted</span>
+                  )}
                   <span className="text-[9px] text-[color:oklch(0.45_0.05_30/0.7)]">{m.time}</span>
-                  {m.from === "me" && (
+                  {m.from === "me" && !m.deleted && (
                     <span className={`text-[10px] font-bold ${m.read ? "text-sky-600" : "text-[color:oklch(0.55_0.05_30)]"}`}>✓✓</span>
                   )}
                 </div>
 
                 {/* Long-press action menu for own message */}
-                {longPressMsg === m.id && m.from === "me" && (
+                {longPressMsg === m.id && m.from === "me" && !m.deleted && (
                   <div className="absolute -top-9 right-0 bg-white shadow-lg rounded-full px-2 py-1 flex items-center gap-1 border border-black/10 z-10">
-                    <button onClick={() => beginEdit(m)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-[#fef3c7] active:scale-90">
+                    <button onClick={() => beginEdit(m)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-[#fef3c7] active:scale-90" aria-label="Edit">
                       <Pencil className="h-3.5 w-3.5 text-[#d97706]" />
                     </button>
-                    <button onClick={() => setLongPressMsg(null)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-gray-100 active:scale-90">
+                    <button onClick={() => deleteMessage(m.id)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-red-50 active:scale-90" aria-label="Delete">
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </button>
+                    <button onClick={() => setLongPressMsg(null)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-gray-100 active:scale-90" aria-label="Close">
                       <X className="h-3.5 w-3.5 text-gray-500" />
                     </button>
                   </div>
@@ -401,26 +429,30 @@ function ChatPage() {
         )}
       </div>
 
-      {/* Quick reply chips */}
+      {/* Quick reply chips — long-press to edit, + to add */}
       <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1.5 w-max">
-          {[
-            { label: "When can you come?", emoji: "⏰" },
-            { label: "Send price", emoji: "💰" },
-            { label: "Share location", emoji: "📍" },
-            { label: "Send photo", emoji: "📷" },
-            { label: "Confirm booking", emoji: "✅" },
-          ].map((chip, i) => (
+          {chips.map((chip, i) => (
             <motion.button
-              key={chip.label}
+              key={`${chip.label}-${i}`}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
               onClick={() => setDraft(chip.label)}
+              onContextMenu={(e) => { e.preventDefault(); setEditingChip({ index: i, label: chip.label, emoji: chip.emoji }); }}
+              onTouchStart={() => { chipPressTimer.current = window.setTimeout(() => setEditingChip({ index: i, label: chip.label, emoji: chip.emoji }), 500); }}
+              onTouchEnd={() => { if (chipPressTimer.current) { clearTimeout(chipPressTimer.current); chipPressTimer.current = null; } }}
               className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-95 transition"
             >
               <span className="text-xs">{chip.emoji}</span>
               <span className="text-[11px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap">{chip.label}</span>
             </motion.button>
           ))}
+          <button
+            onClick={() => setEditingChip({ index: null, label: "", emoji: "✨" })}
+            aria-label="Add quick reply"
+            className="flex-shrink-0 h-7 w-7 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 shadow-sm active:scale-90"
+          >
+            <Plus className="h-3.5 w-3.5 text-[#92400e]" strokeWidth={2.6} />
+          </button>
         </div>
       </div>
 
@@ -446,7 +478,7 @@ function ChatPage() {
         </div>
       )}
 
-      {/* Composer (eye removed) */}
+      {/* Composer */}
       <div className="flex-shrink-0 px-3 pt-2 pb-2 bg-transparent">
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
@@ -457,9 +489,20 @@ function ChatPage() {
               placeholder={recording ? "🎙️ Listening…" : "| Quick message……"}
               className="flex-1 bg-transparent text-sm outline-none placeholder:italic placeholder:text-[#9ca3af]"
             />
-            <button aria-label="Camera" onClick={() => cameraInputRef.current?.click()} className="active:scale-90">
-              <Camera className="h-4 w-4 text-[color:oklch(0.50_0.05_30)]" />
-            </button>
+            {/* Camera ↔ Send swap based on draft */}
+            {draft.trim() ? (
+              <button
+                onClick={send}
+                aria-label="Send"
+                className="h-8 w-8 grid place-items-center rounded-full bg-gradient-to-br from-[#1f2937] to-black active:scale-90 shadow"
+              >
+                <Send className="h-4 w-4 text-white" />
+              </button>
+            ) : (
+              <button aria-label="Camera" onClick={() => cameraInputRef.current?.click()} className="h-8 w-8 grid place-items-center active:scale-90">
+                <Camera className="h-4 w-4 text-[color:oklch(0.50_0.05_30)]" />
+              </button>
+            )}
             <button
               aria-label="Hold to record"
               onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={() => recording && stopRecording()}
@@ -468,16 +511,14 @@ function ChatPage() {
             >
               <Mic className={`h-4 w-4 ${recording ? "text-white" : "text-[color:oklch(0.30_0.05_85)]"}`} />
             </button>
-            <button
-              aria-label="Attach"
-              onClick={() => setShowAttach(true)}
-              className="h-8 w-8 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 shadow-sm active:scale-90"
-            >
-              <Paperclip className="h-4 w-4 text-[#92400e]" />
-            </button>
           </div>
-          <button onClick={send} aria-label="Send" className="h-11 w-11 rounded-full bg-gradient-to-br from-[#1f2937] to-black grid place-items-center shadow-md active:scale-90">
-            <Send className="h-4 w-4 text-white" />
+          {/* Paperclip moved OUTSIDE composer, right side */}
+          <button
+            aria-label="Attach"
+            onClick={() => setShowAttach(true)}
+            className="h-11 w-11 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/50 shadow-md grid place-items-center active:scale-90"
+          >
+            <Paperclip className="h-4 w-4 text-[#92400e]" />
           </button>
         </div>
 
@@ -485,12 +526,12 @@ function ChatPage() {
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={onFilePicked} className="hidden" />
         <input ref={galleryInputRef} type="file" accept="image/*" onChange={onFilePicked} className="hidden" />
 
-        {/* Status bar trigger (replaces "Live | chat") */}
+        {/* Status bar trigger — softer, less aggressive */}
         <button
           onClick={() => navigate({ to: "/status" })}
-          className="mt-2 w-full py-2 rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] text-white font-display font-bold text-xs tracking-wide shadow-md active:scale-95"
+          className="mt-2 w-full py-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] text-[color:oklch(0.30_0.05_85)] font-display font-semibold text-xs tracking-wide shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
         >
-          📊 Status — Tap to view orders
+          <span className="text-[#d97706]">📊</span> Status — Tap to view orders
         </button>
       </div>
 
@@ -686,14 +727,63 @@ function ChatPage() {
         })()}
       </AnimatePresence>
 
-      {/* Quick nav button */}
-      <button
-        onClick={() => navigate({ to: "/status" })}
-        className="fixed bottom-24 right-4 z-40 h-12 w-12 rounded-full bg-gradient-to-b from-[#fbbf24] to-[#d97706] grid place-items-center shadow-[0_6px_18px_-4px_rgba(217,119,6,0.6)] active:scale-90"
-        aria-label="View order status"
-      >
-        <Plus className="h-5 w-5 text-white" strokeWidth={3} />
-      </button>
+      {/* ===== Quick reply chip editor ===== */}
+      <AnimatePresence>
+        {editingChip && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setEditingChip(null)} className="fixed inset-0 bg-black/50 z-[75]" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="fixed left-4 right-4 top-1/3 z-[75] bg-white rounded-2xl p-5 shadow-2xl">
+              <h3 className="font-bold text-base mb-3">{editingChip.index === null ? "Add quick reply" : "Edit quick reply"}</h3>
+              <div className="flex gap-2 mb-3">
+                <input
+                  value={editingChip.emoji}
+                  onChange={(e) => setEditingChip({ ...editingChip, emoji: e.target.value })}
+                  className="w-14 p-3 text-center rounded-xl border border-gray-200 text-lg outline-none focus:border-[#d97706]"
+                  maxLength={2}
+                />
+                <input
+                  value={editingChip.label}
+                  onChange={(e) => setEditingChip({ ...editingChip, label: e.target.value })}
+                  placeholder="Quick reply text…"
+                  className="flex-1 p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-[#d97706]"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-between gap-2">
+                {editingChip.index !== null && (
+                  <button
+                    onClick={() => {
+                      const idx = editingChip.index;
+                      setChips((cs) => cs.filter((_, i) => i !== idx));
+                      setEditingChip(null);
+                    }}
+                    className="px-4 py-2 rounded-full text-sm font-semibold text-red-500"
+                  >
+                    Delete
+                  </button>
+                )}
+                <div className="flex gap-2 ml-auto">
+                  <button onClick={() => setEditingChip(null)} className="px-4 py-2 rounded-full text-sm font-semibold text-gray-600">Cancel</button>
+                  <button
+                    onClick={() => {
+                      if (!editingChip.label.trim()) return;
+                      const next: QuickChip = { label: editingChip.label.trim(), emoji: editingChip.emoji || "✨" };
+                      const idx = editingChip.index;
+                      setChips((cs) => idx === null ? [...cs, next] : cs.map((c, i) => (i === idx ? next : c)));
+                      setEditingChip(null);
+                    }}
+                    className="px-4 py-2 rounded-full bg-[#d97706] text-white text-sm font-bold"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
