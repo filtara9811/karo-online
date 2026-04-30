@@ -346,19 +346,19 @@ function ChatPage() {
               className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}
             >
               <div
-                onTouchStart={() => m.from === "me" && startLongPress(m.id)}
+                onTouchStart={() => m.from === "me" && !m.deleted && startLongPress(m.id)}
                 onTouchEnd={cancelLongPress}
-                onContextMenu={(e) => { if (m.from === "me") { e.preventDefault(); setLongPressMsg(m.id); } }}
+                onContextMenu={(e) => { if (m.from === "me" && !m.deleted) { e.preventDefault(); setLongPressMsg(m.id); } }}
                 className={`relative max-w-[78%] px-3.5 py-2 rounded-2xl shadow-sm ${
                   m.from === "me"
-                    ? "bg-gradient-to-br from-[#fde2d8] to-[#fbcdbe] text-[color:oklch(0.22_0.05_30)] rounded-br-sm"
-                    : "bg-[#fde6dd] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
-                } ${m.edited ? "opacity-80" : ""}`}
+                    ? "bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] text-[color:oklch(0.22_0.05_240)] rounded-br-sm"
+                    : "bg-white border border-[color:oklch(0.78_0.14_82/0.25)] text-[color:oklch(0.22_0.05_30)] rounded-bl-sm"
+                } ${m.edited ? "opacity-90" : ""} ${m.deleted ? "opacity-60" : ""}`}
               >
-                {m.image && (
+                {m.image && !m.deleted && (
                   <img src={m.image} alt="attachment" className="mb-1.5 -mx-1 rounded-xl max-h-48 object-cover" />
                 )}
-                {m.product && (
+                {m.product && !m.deleted && (
                   <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
                     <div className="flex items-center gap-2 p-2">
                       <img src={m.product.image} alt={m.product.name} className="h-14 w-14 rounded-lg object-cover flex-shrink-0" />
@@ -372,16 +372,18 @@ function ChatPage() {
                     </div>
                   </div>
                 )}
-                <p className={`text-sm leading-snug whitespace-pre-wrap ${m.edited ? "italic blur-[0.3px]" : ""}`}>{m.text}</p>
+                <p className={`text-sm leading-snug whitespace-pre-wrap ${m.edited ? "italic" : ""} ${m.deleted ? "italic blur-[1.2px] text-gray-500" : ""}`}>{m.text}</p>
                 <div className="mt-0.5 flex items-center justify-end gap-1.5">
-                  <button
-                    onClick={() => speakMessage(m.text)}
-                    aria-label="Read aloud"
-                    className="h-5 w-5 grid place-items-center rounded-full bg-white/60 active:scale-90"
-                  >
-                    <Volume2 className="h-3 w-3 text-[color:oklch(0.40_0.05_30)]" />
-                  </button>
-                  {m.edited && (
+                  {!m.deleted && (
+                    <button
+                      onClick={() => speakMessage(m.text)}
+                      aria-label="Read aloud"
+                      className="h-5 w-5 grid place-items-center rounded-full bg-white/60 active:scale-90"
+                    >
+                      <Volume2 className="h-3 w-3 text-[color:oklch(0.40_0.05_30)]" />
+                    </button>
+                  )}
+                  {m.edited && !m.deleted && (
                     <button
                       onClick={() => setEditedInfoFor(m.id)}
                       className="text-[9px] italic text-[color:oklch(0.45_0.05_30/0.8)] underline"
@@ -389,37 +391,30 @@ function ChatPage() {
                       edited
                     </button>
                   )}
+                  {m.deleted && (
+                    <span className="text-[9px] italic text-red-500">deleted</span>
+                  )}
                   <span className="text-[9px] text-[color:oklch(0.45_0.05_30/0.7)]">{m.time}</span>
-                  {m.from === "me" && (
+                  {m.from === "me" && !m.deleted && (
                     <span className={`text-[10px] font-bold ${m.read ? "text-sky-600" : "text-[color:oklch(0.55_0.05_30)]"}`}>✓✓</span>
                   )}
                 </div>
 
                 {/* Long-press action menu for own message */}
-                {longPressMsg === m.id && m.from === "me" && (
+                {longPressMsg === m.id && m.from === "me" && !m.deleted && (
                   <div className="absolute -top-9 right-0 bg-white shadow-lg rounded-full px-2 py-1 flex items-center gap-1 border border-black/10 z-10">
-                    <button onClick={() => beginEdit(m)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-[#fef3c7] active:scale-90">
+                    <button onClick={() => beginEdit(m)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-[#fef3c7] active:scale-90" aria-label="Edit">
                       <Pencil className="h-3.5 w-3.5 text-[#d97706]" />
                     </button>
-                    <button onClick={() => setLongPressMsg(null)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-gray-100 active:scale-90">
+                    <button onClick={() => deleteMessage(m.id)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-red-50 active:scale-90" aria-label="Delete">
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </button>
+                    <button onClick={() => setLongPressMsg(null)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-gray-100 active:scale-90" aria-label="Close">
                       <X className="h-3.5 w-3.5 text-gray-500" />
                     </button>
                   </div>
                 )}
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {active.status === "Typing…" && (
-          <div className="flex justify-start pl-2">
-            <span className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <motion.span key={i} animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} className="h-1.5 w-1.5 rounded-full bg-[color:oklch(0.45_0.05_30)]" />
-              ))}
-            </span>
-          </div>
-        )}
-      </div>
 
       {/* Quick reply chips */}
       <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
