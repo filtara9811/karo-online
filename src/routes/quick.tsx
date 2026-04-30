@@ -417,7 +417,7 @@ function QuickPage() {
         aria-label="Add need"
         className="btn-3d fixed z-40 right-5 grid place-items-center"
         style={{
-          bottom: "calc(160px + env(safe-area-inset-bottom))",
+          bottom: "calc(150px + env(safe-area-inset-bottom))",
         }}
       >
         <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
