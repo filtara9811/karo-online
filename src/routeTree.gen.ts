@@ -31,6 +31,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -143,6 +144,11 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   path: '/admin/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCatalogRoute = AdminCatalogRouteImport.update({
+  id: '/admin/catalog',
+  path: '/admin/catalog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   id: '/vendor/lead/$id',
   path: '/vendor/lead/$id',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/catalog'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/login'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/catalog'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/login'
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/catalog'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/login'
@@ -316,6 +328,7 @@ export interface RootRouteChildren {
   ServicesRoute: typeof ServicesRoute
   StatusRoute: typeof StatusRoute
   VendorsRoute: typeof VendorsRoute
+  AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -485,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/catalog': {
+      id: '/admin/catalog'
+      path: '/admin/catalog'
+      fullPath: '/admin/catalog'
+      preLoaderRoute: typeof AdminCatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/lead/$id': {
       id: '/vendor/lead/$id'
       path: '/vendor/lead/$id'
@@ -508,6 +528,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesRoute: ServicesRoute,
   StatusRoute: StatusRoute,
   VendorsRoute: VendorsRoute,
+  AdminCatalogRoute: AdminCatalogRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminLoginRoute: AdminLoginRoute,
