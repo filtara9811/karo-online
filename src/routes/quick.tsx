@@ -212,9 +212,7 @@ function QuickPage() {
   const [vendorListOpen, setVendorListOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Active catalog type (Product/Service/Other) chosen from the bottom bar pills.
   // Categories row below is intentionally STATIC (hardcoded) for instant render — no DB fetch.
-  const [activeTypeId] = useActiveTypeId();
 
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
