@@ -273,6 +273,12 @@
   80%, 100% { transform: scale(2.6); opacity: 0; }
 }
 
+@keyframes cat-lift {
+  0%   { transform: translateY(0) scale(1); }
+  45%  { transform: translateY(-10px) scale(1.14); }
+  100% { transform: translateY(-3px) scale(1.08); }
+}
+
 @keyframes scan-bar {
   0% { top: 0%; }
   50% { top: calc(100% - 4px); }
