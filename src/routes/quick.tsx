@@ -345,12 +345,14 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* BOTTOM — categories row PINNED just above the global bottom action bar.
-          Bottom action bar lives inside AppShell and reserves ~120px (incl. Admin pill + safe-area).
-          We position this strip directly on top of it so it feels glued. */}
+      {/* BOTTOM — categories row glued to bottom action bar (zero gap).
+          White/glass panel extends all the way down behind the bottom bar so they feel like ONE floating surface. */}
       <section
-        className="fixed left-0 right-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]"
-        style={{ bottom: "calc(78px + env(safe-area-inset-bottom))" }}
+        className="fixed left-0 right-0 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
+        style={{
+          bottom: "calc(64px + env(safe-area-inset-bottom))",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
+        }}
       >
         <div className="max-w-md mx-auto">
           {/* Circular icons + tiny label below each. Tap → filter list + lift animation. */}
