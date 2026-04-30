@@ -8,6 +8,9 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
+import { supabase } from "@/integrations/supabase/client";
+import { IconImage } from "@/components/admin/ImageUpload";
+import { useActiveTypeId } from "@/hooks/use-active-type";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
@@ -212,6 +215,40 @@ function QuickPage() {
   const [vendorListOpen, setVendorListOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // Active catalog type (Product/Service/Other) chosen from the bottom bar pills.
+  const [activeTypeId] = useActiveTypeId();
+  type DbCategory = { id: string; name: string; icon: string | null; image_url: string | null };
+  const [dbCats, setDbCats] = useState<DbCategory[]>([]);
+
+  // Load categories for the active type + live updates.
+  useEffect(() => {
+    if (!activeTypeId) {
+      setDbCats([]);
+      return;
+    }
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id,name,icon,image_url")
+        .eq("is_active", true)
+        .eq("type_id", activeTypeId)
+        .is("parent_id", null)
+        .order("sort_order")
+        .order("name");
+      if (mounted) setDbCats((data ?? []) as DbCategory[]);
+    };
+    load();
+    const ch = supabase
+      .channel(`quick-cats-${activeTypeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => load())
+      .subscribe();
+    return () => {
+      mounted = false;
+      supabase.removeChannel(ch);
+    };
+  }, [activeTypeId]);
+
   const filteredVendors = useMemo(
     () => VENDORS_BY_CAT[activeCat] ?? DEFAULT_VENDORS,
     [activeCat]
@@ -347,41 +384,77 @@ function QuickPage() {
       <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
         {/* Categories — circular icons. Tap once → filter products list only. */}
         <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
-          {CATS.map((c, i) => {
-            const Icon = c.Icon;
-            const isActive = categoryFilter === c.key;
-            const isPulsing = pulseKey.startsWith(`${c.key}-`);
-            return (
-              <button
-                key={c.key}
-                onClick={() => handleCatTap(c.key)}
-                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
-                  isActive
-                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
-                    : c.tone === "muted"
-                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm hover:scale-105"
-                    : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
-                }`}
-                style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
-                aria-label={c.label}
-              >
-                {isPulsing && (
-                  <span
-                    key={pulseKey}
-                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
-                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
-                  />
-                )}
-                <Icon
-                  className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
-                  strokeWidth={2.2}
-                />
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                )}
-              </button>
-            );
-          })}
+          {dbCats.length > 0
+            ? dbCats.map((c, i) => {
+                const isActive = categoryFilter === c.id;
+                const isPulsing = pulseKey.startsWith(`${c.id}-`);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCatTap(c.id)}
+                    className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 overflow-hidden ${
+                      isActive
+                        ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
+                        : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm hover:scale-105"
+                    }`}
+                    style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                    aria-label={c.name}
+                    title={c.name}
+                  >
+                    {isPulsing && (
+                      <span
+                        key={pulseKey}
+                        className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                        style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                      />
+                    )}
+                    <IconImage url={c.image_url} icon={c.icon} size={36} />
+                    {isActive && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                    )}
+                  </button>
+                );
+              })
+            : CATS.map((c, i) => {
+                const Icon = c.Icon;
+                const isActive = categoryFilter === c.key;
+                const isPulsing = pulseKey.startsWith(`${c.key}-`);
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => handleCatTap(c.key)}
+                    className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                      isActive
+                        ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
+                        : c.tone === "muted"
+                        ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm hover:scale-105"
+                        : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
+                    }`}
+                    style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                    aria-label={c.label}
+                  >
+                    {isPulsing && (
+                      <span
+                        key={pulseKey}
+                        className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                        style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                      />
+                    )}
+                    <Icon
+                      className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                      strokeWidth={2.2}
+                    />
+                    {isActive && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                    )}
+                  </button>
+                );
+              })}
+          {activeTypeId && dbCats.length === 0 && (
+            <span className="self-center text-[10px] text-[color:oklch(0.50_0.08_85)] px-2 whitespace-nowrap">
+              Is type me abhi koi category nahi. Admin se add karein.
+            </span>
+          )}
         </div>
       </section>
 
