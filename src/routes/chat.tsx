@@ -478,7 +478,7 @@ function ChatPage() {
         </div>
       )}
 
-      {/* Composer (eye removed) */}
+      {/* Composer */}
       <div className="flex-shrink-0 px-3 pt-2 pb-2 bg-transparent">
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
@@ -489,9 +489,20 @@ function ChatPage() {
               placeholder={recording ? "🎙️ Listening…" : "| Quick message……"}
               className="flex-1 bg-transparent text-sm outline-none placeholder:italic placeholder:text-[#9ca3af]"
             />
-            <button aria-label="Camera" onClick={() => cameraInputRef.current?.click()} className="active:scale-90">
-              <Camera className="h-4 w-4 text-[color:oklch(0.50_0.05_30)]" />
-            </button>
+            {/* Camera ↔ Send swap based on draft */}
+            {draft.trim() ? (
+              <button
+                onClick={send}
+                aria-label="Send"
+                className="h-8 w-8 grid place-items-center rounded-full bg-gradient-to-br from-[#1f2937] to-black active:scale-90 shadow"
+              >
+                <Send className="h-4 w-4 text-white" />
+              </button>
+            ) : (
+              <button aria-label="Camera" onClick={() => cameraInputRef.current?.click()} className="h-8 w-8 grid place-items-center active:scale-90">
+                <Camera className="h-4 w-4 text-[color:oklch(0.50_0.05_30)]" />
+              </button>
+            )}
             <button
               aria-label="Hold to record"
               onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={() => recording && stopRecording()}
@@ -500,16 +511,14 @@ function ChatPage() {
             >
               <Mic className={`h-4 w-4 ${recording ? "text-white" : "text-[color:oklch(0.30_0.05_85)]"}`} />
             </button>
-            <button
-              aria-label="Attach"
-              onClick={() => setShowAttach(true)}
-              className="h-8 w-8 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 shadow-sm active:scale-90"
-            >
-              <Paperclip className="h-4 w-4 text-[#92400e]" />
-            </button>
           </div>
-          <button onClick={send} aria-label="Send" className="h-11 w-11 rounded-full bg-gradient-to-br from-[#1f2937] to-black grid place-items-center shadow-md active:scale-90">
-            <Send className="h-4 w-4 text-white" />
+          {/* Paperclip moved OUTSIDE composer, right side */}
+          <button
+            aria-label="Attach"
+            onClick={() => setShowAttach(true)}
+            className="h-11 w-11 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/50 shadow-md grid place-items-center active:scale-90"
+          >
+            <Paperclip className="h-4 w-4 text-[#92400e]" />
           </button>
         </div>
 
@@ -517,12 +526,12 @@ function ChatPage() {
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={onFilePicked} className="hidden" />
         <input ref={galleryInputRef} type="file" accept="image/*" onChange={onFilePicked} className="hidden" />
 
-        {/* Status bar trigger (replaces "Live | chat") */}
+        {/* Status bar trigger — softer, less aggressive */}
         <button
           onClick={() => navigate({ to: "/status" })}
-          className="mt-2 w-full py-2 rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] text-white font-display font-bold text-xs tracking-wide shadow-md active:scale-95"
+          className="mt-2 w-full py-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] text-[color:oklch(0.30_0.05_85)] font-display font-semibold text-xs tracking-wide shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
         >
-          📊 Status — Tap to view orders
+          <span className="text-[#d97706]">📊</span> Status — Tap to view orders
         </button>
       </div>
 
