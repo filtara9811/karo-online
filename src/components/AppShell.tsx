@@ -263,7 +263,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
                   className="h-5 w-5 object-contain drop-shadow-[0_1px_2px_rgba(212,175,55,0.5)]"
                 />
               </span>
-              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight">
+              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight rounded-2xl">
                 {activeType ? `${activeType.name === "Service" ? "Sarvic" : activeType.name} | Products` : "Sarvic | Products"}
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
@@ -279,7 +279,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
               aria-label="Quick Sarvic"
             >
               <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
-              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight">
+              <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight rounded-2xl">
                 Quick | Sarvic
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
