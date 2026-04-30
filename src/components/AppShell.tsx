@@ -4,17 +4,26 @@ import { Bell, ShoppingBasket, Search, Star, UserPlus, Package, Wrench, Sparkles
 import goldServices from "@/assets/gold-services.png";
 import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
+import goldOrders from "@/assets/gold-orders.png";
+import goldOther from "@/assets/gold-other.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
-type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon };
+type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
 const STATIC_TYPES: StaticType[] = [
-  { id: "product", code: "product", name: "Product", Icon: Package },
-  { id: "service", code: "service", name: "Service", Icon: Wrench },
-  { id: "other", code: "other", name: "Other", Icon: Sparkles },
+  { id: "product", code: "product", name: "Product", Icon: Package, iconImg: goldOrders, sub: "Browse products & shop categories" },
+  { id: "service", code: "service", name: "Service", Icon: Wrench, iconImg: goldRepair, sub: "Book trusted services nearby" },
+  { id: "other", code: "other", name: "Other", Icon: Sparkles, iconImg: goldOther, sub: "Everything else · special needs" },
 ];
+
+const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
+  value: t.id,
+  label: t.name,
+  sub: t.sub,
+  icon: t.iconImg,
+}));
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
