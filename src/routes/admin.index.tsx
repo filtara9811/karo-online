@@ -50,7 +50,7 @@ function AdminHome() {
     { label: "Customers", value: stats?.customers ?? 0, icon: Users, to: "/admin/customers", hint: "Registered users" },
     { label: "Vendors", value: stats?.vendors ?? 0, icon: Store, to: "/admin/vendors", hint: "Active sellers" },
     { label: "Staff", value: stats?.staff ?? 0, icon: Shield, to: "/admin/staff", hint: "Admin accounts" },
-    { label: "Categories", value: stats?.categories ?? 0, icon: FolderTree, to: "/admin/categories", hint: "Total categories" },
+    { label: "Catalog", value: stats?.categories ?? 0, icon: FolderTree, to: "/admin/catalog", hint: "Types, categories, items" },
     { label: "Payment Gateways", value: stats?.activeGateways ?? 0, icon: CreditCard, to: "/admin/payments", hint: "Active providers" },
   ];
 
