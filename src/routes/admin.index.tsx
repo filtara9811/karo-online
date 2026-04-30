@@ -1,7 +1,8 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, LogOut, Crown, Shield } from "lucide-react";
+import { Users, Store, FolderTree, Shield, CreditCard, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -13,148 +14,109 @@ export const Route = createFileRoute("/admin/")({
   component: AdminHome,
 });
 
+type Stats = {
+  customers: number;
+  vendors: number;
+  staff: number;
+  categories: number;
+  activeGateways: number;
+};
+
 function AdminHome() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState<string | null>(null);
-  const [roles, setRoles] = useState<string[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
     (async () => {
-      const { data: sess } = await supabase.auth.getSession();
-      const user = sess.session?.user;
-      if (!user) {
-        navigate({ to: "/admin/login" });
-        return;
-      }
-      const { data: roleRows } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
+      const [staffRes, catRes, gwRes] = await Promise.all([
+        supabase.from("user_roles").select("user_id", { count: "exact", head: true }),
+        supabase.from("categories").select("id", { count: "exact", head: true }),
+        supabase
+          .from("payment_gateways")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true),
+      ]);
 
-      const r = (roleRows ?? []).map((x) => x.role as string);
-      const isAdmin = r.some((role) =>
-        ["super_admin", "admin", "moderator", "support"].includes(role),
-      );
-      if (!isAdmin) {
-        await supabase.auth.signOut();
-        navigate({ to: "/admin/login" });
-        return;
-      }
-      if (cancelled) return;
-      setEmail(user.email ?? null);
-      setRoles(r);
-      setLoading(false);
+      setStats({
+        customers: 0, // wired when customer table exists
+        vendors: 0, // wired when vendors table exists
+        staff: staffRes.count ?? 0,
+        categories: catRes.count ?? 0,
+        activeGateways: gwRes.count ?? 0,
+      });
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
+  }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/admin/login" });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-[oklch(0.12_0.02_80)]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#d4af37]" />
-      </div>
-    );
-  }
+  const cards = [
+    { label: "Customers", value: stats?.customers ?? 0, icon: Users, to: "/admin/customers", hint: "Registered users" },
+    { label: "Vendors", value: stats?.vendors ?? 0, icon: Store, to: "/admin/vendors", hint: "Active sellers" },
+    { label: "Staff", value: stats?.staff ?? 0, icon: Shield, to: "/admin/staff", hint: "Admin accounts" },
+    { label: "Categories", value: stats?.categories ?? 0, icon: FolderTree, to: "/admin/categories", hint: "Total categories" },
+    { label: "Payment Gateways", value: stats?.activeGateways ?? 0, icon: CreditCard, to: "/admin/payments", hint: "Active providers" },
+  ];
 
   return (
-    <div
-      className="min-h-screen px-5 py-8"
-      style={{
-        background:
-          "radial-gradient(circle at 20% 0%, oklch(0.22 0.04 80) 0%, oklch(0.10 0.02 80) 70%)",
-      }}
-    >
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-12 w-12 rounded-xl grid place-items-center"
-              style={{
-                background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
-                boxShadow: "0 8px 30px -6px rgba(212,175,55,0.5)",
-              }}
-            >
-              <Crown className="h-6 w-6 text-[#1a1208]" />
-            </div>
-            <div>
-              <h1
-                className="font-display text-2xl font-bold"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Admin Panel
-              </h1>
-              <p className="text-xs text-[#f5d97a]/60 mt-0.5">{email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#d4af37]/30 text-[#f5d97a] text-xs font-bold uppercase tracking-wider hover:bg-[#d4af37]/10 transition"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Logout
-          </button>
-        </div>
+    <AdminLayout>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Overview of your platform"
+      />
 
-        <div
-          className="rounded-3xl p-6 border backdrop-blur-xl"
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Link key={c.label} to={c.to}>
+              <GoldCard className="p-4 sm:p-5 h-full hover:scale-[1.02] transition cursor-pointer">
+                <div className="flex items-start justify-between mb-3">
+                  <div
+                    className="h-10 w-10 rounded-xl grid place-items-center"
+                    style={{
+                      background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
+                    }}
+                  >
+                    <Icon className="h-5 w-5 text-[#1a1208]" />
+                  </div>
+                  <TrendingUp className="h-3.5 w-3.5 text-[#d4af37]/50" />
+                </div>
+                <p
+                  className="font-display text-3xl font-bold leading-none"
+                  style={{
+                    background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {c.value}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5d97a]/80 font-bold mt-2">
+                  {c.label}
+                </p>
+                <p className="text-[10px] text-[#d4af37]/50 mt-0.5">{c.hint}</p>
+              </GoldCard>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Welcome panel */}
+      <GoldCard className="mt-6 p-6">
+        <h3
+          className="font-display text-xl font-bold mb-2"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(255,253,245,0.06) 0%, rgba(255,253,245,0.02) 100%)",
-            borderColor: "rgba(212,175,55,0.3)",
+            background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className="h-4 w-4 text-[#d4af37]" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#f5d97a]/80 font-bold">
-              Your Roles
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {roles.map((r) => (
-              <span
-                key={r}
-                className="px-3 py-1 rounded-full text-xs font-bold text-[#1a1208]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37)",
-                }}
-              >
-                {r.replace("_", " ").toUpperCase()}
-              </span>
-            ))}
-          </div>
-
-          <div className="rounded-2xl border border-dashed border-[#d4af37]/30 p-5 text-center">
-            <p className="font-display text-lg text-[#fff8dc] mb-1">
-              ✨ Welcome to your Admin Panel
-            </p>
-            <p className="text-xs text-[#f5d97a]/60 leading-relaxed">
-              Auth foundation ready. Next turn: Dashboard stats, Users list,
-              Vendors, Categories, Staff & Payment Gateway modules.
-            </p>
-          </div>
-        </div>
-
-        <Link
-          to="/"
-          className="block text-center text-[10px] uppercase tracking-[0.25em] text-[#d4af37]/60 mt-6 hover:text-[#d4af37]"
-        >
-          ← Back to Customer App
-        </Link>
-      </div>
-    </div>
+          ✨ Welcome to your Super Admin Panel
+        </h3>
+        <p className="text-sm text-[#f5d97a]/70 leading-relaxed">
+          Sidebar se kisi bhi module mein jaaiye — Categories add kariye, Staff
+          ko roles assign kariye, Payment Gateways configure kariye. Sab kuch
+          mobile aur laptop dono par smoothly chalega.
+        </p>
+      </GoldCard>
+    </AdminLayout>
   );
 }
