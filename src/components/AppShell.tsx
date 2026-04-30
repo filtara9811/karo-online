@@ -264,7 +264,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
                 />
               </span>
               <span className="font-display text-[12px] text-gold-gradient font-bold italic tracking-tight rounded-2xl">
-                {activeType ? `${activeType.name === "Service" ? "Sarvic" : activeType.name} | Products` : "Sarvic | Products"}
+                All | Digital | Shop
               </span>
               <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
             </button>
