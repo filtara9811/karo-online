@@ -345,45 +345,67 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* BOTTOM — FIXED categories only (golden hint+button strip removed) */}
-      <section className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]">
-        {/* Categories — circular icons. Tap once → filter products list only. */}
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
-          {CATS.map((c, i) => {
-            const Icon = c.Icon;
-            const isActive = categoryFilter === c.key;
-            const isPulsing = pulseKey.startsWith(`${c.key}-`);
-            return (
-              <button
-                key={c.key}
-                onClick={() => handleCatTap(c.key)}
-                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
-                  isActive
-                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
-                    : c.tone === "muted"
-                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm hover:scale-105"
-                    : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
-                }`}
-                style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
-                aria-label={c.label}
-              >
-                {isPulsing && (
+      {/* BOTTOM — categories row PINNED just above the global bottom action bar.
+          Bottom action bar lives inside AppShell and reserves ~120px (incl. Admin pill + safe-area).
+          We position this strip directly on top of it so it feels glued. */}
+      <section
+        className="fixed left-0 right-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]"
+        style={{ bottom: "calc(108px + env(safe-area-inset-bottom))" }}
+      >
+        <div className="max-w-md mx-auto">
+          {/* Circular icons + tiny label below each. Tap → filter list + lift animation. */}
+          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+            {CATS.map((c, i) => {
+              const Icon = c.Icon;
+              const isActive = categoryFilter === c.key;
+              const isPulsing = pulseKey.startsWith(`${c.key}-`);
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => handleCatTap(c.key)}
+                  className="group flex-shrink-0 flex flex-col items-center gap-1 w-14"
+                  style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                  aria-label={c.label}
+                >
                   <span
-                    key={pulseKey}
-                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
-                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
-                  />
-                )}
-                <Icon
-                  className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
-                  strokeWidth={2.2}
-                />
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                )}
-              </button>
-            );
-          })}
+                    key={isPulsing ? pulseKey : c.key}
+                    className={`btn-3d relative h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                      isActive
+                        ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_6px_16px_-2px_rgba(194,65,12,0.55)]"
+                        : c.tone === "muted"
+                        ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                        : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
+                    }`}
+                    style={{
+                      animation: isPulsing ? "cat-lift 0.45s cubic-bezier(0.22,1,0.36,1)" : undefined,
+                      transform: isActive && !isPulsing ? "translateY(-3px) scale(1.08)" : undefined,
+                    }}
+                  >
+                    {isPulsing && (
+                      <span
+                        className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                        style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                      />
+                    )}
+                    <Icon
+                      className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                      strokeWidth={2.2}
+                    />
+                    {isActive && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                    )}
+                  </span>
+                  <span
+                    className={`text-[9px] font-display font-semibold tracking-tight leading-none truncate w-full text-center ${
+                      isActive ? "text-[color:oklch(0.35_0.15_45)]" : "text-[color:oklch(0.45_0.08_85)]"
+                    }`}
+                  >
+                    {c.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
