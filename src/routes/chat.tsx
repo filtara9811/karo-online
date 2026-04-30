@@ -247,8 +247,15 @@ function ChatPage() {
     }));
     setEditing(null);
   };
-
-  // ===== Vendor pin/tag =====
+  const deleteMessage = (msgId: string) => {
+    setThreads((p) => ({
+      ...p,
+      [activeId]: (p[activeId] ?? []).map((m) =>
+        m.id === msgId ? { ...m, deleted: { at: new Date().toLocaleString(), original: m.text }, text: "🗑 Message deleted" } : m
+      ),
+    }));
+    setLongPressMsg(null);
+  };
   const togglePin = (id: string) => {
     setVendors((vs) => vs.map((v) => (v.id === id ? { ...v, pinned: !v.pinned } : v)));
   };
