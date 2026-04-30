@@ -76,6 +76,17 @@ export function useGeolocation(): GeoState {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const cached = readCache();
+    if (cached) {
+      setState({
+        status: "ready",
+        lat: cached.lat,
+        lng: cached.lng,
+        label: cached.label,
+        accuracyKm: null,
+      });
+      return;
+    }
     if (!("geolocation" in navigator)) {
       setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
       return;
