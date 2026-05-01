@@ -30,7 +30,7 @@ import goldTruck from "@/assets/gold-truck.png";
 import goldHome from "@/assets/gold-home.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 
-export const Route = createFileRoute('/vendor/register')({
+export const Route = createFileRoute("/vendor/register")({
   head: () => ({
     meta: [
       { title: "Vendor Registration — Karo Online" },
