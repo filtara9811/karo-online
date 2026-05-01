@@ -218,6 +218,104 @@ export function ActionPicker({
           Cancel
         </button>
       </div>
+
+      {/* Long-press share/copy popover */}
+      {shareFor && (
+        <div
+          className="absolute inset-0 z-[80] flex items-end justify-center"
+          onClick={() => setShareFor(null)}
+        >
+          <div
+            className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.55)] backdrop-blur-sm"
+            style={{ animation: "overlay-in 0.2s ease-out" }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-5 pt-4 pb-7 mb-0"
+            style={{ animation: "sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-70" />
+            <button
+              onClick={() => setShareFor(null)}
+              aria-label="Close"
+              className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)]"
+            >
+              <X className="h-4 w-4 text-[#92400e]" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <img src={shareFor.icon} alt="" className="h-10 w-10 object-contain" />
+              <div className="min-w-0">
+                <p className="font-display text-base text-gold-gradient leading-tight">{shareFor.label}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{shareFor.sub}</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/85 px-3 py-2.5 flex items-center gap-2 mb-4">
+              <Link2 className="h-4 w-4 text-[#92400e] flex-shrink-0" />
+              <span className="text-[11px] text-slate-700 truncate flex-1 font-mono">
+                {buildShareUrl(shareFor.shareTo)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={async () => {
+                  const url = buildShareUrl(shareFor.shareTo);
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setCopied(true);
+                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                      try { navigator.vibrate?.(20); } catch { /* noop */ }
+                    }
+                    setTimeout(() => setCopied(false), 1500);
+                  } catch { /* noop */ }
+                }}
+                className="btn-3d flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-white border border-[color:oklch(0.78_0.14_82/0.55)] active:scale-[0.97] transition"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 text-[#92400e]" />
+                    <span className="text-xs font-semibold text-[#92400e] uppercase tracking-wider">Copy Link</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={async () => {
+                  const url = buildShareUrl(shareFor.shareTo);
+                  const shareData = {
+                    title: shareFor.label,
+                    text: `${shareFor.label} — ${shareFor.sub ?? ""}`.trim(),
+                    url,
+                  };
+                  if (typeof navigator !== "undefined" && navigator.share) {
+                    try { await navigator.share(shareData); } catch { /* noop */ }
+                  } else {
+                    // Fallback: WhatsApp share
+                    const wa = `https://wa.me/?text=${encodeURIComponent(`${shareData.text}\n${url}`)}`;
+                    window.open(wa, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                className="btn-3d flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-gradient-to-br from-[#d4af37] to-[#8b6508] text-white active:scale-[0.97] transition shadow-gold-glow"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Share Link</span>
+              </button>
+            </div>
+
+            <p className="mt-3 text-center text-[10px] text-muted-foreground italic">
+              Anyone with this link will land directly on the {shareFor.label}.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
