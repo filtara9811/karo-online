@@ -33,11 +33,7 @@ const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
 ];
 
-const EMAIL_OPTIONS: PickerOption[] = [
-  { value: "primary@gmail.com", label: "Aarav Maison", sub: "primary@gmail.com", icon: goldGoogle },
-  { value: "studio@gmail.com", label: "Maison Studio", sub: "studio@gmail.com", icon: goldGoogle },
-  { value: "private@gmail.com", label: "Private", sub: "private@gmail.com", icon: goldGoogle },
-];
+const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
 
 export type RegistrationFlowProps = {
   /** When true, the outer page background is omitted so caller can show its own (e.g. translucent overlay). */
@@ -503,15 +499,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
-      <LuxPicker
-        open={picker === "email"}
-        title="Choose a Google Account"
-        subtitle="Tap one of your signed-in accounts"
-        options={EMAIL_OPTIONS}
-        onSelect={(v) => { setEmail(v); setPicker(null); }}
-        onClose={() => setPicker(null)}
-      />
-
       <OtpModal
         open={otpOpen}
         phone={phone}
