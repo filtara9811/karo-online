@@ -177,9 +177,11 @@ export type Database = {
           email: string | null
           gender: string | null
           id: string
+          is_blocked: boolean
           name: string | null
           phone: string | null
           signup_method: string | null
+          status: string
           updated_at: string
           user_id: string
         }
@@ -190,9 +192,11 @@ export type Database = {
           email?: string | null
           gender?: string | null
           id?: string
+          is_blocked?: boolean
           name?: string | null
           phone?: string | null
           signup_method?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -203,9 +207,11 @@ export type Database = {
           email?: string | null
           gender?: string | null
           id?: string
+          is_blocked?: boolean
           name?: string | null
           phone?: string | null
           signup_method?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -294,6 +300,51 @@ export type Database = {
           public_key?: string | null
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      staff_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          designation: string | null
+          email: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -391,11 +442,90 @@ export type Database = {
           },
         ]
       }
+      vendors: {
+        Row: {
+          aadhaar: string | null
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string
+          deals_in: string | null
+          entity: string | null
+          facebook: string | null
+          gst: string | null
+          id: string
+          instagram: string | null
+          is_blocked: boolean
+          manager_email: string | null
+          owner_name: string | null
+          pan: string | null
+          plan: string | null
+          referral: string | null
+          role: string | null
+          status: string
+          trade: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          aadhaar?: string | null
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          deals_in?: string | null
+          entity?: string | null
+          facebook?: string | null
+          gst?: string | null
+          id?: string
+          instagram?: string | null
+          is_blocked?: boolean
+          manager_email?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          plan?: string | null
+          referral?: string | null
+          role?: string | null
+          status?: string
+          trade?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          aadhaar?: string | null
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          deals_in?: string | null
+          entity?: string | null
+          facebook?: string | null
+          gst?: string | null
+          id?: string
+          instagram?: string | null
+          is_blocked?: boolean
+          manager_email?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          plan?: string | null
+          referral?: string | null
+          role?: string | null
+          status?: string
+          trade?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_admin_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
