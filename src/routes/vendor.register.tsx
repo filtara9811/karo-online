@@ -263,7 +263,7 @@ function VendorRegister() {
         <RegistrationFlow
           transparent
           onBack={() => navigate({ to: "/" })}
-          onComplete={() => setAuthGateDone(true)}
+          onComplete={() => { /* AuthProvider will flip isAuthenticated */ }}
         />
       </main>
     );
