@@ -404,12 +404,20 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     <GoldField
                       Icon={Mail}
                       label="Gmail account choice"
-                      hint="Choose gmail"
+                      hint={
+                        isAuthenticated
+                          ? "Verified ✓"
+                          : googleBusy
+                            ? "Opening Google…"
+                            : "Tap to sign in with Google"
+                      }
                       value={email}
                       placeholder=""
-                      filled={!!email.trim()}
+                      filled={!!email.trim() && isAuthenticated}
                       readOnly
-                      onClick={() => setPicker("email")}
+                      onClick={() => {
+                        if (!isAuthenticated && !googleBusy) handleGoogleSignIn();
+                      }}
                     />
                   )}
 
