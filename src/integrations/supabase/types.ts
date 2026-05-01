@@ -169,6 +169,48 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          signup_method: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          signup_method?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          signup_method?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       item_variations: {
         Row: {
           created_at: string
