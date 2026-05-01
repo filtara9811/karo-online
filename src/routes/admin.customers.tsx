@@ -182,6 +182,7 @@ function CustomersPage() {
                 </div>
               </div>
             </GoldCard>
+            </button>
           ))}
         </div>
       )}
