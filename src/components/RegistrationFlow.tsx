@@ -136,7 +136,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setOtp(code);
     setPhoneVerified(true);
     setOtpOpen(false);
-    setTimeout(() => setPicker("email"), 500);
+    // Move on; user will tap Gmail field which triggers Google OAuth
   };
 
   const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
