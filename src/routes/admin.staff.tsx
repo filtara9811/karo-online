@@ -150,6 +150,82 @@ function StaffPage() {
         }
       />
 
+      {/* Staff Members section */}
+      <div className="mb-6">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d4af37]/70 font-bold mb-2">
+          Staff Members ({staff.length})
+        </p>
+        <AdminListToolbar
+          filters={filters}
+          onChange={setFilters}
+          onRefresh={loadStaff}
+          loading={staffLoading}
+          total={staff.length}
+          filtered={filteredStaff.length}
+          onExportCsv={() => downloadCsv(`staff-${Date.now()}.csv`, exportStaffRows())}
+          onExportPdf={() => downloadPdf("Staff", exportStaffRows())}
+        />
+        {staffLoading ? (
+          <GoldCard className="p-8 text-center">
+            <Loader2 className="h-5 w-5 animate-spin text-[#d4af37] mx-auto" />
+          </GoldCard>
+        ) : filteredStaff.length === 0 ? (
+          <GoldCard className="p-8 text-center">
+            <p className="text-xs text-[#f5d97a]/60">
+              {staff.length === 0 ? "Abhi koi staff member registered nahi hai." : "No matches"}
+            </p>
+          </GoldCard>
+        ) : (
+          <div className="space-y-2">
+            {filteredStaff.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setActive(s)}
+                className="block w-full text-left"
+              >
+                <GoldCard className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full overflow-hidden border border-[#d4af37]/40 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center flex-shrink-0">
+                      {s.avatar_url ? (
+                        <img src={s.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="font-bold text-[#1a1a1a] text-sm">
+                          {(s.name || s.email || "?").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-sm font-bold text-[#fff8dc] truncate">
+                          {s.name || "Unnamed"}
+                        </h4>
+                        {s.verified && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                            <ShieldCheck className="h-2 w-2" /> VERIFIED
+                          </span>
+                        )}
+                        {s.is_blocked && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
+                            BLOCKED
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[#f5d97a]/70 truncate">
+                        {[s.designation, s.department].filter(Boolean).join(" · ") || s.email || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </GoldCard>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="text-[10px] uppercase tracking-[0.25em] text-[#d4af37]/70 font-bold mb-2">
+        Role Assignments
+      </p>
       <GoldCard className="p-3 sm:p-4">
         {loading ? (
           <div className="grid place-items-center py-16">
