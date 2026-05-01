@@ -207,7 +207,7 @@ function VendorRegister() {
       className="fixed inset-0 overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at top, #0a0a0a 0%, transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #1a1208 60%, #2b1d05 100%)",
+          "radial-gradient(ellipse at top, #0a0a0a 0%, transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #04231a 60%, #053024 100%)",
       }}
     >
       {/* Decorative gold orbs */}
@@ -226,7 +226,7 @@ function VendorRegister() {
       </button>
 
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
-        <h1 className="font-display text-3xl font-bold text-gold-gradient tracking-tight">
+        <h1 className="font-display text-3xl font-bold text-emerald-gradient tracking-tight">
           Vendor <span className="font-light">|</span> Apps
         </h1>
         <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.6)]">
@@ -248,14 +248,14 @@ function VendorRegister() {
           className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
           style={{
             background:
-              "linear-gradient(180deg, #ffffff 0%, #fffdf5 35%, #fbf3d9 100%)",
+              "linear-gradient(180deg, #ffffff 0%, #f0fdf4 35%, #bbf7d0 100%)",
             boxShadow:
-              "0 -20px 60px -12px rgba(212,175,55,0.45), 0 0 0 1.5px rgba(255,255,255,0.7) inset",
+              "0 -20px 60px -12px rgba(16,185,129,0.45), 0 0 0 1.5px rgba(255,255,255,0.7) inset",
           }}
         >
           {/* drag handle */}
           <div className="pt-3 pb-1 grid place-items-center cursor-grab active:cursor-grabbing">
-            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37] shadow-[0_1px_4px_rgba(212,175,55,0.5)]" />
+            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#10b981] via-[#6ee7b7] to-[#10b981] shadow-[0_1px_4px_rgba(16,185,129,0.5)]" />
           </div>
 
           <div
@@ -271,7 +271,7 @@ function VendorRegister() {
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
                     mode === "register" ? "text-[color:oklch(0.18_0.06_18)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "register" ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" } : undefined}
+                  style={mode === "register" ? { background: "linear-gradient(180deg, #d1fae5, #6ee7b7, #10b981)" } : undefined}
                 >
                   Registered | vendor
                 </button>
@@ -280,7 +280,7 @@ function VendorRegister() {
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
                     mode === "login" ? "text-[color:oklch(0.18_0.06_18)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "login" ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" } : undefined}
+                  style={mode === "login" ? { background: "linear-gradient(180deg, #d1fae5, #6ee7b7, #10b981)" } : undefined}
                 >
                   Login
                 </button>
@@ -294,7 +294,7 @@ function VendorRegister() {
                   <Sun className="h-4 w-4 text-[color:oklch(0.55_0.15_82)]" strokeWidth={2.4} />
                 </button>
                 <button
-                  className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center shadow-md"
+                  className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#ecfdf5] to-[#6ee7b7] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center shadow-md"
                   aria-label="Language"
                 >
                   <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
@@ -304,7 +304,7 @@ function VendorRegister() {
 
             {mode === "login" ? (
               <div className="mt-10 text-center px-6">
-                <p className="font-display text-2xl text-gold-gradient">Existing vendor?</p>
+                <p className="font-display text-2xl text-emerald-gradient">Existing vendor?</p>
                 <p className="text-sm text-[color:oklch(0.45_0.08_85)] mt-2 italic">
                   Login coming next phase. Switch to <strong>Registered</strong> to onboard.
                 </p>
@@ -376,9 +376,9 @@ function VendorRegister() {
                     className="btn-3d rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.18_0.06_18)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     style={{
                       background:
-                        "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
+                        "linear-gradient(180deg, #d1fae5 0%, #6ee7b7 35%, #10b981 70%, #065f46 100%)",
                       boxShadow: canNext
-                        ? "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)"
+                        ? "0 8px 24px -6px rgba(16,185,129,0.55), inset 0 1px 0 rgba(255,255,255,0.7)"
                         : undefined,
                     }}
                   >
@@ -410,8 +410,8 @@ function VendorRegister() {
           <div
             className="rounded-3xl p-8 text-center max-w-xs"
             style={{
-              background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 50%, #d4af37 100%)",
-              boxShadow: "0 30px 80px -10px rgba(212,175,55,0.7)",
+              background: "linear-gradient(180deg, #d1fae5 0%, #6ee7b7 50%, #10b981 100%)",
+              boxShadow: "0 30px 80px -10px rgba(16,185,129,0.7)",
               animation: "sheet-up 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
@@ -446,8 +446,8 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
                 i <= current
                   ? {
                       background:
-                        "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)",
-                      boxShadow: "0 4px 10px -2px rgba(212,175,55,0.6)",
+                        "linear-gradient(135deg, #6ee7b7 0%, #10b981 50%, #065f46 100%)",
+                      boxShadow: "0 4px 10px -2px rgba(16,185,129,0.6)",
                     }
                   : undefined
               }
@@ -460,8 +460,8 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
                 style={{
                   background:
                     i < current
-                      ? "linear-gradient(90deg, #d4af37, #f5d97a)"
-                      : "linear-gradient(90deg, oklch(0.78 0.14 82 / 0.4), oklch(0.78 0.14 82 / 0.2))",
+                      ? "linear-gradient(90deg, #10b981, #6ee7b7)"
+                      : "linear-gradient(90deg, oklch(0.78 0.14 165 / 0.4), oklch(0.78 0.14 165 / 0.2))",
                 }}
               />
             )}
@@ -474,7 +474,7 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
             key={l}
             className={`flex-1 text-center ${
               i === current
-                ? "text-gold-gradient font-bold"
+                ? "text-emerald-gradient font-bold"
                 : "text-[color:oklch(0.50_0.08_85/0.7)]"
             }`}
           >
@@ -744,7 +744,7 @@ const PLANS = [
     price: "₹499",
     coins: 100,
     perks: ["100 lead coins", "WhatsApp leads", "Basic analytics"],
-    accent: "linear-gradient(135deg, #f5e9b8, #d4af37)",
+    accent: "linear-gradient(135deg, #a7f3d0, #10b981)",
   },
   {
     id: "growth",
@@ -754,7 +754,7 @@ const PLANS = [
     coins: 500,
     bonus: 50,
     perks: ["500 + 50 bonus coins", "Priority leads", "Vendor badge"],
-    accent: "linear-gradient(135deg, #f5d97a, #d4af37, #8b6508)",
+    accent: "linear-gradient(135deg, #6ee7b7, #10b981, #065f46)",
     popular: true,
   },
   {
@@ -765,7 +765,7 @@ const PLANS = [
     coins: 1500,
     bonus: 250,
     perks: ["1,500 + 250 bonus coins", "Hot leads first", "Verified gold tag", "Dedicated CSM"],
-    accent: "linear-gradient(135deg, #fff3c8, #f5d97a, #d4af37, #6b4f04)",
+    accent: "linear-gradient(135deg, #d1fae5, #6ee7b7, #10b981, #064e3b)",
   },
 ];
 
@@ -774,7 +774,7 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
     <div className="mt-2">
       <div className="text-center mb-4">
         <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">✦ Final Step ✦</p>
-        <h2 className="font-display text-3xl text-gold-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
+        <h2 className="font-display text-3xl text-emerald-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
         <p className="text-xs italic text-[color:oklch(0.45_0.08_85)] mt-1">
           Coins unlock leads. Top up anytime.
         </p>
@@ -792,16 +792,16 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
               style={{
                 background: isChosen
                   ? p.accent
-                  : "linear-gradient(180deg, #ffffff 0%, #fffaf0 100%)",
-                borderColor: isChosen ? "#8b6508" : "rgba(212,175,55,0.4)",
+                  : "linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)",
+                borderColor: isChosen ? "#065f46" : "rgba(16,185,129,0.4)",
                 boxShadow: isChosen
-                  ? "0 12px 30px -8px rgba(212,175,55,0.6)"
-                  : "0 4px 12px -4px rgba(212,175,55,0.2)",
+                  ? "0 12px 30px -8px rgba(16,185,129,0.6)"
+                  : "0 4px 12px -4px rgba(16,185,129,0.2)",
               }}
             >
               {p.popular && (
                 <span className="absolute -top-2 right-4 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white"
-                  style={{ background: "linear-gradient(90deg, #d4af37, #8b6508)" }}>
+                  style={{ background: "linear-gradient(90deg, #10b981, #065f46)" }}>
                   Most Popular
                 </span>
               )}
@@ -878,10 +878,10 @@ function Field({
           }`}
           style={{
             background: filled
-              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
-              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+              ? "linear-gradient(135deg, #6ee7b7 0%, #10b981 50%, #065f46 100%)"
+              : "linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%)",
             boxShadow: filled
-              ? "0 4px 12px -2px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.6)"
+              ? "0 4px 12px -2px rgba(16,185,129,0.55), inset 0 1px 0 rgba(255,255,255,0.6)"
               : "inset 0 1px 0 rgba(255,255,255,0.8)",
           }}
         >
@@ -890,8 +890,8 @@ function Field({
             <span
               className="absolute -top-1 -right-1 h-4 w-4 rounded-full grid place-items-center border border-white"
               style={{
-                background: "linear-gradient(135deg,#fff3c8 0%,#d4af37 60%,#8b6508 100%)",
-                boxShadow: "0 2px 6px -1px rgba(212,175,55,0.6)",
+                background: "linear-gradient(135deg,#d1fae5 0%,#10b981 60%,#065f46 100%)",
+                boxShadow: "0 2px 6px -1px rgba(16,185,129,0.6)",
               }}
             >
               <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
@@ -918,7 +918,7 @@ function Field({
             className="h-px w-full"
             style={{
               background:
-                "linear-gradient(90deg, rgba(212,175,55,0.7) 0%, rgba(212,175,55,0.3) 100%)",
+                "linear-gradient(90deg, rgba(16,185,129,0.7) 0%, rgba(16,185,129,0.3) 100%)",
             }}
           />
           <p className="text-[10px] text-[color:oklch(0.50_0.08_85/0.85)] mt-1 italic">{hint}</p>
