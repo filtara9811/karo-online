@@ -248,6 +248,33 @@ function VendorRegister() {
 
   const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
 
+  // Show OTP/Google sign-in gate first if user not authenticated
+  if (ready && !isAuthenticated) {
+    return (
+      <main
+        className="fixed inset-0 overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, #0a0a0a 0%, transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #04231a 60%, #053024 100%)",
+        }}
+      >
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 pointer-events-none">
+          <h1 className="font-display text-2xl font-bold text-silver-gradient tracking-tight">
+            Vendor <span className="font-light">|</span> Sign in
+          </h1>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.6)]">
+            Verify phone to start onboarding
+          </span>
+        </div>
+        <RegistrationFlow
+          transparent
+          onBack={() => navigate({ to: "/" })}
+          onComplete={() => setAuthGateDone(true)}
+        />
+      </main>
+    );
+  }
+
   return (
     <main
       className="fixed inset-0 overflow-hidden"
