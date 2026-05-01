@@ -46,6 +46,51 @@ function StaffPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Staff profiles (separate table)
+  type StaffProfile = AdminRecord & { designation: string | null; department: string | null };
+  const [staff, setStaff] = useState<StaffProfile[]>([]);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [filters, setFilters] = useState<ListFilters>(emptyFilters);
+  const [active, setActive] = useState<StaffProfile | null>(null);
+
+  const loadStaff = async () => {
+    setStaffLoading(true);
+    const { data } = await supabase
+      .from("staff_profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setStaff((data ?? []) as StaffProfile[]);
+    setStaffLoading(false);
+  };
+  useEffect(() => {
+    loadStaff();
+  }, []);
+
+  const filteredStaff = useMemo(
+    () =>
+      applyFilters(staff, filters, (s) => [
+        s.name ?? "",
+        s.email ?? "",
+        s.phone ?? "",
+        s.designation ?? "",
+        s.department ?? "",
+        ...(s.tags ?? []),
+      ]),
+    [staff, filters],
+  );
+  const exportStaffRows = () =>
+    filteredStaff.map((s) => ({
+      name: s.name,
+      email: s.email,
+      phone: s.phone,
+      designation: s.designation,
+      department: s.department,
+      verified: s.verified ? "yes" : "no",
+      blocked: s.is_blocked ? "yes" : "no",
+      tags: (s.tags ?? []).join("|"),
+      created_at: new Date(s.created_at).toISOString(),
+    }));
+
   const load = async () => {
     setLoading(true);
     const { data } = await supabase
