@@ -98,12 +98,14 @@ const SOCIALS = [
 
 function ProfilePage() {
   const router = useRouter();
+  const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
   const { signOut } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
+  const [panelPicker, setPanelPicker] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
