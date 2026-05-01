@@ -69,7 +69,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
-  const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
+  const [picker, setPicker] = useState<null | "gender" | "sim">(null);
   const [otpOpen, setOtpOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
