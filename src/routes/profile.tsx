@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,12 +6,17 @@ import {
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
   IdCard, Wallet, PackageCheck, FileCheck2, Building2,
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
-  Users, Truck, ChevronRight, X,
+  Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import goldUser from "@/assets/gold-user.png";
+import goldBriefcase from "@/assets/gold-briefcase.png";
+import goldServices from "@/assets/gold-services.png";
+import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 import { useAuth } from "@/hooks/use-auth";
+import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -93,12 +98,14 @@ const SOCIALS = [
 
 function ProfilePage() {
   const router = useRouter();
+  const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
   const { signOut } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
+  const [panelPicker, setPanelPicker] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -298,9 +305,57 @@ function ProfilePage() {
         {topSheet === "support" && <SupportSheet onClose={() => setTopSheet(null)} />}
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
+
+      {/* Floating "Switch Panel" pill — sticks to bottom like home screen action bar */}
+      <div
+        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none"
+        style={{ bottom: 0 }}
+      >
+        <div className="max-w-md mx-auto px-4 pb-3">
+          <button
+            onClick={() => setPanelPicker(true)}
+            className="pointer-events-auto btn-3d w-full relative overflow-hidden rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.45)] backdrop-blur-md flex items-center justify-center gap-2 px-5 py-3 active:scale-[0.98] transition-transform"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,248,220,0.78) 100%)",
+            }}
+            aria-label="Switch panel"
+          >
+            <span className="h-7 w-7 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm">
+              <LayoutGrid className="h-4 w-4 text-[#92400e]" strokeWidth={2.4} />
+            </span>
+            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
+              Switch Panel
+            </span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-[11px]">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <ActionPicker
+        open={panelPicker}
+        title="Switch Panel"
+        subtitle="Choose your workspace"
+        options={PANEL_OPTIONS}
+        onSelect={(value) => {
+          setPanelPicker(false);
+          setTimeout(() => {
+            if (value === "vendor") navigate({ to: "/vendor/dashboard" });
+            else if (value === "admin") navigate({ to: "/admin" });
+            else if (value === "customer") navigate({ to: "/" });
+          }, 220);
+        }}
+        onClose={() => setPanelPicker(false)}
+      />
     </div>
   );
 }
+
+const PANEL_OPTIONS: ActionOption[] = [
+  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile },
+  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase },
+  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO" },
+  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
+];
 
 function TopIconButton({
   children, onClick, ...rest

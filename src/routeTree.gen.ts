@@ -24,8 +24,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
-import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
+import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
@@ -110,14 +110,14 @@ const VendorServicesRoute = VendorServicesRouteImport.update({
   path: '/vendor/services',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VendorDashboardRoute = VendorDashboardRouteImport.update({
-  id: '/vendor/dashboard',
-  path: '/vendor/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const VendorRegisterRoute = VendorRegisterRouteImport.update({
   id: '/vendor/register',
   path: '/vendor/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorDashboardRoute = VendorDashboardRouteImport.update({
+  id: '/vendor/dashboard',
+  path: '/vendor/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -462,18 +462,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vendor/dashboard': {
-      id: '/vendor/dashboard'
-      path: '/vendor/dashboard'
-      fullPath: '/vendor/dashboard'
-      preLoaderRoute: typeof VendorDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/vendor/register': {
       id: '/vendor/register'
       path: '/vendor/register'
       fullPath: '/vendor/register'
       preLoaderRoute: typeof VendorRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/dashboard': {
+      id: '/vendor/dashboard'
+      path: '/vendor/dashboard'
+      fullPath: '/vendor/dashboard'
+      preLoaderRoute: typeof VendorDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {

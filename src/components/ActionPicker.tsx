@@ -7,6 +7,7 @@ export type ActionOption = {
   sub?: string;
   icon: string;
   badge?: string;
+  disabled?: boolean;
 };
 
 type Props = {
@@ -119,20 +120,24 @@ export function ActionPicker({
             return (
               <button
                 key={opt.value}
+                disabled={opt.disabled}
                 onClick={() => {
+                  if (opt.disabled) return;
                   if (longPressFiredRef.current) {
                     longPressFiredRef.current = false;
                     return;
                   }
                   onSelect(opt.value);
                 }}
-                onPointerDown={() => startPress(opt.value)}
+                onPointerDown={() => !opt.disabled && startPress(opt.value)}
                 onPointerUp={cancelPress}
                 onPointerLeave={cancelPress}
                 onPointerCancel={cancelPress}
                 onContextMenu={(e) => e.preventDefault()}
                 className={`btn-3d group relative w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 bg-white/90 border transition-all overflow-hidden ${
-                  isDefault
+                  opt.disabled
+                    ? "opacity-60 grayscale cursor-not-allowed border-[color:oklch(0.78_0.14_82/0.3)]"
+                    : isDefault
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.45)] hover:border-[color:oklch(0.78_0.14_82)] hover:shadow-gold-glow"
                 }`}
