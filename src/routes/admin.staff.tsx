@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Shield, Loader2, Plus, X, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Shield, Loader2, Plus, X, Mail, Phone, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminLayout,
@@ -8,8 +8,25 @@ import {
   GoldButton,
   PageHeader,
 } from "@/components/admin/AdminLayout";
+import {
+  AdminListToolbar,
+  applyFilters,
+  downloadCsv,
+  downloadPdf,
+  emptyFilters,
+  type ListFilters,
+} from "@/components/admin/AdminListToolbar";
+import { AdminRecordDrawer, type AdminRecord } from "@/components/admin/AdminRecordDrawer";
 
 export const Route = createFileRoute("/admin/staff")({
+  head: () => ({
+    meta: [
+      { title: "Staff & Roles — Admin" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: StaffPage,
+});
   head: () => ({
     meta: [
       { title: "Staff & Roles — Admin" },
