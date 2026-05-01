@@ -64,19 +64,30 @@ export function ActionPicker({
 
   if (!open) return null;
 
-  const startPress = (value: string) => {
-    if (!onSetDefault) return;
+  const buildShareUrl = (path?: string) => {
+    if (!path) return "";
+    if (typeof window === "undefined") return path;
+    return `${window.location.origin}${path}`;
+  };
+
+  const startPress = (opt: ActionOption) => {
+    const canShare = shareMode && opt.shareTo;
+    if (!onSetDefault && !canShare) return;
     longPressFiredRef.current = false;
-    setPressing(value);
+    setPressing(opt.value);
     timerRef.current = setTimeout(() => {
       longPressFiredRef.current = true;
-      onSetDefault(value);
       setPressing(null);
-      // haptic feedback if available
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try { navigator.vibrate?.(40); } catch { /* noop */ }
       }
-    }, 650);
+      if (canShare) {
+        setShareFor(opt);
+        setCopied(false);
+      } else if (onSetDefault) {
+        onSetDefault(opt.value);
+      }
+    }, 600);
   };
 
   const cancelPress = () => {
