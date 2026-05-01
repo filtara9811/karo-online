@@ -26,6 +26,7 @@ export const Route = createFileRoute("/admin/staff")({
     ],
   }),
   component: StaffPage,
+});
 
 type RoleRow = {
   id: string;
