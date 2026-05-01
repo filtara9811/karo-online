@@ -1,13 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Users, Search, Trash2, Mail, Phone, MapPin, RefreshCw, Ban, CheckCircle2 } from "lucide-react";
-import {
-  AdminLayout,
-  GoldCard,
-  PageHeader,
-} from "@/components/admin/AdminLayout";
+import { useEffect, useMemo, useState } from "react";
+import { Users, Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AdminListToolbar,
+  applyFilters,
+  downloadCsv,
+  downloadPdf,
+  emptyFilters,
+  type ListFilters,
+} from "@/components/admin/AdminListToolbar";
+import { AdminRecordDrawer, type AdminRecord } from "@/components/admin/AdminRecordDrawer";
 
 export const Route = createFileRoute("/admin/customers")({
   head: () => ({
@@ -19,25 +24,17 @@ export const Route = createFileRoute("/admin/customers")({
   component: CustomersPage,
 });
 
-type Customer = {
-  id: string;
-  user_id: string;
-  name: string | null;
+type Customer = AdminRecord & {
   gender: string | null;
-  phone: string | null;
-  email: string | null;
   address: string | null;
-  avatar_url: string | null;
   signup_method: string | null;
-  is_blocked: boolean;
-  status: string;
-  created_at: string;
 };
 
 function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
+  const [filters, setFilters] = useState<ListFilters>(emptyFilters);
+  const [active, setActive] = useState<Customer | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -45,12 +42,8 @@ function CustomersPage() {
       .from("customers")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) {
-      toast.error("Customers load fail");
-      console.error(error);
-    } else {
-      setCustomers((data as Customer[]) ?? []);
-    }
+    if (error) toast.error("Customers load fail");
+    else setCustomers((data as Customer[]) ?? []);
     setLoading(false);
   };
 
@@ -58,67 +51,47 @@ function CustomersPage() {
     load();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Customer ko delete karna hai?")) return;
-    const { error } = await supabase.from("customers").delete().eq("id", id);
-    if (error) {
-      toast.error("Delete fail");
-    } else {
-      toast.success("Deleted");
-      setCustomers((c) => c.filter((x) => x.id !== id));
-    }
-  };
+  const filtered = useMemo(
+    () =>
+      applyFilters(customers, filters, (c) => [
+        c.name ?? "",
+        c.email ?? "",
+        c.phone ?? "",
+        c.address ?? "",
+        ...(c.tags ?? []),
+      ]),
+    [customers, filters],
+  );
 
-  const toggleBlock = async (c: Customer) => {
-    const next = !c.is_blocked;
-    const { error } = await supabase
-      .from("customers")
-      .update({ is_blocked: next, status: next ? "blocked" : "active" })
-      .eq("id", c.id);
-    if (error) return toast.error("Update fail");
-    toast.success(next ? "Blocked" : "Unblocked");
-    setCustomers((rs) =>
-      rs.map((r) =>
-        r.id === c.id ? { ...r, is_blocked: next, status: next ? "blocked" : "active" } : r,
-      ),
-    );
-  };
-
-  const filtered = customers.filter((c) => {
-    if (!q.trim()) return true;
-    const s = q.toLowerCase();
-    return (
-      c.name?.toLowerCase().includes(s) ||
-      c.email?.toLowerCase().includes(s) ||
-      c.phone?.toLowerCase().includes(s)
-    );
-  });
+  const exportRows = () =>
+    filtered.map((c) => ({
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      gender: c.gender,
+      address: c.address,
+      signup: c.signup_method,
+      verified: c.verified ? "yes" : "no",
+      blocked: c.is_blocked ? "yes" : "no",
+      status: c.status,
+      tags: (c.tags ?? []).join("|"),
+      created_at: new Date(c.created_at).toISOString(),
+    }));
 
   return (
     <AdminLayout>
-      <PageHeader
-        title="Customers"
-        subtitle={`${customers.length} registered users`}
-      />
+      <PageHeader title="Customers" subtitle={`${customers.length} registered users`} />
 
-      <div className="flex items-center gap-2 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d4af37]/60" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, email, phone…"
-            className="w-full bg-black/40 border border-[#d4af37]/30 rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5d97a] placeholder:text-[#f5d97a]/40 outline-none focus:border-[#d4af37]/60"
-          />
-        </div>
-        <button
-          onClick={load}
-          className="h-10 w-10 grid place-items-center rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#d4af37] active:scale-95"
-          aria-label="Refresh"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </button>
-      </div>
+      <AdminListToolbar
+        filters={filters}
+        onChange={setFilters}
+        onRefresh={load}
+        loading={loading}
+        total={customers.length}
+        filtered={filtered.length}
+        onExportCsv={() => downloadCsv(`customers-${Date.now()}.csv`, exportRows())}
+        onExportPdf={() => downloadPdf("Customers", exportRows())}
+      />
 
       {loading ? (
         <GoldCard className="p-12 text-center">
@@ -137,16 +110,17 @@ function CustomersPage() {
           >
             {customers.length === 0 ? "No customers yet" : "No matches"}
           </h3>
-          <p className="text-sm text-[#f5d97a]/60 max-w-md mx-auto leading-relaxed">
-            {customers.length === 0
-              ? "Jab koi customer signup karega, uska entry yahan dikh jayegi."
-              : "Try different search terms."}
-          </p>
         </GoldCard>
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (
-            <GoldCard key={c.id} className="p-4">
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setActive(c)}
+              className="block w-full text-left"
+            >
+              <GoldCard className="p-4">
               <div className="flex items-start gap-3">
                 <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-[#d4af37]/40 flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center">
                   {c.avatar_url ? (
@@ -163,14 +137,9 @@ function CustomersPage() {
                     <h3 className="font-display text-base font-bold text-[#f5d97a] truncate">
                       {c.name || "Unnamed customer"}
                     </h3>
-                    {c.gender && (
-                      <span className="text-[10px] uppercase tracking-wider text-[#d4af37]/70">
-                        {c.gender}
-                      </span>
-                    )}
-                    {c.signup_method && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#d4af37]/15 text-[#d4af37] border border-[#d4af37]/30">
-                        {c.signup_method}
+                    {c.verified && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                        <ShieldCheck className="h-2.5 w-2.5" /> VERIFIED
                       </span>
                     )}
                     {c.is_blocked && (
@@ -178,6 +147,14 @@ function CustomersPage() {
                         BLOCKED
                       </span>
                     )}
+                    {(c.tags ?? []).slice(0, 2).map((t) => (
+                      <span
+                        key={t}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#d4af37]/15 text-[#d4af37] border border-[#d4af37]/30"
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </div>
 
                   <div className="mt-1 space-y-0.5 text-xs text-[#f5d97a]/75">
@@ -203,32 +180,30 @@ function CustomersPage() {
                     Joined {new Date(c.created_at).toLocaleString()}
                   </p>
                 </div>
-
-                <div className="flex flex-col gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={() => toggleBlock(c)}
-                    className={`h-9 w-9 grid place-items-center rounded-lg border active:scale-95 ${
-                      c.is_blocked
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                        : "bg-orange-500/10 border-orange-500/30 text-orange-300"
-                    }`}
-                    aria-label={c.is_blocked ? "Unblock" : "Block"}
-                  >
-                    {c.is_blocked ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(c.id)}
-                    className="h-9 w-9 grid place-items-center rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 active:scale-95"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
               </div>
             </GoldCard>
+            </button>
           ))}
         </div>
       )}
+
+      <AdminRecordDrawer
+        open={!!active}
+        record={active}
+        entity="customers"
+        entityLabel="Customer"
+        onClose={() => setActive(null)}
+        onMutated={load}
+        extraFields={
+          active
+            ? [
+                { label: "Gender", value: active.gender },
+                { label: "Address", value: active.address },
+                { label: "Signup via", value: active.signup_method },
+              ]
+            : []
+        }
+      />
     </AdminLayout>
   );
 }

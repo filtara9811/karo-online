@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       catalog_items: {
         Row: {
           category_id: string
@@ -172,6 +205,8 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          admin_notes: string | null
+          assigned_to: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -182,11 +217,15 @@ export type Database = {
           phone: string | null
           signup_method: string | null
           status: string
+          tags: string[] | null
           updated_at: string
           user_id: string
+          verified: boolean
         }
         Insert: {
           address?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -197,11 +236,15 @@ export type Database = {
           phone?: string | null
           signup_method?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id: string
+          verified?: boolean
         }
         Update: {
           address?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -212,8 +255,10 @@ export type Database = {
           phone?: string | null
           signup_method?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -305,6 +350,8 @@ export type Database = {
       }
       staff_profiles: {
         Row: {
+          admin_notes: string | null
+          assigned_to: string | null
           avatar_url: string | null
           created_at: string
           department: string | null
@@ -315,10 +362,14 @@ export type Database = {
           name: string | null
           phone: string | null
           status: string
+          tags: string[] | null
           updated_at: string
           user_id: string
+          verified: boolean
         }
         Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
@@ -329,10 +380,14 @@ export type Database = {
           name?: string | null
           phone?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id: string
+          verified?: boolean
         }
         Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
@@ -343,8 +398,10 @@ export type Database = {
           name?: string | null
           phone?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -445,6 +502,8 @@ export type Database = {
       vendors: {
         Row: {
           aadhaar: string | null
+          admin_notes: string | null
+          assigned_to: string | null
           avatar_url: string | null
           business_name: string | null
           created_at: string
@@ -462,14 +521,18 @@ export type Database = {
           referral: string | null
           role: string | null
           status: string
+          tags: string[] | null
           trade: string | null
           updated_at: string
           user_id: string
+          verified: boolean
           website: string | null
           whatsapp: string | null
         }
         Insert: {
           aadhaar?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
@@ -487,14 +550,18 @@ export type Database = {
           referral?: string | null
           role?: string | null
           status?: string
+          tags?: string[] | null
           trade?: string | null
           updated_at?: string
           user_id: string
+          verified?: boolean
           website?: string | null
           whatsapp?: string | null
         }
         Update: {
           aadhaar?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
@@ -512,9 +579,11 @@ export type Database = {
           referral?: string | null
           role?: string | null
           status?: string
+          tags?: string[] | null
           trade?: string | null
           updated_at?: string
           user_id?: string
+          verified?: boolean
           website?: string | null
           whatsapp?: string | null
         }
