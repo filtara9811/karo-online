@@ -368,6 +368,22 @@ function StaffPage() {
           </div>
         </div>
       )}
+      <AdminRecordDrawer
+        open={!!active}
+        record={active}
+        entity="staff_profiles"
+        entityLabel="Staff"
+        onClose={() => setActive(null)}
+        onMutated={loadStaff}
+        extraFields={
+          active
+            ? [
+                { label: "Designation", value: active.designation },
+                { label: "Department", value: active.department },
+              ]
+            : []
+        }
+      />
     </AdminLayout>
   );
 }
