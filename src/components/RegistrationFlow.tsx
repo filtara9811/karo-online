@@ -9,11 +9,14 @@ import { MpinLogin } from "@/components/MpinLogin";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
-import goldGoogle from "@/assets/gold-google.png";
+
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
+import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
 type StepKey = "name" | "phone" | "otp" | "email" | "address";
@@ -30,11 +33,7 @@ const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
 ];
 
-const EMAIL_OPTIONS: PickerOption[] = [
-  { value: "primary@gmail.com", label: "Aarav Maison", sub: "primary@gmail.com", icon: goldGoogle },
-  { value: "studio@gmail.com", label: "Maison Studio", sub: "studio@gmail.com", icon: goldGoogle },
-  { value: "private@gmail.com", label: "Private", sub: "private@gmail.com", icon: goldGoogle },
-];
+const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
 
 export type RegistrationFlowProps = {
   /** When true, the outer page background is omitted so caller can show its own (e.g. translucent overlay). */
@@ -48,8 +47,18 @@ export type RegistrationFlowProps = {
 };
 
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
-  const { signIn } = useAuth();
+  const { user, isAuthenticated, refreshProfile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signup");
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  // When the user signs in via Google OAuth, prefill email + name from the session
+  useEffect(() => {
+    if (user?.email && !email) setEmail(user.email);
+    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const metaName = meta?.full_name || meta?.name;
+    if (metaName && !name) setName(metaName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const [agreed, setAgreed] = useState(false);
   const [gender, setGender] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -60,7 +69,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
-  const [picker, setPicker] = useState<null | "gender" | "sim" | "email">(null);
+  const [picker, setPicker] = useState<null | "gender" | "sim">(null);
   const [otpOpen, setOtpOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -127,7 +136,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setOtp(code);
     setPhoneVerified(true);
     setOtpOpen(false);
-    setTimeout(() => setPicker("email"), 500);
+    // Move on; user will tap Gmail field which triggers Google OAuth
   };
 
   const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
@@ -147,17 +156,54 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     snapTo(nearest);
   };
 
-  const handleFinish = () => {
-    // Persist mock auth
-    signIn({
-      name: name.trim() || "Guest",
-      gender: gender ?? undefined,
-      phone: phone || undefined,
-      email: email || undefined,
-      address: address || undefined,
-    });
+  const handleFinish = async () => {
+    // Save profile details to customers table — uses authenticated user's RLS
+    if (user) {
+      const { error } = await supabase
+        .from("customers")
+        .upsert(
+          {
+            user_id: user.id,
+            name: name.trim() || null,
+            gender: gender || null,
+            phone: phone || null,
+            email: email || user.email || null,
+            address: address || null,
+          },
+          { onConflict: "user_id" },
+        );
+      if (error) {
+        console.error("[customers upsert]", error);
+        toast.error("Profile save fail hua — phir try karo");
+      } else {
+        await refreshProfile();
+      }
+    }
     setSuccessOpen(false);
     onComplete?.();
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Google sign-in fail hua. Phir try karo.");
+        setGoogleBusy(false);
+        return;
+      }
+      // If redirected, browser will navigate away
+      if (result.redirected) return;
+      // Else tokens received — auth state will pick up via onAuthStateChange
+      toast.success("Google account connected ✓");
+    } catch (e) {
+      console.error(e);
+      toast.error("Google sign-in fail hua");
+    } finally {
+      setGoogleBusy(false);
+    }
   };
 
   return (
@@ -299,10 +345,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
             {mode === "login" ? (
               <MpinLogin
-                onSuccess={() => {
-                  // Mock login — mark as authenticated with a generic profile
-                  signIn({ name: "Guest" });
-                  onComplete?.();
+                onSuccess={async () => {
+                  // For now, MPIN login also routes through Google OAuth as the only real auth
+                  await handleGoogleSignIn();
                 }}
                 onSwitchToSignup={() => setMode("signup")}
               />
@@ -355,12 +400,20 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     <GoldField
                       Icon={Mail}
                       label="Gmail account choice"
-                      hint="Choose gmail"
+                      hint={
+                        isAuthenticated
+                          ? "Verified ✓"
+                          : googleBusy
+                            ? "Opening Google…"
+                            : "Tap to sign in with Google"
+                      }
                       value={email}
                       placeholder=""
-                      filled={!!email.trim()}
+                      filled={!!email.trim() && isAuthenticated}
                       readOnly
-                      onClick={() => setPicker("email")}
+                      onClick={() => {
+                        if (!isAuthenticated && !googleBusy) handleGoogleSignIn();
+                      }}
                     />
                   )}
 
@@ -446,15 +499,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
-      <LuxPicker
-        open={picker === "email"}
-        title="Choose a Google Account"
-        subtitle="Tap one of your signed-in accounts"
-        options={EMAIL_OPTIONS}
-        onSelect={(v) => { setEmail(v); setPicker(null); }}
-        onClose={() => setPicker(null)}
-      />
-
       <OtpModal
         open={otpOpen}
         phone={phone}

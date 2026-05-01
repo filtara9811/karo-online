@@ -217,9 +217,9 @@ function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.06 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => {
+            onClick={async () => {
               if (r.id === "logout") {
-                signOut();
+                await signOut();
                 router.navigate({ to: "/" });
                 return;
               }

@@ -1,58 +1,92 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session, User } from "@supabase/supabase-js";
 
-const STORAGE_KEY = "ko-auth-user";
-
-export type AuthUser = {
-  name: string;
-  gender?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  signedUpAt: string;
+export type CustomerProfile = {
+  id?: string;
+  user_id?: string;
+  name?: string | null;
+  gender?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  avatar_url?: string | null;
 };
 
 type Ctx = {
-  user: AuthUser | null;
+  session: Session | null;
+  user: User | null;
+  profile: CustomerProfile | null;
   isAuthenticated: boolean;
   ready: boolean;
-  signIn: (u: Omit<AuthUser, "signedUpAt">) => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthCtx = createContext<Ctx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {
-      /* ignore */
-    }
-    setReady(true);
-  }, []);
-
-  const signIn = (u: Omit<AuthUser, "signedUpAt">) => {
-    const full: AuthUser = { ...u, signedUpAt: new Date().toISOString() };
-    setUser(full);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(full));
-    }
+  const loadProfile = async (uid: string) => {
+    const { data } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("user_id", uid)
+      .maybeSingle();
+    setProfile((data as CustomerProfile) ?? null);
   };
 
-  const signOut = () => {
+  useEffect(() => {
+    // Set up listener FIRST
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) {
+        // Defer profile fetch to avoid deadlock
+        setTimeout(() => loadProfile(sess.user.id), 0);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    // THEN check existing session
+    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) loadProfile(sess.user.id);
+      setReady(true);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
     setUser(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    setProfile(null);
+  };
+
+  const refreshProfile = async () => {
+    if (user) await loadProfile(user.id);
   };
 
   return (
-    <AuthCtx.Provider value={{ user, isAuthenticated: !!user, ready, signIn, signOut }}>
+    <AuthCtx.Provider
+      value={{
+        session,
+        user,
+        profile,
+        isAuthenticated: !!session,
+        ready,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthCtx.Provider>
   );
@@ -62,11 +96,13 @@ export function useAuth() {
   const ctx = useContext(AuthCtx);
   if (!ctx) {
     return {
+      session: null,
       user: null,
+      profile: null,
       isAuthenticated: false,
       ready: true,
-      signIn: () => {},
-      signOut: () => {},
+      signOut: async () => {},
+      refreshProfile: async () => {},
     } satisfies Ctx;
   }
   return ctx;
