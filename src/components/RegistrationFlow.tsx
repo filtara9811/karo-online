@@ -160,17 +160,54 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     snapTo(nearest);
   };
 
-  const handleFinish = () => {
-    // Persist mock auth
-    signIn({
-      name: name.trim() || "Guest",
-      gender: gender ?? undefined,
-      phone: phone || undefined,
-      email: email || undefined,
-      address: address || undefined,
-    });
+  const handleFinish = async () => {
+    // Save profile details to customers table — uses authenticated user's RLS
+    if (user) {
+      const { error } = await supabase
+        .from("customers")
+        .upsert(
+          {
+            user_id: user.id,
+            name: name.trim() || null,
+            gender: gender || null,
+            phone: phone || null,
+            email: email || user.email || null,
+            address: address || null,
+          },
+          { onConflict: "user_id" },
+        );
+      if (error) {
+        console.error("[customers upsert]", error);
+        toast.error("Profile save fail hua — phir try karo");
+      } else {
+        await refreshProfile();
+      }
+    }
     setSuccessOpen(false);
     onComplete?.();
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Google sign-in fail hua. Phir try karo.");
+        setGoogleBusy(false);
+        return;
+      }
+      // If redirected, browser will navigate away
+      if (result.redirected) return;
+      // Else tokens received — auth state will pick up via onAuthStateChange
+      toast.success("Google account connected ✓");
+    } catch (e) {
+      console.error(e);
+      toast.error("Google sign-in fail hua");
+    } finally {
+      setGoogleBusy(false);
+    }
   };
 
   return (
@@ -312,10 +349,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
             {mode === "login" ? (
               <MpinLogin
-                onSuccess={() => {
-                  // Mock login — mark as authenticated with a generic profile
-                  signIn({ name: "Guest" });
-                  onComplete?.();
+                onSuccess={async () => {
+                  // For now, MPIN login also routes through Google OAuth as the only real auth
+                  await handleGoogleSignIn();
                 }}
                 onSwitchToSignup={() => setMode("signup")}
               />
