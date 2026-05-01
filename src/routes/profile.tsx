@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -93,6 +94,7 @@ const SOCIALS = [
 function ProfilePage() {
   const router = useRouter();
   const { t, theme, toggleTheme } = useAppPrefs();
+  const { signOut } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
@@ -215,7 +217,14 @@ function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.06 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveRow(r.id)}
+            onClick={() => {
+              if (r.id === "logout") {
+                signOut();
+                router.navigate({ to: "/" });
+                return;
+              }
+              setActiveRow(r.id);
+            }}
             className="w-full rounded-2xl bg-white border border-amber-200/70 px-4 py-4 flex items-center gap-4 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] active:shadow-md"
           >
             <div className="h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
