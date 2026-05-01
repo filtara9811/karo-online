@@ -126,9 +126,9 @@
     color: transparent;
   }
 
-  /* Emerald metallic gradient for vendor headings (differentiates from customer gold) */
+  /* Royal Sapphire metallic gradient for vendor headings (differentiates from customer gold) */
   .text-emerald-gradient {
-    background: linear-gradient(135deg, #6ee7b7 0%, #d1fae5 22%, #10b981 55%, #34d399 78%, #065f46 100%);
+    background: linear-gradient(135deg, #93c5fd 0%, #dbeafe 22%, #2563eb 55%, #60a5fa 78%, #1e3a8a 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
