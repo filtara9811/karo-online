@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,12 +6,17 @@ import {
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
   IdCard, Wallet, PackageCheck, FileCheck2, Building2,
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
-  Users, Truck, ChevronRight, X,
+  Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import goldUser from "@/assets/gold-user.png";
+import goldBriefcase from "@/assets/gold-briefcase.png";
+import goldServices from "@/assets/gold-services.png";
+import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 import { useAuth } from "@/hooks/use-auth";
+import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
