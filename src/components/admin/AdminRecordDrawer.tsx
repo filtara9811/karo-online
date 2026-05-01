@@ -89,7 +89,8 @@ export function AdminRecordDrawer({
 
   const update = async (patch: Record<string, unknown>, msg = "Saved") => {
     setBusy(true);
-    const { error } = await supabase.from(entity).update(patch).eq("id", record.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from(entity) as any).update(patch).eq("id", record.id);
     setBusy(false);
     if (error) {
       toast.error(error.message);
