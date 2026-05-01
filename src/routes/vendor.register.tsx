@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { RegistrationFlow } from "@/components/RegistrationFlow";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldOther from "@/assets/gold-other.png";
@@ -75,8 +79,10 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 
 function VendorRegister() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, ready } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
+  const [, setSaving] = useState(false);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
@@ -194,13 +200,74 @@ function VendorRegister() {
     return null;
   }, [picker]);
 
-  const handleJoinPlan = (planId: string) => {
+  const handleJoinPlan = async (planId: string) => {
+    if (!user) {
+      toast.error("Pehle sign in karein");
+      return;
+    }
     setPlanChosen(planId);
+    setSaving(true);
+    const { error } = await supabase.from("vendors").upsert(
+      {
+        user_id: user.id,
+        role,
+        owner_name: ownerName.trim() || null,
+        entity,
+        trade,
+        deals_in: dealsIn,
+        business_name: businessName.trim() || null,
+        whatsapp: whatsapp || null,
+        manager_email: managerEmail.trim() || null,
+        referral: referral.trim() || null,
+        instagram: insta.trim() || null,
+        facebook: fb.trim() || null,
+        website: website.trim() || null,
+        aadhaar: aadhaar || null,
+        pan: pan.trim() || null,
+        gst: gst.trim() || null,
+        plan: planId,
+        status: "pending",
+      },
+      { onConflict: "user_id" },
+    );
+    setSaving(false);
+    if (error) {
+      console.error("[vendors upsert]", error);
+      toast.error("Vendor save fail hua — phir try karein");
+      return;
+    }
     setShowJoined(true);
     setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
   };
 
   const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
+
+  // Show OTP/Google sign-in gate first if user not authenticated
+  if (ready && !isAuthenticated) {
+    return (
+      <main
+        className="fixed inset-0 overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, #0a0a0a 0%, transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #04231a 60%, #053024 100%)",
+        }}
+      >
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 pointer-events-none">
+          <h1 className="font-display text-2xl font-bold text-silver-gradient tracking-tight">
+            Vendor <span className="font-light">|</span> Sign in
+          </h1>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.6)]">
+            Verify phone to start onboarding
+          </span>
+        </div>
+        <RegistrationFlow
+          transparent
+          onBack={() => navigate({ to: "/" })}
+          onComplete={() => { /* AuthProvider will flip isAuthenticated */ }}
+        />
+      </main>
+    );
+  }
 
   return (
     <main
