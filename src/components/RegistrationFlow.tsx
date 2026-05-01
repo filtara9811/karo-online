@@ -9,7 +9,7 @@ import { MpinLogin } from "@/components/MpinLogin";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
-import goldGoogle from "@/assets/gold-google.png";
+
 import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
