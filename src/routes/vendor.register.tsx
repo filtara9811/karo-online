@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { RegistrationFlow } from "@/components/RegistrationFlow";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldOther from "@/assets/gold-other.png";
@@ -75,8 +79,16 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 
 function VendorRegister() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, ready } = useAuth();
+  const [authGateDone, setAuthGateDone] = useState(false);
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
+  const [saving, setSaving] = useState(false);
+
+  // If user signs in via the gate, mark gate done
+  useEffect(() => {
+    if (isAuthenticated) setAuthGateDone(true);
+  }, [isAuthenticated]);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
@@ -194,8 +206,42 @@ function VendorRegister() {
     return null;
   }, [picker]);
 
-  const handleJoinPlan = (planId: string) => {
+  const handleJoinPlan = async (planId: string) => {
+    if (!user) {
+      toast.error("Pehle sign in karein");
+      return;
+    }
     setPlanChosen(planId);
+    setSaving(true);
+    const { error } = await supabase.from("vendors").upsert(
+      {
+        user_id: user.id,
+        role,
+        owner_name: ownerName.trim() || null,
+        entity,
+        trade,
+        deals_in: dealsIn,
+        business_name: businessName.trim() || null,
+        whatsapp: whatsapp || null,
+        manager_email: managerEmail.trim() || null,
+        referral: referral.trim() || null,
+        instagram: insta.trim() || null,
+        facebook: fb.trim() || null,
+        website: website.trim() || null,
+        aadhaar: aadhaar || null,
+        pan: pan.trim() || null,
+        gst: gst.trim() || null,
+        plan: planId,
+        status: "pending",
+      },
+      { onConflict: "user_id" },
+    );
+    setSaving(false);
+    if (error) {
+      console.error("[vendors upsert]", error);
+      toast.error("Vendor save fail hua — phir try karein");
+      return;
+    }
     setShowJoined(true);
     setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
   };
