@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, Search, Trash2, Mail, Phone, MapPin, RefreshCw } from "lucide-react";
+import { Users, Search, Trash2, Mail, Phone, MapPin, RefreshCw, Ban, CheckCircle2 } from "lucide-react";
 import {
   AdminLayout,
   GoldCard,
@@ -29,6 +29,8 @@ type Customer = {
   address: string | null;
   avatar_url: string | null;
   signup_method: string | null;
+  is_blocked: boolean;
+  status: string;
   created_at: string;
 };
 
@@ -65,6 +67,21 @@ function CustomersPage() {
       toast.success("Deleted");
       setCustomers((c) => c.filter((x) => x.id !== id));
     }
+  };
+
+  const toggleBlock = async (c: Customer) => {
+    const next = !c.is_blocked;
+    const { error } = await supabase
+      .from("customers")
+      .update({ is_blocked: next, status: next ? "blocked" : "active" })
+      .eq("id", c.id);
+    if (error) return toast.error("Update fail");
+    toast.success(next ? "Blocked" : "Unblocked");
+    setCustomers((rs) =>
+      rs.map((r) =>
+        r.id === c.id ? { ...r, is_blocked: next, status: next ? "blocked" : "active" } : r,
+      ),
+    );
   };
 
   const filtered = customers.filter((c) => {
@@ -182,13 +199,26 @@ function CustomersPage() {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(c.id)}
-                  className="h-9 w-9 grid place-items-center rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 active:scale-95 flex-shrink-0"
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex flex-col gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => toggleBlock(c)}
+                    className={`h-9 w-9 grid place-items-center rounded-lg border active:scale-95 ${
+                      c.is_blocked
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                        : "bg-orange-500/10 border-orange-500/30 text-orange-300"
+                    }`}
+                    aria-label={c.is_blocked ? "Unblock" : "Block"}
+                  >
+                    {c.is_blocked ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="h-9 w-9 grid place-items-center rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 active:scale-95"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </GoldCard>
           ))}
