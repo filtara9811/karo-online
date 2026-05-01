@@ -336,6 +336,8 @@ function ProfilePage() {
         title="Switch Panel"
         subtitle="Choose your workspace"
         options={PANEL_OPTIONS}
+        shareMode
+        longPressHint="Long-press to copy or share panel link"
         onSelect={(value) => {
           setPanelPicker(false);
           setTimeout(() => {
@@ -351,9 +353,9 @@ function ProfilePage() {
 }
 
 const PANEL_OPTIONS: ActionOption[] = [
-  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile },
-  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase },
-  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO" },
+  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile, shareTo: "/" },
+  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase, shareTo: "/vendor/dashboard" },
+  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO", shareTo: "/admin" },
   { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
 ];
 
