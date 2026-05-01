@@ -80,15 +80,9 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 function VendorRegister() {
   const navigate = useNavigate();
   const { user, isAuthenticated, ready } = useAuth();
-  const [authGateDone, setAuthGateDone] = useState(false);
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
-  const [saving, setSaving] = useState(false);
-
-  // If user signs in via the gate, mark gate done
-  useEffect(() => {
-    if (isAuthenticated) setAuthGateDone(true);
-  }, [isAuthenticated]);
+  const [, setSaving] = useState(false);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
