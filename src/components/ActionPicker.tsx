@@ -42,10 +42,14 @@ export function ActionPicker({
   defaultValue,
   onSetDefault,
   topRightAction,
+  shareMode,
+  longPressHint,
 }: Props) {
   const [pressing, setPressing] = useState<string | null>(null);
   const longPressFiredRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [shareFor, setShareFor] = useState<ActionOption | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
