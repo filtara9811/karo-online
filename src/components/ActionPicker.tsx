@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Home as HomeIcon, Pin } from "lucide-react";
+import { Home as HomeIcon, Pin, Copy, Share2, Check, Link2, X } from "lucide-react";
 
 export type ActionOption = {
   value: string;
@@ -8,6 +8,8 @@ export type ActionOption = {
   icon: string;
   badge?: string;
   disabled?: boolean;
+  /** Optional deep-link path (e.g. "/vendor/dashboard"). When provided & shareMode is on, long-press opens a share/copy menu. */
+  shareTo?: string;
 };
 
 type Props = {
@@ -24,6 +26,10 @@ type Props = {
   onSetDefault?: (value: string) => void;
   /** Optional element rendered in the top-right corner of the sheet (e.g. Admin chip). */
   topRightAction?: React.ReactNode;
+  /** When true, long-press opens a Copy/Share link menu instead of pinning. Requires options to have shareTo. */
+  shareMode?: boolean;
+  /** Long-press hint text (override default). */
+  longPressHint?: string;
 };
 
 export function ActionPicker({
