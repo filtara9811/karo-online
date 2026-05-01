@@ -13,39 +13,42 @@ const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
  * - Sheet has a fully translucent backdrop so the home screen stays visible behind.
  */
 export function AuthGate() {
-  const { isAuthenticated, ready } = useAuth();
+  const { isAuthenticated, ready, profile } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
 
+  // Profile is "complete" when basic fields are filled
+  const profileComplete = !!(profile?.name && profile?.address);
+  const needsGate = !skip && (!isAuthenticated || !profileComplete);
+
   // Auto-open ~1.5s after first ready render
   useEffect(() => {
-    if (!ready || isAuthenticated || skip) return;
+    if (!ready || !needsGate) return;
     const id = window.setTimeout(() => setOpen(true), 1500);
     return () => window.clearTimeout(id);
-  }, [ready, isAuthenticated, skip]);
+  }, [ready, needsGate]);
 
-  // Intercept first click anywhere (capture phase) while unauthenticated
+  // Intercept first click anywhere (capture phase) while gate is needed
   useEffect(() => {
-    if (!ready || isAuthenticated || skip) return;
+    if (!ready || !needsGate) return;
 
     const handler = (e: MouseEvent | TouchEvent) => {
-      // Don't intercept clicks inside the gate itself
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-auth-gate]")) return;
       setOpen(true);
     };
     document.addEventListener("pointerdown", handler as EventListener, { capture: true });
     return () => document.removeEventListener("pointerdown", handler as EventListener, { capture: true } as EventListenerOptions);
-  }, [ready, isAuthenticated, skip]);
+  }, [ready, needsGate]);
 
-  // Auto-close once the user signs in
+  // Auto-close once profile is complete
   useEffect(() => {
-    if (isAuthenticated) setOpen(false);
-  }, [isAuthenticated]);
+    if (!needsGate) setOpen(false);
+  }, [needsGate]);
 
-  if (!open || isAuthenticated || skip) return null;
+  if (!open || !needsGate) return null;
 
   return (
     <div
