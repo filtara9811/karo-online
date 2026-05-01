@@ -278,7 +278,17 @@ function VendorDashboard() {
               </span>
               <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
             </Link>
-            <DockItem label="Profile" icon={<Store className="h-4 w-4" />} />
+            <Link
+              to="/profile"
+              className="flex flex-col items-center gap-0.5 px-3 py-1"
+            >
+              <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
+                <Store className="h-4 w-4" />
+              </span>
+              <span className="text-[9px] font-bold text-[color:oklch(0.45_0.01_260)]">
+                Profile
+              </span>
+            </Link>
           </div>
         </div>
       </div>
