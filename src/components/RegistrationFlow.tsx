@@ -14,6 +14,9 @@ import goldSimJio from "@/assets/gold-sim-jio.png";
 import goldSimAirtel from "@/assets/gold-sim-airtel.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
+import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
 type StepKey = "name" | "phone" | "otp" | "email" | "address";
@@ -48,8 +51,18 @@ export type RegistrationFlowProps = {
 };
 
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
-  const { signIn } = useAuth();
+  const { user, isAuthenticated, refreshProfile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signup");
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  // When the user signs in via Google OAuth, prefill email + name from the session
+  useEffect(() => {
+    if (user?.email && !email) setEmail(user.email);
+    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const metaName = meta?.full_name || meta?.name;
+    if (metaName && !name) setName(metaName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const [agreed, setAgreed] = useState(false);
   const [gender, setGender] = useState<string | null>(null);
   const [name, setName] = useState("");
