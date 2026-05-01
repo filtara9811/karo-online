@@ -114,7 +114,13 @@ function CustomersPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (
-            <GoldCard key={c.id} className="p-4 cursor-pointer" onClick={() => setActive(c)}>
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setActive(c)}
+              className="block w-full text-left"
+            >
+              <GoldCard className="p-4">
               <div className="flex items-start gap-3">
                 <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-[#d4af37]/40 flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center">
                   {c.avatar_url ? (
