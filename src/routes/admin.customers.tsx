@@ -173,6 +173,11 @@ function CustomersPage() {
                         {c.signup_method}
                       </span>
                     )}
+                    {c.is_blocked && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
+                        BLOCKED
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-1 space-y-0.5 text-xs text-[#f5d97a]/75">
