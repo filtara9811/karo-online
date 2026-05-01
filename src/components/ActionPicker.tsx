@@ -150,7 +150,7 @@ export function ActionPicker({
                   }
                   onSelect(opt.value);
                 }}
-                onPointerDown={() => !opt.disabled && startPress(opt.value)}
+                onPointerDown={() => !opt.disabled && startPress(opt)}
                 onPointerUp={cancelPress}
                 onPointerLeave={cancelPress}
                 onPointerCancel={cancelPress}
