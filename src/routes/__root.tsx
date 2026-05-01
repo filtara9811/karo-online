@@ -2,6 +2,7 @@ import { Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-rou
 import { AppShell } from "@/components/AppShell";
 import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
+import { AuthProvider } from "@/hooks/use-auth";
 
 import appCss from "../styles.css?url";
 
@@ -88,9 +89,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <AppPrefsProvider>
-      <CartProvider>
-        <AppShell />
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <AppShell />
+        </CartProvider>
+      </AuthProvider>
     </AppPrefsProvider>
   );
 }

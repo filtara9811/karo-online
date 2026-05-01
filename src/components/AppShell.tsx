@@ -9,6 +9,7 @@ import goldOther from "@/assets/gold-other.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
+import { AuthGate } from "@/components/AuthGate";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
@@ -69,6 +70,8 @@ export function AppShell() {
       </main>
 
       {!hideBottomBar && <BottomActionBar loading={isLoading} />}
+
+      <AuthGate />
     </div>
   );
 }
