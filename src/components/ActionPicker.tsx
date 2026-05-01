@@ -127,9 +127,9 @@ export function ActionPicker({
           </p>
           <h2 className="font-display text-2xl text-gold-gradient leading-tight">{title}</h2>
           {subtitle && <p className="mt-1 text-xs text-muted-foreground italic">{subtitle}</p>}
-          {onSetDefault && (
+          {(onSetDefault || shareMode) && (
             <p className="mt-1.5 text-[9px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82/0.85)]">
-              ✦ Long-press to pin as Home ✦
+              ✦ {longPressHint ?? (shareMode ? "Long-press to copy or share link" : "Long-press to pin as Home")} ✦
             </p>
           )}
         </div>
