@@ -26,15 +26,6 @@ export const Route = createFileRoute("/admin/staff")({
     ],
   }),
   component: StaffPage,
-});
-  head: () => ({
-    meta: [
-      { title: "Staff & Roles — Admin" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
-  component: StaffPage,
-});
 
 type RoleRow = {
   id: string;
