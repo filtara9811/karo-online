@@ -126,6 +126,15 @@
     color: transparent;
   }
 
+  /* Emerald metallic gradient for vendor headings (differentiates from customer gold) */
+  .text-emerald-gradient {
+    background: linear-gradient(135deg, #6ee7b7 0%, #d1fae5 22%, #10b981 55%, #34d399 78%, #065f46 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
   /* 3D metallic gold bar for primary buttons (Join / Submit) */
   .bg-gold-bar {
     background:
