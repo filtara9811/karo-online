@@ -88,11 +88,11 @@ export function VendorListSheet({ open, category, onClose }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#fff8e7] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
+        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#f5f6f8] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
         style={{ animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
+          <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent opacity-80" />
         </div>
 
         {/* Header */}
@@ -101,11 +101,11 @@ export function VendorListSheet({ open, category, onClose }: Props) {
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
               ✦ Matched ✦
             </p>
-            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
+            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
               {category ?? "Ac"} | service vendor
             </h3>
             <div className="flex items-center gap-1 mt-0.5">
-              <Star className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
+              <Star className="h-3.5 w-3.5 text-slate-500" fill="currentColor" />
               <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">4.9</span>
               <span className="text-[10px] text-[color:oklch(0.50_0.08_85)]">
                 · {MATCHED.length} vendors found
@@ -115,7 +115,7 @@ export function VendorListSheet({ open, category, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
           >
             <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
           </button>
@@ -135,7 +135,7 @@ export function VendorListSheet({ open, category, onClose }: Props) {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.4)] overflow-hidden shadow-sm"
+                className="rounded-2xl bg-white border-2 border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm"
               >
                 {/* Cover — tap opens contact popup */}
                 <button
@@ -144,11 +144,11 @@ export function VendorListSheet({ open, category, onClose }: Props) {
                   aria-label={`Open ${v.name} profile`}
                 >
                   <img src={v.cover} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
-                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-[color:oklch(0.25_0.05_85)]">{v.rating}</span>
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow">
+                    <Star className="h-3 w-3 text-slate-500" fill="currentColor" />
+                    <span className="text-[10px] font-bold text-[color:oklch(0.25_0.01_260)]">{v.rating}</span>
                   </div>
-                  <div className="absolute -bottom-3 left-3 right-3 h-9 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706] border-2 border-white shadow-md flex items-center px-2 gap-2">
+                  <div className="absolute -bottom-3 left-3 right-3 h-9 rounded-full bg-gradient-to-r from-[#d8dde3] to-[#6b7280] border-2 border-white shadow-md flex items-center px-2 gap-2">
                     <span className="h-7 w-7 rounded-full overflow-hidden border border-white flex-shrink-0">
                       <img src={v.avatar} alt="" className="h-full w-full object-cover" />
                     </span>
@@ -165,19 +165,19 @@ export function VendorListSheet({ open, category, onClose }: Props) {
                 {/* Body — tap opens popup too */}
                 <button
                   onClick={() => setActiveContact(v)}
-                  className="px-3 pt-5 pb-2 w-full text-left active:bg-[#fffbeb]"
+                  className="px-3 pt-5 pb-2 w-full text-left active:bg-[#f5f6f8]"
                 >
-                  <h4 className="font-display text-base font-bold text-[color:oklch(0.25_0.05_85)] leading-tight">
+                  <h4 className="font-display text-base font-bold text-[color:oklch(0.25_0.01_260)] leading-tight">
                     {v.name}
                   </h4>
                   <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.body}</p>
 
-                  <div className="mt-2 rounded-xl bg-[#fffbeb] border border-[color:oklch(0.78_0.14_82/0.35)] p-2 flex items-center gap-2">
-                    <div className="h-12 w-14 rounded-lg bg-gradient-to-br from-sky-200 to-emerald-200 grid place-items-center flex-shrink-0">
+                  <div className="mt-2 rounded-xl bg-[#f5f6f8] border border-[color:oklch(0.72_0.01_260/0.35)] p-2 flex items-center gap-2">
+                    <div className="h-12 w-14 rounded-lg bg-gradient-to-br from-sky-200 to-slate-300 grid place-items-center flex-shrink-0">
                       <span className="text-[18px]">☁️</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)]">
+                      <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)]">
                         {v.productTitle}
                       </p>
                       <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.productPrice}</p>
@@ -189,11 +189,11 @@ export function VendorListSheet({ open, category, onClose }: Props) {
                 </button>
 
                 {/* Action bar */}
-                <div className="flex items-stretch border-t border-[color:oklch(0.78_0.14_82/0.3)] bg-[color:oklch(0.13_0.02_85)]">
+                <div className="flex items-stretch border-t border-[color:oklch(0.72_0.01_260/0.3)] bg-[color:oklch(0.13_0.02_85)]">
                   <button
                     onClick={() => toggleApprove(v.id)}
                     className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm underline underline-offset-2 ${
-                      isApproved ? "text-amber-300" : "text-white"
+                      isApproved ? "text-slate-300" : "text-white"
                     } active:scale-95 transition`}
                   >
                     {isApproved && <Check className="h-4 w-4" strokeWidth={3} />}
@@ -268,7 +268,7 @@ function ContactActionPopup({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-white to-[#fff8e7] border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)] overflow-hidden"
+        className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-white to-[#f5f6f8] border-2 border-[color:oklch(0.72_0.01_260/0.5)] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)] overflow-hidden"
       >
         {/* Hero */}
         <div className="relative h-32 w-full">
@@ -279,7 +279,7 @@ function ContactActionPopup({
             aria-label="Close"
             className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/95 border border-white shadow active:scale-90"
           >
-            <X className="h-4 w-4 text-[color:oklch(0.25_0.05_85)]" />
+            <X className="h-4 w-4 text-[color:oklch(0.25_0.01_260)]" />
           </button>
           <div className="absolute -bottom-8 left-4 h-16 w-16 rounded-2xl overflow-hidden border-4 border-white shadow-lg">
             <img src={vendor.avatar} alt={vendor.name} className="h-full w-full object-cover" />
@@ -287,14 +287,14 @@ function ContactActionPopup({
         </div>
 
         <div className="px-4 pt-10 pb-3">
-          <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
+          <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
             {vendor.name}
           </h3>
           <p className="text-xs text-[color:oklch(0.50_0.08_85)]">{vendor.body}</p>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />
+                <Star key={i} className="h-3 w-3 text-slate-500" fill="currentColor" />
               ))}
             </div>
             <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">{vendor.rating}</span>
@@ -327,7 +327,7 @@ function ContactActionPopup({
         <div className="px-4 pb-4">
           <button
             onClick={onApprove}
-            className="w-full py-2.5 rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)] active:scale-95 underline underline-offset-2"
+            className="w-full py-2.5 rounded-2xl bg-gradient-to-b from-[#d8dde3] to-[#6b7280] text-white font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)] active:scale-95 underline underline-offset-2"
           >
             Approve | Vendor
           </button>
@@ -350,10 +350,10 @@ function ActionTile({
 }) {
   const styles =
     tone === "emerald"
-      ? "from-emerald-400 to-emerald-600 shadow-[0_4px_12px_-2px_rgba(5,150,105,0.5)]"
+      ? "from-slate-500 to-slate-600 shadow-[0_4px_12px_-2px_rgba(5,150,105,0.5)]"
       : tone === "sky"
       ? "from-sky-400 to-sky-600 shadow-[0_4px_12px_-2px_rgba(2,132,199,0.5)]"
-      : "from-[#fbbf24] to-[#d97706] shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)]";
+      : "from-[#d8dde3] to-[#6b7280] shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)]";
   return (
     <button
       onClick={onClick}

@@ -27,10 +27,10 @@ export function DashboardHistoryFace({
 
   return (
     <article
-      className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)] h-full"
+      className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)] h-full"
       style={{
         background:
-          "linear-gradient(135deg, #fdf3c8 0%, #f5d97a 55%, #d4af37 100%)",
+          "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 55%, #a8acb3 100%)",
       }}
     >
       <div className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full border border-white/40" />
@@ -38,16 +38,16 @@ export function DashboardHistoryFace({
 
       <header className="relative px-4 pt-3.5 pb-2 flex items-center gap-3">
         <span
-          className="h-10 w-10 rounded-full grid place-items-center text-[color:oklch(0.18_0.06_18)] shadow border-2 border-white"
+          className="h-10 w-10 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow border-2 border-white"
           style={{
             background:
-              "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+              "linear-gradient(180deg, #f5f6f8, #d8dde3, #a8acb3, #3f4750)",
           }}
         >
           <Trophy className="h-4 w-4" strokeWidth={2.4} />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.42_0.10_82)] font-bold">
+          <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.42_0.01_260)] font-bold">
             ✦ History ✦
           </p>
           <h2 className="font-display text-base text-[color:oklch(0.22_0.08_30)] font-bold leading-tight truncate uppercase">
@@ -62,12 +62,12 @@ export function DashboardHistoryFace({
           aria-label="Flip back to live"
           className="h-8 w-8 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.55_0.14_82/0.6)] active:scale-90"
         >
-          <RotateCcw className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" />
+          <RotateCcw className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
         </button>
       </header>
 
       <div className="relative px-3 pb-3">
-        <div className="rounded-2xl bg-white/85 backdrop-blur-sm border border-white/60 divide-y divide-[color:oklch(0.78_0.14_82/0.25)]">
+        <div className="rounded-2xl bg-white/85 backdrop-blur-sm border border-white/60 divide-y divide-[color:oklch(0.72_0.01_260/0.25)]">
           {rows.map((r) => {
             const positive = r.delta >= 0;
             return (
@@ -81,12 +81,12 @@ export function DashboardHistoryFace({
                 <span className="col-span-3 text-[10px] text-[color:oklch(0.55_0.10_82)] tabular-nums">
                   {r.yesterday}
                 </span>
-                <span className="col-span-3 font-display font-bold text-[color:oklch(0.18_0.06_18)] tabular-nums">
+                <span className="col-span-3 font-display font-bold text-[color:oklch(0.20_0.01_260)] tabular-nums">
                   {r.today}
                 </span>
                 <span
                   className={`col-span-3 flex items-center justify-end gap-0.5 font-bold tabular-nums ${
-                    positive ? "text-emerald-700" : "text-rose-600"
+                    positive ? "text-slate-700" : "text-rose-600"
                   }`}
                 >
                   {positive ? (
@@ -105,7 +105,7 @@ export function DashboardHistoryFace({
           <span className="font-display font-bold text-[color:oklch(0.30_0.05_85)]">
             Top Product
           </span>
-          <span className="font-display font-bold text-gold-gradient">
+          <span className="font-display font-bold text-silver-gradient">
             Aurum Perfume · 18 sold
           </span>
         </div>

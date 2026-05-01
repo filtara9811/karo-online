@@ -217,16 +217,16 @@ function VendorRegister() {
       {/* Header — Vendor branding */}
       <button
         onClick={() => navigate({ to: "/" })}
-        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-white/90 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-md"
+        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-white/90 backdrop-blur-md border border-[color:oklch(0.72_0.01_260/0.5)] grid place-items-center shadow-md"
         aria-label="Close"
       >
-        <svg className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+        <svg className="h-5 w-5 text-[color:oklch(0.42_0.01_260)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
           <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
-        <h1 className="font-display text-3xl font-bold text-emerald-gradient tracking-tight">
+        <h1 className="font-display text-3xl font-bold text-silver-gradient tracking-tight">
           Vendor <span className="font-light">|</span> Apps
         </h1>
         <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.6)]">
@@ -255,7 +255,7 @@ function VendorRegister() {
         >
           {/* drag handle */}
           <div className="pt-3 pb-1 grid place-items-center cursor-grab active:cursor-grabbing">
-            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#2563eb] via-[#93c5fd] to-[#2563eb] shadow-[0_1px_4px_rgba(37,99,235,0.5)]" />
+            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#a8acb3] via-[#d8dde3] to-[#a8acb3] shadow-[0_1px_4px_rgba(37,99,235,0.5)]" />
           </div>
 
           <div
@@ -265,22 +265,22 @@ function VendorRegister() {
             {/* top icons */}
             <div className="flex items-center justify-between gap-2 pt-1">
               {/* Mode tabs */}
-              <div className="grid grid-cols-2 gap-1 p-1 rounded-full border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/70">
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-full border border-[color:oklch(0.72_0.01_260/0.5)] bg-white/70">
                 <button
                   onClick={() => setMode("register")}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
-                    mode === "register" ? "text-[color:oklch(0.18_0.06_18)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
+                    mode === "register" ? "text-[color:oklch(0.20_0.01_260)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "register" ? { background: "linear-gradient(180deg, #dbeafe, #93c5fd, #2563eb)" } : undefined}
+                  style={mode === "register" ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" } : undefined}
                 >
                   Registered | vendor
                 </button>
                 <button
                   onClick={() => setMode("login")}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
-                    mode === "login" ? "text-[color:oklch(0.18_0.06_18)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
+                    mode === "login" ? "text-[color:oklch(0.20_0.01_260)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "login" ? { background: "linear-gradient(180deg, #dbeafe, #93c5fd, #2563eb)" } : undefined}
+                  style={mode === "login" ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" } : undefined}
                 >
                   Login
                 </button>
@@ -288,13 +288,13 @@ function VendorRegister() {
 
               <div className="flex gap-1.5">
                 <button
-                  className="h-8 w-8 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center shadow-md"
+                  className="h-8 w-8 rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.55)] grid place-items-center shadow-md"
                   aria-label="Theme"
                 >
                   <Sun className="h-4 w-4 text-[color:oklch(0.55_0.15_82)]" strokeWidth={2.4} />
                 </button>
                 <button
-                  className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#eff6ff] to-[#93c5fd] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center shadow-md"
+                  className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#f5f6f8] to-[#d8dde3] border border-[color:oklch(0.72_0.01_260/0.6)] grid place-items-center shadow-md"
                   aria-label="Language"
                 >
                   <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
@@ -304,8 +304,8 @@ function VendorRegister() {
 
             {mode === "login" ? (
               <div className="mt-10 text-center px-6">
-                <p className="font-display text-2xl text-emerald-gradient">Existing vendor?</p>
-                <p className="text-sm text-[color:oklch(0.45_0.08_85)] mt-2 italic">
+                <p className="font-display text-2xl text-silver-gradient">Existing vendor?</p>
+                <p className="text-sm text-[color:oklch(0.45_0.01_260)] mt-2 italic">
                   Login coming next phase. Switch to <strong>Registered</strong> to onboard.
                 </p>
               </div>
@@ -366,17 +366,17 @@ function VendorRegister() {
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     onClick={goBack}
-                    className="rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.30_0.06_82)] border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/70"
+                    className="rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.30_0.06_82)] border border-[color:oklch(0.72_0.01_260/0.5)] bg-white/70"
                   >
                     Back
                   </button>
                   <button
                     onClick={goNext}
                     disabled={!canNext}
-                    className="btn-3d rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.18_0.06_18)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="btn-3d rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.20_0.01_260)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     style={{
                       background:
-                        "linear-gradient(180deg, #dbeafe 0%, #93c5fd 35%, #2563eb 70%, #1e3a8a 100%)",
+                        "linear-gradient(180deg, #eef0f3 0%, #d8dde3 35%, #a8acb3 70%, #3f4750 100%)",
                       boxShadow: canNext
                         ? "0 8px 24px -6px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.7)"
                         : undefined,
@@ -410,15 +410,15 @@ function VendorRegister() {
           <div
             className="rounded-3xl p-8 text-center max-w-xs"
             style={{
-              background: "linear-gradient(180deg, #dbeafe 0%, #93c5fd 50%, #2563eb 100%)",
+              background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)",
               boxShadow: "0 30px 80px -10px rgba(37,99,235,0.7)",
               animation: "sheet-up 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             <div className="h-16 w-16 mx-auto rounded-full bg-white grid place-items-center mb-3 shadow-lg">
-              <Check className="h-9 w-9 text-[color:oklch(0.42_0.10_82)]" strokeWidth={3} />
+              <Check className="h-9 w-9 text-[color:oklch(0.42_0.01_260)]" strokeWidth={3} />
             </div>
-            <p className="font-display text-2xl text-[color:oklch(0.18_0.06_18)] font-bold">Joined!</p>
+            <p className="font-display text-2xl text-[color:oklch(0.20_0.01_260)] font-bold">Joined!</p>
             <p className="text-xs text-[color:oklch(0.30_0.06_18)] mt-1 italic">
               Redirecting to vendor dashboard…
             </p>
@@ -440,13 +440,13 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
               className={`h-8 w-8 rounded-full grid place-items-center text-xs font-bold border-2 transition-all ${
                 i <= current
                   ? "border-white text-white"
-                  : "border-[color:oklch(0.78_0.14_82/0.4)] text-[color:oklch(0.55_0.10_82)] bg-white/70"
+                  : "border-[color:oklch(0.72_0.01_260/0.4)] text-[color:oklch(0.55_0.10_82)] bg-white/70"
               }`}
               style={
                 i <= current
                   ? {
                       background:
-                        "linear-gradient(135deg, #93c5fd 0%, #2563eb 50%, #1e3a8a 100%)",
+                        "linear-gradient(135deg, #d8dde3 0%, #a8acb3 50%, #3f4750 100%)",
                       boxShadow: "0 4px 10px -2px rgba(37,99,235,0.6)",
                     }
                   : undefined
@@ -460,7 +460,7 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
                 style={{
                   background:
                     i < current
-                      ? "linear-gradient(90deg, #2563eb, #93c5fd)"
+                      ? "linear-gradient(90deg, #a8acb3, #d8dde3)"
                       : "linear-gradient(90deg, oklch(0.78 0.14 165 / 0.4), oklch(0.78 0.14 165 / 0.2))",
                 }}
               />
@@ -474,7 +474,7 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
             key={l}
             className={`flex-1 text-center ${
               i === current
-                ? "text-emerald-gradient font-bold"
+                ? "text-silver-gradient font-bold"
                 : "text-[color:oklch(0.50_0.08_85/0.7)]"
             }`}
           >
@@ -639,7 +639,7 @@ function Step2Social({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-center text-xs italic text-[color:oklch(0.45_0.08_85)] mb-2">
+      <p className="text-center text-xs italic text-[color:oklch(0.45_0.01_260)] mb-2">
         Add at least one — helps customers find & trust you
       </p>
       <Field
@@ -696,7 +696,7 @@ function Step3Kyc({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-center text-xs italic text-[color:oklch(0.45_0.08_85)] mb-2">
+      <p className="text-center text-xs italic text-[color:oklch(0.45_0.01_260)] mb-2">
         Your KYC is encrypted — verifies you as a real vendor
       </p>
       <Field
@@ -744,7 +744,7 @@ const PLANS = [
     price: "₹499",
     coins: 100,
     perks: ["100 lead coins", "WhatsApp leads", "Basic analytics"],
-    accent: "linear-gradient(135deg, #bfdbfe, #2563eb)",
+    accent: "linear-gradient(135deg, #eef0f3, #a8acb3)",
   },
   {
     id: "growth",
@@ -754,7 +754,7 @@ const PLANS = [
     coins: 500,
     bonus: 50,
     perks: ["500 + 50 bonus coins", "Priority leads", "Vendor badge"],
-    accent: "linear-gradient(135deg, #93c5fd, #2563eb, #1e3a8a)",
+    accent: "linear-gradient(135deg, #d8dde3, #a8acb3, #3f4750)",
     popular: true,
   },
   {
@@ -765,7 +765,7 @@ const PLANS = [
     coins: 1500,
     bonus: 250,
     perks: ["1,500 + 250 bonus coins", "Hot leads first", "Verified gold tag", "Dedicated CSM"],
-    accent: "linear-gradient(135deg, #dbeafe, #93c5fd, #2563eb, #172554)",
+    accent: "linear-gradient(135deg, #eef0f3, #d8dde3, #a8acb3, #3f4750)",
   },
 ];
 
@@ -774,8 +774,8 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
     <div className="mt-2">
       <div className="text-center mb-4">
         <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">✦ Final Step ✦</p>
-        <h2 className="font-display text-3xl text-emerald-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
-        <p className="text-xs italic text-[color:oklch(0.45_0.08_85)] mt-1">
+        <h2 className="font-display text-3xl text-silver-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
+        <p className="text-xs italic text-[color:oklch(0.45_0.01_260)] mt-1">
           Coins unlock leads. Top up anytime.
         </p>
       </div>
@@ -793,7 +793,7 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
                 background: isChosen
                   ? p.accent
                   : "linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)",
-                borderColor: isChosen ? "#1e3a8a" : "rgba(37,99,235,0.4)",
+                borderColor: isChosen ? "#3f4750" : "rgba(37,99,235,0.4)",
                 boxShadow: isChosen
                   ? "0 12px 30px -8px rgba(37,99,235,0.6)"
                   : "0 4px 12px -4px rgba(37,99,235,0.2)",
@@ -801,7 +801,7 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
             >
               {p.popular && (
                 <span className="absolute -top-2 right-4 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white"
-                  style={{ background: "linear-gradient(90deg, #2563eb, #1e3a8a)" }}>
+                  style={{ background: "linear-gradient(90deg, #a8acb3, #3f4750)" }}>
                   Most Popular
                 </span>
               )}
@@ -810,14 +810,14 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
                   className="h-12 w-12 rounded-xl grid place-items-center flex-shrink-0"
                   style={{ background: p.accent, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)" }}
                 >
-                  <Icon className="h-6 w-6 text-[color:oklch(0.18_0.06_18)]" strokeWidth={2.4} />
+                  <Icon className="h-6 w-6 text-[color:oklch(0.20_0.01_260)]" strokeWidth={2.4} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between">
-                    <p className="font-display text-xl font-bold text-[color:oklch(0.18_0.06_18)]">
+                    <p className="font-display text-xl font-bold text-[color:oklch(0.20_0.01_260)]">
                       {p.name}
                     </p>
-                    <p className="font-display text-xl font-bold text-[color:oklch(0.18_0.06_18)]">
+                    <p className="font-display text-xl font-bold text-[color:oklch(0.20_0.01_260)]">
                       {p.price}
                     </p>
                   </div>
@@ -874,23 +874,23 @@ function Field({
       <div className="relative flex flex-col items-center pt-3.5">
         <div
           className={`relative h-9 w-9 rounded-full grid place-items-center border-2 transition-all ${
-            filled ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+            filled ? "border-white" : "border-[color:oklch(0.72_0.01_260/0.4)]"
           }`}
           style={{
             background: filled
-              ? "linear-gradient(135deg, #93c5fd 0%, #2563eb 50%, #1e3a8a 100%)"
-              : "linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%)",
+              ? "linear-gradient(135deg, #d8dde3 0%, #a8acb3 50%, #3f4750 100%)"
+              : "linear-gradient(135deg, #f5f6f8 0%, #eef0f3 100%)",
             boxShadow: filled
               ? "0 4px 12px -2px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.6)"
               : "inset 0 1px 0 rgba(255,255,255,0.8)",
           }}
         >
-          <Icon className={filled ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"} strokeWidth={2.4} />
+          <Icon className={filled ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.01_260)]"} strokeWidth={2.4} />
           {filled && (
             <span
               className="absolute -top-1 -right-1 h-4 w-4 rounded-full grid place-items-center border border-white"
               style={{
-                background: "linear-gradient(135deg,#dbeafe 0%,#2563eb 60%,#1e3a8a 100%)",
+                background: "linear-gradient(135deg,#eef0f3 0%,#a8acb3 60%,#3f4750 100%)",
                 boxShadow: "0 2px 6px -1px rgba(37,99,235,0.6)",
               }}
             >
@@ -899,7 +899,7 @@ function Field({
           )}
         </div>
         {!isLast && (
-          <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.78_0.14_82/0.6)] to-transparent min-h-[44px]" />
+          <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.72_0.01_260/0.6)] to-transparent min-h-[44px]" />
         )}
       </div>
 
@@ -912,7 +912,7 @@ function Field({
             onChange={(e) => onChange?.(e.target.value)}
             placeholder={showInput ? placeholder ?? label : label}
             inputMode={inputMode}
-            className="w-full bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.7)] outline-none py-0.5"
+            className="w-full bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.01_260/0.7)] outline-none py-0.5"
           />
           <div
             className="h-px w-full"
