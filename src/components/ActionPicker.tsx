@@ -7,6 +7,7 @@ export type ActionOption = {
   sub?: string;
   icon: string;
   badge?: string;
+  disabled?: boolean;
 };
 
 type Props = {
