@@ -17,6 +17,8 @@ import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { LegalSheet } from "@/components/LegalSheet";
+import { useSocialLinks } from "@/hooks/use-social-links";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -87,13 +89,13 @@ const ROWS = [
   { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
-const SOCIALS = [
-  { Icon: Facebook, color: "#1877F2" },
-  { Icon: Instagram, color: "#E4405F" },
-  { Icon: Twitter, color: "#000" },
-  { Icon: Send, color: "#0088cc" },
-  { Icon: Youtube, color: "#FF0000" },
-  { Icon: Linkedin, color: "#0A66C2" },
+const SOCIAL_META: Array<{ key: "facebook" | "instagram" | "twitter" | "telegram" | "youtube" | "linkedin" | "whatsapp"; Icon: typeof Facebook; color: string }> = [
+  { key: "facebook", Icon: Facebook, color: "#1877F2" },
+  { key: "instagram", Icon: Instagram, color: "#E4405F" },
+  { key: "twitter", Icon: Twitter, color: "#000" },
+  { key: "telegram", Icon: Send, color: "#0088cc" },
+  { key: "youtube", Icon: Youtube, color: "#FF0000" },
+  { key: "linkedin", Icon: Linkedin, color: "#0A66C2" },
 ];
 
 function ProfilePage() {
@@ -106,6 +108,8 @@ function ProfilePage() {
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
+  const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
