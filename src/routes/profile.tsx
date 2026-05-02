@@ -17,6 +17,8 @@ import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { LegalSheet } from "@/components/LegalSheet";
+import { useSocialLinks } from "@/hooks/use-social-links";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -87,13 +89,13 @@ const ROWS = [
   { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
-const SOCIALS = [
-  { Icon: Facebook, color: "#1877F2" },
-  { Icon: Instagram, color: "#E4405F" },
-  { Icon: Twitter, color: "#000" },
-  { Icon: Send, color: "#0088cc" },
-  { Icon: Youtube, color: "#FF0000" },
-  { Icon: Linkedin, color: "#0A66C2" },
+const SOCIAL_META: Array<{ key: "facebook" | "instagram" | "twitter" | "telegram" | "youtube" | "linkedin" | "whatsapp"; Icon: typeof Facebook; color: string }> = [
+  { key: "facebook", Icon: Facebook, color: "#1877F2" },
+  { key: "instagram", Icon: Instagram, color: "#E4405F" },
+  { key: "twitter", Icon: Twitter, color: "#000" },
+  { key: "telegram", Icon: Send, color: "#0088cc" },
+  { key: "youtube", Icon: Youtube, color: "#FF0000" },
+  { key: "linkedin", Icon: Linkedin, color: "#0A66C2" },
 ];
 
 function ProfilePage() {
@@ -106,6 +108,8 @@ function ProfilePage() {
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
+  const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -249,30 +253,43 @@ function ProfilePage() {
 
       {/* Bottom: T&C + Socials + Help FAB */}
       <section className="mt-8 px-4">
-        <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-200 px-3 py-3 flex items-center gap-2 shadow-inner">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition">
+        <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-200 pl-3 pr-2 py-3 flex items-center gap-2 shadow-inner">
+          <button
+            onClick={() => setLegalSlug("terms")}
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition"
+            aria-label="Legal"
+          >
             <FileText className="h-4 w-4 text-amber-700" />
             <ShieldCheck className="h-4 w-4 text-amber-700" />
           </button>
 
-          <div className="flex-1 flex items-center justify-around">
-            {SOCIALS.map(({ Icon, color }, i) => (
-              <motion.button
-                key={i}
+          <div
+            className="flex-1 flex items-center gap-3 overflow-x-auto scrollbar-hide px-1"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {SOCIAL_META.filter(({ key }) => socialLinks[key]).map(({ key, Icon, color }) => (
+              <motion.a
+                key={key}
+                href={socialLinks[key]}
+                target="_blank"
+                rel="noopener noreferrer"
                 whileTap={{ scale: 0.85 }}
                 whileHover={{ y: -2 }}
-                className="h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm"
-                aria-label="social"
+                className="flex-shrink-0 h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm"
+                aria-label={key}
               >
                 <Icon className="h-5 w-5" style={{ color }} />
-              </motion.button>
+              </motion.a>
             ))}
+            {SOCIAL_META.every(({ key }) => !socialLinks[key]) && (
+              <span className="text-[10px] text-slate-400 italic px-2">No social links yet</span>
+            )}
           </div>
 
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setTopSheet("support")}
-            className="h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
+            className="flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
             aria-label="Help"
           >
             <Headphones className="h-6 w-6" />
@@ -280,13 +297,19 @@ function ProfilePage() {
         </div>
 
         <div className="flex justify-center gap-4 mt-3 text-[10px] text-slate-500">
-          <button className="hover:text-amber-700">{t("terms")}</button>
+          <button onClick={() => setLegalSlug("terms")} className="hover:text-amber-700">{t("terms")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">{t("privacy")}</button>
+          <button onClick={() => setLegalSlug("privacy")} className="hover:text-amber-700">{t("privacy")}</button>
           <span>·</span>
-          <button className="hover:text-amber-700">{t("refund")}</button>
+          <button onClick={() => setLegalSlug("refund")} className="hover:text-amber-700">{t("refund")}</button>
         </div>
       </section>
+
+      <LegalSheet
+        open={legalSlug !== null}
+        initialSlug={legalSlug ?? undefined}
+        onClose={() => setLegalSlug(null)}
+      />
 
       {/* Edit card sheet */}
       <AnimatePresence>
