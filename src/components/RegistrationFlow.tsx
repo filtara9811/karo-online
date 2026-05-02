@@ -21,6 +21,29 @@ import { toast } from "sonner";
 type AuthMode = "signup" | "login";
 type StepKey = "name" | "phone" | "otp" | "email" | "address";
 const STEP_ORDER: StepKey[] = ["name", "phone", "otp", "email", "address"];
+export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
+
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
+
+type CustomerDraft = {
+  gender?: string | null;
+  name?: string;
+  operator?: string | null;
+  phone?: string;
+  phoneVerified?: boolean;
+  email?: string;
+  address?: string;
+  agreed?: boolean;
+};
+
+const readCustomerDraft = (): CustomerDraft => {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(CUSTOMER_DRAFT_KEY) || "{}") as CustomerDraft;
+  } catch {
+    return {};
+  }
+};
 
 const GENDER_OPTIONS: PickerOption[] = [
   { value: "male", label: "Male", sub: "His Highness", icon: goldMale },
@@ -48,6 +71,7 @@ export type RegistrationFlowProps = {
 
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
   const { user, isAuthenticated, refreshProfile } = useAuth();
+  const draft = useMemo(readCustomerDraft, []);
   const [mode, setMode] = useState<AuthMode>("signup");
   const [googleBusy, setGoogleBusy] = useState(false);
 
@@ -59,15 +83,15 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (metaName && !name) setName(metaName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-  const [agreed, setAgreed] = useState(false);
-  const [gender, setGender] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [operator, setOperator] = useState<string | null>(null);
-  const [phone, setPhone] = useState("");
+  const [agreed, setAgreed] = useState(!!draft.agreed);
+  const [gender, setGender] = useState<string | null>(draft.gender ?? null);
+  const [name, setName] = useState(draft.name ?? "");
+  const [operator, setOperator] = useState<string | null>(draft.operator ?? null);
+  const [phone, setPhone] = useState(draft.phone ?? "");
   const [, setOtp] = useState("");
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(!!draft.phoneVerified);
+  const [email, setEmail] = useState(draft.email ?? "");
+  const [address, setAddress] = useState(draft.address ?? "");
 
   const [picker, setPicker] = useState<null | "gender" | "sim">(null);
   const [otpOpen, setOtpOpen] = useState(false);
