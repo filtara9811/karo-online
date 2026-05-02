@@ -144,6 +144,21 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload: CustomerDraft = {
+      gender,
+      name,
+      operator,
+      phone,
+      phoneVerified,
+      email,
+      address,
+      agreed,
+    };
+    window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
+  }, [address, agreed, email, gender, name, operator, phone, phoneVerified]);
+
+  useEffect(() => {
     if (gender) setTimeout(() => nameInputRef.current?.focus(), 250);
   }, [gender]);
 
@@ -200,6 +215,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         console.error("[customers upsert]", error);
         toast.error("Profile save fail hua — phir try karo");
       } else {
+        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
         await refreshProfile();
       }
     }
@@ -210,9 +227,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handleGoogleSignIn = async () => {
     setGoogleBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
+      const result = await lovable.auth.signInWithOAuth("google");
       if (result.error) {
         toast.error("Google sign-in fail hua. Phir try karo.");
         setGoogleBusy(false);
