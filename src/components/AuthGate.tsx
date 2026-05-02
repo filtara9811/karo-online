@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { RegistrationFlow } from "@/components/RegistrationFlow";
+import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
 
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
@@ -18,10 +18,11 @@ export function AuthGate() {
   const [open, setOpen] = useState(false);
 
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
+  const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
 
   // Profile is "complete" when basic fields are filled
-  const profileComplete = !!(profile?.name && profile?.address);
-  const needsGate = !skip && (!isAuthenticated || !profileComplete);
+  const profileComplete = locallyOnboarded || !!(profile?.name && profile?.address);
+  const needsGate = !skip && !profileComplete;
 
   // Auto-open ~1.5s after first ready render
   useEffect(() => {
