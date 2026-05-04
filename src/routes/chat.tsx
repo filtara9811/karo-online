@@ -809,6 +809,35 @@ function ChatPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ===== Feature sheets: Location / QR Pay / Shop / Invoice ===== */}
+      <AnimatePresence>
+        {activeSheet === "location" && (
+          <LocationSheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(loc) => pushMyMessage({ location: loc, text: loc.live ? "📍 Live location shared" : "📍 Location" }, "📍 Location")}
+          />
+        )}
+        {activeSheet === "qrpay" && (
+          <QrPaySheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(q) => pushMyMessage({ qrPay: q, text: `💸 Payment request ₹${q.amount.toFixed(2)}` }, "QR Payment")}
+          />
+        )}
+        {activeSheet === "shop" && (
+          <ShopSheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(s) => pushMyMessage({ shop: s, text: `🏪 ${s.name}` }, "Shop")}
+          />
+        )}
+        {activeSheet === "invoice" && (
+          <InvoiceSheet
+            vendorName={active.name.split(" | ")[0]}
+            onClose={() => setActiveSheet(null)}
+            onSend={(inv) => pushMyMessage({ invoice: inv, text: `🧾 Invoice ${inv.number} · ₹${inv.total.toFixed(2)}` }, "Invoice")}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
