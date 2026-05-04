@@ -183,6 +183,17 @@ function ChatPage() {
     }, 1400);
   };
 
+  const pushMyMessage = (partial: Partial<Msg>, fallbackText: string) => {
+    const newMsg: Msg = {
+      id: `${Date.now()}`, from: "me",
+      text: partial.text || fallbackText,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: true,
+      ...partial,
+    };
+    setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), newMsg] }));
+  };
+
   // ===== Voice: hold-to-talk speech-to-text =====
   const startRecording = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
