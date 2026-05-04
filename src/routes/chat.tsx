@@ -7,6 +7,11 @@ import {
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import {
+  LocationSheet, QrPaySheet, ShopSheet, InvoiceSheet,
+  LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
+  type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
+} from "@/components/ChatSheets";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
