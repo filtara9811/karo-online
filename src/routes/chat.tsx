@@ -3,10 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2,
-  Image as ImageIcon, FileText, MapPin, QrCode, Store, CreditCard, User as UserIcon, Pencil,
+  Image as ImageIcon, FileText, MapPin, QrCode, Store, User as UserIcon, Pencil,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import {
+  LocationSheet, QrPaySheet, ShopSheet, InvoiceSheet,
+  LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
+  type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
+} from "@/components/ChatSheets";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -49,6 +54,10 @@ type Msg = {
   read?: boolean;
   product?: { name: string; image: string; price: number };
   image?: string;
+  location?: LocationPayload;
+  qrPay?: QrPayPayload;
+  shop?: ShopCardPayload;
+  invoice?: InvoicePayload;
   kind?: "inquiry" | "chat";
   edited?: { at: string; original: string } | null;
   deleted?: { at: string; original: string } | null;
@@ -101,6 +110,7 @@ function ChatPage() {
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [showAttach, setShowAttach] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<null | "location" | "qrpay" | "shop" | "invoice">(null);
   const [showVendorsSheet, setShowVendorsSheet] = useState(false);
   const [editing, setEditing] = useState<{ msgId: string; text: string } | null>(null);
   const [longPressMsg, setLongPressMsg] = useState<string | null>(null);
@@ -171,6 +181,17 @@ function ChatPage() {
       };
       setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), reply] }));
     }, 1400);
+  };
+
+  const pushMyMessage = (partial: Partial<Msg>, fallbackText: string) => {
+    const newMsg: Msg = {
+      id: `${Date.now()}`, from: "me",
+      text: partial.text || fallbackText,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: true,
+      ...partial,
+    };
+    setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), newMsg] }));
   };
 
   // ===== Voice: hold-to-talk speech-to-text =====
@@ -358,6 +379,10 @@ function ChatPage() {
                 {m.image && !m.deleted && (
                   <img src={m.image} alt="attachment" className="mb-1.5 -mx-1 rounded-xl max-h-48 object-cover" />
                 )}
+                {m.location && !m.deleted && <LocationBubble loc={m.location} />}
+                {m.qrPay && !m.deleted && <QrPayBubble q={m.qrPay} />}
+                {m.shop && !m.deleted && <ShopBubble s={m.shop} />}
+                {m.invoice && !m.deleted && <InvoiceBubble inv={m.invoice} />}
                 {m.product && !m.deleted && (
                   <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
                     <div className="flex items-center gap-2 p-2">
@@ -558,10 +583,10 @@ function ChatPage() {
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
                   { icon: FileText, label: "Document", color: "bg-indigo-500", action: () => setShowAttach(false) },
-                  { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => setShowAttach(false) },
-                  { icon: QrCode, label: "QR Pay", color: "bg-amber-500", action: () => setShowAttach(false) },
-                  { icon: Store, label: "My Shop", color: "bg-orange-500", action: () => setShowAttach(false) },
-                  { icon: CreditCard, label: "Payment", color: "bg-sky-500", action: () => setShowAttach(false) },
+                  { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => { setShowAttach(false); setActiveSheet("location"); } },
+                  { icon: QrCode, label: "QR Pay", color: "bg-amber-500", action: () => { setShowAttach(false); setActiveSheet("qrpay"); } },
+                  { icon: Store, label: "My Shop", color: "bg-orange-500", action: () => { setShowAttach(false); setActiveSheet("shop"); } },
+                  { icon: FileText, label: "Invoice", color: "bg-sky-500", action: () => { setShowAttach(false); setActiveSheet("invoice"); } },
                   { icon: UserIcon, label: "Catalog", color: "bg-rose-500", action: () => setShowAttach(false) },
                 ].map((it) => (
                   <button key={it.label} onClick={it.action} className="flex flex-col items-center gap-1.5 active:scale-90">
@@ -782,6 +807,35 @@ function ChatPage() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== Feature sheets: Location / QR Pay / Shop / Invoice ===== */}
+      <AnimatePresence>
+        {activeSheet === "location" && (
+          <LocationSheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(loc) => pushMyMessage({ location: loc, text: loc.live ? "📍 Live location shared" : "📍 Location" }, "📍 Location")}
+          />
+        )}
+        {activeSheet === "qrpay" && (
+          <QrPaySheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(q) => pushMyMessage({ qrPay: q, text: `💸 Payment request ₹${q.amount.toFixed(2)}` }, "QR Payment")}
+          />
+        )}
+        {activeSheet === "shop" && (
+          <ShopSheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(s) => pushMyMessage({ shop: s, text: `🏪 ${s.name}` }, "Shop")}
+          />
+        )}
+        {activeSheet === "invoice" && (
+          <InvoiceSheet
+            vendorName={active.name.split(" | ")[0]}
+            onClose={() => setActiveSheet(null)}
+            onSend={(inv) => pushMyMessage({ invoice: inv, text: `🧾 Invoice ${inv.number} · ₹${inv.total.toFixed(2)}` }, "Invoice")}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -236,10 +236,14 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_url: string | null
           signup_method: string | null
           status: string
           tags: string[] | null
           updated_at: string
+          upi_id: string | null
           user_id: string
           verified: boolean
         }
@@ -255,10 +259,14 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          shop_logo_url?: string | null
+          shop_name?: string | null
+          shop_url?: string | null
           signup_method?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
+          upi_id?: string | null
           user_id: string
           verified?: boolean
         }
@@ -274,10 +282,14 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          shop_logo_url?: string | null
+          shop_name?: string | null
+          shop_url?: string | null
           signup_method?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
+          upi_id?: string | null
           user_id?: string
           verified?: boolean
         }
