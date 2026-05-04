@@ -110,6 +110,7 @@ function ChatPage() {
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [showAttach, setShowAttach] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<null | "location" | "qrpay" | "shop" | "invoice">(null);
   const [showVendorsSheet, setShowVendorsSheet] = useState(false);
   const [editing, setEditing] = useState<{ msgId: string; text: string } | null>(null);
   const [longPressMsg, setLongPressMsg] = useState<string | null>(null);
