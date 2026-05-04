@@ -54,6 +54,10 @@ type Msg = {
   read?: boolean;
   product?: { name: string; image: string; price: number };
   image?: string;
+  location?: LocationPayload;
+  qrPay?: QrPayPayload;
+  shop?: ShopCardPayload;
+  invoice?: InvoicePayload;
   kind?: "inquiry" | "chat";
   edited?: { at: string; original: string } | null;
   deleted?: { at: string; original: string } | null;
