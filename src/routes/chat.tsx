@@ -379,6 +379,10 @@ function ChatPage() {
                 {m.image && !m.deleted && (
                   <img src={m.image} alt="attachment" className="mb-1.5 -mx-1 rounded-xl max-h-48 object-cover" />
                 )}
+                {m.location && !m.deleted && <LocationBubble loc={m.location} />}
+                {m.qrPay && !m.deleted && <QrPayBubble q={m.qrPay} />}
+                {m.shop && !m.deleted && <ShopBubble s={m.shop} />}
+                {m.invoice && !m.deleted && <InvoiceBubble inv={m.invoice} />}
                 {m.product && !m.deleted && (
                   <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
                     <div className="flex items-center gap-2 p-2">
