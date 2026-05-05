@@ -113,7 +113,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
-  const [otpOpen, setOtpOpen] = useState(false);
+  
   const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
