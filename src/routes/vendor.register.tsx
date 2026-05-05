@@ -223,6 +223,7 @@ function VendorRegister() {
         instagram: insta.trim() || null,
         facebook: fb.trim() || null,
         website: website.trim() || null,
+        google_place_id: gmbPlaceId.trim() || null,
         aadhaar: aadhaar || null,
         pan: pan.trim() || null,
         gst: gst.trim() || null,
