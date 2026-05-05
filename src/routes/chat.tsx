@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2, ArrowLeft,
   Image as ImageIcon, FileText, MapPin, QrCode, Store, User as UserIcon, Pencil,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -337,20 +337,27 @@ function ChatPage() {
         </div>
       </div>
 
-      {/* Active vendor header */}
-      <div className="flex-shrink-0 bg-white px-4 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24]">
-        <div className="flex items-center gap-2.5">
-          <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)]">
+      {/* Active vendor header with back to /orders */}
+      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24] gap-2">
+        <button
+          onClick={() => navigate({ to: "/orders" })}
+          aria-label="Back to My Orders"
+          className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+        </button>
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
           </span>
-          <div className="leading-tight">
-            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)]">
+          <div className="leading-tight min-w-0">
+            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">
               Vander | {active.name.split(" | ")[0]}
             </p>
             <p className="text-[10px] text-emerald-600 font-semibold">{active.status}</p>
           </div>
         </div>
-        <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90">
+        <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
