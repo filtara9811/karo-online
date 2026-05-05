@@ -414,9 +414,11 @@ function VendorRegister() {
                       insta={insta}
                       fb={fb}
                       website={website}
+                      gmbPlaceId={gmbPlaceId}
                       setInsta={setInsta}
                       setFb={setFb}
                       setWebsite={setWebsite}
+                      setGmbPlaceId={setGmbPlaceId}
                     />
                   )}
                   {step === 2 && (
