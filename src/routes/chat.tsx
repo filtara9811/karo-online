@@ -12,6 +12,7 @@ import {
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
+import { MyOrdersList } from "@/components/MyOrdersList";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -337,15 +338,8 @@ function ChatPage() {
         </div>
       </div>
 
-      {/* Active vendor header with back to /orders */}
+      {/* Active vendor header — close (X) on right closes the chat sheet back to previous page */}
       <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24] gap-2">
-        <button
-          onClick={() => navigate({ to: "/orders" })}
-          aria-label="Back to My Orders"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
-        </button>
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
@@ -359,6 +353,13 @@ function ChatPage() {
         </div>
         <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+        </button>
+        <button
+          onClick={() => { try { window.history.length > 1 ? window.history.back() : navigate({ to: "/home" }); } catch { navigate({ to: "/home" }); } }}
+          aria-label="Close chat"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
 
