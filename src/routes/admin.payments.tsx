@@ -19,6 +19,8 @@ export const Route = createFileRoute("/admin/payments")({
   component: PaymentsPage,
 });
 
+type GatewayPurpose = "wallet_recharge" | "coin_purchase" | "both";
+
 type Gateway = {
   id: string;
   provider: string;
@@ -26,6 +28,8 @@ type Gateway = {
   is_active: boolean;
   is_test_mode: boolean;
   public_key: string | null;
+  purpose: GatewayPurpose;
+  priority: number;
 };
 
 function PaymentsPage() {
