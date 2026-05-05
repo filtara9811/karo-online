@@ -12,6 +12,7 @@ import {
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
+import { MyOrdersList } from "@/components/MyOrdersList";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -329,23 +330,16 @@ function ChatPage() {
           })}
           <button
             onClick={() => setShowVendorsSheet(true)}
-            className="flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
-            aria-label="All vendors"
+            className="ml-auto flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
+            aria-label="My Orders"
           >
             <span className="text-xs font-bold text-[color:oklch(0.45_0.08_85)]">{vendors.length}+</span>
           </button>
         </div>
       </div>
 
-      {/* Active vendor header with back to /orders */}
+      {/* Active vendor header — close (X) on right closes the chat sheet back to previous page */}
       <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24] gap-2">
-        <button
-          onClick={() => navigate({ to: "/orders" })}
-          aria-label="Back to My Orders"
-          className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
-        </button>
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
@@ -359,6 +353,13 @@ function ChatPage() {
         </div>
         <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+        </button>
+        <button
+          onClick={() => { try { window.history.length > 1 ? window.history.back() : navigate({ to: "/home" }); } catch { navigate({ to: "/home" }); } }}
+          aria-label="Close chat"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
 
@@ -623,35 +624,13 @@ function ChatPage() {
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 my-3" />
               <div className="px-5 pb-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">All Vendors ({vendors.length})</h3>
-                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
+                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">My Orders</h3>
+                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90" aria-label="Close">
                   <X className="h-4 w-4 text-gray-600" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                {sortedVendors.map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition">
-                    <button onClick={() => { setActiveId(v.id); setShowVendorsSheet(false); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                      <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-                        <img src={v.avatar} alt="" className="h-full w-full object-cover" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{v.name}</p>
-                          {v.pinned && <Pin className="h-3 w-3 text-[#d97706]" />}
-                          {v.tag && (
-                            <span className={`px-1.5 py-px text-[9px] font-bold rounded-full ${TAG_STYLES[v.tag.color]}`}>{v.tag.label}</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-emerald-600 font-semibold">{v.status}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{(threads[v.id] ?? []).slice(-1)[0]?.text ?? "No messages yet"}</p>
-                      </div>
-                    </button>
-                    <button onClick={() => setVendorActionFor(v.id)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
-                      <Tag className="h-4 w-4 text-gray-600" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <MyOrdersList onItemClick={() => setShowVendorsSheet(false)} />
               </div>
             </motion.div>
           </>
