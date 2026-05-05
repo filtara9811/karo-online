@@ -54,6 +54,7 @@ const GENDER_OPTIONS: PickerOption[] = [
 const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
   { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
+  { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
 ];
 
 const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
@@ -167,6 +168,19 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (!sim) return;
     setOperator(value);
     setPicker(null);
+    if (value === "manual") {
+      // Prompt user to type number; OTP opens once they type 10 digits
+      setPhone("");
+      setTimeout(() => {
+        const v = window.prompt("Apna 10-digit mobile number daaliye");
+        if (v && v.replace(/\D/g, "").length >= 10) {
+          const digits = v.replace(/\D/g, "").slice(-10);
+          setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
+          setTimeout(() => setOtpOpen(true), 400);
+        }
+      }, 250);
+      return;
+    }
     setPhone(sim.number);
     setTimeout(() => setOtpOpen(true), 600);
   };
