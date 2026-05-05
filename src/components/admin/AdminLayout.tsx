@@ -9,6 +9,8 @@ import {
   Shield,
   CreditCard,
   MessageSquare,
+  Truck,
+  Coins,
   FileText,
   Settings as SettingsIcon,
   LogOut,
@@ -28,6 +30,8 @@ const NAV: NavItem[] = [
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
   { to: "/admin/sms", label: "SMS Gateways", icon: MessageSquare },
+  { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
+  { to: "/admin/coins", label: "Coins & Wallet", icon: Coins },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
 ];
