@@ -13,9 +13,6 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import { MyOrdersList } from "@/components/MyOrdersList";
-import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
-import { ApprovalStickyBanner, ApprovalInlineCard } from "@/components/ApprovalCard";
-import { ChatTopMedia } from "@/components/ChatTopMedia";
 import { RatingSheet } from "@/components/RatingSheet";
 import {
   useOrdersStore, getOrder, getVendor, cancelOrder, clearUnread,
