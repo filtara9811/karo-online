@@ -19,8 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
-type StepKey = "phone" | "otp" | "name" | "email" | "address";
-const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address"];
+type StepKey = "phone" | "otp" | "name" | "email" | "address" | "manager" | "referral";
+const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
@@ -33,6 +33,9 @@ type CustomerDraft = {
   phoneVerified?: boolean;
   email?: string;
   address?: string;
+  manager?: string | null;
+  referral?: string;
+  referralVerified?: boolean;
   agreed?: boolean;
 };
 
