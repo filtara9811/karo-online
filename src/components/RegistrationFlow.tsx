@@ -515,18 +515,69 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     }}
                   />
 
-                  {/* Step 2 — OTP */}
+                  {/* Step 2 — Inline OTP with timer + resend */}
                   {visibleSteps.includes("otp") && (
-                    <GoldField
-                      Icon={ShieldCheck}
-                      label="Enter your OTP"
-                      hint={phoneVerified ? "Verified ✓" : "Auto · OTP"}
-                      value={phoneVerified ? "● ● ● ● ● ●" : ""}
-                      placeholder=""
-                      filled={phoneVerified}
-                      readOnly
-                      onClick={() => !phoneVerified && setOtpOpen(true)}
-                    />
+                    <div
+                      className="relative flex items-start gap-3"
+                      style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    >
+                      <div className="relative flex flex-col items-center pt-3.5">
+                        <div
+                          className={`relative h-9 w-9 rounded-full grid place-items-center border-2 transition-all ${
+                            phoneVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+                          }`}
+                          style={{
+                            background: phoneVerified
+                              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+                              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+                          }}
+                        >
+                          <ShieldCheck
+                            className={phoneVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+                            strokeWidth={2.4}
+                          />
+                        </div>
+                        <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.78_0.14_82/0.6)] to-transparent min-h-[44px]" />
+                      </div>
+                      <div className="flex-1 pt-1 pb-3">
+                        <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.4)] bg-white/70 px-4 py-3">
+                          <div className="flex items-center justify-center gap-3">
+                            {[0, 1, 2, 3].map((i) => (
+                              <input
+                                key={i}
+                                ref={(el) => { otpRefs.current[i] = el; }}
+                                value={otpDigits[i]}
+                                onChange={(e) => handleOtpChange(i, e.target.value)}
+                                inputMode="numeric"
+                                maxLength={1}
+                                disabled={phoneVerified}
+                                className={`h-12 w-10 text-center text-2xl font-display rounded-lg border-2 outline-none ${
+                                  phoneVerified
+                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                    : otpDigits[i]
+                                    ? "border-[color:oklch(0.78_0.14_82)] bg-white text-[color:oklch(0.30_0.05_85)]"
+                                    : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80 text-[color:oklch(0.55_0.10_82)]"
+                                }`}
+                                placeholder="✻"
+                              />
+                            ))}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-[11px]">
+                            <button
+                              type="button"
+                              onClick={handleResendOtp}
+                              disabled={otpSeconds > 0 && !phoneVerified}
+                              className="text-[color:oklch(0.45_0.10_82)] underline disabled:opacity-50 disabled:no-underline"
+                            >
+                              Resend OTP
+                            </button>
+                            <span className="text-[color:oklch(0.45_0.10_82)] tabular-nums">
+                              {phoneVerified ? "Verified ✓" : `00:${String(otpSeconds).padStart(2, "0")}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {/* Step 3 — Name + gender (only after verify) */}
