@@ -622,17 +622,132 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   {visibleSteps.includes("address") && (
                     <GoldField
                       Icon={MapPin}
-                      label="Address | location"
-                      hint={address ? "Tap to change" : "Choose address"}
+                      label="Choice location and address"
+                      hint={address ? "Tap to change" : "Live location · or manual"}
                       value={address}
                       placeholder=""
                       filled={!!address.trim()}
-                      isLast
                       readOnly
                       onClick={() => setAddressOpen(true)}
                     />
                   )}
+
+                  {/* Step 6 — Relation Manager */}
+                  {visibleSteps.includes("manager") && (
+                    <GoldField
+                      Icon={UserCheck}
+                      label="Choice your manager relation"
+                      hint={managerMeta ? `${managerMeta.label} · ★ ${managerMeta.rating}` : "Tap → choose nearby manager"}
+                      value={managerMeta?.label ?? ""}
+                      placeholder=""
+                      filled={!!manager}
+                      readOnly
+                      onClick={() => setPicker("manager")}
+                    />
+                  )}
+
+                  {/* Step 7 — Referral with QR scanner */}
+                  {visibleSteps.includes("referral") && (
+                    <div
+                      className="relative flex items-start gap-3"
+                      style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    >
+                      <div className="relative flex flex-col items-center pt-3.5">
+                        <div
+                          className={`relative h-9 w-9 rounded-full grid place-items-center border-2 ${
+                            referralVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+                          }`}
+                          style={{
+                            background: referralVerified
+                              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+                              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+                          }}
+                        >
+                          <Gift
+                            className={referralVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+                            strokeWidth={2.4}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 pt-2 pb-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={referral}
+                            onChange={(e) => handleReferralVerify(e.target.value)}
+                            placeholder="Enter your referral code"
+                            className="flex-1 bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.7)] outline-none py-0.5"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setScannerOpen(true)}
+                            className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center"
+                            aria-label="Scan QR"
+                          >
+                            <QrCode className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+                          </button>
+                        </div>
+                        <div
+                          className="h-px w-full"
+                          style={{ background: "linear-gradient(90deg, rgba(212,175,55,0.7) 0%, rgba(212,175,55,0.3) 100%)" }}
+                        />
+                        <p className="text-[10px] mt-1 italic flex items-center gap-1">
+                          {referralVerified ? (
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Aryan verified
+                            </span>
+                          ) : (
+                            <span className="text-[color:oklch(0.50_0.08_85/0.85)]">
+                              Optional · scan QR or paste code
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {visibleSteps.includes("referral") && (
+                  <label
+                    className="mt-6 flex items-start gap-3 cursor-pointer"
+                    style={{ animation: "step-reveal 0.55s ease-out 0.15s both" }}
+                  >
+                    <span
+                      onClick={() => setAgreed(!agreed)}
+                      className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
+                        agreed
+                          ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
+                          : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
+                      }`}
+                    >
+                      {agreed && (
+                        <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
+                    <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
+                      Tram and condition privacy<br />policy review and accept
+                    </span>
+                  </label>
+                )}
+
+                {visibleSteps.includes("referral") && agreed && (
+                  <button
+                    onClick={() => setSuccessOpen(true)}
+                    className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
+                      boxShadow:
+                        "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
+                      animation: "breathe 2.6s ease-in-out infinite",
+                    }}
+                  >
+                    <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
+                    <span>Thanks for you</span>
+                  </button>
+                )}
 
                 {visibleSteps.includes("address") && (
                   <label
