@@ -75,6 +75,7 @@ const SEED: VendorGroup[] = [
     vendorName: "Aryan | Bansal",
     avatar: avatarAryan,
     presence: "Online",
+    gmbPlaceId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
     orders: [
       {
         id: "KO-1042", vendorId: "v1", service: "AC Service", source: "service",
@@ -85,6 +86,16 @@ const SEED: VendorGroup[] = [
           { status: "processing", at: "21 Mar · 11:30" },
         ],
         lastMsg: "20 minute mein. Address confirm…", lastAt: "Just now", unread: 3, pinned: true,
+        approvals: [
+          {
+            id: "ap-1", kind: "time", title: "Vendor proposed visit time",
+            detail: "Aaj shaam 5:30 PM ko aapke ghar pahunchne ka time set kiya gaya hai.",
+            proposedAt: "Today · 5:30 PM",
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+            state: "pending",
+          },
+        ],
       },
       {
         id: "KO-1056", vendorId: "v1", service: "Cooler Service", source: "service",
