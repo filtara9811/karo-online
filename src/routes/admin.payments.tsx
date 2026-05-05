@@ -63,6 +63,8 @@ function PaymentsPage() {
         is_active: g.is_active,
         is_test_mode: g.is_test_mode,
         public_key: g.public_key,
+        purpose: g.purpose,
+        priority: g.priority,
       })
       .eq("id", g.id);
     setSavingId(null);
