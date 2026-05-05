@@ -10,6 +10,9 @@ import {
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import avatarAryan from "@/assets/avatar-aryan.png";
+import avatarRani from "@/assets/avatar-rani.png";
+import avatarRaj from "@/assets/avatar-raj.png";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
