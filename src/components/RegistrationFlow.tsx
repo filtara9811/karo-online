@@ -393,35 +393,27 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
             ) : (
               <>
                 <div className="space-y-1 relative">
+                  {/* Step 1 — Phone (SIM picker) */}
                   <GoldField
-                    Icon={User}
-                    label="Enter full name"
-                    hint={gender ? `Choose · ${gender}` : "Choose gender"}
-                    value={name}
+                    Icon={Phone}
+                    label="Enter mobile number"
+                    hint={
+                      operator
+                        ? `${operatorMeta?.label} · auto-filled`
+                        : phone
+                          ? "Tap to change"
+                          : "Tap → choose SIM or type manually"
+                    }
+                    value={phone}
                     placeholder=""
-                    filled={!!name.trim()}
-                    readOnly={!gender}
-                    onClick={() => !gender && setPicker("gender")}
-                    onChange={setName}
-                    inputRef={nameInputRef}
+                    filled={phoneVerified}
+                    readOnly
+                    onClick={() => {
+                      if (!phoneVerified) setPicker("sim");
+                    }}
                   />
 
-                  {visibleSteps.includes("phone") && (
-                    <GoldField
-                      Icon={Phone}
-                      label="Enter number choice"
-                      hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choose number"}
-                      value={phone}
-                      placeholder=""
-                      filled={phoneVerified}
-                      readOnly
-                      onClick={() => {
-                        if (!operator) setPicker("sim");
-                        else if (!phoneVerified) setOtpOpen(true);
-                      }}
-                    />
-                  )}
-
+                  {/* Step 2 — OTP */}
                   {visibleSteps.includes("otp") && (
                     <GoldField
                       Icon={ShieldCheck}
@@ -435,6 +427,23 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
+                  {/* Step 3 — Name + gender (only after verify) */}
+                  {visibleSteps.includes("name") && (
+                    <GoldField
+                      Icon={User}
+                      label="Enter full name"
+                      hint={gender ? `Choose · ${gender}` : "Choose gender"}
+                      value={name}
+                      placeholder=""
+                      filled={!!name.trim()}
+                      readOnly={!gender}
+                      onClick={() => !gender && setPicker("gender")}
+                      onChange={setName}
+                      inputRef={nameInputRef}
+                    />
+                  )}
+
+                  {/* Step 4 — Gmail */}
                   {visibleSteps.includes("email") && (
                     <GoldField
                       Icon={Mail}
@@ -456,6 +465,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
+                  {/* Step 5 — Address */}
                   {visibleSteps.includes("address") && (
                     <GoldField
                       Icon={MapPin}
