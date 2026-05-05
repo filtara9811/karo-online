@@ -151,9 +151,45 @@ function PaymentsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
+                    Purpose
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        { v: "wallet_recharge", l: "Wallet" },
+                        { v: "coin_purchase", l: "Coins" },
+                        { v: "both", l: "Both" },
+                      ] as const
+                    ).map((opt) => {
+                      const active = g.purpose === opt.v;
+                      return (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => update(g.id, { purpose: opt.v })}
+                          className={`px-2 py-2 rounded-xl text-[10px] uppercase tracking-wider font-bold transition border ${
+                            active
+                              ? "text-[#1a1208] border-transparent"
+                              : "text-[#f5d97a]/70 border-[#d4af37]/30 hover:bg-[#d4af37]/10"
+                          }`}
+                          style={
+                            active
+                              ? { background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }
+                              : undefined
+                          }
+                        >
+                          {opt.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
                   <Toggle
-                    label="Test mode"
+                    label="Test"
                     value={g.is_test_mode}
                     onChange={(v) => update(g.id, { is_test_mode: v })}
                   />
@@ -162,6 +198,19 @@ function PaymentsPage() {
                     value={g.is_active}
                     onChange={(v) => update(g.id, { is_active: v })}
                   />
+                  <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-black/40 border border-[#d4af37]/30">
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-[#f5d97a]/80 font-bold">
+                      Priority
+                    </span>
+                    <input
+                      type="number"
+                      value={g.priority}
+                      onChange={(e) =>
+                        update(g.id, { priority: parseInt(e.target.value) || 0 })
+                      }
+                      className="w-full bg-transparent text-[#fff8dc] outline-none text-sm font-bold"
+                    />
+                  </div>
                 </div>
 
                 <GoldButton
