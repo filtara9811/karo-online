@@ -8,8 +8,8 @@ import {
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
-  MessageCircle, Search, Filter, Clock, CheckCircle2, Tag,
 } from "lucide-react";
+import { MyOrdersList } from "@/components/MyOrdersList";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -235,7 +235,8 @@ function ProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* List rows */}
+      {/* List rows — hidden when Orders card is active */}
+      {activeCard.type !== "orders" && (
       <section className="px-4 mt-5 space-y-3">
         {ROWS.map((r, i) => (
           <motion.button
