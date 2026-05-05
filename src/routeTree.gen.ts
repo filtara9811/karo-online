@@ -22,6 +22,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
 import { Route as VendorStatusRouteImport } from './routes/vendor.status'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
@@ -105,6 +106,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorWalletRoute = VendorWalletRouteImport.update({
+  id: '/vendor/wallet',
+  path: '/vendor/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorStatusRoute = VendorStatusRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/vendor/services'
     | '/vendor/shop'
     | '/vendor/status'
+    | '/vendor/wallet'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/vendor/services'
     | '/vendor/shop'
     | '/vendor/status'
+    | '/vendor/wallet'
     | '/admin'
     | '/vendor/lead/$id'
   id:
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/vendor/services'
     | '/vendor/shop'
     | '/vendor/status'
+    | '/vendor/wallet'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesById: FileRoutesById
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
   VendorStatusRoute: typeof VendorStatusRoute
+  VendorWalletRoute: typeof VendorWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
 }
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/wallet': {
+      id: '/vendor/wallet'
+      path: '/vendor/wallet'
+      fullPath: '/vendor/wallet'
+      preLoaderRoute: typeof VendorWalletRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/status': {
@@ -706,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,
   VendorStatusRoute: VendorStatusRoute,
+  VendorWalletRoute: VendorWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
 }

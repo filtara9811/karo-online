@@ -16,6 +16,7 @@ import {
   Plus,
   Sparkles,
   ArrowLeft,
+  Wallet as WalletIcon,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { LEADS as SHARED_LEADS } from "@/lib/leads";
@@ -113,7 +114,14 @@ function VendorDashboard() {
             <p className="font-display text-base text-silver-gradient font-bold truncate">Ashhu Qureshi</p>
             <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] italic truncate">Quick Service · Beauty · Delhi NCR</p>
           </div>
-          <Sparkles className="h-5 w-5 text-[#a8acb3]" />
+          <Link
+            to="/vendor/wallet"
+            aria-label="My Wallet"
+            className="h-10 w-10 grid place-items-center rounded-full shadow-md active:scale-90"
+            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+          >
+            <WalletIcon className="h-4 w-4 text-[#1a1208]" />
+          </Link>
         </section>
 
         {/* Tabs */}

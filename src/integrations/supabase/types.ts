@@ -411,6 +411,24 @@ export type Database = {
           },
         ]
       }
+      leadx_rate_history: {
+        Row: {
+          id: string
+          rate_inr: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          rate_inr: number
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          rate_inr?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
       legal_pages: {
         Row: {
           body: string
@@ -727,6 +745,57 @@ export type Database = {
           },
         ]
       }
+      vendor_wallets: {
+        Row: {
+          auto_topup_enabled: boolean
+          created_at: string
+          id: string
+          leads_total: number
+          leads_used: number
+          leadx_coins: number
+          lifetime_coins_purchased: number
+          lifetime_coins_used: number
+          lifetime_recharged_paise: number
+          lifetime_spent_paise: number
+          low_balance_threshold_paise: number
+          service_balance_paise: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          auto_topup_enabled?: boolean
+          created_at?: string
+          id?: string
+          leads_total?: number
+          leads_used?: number
+          leadx_coins?: number
+          lifetime_coins_purchased?: number
+          lifetime_coins_used?: number
+          lifetime_recharged_paise?: number
+          lifetime_spent_paise?: number
+          low_balance_threshold_paise?: number
+          service_balance_paise?: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          auto_topup_enabled?: boolean
+          created_at?: string
+          id?: string
+          leads_total?: number
+          leads_used?: number
+          leadx_coins?: number
+          lifetime_coins_purchased?: number
+          lifetime_coins_used?: number
+          lifetime_recharged_paise?: number
+          lifetime_spent_paise?: number
+          low_balance_threshold_paise?: number
+          service_balance_paise?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           aadhaar: string | null
@@ -850,6 +919,60 @@ export type Database = {
           label?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount_paise: number
+          balance_after_paise: number | null
+          coin_balance_after: number | null
+          coins: number
+          created_at: string
+          description: string | null
+          direction: string
+          gateway: string | null
+          id: string
+          metadata: Json
+          reference_id: string | null
+          status: string
+          txn_type: string
+          vendor_id: string
+          wallet_kind: string
+        }
+        Insert: {
+          amount_paise?: number
+          balance_after_paise?: number | null
+          coin_balance_after?: number | null
+          coins?: number
+          created_at?: string
+          description?: string | null
+          direction: string
+          gateway?: string | null
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          status?: string
+          txn_type: string
+          vendor_id: string
+          wallet_kind: string
+        }
+        Update: {
+          amount_paise?: number
+          balance_after_paise?: number | null
+          coin_balance_after?: number | null
+          coins?: number
+          created_at?: string
+          description?: string | null
+          direction?: string
+          gateway?: string | null
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          status?: string
+          txn_type?: string
+          vendor_id?: string
+          wallet_kind?: string
         }
         Relationships: []
       }
