@@ -25,7 +25,7 @@ const chatSearchSchema = z.object({
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
 });
 
-export const Route = createFileRoute("/chat")({
+export const Route = createFileRoute("/vendor/chat")({
   validateSearch: zodValidator(chatSearchSchema),
   head: () => ({
     meta: [
