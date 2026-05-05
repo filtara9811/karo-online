@@ -2,17 +2,23 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2, ArrowLeft,
-  Image as ImageIcon, FileText, MapPin, QrCode, Store, User as UserIcon, Pencil,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Trash2,
+  Image as ImageIcon, MapPin, MessageSquare, Pencil, Check, Ban, ChevronDown,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import {
-  LocationSheet, QrPaySheet, ShopSheet, InvoiceSheet,
+  LocationSheet,
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import {
+  useOrdersStore, getOrder, cancelOrder, clearUnread,
+  STATUS_STEPS, STATUS_BADGE,
+  type OrderStatus,
+} from "@/lib/orders-store";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
