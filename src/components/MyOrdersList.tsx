@@ -175,7 +175,7 @@ export function MyOrdersList({
                       {v.orders.map((o, idx) => (
                         <button
                           key={o.id}
-                          onClick={() => openChat(v.vendorId, o.id)}
+                          onClick={() => openOrder(v.vendorId, o.id)}
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-amber-100 hover:border-amber-300 active:scale-[0.99] transition text-left"
                         >
                           <span className="h-8 w-8 rounded-lg grid place-items-center bg-gradient-to-br from-amber-100 to-amber-200 text-[10px] font-bold text-amber-800 flex-shrink-0">
@@ -208,7 +208,7 @@ export function MyOrdersList({
                         </button>
                       ))}
                       <button
-                        onClick={() => openChat(v.vendorId, v.orders[0].id)}
+                        onClick={() => openOrder(v.vendorId, v.orders[0].id)}
                         className="w-full flex items-center justify-center gap-1.5 p-2 rounded-xl border border-dashed border-amber-300 text-[11px] font-semibold text-amber-700 active:bg-amber-100"
                       >
                         <Plus className="h-3.5 w-3.5" /> New order with this vendor
