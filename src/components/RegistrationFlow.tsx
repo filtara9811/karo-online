@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin } from "lucide-react";
+import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin, UserCheck, Gift, QrCode, CheckCircle2 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
-import { OtpModal } from "@/components/OtpModal";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
 import { MpinLogin } from "@/components/MpinLogin";
@@ -19,8 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
-type StepKey = "phone" | "otp" | "name" | "email" | "address";
-const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address"];
+type StepKey = "phone" | "otp" | "name" | "email" | "address" | "manager" | "referral";
+const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
@@ -33,6 +32,9 @@ type CustomerDraft = {
   phoneVerified?: boolean;
   email?: string;
   address?: string;
+  manager?: string | null;
+  referral?: string;
+  referralVerified?: boolean;
   agreed?: boolean;
 };
 
@@ -55,6 +57,13 @@ const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
   { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
   { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
+];
+
+const MANAGER_OPTIONS: (PickerOption & { rating: number; vendors: number })[] = [
+  { value: "aryan", label: "Aryan Sharma", sub: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, icon: goldMale },
+  { value: "priya", label: "Priya Verma", sub: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, icon: goldFemale },
+  { value: "rahul", label: "Rahul Mehta", sub: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, icon: goldMale },
+  { value: "neha", label: "Neha Singh", sub: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, icon: goldFemale },
 ];
 
 const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
@@ -89,16 +98,31 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [name, setName] = useState(draft.name ?? "");
   const [operator, setOperator] = useState<string | null>(draft.operator ?? null);
   const [phone, setPhone] = useState(draft.phone ?? "");
-  const [, setOtp] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(!!draft.phoneVerified);
   const [email, setEmail] = useState(draft.email ?? "");
   const [address, setAddress] = useState(draft.address ?? "");
+  const [manager, setManager] = useState<string | null>(draft.manager ?? null);
+  const [referral, setReferral] = useState<string>(() => {
+    if (draft.referral) return draft.referral;
+    if (typeof window !== "undefined") {
+      const url = new URLSearchParams(window.location.search);
+      return url.get("ref") || url.get("referral") || "";
+    }
+    return "";
+  });
+  const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
-  const [picker, setPicker] = useState<null | "gender" | "sim">(null);
-  const [otpOpen, setOtpOpen] = useState(false);
+  const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
+  
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Inline OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
+  const [otpSeconds, setOtpSeconds] = useState(45);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [vh, setVh] = useState(800);
   const SNAP_FULL = vh * 0.06;
@@ -128,8 +152,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (!phoneVerified) return "otp";
     if (!name.trim()) return "name";
     if (!email.trim()) return "email";
-    return "address";
-  }, [name, phone, phoneVerified, email]);
+    if (!address.trim()) return "address";
+    if (!manager) return "manager";
+    return "referral";
+  }, [name, phone, phoneVerified, email, address, manager]);
 
   const visibleSteps = useMemo(() => {
     const idx = STEP_ORDER.indexOf(reachedStep);
@@ -143,6 +169,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [visibleSteps.length]);
 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
+  const managerMeta = MANAGER_OPTIONS.find((m) => m.value === manager);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -154,14 +181,39 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       phoneVerified,
       email,
       address,
+      manager,
+      referral,
+      referralVerified,
       agreed,
     };
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
-  }, [address, agreed, email, gender, name, operator, phone, phoneVerified]);
+  }, [address, agreed, email, gender, name, operator, phone, phoneVerified, manager, referral, referralVerified]);
 
   useEffect(() => {
     if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
   }, [phoneVerified]);
+
+  const startInlineOtp = () => {
+    setOtpDigits(["", "", "", ""]);
+    setOtpSeconds(45);
+    // Auto-fill simulation
+    const AUTO = "4829";
+    let i = 0;
+    const fill = () => {
+      if (i >= AUTO.length) {
+        setTimeout(() => setPhoneVerified(true), 500);
+        return;
+      }
+      setOtpDigits((prev) => {
+        const next = [...prev];
+        next[i] = AUTO[i];
+        return next;
+      });
+      i++;
+      setTimeout(fill, 280);
+    };
+    setTimeout(fill, 1500);
+  };
 
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
@@ -169,27 +221,61 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setOperator(value);
     setPicker(null);
     if (value === "manual") {
-      // Prompt user to type number; OTP opens once they type 10 digits
       setPhone("");
       setTimeout(() => {
         const v = window.prompt("Apna 10-digit mobile number daaliye");
         if (v && v.replace(/\D/g, "").length >= 10) {
           const digits = v.replace(/\D/g, "").slice(-10);
           setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
-          setTimeout(() => setOtpOpen(true), 400);
+          setTimeout(startInlineOtp, 400);
         }
       }, 250);
       return;
     }
     setPhone(sim.number);
-    setTimeout(() => setOtpOpen(true), 600);
+    setTimeout(startInlineOtp, 600);
   };
 
-  const handleOtpVerified = (code: string) => {
-    setOtp(code);
-    setPhoneVerified(true);
-    setOtpOpen(false);
-    // Move on; user will tap Gmail field which triggers Google OAuth
+  // OTP timer
+  useEffect(() => {
+    if (!phone || phoneVerified || otpSeconds <= 0) return;
+    const t = setTimeout(() => setOtpSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phone, phoneVerified, otpSeconds]);
+
+  // Auto-verify when all 4 digits entered manually
+  useEffect(() => {
+    if (phoneVerified) return;
+    if (otpDigits.every((d) => d !== "") && otpDigits.join("").length === 4) {
+      setTimeout(() => setPhoneVerified(true), 400);
+    }
+  }, [otpDigits, phoneVerified]);
+
+  const handleOtpChange = (idx: number, val: string) => {
+    const v = val.replace(/\D/g, "").slice(-1);
+    setOtpDigits((prev) => {
+      const next = [...prev];
+      next[idx] = v;
+      return next;
+    });
+    if (v && idx < 3) otpRefs.current[idx + 1]?.focus();
+  };
+
+  const handleResendOtp = () => {
+    setOtpSeconds(45);
+    setOtpDigits(["", "", "", ""]);
+    toast.success("OTP resent");
+    startInlineOtp();
+  };
+
+  const handleReferralVerify = (code: string) => {
+    const c = code.trim();
+    setReferral(c);
+    if (c.length >= 4) {
+      setTimeout(() => setReferralVerified(true), 600);
+    } else {
+      setReferralVerified(false);
+    }
   };
 
   const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
@@ -427,18 +513,69 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     }}
                   />
 
-                  {/* Step 2 — OTP */}
+                  {/* Step 2 — Inline OTP with timer + resend */}
                   {visibleSteps.includes("otp") && (
-                    <GoldField
-                      Icon={ShieldCheck}
-                      label="Enter your OTP"
-                      hint={phoneVerified ? "Verified ✓" : "Auto · OTP"}
-                      value={phoneVerified ? "● ● ● ● ● ●" : ""}
-                      placeholder=""
-                      filled={phoneVerified}
-                      readOnly
-                      onClick={() => !phoneVerified && setOtpOpen(true)}
-                    />
+                    <div
+                      className="relative flex items-start gap-3"
+                      style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    >
+                      <div className="relative flex flex-col items-center pt-3.5">
+                        <div
+                          className={`relative h-9 w-9 rounded-full grid place-items-center border-2 transition-all ${
+                            phoneVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+                          }`}
+                          style={{
+                            background: phoneVerified
+                              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+                              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+                          }}
+                        >
+                          <ShieldCheck
+                            className={phoneVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+                            strokeWidth={2.4}
+                          />
+                        </div>
+                        <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.78_0.14_82/0.6)] to-transparent min-h-[44px]" />
+                      </div>
+                      <div className="flex-1 pt-1 pb-3">
+                        <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.4)] bg-white/70 px-4 py-3">
+                          <div className="flex items-center justify-center gap-3">
+                            {[0, 1, 2, 3].map((i) => (
+                              <input
+                                key={i}
+                                ref={(el) => { otpRefs.current[i] = el; }}
+                                value={otpDigits[i]}
+                                onChange={(e) => handleOtpChange(i, e.target.value)}
+                                inputMode="numeric"
+                                maxLength={1}
+                                disabled={phoneVerified}
+                                className={`h-12 w-10 text-center text-2xl font-display rounded-lg border-2 outline-none ${
+                                  phoneVerified
+                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                    : otpDigits[i]
+                                    ? "border-[color:oklch(0.78_0.14_82)] bg-white text-[color:oklch(0.30_0.05_85)]"
+                                    : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80 text-[color:oklch(0.55_0.10_82)]"
+                                }`}
+                                placeholder="✻"
+                              />
+                            ))}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-[11px]">
+                            <button
+                              type="button"
+                              onClick={handleResendOtp}
+                              disabled={otpSeconds > 0 && !phoneVerified}
+                              className="text-[color:oklch(0.45_0.10_82)] underline disabled:opacity-50 disabled:no-underline"
+                            >
+                              Resend OTP
+                            </button>
+                            <span className="text-[color:oklch(0.45_0.10_82)] tabular-nums">
+                              {phoneVerified ? "Verified ✓" : `00:${String(otpSeconds).padStart(2, "0")}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {/* Step 3 — Name + gender (only after verify) */}
@@ -483,19 +620,91 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   {visibleSteps.includes("address") && (
                     <GoldField
                       Icon={MapPin}
-                      label="Address | location"
-                      hint={address ? "Tap to change" : "Choose address"}
+                      label="Choice location and address"
+                      hint={address ? "Tap to change" : "Live location · or manual"}
                       value={address}
                       placeholder=""
                       filled={!!address.trim()}
-                      isLast
                       readOnly
                       onClick={() => setAddressOpen(true)}
                     />
                   )}
+
+                  {/* Step 6 — Relation Manager */}
+                  {visibleSteps.includes("manager") && (
+                    <GoldField
+                      Icon={UserCheck}
+                      label="Choice your manager relation"
+                      hint={managerMeta ? `${managerMeta.label} · ★ ${managerMeta.rating}` : "Tap → choose nearby manager"}
+                      value={managerMeta?.label ?? ""}
+                      placeholder=""
+                      filled={!!manager}
+                      readOnly
+                      onClick={() => setPicker("manager")}
+                    />
+                  )}
+
+                  {/* Step 7 — Referral with QR scanner */}
+                  {visibleSteps.includes("referral") && (
+                    <div
+                      className="relative flex items-start gap-3"
+                      style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    >
+                      <div className="relative flex flex-col items-center pt-3.5">
+                        <div
+                          className={`relative h-9 w-9 rounded-full grid place-items-center border-2 ${
+                            referralVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+                          }`}
+                          style={{
+                            background: referralVerified
+                              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+                              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+                          }}
+                        >
+                          <Gift
+                            className={referralVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+                            strokeWidth={2.4}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 pt-2 pb-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={referral}
+                            onChange={(e) => handleReferralVerify(e.target.value)}
+                            placeholder="Enter your referral code"
+                            className="flex-1 bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.7)] outline-none py-0.5"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setScannerOpen(true)}
+                            className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center"
+                            aria-label="Scan QR"
+                          >
+                            <QrCode className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+                          </button>
+                        </div>
+                        <div
+                          className="h-px w-full"
+                          style={{ background: "linear-gradient(90deg, rgba(212,175,55,0.7) 0%, rgba(212,175,55,0.3) 100%)" }}
+                        />
+                        <p className="text-[10px] mt-1 italic flex items-center gap-1">
+                          {referralVerified ? (
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Aryan verified
+                            </span>
+                          ) : (
+                            <span className="text-[color:oklch(0.50_0.08_85/0.85)]">
+                              Optional · scan QR or paste code
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {visibleSteps.includes("address") && (
+                {visibleSteps.includes("referral") && (
                   <label
                     className="mt-6 flex items-start gap-3 cursor-pointer"
                     style={{ animation: "step-reveal 0.55s ease-out 0.15s both" }}
@@ -516,12 +725,12 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     </span>
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
                     <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
-                      I accept the public terms<br />and the privacy policy
+                      Tram and condition privacy<br />policy review and accept
                     </span>
                   </label>
                 )}
 
-                {address.trim() && agreed && (
+                {visibleSteps.includes("referral") && agreed && (
                   <button
                     onClick={() => setSuccessOpen(true)}
                     className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
@@ -530,16 +739,14 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                         "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
                       boxShadow:
                         "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
-                      textDecoration: "underline",
-                      textDecorationThickness: "2px",
-                      textUnderlineOffset: "4px",
                       animation: "breathe 2.6s ease-in-out infinite",
                     }}
                   >
                     <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
-                    <span>WhatsApp Join</span>
+                    <span>Thanks for you</span>
                   </button>
                 )}
+
               </>
             )}
           </div>
@@ -562,12 +769,39 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
-      <OtpModal
-        open={otpOpen}
-        phone={phone}
-        onVerified={handleOtpVerified}
-        onClose={() => setOtpOpen(false)}
+      <LuxPicker
+        open={picker === "manager"}
+        title="Choose Your Relation Manager"
+        subtitle="Nearby · ratings · vendors handled"
+        options={MANAGER_OPTIONS}
+        onSelect={(v) => { setManager(v); setPicker(null); }}
+        onClose={() => setPicker(null)}
       />
+
+      {scannerOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center">
+            <QrCode className="h-12 w-12 mx-auto text-[color:oklch(0.42_0.10_82)]" />
+            <h3 className="font-display text-lg mt-3">Scan referral QR</h3>
+            <p className="text-xs text-muted-foreground mt-1">Point camera at QR — auto-fills code</p>
+            <button
+              onClick={() => {
+                handleReferralVerify("ARYAN500");
+                setScannerOpen(false);
+              }}
+              className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#f5d97a] to-[#d4af37] font-bold text-[color:oklch(0.18_0.06_18)]"
+            >
+              Simulate scan
+            </button>
+            <button
+              onClick={() => setScannerOpen(false)}
+              className="mt-2 w-full py-2 text-xs uppercase tracking-widest text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <AddressPicker
         open={addressOpen}
