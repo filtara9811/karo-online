@@ -711,6 +711,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      lookup_customer_by_phone: {
+        Args: { _phone: string }
+        Returns: {
+          address: string
+          email: string
+          exists_flag: boolean
+          gender: string
+          name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "moderator" | "support"

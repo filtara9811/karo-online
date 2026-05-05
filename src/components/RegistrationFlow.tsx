@@ -4,7 +4,6 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
-import { MpinLogin } from "@/components/MpinLogin";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
@@ -17,9 +16,10 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AuthMode = "signup" | "login";
-type StepKey = "phone" | "otp" | "name" | "email" | "address" | "manager" | "referral";
-const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address", "manager", "referral"];
+/** Stage A = phone + OTP only. Stage B = full signup progress. */
+type Stage = "auth" | "signup";
+type StepKey = "name" | "email" | "address" | "manager" | "referral";
+const STEP_ORDER: StepKey[] = ["name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
@@ -82,17 +82,11 @@ export type RegistrationFlowProps = {
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
   const { user, isAuthenticated, refreshProfile } = useAuth();
   const draft = useMemo(readCustomerDraft, []);
-  const [mode, setMode] = useState<AuthMode>("signup");
   const [googleBusy, setGoogleBusy] = useState(false);
 
-  // When the user signs in via Google OAuth, prefill email + name from the session
-  useEffect(() => {
-    if (user?.email && !email) setEmail(user.email);
-    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
-    const metaName = meta?.full_name || meta?.name;
-    if (metaName && !name) setName(metaName);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  const [stage, setStage] = useState<Stage>(draft.phoneVerified ? "signup" : "auth");
+
+  // Profile fields
   const [agreed, setAgreed] = useState(!!draft.agreed);
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
   const [name, setName] = useState(draft.name ?? "");
@@ -113,7 +107,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
   const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
-  
   const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -122,14 +115,26 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   // Inline OTP state
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
+  const [lookupBusy, setLookupBusy] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Prefill email/name from Google session
+  useEffect(() => {
+    if (user?.email && !email) setEmail(user.email);
+    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const metaName = meta?.full_name || meta?.name;
+    if (metaName && !name) setName(metaName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const [vh, setVh] = useState(800);
-  const SNAP_FULL = vh * 0.06;
-  const SNAP_HALF = vh * 0.30;
-  const SNAP_PEEK = vh * 0.55;
-  const SNAPS = useMemo(() => [SNAP_FULL, SNAP_HALF, SNAP_PEEK], [SNAP_FULL, SNAP_HALF, SNAP_PEEK]);
-  const y = useMotionValue(SNAP_HALF);
+  // Auth stage = compact peek; signup stage = larger
+  const SNAP_AUTH = vh * 0.55;
+  const SNAP_AUTH_OTP = vh * 0.42;
+  const SNAP_SIGNUP_HALF = vh * 0.25;
+  const SNAP_SIGNUP_FULL = vh * 0.06;
+
+  const y = useMotionValue(SNAP_AUTH);
 
   useEffect(() => {
     const onResize = () => setVh(window.innerHeight);
@@ -138,70 +143,91 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    animate(y, SNAP_HALF, { type: "spring", stiffness: 220, damping: 28 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAP_HALF]);
-
   const snapTo = (target: number) => {
     animate(y, target, { type: "spring", stiffness: 260, damping: 30 });
   };
 
+  // Snap based on stage and progress
+  useEffect(() => {
+    if (stage === "auth") {
+      snapTo(phone ? SNAP_AUTH_OTP : SNAP_AUTH);
+    } else {
+      snapTo(SNAP_SIGNUP_FULL);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, phone, vh]);
+
   const reachedStep = useMemo<StepKey>(() => {
-    if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
-    if (!phoneVerified) return "otp";
     if (!name.trim()) return "name";
     if (!email.trim()) return "email";
     if (!address.trim()) return "address";
     if (!manager) return "manager";
     return "referral";
-  }, [name, phone, phoneVerified, email, address, manager]);
+  }, [name, email, address, manager]);
 
   const visibleSteps = useMemo(() => {
     const idx = STEP_ORDER.indexOf(reachedStep);
     return STEP_ORDER.slice(0, idx + 1);
   }, [reachedStep]);
 
-  useEffect(() => {
-    if (visibleSteps.length >= 4) snapTo(SNAP_FULL);
-    else if (visibleSteps.length >= 2) snapTo(SNAP_HALF);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleSteps.length]);
-
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
   const managerMeta = MANAGER_OPTIONS.find((m) => m.value === manager);
 
+  // Persist draft
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: CustomerDraft = {
-      gender,
-      name,
-      operator,
-      phone,
-      phoneVerified,
-      email,
-      address,
-      manager,
-      referral,
-      referralVerified,
-      agreed,
+      gender, name, operator, phone, phoneVerified, email, address, manager, referral, referralVerified, agreed,
     };
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
   }, [address, agreed, email, gender, name, operator, phone, phoneVerified, manager, referral, referralVerified]);
 
+  // After OTP verified → check if mobile already registered
+  const handlePhoneVerified = async () => {
+    setPhoneVerified(true);
+    setLookupBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
+      if (!error && data && data.length > 0) {
+        const row = data[0] as { name: string | null; gender: string | null; email: string | null; address: string | null };
+        // Already registered → auto login & complete
+        if (row.name) setName(row.name);
+        if (row.gender) setGender(row.gender);
+        if (row.email) setEmail(row.email);
+        if (row.address) setAddress(row.address);
+        toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
+        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+        await refreshProfile();
+        setTimeout(() => onComplete?.(), 800);
+        return;
+      }
+    } catch (e) {
+      console.error("[lookup_customer_by_phone]", e);
+    } finally {
+      setLookupBusy(false);
+    }
+    // New user → move to signup progress
+    setTimeout(() => {
+      setStage("signup");
+      setTimeout(() => nameInputRef.current?.focus(), 350);
+    }, 600);
+  };
+
   useEffect(() => {
-    if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
-  }, [phoneVerified]);
+    if (stage === "signup" && phoneVerified && !name) {
+      setTimeout(() => nameInputRef.current?.focus(), 250);
+    }
+  }, [stage, phoneVerified, name]);
 
   const startInlineOtp = () => {
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
-    // Auto-fill simulation
     const AUTO = "4829";
     let i = 0;
     const fill = () => {
       if (i >= AUTO.length) {
-        setTimeout(() => setPhoneVerified(true), 500);
+        setTimeout(handlePhoneVerified, 500);
         return;
       }
       setOtpDigits((prev) => {
@@ -243,12 +269,13 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     return () => clearTimeout(t);
   }, [phone, phoneVerified, otpSeconds]);
 
-  // Auto-verify when all 4 digits entered manually
+  // Auto-verify when 4 digits manually entered
   useEffect(() => {
     if (phoneVerified) return;
     if (otpDigits.every((d) => d !== "") && otpDigits.join("").length === 4) {
-      setTimeout(() => setPhoneVerified(true), 400);
+      setTimeout(handlePhoneVerified, 400);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otpDigits, phoneVerified]);
 
   const handleOtpChange = (idx: number, val: string) => {
@@ -271,32 +298,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handleReferralVerify = (code: string) => {
     const c = code.trim();
     setReferral(c);
-    if (c.length >= 4) {
-      setTimeout(() => setReferralVerified(true), 600);
-    } else {
-      setReferralVerified(false);
-    }
-  };
-
-  const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
-    const current = y.get();
-    const v = info.velocity.y;
-    if (v < -500) return snapTo(SNAP_FULL);
-    if (v > 500) return snapTo(SNAP_PEEK);
-    let nearest = SNAPS[0];
-    let minDist = Math.abs(current - SNAPS[0]);
-    for (const s of SNAPS) {
-      const d = Math.abs(current - s);
-      if (d < minDist) {
-        minDist = d;
-        nearest = s;
-      }
-    }
-    snapTo(nearest);
+    if (c.length >= 4) setTimeout(() => setReferralVerified(true), 600);
+    else setReferralVerified(false);
   };
 
   const handleFinish = async () => {
-    // Save profile details to customers table — uses authenticated user's RLS
     if (user) {
       const { error } = await supabase
         .from("customers")
@@ -319,6 +325,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
         await refreshProfile();
       }
+    } else {
+      // No auth user yet — still mark onboarded locally so gate closes
+      window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+      window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
     }
     setSuccessOpen(false);
     onComplete?.();
@@ -333,9 +343,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         setGoogleBusy(false);
         return;
       }
-      // If redirected, browser will navigate away
       if (result.redirected) return;
-      // Else tokens received — auth state will pick up via onAuthStateChange
       toast.success("Google account connected ✓");
     } catch (e) {
       console.error(e);
@@ -347,7 +355,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   return (
     <main
-      className={transparent ? "fixed inset-0 overflow-hidden" : "fixed inset-0 overflow-hidden"}
+      className="fixed inset-0 overflow-hidden"
       style={
         transparent
           ? { background: "transparent" }
@@ -376,23 +384,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         </button>
       )}
 
-      {!transparent && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
-          <span className="font-display text-2xl text-gold-gradient font-bold tracking-tight">
-            Karo <span className="font-light">|</span> Online
-          </span>
-          <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.45_0.08_85/0.85)]">
-            Premium Onboarding
-          </span>
-        </div>
-      )}
-
       <motion.section
-        drag="y"
-        dragConstraints={{ top: SNAP_FULL, bottom: SNAP_PEEK }}
-        dragElastic={0.08}
-        dragMomentum={false}
-        onDragEnd={handleDragEnd}
         style={{ y, height: vh }}
         className="absolute inset-x-0 top-0 z-20 will-change-transform"
       >
@@ -400,14 +392,14 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
           className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
           style={{
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,253,245,0.9) 35%, rgba(251,243,217,0.92) 100%)",
+              "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,253,245,0.92) 35%, rgba(251,243,217,0.94) 100%)",
             backdropFilter: "blur(18px)",
             WebkitBackdropFilter: "blur(18px)",
             boxShadow:
               "0 -20px 60px -12px rgba(212,175,55,0.45), 0 0 0 1.5px rgba(255,255,255,0.7) inset",
           }}
         >
-          <div className="pt-3 pb-1 grid place-items-center cursor-grab active:cursor-grabbing">
+          <div className="pt-3 pb-1 grid place-items-center">
             <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37] shadow-[0_1px_4px_rgba(212,175,55,0.5)]" />
           </div>
 
@@ -415,24 +407,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
             className="h-[calc(100%-1.5rem)] overflow-y-auto overscroll-contain px-6 pb-32"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center shadow-md"
-                aria-label="Language"
-              >
-                <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-              </button>
-              <button
-                className="h-9 w-9 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center shadow-md"
-                aria-label="Theme"
-              >
-                <Sun className="h-4 w-4 text-[color:oklch(0.55_0.15_82)]" strokeWidth={2.4} />
-              </button>
-            </div>
-
-            <div className="text-center mb-4 pt-1">
+            <div className="text-center mb-3 pt-2">
               <h1
-                className="font-display font-bold text-[34px] leading-none text-gold-gradient"
+                className="font-display font-bold text-[28px] leading-none text-gold-gradient"
                 style={{
                   textDecoration: "underline",
                   textDecorationColor: "rgba(212,175,55,0.6)",
@@ -442,159 +419,133 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
               >
                 Karo <span className="font-light">|</span> Online
               </h1>
-              <p className="mt-2 text-base font-display italic text-[color:oklch(0.45_0.10_85)]">
-                <span style={{ borderBottom: "1px solid rgba(212,175,55,0.5)" }}>
-                  {mode === "login" ? "Welcome | back" : "Sign - up"}
-                </span>
+              <p className="mt-1.5 text-sm font-display italic text-[color:oklch(0.45_0.10_85)]">
+                {stage === "auth"
+                  ? phoneVerified
+                    ? lookupBusy
+                      ? "Checking your account…"
+                      : "Verified ✓"
+                    : phone
+                      ? "Enter OTP"
+                      : "Enter your mobile"
+                  : "Complete your profile"}
               </p>
             </div>
 
-            <div className="mx-auto max-w-[280px] grid grid-cols-2 gap-1 p-1 rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/70 mb-5">
-              <button
-                onClick={() => setMode("login")}
-                className={`py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition ${
-                  mode === "login"
-                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
-                    : "text-[color:oklch(0.55_0.10_82)]"
-                }`}
-                style={
-                  mode === "login"
-                    ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
-                    : undefined
-                }
-              >
-                Login
-              </button>
-              <button
-                onClick={() => setMode("signup")}
-                className={`py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition ${
-                  mode === "signup"
-                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
-                    : "text-[color:oklch(0.55_0.10_82)]"
-                }`}
-                style={
-                  mode === "signup"
-                    ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
-                    : undefined
-                }
-              >
-                Sign-up
-              </button>
-            </div>
+            {/* === STAGE A: Phone + OTP only === */}
+            {stage === "auth" && (
+              <div className="space-y-3 mt-2">
+                <GoldField
+                  Icon={Phone}
+                  label="Pick and enter mobile number"
+                  hint={
+                    operator
+                      ? `${operatorMeta?.label} · auto-filled`
+                      : phone
+                        ? "Tap to change"
+                        : "Tap → SIM 1 / SIM 2 / Manual"
+                  }
+                  value={phone}
+                  placeholder=""
+                  filled={phoneVerified}
+                  readOnly
+                  onClick={() => {
+                    if (!phoneVerified) setPicker("sim");
+                  }}
+                />
 
-            {mode === "login" ? (
-              <MpinLogin
-                onSuccess={async () => {
-                  // For now, MPIN login also routes through Google OAuth as the only real auth
-                  await handleGoogleSignIn();
-                }}
-                onSwitchToSignup={() => setMode("signup")}
-              />
-            ) : (
-              <>
-                <div className="space-y-1 relative">
-                  {/* Step 1 — Phone (SIM picker) */}
-                  <GoldField
-                    Icon={Phone}
-                    label="Enter mobile number"
-                    hint={
-                      operator
-                        ? `${operatorMeta?.label} · auto-filled`
-                        : phone
-                          ? "Tap to change"
-                          : "Tap → choose SIM or type manually"
-                    }
-                    value={phone}
-                    placeholder=""
-                    filled={phoneVerified}
-                    readOnly
-                    onClick={() => {
-                      if (!phoneVerified) setPicker("sim");
-                    }}
-                  />
-
-                  {/* Step 2 — Inline OTP with timer + resend */}
-                  {visibleSteps.includes("otp") && (
-                    <div
-                      className="relative flex items-start gap-3"
-                      style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
-                    >
-                      <div className="relative flex flex-col items-center pt-3.5">
-                        <div
-                          className={`relative h-9 w-9 rounded-full grid place-items-center border-2 transition-all ${
-                            phoneVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
-                          }`}
-                          style={{
-                            background: phoneVerified
-                              ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
-                              : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
-                          }}
-                        >
-                          <ShieldCheck
-                            className={phoneVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
-                            strokeWidth={2.4}
-                          />
-                        </div>
-                        <div className="w-0.5 flex-1 mt-1 bg-gradient-to-b from-[color:oklch(0.78_0.14_82/0.6)] to-transparent min-h-[44px]" />
+                {phone && (
+                  <div
+                    className="relative flex items-start gap-3"
+                    style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                  >
+                    <div className="relative flex flex-col items-center pt-3.5">
+                      <div
+                        className={`relative h-9 w-9 rounded-full grid place-items-center border-2 ${
+                          phoneVerified ? "border-white" : "border-[color:oklch(0.78_0.14_82/0.4)]"
+                        }`}
+                        style={{
+                          background: phoneVerified
+                            ? "linear-gradient(135deg, #f5d97a 0%, #d4af37 50%, #8b6508 100%)"
+                            : "linear-gradient(135deg, #fff8dc 0%, #f5e9b8 100%)",
+                        }}
+                      >
+                        <ShieldCheck
+                          className={phoneVerified ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.10_82)]"}
+                          strokeWidth={2.4}
+                        />
                       </div>
-                      <div className="flex-1 pt-1 pb-3">
-                        <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.4)] bg-white/70 px-4 py-3">
-                          <div className="flex items-center justify-center gap-3">
-                            {[0, 1, 2, 3].map((i) => (
-                              <input
-                                key={i}
-                                ref={(el) => { otpRefs.current[i] = el; }}
-                                value={otpDigits[i]}
-                                onChange={(e) => handleOtpChange(i, e.target.value)}
-                                inputMode="numeric"
-                                maxLength={1}
-                                disabled={phoneVerified}
-                                className={`h-12 w-10 text-center text-2xl font-display rounded-lg border-2 outline-none ${
-                                  phoneVerified
-                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                    : otpDigits[i]
-                                    ? "border-[color:oklch(0.78_0.14_82)] bg-white text-[color:oklch(0.30_0.05_85)]"
-                                    : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80 text-[color:oklch(0.55_0.10_82)]"
-                                }`}
-                                placeholder="✻"
-                              />
-                            ))}
-                          </div>
-                          <div className="mt-2 flex items-center justify-between text-[11px]">
-                            <button
-                              type="button"
-                              onClick={handleResendOtp}
-                              disabled={otpSeconds > 0 && !phoneVerified}
-                              className="text-[color:oklch(0.45_0.10_82)] underline disabled:opacity-50 disabled:no-underline"
-                            >
-                              Resend OTP
-                            </button>
-                            <span className="text-[color:oklch(0.45_0.10_82)] tabular-nums">
-                              {phoneVerified ? "Verified ✓" : `00:${String(otpSeconds).padStart(2, "0")}`}
-                            </span>
-                          </div>
+                    </div>
+                    <div className="flex-1 pt-1 pb-3">
+                      <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.4)] bg-white/70 px-4 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.25em] text-[color:oklch(0.50_0.10_82)] mb-2 text-center">
+                          Enter your OTP
+                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                          {[0, 1, 2, 3].map((i) => (
+                            <input
+                              key={i}
+                              ref={(el) => { otpRefs.current[i] = el; }}
+                              value={otpDigits[i]}
+                              onChange={(e) => handleOtpChange(i, e.target.value)}
+                              inputMode="numeric"
+                              maxLength={1}
+                              disabled={phoneVerified}
+                              className={`h-14 w-12 text-center text-3xl font-display rounded-lg border-2 outline-none ${
+                                phoneVerified
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                  : otpDigits[i]
+                                  ? "border-[color:oklch(0.78_0.14_82)] bg-white text-[color:oklch(0.30_0.05_85)]"
+                                  : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80 text-[color:oklch(0.55_0.10_82)]"
+                              }`}
+                              placeholder=""
+                            />
+                          ))}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-[11px]">
+                          <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            disabled={otpSeconds > 0 && !phoneVerified}
+                            className="text-[color:oklch(0.45_0.10_82)] underline disabled:opacity-50 disabled:no-underline"
+                          >
+                            Resend OTP
+                          </button>
+                          <span className="text-[color:oklch(0.45_0.10_82)] tabular-nums">
+                            {phoneVerified ? "Verified ✓" : `00:${String(otpSeconds).padStart(2, "0")}`}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            )}
 
-                  {/* Step 3 — Name + gender (only after verify) */}
-                  {visibleSteps.includes("name") && (
-                    <GoldField
-                      Icon={User}
-                      label="Enter full name"
-                      hint={gender ? `Choose · ${gender}` : "Choose gender"}
-                      value={name}
-                      placeholder=""
-                      filled={!!name.trim()}
-                      readOnly={!gender}
-                      onClick={() => !gender && setPicker("gender")}
-                      onChange={setName}
-                      inputRef={nameInputRef}
-                    />
-                  )}
+            {/* === STAGE B: Full signup progress === */}
+            {stage === "signup" && (
+              <>
+                <div className="space-y-1 relative">
+                  {/* Phone summary chip (read-only) */}
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="text-emerald-700 font-medium">{phone}</span>
+                    <span className="text-emerald-600/70">· verified</span>
+                  </div>
 
-                  {/* Step 4 — Gmail */}
+                  <GoldField
+                    Icon={User}
+                    label="Enter full name"
+                    hint={gender ? `Choose · ${gender}` : "Choose gender"}
+                    value={name}
+                    placeholder=""
+                    filled={!!name.trim()}
+                    readOnly={!gender}
+                    onClick={() => !gender && setPicker("gender")}
+                    onChange={setName}
+                    inputRef={nameInputRef}
+                  />
+
                   {visibleSteps.includes("email") && (
                     <GoldField
                       Icon={Mail}
@@ -616,7 +567,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
-                  {/* Step 5 — Address */}
                   {visibleSteps.includes("address") && (
                     <GoldField
                       Icon={MapPin}
@@ -630,7 +580,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
-                  {/* Step 6 — Relation Manager */}
                   {visibleSteps.includes("manager") && (
                     <GoldField
                       Icon={UserCheck}
@@ -644,7 +593,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
-                  {/* Step 7 — Referral with QR scanner */}
                   {visibleSteps.includes("referral") && (
                     <div
                       className="relative flex items-start gap-3"
@@ -746,7 +694,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     <span>Thanks for you</span>
                   </button>
                 )}
-
               </>
             )}
           </div>
