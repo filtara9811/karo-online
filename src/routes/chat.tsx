@@ -624,35 +624,13 @@ function ChatPage() {
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 my-3" />
               <div className="px-5 pb-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">All Vendors ({vendors.length})</h3>
-                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
+                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">My Orders</h3>
+                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90" aria-label="Close">
                   <X className="h-4 w-4 text-gray-600" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                {sortedVendors.map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition">
-                    <button onClick={() => { setActiveId(v.id); setShowVendorsSheet(false); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                      <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-                        <img src={v.avatar} alt="" className="h-full w-full object-cover" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{v.name}</p>
-                          {v.pinned && <Pin className="h-3 w-3 text-[#d97706]" />}
-                          {v.tag && (
-                            <span className={`px-1.5 py-px text-[9px] font-bold rounded-full ${TAG_STYLES[v.tag.color]}`}>{v.tag.label}</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-emerald-600 font-semibold">{v.status}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{(threads[v.id] ?? []).slice(-1)[0]?.text ?? "No messages yet"}</p>
-                      </div>
-                    </button>
-                    <button onClick={() => setVendorActionFor(v.id)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
-                      <Tag className="h-4 w-4 text-gray-600" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <MyOrdersList onItemClick={() => setShowVendorsSheet(false)} />
               </div>
             </motion.div>
           </>
