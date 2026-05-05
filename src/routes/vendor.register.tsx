@@ -99,6 +99,7 @@ function VendorRegister() {
   const [insta, setInsta] = useState("");
   const [fb, setFb] = useState("");
   const [website, setWebsite] = useState("");
+  const [gmbPlaceId, setGmbPlaceId] = useState("");
 
   // Step 3 — KYC
   const [aadhaar, setAadhaar] = useState("");
