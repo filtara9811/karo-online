@@ -12,6 +12,12 @@ import {
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
+import {
+  useOrdersStore, advanceStatus, cancelOrder,
+  STATUS_STEPS, STATUS_BADGE,
+  type OrderStatus,
+} from "@/lib/orders-store";
+import { Check, Ban, ChevronRight } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -23,6 +29,8 @@ const chatSearchSchema = z.object({
   productImage: fallback(z.string(), "").default(""),
   productPrice: fallback(z.number(), 0).default(0),
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+  vendorId: fallback(z.string(), "").default(""),
+  orderId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/vendor/chat")({
