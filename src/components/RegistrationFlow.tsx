@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin, UserCheck, Gift, QrCode, Star, CheckCircle2 } from "lucide-react";
+import { Languages, Sun, User, Phone, ShieldCheck, Mail, MapPin, UserCheck, Gift, QrCode, CheckCircle2 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
-import { OtpModal } from "@/components/OtpModal";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
 import { MpinLogin } from "@/components/MpinLogin";
