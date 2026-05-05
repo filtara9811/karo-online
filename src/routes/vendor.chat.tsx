@@ -111,7 +111,10 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
+  const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
+  const [activeOrderId, setActiveOrderId] = useState<string>(search.orderId || "");
   const [activeId, setActiveId] = useState<string>("v1");
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
