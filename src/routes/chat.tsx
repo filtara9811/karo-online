@@ -30,6 +30,8 @@ const chatSearchSchema = z.object({
   productImage: fallback(z.string(), "").default(""),
   productPrice: fallback(z.number(), 0).default(0),
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+  vendorId: fallback(z.string(), "").default(""),
+  orderId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/chat")({
