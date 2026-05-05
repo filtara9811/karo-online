@@ -154,8 +154,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (!phoneVerified) return "otp";
     if (!name.trim()) return "name";
     if (!email.trim()) return "email";
-    return "address";
-  }, [name, phone, phoneVerified, email]);
+    if (!address.trim()) return "address";
+    if (!manager) return "manager";
+    return "referral";
+  }, [name, phone, phoneVerified, email, address, manager]);
 
   const visibleSteps = useMemo(() => {
     const idx = STEP_ORDER.indexOf(reachedStep);
@@ -169,6 +171,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [visibleSteps.length]);
 
   const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
+  const managerMeta = MANAGER_OPTIONS.find((m) => m.value === manager);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -180,10 +183,13 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       phoneVerified,
       email,
       address,
+      manager,
+      referral,
+      referralVerified,
       agreed,
     };
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
-  }, [address, agreed, email, gender, name, operator, phone, phoneVerified]);
+  }, [address, agreed, email, gender, name, operator, phone, phoneVerified, manager, referral, referralVerified]);
 
   useEffect(() => {
     if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
