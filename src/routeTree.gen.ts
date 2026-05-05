@@ -29,6 +29,7 @@ import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -137,6 +138,11 @@ const AdminStaffRoute = AdminStaffRouteImport.update({
   path: '/admin/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSmsRoute = AdminSmsRouteImport.update({
+  id: '/admin/sms',
+  path: '/admin/sms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/product/$id': typeof ProductIdRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/product/$id': typeof ProductIdRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/product/$id': typeof ProductIdRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/payments'
     | '/admin/settings'
+    | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
     | '/product/$id'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/payments'
     | '/admin/settings'
+    | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
     | '/product/$id'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/payments'
     | '/admin/settings'
+    | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
     | '/product/$id'
@@ -370,6 +382,7 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStaffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/sms': {
+      id: '/admin/sms'
+      path: '/admin/sms'
+      fullPath: '/admin/sms'
+      preLoaderRoute: typeof AdminSmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -594,6 +614,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminVendorsRoute: AdminVendorsRoute,
   ProductIdRoute: ProductIdRoute,
