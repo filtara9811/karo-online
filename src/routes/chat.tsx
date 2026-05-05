@@ -598,12 +598,8 @@ function ChatPage() {
                 {[
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
-                  { icon: FileText, label: "Document", color: "bg-indigo-500", action: () => setShowAttach(false) },
                   { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => { setShowAttach(false); setActiveSheet("location"); } },
-                  { icon: QrCode, label: "QR Pay", color: "bg-amber-500", action: () => { setShowAttach(false); setActiveSheet("qrpay"); } },
-                  { icon: Store, label: "My Shop", color: "bg-orange-500", action: () => { setShowAttach(false); setActiveSheet("shop"); } },
-                  { icon: FileText, label: "Invoice", color: "bg-sky-500", action: () => { setShowAttach(false); setActiveSheet("invoice"); } },
-                  { icon: UserIcon, label: "Catalog", color: "bg-rose-500", action: () => setShowAttach(false) },
+                  { icon: MessageSquare, label: "Quick Reply", color: "bg-amber-500", action: () => { setShowAttach(false); setEditingChip({ index: null, label: "", emoji: "✨" }); } },
                 ].map((it) => (
                   <button key={it.label} onClick={it.action} className="flex flex-col items-center gap-1.5 active:scale-90">
                     <span className={`h-14 w-14 rounded-2xl grid place-items-center ${it.color} shadow-md`}>
