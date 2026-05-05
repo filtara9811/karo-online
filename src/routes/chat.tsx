@@ -141,6 +141,25 @@ function ChatPage() {
   const msgs = threads[activeId] ?? [];
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
 
+  // Vendor's orders + currently-selected order
+  const vendorOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const currentOrder = vendorOrders.find((o) => o.id === activeOrderId) ?? vendorOrders[0];
+
+  // Sync activeId/orderId when search params change (e.g. opening from MyOrdersList)
+  useEffect(() => {
+    if (search.vendorId && search.vendorId !== activeId) setActiveId(search.vendorId);
+    if (search.orderId && search.orderId !== activeOrderId) setActiveOrderId(search.orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.vendorId, search.orderId]);
+
+  // Default order on vendor switch
+  useEffect(() => {
+    if (vendorOrders.length > 0 && !vendorOrders.some((o) => o.id === activeOrderId)) {
+      setActiveOrderId(vendorOrders[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, ordersStore]);
+
   // Handle incoming product
   useEffect(() => {
     if (!search.productId || !search.productImage) return;
