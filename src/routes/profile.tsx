@@ -267,6 +267,7 @@ function ProfilePage() {
           </motion.button>
         ))}
       </section>
+      )}
 
       {/* Bottom: T&C + Socials + Help FAB */}
       <section className="mt-8 px-4">
