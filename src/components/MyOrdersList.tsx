@@ -33,10 +33,10 @@ function statusBucket(s: OrderStatus): OrderStatusKind {
 
 export function MyOrdersList({
   onItemClick,
-  basePath = "/chat",
+  basePath = "/status",
 }: {
   onItemClick?: () => void;
-  basePath?: "/chat" | "/vendor/chat";
+  basePath?: "/status" | "/vendor/status" | "/chat" | "/vendor/chat";
 }) {
   const vendors = useOrdersStore();
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ export function MyOrdersList({
   const totalUnread = vendors.reduce((s, v) => s + v.orders.reduce((a, o) => a + o.unread, 0), 0);
   const totalOrders = vendors.reduce((s, v) => s + v.orders.length, 0);
 
-  const openChat = (vendorId: string, orderId: string) => {
+  const openOrder = (vendorId: string, orderId: string) => {
     clearUnread(orderId);
     onItemClick?.();
     navigate({ to: basePath, search: { vendorId, orderId } as never });
