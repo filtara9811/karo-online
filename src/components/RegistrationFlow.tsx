@@ -749,51 +749,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   </button>
                 )}
 
-                {visibleSteps.includes("address") && (
-                  <label
-                    className="mt-6 flex items-start gap-3 cursor-pointer"
-                    style={{ animation: "step-reveal 0.55s ease-out 0.15s both" }}
-                  >
-                    <span
-                      onClick={() => setAgreed(!agreed)}
-                      className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
-                        agreed
-                          ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
-                          : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
-                      }`}
-                    >
-                      {agreed && (
-                        <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
-                          <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="sr-only" />
-                    <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
-                      I accept the public terms<br />and the privacy policy
-                    </span>
-                  </label>
-                )}
-
-                {address.trim() && agreed && (
-                  <button
-                    onClick={() => setSuccessOpen(true)}
-                    className="btn-3d mt-5 w-full rounded-2xl py-3.5 font-display font-bold text-xl tracking-wide flex items-center justify-center gap-3 text-[color:oklch(0.18_0.06_18)]"
-                    style={{
-                      background:
-                        "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 70%, #8b6508 100%)",
-                      boxShadow:
-                        "0 8px 24px -6px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
-                      textDecoration: "underline",
-                      textDecorationThickness: "2px",
-                      textUnderlineOffset: "4px",
-                      animation: "breathe 2.6s ease-in-out infinite",
-                    }}
-                  >
-                    <img src={goldWhatsapp} alt="" className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
-                    <span>WhatsApp Join</span>
-                  </button>
-                )}
               </>
             )}
           </div>
@@ -816,12 +771,39 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
-      <OtpModal
-        open={otpOpen}
-        phone={phone}
-        onVerified={handleOtpVerified}
-        onClose={() => setOtpOpen(false)}
+      <LuxPicker
+        open={picker === "manager"}
+        title="Choose Your Relation Manager"
+        subtitle="Nearby · ratings · vendors handled"
+        options={MANAGER_OPTIONS}
+        onSelect={(v) => { setManager(v); setPicker(null); }}
+        onClose={() => setPicker(null)}
       />
+
+      {scannerOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center">
+            <QrCode className="h-12 w-12 mx-auto text-[color:oklch(0.42_0.10_82)]" />
+            <h3 className="font-display text-lg mt-3">Scan referral QR</h3>
+            <p className="text-xs text-muted-foreground mt-1">Point camera at QR — auto-fills code</p>
+            <button
+              onClick={() => {
+                handleReferralVerify("ARYAN500");
+                setScannerOpen(false);
+              }}
+              className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#f5d97a] to-[#d4af37] font-bold text-[color:oklch(0.18_0.06_18)]"
+            >
+              Simulate scan
+            </button>
+            <button
+              onClick={() => setScannerOpen(false)}
+              className="mt-2 w-full py-2 text-xs uppercase tracking-widest text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <AddressPicker
         open={addressOpen}
