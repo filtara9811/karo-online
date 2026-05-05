@@ -148,8 +148,11 @@ function ChatPage() {
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
 
   // Vendor's orders + currently-selected order
-  const vendorOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const vendorGroup = ordersStore.find((v) => v.vendorId === activeId);
+  const vendorOrders = vendorGroup?.orders ?? [];
   const currentOrder = vendorOrders.find((o) => o.id === activeOrderId) ?? vendorOrders[0];
+  const pendingApproval = currentOrder?.approvals?.find((a) => a.state === "pending");
+  const allApprovals = currentOrder?.approvals ?? [];
 
   // Sync activeId/orderId when search params change (e.g. opening from MyOrdersList)
   useEffect(() => {
