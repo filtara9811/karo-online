@@ -703,10 +703,10 @@ function Step1Business(p: Step1Props) {
 
 /* ─────────── Step 2 ─────────── */
 function Step2Social({
-  insta, fb, website, setInsta, setFb, setWebsite,
+  insta, fb, website, gmbPlaceId, setInsta, setFb, setWebsite, setGmbPlaceId,
 }: {
-  insta: string; fb: string; website: string;
-  setInsta: (v: string) => void; setFb: (v: string) => void; setWebsite: (v: string) => void;
+  insta: string; fb: string; website: string; gmbPlaceId: string;
+  setInsta: (v: string) => void; setFb: (v: string) => void; setWebsite: (v: string) => void; setGmbPlaceId: (v: string) => void;
 }) {
   return (
     <div className="space-y-1">
@@ -751,8 +751,18 @@ function Step2Social({
         filled={false}
         onChange={() => {}}
         showInput
-        isLast
         placeholder="https://karomart.in"
+      />
+      <Field
+        Icon={Globe}
+        label="Google Place ID (optional)"
+        hint="For auto Google review link"
+        value={gmbPlaceId}
+        filled={gmbPlaceId.length > 0}
+        onChange={setGmbPlaceId}
+        showInput
+        isLast
+        placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
       />
     </div>
   );
