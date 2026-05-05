@@ -327,11 +327,12 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   const st = STATUS_META[lead.status];
   return (
     <article className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm">
-      <Link
-        to="/vendor/lead/$id"
-        params={{ id: lead.id }}
-        className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
-      >
+      {lead.status === "new" ? (
+        <div
+          aria-disabled
+          title="Accept this lead to view full details"
+          className="block p-3 cursor-not-allowed select-none"
+        >
         <div className="flex items-start gap-3">
           <span
             className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0"
