@@ -495,6 +495,12 @@ function ChatPage() {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {/* Inline approval cards (above messages, current order only) */}
+        {currentOrder && allApprovals.map((ap) => (
+          <div id={`approval-${ap.id}`} key={ap.id}>
+            <ApprovalInlineCard orderId={currentOrder.id} approval={ap} />
+          </div>
+        ))}
         <AnimatePresence mode="popLayout">
           {msgs.map((m) => (
             <motion.div
