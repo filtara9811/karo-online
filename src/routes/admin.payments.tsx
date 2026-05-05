@@ -74,8 +74,16 @@ function PaymentsPage() {
     <AdminLayout>
       <PageHeader
         title="Payment Gateways"
-        subtitle="Razorpay / Stripe configuration"
+        subtitle="Razorpay / Stripe / PhonePe configuration"
       />
+
+      <GoldCard className="p-4 mb-4">
+        <p className="text-xs text-[#f5d97a]/85 leading-relaxed">
+          💡 <b className="text-[#fff8dc]">Tip:</b> Har gateway ko ek <b>purpose</b> assign karein —
+          ek gateway sirf <b>Wallet Recharge</b> ke liye, dusra sirf <b>LeadX Coin Purchase</b> ke liye.
+          Vendor app me sahi gateway automatically chosen ho jayega.
+        </p>
+      </GoldCard>
 
       {loading ? (
         <GoldCard className="p-16 grid place-items-center">
