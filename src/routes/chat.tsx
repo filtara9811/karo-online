@@ -2,17 +2,23 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2, ArrowLeft,
-  Image as ImageIcon, FileText, MapPin, QrCode, Store, User as UserIcon, Pencil,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Trash2,
+  Image as ImageIcon, MapPin, MessageSquare, Pencil, Check, Ban, ChevronDown,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import {
-  LocationSheet, QrPaySheet, ShopSheet, InvoiceSheet,
+  LocationSheet,
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import {
+  useOrdersStore, getOrder, cancelOrder, clearUnread,
+  STATUS_STEPS, STATUS_BADGE,
+  type OrderStatus,
+} from "@/lib/orders-store";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -24,6 +30,8 @@ const chatSearchSchema = z.object({
   productImage: fallback(z.string(), "").default(""),
   productPrice: fallback(z.number(), 0).default(0),
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+  vendorId: fallback(z.string(), "").default(""),
+  orderId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/chat")({
@@ -104,8 +112,10 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
-  const [activeId, setActiveId] = useState<string>("v1");
+  const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
+  const [activeOrderId, setActiveOrderId] = useState<string>(search.orderId || "");
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
@@ -130,6 +140,25 @@ function ChatPage() {
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+
+  // Vendor's orders + currently-selected order
+  const vendorOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const currentOrder = vendorOrders.find((o) => o.id === activeOrderId) ?? vendorOrders[0];
+
+  // Sync activeId/orderId when search params change (e.g. opening from MyOrdersList)
+  useEffect(() => {
+    if (search.vendorId && search.vendorId !== activeId) setActiveId(search.vendorId);
+    if (search.orderId && search.orderId !== activeOrderId) setActiveOrderId(search.orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.vendorId, search.orderId]);
+
+  // Default order on vendor switch
+  useEffect(() => {
+    if (vendorOrders.length > 0 && !vendorOrders.some((o) => o.id === activeOrderId)) {
+      setActiveOrderId(vendorOrders[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, ordersStore]);
 
   // Handle incoming product
   useEffect(() => {
@@ -338,8 +367,8 @@ function ChatPage() {
         </div>
       </div>
 
-      {/* Active vendor header — close (X) on right closes the chat sheet back to previous page */}
-      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24] gap-2">
+      {/* Active vendor header — WhatsApp + Call + X */}
+      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b border-[#fbbf24]/60 gap-2">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
@@ -351,6 +380,15 @@ function ChatPage() {
             <p className="text-[10px] text-emerald-600 font-semibold">{active.status}</p>
           </div>
         </div>
+        <a
+          href="https://wa.me/919999999999"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="WhatsApp"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-emerald-300 shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <img src={whatsappIcon} alt="" className="h-5 w-5" loading="lazy" width={20} height={20} />
+        </a>
         <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
@@ -362,6 +400,92 @@ function ChatPage() {
           <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
+
+      {/* Per-vendor order tabs (Option C) + status pipeline */}
+      {vendorOrders.length > 0 && (
+        <div className="flex-shrink-0 bg-gradient-to-b from-white to-amber-50/40 border-b border-amber-100">
+          <div className="px-3 pt-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {vendorOrders.map((o) => {
+              const isActive = o.id === currentOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setActiveOrderId(o.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-t-xl border-b-2 text-[11px] font-semibold transition ${
+                    isActive
+                      ? "bg-white border-amber-500 text-amber-800 shadow-sm"
+                      : "bg-transparent border-transparent text-slate-500"
+                  }`}
+                >
+                  <span className="font-bold">{o.service}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
+                    {STATUS_BADGE[o.status].label}
+                  </span>
+                  {o.unread > 0 && (
+                    <span className="min-w-[16px] h-4 px-1 grid place-items-center text-[9px] font-bold text-white bg-emerald-500 rounded-full">
+                      {o.unread}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Status pipeline strip — Amazon style */}
+          {currentOrder && currentOrder.status !== "cancelled" && (
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-bold text-amber-800">
+                  Order #{currentOrder.id} — Live status
+                </p>
+                <button
+                  onClick={() => {
+                    if (confirm(`Cancel order ${currentOrder.id}? This cannot be undone.`)) {
+                      cancelOrder(currentOrder.id);
+                    }
+                  }}
+                  className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
+                >
+                  <Ban className="h-3 w-3" /> Cancel
+                </button>
+              </div>
+              <div className="flex items-center">
+                {STATUS_STEPS.map((step, i) => {
+                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                  const done = i <= currentIdx;
+                  const isCurrent = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
+                            done
+                              ? "bg-emerald-500 text-white border-emerald-500"
+                              : "bg-white text-slate-400 border-slate-200"
+                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
+                        >
+                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                        </span>
+                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                      {i < STATUS_STEPS.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {currentOrder?.status === "cancelled" && (
+            <div className="px-3 py-2 text-center">
+              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
@@ -590,12 +714,8 @@ function ChatPage() {
                 {[
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
-                  { icon: FileText, label: "Document", color: "bg-indigo-500", action: () => setShowAttach(false) },
                   { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => { setShowAttach(false); setActiveSheet("location"); } },
-                  { icon: QrCode, label: "QR Pay", color: "bg-amber-500", action: () => { setShowAttach(false); setActiveSheet("qrpay"); } },
-                  { icon: Store, label: "My Shop", color: "bg-orange-500", action: () => { setShowAttach(false); setActiveSheet("shop"); } },
-                  { icon: FileText, label: "Invoice", color: "bg-sky-500", action: () => { setShowAttach(false); setActiveSheet("invoice"); } },
-                  { icon: UserIcon, label: "Catalog", color: "bg-rose-500", action: () => setShowAttach(false) },
+                  { icon: MessageSquare, label: "Quick Reply", color: "bg-amber-500", action: () => { setShowAttach(false); setEditingChip({ index: null, label: "", emoji: "✨" }); } },
                 ].map((it) => (
                   <button key={it.label} onClick={it.action} className="flex flex-col items-center gap-1.5 active:scale-90">
                     <span className={`h-14 w-14 rounded-2xl grid place-items-center ${it.color} shadow-md`}>
@@ -802,25 +922,6 @@ function ChatPage() {
           <LocationSheet
             onClose={() => setActiveSheet(null)}
             onSend={(loc) => pushMyMessage({ location: loc, text: loc.live ? "📍 Live location shared" : "📍 Location" }, "📍 Location")}
-          />
-        )}
-        {activeSheet === "qrpay" && (
-          <QrPaySheet
-            onClose={() => setActiveSheet(null)}
-            onSend={(q) => pushMyMessage({ qrPay: q, text: `💸 Payment request ₹${q.amount.toFixed(2)}` }, "QR Payment")}
-          />
-        )}
-        {activeSheet === "shop" && (
-          <ShopSheet
-            onClose={() => setActiveSheet(null)}
-            onSend={(s) => pushMyMessage({ shop: s, text: `🏪 ${s.name}` }, "Shop")}
-          />
-        )}
-        {activeSheet === "invoice" && (
-          <InvoiceSheet
-            vendorName={active.name.split(" | ")[0]}
-            onClose={() => setActiveSheet(null)}
-            onSend={(inv) => pushMyMessage({ invoice: inv, text: `🧾 Invoice ${inv.number} · ₹${inv.total.toFixed(2)}` }, "Invoice")}
           />
         )}
       </AnimatePresence>

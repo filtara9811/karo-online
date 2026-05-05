@@ -12,6 +12,12 @@ import {
   LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
+import {
+  useOrdersStore, advanceStatus, cancelOrder,
+  STATUS_STEPS, STATUS_BADGE,
+  type OrderStatus,
+} from "@/lib/orders-store";
+import { Check, Ban, ChevronRight } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -23,6 +29,8 @@ const chatSearchSchema = z.object({
   productImage: fallback(z.string(), "").default(""),
   productPrice: fallback(z.number(), 0).default(0),
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+  vendorId: fallback(z.string(), "").default(""),
+  orderId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/vendor/chat")({
@@ -103,8 +111,11 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
-  const [activeId, setActiveId] = useState<string>("v1");
+  const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
+  const [activeOrderId, setActiveOrderId] = useState<string>(search.orderId || "");
+  // (activeId/setActiveId/activeOrderId declared above)
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
@@ -129,6 +140,22 @@ function ChatPage() {
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+
+  const customerOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const currentOrder = customerOrders.find((o) => o.id === activeOrderId) ?? customerOrders[0];
+
+  useEffect(() => {
+    if (search.vendorId && search.vendorId !== activeId) setActiveId(search.vendorId);
+    if (search.orderId && search.orderId !== activeOrderId) setActiveOrderId(search.orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.vendorId, search.orderId]);
+
+  useEffect(() => {
+    if (customerOrders.length > 0 && !customerOrders.some((o) => o.id === activeOrderId)) {
+      setActiveOrderId(customerOrders[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, ordersStore]);
 
   // Handle incoming product
   useEffect(() => {
@@ -354,6 +381,97 @@ function ChatPage() {
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
+
+      {/* Per-customer order tabs (Option C) + status updater */}
+      {customerOrders.length > 0 && (
+        <div className="flex-shrink-0 bg-gradient-to-b from-white to-amber-50/40 border-b border-amber-100">
+          <div className="px-3 pt-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {customerOrders.map((o) => {
+              const isActive = o.id === currentOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setActiveOrderId(o.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-t-xl border-b-2 text-[11px] font-semibold transition ${
+                    isActive
+                      ? "bg-white border-amber-500 text-amber-800 shadow-sm"
+                      : "bg-transparent border-transparent text-slate-500"
+                  }`}
+                >
+                  <span className="font-bold">{o.service}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
+                    {STATUS_BADGE[o.status].label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {currentOrder && currentOrder.status !== "cancelled" && (
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1.5 gap-2">
+                <p className="text-[10px] font-bold text-amber-800 truncate">
+                  Order #{currentOrder.id} — Update status
+                </p>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {(() => {
+                    const idx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                    const next = STATUS_STEPS[idx + 1];
+                    if (!next) return <span className="text-[10px] font-bold text-emerald-600">✓ Delivered</span>;
+                    return (
+                      <button
+                        onClick={() => advanceStatus(currentOrder.id, next.key)}
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow flex items-center gap-1 active:scale-95"
+                      >
+                        Mark {next.label} <ChevronRight className="h-3 w-3" />
+                      </button>
+                    );
+                  })()}
+                  <button
+                    onClick={() => {
+                      if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
+                    }}
+                    className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
+                  >
+                    <Ban className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center">
+                {STATUS_STEPS.map((step, i) => {
+                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                  const done = i <= currentIdx;
+                  const isCurrent = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
+                            done ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-400 border-slate-200"
+                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
+                        >
+                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                        </span>
+                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                      {i < STATUS_STEPS.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {currentOrder?.status === "cancelled" && (
+            <div className="px-3 py-2 text-center">
+              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
