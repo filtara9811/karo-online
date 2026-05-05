@@ -367,8 +367,8 @@ function ChatPage() {
         </div>
       </div>
 
-      {/* Active vendor header — close (X) on right closes the chat sheet back to previous page */}
-      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24] gap-2">
+      {/* Active vendor header — WhatsApp + Call + X */}
+      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b border-[#fbbf24]/60 gap-2">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
@@ -380,6 +380,15 @@ function ChatPage() {
             <p className="text-[10px] text-emerald-600 font-semibold">{active.status}</p>
           </div>
         </div>
+        <a
+          href="https://wa.me/919999999999"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="WhatsApp"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-emerald-300 shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <img src={whatsappIcon} alt="" className="h-5 w-5" loading="lazy" width={20} height={20} />
+        </a>
         <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
@@ -391,6 +400,92 @@ function ChatPage() {
           <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
       </div>
+
+      {/* Per-vendor order tabs (Option C) + status pipeline */}
+      {vendorOrders.length > 0 && (
+        <div className="flex-shrink-0 bg-gradient-to-b from-white to-amber-50/40 border-b border-amber-100">
+          <div className="px-3 pt-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {vendorOrders.map((o) => {
+              const isActive = o.id === currentOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setActiveOrderId(o.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-t-xl border-b-2 text-[11px] font-semibold transition ${
+                    isActive
+                      ? "bg-white border-amber-500 text-amber-800 shadow-sm"
+                      : "bg-transparent border-transparent text-slate-500"
+                  }`}
+                >
+                  <span className="font-bold">{o.service}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
+                    {STATUS_BADGE[o.status].label}
+                  </span>
+                  {o.unread > 0 && (
+                    <span className="min-w-[16px] h-4 px-1 grid place-items-center text-[9px] font-bold text-white bg-emerald-500 rounded-full">
+                      {o.unread}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Status pipeline strip — Amazon style */}
+          {currentOrder && currentOrder.status !== "cancelled" && (
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-bold text-amber-800">
+                  Order #{currentOrder.id} — Live status
+                </p>
+                <button
+                  onClick={() => {
+                    if (confirm(`Cancel order ${currentOrder.id}? This cannot be undone.`)) {
+                      cancelOrder(currentOrder.id);
+                    }
+                  }}
+                  className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
+                >
+                  <Ban className="h-3 w-3" /> Cancel
+                </button>
+              </div>
+              <div className="flex items-center">
+                {STATUS_STEPS.map((step, i) => {
+                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                  const done = i <= currentIdx;
+                  const isCurrent = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
+                            done
+                              ? "bg-emerald-500 text-white border-emerald-500"
+                              : "bg-white text-slate-400 border-slate-200"
+                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
+                        >
+                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                        </span>
+                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                      {i < STATUS_STEPS.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {currentOrder?.status === "cancelled" && (
+            <div className="px-3 py-2 text-center">
+              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
