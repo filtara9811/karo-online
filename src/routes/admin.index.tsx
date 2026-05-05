@@ -117,13 +117,25 @@ function AdminHome() {
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <SmallCard label="Catalog Items" value={stats.categories} icon={FolderTree} to="/admin/catalog" />
         <SmallCard
-          label="Active Gateways"
+          label="Pay Gateways"
           value={stats.activeGateways}
           icon={CreditCard}
           to="/admin/payments"
+        />
+        <SmallCard
+          label="Logistics Live"
+          value={stats.activeLogistics}
+          icon={Truck}
+          to="/admin/logistics"
+        />
+        <SmallCard
+          label={`Coin Rate ₹`}
+          value={stats.coinRate}
+          icon={Coins}
+          to="/admin/coins"
         />
       </div>
 
