@@ -34,9 +34,11 @@ import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
@@ -165,6 +167,11 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   path: '/admin/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLogisticsRoute = AdminLogisticsRouteImport.update({
+  id: '/admin/logistics',
+  path: '/admin/logistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
@@ -178,6 +185,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/admin/customers',
   path: '/admin/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCoinsRoute = AdminCoinsRouteImport.update({
+  id: '/admin/coins',
+  path: '/admin/coins',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCatalogRoute = AdminCatalogRouteImport.update({
@@ -205,9 +217,11 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
+  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -237,9 +251,11 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
+  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -270,9 +286,11 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
+  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -304,9 +322,11 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
+    | '/admin/coins'
     | '/admin/customers'
     | '/admin/legal'
     | '/admin/login'
+    | '/admin/logistics'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/sms'
@@ -336,9 +356,11 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
+    | '/admin/coins'
     | '/admin/customers'
     | '/admin/legal'
     | '/admin/login'
+    | '/admin/logistics'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/sms'
@@ -368,9 +390,11 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
+    | '/admin/coins'
     | '/admin/customers'
     | '/admin/legal'
     | '/admin/login'
+    | '/admin/logistics'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/sms'
@@ -401,9 +425,11 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute
   VendorsRoute: typeof VendorsRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
+  AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminLogisticsRoute: typeof AdminLogisticsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
@@ -597,6 +623,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/logistics': {
+      id: '/admin/logistics'
+      path: '/admin/logistics'
+      fullPath: '/admin/logistics'
+      preLoaderRoute: typeof AdminLogisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/admin/login'
@@ -616,6 +649,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/customers'
       fullPath: '/admin/customers'
       preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/coins': {
+      id: '/admin/coins'
+      path: '/admin/coins'
+      fullPath: '/admin/coins'
+      preLoaderRoute: typeof AdminCoinsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/catalog': {
@@ -649,9 +689,11 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   VendorsRoute: VendorsRoute,
   AdminCatalogRoute: AdminCatalogRoute,
+  AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminLogisticsRoute: AdminLogisticsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,

@@ -223,6 +223,72 @@ export type Database = {
           },
         ]
       }
+      coin_packs: {
+        Row: {
+          bonus_coins: number
+          coins: number
+          created_at: string
+          id: string
+          is_active: boolean
+          pack_name: string
+          price_inr: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_coins?: number
+          coins: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pack_name: string
+          price_inr: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_coins?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pack_name?: string
+          price_inr?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coin_pricing_config: {
+        Row: {
+          coin_rate_inr: number
+          gst_percent: number
+          id: string
+          max_purchase_coins: number
+          min_purchase_coins: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          coin_rate_inr?: number
+          gst_percent?: number
+          id?: string
+          max_purchase_coins?: number
+          min_purchase_coins?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          coin_rate_inr?: number
+          gst_percent?: number
+          id?: string
+          max_purchase_coins?: number
+          min_purchase_coins?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -387,15 +453,19 @@ export type Database = {
         }
         Relationships: []
       }
-      payment_gateways: {
+      logistics_gateways: {
         Row: {
           config: Json
           display_name: string
           id: string
           is_active: boolean
           is_test_mode: boolean
+          priority: number
           provider: string
           public_key: string | null
+          supports_hyperlocal: boolean
+          supports_intercity: boolean
+          supports_international: boolean
           updated_at: string
           updated_by: string | null
         }
@@ -405,8 +475,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_test_mode?: boolean
+          priority?: number
           provider: string
           public_key?: string | null
+          supports_hyperlocal?: boolean
+          supports_intercity?: boolean
+          supports_international?: boolean
           updated_at?: string
           updated_by?: string | null
         }
@@ -416,8 +490,54 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_test_mode?: boolean
+          priority?: number
           provider?: string
           public_key?: string | null
+          supports_hyperlocal?: boolean
+          supports_intercity?: boolean
+          supports_international?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      payment_gateways: {
+        Row: {
+          config: Json
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          priority: number
+          provider: string
+          public_key: string | null
+          purpose: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider: string
+          public_key?: string | null
+          purpose?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider?: string
+          public_key?: string | null
+          purpose?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -697,6 +817,39 @@ export type Database = {
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      wallet_recharge_packs: {
+        Row: {
+          amount_inr: number
+          bonus_inr: number
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          amount_inr: number
+          bonus_inr?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_inr?: number
+          bonus_inr?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }

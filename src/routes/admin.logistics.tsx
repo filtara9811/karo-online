@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CreditCard, Loader2, Save } from "lucide-react";
+import { Truck, Loader2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminLayout,
@@ -9,61 +9,61 @@ import {
   PageHeader,
 } from "@/components/admin/AdminLayout";
 
-export const Route = createFileRoute("/admin/payments")({
+export const Route = createFileRoute("/admin/logistics")({
   head: () => ({
     meta: [
-      { title: "Payment Gateways — Admin" },
+      { title: "Delivery Gateways — Admin" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: PaymentsPage,
+  component: LogisticsPage,
 });
 
-type GatewayPurpose = "wallet_recharge" | "coin_purchase" | "both";
-
-type Gateway = {
+type LG = {
   id: string;
   provider: string;
   display_name: string;
   is_active: boolean;
   is_test_mode: boolean;
   public_key: string | null;
-  purpose: GatewayPurpose;
+  supports_hyperlocal: boolean;
+  supports_intercity: boolean;
+  supports_international: boolean;
   priority: number;
 };
 
-function PaymentsPage() {
-  const [gateways, setGateways] = useState<Gateway[]>([]);
+function LogisticsPage() {
+  const [rows, setRows] = useState<LG[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("payment_gateways")
+      .from("logistics_gateways")
       .select("*")
-      .order("provider");
-    setGateways((data ?? []) as Gateway[]);
+      .order("priority");
+    setRows((data ?? []) as LG[]);
     setLoading(false);
   };
-
   useEffect(() => {
     load();
   }, []);
 
-  const update = (id: string, patch: Partial<Gateway>) => {
-    setGateways((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
-  };
+  const update = (id: string, patch: Partial<LG>) =>
+    setRows((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
-  const save = async (g: Gateway) => {
+  const save = async (g: LG) => {
     setSavingId(g.id);
     await supabase
-      .from("payment_gateways")
+      .from("logistics_gateways")
       .update({
         is_active: g.is_active,
         is_test_mode: g.is_test_mode,
         public_key: g.public_key,
-        purpose: g.purpose,
+        supports_hyperlocal: g.supports_hyperlocal,
+        supports_intercity: g.supports_intercity,
+        supports_international: g.supports_international,
         priority: g.priority,
       })
       .eq("id", g.id);
@@ -73,15 +73,16 @@ function PaymentsPage() {
   return (
     <AdminLayout>
       <PageHeader
-        title="Payment Gateways"
-        subtitle="Razorpay / Stripe / PhonePe configuration"
+        title="Delivery Gateways"
+        subtitle="Shiprocket / Porter / Delhivery — Vendor delivery providers"
       />
 
       <GoldCard className="p-4 mb-4">
         <p className="text-xs text-[#f5d97a]/85 leading-relaxed">
-          💡 <b className="text-[#fff8dc]">Tip:</b> Har gateway ko ek <b>purpose</b> assign karein —
-          ek gateway sirf <b>Wallet Recharge</b> ke liye, dusra sirf <b>LeadX Coin Purchase</b> ke liye.
-          Vendor app me sahi gateway automatically chosen ho jayega.
+          🚚 <b className="text-[#fff8dc]">Hybrid model:</b> <b>Porter</b> for
+          hyperlocal (same-city, &lt;2hr), <b>Shiprocket</b> for intercity & international,
+          <b> Delhivery</b> for bulk intercity. Vendor app me sahi provider auto-pick hoga
+          based on delivery type.
         </p>
       </GoldCard>
 
@@ -91,7 +92,7 @@ function PaymentsPage() {
         </GoldCard>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
-          {gateways.map((g) => (
+          {rows.map((g) => (
             <GoldCard key={g.id} className="p-5">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -102,7 +103,7 @@ function PaymentsPage() {
                         "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
                     }}
                   >
-                    <CreditCard className="h-5 w-5 text-[#1a1208]" />
+                    <Truck className="h-5 w-5 text-[#1a1208]" />
                   </div>
                   <div>
                     <h3
@@ -135,55 +136,40 @@ function PaymentsPage() {
               <div className="space-y-3">
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
-                    Public Key {g.provider === "razorpay" ? "(Key ID)" : "(Publishable Key)"}
+                    API Key / Token
                   </label>
                   <input
                     value={g.public_key ?? ""}
                     onChange={(e) =>
                       update(g.id, { public_key: e.target.value })
                     }
-                    placeholder={
-                      g.provider === "razorpay"
-                        ? "rzp_test_..."
-                        : "pk_test_..."
-                    }
+                    placeholder="API key / public token"
                     className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] placeholder:text-[#f5d97a]/30 outline-none focus:border-[#d4af37] text-xs font-mono"
                   />
                 </div>
 
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
-                    Purpose
+                    Coverage
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        { v: "wallet_recharge", l: "Wallet" },
-                        { v: "coin_purchase", l: "Coins" },
-                        { v: "both", l: "Both" },
-                      ] as const
-                    ).map((opt) => {
-                      const active = g.purpose === opt.v;
-                      return (
-                        <button
-                          key={opt.v}
-                          type="button"
-                          onClick={() => update(g.id, { purpose: opt.v })}
-                          className={`px-2 py-2 rounded-xl text-[10px] uppercase tracking-wider font-bold transition border ${
-                            active
-                              ? "text-[#1a1208] border-transparent"
-                              : "text-[#f5d97a]/70 border-[#d4af37]/30 hover:bg-[#d4af37]/10"
-                          }`}
-                          style={
-                            active
-                              ? { background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }
-                              : undefined
-                          }
-                        >
-                          {opt.l}
-                        </button>
-                      );
-                    })}
+                    <CovToggle
+                      label="Hyperlocal"
+                      value={g.supports_hyperlocal}
+                      onChange={(v) => update(g.id, { supports_hyperlocal: v })}
+                    />
+                    <CovToggle
+                      label="Intercity"
+                      value={g.supports_intercity}
+                      onChange={(v) => update(g.id, { supports_intercity: v })}
+                    />
+                    <CovToggle
+                      label="Intl."
+                      value={g.supports_international}
+                      onChange={(v) =>
+                        update(g.id, { supports_international: v })
+                      }
+                    />
                   </div>
                 </div>
 
@@ -206,7 +192,9 @@ function PaymentsPage() {
                       type="number"
                       value={g.priority}
                       onChange={(e) =>
-                        update(g.id, { priority: parseInt(e.target.value) || 0 })
+                        update(g.id, {
+                          priority: parseInt(e.target.value) || 0,
+                        })
                       }
                       className="w-full bg-transparent text-[#fff8dc] outline-none text-sm font-bold"
                     />
@@ -224,8 +212,8 @@ function PaymentsPage() {
               </div>
 
               <p className="text-[10px] text-[#d4af37]/50 mt-3 leading-relaxed">
-                🔐 Secret keys (key_secret / sk_) ko Supabase secrets mein
-                store karein — yahan sirf safe public key paste karein.
+                🔐 Secret keys ko Lovable Cloud secrets me store karein — yahan
+                sirf safe public key/token paste karein.
               </p>
             </GoldCard>
           ))}
@@ -272,6 +260,35 @@ function Toggle({
           }`}
         />
       </div>
+    </button>
+  );
+}
+
+function CovToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      className={`px-2 py-2 rounded-xl text-[10px] uppercase tracking-wider font-bold transition border ${
+        value
+          ? "text-[#1a1208] border-transparent"
+          : "text-[#f5d97a]/70 border-[#d4af37]/30 hover:bg-[#d4af37]/10"
+      }`}
+      style={
+        value
+          ? { background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }
+          : undefined
+      }
+    >
+      {label}
     </button>
   );
 }

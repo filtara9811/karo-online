@@ -10,6 +10,8 @@ import {
   Ban,
   Calendar,
   Sparkles,
+  Truck,
+  Coins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
@@ -31,6 +33,8 @@ type Stats = {
   staff: Bucket;
   categories: number;
   activeGateways: number;
+  activeLogistics: number;
+  coinRate: number;
 };
 
 const ZERO: Bucket = { total: 0, week: 0, month: 0, blocked: 0 };
@@ -42,18 +46,29 @@ function AdminHome() {
     staff: ZERO,
     categories: 0,
     activeGateways: 0,
+    activeLogistics: 0,
+    coinRate: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [statsRes, catRes, gwRes] = await Promise.all([
+      const [statsRes, catRes, gwRes, lgRes, cpRes] = await Promise.all([
         supabase.rpc("get_admin_stats"),
         supabase.from("categories").select("id", { count: "exact", head: true }),
         supabase
           .from("payment_gateways")
           .select("id", { count: "exact", head: true })
           .eq("is_active", true),
+        supabase
+          .from("logistics_gateways")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true),
+        supabase
+          .from("coin_pricing_config")
+          .select("coin_rate_inr")
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const s = statsRes.data as
@@ -65,6 +80,8 @@ function AdminHome() {
         staff: s?.staff ?? ZERO,
         categories: catRes.count ?? 0,
         activeGateways: gwRes.count ?? 0,
+        activeLogistics: lgRes.count ?? 0,
+        coinRate: Number(cpRes.data?.coin_rate_inr ?? 0),
       });
       setLoading(false);
     })();
@@ -100,13 +117,25 @@ function AdminHome() {
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <SmallCard label="Catalog Items" value={stats.categories} icon={FolderTree} to="/admin/catalog" />
         <SmallCard
-          label="Active Gateways"
+          label="Pay Gateways"
           value={stats.activeGateways}
           icon={CreditCard}
           to="/admin/payments"
+        />
+        <SmallCard
+          label="Logistics Live"
+          value={stats.activeLogistics}
+          icon={Truck}
+          to="/admin/logistics"
+        />
+        <SmallCard
+          label={`Coin Rate ₹`}
+          value={stats.coinRate}
+          icon={Coins}
+          to="/admin/coins"
         />
       </div>
 
