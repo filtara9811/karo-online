@@ -60,6 +60,13 @@ const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
 ];
 
+const MANAGER_OPTIONS: (PickerOption & { rating: number; vendors: number })[] = [
+  { value: "aryan", label: "Aryan Sharma", sub: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, icon: goldMale },
+  { value: "priya", label: "Priya Verma", sub: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, icon: goldFemale },
+  { value: "rahul", label: "Rahul Mehta", sub: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, icon: goldMale },
+  { value: "neha", label: "Neha Singh", sub: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, icon: goldFemale },
+];
+
 const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
 
 export type RegistrationFlowProps = {
