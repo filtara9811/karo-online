@@ -958,6 +958,19 @@ function ChatPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* ===== Rating sheet (Option C — emoji + GMB deep link) ===== */}
+      <AnimatePresence>
+        {showRating && currentOrder && (
+          <RatingSheet
+            orderId={currentOrder.id}
+            vendorName={active.name}
+            vendorAvatar={active.avatar}
+            gmbPlaceId={vendorGroup?.gmbPlaceId}
+            onClose={() => setShowRating(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
