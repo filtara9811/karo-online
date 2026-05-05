@@ -8,6 +8,7 @@ import {
   FolderTree,
   Shield,
   CreditCard,
+  MessageSquare,
   FileText,
   Settings as SettingsIcon,
   LogOut,
@@ -26,6 +27,7 @@ const NAV: NavItem[] = [
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
+  { to: "/admin/sms", label: "SMS Gateways", icon: MessageSquare },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
 ];
