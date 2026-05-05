@@ -440,60 +440,57 @@ function ChatPage() {
             })}
           </div>
 
-          {/* Status pipeline strip — Amazon style */}
-          {currentOrder && currentOrder.status !== "cancelled" && (
-            <div className="px-3 py-2.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] font-bold text-amber-800">
-                  Order #{currentOrder.id} — Live status
-                </p>
-                <button
-                  onClick={() => {
-                    if (confirm(`Cancel order ${currentOrder.id}? This cannot be undone.`)) {
-                      cancelOrder(currentOrder.id);
-                    }
-                  }}
-                  className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
-                >
-                  <Ban className="h-3 w-3" /> Cancel
-                </button>
+          {/* Mini-Avatar Stepper (Option B) */}
+          {currentOrder && (
+            <div className="px-3 pb-1.5 flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-amber-700">
+                    #{currentOrder.id}
+                  </p>
+                  {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
+                      }}
+                      className="text-[9.5px] font-bold text-red-500 flex items-center gap-0.5 active:scale-95"
+                    >
+                      <Ban className="h-2.5 w-2.5" /> Cancel
+                    </button>
+                  )}
+                  {currentOrder.status === "delivered" && !currentOrder.rated && (
+                    <button
+                      onClick={() => setShowRating(true)}
+                      className="text-[9.5px] font-bold text-amber-600 flex items-center gap-0.5 active:scale-95 animate-pulse"
+                    >
+                      ⭐ Rate now
+                    </button>
+                  )}
+                </div>
+                <MiniAvatarStepper
+                  status={currentOrder.status}
+                  vendorAvatar={active.avatar}
+                  vendorName={active.name}
+                />
               </div>
-              <div className="flex items-center">
-                {STATUS_STEPS.map((step, i) => {
-                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
-                  const done = i <= currentIdx;
-                  const isCurrent = i === currentIdx;
-                  return (
-                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span
-                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
-                            done
-                              ? "bg-emerald-500 text-white border-emerald-500"
-                              : "bg-white text-slate-400 border-slate-200"
-                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
-                        >
-                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
-                        </span>
-                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
-                          {step.label}
-                        </span>
-                      </div>
-                      {i < STATUS_STEPS.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {currentOrder?.status === "cancelled" && (
-            <div className="px-3 py-2 text-center">
-              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
             </div>
           )}
         </div>
+      )}
+
+      {/* Sticky approval banner (Option C — Hybrid) */}
+      {pendingApproval && currentOrder && (
+        <ApprovalStickyBanner
+          approval={pendingApproval}
+          onScrollToCard={() =>
+            document.getElementById(`approval-${pendingApproval.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
+        />
+      )}
+
+      {/* Top media zone — small map + auto-sliding banners (Option D) */}
+      {currentOrder && currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+        <ChatTopMedia vendorName={active.name} />
       )}
 
       {/* Messages */}
