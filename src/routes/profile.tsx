@@ -1,5 +1,5 @@
-import { createFileRoute, useRouter, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { createFileRoute, useRouter, useNavigate, Link } from "@tanstack/react-router";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, QrCode, Pencil, Check,
@@ -8,6 +8,7 @@ import {
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
+  MessageCircle, Search, Filter, Clock, CheckCircle2, Tag,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
