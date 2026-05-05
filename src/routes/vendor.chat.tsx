@@ -115,7 +115,7 @@ function ChatPage() {
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
   const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
   const [activeOrderId, setActiveOrderId] = useState<string>(search.orderId || "");
-  const [activeId, setActiveId] = useState<string>("v1");
+  // (activeId/setActiveId/activeOrderId declared above)
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
@@ -140,6 +140,22 @@ function ChatPage() {
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+
+  const customerOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const currentOrder = customerOrders.find((o) => o.id === activeOrderId) ?? customerOrders[0];
+
+  useEffect(() => {
+    if (search.vendorId && search.vendorId !== activeId) setActiveId(search.vendorId);
+    if (search.orderId && search.orderId !== activeOrderId) setActiveOrderId(search.orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.vendorId, search.orderId]);
+
+  useEffect(() => {
+    if (customerOrders.length > 0 && !customerOrders.some((o) => o.id === activeOrderId)) {
+      setActiveOrderId(customerOrders[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, ordersStore]);
 
   // Handle incoming product
   useEffect(() => {
