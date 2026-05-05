@@ -103,12 +103,28 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [phoneVerified, setPhoneVerified] = useState(!!draft.phoneVerified);
   const [email, setEmail] = useState(draft.email ?? "");
   const [address, setAddress] = useState(draft.address ?? "");
+  const [manager, setManager] = useState<string | null>(draft.manager ?? null);
+  const [referral, setReferral] = useState<string>(() => {
+    if (draft.referral) return draft.referral;
+    if (typeof window !== "undefined") {
+      const url = new URLSearchParams(window.location.search);
+      return url.get("ref") || url.get("referral") || "";
+    }
+    return "";
+  });
+  const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
-  const [picker, setPicker] = useState<null | "gender" | "sim">(null);
+  const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
   const [otpOpen, setOtpOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Inline OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
+  const [otpSeconds, setOtpSeconds] = useState(45);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [vh, setVh] = useState(800);
   const SNAP_FULL = vh * 0.06;
