@@ -13,11 +13,16 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
+import { ApprovalStickyBanner, ApprovalInlineCard } from "@/components/ApprovalCard";
+import { ChatTopMedia } from "@/components/ChatTopMedia";
+import { RatingSheet } from "@/components/RatingSheet";
 import {
-  useOrdersStore, getOrder, cancelOrder, clearUnread,
+  useOrdersStore, getOrder, getVendor, cancelOrder, clearUnread,
   STATUS_STEPS, STATUS_BADGE,
   type OrderStatus,
 } from "@/lib/orders-store";
+import { RotateCcw, IndianRupee, Repeat, Siren, Flag } from "lucide-react";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
