@@ -284,3 +284,66 @@ export const STATUS_BADGE: Record<OrderStatus, { label: string; cls: string }> =
   delivered: { label: "Delivered", cls: "bg-emerald-100 text-emerald-700" },
   cancelled: { label: "Cancelled", cls: "bg-red-100 text-red-700" },
 };
+
+// ============ Approvals & Rating helpers ============
+
+export function addApproval(orderId: string, a: Omit<Approval, "id" | "createdAt" | "state">) {
+  const ap: Approval = {
+    ...a,
+    id: `ap-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    state: "pending",
+  };
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId ? { ...o, approvals: [...(o.approvals ?? []), ap] } : o
+    ),
+  }));
+  persist();
+}
+
+export function decideApproval(orderId: string, approvalId: string, decision: "approved" | "declined") {
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId
+        ? {
+            ...o,
+            approvals: (o.approvals ?? []).map((ap) =>
+              ap.id === approvalId ? { ...ap, state: decision, decidedAt: new Date().toISOString() } : ap
+            ),
+          }
+        : o
+    ),
+  }));
+  persist();
+}
+
+export function setOrderRating(orderId: string, mood: "angry" | "neutral" | "happy" | "love", stars: number) {
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId ? { ...o, rated: { mood, stars, at: new Date().toISOString() } } : o
+    ),
+  }));
+  persist();
+}
+
+export function setVendorPlaceId(vendorId: string, placeId: string | null) {
+  state = state.map((v) => (v.vendorId === vendorId ? { ...v, gmbPlaceId: placeId } : v));
+  persist();
+}
+
+export function gmbReviewUrl(placeId?: string | null): string | null {
+  if (!placeId) return null;
+  return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+}
+
+export const APPROVAL_LABELS: Record<ApprovalKind, { label: string; emoji: string }> = {
+  time: { label: "Time Confirmation", emoji: "⏰" },
+  quote: { label: "Quote / Bill", emoji: "💰" },
+  scope: { label: "Scope Change", emoji: "📋" },
+  reschedule: { label: "Reschedule", emoji: "📅" },
+};
+
