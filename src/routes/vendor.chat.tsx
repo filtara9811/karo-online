@@ -382,6 +382,97 @@ function ChatPage() {
         </button>
       </div>
 
+      {/* Per-customer order tabs (Option C) + status updater */}
+      {customerOrders.length > 0 && (
+        <div className="flex-shrink-0 bg-gradient-to-b from-white to-amber-50/40 border-b border-amber-100">
+          <div className="px-3 pt-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {customerOrders.map((o) => {
+              const isActive = o.id === currentOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setActiveOrderId(o.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-t-xl border-b-2 text-[11px] font-semibold transition ${
+                    isActive
+                      ? "bg-white border-amber-500 text-amber-800 shadow-sm"
+                      : "bg-transparent border-transparent text-slate-500"
+                  }`}
+                >
+                  <span className="font-bold">{o.service}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
+                    {STATUS_BADGE[o.status].label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {currentOrder && currentOrder.status !== "cancelled" && (
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1.5 gap-2">
+                <p className="text-[10px] font-bold text-amber-800 truncate">
+                  Order #{currentOrder.id} — Update status
+                </p>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {(() => {
+                    const idx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                    const next = STATUS_STEPS[idx + 1];
+                    if (!next) return <span className="text-[10px] font-bold text-emerald-600">✓ Delivered</span>;
+                    return (
+                      <button
+                        onClick={() => advanceStatus(currentOrder.id, next.key)}
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow flex items-center gap-1 active:scale-95"
+                      >
+                        Mark {next.label} <ChevronRight className="h-3 w-3" />
+                      </button>
+                    );
+                  })()}
+                  <button
+                    onClick={() => {
+                      if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
+                    }}
+                    className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
+                  >
+                    <Ban className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center">
+                {STATUS_STEPS.map((step, i) => {
+                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                  const done = i <= currentIdx;
+                  const isCurrent = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
+                            done ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-400 border-slate-200"
+                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
+                        >
+                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                        </span>
+                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                      {i < STATUS_STEPS.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {currentOrder?.status === "cancelled" && (
+            <div className="px-3 py-2 text-center">
+              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
         <AnimatePresence mode="popLayout">
