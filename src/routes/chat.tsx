@@ -330,8 +330,8 @@ function ChatPage() {
           })}
           <button
             onClick={() => setShowVendorsSheet(true)}
-            className="flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
-            aria-label="All vendors"
+            className="ml-auto flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
+            aria-label="My Orders"
           >
             <span className="text-xs font-bold text-[color:oklch(0.45_0.08_85)]">{vendors.length}+</span>
           </button>
