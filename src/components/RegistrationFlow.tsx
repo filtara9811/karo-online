@@ -195,33 +195,89 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
   }, [phoneVerified]);
 
+  const startInlineOtp = () => {
+    setOtpDigits(["", "", "", ""]);
+    setOtpSeconds(45);
+    // Auto-fill simulation
+    const AUTO = "4829";
+    let i = 0;
+    const fill = () => {
+      if (i >= AUTO.length) {
+        setTimeout(() => setPhoneVerified(true), 500);
+        return;
+      }
+      setOtpDigits((prev) => {
+        const next = [...prev];
+        next[i] = AUTO[i];
+        return next;
+      });
+      i++;
+      setTimeout(fill, 280);
+    };
+    setTimeout(fill, 1500);
+  };
+
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
     if (!sim) return;
     setOperator(value);
     setPicker(null);
     if (value === "manual") {
-      // Prompt user to type number; OTP opens once they type 10 digits
       setPhone("");
       setTimeout(() => {
         const v = window.prompt("Apna 10-digit mobile number daaliye");
         if (v && v.replace(/\D/g, "").length >= 10) {
           const digits = v.replace(/\D/g, "").slice(-10);
           setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
-          setTimeout(() => setOtpOpen(true), 400);
+          setTimeout(startInlineOtp, 400);
         }
       }, 250);
       return;
     }
     setPhone(sim.number);
-    setTimeout(() => setOtpOpen(true), 600);
+    setTimeout(startInlineOtp, 600);
   };
 
-  const handleOtpVerified = (code: string) => {
-    setOtp(code);
-    setPhoneVerified(true);
-    setOtpOpen(false);
-    // Move on; user will tap Gmail field which triggers Google OAuth
+  // OTP timer
+  useEffect(() => {
+    if (!phone || phoneVerified || otpSeconds <= 0) return;
+    const t = setTimeout(() => setOtpSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phone, phoneVerified, otpSeconds]);
+
+  // Auto-verify when all 4 digits entered manually
+  useEffect(() => {
+    if (phoneVerified) return;
+    if (otpDigits.every((d) => d !== "") && otpDigits.join("").length === 4) {
+      setTimeout(() => setPhoneVerified(true), 400);
+    }
+  }, [otpDigits, phoneVerified]);
+
+  const handleOtpChange = (idx: number, val: string) => {
+    const v = val.replace(/\D/g, "").slice(-1);
+    setOtpDigits((prev) => {
+      const next = [...prev];
+      next[idx] = v;
+      return next;
+    });
+    if (v && idx < 3) otpRefs.current[idx + 1]?.focus();
+  };
+
+  const handleResendOtp = () => {
+    setOtpSeconds(45);
+    setOtpDigits(["", "", "", ""]);
+    toast.success("OTP resent");
+    startInlineOtp();
+  };
+
+  const handleReferralVerify = (code: string) => {
+    const c = code.trim();
+    setReferral(c);
+    if (c.length >= 4) {
+      setTimeout(() => setReferralVerified(true), 600);
+    } else {
+      setReferralVerified(false);
+    }
   };
 
   const handleDragEnd = (_: unknown, info: { velocity: { y: number }; point: { y: number } }) => {
