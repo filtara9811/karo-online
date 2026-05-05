@@ -10,6 +10,8 @@ import {
   Ban,
   Calendar,
   Sparkles,
+  Truck,
+  Coins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
