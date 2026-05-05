@@ -216,34 +216,42 @@ function LeadDetailPage() {
           </div>
         </section>
 
-        {/* One-tap actions */}
+        {/* One-tap actions: Live Chat + Status update */}
         <section className="grid grid-cols-2 gap-3">
-          <a
-            href={`tel:${lead.phone}`}
-            onClick={() => logContact("call")}
+          <Link
+            to="/vendor/chat"
+            onClick={() => logContact("wa")}
             className="btn-3d rounded-2xl px-3 py-3 flex items-center gap-2 justify-center font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] shadow-silver-glow active:scale-[0.97]"
             style={{
               background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)",
               border: "1.5px solid rgba(255,255,255,0.6)",
             }}
           >
-            <PhoneCall className="h-4 w-4" />
-            Call Now
-          </a>
-          <a
-            href={`https://wa.me/${lead.phone}?text=${encodeURIComponent(`Hi ${lead.name}, regarding your ${lead.service} request (${lead.id})`)}`}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => logContact("wa")}
+            <MessageCircle className="h-4 w-4" />
+            Live Chat
+          </Link>
+          <button
+            onClick={() => {
+              const next: LeadStatus =
+                lead.status === "process" ? "success" : lead.status === "new" ? "process" : lead.status;
+              pushEvent(
+                {
+                  at: "Just now",
+                  label: `Status updated → ${STATUS_LABEL[next]}`,
+                  kind: next === "success" ? "payment" : "scheduled",
+                },
+                next,
+              );
+            }}
             className="btn-3d rounded-2xl px-3 py-3 flex items-center gap-2 justify-center font-display font-bold text-sm text-white shadow-md active:scale-[0.97]"
             style={{
-              background: "linear-gradient(180deg, #25D366 0%, #128C7E 100%)",
+              background: "linear-gradient(180deg, #16a34a 0%, #15803d 100%)",
               border: "1.5px solid rgba(255,255,255,0.45)",
             }}
           >
-            <MessageCircle className="h-4 w-4" />
-            WhatsApp
-          </a>
+            <CheckCircle2 className="h-4 w-4" />
+            Update Status
+          </button>
         </section>
 
         {/* Contact info */}
