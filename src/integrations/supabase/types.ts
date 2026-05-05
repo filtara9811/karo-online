@@ -423,6 +423,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_gateways: {
+        Row: {
+          config: Json
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       staff_profiles: {
         Row: {
           admin_notes: string | null
