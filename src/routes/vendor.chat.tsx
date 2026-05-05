@@ -13,12 +13,11 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import {
-  useOrdersStore, advanceStatus, cancelOrder, addApproval,
+  useOrdersStore, advanceStatus, cancelOrder,
   STATUS_STEPS, STATUS_BADGE,
-  type OrderStatus, type ApprovalKind,
+  type OrderStatus,
 } from "@/lib/orders-store";
-import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
-import { Check, Ban, ChevronRight, AlertCircle } from "lucide-react";
+import { Check, Ban, ChevronRight } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
