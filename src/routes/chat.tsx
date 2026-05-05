@@ -440,57 +440,36 @@ function ChatPage() {
             })}
           </div>
 
-          {/* Mini-Avatar Stepper (Option B) */}
+          {/* Compact order id + cancel/rate strip (stepper moved to /status) */}
           {currentOrder && (
-            <div className="px-3 pb-1.5 flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-amber-700">
-                    #{currentOrder.id}
-                  </p>
-                  {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
-                      }}
-                      className="text-[9.5px] font-bold text-red-500 flex items-center gap-0.5 active:scale-95"
-                    >
-                      <Ban className="h-2.5 w-2.5" /> Cancel
-                    </button>
-                  )}
-                  {currentOrder.status === "delivered" && !currentOrder.rated && (
-                    <button
-                      onClick={() => setShowRating(true)}
-                      className="text-[9.5px] font-bold text-amber-600 flex items-center gap-0.5 active:scale-95 animate-pulse"
-                    >
-                      ⭐ Rate now
-                    </button>
-                  )}
-                </div>
-                <MiniAvatarStepper
-                  status={currentOrder.status}
-                  vendorAvatar={active.avatar}
-                  vendorName={active.name}
-                />
+            <div className="px-3 pb-2 flex items-center justify-between">
+              <button
+                onClick={() => navigate({ to: "/status", search: { vendorId: activeId, orderId: currentOrder.id } as never })}
+                className="text-[10px] font-bold text-amber-700 underline underline-offset-2 active:scale-95"
+              >
+                #{currentOrder.id} · View live status →
+              </button>
+              <div className="flex items-center gap-2">
+                {currentOrder.status === "delivered" && !currentOrder.rated && (
+                  <button
+                    onClick={() => setShowRating(true)}
+                    className="text-[10px] font-bold text-amber-600 active:scale-95 animate-pulse"
+                  >
+                    ⭐ Rate now
+                  </button>
+                )}
+                {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                  <button
+                    onClick={() => { if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id); }}
+                    className="text-[10px] font-bold text-red-500 flex items-center gap-0.5 active:scale-95"
+                  >
+                    <Ban className="h-2.5 w-2.5" /> Cancel
+                  </button>
+                )}
               </div>
             </div>
           )}
         </div>
-      )}
-
-      {/* Sticky approval banner (Option C — Hybrid) */}
-      {pendingApproval && currentOrder && (
-        <ApprovalStickyBanner
-          approval={pendingApproval}
-          onScrollToCard={() =>
-            document.getElementById(`approval-${pendingApproval.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
-          }
-        />
-      )}
-
-      {/* Top media zone — small map + auto-sliding banners (Option D) */}
-      {currentOrder && currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
-        <ChatTopMedia vendorName={active.name} />
       )}
 
       {/* Messages */}
