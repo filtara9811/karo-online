@@ -19,8 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
-type StepKey = "name" | "phone" | "otp" | "email" | "address";
-const STEP_ORDER: StepKey[] = ["name", "phone", "otp", "email", "address"];
+type StepKey = "phone" | "otp" | "name" | "email" | "address";
+const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
@@ -123,9 +123,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   };
 
   const reachedStep = useMemo<StepKey>(() => {
-    if (!name.trim()) return "name";
     if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
     if (!phoneVerified) return "otp";
+    if (!name.trim()) return "name";
     if (!email.trim()) return "email";
     return "address";
   }, [name, phone, phoneVerified, email]);
@@ -159,8 +159,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [address, agreed, email, gender, name, operator, phone, phoneVerified]);
 
   useEffect(() => {
-    if (gender) setTimeout(() => nameInputRef.current?.focus(), 250);
-  }, [gender]);
+    if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
+  }, [phoneVerified]);
 
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
