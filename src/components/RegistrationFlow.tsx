@@ -4,7 +4,6 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
-import { MpinLogin } from "@/components/MpinLogin";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
@@ -17,9 +16,10 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AuthMode = "signup" | "login";
-type StepKey = "phone" | "otp" | "name" | "email" | "address" | "manager" | "referral";
-const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address", "manager", "referral"];
+/** Stage A = phone + OTP only. Stage B = full signup progress. */
+type Stage = "auth" | "signup";
+type StepKey = "name" | "email" | "address" | "manager" | "referral";
+const STEP_ORDER: StepKey[] = ["name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
