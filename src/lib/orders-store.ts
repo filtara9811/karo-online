@@ -28,6 +28,21 @@ export const STATUS_STEPS: { key: OrderStatus; label: string; emoji: string }[] 
 
 export type OrderSource = "quick" | "service" | "shop" | "lead";
 
+export type ApprovalKind = "time" | "quote" | "scope" | "reschedule";
+export type ApprovalState = "pending" | "approved" | "declined" | "expired";
+export type Approval = {
+  id: string;
+  kind: ApprovalKind;
+  title: string;
+  detail: string;
+  amount?: number;
+  proposedAt?: string; // for time/reschedule
+  createdAt: string;
+  expiresAt: string; // ISO
+  state: ApprovalState;
+  decidedAt?: string;
+};
+
 export type OrderItem = {
   id: string;
   vendorId: string;
@@ -39,6 +54,8 @@ export type OrderItem = {
   lastAt: string;
   unread: number;
   pinned?: boolean;
+  approvals?: Approval[];
+  rated?: { stars: number; mood: "angry" | "neutral" | "happy" | "love"; at: string } | null;
 };
 
 export type VendorGroup = {
@@ -47,6 +64,7 @@ export type VendorGroup = {
   avatar: string;
   presence: "Online" | "Typing…" | "Last seen now" | "Offline";
   orders: OrderItem[];
+  gmbPlaceId?: string | null;
 };
 
 const STORAGE_KEY = "ko_orders_v1";
