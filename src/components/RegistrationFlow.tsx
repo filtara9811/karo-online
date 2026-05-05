@@ -19,8 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type AuthMode = "signup" | "login";
-type StepKey = "name" | "phone" | "otp" | "email" | "address";
-const STEP_ORDER: StepKey[] = ["name", "phone", "otp", "email", "address"];
+type StepKey = "phone" | "otp" | "name" | "email" | "address";
+const STEP_ORDER: StepKey[] = ["phone", "otp", "name", "email", "address"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
 const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
@@ -54,6 +54,7 @@ const GENDER_OPTIONS: PickerOption[] = [
 const SIM_OPTIONS: (PickerOption & { number: string })[] = [
   { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
   { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
+  { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
 ];
 
 const _UNUSED_EMAIL_OPTIONS_REMOVED = true;
@@ -123,9 +124,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   };
 
   const reachedStep = useMemo<StepKey>(() => {
-    if (!name.trim()) return "name";
     if (!phone.trim() || phone.replace(/\D/g, "").length < 10) return "phone";
     if (!phoneVerified) return "otp";
+    if (!name.trim()) return "name";
     if (!email.trim()) return "email";
     return "address";
   }, [name, phone, phoneVerified, email]);
@@ -159,14 +160,27 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [address, agreed, email, gender, name, operator, phone, phoneVerified]);
 
   useEffect(() => {
-    if (gender) setTimeout(() => nameInputRef.current?.focus(), 250);
-  }, [gender]);
+    if (phoneVerified) setTimeout(() => nameInputRef.current?.focus(), 250);
+  }, [phoneVerified]);
 
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
     if (!sim) return;
     setOperator(value);
     setPicker(null);
+    if (value === "manual") {
+      // Prompt user to type number; OTP opens once they type 10 digits
+      setPhone("");
+      setTimeout(() => {
+        const v = window.prompt("Apna 10-digit mobile number daaliye");
+        if (v && v.replace(/\D/g, "").length >= 10) {
+          const digits = v.replace(/\D/g, "").slice(-10);
+          setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
+          setTimeout(() => setOtpOpen(true), 400);
+        }
+      }, 250);
+      return;
+    }
     setPhone(sim.number);
     setTimeout(() => setOtpOpen(true), 600);
   };
@@ -393,35 +407,27 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
             ) : (
               <>
                 <div className="space-y-1 relative">
+                  {/* Step 1 — Phone (SIM picker) */}
                   <GoldField
-                    Icon={User}
-                    label="Enter full name"
-                    hint={gender ? `Choose · ${gender}` : "Choose gender"}
-                    value={name}
+                    Icon={Phone}
+                    label="Enter mobile number"
+                    hint={
+                      operator
+                        ? `${operatorMeta?.label} · auto-filled`
+                        : phone
+                          ? "Tap to change"
+                          : "Tap → choose SIM or type manually"
+                    }
+                    value={phone}
                     placeholder=""
-                    filled={!!name.trim()}
-                    readOnly={!gender}
-                    onClick={() => !gender && setPicker("gender")}
-                    onChange={setName}
-                    inputRef={nameInputRef}
+                    filled={phoneVerified}
+                    readOnly
+                    onClick={() => {
+                      if (!phoneVerified) setPicker("sim");
+                    }}
                   />
 
-                  {visibleSteps.includes("phone") && (
-                    <GoldField
-                      Icon={Phone}
-                      label="Enter number choice"
-                      hint={operator ? `${operatorMeta?.label} · auto-filled` : "Choose number"}
-                      value={phone}
-                      placeholder=""
-                      filled={phoneVerified}
-                      readOnly
-                      onClick={() => {
-                        if (!operator) setPicker("sim");
-                        else if (!phoneVerified) setOtpOpen(true);
-                      }}
-                    />
-                  )}
-
+                  {/* Step 2 — OTP */}
                   {visibleSteps.includes("otp") && (
                     <GoldField
                       Icon={ShieldCheck}
@@ -435,6 +441,23 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
+                  {/* Step 3 — Name + gender (only after verify) */}
+                  {visibleSteps.includes("name") && (
+                    <GoldField
+                      Icon={User}
+                      label="Enter full name"
+                      hint={gender ? `Choose · ${gender}` : "Choose gender"}
+                      value={name}
+                      placeholder=""
+                      filled={!!name.trim()}
+                      readOnly={!gender}
+                      onClick={() => !gender && setPicker("gender")}
+                      onChange={setName}
+                      inputRef={nameInputRef}
+                    />
+                  )}
+
+                  {/* Step 4 — Gmail */}
                   {visibleSteps.includes("email") && (
                     <GoldField
                       Icon={Mail}
@@ -456,6 +479,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     />
                   )}
 
+                  {/* Step 5 — Address */}
                   {visibleSteps.includes("address") && (
                     <GoldField
                       Icon={MapPin}
