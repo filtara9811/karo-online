@@ -618,6 +618,7 @@ export type Database = {
           deals_in: string | null
           entity: string | null
           facebook: string | null
+          google_place_id: string | null
           gst: string | null
           id: string
           instagram: string | null
@@ -647,6 +648,7 @@ export type Database = {
           deals_in?: string | null
           entity?: string | null
           facebook?: string | null
+          google_place_id?: string | null
           gst?: string | null
           id?: string
           instagram?: string | null
@@ -676,6 +678,7 @@ export type Database = {
           deals_in?: string | null
           entity?: string | null
           facebook?: string | null
+          google_place_id?: string | null
           gst?: string | null
           id?: string
           instagram?: string | null
