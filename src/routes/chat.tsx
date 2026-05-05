@@ -135,6 +135,7 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [chips, setChips] = useState<QuickChip[]>(DEFAULT_CHIPS);
   const [editingChip, setEditingChip] = useState<{ index: number | null; label: string; emoji: string } | null>(null);
+  const [showRating, setShowRating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
