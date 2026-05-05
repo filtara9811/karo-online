@@ -99,6 +99,7 @@ function VendorRegister() {
   const [insta, setInsta] = useState("");
   const [fb, setFb] = useState("");
   const [website, setWebsite] = useState("");
+  const [gmbPlaceId, setGmbPlaceId] = useState("");
 
   // Step 3 — KYC
   const [aadhaar, setAadhaar] = useState("");
@@ -222,6 +223,7 @@ function VendorRegister() {
         instagram: insta.trim() || null,
         facebook: fb.trim() || null,
         website: website.trim() || null,
+        google_place_id: gmbPlaceId.trim() || null,
         aadhaar: aadhaar || null,
         pan: pan.trim() || null,
         gst: gst.trim() || null,
@@ -412,9 +414,11 @@ function VendorRegister() {
                       insta={insta}
                       fb={fb}
                       website={website}
+                      gmbPlaceId={gmbPlaceId}
                       setInsta={setInsta}
                       setFb={setFb}
                       setWebsite={setWebsite}
+                      setGmbPlaceId={setGmbPlaceId}
                     />
                   )}
                   {step === 2 && (
@@ -699,10 +703,10 @@ function Step1Business(p: Step1Props) {
 
 /* ─────────── Step 2 ─────────── */
 function Step2Social({
-  insta, fb, website, setInsta, setFb, setWebsite,
+  insta, fb, website, gmbPlaceId, setInsta, setFb, setWebsite, setGmbPlaceId,
 }: {
-  insta: string; fb: string; website: string;
-  setInsta: (v: string) => void; setFb: (v: string) => void; setWebsite: (v: string) => void;
+  insta: string; fb: string; website: string; gmbPlaceId: string;
+  setInsta: (v: string) => void; setFb: (v: string) => void; setWebsite: (v: string) => void; setGmbPlaceId: (v: string) => void;
 }) {
   return (
     <div className="space-y-1">
@@ -747,8 +751,18 @@ function Step2Social({
         filled={false}
         onChange={() => {}}
         showInput
-        isLast
         placeholder="https://karomart.in"
+      />
+      <Field
+        Icon={Globe}
+        label="Google Place ID (optional)"
+        hint="For auto Google review link"
+        value={gmbPlaceId}
+        filled={gmbPlaceId.length > 0}
+        onChange={setGmbPlaceId}
+        showInput
+        isLast
+        placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
       />
     </div>
   );

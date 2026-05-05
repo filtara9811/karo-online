@@ -13,11 +13,16 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
+import { ApprovalStickyBanner, ApprovalInlineCard } from "@/components/ApprovalCard";
+import { ChatTopMedia } from "@/components/ChatTopMedia";
+import { RatingSheet } from "@/components/RatingSheet";
 import {
-  useOrdersStore, getOrder, cancelOrder, clearUnread,
+  useOrdersStore, getOrder, getVendor, cancelOrder, clearUnread,
   STATUS_STEPS, STATUS_BADGE,
   type OrderStatus,
 } from "@/lib/orders-store";
+import { RotateCcw, IndianRupee, Repeat, Siren, Flag } from "lucide-react";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -130,6 +135,7 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [chips, setChips] = useState<QuickChip[]>(DEFAULT_CHIPS);
   const [editingChip, setEditingChip] = useState<{ index: number | null; label: string; emoji: string } | null>(null);
+  const [showRating, setShowRating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -142,8 +148,11 @@ function ChatPage() {
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
 
   // Vendor's orders + currently-selected order
-  const vendorOrders = ordersStore.find((v) => v.vendorId === activeId)?.orders ?? [];
+  const vendorGroup = ordersStore.find((v) => v.vendorId === activeId);
+  const vendorOrders = vendorGroup?.orders ?? [];
   const currentOrder = vendorOrders.find((o) => o.id === activeOrderId) ?? vendorOrders[0];
+  const pendingApproval = currentOrder?.approvals?.find((a) => a.state === "pending");
+  const allApprovals = currentOrder?.approvals ?? [];
 
   // Sync activeId/orderId when search params change (e.g. opening from MyOrdersList)
   useEffect(() => {
@@ -431,64 +440,67 @@ function ChatPage() {
             })}
           </div>
 
-          {/* Status pipeline strip — Amazon style */}
-          {currentOrder && currentOrder.status !== "cancelled" && (
-            <div className="px-3 py-2.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] font-bold text-amber-800">
-                  Order #{currentOrder.id} — Live status
-                </p>
-                <button
-                  onClick={() => {
-                    if (confirm(`Cancel order ${currentOrder.id}? This cannot be undone.`)) {
-                      cancelOrder(currentOrder.id);
-                    }
-                  }}
-                  className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
-                >
-                  <Ban className="h-3 w-3" /> Cancel
-                </button>
+          {/* Mini-Avatar Stepper (Option B) */}
+          {currentOrder && (
+            <div className="px-3 pb-1.5 flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-amber-700">
+                    #{currentOrder.id}
+                  </p>
+                  {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
+                      }}
+                      className="text-[9.5px] font-bold text-red-500 flex items-center gap-0.5 active:scale-95"
+                    >
+                      <Ban className="h-2.5 w-2.5" /> Cancel
+                    </button>
+                  )}
+                  {currentOrder.status === "delivered" && !currentOrder.rated && (
+                    <button
+                      onClick={() => setShowRating(true)}
+                      className="text-[9.5px] font-bold text-amber-600 flex items-center gap-0.5 active:scale-95 animate-pulse"
+                    >
+                      ⭐ Rate now
+                    </button>
+                  )}
+                </div>
+                <MiniAvatarStepper
+                  status={currentOrder.status}
+                  vendorAvatar={active.avatar}
+                  vendorName={active.name}
+                />
               </div>
-              <div className="flex items-center">
-                {STATUS_STEPS.map((step, i) => {
-                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
-                  const done = i <= currentIdx;
-                  const isCurrent = i === currentIdx;
-                  return (
-                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span
-                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
-                            done
-                              ? "bg-emerald-500 text-white border-emerald-500"
-                              : "bg-white text-slate-400 border-slate-200"
-                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
-                        >
-                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
-                        </span>
-                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
-                          {step.label}
-                        </span>
-                      </div>
-                      {i < STATUS_STEPS.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {currentOrder?.status === "cancelled" && (
-            <div className="px-3 py-2 text-center">
-              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
             </div>
           )}
         </div>
       )}
 
+      {/* Sticky approval banner (Option C — Hybrid) */}
+      {pendingApproval && currentOrder && (
+        <ApprovalStickyBanner
+          approval={pendingApproval}
+          onScrollToCard={() =>
+            document.getElementById(`approval-${pendingApproval.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
+        />
+      )}
+
+      {/* Top media zone — small map + auto-sliding banners (Option D) */}
+      {currentOrder && currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+        <ChatTopMedia vendorName={active.name} />
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {/* Inline approval cards (above messages, current order only) */}
+        {currentOrder && allApprovals.map((ap) => (
+          <div id={`approval-${ap.id}`} key={ap.id}>
+            <ApprovalInlineCard orderId={currentOrder.id} approval={ap} />
+          </div>
+        ))}
         <AnimatePresence mode="popLayout">
           {msgs.map((m) => (
             <motion.div
@@ -709,8 +721,8 @@ function ChatPage() {
               className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl p-5 pb-8 shadow-2xl"
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-4" />
-              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-4">Share with vendor</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-3">Share with vendor</h3>
+              <div className="grid grid-cols-4 gap-3">
                 {[
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
@@ -724,6 +736,27 @@ function ChatPage() {
                     <span className="text-[10px] font-semibold text-[color:oklch(0.30_0.05_85)]">{it.label}</span>
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <h3 className="font-display font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">Need help with order?</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { icon: RotateCcw, label: "Return", color: "bg-blue-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔄 Return request raised for this order." }, "Return request"); } },
+                    { icon: IndianRupee, label: "Refund", color: "bg-emerald-600", action: () => { setShowAttach(false); pushMyMessage({ text: "💸 Refund request raised." }, "Refund request"); } },
+                    { icon: Repeat, label: "Exchange", color: "bg-indigo-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔁 Exchange request raised." }, "Exchange request"); } },
+                    { icon: Flag, label: "Report", color: "bg-orange-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🚩 Issue reported. Our team will review." }, "Report issue"); } },
+                    { icon: Siren, label: "SOS", color: "bg-red-600", action: () => { setShowAttach(false); if (confirm("Call helpline 1800-000-000?")) window.location.href = "tel:18000000000"; } },
+                  ].map((it) => (
+                    <button key={it.label} onClick={it.action} onContextMenu={(e) => { if (it.label === "SOS") { e.preventDefault(); window.location.href = "tel:18000000000"; } }} className="flex flex-col items-center gap-1 active:scale-90">
+                      <span className={`h-11 w-11 rounded-xl grid place-items-center ${it.color} shadow ${it.label === "SOS" ? "animate-pulse" : ""}`}>
+                        <it.icon className="h-5 w-5 text-white" />
+                      </span>
+                      <span className="text-[9px] font-semibold text-slate-700">{it.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-center text-[9px] italic text-slate-400">Long-press SOS to call helpline directly</p>
               </div>
             </motion.div>
           </>
@@ -922,6 +955,19 @@ function ChatPage() {
           <LocationSheet
             onClose={() => setActiveSheet(null)}
             onSend={(loc) => pushMyMessage({ location: loc, text: loc.live ? "📍 Live location shared" : "📍 Location" }, "📍 Location")}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ===== Rating sheet (Option C — emoji + GMB deep link) ===== */}
+      <AnimatePresence>
+        {showRating && currentOrder && (
+          <RatingSheet
+            orderId={currentOrder.id}
+            vendorName={active.name}
+            vendorAvatar={active.avatar}
+            gmbPlaceId={vendorGroup?.gmbPlaceId}
+            onClose={() => setShowRating(false)}
           />
         )}
       </AnimatePresence>

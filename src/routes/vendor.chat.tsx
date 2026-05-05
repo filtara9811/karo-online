@@ -13,11 +13,12 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import {
-  useOrdersStore, advanceStatus, cancelOrder,
+  useOrdersStore, advanceStatus, cancelOrder, addApproval,
   STATUS_STEPS, STATUS_BADGE,
-  type OrderStatus,
+  type OrderStatus, type ApprovalKind,
 } from "@/lib/orders-store";
-import { Check, Ban, ChevronRight } from "lucide-react";
+import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
+import { Check, Ban, ChevronRight, AlertCircle } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -407,17 +408,36 @@ function ChatPage() {
             })}
           </div>
 
-          {currentOrder && currentOrder.status !== "cancelled" && (
-            <div className="px-3 py-2.5">
-              <div className="flex items-center justify-between mb-1.5 gap-2">
+          {currentOrder && (
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-1 gap-2">
                 <p className="text-[10px] font-bold text-amber-800 truncate">
-                  Order #{currentOrder.id} — Update status
+                  #{currentOrder.id}
                 </p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {(() => {
+                  <button
+                    onClick={() => {
+                      const kind = (prompt("Approval type — time, quote, scope, or reschedule?", "time") || "").toLowerCase() as ApprovalKind;
+                      if (!["time", "quote", "scope", "reschedule"].includes(kind)) return;
+                      const title = prompt("Short title (e.g. 'Visit at 5:30 PM')") || "";
+                      if (!title.trim()) return;
+                      const detail = prompt("Detail message for customer:") || "";
+                      const amountStr = kind === "quote" ? prompt("Amount (₹)") || "0" : "0";
+                      addApproval(currentOrder.id, {
+                        kind, title, detail,
+                        amount: kind === "quote" ? Number(amountStr) || 0 : undefined,
+                        proposedAt: kind === "time" || kind === "reschedule" ? title : undefined,
+                        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300 active:scale-95 flex items-center gap-1"
+                  >
+                    <AlertCircle className="h-3 w-3" /> Ask approval
+                  </button>
+                  {currentOrder.status !== "cancelled" && (() => {
                     const idx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
                     const next = STATUS_STEPS[idx + 1];
-                    if (!next) return <span className="text-[10px] font-bold text-emerald-600">✓ Delivered</span>;
+                    if (!next) return <span className="text-[10px] font-bold text-emerald-600">✓ Done</span>;
                     return (
                       <button
                         onClick={() => advanceStatus(currentOrder.id, next.key)}
@@ -427,47 +447,22 @@ function ChatPage() {
                       </button>
                     );
                   })()}
-                  <button
-                    onClick={() => {
-                      if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id);
-                    }}
-                    className="text-[10px] font-bold text-red-500 flex items-center gap-1 active:scale-95"
-                  >
-                    <Ban className="h-3 w-3" />
-                  </button>
+                  {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                    <button
+                      onClick={() => { if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id); }}
+                      className="text-[10px] font-bold text-red-500 active:scale-95"
+                      aria-label="Cancel"
+                    >
+                      <Ban className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center">
-                {STATUS_STEPS.map((step, i) => {
-                  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
-                  const done = i <= currentIdx;
-                  const isCurrent = i === currentIdx;
-                  return (
-                    <div key={step.key} className="flex items-center flex-1 last:flex-initial">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span
-                          className={`h-6 w-6 rounded-full grid place-items-center text-[10px] border-2 transition ${
-                            done ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-400 border-slate-200"
-                          } ${isCurrent ? "ring-2 ring-emerald-300 ring-offset-1 animate-pulse" : ""}`}
-                        >
-                          {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
-                        </span>
-                        <span className={`text-[8px] font-semibold whitespace-nowrap ${done ? "text-emerald-700" : "text-slate-400"}`}>
-                          {step.label}
-                        </span>
-                      </div>
-                      {i < STATUS_STEPS.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-0.5 -mt-3 ${i < currentIdx ? "bg-emerald-500" : "bg-slate-200"}`} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {currentOrder?.status === "cancelled" && (
-            <div className="px-3 py-2 text-center">
-              <span className="text-[11px] font-bold text-red-600">❌ Order cancelled</span>
+              <MiniAvatarStepper
+                status={currentOrder.status}
+                vendorAvatar={active.avatar}
+                vendorName={active.name}
+              />
             </div>
           )}
         </div>

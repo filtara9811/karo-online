@@ -28,6 +28,21 @@ export const STATUS_STEPS: { key: OrderStatus; label: string; emoji: string }[] 
 
 export type OrderSource = "quick" | "service" | "shop" | "lead";
 
+export type ApprovalKind = "time" | "quote" | "scope" | "reschedule";
+export type ApprovalState = "pending" | "approved" | "declined" | "expired";
+export type Approval = {
+  id: string;
+  kind: ApprovalKind;
+  title: string;
+  detail: string;
+  amount?: number;
+  proposedAt?: string; // for time/reschedule
+  createdAt: string;
+  expiresAt: string; // ISO
+  state: ApprovalState;
+  decidedAt?: string;
+};
+
 export type OrderItem = {
   id: string;
   vendorId: string;
@@ -39,6 +54,8 @@ export type OrderItem = {
   lastAt: string;
   unread: number;
   pinned?: boolean;
+  approvals?: Approval[];
+  rated?: { stars: number; mood: "angry" | "neutral" | "happy" | "love"; at: string } | null;
 };
 
 export type VendorGroup = {
@@ -47,6 +64,7 @@ export type VendorGroup = {
   avatar: string;
   presence: "Online" | "Typing…" | "Last seen now" | "Offline";
   orders: OrderItem[];
+  gmbPlaceId?: string | null;
 };
 
 const STORAGE_KEY = "ko_orders_v1";
@@ -57,6 +75,7 @@ const SEED: VendorGroup[] = [
     vendorName: "Aryan | Bansal",
     avatar: avatarAryan,
     presence: "Online",
+    gmbPlaceId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
     orders: [
       {
         id: "KO-1042", vendorId: "v1", service: "AC Service", source: "service",
@@ -67,6 +86,16 @@ const SEED: VendorGroup[] = [
           { status: "processing", at: "21 Mar · 11:30" },
         ],
         lastMsg: "20 minute mein. Address confirm…", lastAt: "Just now", unread: 3, pinned: true,
+        approvals: [
+          {
+            id: "ap-1", kind: "time", title: "Vendor proposed visit time",
+            detail: "Aaj shaam 5:30 PM ko aapke ghar pahunchne ka time set kiya gaya hai.",
+            proposedAt: "Today · 5:30 PM",
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+            state: "pending",
+          },
+        ],
       },
       {
         id: "KO-1056", vendorId: "v1", service: "Cooler Service", source: "service",
@@ -255,3 +284,66 @@ export const STATUS_BADGE: Record<OrderStatus, { label: string; cls: string }> =
   delivered: { label: "Delivered", cls: "bg-emerald-100 text-emerald-700" },
   cancelled: { label: "Cancelled", cls: "bg-red-100 text-red-700" },
 };
+
+// ============ Approvals & Rating helpers ============
+
+export function addApproval(orderId: string, a: Omit<Approval, "id" | "createdAt" | "state">) {
+  const ap: Approval = {
+    ...a,
+    id: `ap-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    state: "pending",
+  };
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId ? { ...o, approvals: [...(o.approvals ?? []), ap] } : o
+    ),
+  }));
+  persist();
+}
+
+export function decideApproval(orderId: string, approvalId: string, decision: "approved" | "declined") {
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId
+        ? {
+            ...o,
+            approvals: (o.approvals ?? []).map((ap) =>
+              ap.id === approvalId ? { ...ap, state: decision, decidedAt: new Date().toISOString() } : ap
+            ),
+          }
+        : o
+    ),
+  }));
+  persist();
+}
+
+export function setOrderRating(orderId: string, mood: "angry" | "neutral" | "happy" | "love", stars: number) {
+  state = state.map((v) => ({
+    ...v,
+    orders: v.orders.map((o) =>
+      o.id === orderId ? { ...o, rated: { mood, stars, at: new Date().toISOString() } } : o
+    ),
+  }));
+  persist();
+}
+
+export function setVendorPlaceId(vendorId: string, placeId: string | null) {
+  state = state.map((v) => (v.vendorId === vendorId ? { ...v, gmbPlaceId: placeId } : v));
+  persist();
+}
+
+export function gmbReviewUrl(placeId?: string | null): string | null {
+  if (!placeId) return null;
+  return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+}
+
+export const APPROVAL_LABELS: Record<ApprovalKind, { label: string; emoji: string }> = {
+  time: { label: "Time Confirmation", emoji: "⏰" },
+  quote: { label: "Quote / Bill", emoji: "💰" },
+  scope: { label: "Scope Change", emoji: "📋" },
+  reschedule: { label: "Reschedule", emoji: "📅" },
+};
+
