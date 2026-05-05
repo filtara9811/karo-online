@@ -9,18 +9,18 @@ const searchSchema = z.object({
   orderId: fallback(z.string(), "").default(""),
 });
 
-export const Route = createFileRoute("/status")({
+export const Route = createFileRoute("/vendor/status")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Order Status — Karo Online" },
-      { name: "description", content: "Live timeline for your service order with approvals and chat." },
+      { title: "Order Status — Vendor" },
+      { name: "description", content: "Live timeline for the customer order with approvals and chat." },
     ],
   }),
-  component: StatusPage,
+  component: VendorStatusPage,
 });
 
-function StatusPage() {
+function VendorStatusPage() {
   const { vendorId, orderId } = Route.useSearch();
   const navigate = useNavigate();
   const vendors = useOrdersStore();
@@ -35,15 +35,15 @@ function StatusPage() {
         <div className="text-center">
           <p className="text-slate-500 text-sm">No order selected.</p>
           <button
-            onClick={() => navigate({ to: "/profile" })}
+            onClick={() => navigate({ to: "/vendor/dashboard" })}
             className="mt-3 px-4 py-2 rounded-full bg-amber-500 text-white text-sm font-bold"
           >
-            Go to My Orders
+            Back to Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  return <VerticalOrderTimeline vendor={vendor} order={order} role="customer" />;
+  return <VerticalOrderTimeline vendor={vendor} order={order} role="vendor" />;
 }

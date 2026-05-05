@@ -22,6 +22,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as VendorStatusRouteImport } from './routes/vendor.status'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
@@ -102,6 +103,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorStatusRoute = VendorStatusRouteImport.update({
+  id: '/vendor/status',
+  path: '/vendor/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorShopRoute = VendorShopRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/status': typeof VendorStatusRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/status': typeof VendorStatusRoute
   '/admin': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/status': typeof VendorStatusRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/status'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/status'
     | '/admin'
     | '/vendor/lead/$id'
   id:
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/status'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesById: FileRoutesById
@@ -403,6 +415,7 @@ export interface RootRouteChildren {
   VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
+  VendorStatusRoute: typeof VendorStatusRoute
   AdminIndexRoute: typeof AdminIndexRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
 }
@@ -498,6 +511,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/status': {
+      id: '/vendor/status'
+      path: '/vendor/status'
+      fullPath: '/vendor/status'
+      preLoaderRoute: typeof VendorStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/shop': {
@@ -643,6 +663,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,
+  VendorStatusRoute: VendorStatusRoute,
   AdminIndexRoute: AdminIndexRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
 }

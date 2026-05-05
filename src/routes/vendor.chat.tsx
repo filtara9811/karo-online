@@ -13,12 +13,11 @@ import {
   type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
 } from "@/components/ChatSheets";
 import {
-  useOrdersStore, advanceStatus, cancelOrder, addApproval,
+  useOrdersStore, advanceStatus, cancelOrder,
   STATUS_STEPS, STATUS_BADGE,
-  type OrderStatus, type ApprovalKind,
+  type OrderStatus,
 } from "@/lib/orders-store";
-import { MiniAvatarStepper } from "@/components/MiniAvatarStepper";
-import { Check, Ban, ChevronRight, AlertCircle } from "lucide-react";
+import { Check, Ban, ChevronRight } from "lucide-react";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -409,60 +408,37 @@ function ChatPage() {
           </div>
 
           {currentOrder && (
-            <div className="px-3 py-2">
-              <div className="flex items-center justify-between mb-1 gap-2">
-                <p className="text-[10px] font-bold text-amber-800 truncate">
-                  #{currentOrder.id}
-                </p>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={() => {
-                      const kind = (prompt("Approval type — time, quote, scope, or reschedule?", "time") || "").toLowerCase() as ApprovalKind;
-                      if (!["time", "quote", "scope", "reschedule"].includes(kind)) return;
-                      const title = prompt("Short title (e.g. 'Visit at 5:30 PM')") || "";
-                      if (!title.trim()) return;
-                      const detail = prompt("Detail message for customer:") || "";
-                      const amountStr = kind === "quote" ? prompt("Amount (₹)") || "0" : "0";
-                      addApproval(currentOrder.id, {
-                        kind, title, detail,
-                        amount: kind === "quote" ? Number(amountStr) || 0 : undefined,
-                        proposedAt: kind === "time" || kind === "reschedule" ? title : undefined,
-                        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-                      });
-                    }}
-                    className="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300 active:scale-95 flex items-center gap-1"
-                  >
-                    <AlertCircle className="h-3 w-3" /> Ask approval
-                  </button>
-                  {currentOrder.status !== "cancelled" && (() => {
-                    const idx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
-                    const next = STATUS_STEPS[idx + 1];
-                    if (!next) return <span className="text-[10px] font-bold text-emerald-600">✓ Done</span>;
-                    return (
-                      <button
-                        onClick={() => advanceStatus(currentOrder.id, next.key)}
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow flex items-center gap-1 active:scale-95"
-                      >
-                        Mark {next.label} <ChevronRight className="h-3 w-3" />
-                      </button>
-                    );
-                  })()}
-                  {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+            <div className="px-3 py-2 flex items-center justify-between">
+              <button
+                onClick={() => navigate({ to: "/vendor/status", search: { vendorId: activeId, orderId: currentOrder.id } as never })}
+                className="text-[10px] font-bold text-amber-700 underline underline-offset-2 active:scale-95"
+              >
+                #{currentOrder.id} · Open live status →
+              </button>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const idx = STATUS_STEPS.findIndex((s) => s.key === currentOrder.status);
+                  const next = STATUS_STEPS[idx + 1];
+                  if (!next || currentOrder.status === "cancelled") return null;
+                  return (
                     <button
-                      onClick={() => { if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id); }}
-                      className="text-[10px] font-bold text-red-500 active:scale-95"
-                      aria-label="Cancel"
+                      onClick={() => advanceStatus(currentOrder.id, next.key)}
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow flex items-center gap-1 active:scale-95"
                     >
-                      <Ban className="h-3 w-3" />
+                      Mark {next.label} <ChevronRight className="h-3 w-3" />
                     </button>
-                  )}
-                </div>
+                  );
+                })()}
+                {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                  <button
+                    onClick={() => { if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id); }}
+                    className="text-[10px] font-bold text-red-500 active:scale-95"
+                    aria-label="Cancel"
+                  >
+                    <Ban className="h-3 w-3" />
+                  </button>
+                )}
               </div>
-              <MiniAvatarStepper
-                status={currentOrder.status}
-                vendorAvatar={active.avatar}
-                vendorName={active.name}
-              />
             </div>
           )}
         </div>
