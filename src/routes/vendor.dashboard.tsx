@@ -16,6 +16,7 @@ import {
   Plus,
   Sparkles,
   ArrowLeft,
+  Wallet as WalletIcon,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { LEADS as SHARED_LEADS } from "@/lib/leads";
