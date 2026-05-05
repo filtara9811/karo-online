@@ -721,8 +721,8 @@ function ChatPage() {
               className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl p-5 pb-8 shadow-2xl"
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-4" />
-              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-4">Share with vendor</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-3">Share with vendor</h3>
+              <div className="grid grid-cols-4 gap-3">
                 {[
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
@@ -736,6 +736,27 @@ function ChatPage() {
                     <span className="text-[10px] font-semibold text-[color:oklch(0.30_0.05_85)]">{it.label}</span>
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <h3 className="font-display font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">Need help with order?</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { icon: RotateCcw, label: "Return", color: "bg-blue-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔄 Return request raised for this order." }, "Return request"); } },
+                    { icon: IndianRupee, label: "Refund", color: "bg-emerald-600", action: () => { setShowAttach(false); pushMyMessage({ text: "💸 Refund request raised." }, "Refund request"); } },
+                    { icon: Repeat, label: "Exchange", color: "bg-indigo-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔁 Exchange request raised." }, "Exchange request"); } },
+                    { icon: Flag, label: "Report", color: "bg-orange-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🚩 Issue reported. Our team will review." }, "Report issue"); } },
+                    { icon: Siren, label: "SOS", color: "bg-red-600", action: () => { setShowAttach(false); if (confirm("Call helpline 1800-000-000?")) window.location.href = "tel:18000000000"; } },
+                  ].map((it) => (
+                    <button key={it.label} onClick={it.action} onContextMenu={(e) => { if (it.label === "SOS") { e.preventDefault(); window.location.href = "tel:18000000000"; } }} className="flex flex-col items-center gap-1 active:scale-90">
+                      <span className={`h-11 w-11 rounded-xl grid place-items-center ${it.color} shadow ${it.label === "SOS" ? "animate-pulse" : ""}`}>
+                        <it.icon className="h-5 w-5 text-white" />
+                      </span>
+                      <span className="text-[9px] font-semibold text-slate-700">{it.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-center text-[9px] italic text-slate-400">Long-press SOS to call helpline directly</p>
               </div>
             </motion.div>
           </>
