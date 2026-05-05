@@ -269,13 +269,15 @@ export function VerticalOrderTimeline({ vendor, order, role }: Props) {
         </span>
       </button>
 
-      <RatingSheet
-        open={showRating}
-        onClose={() => setShowRating(false)}
-        orderId={order.id}
-        vendorName={vendor.vendorName}
-        vendorPlaceId={vendor.gmbPlaceId}
-      />
+      {showRating && (
+        <RatingSheet
+          orderId={order.id}
+          vendorName={vendor.vendorName}
+          vendorAvatar={vendor.avatar}
+          gmbPlaceId={vendor.gmbPlaceId}
+          onClose={() => setShowRating(false)}
+        />
+      )}
     </div>
   );
 }
