@@ -953,3 +953,35 @@ function ChatPage() {
     </div>
   );
 }
+
+function LeadChatRoute({ leadId, vendorId }: { leadId: string; vendorId: string }) {
+  const [peer, setPeer] = useState<LeadChatPeer | null>(null);
+
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      const list = (data ?? []) as Array<{
+        vendor_id: string;
+        business_name: string | null;
+        owner_name: string | null;
+        avatar_url: string | null;
+        whatsapp: string | null;
+        phone: string | null;
+      }>;
+      const v = (vendorId && list.find((x) => x.vendor_id === vendorId)) || list[0];
+      if (!alive || !v) return;
+      setPeer({
+        id: v.vendor_id,
+        name: v.business_name || v.owner_name || "Vendor",
+        avatar_url: v.avatar_url,
+        phone: v.phone || v.whatsapp,
+        subtitle: v.owner_name && v.business_name ? v.owner_name : "Verified vendor",
+      });
+    })();
+    return () => { alive = false; };
+  }, [leadId, vendorId]);
+
+  return <LeadChatThread leadId={leadId} peer={peer} myRole="customer" />;
+}
