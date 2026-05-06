@@ -31,7 +31,7 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
       setError(map[res.reason ?? ""] ?? "Could not accept lead.");
       setTimeout(() => setError(null), 2600);
     } else {
-      navigate({ to: "/vendor/dashboard" });
+      navigate({ to: "/vendor/chat", search: { leadId } as any });
     }
   };
 
