@@ -1,11 +1,23 @@
-import { useRef, useState } from "react";
-import { Upload, Link as LinkIcon, Smile, Sparkles, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Link as LinkIcon, Smile, Sparkles, Loader2, X, Library } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SmartMedia, detectMediaKind } from "./SmartMedia";
 
-type Tab = "upload" | "url" | "lottie" | "emoji";
+type Tab = "library" | "upload" | "url" | "lottie" | "emoji";
 
 const QUICK_EMOJI = ["🛠️", "📦", "✨", "⚡", "🔧", "🎨", "🚚", "🧹", "🍳", "💡", "🔌", "🪑"];
+
+// Curated built-in vendor/service icons (Iconify CDN, free, no key)
+const BUILTIN_LIBRARY = [
+  "🛠️","🔧","🔨","🪚","🪛","⚙️","🧰","🪜","🧱","🏗️",
+  "🔌","💡","🔋","🪫","📡","🖥️","💻","📱","⌨️","🖨️",
+  "🚿","🚰","🚽","🛁","🧼","🧽","🧹","🧺","🪣","🧴",
+  "❄️","🌬️","🔥","🌡️","💨","🪟","🚪","🛏️","🛋️","🪑",
+  "✂️","💇","💅","💄","🧖","💆","🪒","🧴","🧼","🧻",
+  "🍳","🍕","🍔","☕","🥤","🧁","🍰","🥗","🍱","🥡",
+  "🚗","🚕","🚙","🚌","🛻","🚛","🛵","🏍️","🚲","🛴",
+  "📦","📮","🚚","🛒","🏪","🏬","💳","💵","💰","🧾",
+];
 
 /**
  * Universal media picker — single-string output.
