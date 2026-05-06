@@ -1,80 +1,78 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { X, Star, Phone, MessageCircle, MoreVertical, Check, ShieldCheck } from "lucide-react";
-import avatarAryan from "@/assets/avatar-aryan.png";
-import avatarRani from "@/assets/avatar-rani.png";
-import avatarRaj from "@/assets/avatar-raj.png";
-import avatarUser from "@/assets/avatar-user.png";
+import { X, Star, Phone, MessageCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-type MatchedVendor = {
-  id: string;
-  name: string;
-  body: string;
-  rating: number;
-  avatar: string;
-  cover: string;
-  productTitle: string;
-  productPrice: string;
-  approved?: boolean;
+type AcceptedVendor = {
+  vendor_id: string;
+  business_name: string | null;
+  owner_name: string | null;
+  avatar_url: string | null;
+  whatsapp: string | null;
+  phone: string | null;
 };
-
-const COVERS = [
-  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=400&q=70",
-  "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&q=70",
-  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70",
-];
-
-const MATCHED: MatchedVendor[] = [
-  { id: "v1", name: "Aryan | Bansal", body: "AC service expert · 6 yrs", rating: 4.9, avatar: avatarAryan, cover: COVERS[0], productTitle: "Ac sarvic", productPrice: "499 | 299", approved: true },
-  { id: "v2", name: "Karan | Bansal", body: "Quick & affordable repair", rating: 4.7, avatar: avatarRaj, cover: COVERS[1], productTitle: "Ac repair", productPrice: "599 | 349" },
-  { id: "v3", name: "Rani | kumari", body: "Premium installation team", rating: 4.8, avatar: avatarRani, cover: COVERS[2], productTitle: "Ac install", productPrice: "799 | 499" },
-  { id: "v4", name: "Ashu | Qureshi", body: "Gas & deep clean specialist", rating: 4.6, avatar: avatarUser, cover: COVERS[0], productTitle: "Gas refill", productPrice: "899 | 599" },
-];
 
 type Props = {
   open: boolean;
   category: string | null;
+  leadId: string | null;
   onClose: () => void;
 };
 
-export function VendorListSheet({ open, category, onClose }: Props) {
-  const navigate = useNavigate();
-  const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set(["v1"]));
-  const [activeContact, setActiveContact] = useState<MatchedVendor | null>(null);
+const FALLBACK_AVATAR =
+  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
+const COVER =
+  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
 
+export function VendorListSheet({ open, category, leadId, onClose }: Props) {
+  const navigate = useNavigate();
+  const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeContact, setActiveContact] = useState<AcceptedVendor | null>(null);
+
+  // Lock scroll
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    document.body.setAttribute("data-variation-open", "true");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
-      document.body.removeAttribute("data-variation-open");
       document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
 
+  // Load + realtime poll on lead acceptance
+  useEffect(() => {
+    if (!open || !leadId) return;
+    let alive = true;
+    const load = async () => {
+      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      if (!alive) return;
+      setVendors((data ?? []) as AcceptedVendor[]);
+      setLoading(false);
+    };
+    setLoading(true);
+    load();
+    // Subscribe to lead row updates so list grows as vendors accept
+    const ch = supabase
+      .channel(`lead-accepted-${leadId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [open, leadId]);
+
   if (!open) return null;
 
-  const toggleApprove = (id: string) => {
-    setApprovedIds((p) => {
-      const n = new Set(p);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-    // After approving, navigate to status tracking screen
-    setTimeout(() => {
-      onClose();
-      navigate({ to: "/status" });
-    }, 350);
-  };
-
-  const goToChat = () => {
+  const goToChat = (v: AcceptedVendor) => {
+    if (!leadId) return;
     onClose();
-    navigate({ to: "/chat" });
+    navigate({ to: "/chat", search: { leadId, vendorId: v.vendor_id } as any });
   };
 
   return (
@@ -83,7 +81,6 @@ export function VendorListSheet({ open, category, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.55)] backdrop-blur-sm"
-        style={{ animation: "overlay-in 0.3s ease-out" }}
       />
       <div
         role="dialog"
@@ -95,146 +92,110 @@ export function VendorListSheet({ open, category, onClose }: Props) {
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent opacity-80" />
         </div>
 
-        {/* Header */}
         <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
-              ✦ Matched ✦
+              ✦ Accepted Vendors ✦
             </p>
             <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
-              {category ?? "Ac"} | service vendor
+              {category ?? "Service"}
             </h3>
-            <div className="flex items-center gap-1 mt-0.5">
-              <Star className="h-3.5 w-3.5 text-slate-500" fill="currentColor" />
-              <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">4.9</span>
-              <span className="text-[10px] text-[color:oklch(0.50_0.08_85)]">
-                · {MATCHED.length} vendors found
-              </span>
-            </div>
+            <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] mt-0.5">
+              {loading ? "Searching…" : `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready to help`}
+            </p>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
             className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
           >
-            <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <p className="px-5 text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 mb-2">
-          Vander | Profile · tap to contact
-        </p>
-
-        {/* Vendor cards */}
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
-          {MATCHED.map((v, i) => {
-            const isApproved = approvedIds.has(v.id);
-            return (
+          {loading ? (
+            <div className="grid place-items-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : vendors.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-sm text-slate-500">Waiting for vendors to accept…</p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Aapko alert milega jaise hi koi vendor accept kare.
+              </p>
+            </div>
+          ) : (
+            vendors.map((v, i) => (
               <motion.article
-                key={v.id}
+                key={v.vendor_id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+                transition={{ delay: i * 0.06 }}
                 className="rounded-2xl bg-white border-2 border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm"
               >
-                {/* Cover — tap opens contact popup */}
                 <button
                   onClick={() => setActiveContact(v)}
-                  className="relative h-28 w-full overflow-hidden block text-left active:opacity-90"
-                  aria-label={`Open ${v.name} profile`}
+                  className="relative h-24 w-full overflow-hidden block text-left active:opacity-90"
                 >
-                  <img src={v.cover} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
-                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow">
-                    <Star className="h-3 w-3 text-slate-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-[color:oklch(0.25_0.01_260)]">{v.rating}</span>
-                  </div>
-                  <div className="absolute -bottom-3 left-3 right-3 h-9 rounded-full bg-gradient-to-r from-[#d8dde3] to-[#6b7280] border-2 border-white shadow-md flex items-center px-2 gap-2">
-                    <span className="h-7 w-7 rounded-full overflow-hidden border border-white flex-shrink-0">
-                      <img src={v.avatar} alt="" className="h-full w-full object-cover" />
-                    </span>
-                    <span className="text-[11px] font-display italic text-white truncate">
-                      Quick message Note….
-                    </span>
-                    <span className="ml-auto flex items-center gap-0.5 text-white text-[10px] font-bold flex-shrink-0">
-                      <Star className="h-3 w-3" fill="currentColor" />
-                      {v.rating}
-                    </span>
+                  <img src={COVER} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 shadow">
+                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                    <span className="text-[10px] font-bold">4.8</span>
                   </div>
                 </button>
 
-                {/* Body — tap opens popup too */}
-                <button
-                  onClick={() => setActiveContact(v)}
-                  className="px-3 pt-5 pb-2 w-full text-left active:bg-[#f5f6f8]"
-                >
-                  <h4 className="font-display text-base font-bold text-[color:oklch(0.25_0.01_260)] leading-tight">
-                    {v.name}
-                  </h4>
-                  <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.body}</p>
-
-                  <div className="mt-2 rounded-xl bg-[#f5f6f8] border border-[color:oklch(0.72_0.01_260/0.35)] p-2 flex items-center gap-2">
-                    <div className="h-12 w-14 rounded-lg bg-gradient-to-br from-sky-200 to-slate-300 grid place-items-center flex-shrink-0">
-                      <span className="text-[18px]">☁️</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)]">
-                        {v.productTitle}
-                      </p>
-                      <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.productPrice}</p>
-                      <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] truncate">
-                        Add a little bit of body text
-                      </p>
-                    </div>
+                <div className="px-3 pt-3 pb-2 flex items-center gap-3">
+                  <img
+                    src={v.avatar_url || FALLBACK_AVATAR}
+                    alt={v.business_name ?? ""}
+                    className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-display text-base font-bold text-slate-800 leading-tight truncate">
+                      {v.business_name || v.owner_name || "Vendor"}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {v.owner_name && v.business_name ? v.owner_name : "Verified vendor"}
+                    </p>
                   </div>
-                </button>
+                  <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                </div>
 
-                {/* Action bar */}
-                <div className="flex items-stretch border-t border-[color:oklch(0.72_0.01_260/0.3)] bg-[color:oklch(0.13_0.02_85)]">
+                <div className="flex items-stretch border-t border-slate-200 bg-[color:oklch(0.13_0.02_85)]">
+                  {v.phone || v.whatsapp ? (
+                    <a
+                      href={`tel:${v.phone || v.whatsapp}`}
+                      className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white active:scale-95"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Call
+                    </a>
+                  ) : (
+                    <button disabled className="flex-1 py-2.5 text-white/50 text-sm font-bold">
+                      No Phone
+                    </button>
+                  )}
                   <button
-                    onClick={() => toggleApprove(v.id)}
-                    className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm underline underline-offset-2 ${
-                      isApproved ? "text-slate-300" : "text-white"
-                    } active:scale-95 transition`}
+                    onClick={() => goToChat(v)}
+                    className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white border-l border-white/10 active:scale-95"
                   >
-                    {isApproved && <Check className="h-4 w-4" strokeWidth={3} />}
-                    {isApproved ? "Aproved" : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => setActiveContact(v)}
-                    aria-label="Call"
-                    className="px-4 grid place-items-center border-l border-white/10 active:scale-95"
-                  >
-                    <Phone className="h-4 w-4 text-white" strokeWidth={2.4} />
-                  </button>
-                  <button
-                    onClick={goToChat}
-                    aria-label="Chat"
-                    className="px-4 grid place-items-center border-l border-white/10 active:scale-95"
-                  >
-                    <MessageCircle className="h-4 w-4 text-white" strokeWidth={2.4} />
-                  </button>
-                  <button
-                    onClick={() => setActiveContact(v)}
-                    aria-label="More"
-                    className="px-3 grid place-items-center border-l border-white/10 active:scale-95"
-                  >
-                    <MoreVertical className="h-4 w-4 text-white" strokeWidth={2.4} />
+                    <MessageCircle className="h-4 w-4" />
+                    Chat
                   </button>
                 </div>
               </motion.article>
-            );
-          })}
+            ))
+          )}
         </div>
       </div>
 
-      {/* Contact action popup */}
       <AnimatePresence>
         {activeContact && (
-          <ContactActionPopup
+          <ContactPopup
             vendor={activeContact}
             onClose={() => setActiveContact(null)}
-            onChat={() => { setActiveContact(null); goToChat(); }}
-            onApprove={() => { setActiveContact(null); toggleApprove(activeContact.id); }}
+            onChat={() => { const v = activeContact; setActiveContact(null); goToChat(v); }}
           />
         )}
       </AnimatePresence>
@@ -242,17 +203,9 @@ export function VendorListSheet({ open, category, onClose }: Props) {
   );
 }
 
-function ContactActionPopup({
-  vendor,
-  onClose,
-  onChat,
-  onApprove,
-}: {
-  vendor: MatchedVendor;
-  onClose: () => void;
-  onChat: () => void;
-  onApprove: () => void;
-}) {
+function ContactPopup({
+  vendor, onClose, onChat,
+}: { vendor: AcceptedVendor; onClose: () => void; onChat: () => void }) {
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
       <motion.button
@@ -268,99 +221,53 @@ function ContactActionPopup({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-white to-[#f5f6f8] border-2 border-[color:oklch(0.72_0.01_260/0.5)] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)] overflow-hidden"
+        className="relative w-full max-w-sm rounded-3xl bg-white border-2 border-slate-200 shadow-2xl overflow-hidden"
       >
-        {/* Hero */}
-        <div className="relative h-32 w-full">
-          <img src={vendor.cover} alt="" className="h-full w-full object-cover" />
+        <div className="relative h-28">
+          <img src={COVER} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent" />
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/95 border border-white shadow active:scale-90"
+            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white shadow active:scale-90"
           >
-            <X className="h-4 w-4 text-[color:oklch(0.25_0.01_260)]" />
+            <X className="h-4 w-4" />
           </button>
           <div className="absolute -bottom-8 left-4 h-16 w-16 rounded-2xl overflow-hidden border-4 border-white shadow-lg">
-            <img src={vendor.avatar} alt={vendor.name} className="h-full w-full object-cover" />
+            <img src={vendor.avatar_url || FALLBACK_AVATAR} alt="" className="h-full w-full object-cover" />
           </div>
         </div>
-
         <div className="px-4 pt-10 pb-3">
-          <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
-            {vendor.name}
+          <h3 className="font-display text-lg font-bold">
+            {vendor.business_name || vendor.owner_name || "Vendor"}
           </h3>
-          <p className="text-xs text-[color:oklch(0.50_0.08_85)]">{vendor.body}</p>
+          <p className="text-xs text-slate-500">{vendor.owner_name ?? "Verified vendor"}</p>
           <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-3 w-3 text-slate-500" fill="currentColor" />
-              ))}
-            </div>
-            <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">{vendor.rating}</span>
-            <span className="text-[10px] text-[color:oklch(0.50_0.08_85)]">· verified</span>
+            {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />)}
+            <span className="text-xs font-bold text-slate-700">4.8</span>
           </div>
         </div>
-
-        {/* Action grid */}
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
-          <ActionTile
-            icon={<Phone className="h-5 w-5" strokeWidth={2.4} />}
-            label="Call"
-            tone="emerald"
-            onClick={onClose}
-          />
-          <ActionTile
-            icon={<MessageCircle className="h-5 w-5" strokeWidth={2.4} />}
-            label="Chat"
-            tone="sky"
-            onClick={onChat}
-          />
-          <ActionTile
-            icon={<ShieldCheck className="h-5 w-5" strokeWidth={2.4} />}
-            label="Proof"
-            tone="gold"
-            onClick={onClose}
-          />
-        </div>
-
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+          {vendor.phone || vendor.whatsapp ? (
+            <a
+              href={`tel:${vendor.phone || vendor.whatsapp}`}
+              className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white active:scale-95"
+            >
+              <Phone className="h-5 w-5" />
+              <span className="text-[11px] font-display font-bold">Call</span>
+            </a>
+          ) : (
+            <div className="py-3 text-center text-[11px] text-slate-400 rounded-2xl bg-slate-100">No phone</div>
+          )}
           <button
-            onClick={onApprove}
-            className="w-full py-2.5 rounded-2xl bg-gradient-to-b from-[#d8dde3] to-[#6b7280] text-white font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)] active:scale-95 underline underline-offset-2"
+            onClick={onChat}
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-sky-500 to-sky-600 text-white active:scale-95"
           >
-            Approve | Vendor
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-[11px] font-display font-bold">Chat</span>
           </button>
         </div>
       </motion.div>
     </div>
-  );
-}
-
-function ActionTile({
-  icon,
-  label,
-  tone,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  tone: "emerald" | "sky" | "gold";
-  onClick: () => void;
-}) {
-  const styles =
-    tone === "emerald"
-      ? "from-slate-500 to-slate-600 shadow-[0_4px_12px_-2px_rgba(5,150,105,0.5)]"
-      : tone === "sky"
-      ? "from-sky-400 to-sky-600 shadow-[0_4px_12px_-2px_rgba(2,132,199,0.5)]"
-      : "from-[#d8dde3] to-[#6b7280] shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)]";
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b ${styles} text-white active:scale-95 transition`}
-    >
-      {icon}
-      <span className="text-[11px] font-display font-bold">{label}</span>
-    </button>
   );
 }
