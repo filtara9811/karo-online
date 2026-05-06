@@ -66,6 +66,7 @@ export function AdminRecordDrawer({
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [msgTitle, setMsgTitle] = useState("");
   const [msgBody, setMsgBody] = useState("");
+  const vendorNeedsApproval = entity === "vendors" && (record?.status !== "active" || !record?.verified);
 
   useEffect(() => {
     if (!record) return;
@@ -90,10 +91,18 @@ export function AdminRecordDrawer({
   const update = async (patch: Record<string, unknown>, msg = "Saved") => {
     setBusy(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from(entity) as any).update(patch).eq("id", record.id);
+    const { data, error } = await (supabase.from(entity) as any)
+      .update(entity === "vendors" || entity === "customers" ? { ...patch, updated_at: new Date().toISOString() } : patch)
+      .eq("id", record.id)
+      .select("id")
+      .maybeSingle();
     setBusy(false);
     if (error) {
       toast.error(error.message);
+      return false;
+    }
+    if (!data) {
+      toast.error("Permission issue: record update nahi hua");
       return false;
     }
     toast.success(msg);
@@ -107,7 +116,22 @@ export function AdminRecordDrawer({
       record.is_blocked ? "Unblocked" : "Blocked",
     );
 
+  const approveVendor = async () => {
+    if (entity !== "vendors") return false;
+    setBusy(true);
+    const { error } = await supabase.rpc("approve_vendor", { _vendor_user_id: record.user_id });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Vendor approved — dashboard active ho gaya");
+    onMutated();
+    return true;
+  };
+
   const toggleVerify = () => {
+    if (vendorNeedsApproval) return approveVendor();
     const nextVerified = !record.verified;
     const patch: Record<string, unknown> = { verified: nextVerified };
     if (entity === "vendors") patch.status = nextVerified ? "active" : "pending";
@@ -221,21 +245,22 @@ export function AdminRecordDrawer({
         <div className="p-4 space-y-4">
           {/* Quick actions */}
           <div className="grid grid-cols-3 gap-2">
-            {entity === "vendors" && record.status === "pending" && !record.verified && (
+            {vendorNeedsApproval && (
               <button
-                onClick={toggleVerify}
+                onClick={approveVendor}
                 disabled={busy}
-                className="col-span-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-3 text-emerald-200 font-bold uppercase tracking-wider text-xs active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="click-feedback col-span-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-3 text-emerald-200 font-bold uppercase tracking-wider text-xs disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="h-4 w-4" /> Approve Vendor & Open Dashboard
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                Approve Vendor & Open Dashboard
               </button>
             )}
             <ActionTile
               onClick={toggleVerify}
               icon={ShieldCheck}
-              label={record.verified ? "Unverify" : "Verify"}
+              label={vendorNeedsApproval ? "Approve" : "Unverify"}
               active={!!record.verified}
-              tone="blue"
+              tone={vendorNeedsApproval ? "green" : "blue"}
               disabled={busy}
             />
             <ActionTile
@@ -479,7 +504,7 @@ function ActionTile({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border ${map[tone]} active:scale-95 disabled:opacity-50 ${active ? "ring-2 ring-current/40" : ""}`}
+      className={`click-feedback flex flex-col items-center gap-1 px-2 py-3 rounded-xl border ${map[tone]} disabled:opacity-50 ${active ? "ring-2 ring-current/40" : ""}`}
     >
       <Icon className="h-4 w-4" />
       <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>

@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Check, ChevronRight, Sparkles, Package } from "lucide-react";
+import { Loader2, Check, ChevronRight, Sparkles, Package, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
@@ -23,6 +24,7 @@ const GOLD_BG = "radial-gradient(circle at 20% 0%, oklch(0.22 0.04 80) 0%, oklch
 const GOLD_GRAD = "linear-gradient(180deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 100%)";
 
 function VendorServicesPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [types, setTypes] = useState<Type[]>([]);
@@ -31,6 +33,8 @@ function VendorServicesPage() {
   const [vars, setVars] = useState<Variation[]>([]);
   const [mappedItems, setMappedItems] = useState<Set<string>>(new Set());
   const [mappedVars, setMappedVars] = useState<Set<string>>(new Set());
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   const [path, setPath] = useState<{ type?: Type; cat?: Cat; sub?: Cat; item?: Item }>({});
 
@@ -60,26 +64,56 @@ function VendorServicesPage() {
 
   useEffect(() => { load(); }, []);
 
+  const flashSaved = (key: string, msg: string) => {
+    setSavedKey(key);
+    toast.success(msg);
+    window.setTimeout(() => setSavedKey((current) => (current === key ? null : current)), 1300);
+  };
+
   const toggleItem = async (itemId: string) => {
     if (!userId) return;
+    const key = `item:${itemId}`;
+    setSavingKey(key);
     if (mappedItems.has(itemId)) {
-      await supabase.from("vendor_item_mappings").delete().eq("vendor_id", userId).eq("item_id", itemId);
+      const { error } = await supabase.from("vendor_item_mappings").delete().eq("vendor_id", userId).eq("item_id", itemId);
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.delete(itemId); setMappedItems(n);
+      flashSaved(key, "Service removed");
     } else {
-      await supabase.from("vendor_item_mappings").insert({ vendor_id: userId, item_id: itemId, is_active: true });
+      const { error } = await supabase.from("vendor_item_mappings").insert({ vendor_id: userId, item_id: itemId, is_active: true });
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.add(itemId); setMappedItems(n);
+      flashSaved(key, "Service mapped successfully");
     }
   };
 
   const toggleVar = async (vId: string) => {
     if (!userId) return;
+    const key = `var:${vId}`;
+    setSavingKey(key);
     if (mappedVars.has(vId)) {
-      await supabase.from("vendor_variation_mappings").delete().eq("vendor_id", userId).eq("variation_id", vId);
+      const { error } = await supabase.from("vendor_variation_mappings").delete().eq("vendor_id", userId).eq("variation_id", vId);
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedVars); n.delete(vId); setMappedVars(n);
+      flashSaved(key, "Variation removed");
     } else {
-      await supabase.from("vendor_variation_mappings").insert({ vendor_id: userId, variation_id: vId, is_active: true });
+      const { error } = await supabase.from("vendor_variation_mappings").insert({ vendor_id: userId, variation_id: vId, is_active: true });
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedVars); n.add(vId); setMappedVars(n);
+      flashSaved(key, "Variation saved successfully");
     }
+  };
+
+  const goBack = () => {
+    if (path.item) return setPath(({ type, cat, sub }) => ({ type, cat, sub }));
+    if (path.sub) return setPath(({ type, cat }) => ({ type, cat }));
+    if (path.cat) return setPath(({ type }) => ({ type }));
+    if (path.type) return setPath({});
+    navigate({ to: "/vendor/dashboard" });
   };
 
   if (loading) {
@@ -179,12 +213,14 @@ function VendorServicesPage() {
               </div>
               <button
                 onClick={() => toggleItem(it.id)}
-                className={`px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition ${
-                  mapped ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
+                disabled={savingKey === `item:${it.id}`}
+                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
+                  mapped || savedKey === `item:${it.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
                 }`}
-                style={mapped ? { background: GOLD_GRAD } : undefined}
+                style={mapped || savedKey === `item:${it.id}` ? { background: GOLD_GRAD } : undefined}
               >
-                {mapped ? <><Check className="h-3 w-3 inline mr-1" />Mapped</> : "Map"}
+                {savingKey === `item:${it.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `item:${it.id}` ? "" : "hidden"}`} />}
+                {savingKey === `item:${it.id}` ? "Saving" : savedKey === `item:${it.id}` ? "Saved" : mapped ? "Mapped" : "Map"}
               </button>
             </div>
           );
@@ -220,12 +256,14 @@ function VendorServicesPage() {
               </div>
               <button
                 onClick={() => toggleVar(v.id)}
-                className={`px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition ${
-                  mapped ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
+                disabled={savingKey === `var:${v.id}`}
+                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
+                  mapped || savedKey === `var:${v.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
                 }`}
-                style={mapped ? { background: GOLD_GRAD } : undefined}
+                style={mapped || savedKey === `var:${v.id}` ? { background: GOLD_GRAD } : undefined}
               >
-                {mapped ? <><Check className="h-3 w-3 inline mr-1" />On</> : "Select"}
+                {savingKey === `var:${v.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `var:${v.id}` ? "" : "hidden"}`} />}
+                {savingKey === `var:${v.id}` ? "Saving" : savedKey === `var:${v.id}` ? "Saved" : mapped ? "On" : "Select"}
               </button>
             </div>
           );
@@ -236,13 +274,24 @@ function VendorServicesPage() {
 
   return (
     <div className="min-h-screen" style={{ background: GOLD_BG }}>
-      <header className="px-4 sm:px-6 py-5 border-b border-[#a8acb3]/20">
-        <h1 className="font-display text-2xl font-bold" style={{ background: GOLD_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          My Services
-        </h1>
-        <p className="text-xs text-[#d8dde3]/60 mt-1">
-          Apne services map kariye — customers aapko in services par dhoondhenge.
-        </p>
+      <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 border-b border-[#a8acb3]/20 backdrop-blur-xl bg-black/20">
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <button
+            onClick={goBack}
+            aria-label="Back"
+            className="click-feedback h-10 w-10 grid place-items-center rounded-full border border-[#a8acb3]/30 text-[#f5f6f8] bg-white/5"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-bold" style={{ background: GOLD_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              My Services
+            </h1>
+            <p className="text-xs text-[#d8dde3]/60 mt-1 truncate">
+              Apne services map kariye — customers aapko in services par dhoondhenge.
+            </p>
+          </div>
+        </div>
       </header>
       <main className="px-4 sm:px-6 py-6 max-w-3xl mx-auto">
         {Crumb}
@@ -256,7 +305,7 @@ function Tile({ title, icon, onClick }: { title: string; icon?: string | null; o
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl border p-3 sm:p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
+      className="click-feedback rounded-2xl border p-3 sm:p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
       style={{
         background: "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
         borderColor: "rgba(212,175,55,0.25)",
