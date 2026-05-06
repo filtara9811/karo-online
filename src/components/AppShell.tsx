@@ -73,6 +73,7 @@ export function AppShell() {
       {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
       <AuthGate />
+      <VendorLeadAlerts />
     </div>
   );
 }
