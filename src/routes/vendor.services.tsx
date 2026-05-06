@@ -274,13 +274,24 @@ function VendorServicesPage() {
 
   return (
     <div className="min-h-screen" style={{ background: GOLD_BG }}>
-      <header className="px-4 sm:px-6 py-5 border-b border-[#a8acb3]/20">
-        <h1 className="font-display text-2xl font-bold" style={{ background: GOLD_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          My Services
-        </h1>
-        <p className="text-xs text-[#d8dde3]/60 mt-1">
-          Apne services map kariye — customers aapko in services par dhoondhenge.
-        </p>
+      <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 border-b border-[#a8acb3]/20 backdrop-blur-xl bg-black/20">
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <button
+            onClick={goBack}
+            aria-label="Back"
+            className="click-feedback h-10 w-10 grid place-items-center rounded-full border border-[#a8acb3]/30 text-[#f5f6f8] bg-white/5"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-bold" style={{ background: GOLD_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              My Services
+            </h1>
+            <p className="text-xs text-[#d8dde3]/60 mt-1 truncate">
+              Apne services map kariye — customers aapko in services par dhoondhenge.
+            </p>
+          </div>
+        </div>
       </header>
       <main className="px-4 sm:px-6 py-6 max-w-3xl mx-auto">
         {Crumb}
