@@ -161,7 +161,75 @@ function AdminHome() {
           hain, aur weekly/monthly growth track kar sakte hain.
         </p>
       </GoldCard>
+
+      <DangerZone />
     </AdminLayout>
+  );
+}
+
+function DangerZone() {
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const wipe = async () => {
+    setBusy(true);
+    setResult(null);
+    const { data, error } = await supabase.rpc("wipe_all_test_data");
+    setBusy(false);
+    setConfirming(false);
+    if (error) {
+      setResult(`Error: ${error.message}`);
+      return;
+    }
+    const d = data as any;
+    setResult(`✓ Wiped: ${d?.customers_users_removed ?? 0} customers + ${d?.vendors_users_removed ?? 0} vendors. Reload page.`);
+  };
+
+  return (
+    <div
+      className="mt-6 rounded-2xl border-2 p-5"
+      style={{ borderColor: "rgba(239,68,68,0.5)", background: "rgba(239,68,68,0.06)" }}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Ban className="h-4 w-4 text-red-400" />
+        <h3 className="font-display text-lg font-bold text-red-300">Danger Zone — Wipe Test Data</h3>
+      </div>
+      <p className="text-xs text-red-200/80 leading-relaxed mb-4">
+        Sabhi customers, vendors, leads, chats aur wallets permanently delete kar deta hai.
+        Admin/staff accounts aur platform config (categories, gateways, coin pricing) safe rahenge.
+        Sirf <strong>super_admin</strong> chala sakta hai.
+      </p>
+      {result && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-black/40 text-xs text-[#fff8dc] font-mono">
+          {result}
+        </div>
+      )}
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition"
+        >
+          🗑 Wipe All Customers & Vendors
+        </button>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={wipe}
+            disabled={busy}
+            className="px-4 py-2.5 rounded-xl bg-red-700 text-white text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+          >
+            {busy ? "Wiping…" : "Yes — Delete Everything"}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="px-4 py-2.5 rounded-xl border border-[#d4af37]/40 text-[#f5d97a] text-xs font-bold uppercase tracking-widest"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
