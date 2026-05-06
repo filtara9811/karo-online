@@ -86,67 +86,77 @@ function VendorDashboard() {
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
-      {/* Top bar */}
+      {/* Top bar — avatar (opens menu) at left, status banner if pending */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
-        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="max-w-md mx-auto px-3 py-2 flex items-center justify-between gap-3">
           <button
-            onClick={() => navigate({ to: "/" })}
-            aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            className="relative h-11 w-11 rounded-full overflow-hidden border-2 shadow-md active:scale-95 shrink-0"
+            style={{ borderColor: "#d4af37" }}
           >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+            <img src={vendor?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
+            {vendor?.verified && (
+              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+            )}
           </button>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ Vendor Panel ✦</p>
-            <h1 className="font-display text-lg text-silver-gradient leading-tight font-bold">My Dashboard</h1>
+            <h1 className="font-display text-base text-silver-gradient leading-tight font-bold truncate">
+              {vendor?.business_name || "My Dashboard"}
+            </h1>
           </div>
           <button
             aria-label="Notifications"
-            className="relative h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
+            className="relative h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90 shrink-0"
           >
             <Bell className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
-            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-gradient-to-br from-[#d8dde3] to-[#3f4750] text-[8px] font-bold text-white grid place-items-center">
-              {stats.action}
-            </span>
+            {stats.action > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-gradient-to-br from-[#d8dde3] to-[#3f4750] text-[8px] font-bold text-white grid place-items-center">
+                {stats.action}
+              </span>
+            )}
           </button>
         </div>
+        {vendor?.status === "pending" && (
+          <div className="bg-amber-100 border-t border-amber-300 px-4 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-amber-800">
+            ⏳ Pending Admin Approval
+          </div>
+        )}
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-4 relative">
-        {/* Vendor profile chip */}
+        {/* Compact action chip — Services + Wallet (avatar moved to top) */}
         <section
-          className="relative rounded-2xl overflow-hidden p-3 flex items-center gap-3 shadow-silver-glow"
+          className="relative rounded-2xl overflow-hidden px-3 py-2 flex items-center gap-2 shadow-silver-glow"
           style={{
             background: "linear-gradient(135deg, #ffffff 0%, #f5f6f8 60%, #eef0f3 100%)",
             border: "1px solid rgba(212,175,55,0.5)",
           }}
         >
-          <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.72_0.01_260/0.7)] shadow-silver-glow">
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
-          </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">Verified Vendor · ID K-91824</p>
-            <p className="font-display text-base text-silver-gradient font-bold truncate">Ashhu Qureshi</p>
-            <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] italic truncate">Quick Service · Beauty · Delhi NCR</p>
+            <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">
+              {vendor?.verified ? "Verified · ID K-91824" : "Vendor Profile"}
+            </p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] italic truncate">
+              {vendor?.owner_name || "Quick Service · Beauty"}
+            </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Link
-              to="/vendor/services"
-              aria-label="My Services"
-              className="h-10 px-3 grid place-items-center rounded-full shadow-md active:scale-95 text-[10px] font-display font-bold text-[#1a1208] uppercase tracking-wider"
-              style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
-            >
-              Services
-            </Link>
-            <Link
-              to="/vendor/wallet"
-              aria-label="My Wallet"
-              className="h-10 w-10 grid place-items-center rounded-full shadow-md active:scale-90"
-              style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
-            >
-              <WalletIcon className="h-4 w-4 text-[#1a1208]" />
-            </Link>
-          </div>
+          <Link
+            to="/vendor/services"
+            className="h-9 px-3 grid place-items-center rounded-full shadow-md active:scale-95 text-[10px] font-display font-bold text-[#1a1208] uppercase tracking-wider"
+            style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
+          >
+            Services
+          </Link>
+          <Link
+            to="/vendor/wallet"
+            aria-label="Wallet"
+            className="h-9 w-9 grid place-items-center rounded-full shadow-md active:scale-90"
+            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+          >
+            <WalletIcon className="h-4 w-4 text-[#1a1208]" />
+          </Link>
         </section>
 
         {/* Tabs */}
