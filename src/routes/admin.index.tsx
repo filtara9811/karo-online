@@ -197,7 +197,7 @@ function PeopleCard({
             background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
-          } as any}
+          } as React.CSSProperties}
           digits={0}
         />
         <p className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/85 font-bold mt-2">
