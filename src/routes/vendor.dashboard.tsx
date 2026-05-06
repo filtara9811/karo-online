@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { VendorSideMenu } from "@/components/VendorSideMenu";
@@ -70,7 +71,16 @@ function VendorDashboard() {
     return { total, success, process, rejected, action };
   }, [leads]);
 
-  const acceptLead = (id: string) => {
+  const acceptLead = async (id: string) => {
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      const { data, error } = await supabase.rpc("accept_lead", { _lead_id: id });
+      const res = data as any;
+      if (error || !res?.ok) {
+        toast.error(res?.reason === "insufficient_coins" ? "LeadX coins low hain — wallet recharge karein" : "Lead accept nahi ho paayi");
+        return;
+      }
+      toast.success("Lead accept ho gayi — customer ko profile dikh rahi hai");
+    }
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "process" } : l)));
   };
 

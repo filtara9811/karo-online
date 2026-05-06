@@ -29,6 +29,7 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
   const navigate = useNavigate();
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeContact, setActiveContact] = useState<AcceptedVendor | null>(null);
 
   // Lock scroll
@@ -48,8 +49,9 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
     if (!open || !leadId) return;
     let alive = true;
     const load = async () => {
-      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      const { data, error } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
       if (!alive) return;
+      setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
       setVendors((data ?? []) as AcceptedVendor[]);
       setLoading(false);
     };
@@ -122,14 +124,24 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
 
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
           {loading ? (
-            <div className="grid place-items-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <div className="grid place-items-center py-16 text-center">
+              <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
+              <p className="mt-3 text-xs font-semibold text-slate-500">Accepted vendors check ho rahe hain…</p>
             </div>
           ) : vendors.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-sm text-slate-500">Waiting for vendors to accept…</p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Aapko alert milega jaise hi koi vendor accept kare.
+            <div className="text-center py-12 px-3">
+              <motion.div
+                className="mx-auto h-14 w-14 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center bg-white shadow-sm"
+                animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
+                transition={{ duration: 1.4, repeat: Infinity }}
+              >
+                <Loader2 className="h-6 w-6 animate-spin text-[color:oklch(0.55_0.10_82)]" />
+              </motion.div>
+              <p className="mt-4 text-sm font-semibold text-slate-600">
+                {loadError ?? "Abhi kisi vendor ne accept nahi kiya."}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Jaise hi vendor accept karega, uski profile yahin call aur chat option ke saath aa jayegi.
               </p>
             </div>
           ) : (
