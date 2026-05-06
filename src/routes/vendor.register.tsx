@@ -923,6 +923,53 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
       <p className="text-center text-[10px] text-[color:oklch(0.50_0.08_85)] italic mt-4">
         Real payment integration coming next phase. For now this completes onboarding.
       </p>
+
+      <VendorAppDownloadCard />
+    </div>
+  );
+}
+
+function VendorAppDownloadCard() {
+  const [urls, setUrls] = useState<{ apk_url?: string; play_store_url?: string }>({});
+  useEffect(() => {
+    let cancel = false;
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.from("app_settings").select("value").eq("key", "vendor_app").maybeSingle().then(({ data }) => {
+        if (!cancel && data) setUrls(((data as any).value ?? {}) as any);
+      });
+    });
+    return () => { cancel = true; };
+  }, []);
+
+  if (!urls.apk_url && !urls.play_store_url) return null;
+
+  return (
+    <div className="mt-6 rounded-2xl p-4 border-2 border-emerald-300"
+      style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" }}
+    >
+      <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-700 font-bold text-center">
+        ✦ Vendor App ✦
+      </p>
+      <h3 className="font-display text-lg font-bold text-center text-emerald-950 mt-1">
+        Download the dedicated Vendor App
+      </h3>
+      <p className="text-xs text-center text-emerald-800/80 mt-1 mb-3">
+        Faster leads, push notifications, offline mode.
+      </p>
+      <div className="flex gap-2">
+        {urls.play_store_url && (
+          <a href={urls.play_store_url} target="_blank" rel="noopener noreferrer"
+            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-600 text-white font-display font-bold text-sm text-center active:scale-95">
+            ▶ Play Store
+          </a>
+        )}
+        {urls.apk_url && (
+          <a href={urls.apk_url} target="_blank" rel="noopener noreferrer"
+            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-900 text-white font-display font-bold text-sm text-center active:scale-95">
+            ⬇ APK
+          </a>
+        )}
+      </div>
     </div>
   );
 }

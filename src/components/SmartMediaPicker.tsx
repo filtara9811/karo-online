@@ -1,11 +1,23 @@
-import { useRef, useState } from "react";
-import { Upload, Link as LinkIcon, Smile, Sparkles, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Link as LinkIcon, Smile, Sparkles, Loader2, X, Library } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SmartMedia, detectMediaKind } from "./SmartMedia";
+import { SmartMedia } from "./SmartMedia";
 
-type Tab = "upload" | "url" | "lottie" | "emoji";
+type Tab = "library" | "upload" | "url" | "lottie" | "emoji";
 
 const QUICK_EMOJI = ["🛠️", "📦", "✨", "⚡", "🔧", "🎨", "🚚", "🧹", "🍳", "💡", "🔌", "🪑"];
+
+// Curated built-in vendor/service icons (Iconify CDN, free, no key)
+const BUILTIN_LIBRARY = [
+  "🛠️","🔧","🔨","🪚","🪛","⚙️","🧰","🪜","🧱","🏗️",
+  "🔌","💡","🔋","🪫","📡","🖥️","💻","📱","⌨️","🖨️",
+  "🚿","🚰","🚽","🛁","🧼","🧽","🧹","🧺","🪣","🧴",
+  "❄️","🌬️","🔥","🌡️","💨","🪟","🚪","🛏️","🛋️","🪑",
+  "✂️","💇","💅","💄","🧖","💆","🪒","🧴","🧼","🧻",
+  "🍳","🍕","🍔","☕","🥤","🧁","🍰","🥗","🍱","🥡",
+  "🚗","🚕","🚙","🚌","🛻","🚛","🛵","🏍️","🚲","🛴",
+  "📦","📮","🚚","🛒","🏪","🏬","💳","💵","💰","🧾",
+];
 
 /**
  * Universal media picker — single-string output.
@@ -27,14 +39,19 @@ export function SmartMediaPicker({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<Tab>(() => {
-    const k = detectMediaKind(value);
-    if (k === "lottie") return "lottie";
-    if (k === "emoji") return "emoji";
-    if (k === "image") return "url";
-    return "upload";
-  });
+  const [tab, setTab] = useState<Tab>("library");
   const [draft, setDraft] = useState(value ?? "");
+  const [library, setLibrary] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancel = false;
+    supabase.from("app_settings").select("value").eq("key", "media_library").maybeSingle().then(({ data }) => {
+      if (cancel) return;
+      const arr = (data?.value as any)?.items;
+      setLibrary(Array.isArray(arr) ? arr : []);
+    });
+    return () => { cancel = true; };
+  }, []);
 
   const upload = async (file: File) => {
     setBusy(true);
@@ -56,6 +73,7 @@ export function SmartMediaPicker({
   };
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
+    { id: "library", label: "Library", icon: Library },
     { id: "upload", label: "Upload", icon: Upload },
     { id: "url", label: "URL", icon: LinkIcon },
     { id: "lottie", label: "Lottie", icon: Sparkles },
@@ -104,6 +122,46 @@ export function SmartMediaPicker({
               </button>
             ))}
           </div>
+
+          {tab === "library" && (
+            <div className="max-h-44 overflow-y-auto pr-1">
+              {library.length > 0 && (
+                <>
+                  <p className="text-[9px] uppercase tracking-wider text-[#f5d97a]/60 mb-1">Saved</p>
+                  <div className="grid grid-cols-7 gap-1.5 mb-2">
+                    {library.map((v) => (
+                      <button
+                        key={"L:" + v}
+                        type="button"
+                        onClick={() => { onChange(v); setDraft(v); }}
+                        className="aspect-square rounded-md border border-[#d4af37]/30 bg-black/40 grid place-items-center overflow-hidden hover:border-[#d4af37] text-base"
+                        title={v}
+                      >
+                        {/^https?:\/\//.test(v)
+                          ? (/\.json($|\?)/i.test(v)
+                              ? <span className="text-[7px] text-[#d4af37]">LOT</span>
+                              : <img src={v} alt="" loading="lazy" className="w-full h-full object-cover" />)
+                          : <span>{v}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <p className="text-[9px] uppercase tracking-wider text-[#f5d97a]/60 mb-1">Built-in</p>
+              <div className="grid grid-cols-10 gap-1">
+                {BUILTIN_LIBRARY.map((e) => (
+                  <button
+                    key={"B:" + e}
+                    type="button"
+                    onClick={() => { onChange(e); setDraft(e); }}
+                    className="aspect-square rounded-md border border-[#d4af37]/15 bg-black/30 grid place-items-center hover:bg-[#d4af37]/10 text-base"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {tab === "upload" && (
             <>

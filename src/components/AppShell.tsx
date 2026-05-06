@@ -33,8 +33,8 @@ const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
-  { value: "vendor", label: "All | Digital | Partner", sub: "Onboard your business · sell services", icon: goldBriefcase },
-  { value: "all", label: "All", sub: "Quick service + vendor combined", icon: goldServices },
+  { value: "all", label: "All Vendors", sub: "Browse all nearby shops & services", icon: goldServices },
+  { value: "vendor", label: "Become a Vendor", sub: "Onboard your business · download vendor app", icon: goldBriefcase },
 ];
 
 export function AppShell() {
