@@ -192,10 +192,14 @@ function PeopleCard({
         </div>
         <AnimatedNumber
           value={bucket.total}
-          className="font-display text-4xl font-bold leading-none block bg-clip-text text-transparent"
+          className="font-display text-4xl font-bold leading-none block"
+          style={{
+            background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          } as any}
           digits={0}
         />
-      </GoldCard>
         <p className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/85 font-bold mt-2">
           Total {label}
         </p>
