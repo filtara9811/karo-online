@@ -213,12 +213,14 @@ function VendorServicesPage() {
               </div>
               <button
                 onClick={() => toggleItem(it.id)}
-                className={`px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition ${
-                  mapped ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
+                disabled={savingKey === `item:${it.id}`}
+                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
+                  mapped || savedKey === `item:${it.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
                 }`}
-                style={mapped ? { background: GOLD_GRAD } : undefined}
+                style={mapped || savedKey === `item:${it.id}` ? { background: GOLD_GRAD } : undefined}
               >
-                {mapped ? <><Check className="h-3 w-3 inline mr-1" />Mapped</> : "Map"}
+                {savingKey === `item:${it.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `item:${it.id}` ? "" : "hidden"}`} />}
+                {savingKey === `item:${it.id}` ? "Saving" : savedKey === `item:${it.id}` ? "Saved" : mapped ? "Mapped" : "Map"}
               </button>
             </div>
           );
@@ -254,12 +256,14 @@ function VendorServicesPage() {
               </div>
               <button
                 onClick={() => toggleVar(v.id)}
-                className={`px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition ${
-                  mapped ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
+                disabled={savingKey === `var:${v.id}`}
+                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
+                  mapped || savedKey === `var:${v.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
                 }`}
-                style={mapped ? { background: GOLD_GRAD } : undefined}
+                style={mapped || savedKey === `var:${v.id}` ? { background: GOLD_GRAD } : undefined}
               >
-                {mapped ? <><Check className="h-3 w-3 inline mr-1" />On</> : "Select"}
+                {savingKey === `var:${v.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `var:${v.id}` ? "" : "hidden"}`} />}
+                {savingKey === `var:${v.id}` ? "Saving" : savedKey === `var:${v.id}` ? "Saved" : mapped ? "On" : "Select"}
               </button>
             </div>
           );
