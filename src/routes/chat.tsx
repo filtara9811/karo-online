@@ -25,6 +25,8 @@ import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { supabase } from "@/integrations/supabase/client";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
