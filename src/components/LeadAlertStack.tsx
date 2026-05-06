@@ -22,8 +22,14 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
     const res = await onAccept(leadId);
     setBusy(null);
     if (!res.ok) {
-      setError(res.reason === "already_taken" ? "Sorry — another vendor accepted first." : "Could not accept lead.");
-      setTimeout(() => setError(null), 2200);
+      const map: Record<string, string> = {
+        already_taken: "Sorry — slots already filled.",
+        sold_out: "Sold Out! This lead has been taken.",
+        insufficient_balance: "Low wallet balance. Please recharge.",
+        not_notified: "This lead is not for you.",
+      };
+      setError(map[res.reason ?? ""] ?? "Could not accept lead.");
+      setTimeout(() => setError(null), 2600);
     } else {
       navigate({ to: "/vendor/dashboard" });
     }
