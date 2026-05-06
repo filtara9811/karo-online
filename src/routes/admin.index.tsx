@@ -261,8 +261,8 @@ function SmallCard({
   to: string;
 }) {
   return (
-    <Link to={to}>
-      <GoldCard className="p-4 h-full hover:scale-[1.02] transition cursor-pointer">
+    <Link to={to} onClick={() => haptic()}>
+      <GoldCard className="p-4 h-full hover:scale-[1.02] active:scale-[0.99] transition cursor-pointer">
         <div className="flex items-center gap-3">
           <div
             className="h-9 w-9 rounded-lg grid place-items-center"
@@ -271,16 +271,16 @@ function SmallCard({
             <Icon className="h-4 w-4 text-[#1a1208]" />
           </div>
           <div>
-            <p
-              className="font-display text-2xl font-bold leading-none"
+            <AnimatedNumber
+              value={value}
+              digits={0}
+              className="font-display text-2xl font-bold leading-none block"
               style={{
                 background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
-            >
-              {value}
-            </p>
+            />
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5d97a]/70 font-bold mt-1">
               {label}
             </p>
