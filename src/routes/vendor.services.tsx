@@ -305,7 +305,7 @@ function Tile({ title, icon, onClick }: { title: string; icon?: string | null; o
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl border p-3 sm:p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
+      className="click-feedback rounded-2xl border p-3 sm:p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
       style={{
         background: "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
         borderColor: "rgba(212,175,55,0.25)",
