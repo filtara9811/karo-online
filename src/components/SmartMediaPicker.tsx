@@ -39,14 +39,19 @@ export function SmartMediaPicker({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<Tab>(() => {
-    const k = detectMediaKind(value);
-    if (k === "lottie") return "lottie";
-    if (k === "emoji") return "emoji";
-    if (k === "image") return "url";
-    return "upload";
-  });
+  const [tab, setTab] = useState<Tab>("library");
   const [draft, setDraft] = useState(value ?? "");
+  const [library, setLibrary] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancel = false;
+    supabase.from("app_settings").select("value").eq("key", "media_library").maybeSingle().then(({ data }) => {
+      if (cancel) return;
+      const arr = (data?.value as any)?.items;
+      setLibrary(Array.isArray(arr) ? arr : []);
+    });
+    return () => { cancel = true; };
+  }, []);
 
   const upload = async (file: File) => {
     setBusy(true);
@@ -68,6 +73,7 @@ export function SmartMediaPicker({
   };
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
+    { id: "library", label: "Library", icon: Library },
     { id: "upload", label: "Upload", icon: Upload },
     { id: "url", label: "URL", icon: LinkIcon },
     { id: "lottie", label: "Lottie", icon: Sparkles },
