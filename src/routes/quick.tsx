@@ -558,8 +558,14 @@ function QuickPage() {
             const cartIds = payload.cart;
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
-            const { data: profile } = await supabase
-              .from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle();
+            const [{ data: profile }, { data: subCat }, { data: defaults }] = await Promise.all([
+              supabase.from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle(),
+              supabase.from("categories").select("lead_price_inr, max_vendors_per_lead").eq("id", selectedSub.id).maybeSingle(),
+              supabase.from("app_settings").select("value").eq("key", "lead_defaults").maybeSingle(),
+            ]);
+            const def = (defaults as any)?.value ?? {};
+            const price = (subCat as any)?.lead_price_inr ?? def.default_price_inr ?? 0;
+            const maxSlots = (subCat as any)?.max_vendors_per_lead ?? def.max_vendors_per_lead ?? 5;
             const { data: lead, error: leadErr } = await supabase
               .from("leads")
               .insert({
@@ -575,6 +581,8 @@ function QuickPage() {
                 note: payload.note || null,
                 images: payload.images ?? [],
                 address: (profile as any)?.address ?? null,
+                max_slots: maxSlots,
+                lead_price_inr: price,
               })
               .select("id")
               .single();
