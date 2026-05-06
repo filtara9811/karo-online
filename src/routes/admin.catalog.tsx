@@ -53,6 +53,8 @@ type Category = {
   image_url: string | null;
   is_active: boolean;
   sort_order: number;
+  lead_price_inr?: number | null;
+  max_vendors_per_lead?: number | null;
 };
 type Item = {
   id: string;
