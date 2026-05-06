@@ -14,6 +14,7 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -553,6 +554,7 @@ function QuickPage() {
           try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user || !selectedSub) {
+              toast.error("Pehle customer login complete karein, phir request vendor ko jayegi.");
               setTimeout(() => setFindingOpen(true), 200);
               return;
             }
@@ -588,6 +590,7 @@ function QuickPage() {
               .select("id")
               .single();
             if (leadErr || !lead) {
+              toast.error(leadErr?.message || "Request create nahi ho paayi");
               setTimeout(() => setFindingOpen(true), 200);
               return;
             }
@@ -608,9 +611,13 @@ function QuickPage() {
                   sub_category_name: selectedSub.name,
                 })),
               );
+              toast.success(`Request ${vendorIds.length} vendor ko bhej di gayi`);
+            } else {
+              toast.info("Request save ho gayi; is service me vendor mapping abhi add karni hai.");
             }
           } catch (e) {
             console.error("lead create failed", e);
+            toast.error("Request send fail hui — login/profile check karein");
           }
           setTimeout(() => setFindingOpen(true), 200);
         }}
