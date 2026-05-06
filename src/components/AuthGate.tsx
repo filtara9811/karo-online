@@ -21,7 +21,7 @@ export function AuthGate() {
   const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
 
   // Profile is "complete" when basic fields are filled
-  const profileComplete = locallyOnboarded || !!(profile?.name && profile?.address);
+  const profileComplete = isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
   const needsGate = !skip && !profileComplete;
 
   // Auto-open ~1.5s after first ready render
