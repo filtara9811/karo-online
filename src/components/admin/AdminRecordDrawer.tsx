@@ -107,7 +107,12 @@ export function AdminRecordDrawer({
       record.is_blocked ? "Unblocked" : "Blocked",
     );
 
-  const toggleVerify = () => update({ verified: !record.verified }, "Verification updated");
+  const toggleVerify = () => {
+    const nextVerified = !record.verified;
+    const patch: Record<string, unknown> = { verified: nextVerified };
+    if (entity === "vendors") patch.status = nextVerified ? "active" : "pending";
+    return update(patch, entity === "vendors" ? (nextVerified ? "Vendor approved" : "Vendor moved to pending") : "Verification updated");
+  };
 
   const saveNotes = () => update({ admin_notes: notes }, "Notes saved");
 
@@ -201,6 +206,7 @@ export function AdminRecordDrawer({
                   {record.is_blocked ? "BLOCKED" : record.status?.toUpperCase() || "ACTIVE"}
                 </Badge>
                 {record.verified && <Badge tone="blue">VERIFIED</Badge>}
+                {entity === "vendors" && record.status === "pending" && <Badge tone="orange">APPROVAL PENDING</Badge>}
               </div>
             </div>
           </div>
@@ -215,6 +221,15 @@ export function AdminRecordDrawer({
         <div className="p-4 space-y-4">
           {/* Quick actions */}
           <div className="grid grid-cols-3 gap-2">
+            {entity === "vendors" && record.status === "pending" && !record.verified && (
+              <button
+                onClick={toggleVerify}
+                disabled={busy}
+                className="col-span-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-3 text-emerald-200 font-bold uppercase tracking-wider text-xs active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="h-4 w-4" /> Approve Vendor & Open Dashboard
+              </button>
+            )}
             <ActionTile
               onClick={toggleVerify}
               icon={ShieldCheck}
