@@ -52,7 +52,12 @@ export function AppShell() {
   }, [location.pathname]);
 
   if (hideShell) {
-    return <Outlet />;
+    return (
+      <>
+        <Outlet />
+        <VendorLeadAlerts />
+      </>
+    );
   }
 
   return (
