@@ -10,6 +10,7 @@ export function AnimatedNumber({
   duration = 1100,
   format,
   className,
+  style,
   prefix = "",
   suffix = "",
   digits = 2,
@@ -18,6 +19,7 @@ export function AnimatedNumber({
   duration?: number;
   format?: (n: number) => string;
   className?: string;
+  style?: React.CSSProperties;
   prefix?: string;
   suffix?: string;
   digits?: number;
