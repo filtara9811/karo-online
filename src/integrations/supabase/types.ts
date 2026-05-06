@@ -169,6 +169,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          lead_cost_coins: number
           lead_price_inr: number | null
           max_vendors_per_lead: number | null
           name: string
@@ -186,6 +187,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_cost_coins?: number
           lead_price_inr?: number | null
           max_vendors_per_lead?: number | null
           name: string
@@ -203,6 +205,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_cost_coins?: number
           lead_price_inr?: number | null
           max_vendors_per_lead?: number | null
           name?: string
@@ -292,6 +295,33 @@ export type Database = {
           min_purchase_coins?: number
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      coin_transfers: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          note: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id?: string
+          sender_id?: string
         }
         Relationships: []
       }
@@ -494,6 +524,39 @@ export type Database = {
           },
         ]
       }
+      lead_source_multipliers: {
+        Row: {
+          id: string
+          is_active: boolean
+          multiplier: number
+          sort_order: number
+          source_key: string
+          source_label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          sort_order?: number
+          source_key: string
+          source_label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          sort_order?: number
+          source_key?: string
+          source_label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           accepted_at: string | null
@@ -515,6 +578,7 @@ export type Database = {
           max_slots: number
           note: string | null
           root_category_id: string | null
+          source: string
           status: string
           sub_category_id: string
           sub_category_name: string
@@ -541,6 +605,7 @@ export type Database = {
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
+          source?: string
           status?: string
           sub_category_id: string
           sub_category_name: string
@@ -567,6 +632,7 @@ export type Database = {
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
+          source?: string
           status?: string
           sub_category_id?: string
           sub_category_name?: string
@@ -1177,6 +1243,11 @@ export type Database = {
         }[]
       }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
+      transfer_coins: {
+        Args: { _coins: number; _note?: string; _receiver_id: string }
+        Returns: Json
+      }
+      update_coin_rate: { Args: { _new_rate: number }; Returns: undefined }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "moderator" | "support"
