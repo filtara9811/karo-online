@@ -219,7 +219,7 @@ function CatalogPage() {
         else await supabase.from("catalog_types").insert(payload);
       } else if (editor.kind === "category" || editor.kind === "subcategory") {
         const d = editor.data;
-        const payload = {
+        const payload: any = {
           name: d.name!.trim(),
           slug: d.slug?.trim() || slugify(d.name || ""),
           description: d.description ?? null,
@@ -230,6 +230,10 @@ function CatalogPage() {
           type_id: d.type_id ?? null,
           parent_id: d.parent_id ?? null,
         };
+        if (editor.kind === "subcategory") {
+          payload.lead_price_inr = d.lead_price_inr === "" || d.lead_price_inr == null ? null : Number(d.lead_price_inr);
+          payload.max_vendors_per_lead = d.max_vendors_per_lead === "" || d.max_vendors_per_lead == null ? null : Number(d.max_vendors_per_lead);
+        }
         if (d.id) await supabase.from("categories").update(payload).eq("id", d.id);
         else await supabase.from("categories").insert(payload);
       } else if (editor.kind === "item") {
