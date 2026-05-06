@@ -546,8 +546,62 @@ function QuickPage() {
         vendorLabel="Filter | wholesaler"
         items={variationItems}
         onClose={() => setVariationOpen(false)}
-        onSubmit={() => {
+        onSubmit={async (payload) => {
           setVariationOpen(false);
+          // Create lead + fan out to mapped vendors
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !selectedSub) {
+              setTimeout(() => setFindingOpen(true), 200);
+              return;
+            }
+            const cartIds = payload.cart;
+            const cartItems = subItems.filter((it) => cartIds.includes(it.id));
+            const itemNames = cartItems.map((it) => it.name);
+            const { data: profile } = await supabase
+              .from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle();
+            const { data: lead, error: leadErr } = await supabase
+              .from("leads")
+              .insert({
+                customer_id: user.id,
+                customer_name: (profile as any)?.name ?? null,
+                customer_phone: (profile as any)?.phone ?? null,
+                type_id: selectedRoot?.type_id ?? null,
+                root_category_id: selectedRoot?.id ?? null,
+                sub_category_id: selectedSub.id,
+                sub_category_name: selectedSub.name,
+                item_ids: cartIds,
+                item_names: itemNames,
+                note: payload.note || null,
+                images: payload.images ?? [],
+                address: (profile as any)?.address ?? null,
+              })
+              .select("id")
+              .single();
+            if (leadErr || !lead) {
+              setTimeout(() => setFindingOpen(true), 200);
+              return;
+            }
+            // Fan out: vendors mapped to ANY item in this sub-category
+            const subItemIds = subItems.map((it) => it.id);
+            const { data: maps } = await supabase
+              .from("vendor_item_mappings")
+              .select("vendor_id")
+              .in("item_id", subItemIds.length ? subItemIds : [selectedSub.id])
+              .eq("is_active", true);
+            const vendorIds = Array.from(new Set((maps ?? []).map((m: any) => m.vendor_id)));
+            if (vendorIds.length > 0) {
+              await supabase.from("lead_notifications").insert(
+                vendorIds.map((vid) => ({
+                  lead_id: lead.id,
+                  vendor_id: vid,
+                  sub_category_name: selectedSub.name,
+                })),
+              );
+            }
+          } catch (e) {
+            console.error("lead create failed", e);
+          }
           setTimeout(() => setFindingOpen(true), 200);
         }}
       />
