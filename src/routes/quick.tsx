@@ -228,10 +228,69 @@ function QuickPage() {
     }));
   }, [subItems, selectedSub]);
 
+  // ---- Real vendors mapped to current sub-category ----
+  const [realVendors, setRealVendors] = useState<Vendor[]>([]);
+  const [realVendorsLoading, setRealVendorsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedSub) {
+      setRealVendors([]);
+      return;
+    }
+    const subItemIds = items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id);
+    if (subItemIds.length === 0) {
+      setRealVendors([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setRealVendorsLoading(true);
+      const { data: mappings } = await supabase
+        .from("vendor_item_mappings")
+        .select("vendor_id")
+        .in("item_id", subItemIds)
+        .eq("is_active", true);
+      const vendorIds = Array.from(new Set((mappings ?? []).map((m: any) => m.vendor_id)));
+      if (vendorIds.length === 0) {
+        if (!cancelled) setRealVendors([]);
+        setRealVendorsLoading(false);
+        return;
+      }
+      const { data: vs } = await supabase
+        .from("vendors")
+        .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked")
+        .in("user_id", vendorIds)
+        .eq("is_blocked", false);
+      if (cancelled) return;
+      // Scatter real vendors deterministically across the map
+      const mapped: Vendor[] = (vs ?? []).slice(0, 8).map((v: any, i: number) => {
+        const positions = [
+          [28, 28], [72, 30], [22, 60], [70, 65], [50, 78],
+          [40, 22], [80, 48], [18, 42],
+        ];
+        const [x, y] = positions[i % positions.length];
+        return {
+          id: v.id,
+          name: v.business_name || v.owner_name || "Vendor",
+          area: "Nearby",
+          km: 1 + Math.round(((i * 13) % 50) / 10),
+          status: i % 2 === 0 ? "Office" : "Online",
+          avatar: v.avatar_url || avatarUser,
+          x, y,
+          cat: SLUG_TO_VENDOR_KEY[selectedSub.slug] ?? "ac",
+        };
+      });
+      setRealVendors(mapped);
+      setRealVendorsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedSub, items]);
+
   const filteredVendors = useMemo(() => {
+    if (realVendors.length > 0) return realVendors;
     const key = selectedSub ? SLUG_TO_VENDOR_KEY[selectedSub.slug] : "ac";
     return VENDORS_BY_CAT[key ?? "ac"] ?? DEFAULT_VENDORS;
-  }, [selectedSub]);
+  }, [selectedSub, realVendors]);
 
   // ---- UI state ----
   const [needsOpen, setNeedsOpen] = useState(false);
