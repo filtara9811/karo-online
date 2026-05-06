@@ -26,7 +26,9 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
         already_taken: "Sorry — slots already filled.",
         sold_out: "Sold Out! This lead has been taken.",
         insufficient_balance: "Low wallet balance. Please recharge.",
+        insufficient_coins: "Not enough LeadX coins. Please recharge wallet.",
         not_notified: "This lead is not for you.",
+        auth_required: "Please login again to accept leads.",
       };
       setError(map[res.reason ?? ""] ?? "Could not accept lead.");
       setTimeout(() => setError(null), 2600);
