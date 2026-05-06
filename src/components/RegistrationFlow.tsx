@@ -188,7 +188,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setLookupBusy(true);
     try {
       const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
-      if (!error && data && data.length > 0) {
+      if (isAuthenticated && !error && data && data.length > 0) {
         const row = data[0] as { name: string | null; gender: string | null; email: string | null; address: string | null };
         // Already registered → auto login & complete
         if (row.name) setName(row.name);
@@ -326,9 +326,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         await refreshProfile();
       }
     } else {
-      // No auth user yet — still mark onboarded locally so gate closes
-      window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-      window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+      toast.error("Pehle Gmail se login karein — tabhi request real vendor tak jayegi.");
+      return;
     }
     setSuccessOpen(false);
     onComplete?.();
