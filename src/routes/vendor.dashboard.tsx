@@ -335,6 +335,7 @@ function VendorDashboard() {
           </div>
         </div>
       </div>
+      <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
     </div>
   );
 }
