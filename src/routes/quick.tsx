@@ -298,6 +298,7 @@ function QuickPage() {
   const [pulseKey, setPulseKey] = useState<string>("");
   const [findingOpen, setFindingOpen] = useState(false);
   const [vendorListOpen, setVendorListOpen] = useState(false);
+  const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
