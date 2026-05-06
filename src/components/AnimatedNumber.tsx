@@ -48,7 +48,7 @@ export function AnimatedNumber({
 
   const out = format ? format(n) : fmtShort(n, digits);
   return (
-    <span className={className}>
+    <span className={className} style={style}>
       {prefix}
       {out}
       {suffix}
