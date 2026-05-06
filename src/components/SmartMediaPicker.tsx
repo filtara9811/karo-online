@@ -123,6 +123,46 @@ export function SmartMediaPicker({
             ))}
           </div>
 
+          {tab === "library" && (
+            <div className="max-h-44 overflow-y-auto pr-1">
+              {library.length > 0 && (
+                <>
+                  <p className="text-[9px] uppercase tracking-wider text-[#f5d97a]/60 mb-1">Saved</p>
+                  <div className="grid grid-cols-7 gap-1.5 mb-2">
+                    {library.map((v) => (
+                      <button
+                        key={"L:" + v}
+                        type="button"
+                        onClick={() => { onChange(v); setDraft(v); }}
+                        className="aspect-square rounded-md border border-[#d4af37]/30 bg-black/40 grid place-items-center overflow-hidden hover:border-[#d4af37] text-base"
+                        title={v}
+                      >
+                        {/^https?:\/\//.test(v)
+                          ? (/\.json($|\?)/i.test(v)
+                              ? <span className="text-[7px] text-[#d4af37]">LOT</span>
+                              : <img src={v} alt="" loading="lazy" className="w-full h-full object-cover" />)
+                          : <span>{v}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <p className="text-[9px] uppercase tracking-wider text-[#f5d97a]/60 mb-1">Built-in</p>
+              <div className="grid grid-cols-10 gap-1">
+                {BUILTIN_LIBRARY.map((e) => (
+                  <button
+                    key={"B:" + e}
+                    type="button"
+                    onClick={() => { onChange(e); setDraft(e); }}
+                    className="aspect-square rounded-md border border-[#d4af37]/15 bg-black/30 grid place-items-center hover:bg-[#d4af37]/10 text-base"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {tab === "upload" && (
             <>
               <input
