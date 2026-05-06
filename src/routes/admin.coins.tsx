@@ -65,19 +65,25 @@ function CoinsPage() {
   const [pricing, setPricing] = useState<Pricing | null>(null);
   const [coinPacks, setCoinPacks] = useState<CoinPack[]>([]);
   const [walletPacks, setWalletPacks] = useState<WalletPack[]>([]);
+  const [sources, setSources] = useState<SourceMult[]>([]);
+  const [history, setHistory] = useState<RateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const [p, c, w] = await Promise.all([
+    const [p, c, w, s, h] = await Promise.all([
       supabase.from("coin_pricing_config").select("*").limit(1).maybeSingle(),
       supabase.from("coin_packs").select("*").order("sort_order"),
       supabase.from("wallet_recharge_packs").select("*").order("sort_order"),
+      supabase.from("lead_source_multipliers").select("*").order("sort_order"),
+      supabase.from("leadx_rate_history").select("*").order("recorded_at", { ascending: false }).limit(20),
     ]);
     setPricing((p.data ?? null) as Pricing | null);
     setCoinPacks((c.data ?? []) as CoinPack[]);
     setWalletPacks((w.data ?? []) as WalletPack[]);
+    setSources((s.data ?? []) as SourceMult[]);
+    setHistory((h.data ?? []) as RateRow[]);
     setLoading(false);
   };
   useEffect(() => {
