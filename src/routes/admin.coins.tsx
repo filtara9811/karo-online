@@ -23,6 +23,9 @@ import {
   GoldButton,
   PageHeader,
 } from "@/components/admin/AdminLayout";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { TileEditSheet, type SheetField } from "@/components/admin/TileEditSheet";
+import { fmtShort, MAX_LEADX_SUPPLY, haptic } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/coins")({
   head: () => ({
@@ -101,12 +104,7 @@ type MarketStats = {
   rate_history: Array<{ rate: number; at: string }>;
 };
 
-function fmt(n: number) {
-  if (n >= 1e7) return (n / 1e7).toFixed(2) + " Cr";
-  if (n >= 1e5) return (n / 1e5).toFixed(2) + " L";
-  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-  return n.toLocaleString("en-IN");
-}
+const fmt = (n: number) => fmtShort(n);
 
 function LeadXMarketPage() {
   const [pricing, setPricing] = useState<Pricing | null>(null);
@@ -118,6 +116,7 @@ function LeadXMarketPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tickerPulse, setTickerPulse] = useState(0);
+  const [activeTile, setActiveTile] = useState<null | "supply" | "market" | "returned" | "reserve" | "rate" | "mcap">(null);
 
   const load = async () => {
     setLoading(true);
@@ -304,31 +303,60 @@ function LeadXMarketPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <StatTile
             label="Total Supply"
-            value={fmt(stats.total_supply)}
-            sub={`₹${fmt(stats.value_inr_total)} value`}
+            value={stats.total_supply}
+            sub={`₹${fmt(stats.value_inr_total)} value · cap 1 Cr`}
             tone="gold"
             icon={Package}
+            onClick={() => { haptic(); setActiveTile("supply"); }}
           />
           <StatTile
             label="In Market"
-            value={fmt(stats.in_circulation)}
+            value={stats.in_circulation}
             sub={`${stats.vendor_count} vendors hold`}
             tone="green"
             icon={ArrowUpRight}
+            onClick={() => { haptic(); setActiveTile("market"); }}
           />
           <StatTile
             label="Returned to Admin"
-            value={fmt(stats.returned)}
+            value={stats.returned}
             sub="used for leads"
             tone="blue"
             icon={ArrowDownLeft}
+            onClick={() => { haptic(); setActiveTile("returned"); }}
           />
           <StatTile
             label="Admin Reserve"
-            value={fmt(stats.admin_holds)}
+            value={stats.admin_holds}
             sub="not yet sold"
             tone="purple"
             icon={Sparkles}
+            onClick={() => { haptic(); setActiveTile("reserve"); }}
+          />
+        </div>
+      )}
+
+      {/* Quick rate + mcap row */}
+      {stats && pricing && (
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <StatTile
+            label="LeadX Rate"
+            value={pricing.coin_rate_inr}
+            sub="₹ per LeadX · tap to edit"
+            tone="gold"
+            icon={TrendingUp}
+            prefix="₹"
+            digits={2}
+            onClick={() => { haptic(); setActiveTile("rate"); }}
+          />
+          <StatTile
+            label="Market Cap"
+            value={stats.value_inr_circulation}
+            sub="circulation × rate"
+            tone="green"
+            icon={Sparkles}
+            prefix="₹"
+            onClick={() => { haptic(); setActiveTile("mcap"); }}
           />
         </div>
       )}
@@ -689,7 +717,144 @@ function LeadXMarketPage() {
           </GoldCard>
         </>
       )}
+
+      {/* Tile edit bottom-sheets */}
+      {pricing && stats && (
+        <>
+          <TileEditSheet
+            open={activeTile === "supply"}
+            onClose={() => setActiveTile(null)}
+            title="Total Supply"
+            subtitle="Hard-capped at 1 Cr LeadX"
+            details={
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Stat k="Current" v={fmt(stats.total_supply)} />
+                <Stat k="In Market" v={fmt(stats.in_circulation)} />
+                <Stat k="Returned" v={fmt(stats.returned)} />
+                <Stat k="Reserve" v={fmt(stats.admin_holds)} />
+              </div>
+            }
+            fields={[
+              {
+                key: "total_supply",
+                label: "Total Supply (max 1 Cr)",
+                value: pricing.total_supply,
+                min: 0,
+                max: MAX_LEADX_SUPPLY,
+                hint: `Cap: ${fmtShort(MAX_LEADX_SUPPLY)}`,
+              },
+            ]}
+            onSave={async (v) => {
+              const capped = Math.min(MAX_LEADX_SUPPLY, v.total_supply);
+              await supabase
+                .from("coin_pricing_config")
+                .update({ total_supply: capped })
+                .eq("id", pricing.id);
+              await load();
+            }}
+          />
+
+          <TileEditSheet
+            open={activeTile === "rate"}
+            onClose={() => setActiveTile(null)}
+            title="LeadX Rate"
+            subtitle="₹ per 1 LeadX — manual control"
+            details={
+              <div className="text-xs text-[#f5d97a]/70">
+                Current: <b className="text-[#fff8dc]">₹{pricing.coin_rate_inr.toFixed(2)}</b>
+                <span className="ml-3">Market Cap: <b className="text-[#fff8dc]">₹{fmt(stats.value_inr_circulation)}</b></span>
+              </div>
+            }
+            fields={[
+              {
+                key: "rate",
+                label: "Rate (₹ / LeadX)",
+                value: pricing.coin_rate_inr,
+                step: 0.5,
+                min: 0,
+                hint: "Logged in rate history",
+              },
+            ]}
+            onSave={async (v) => {
+              await supabase.rpc("update_coin_rate" as any, { _new_rate: v.rate });
+              await load();
+            }}
+          />
+
+          <TileEditSheet
+            open={activeTile === "mcap"}
+            onClose={() => setActiveTile(null)}
+            title="Market Cap"
+            subtitle="In-circulation × current rate"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Circulation" v={fmt(stats.in_circulation)} />
+                <Stat k="Rate" v={`₹${stats.rate_inr.toFixed(2)}`} />
+                <Stat k="Market Cap" v={`₹${fmt(stats.value_inr_circulation)}`} />
+                <Stat k="Total Cap" v={`₹${fmt(stats.value_inr_total)}`} />
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "market"}
+            onClose={() => setActiveTile(null)}
+            title="In Market"
+            subtitle={`${stats.vendor_count} vendors hold LeadX`}
+            fields={[]}
+            details={
+              <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                {stats.top_vendors.slice(0, 20).map((v) => (
+                  <div key={v.vendor_id} className="flex items-center justify-between text-xs border-b border-[#d4af37]/10 pb-1.5">
+                    <span className="text-[#fff8dc] truncate">{v.business_name || v.owner_name || v.vendor_id.slice(0, 8)}</span>
+                    <span className="text-emerald-300 font-bold">{fmt(v.leadx_coins)}</span>
+                  </div>
+                ))}
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "returned"}
+            onClose={() => setActiveTile(null)}
+            title="Returned to Admin"
+            subtitle="LeadX consumed by vendors for accepting leads"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Returned" v={fmt(stats.returned)} />
+                <Stat k="Value (₹)" v={`₹${fmt(stats.returned * stats.rate_inr)}`} />
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "reserve"}
+            onClose={() => setActiveTile(null)}
+            title="Admin Reserve"
+            subtitle="Unsold LeadX in admin pool"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Reserve" v={fmt(stats.admin_holds)} />
+                <Stat k="Total Supply" v={fmt(stats.total_supply)} />
+                <Stat k="Sold" v={fmt(stats.sold)} />
+              </div>
+            }
+          />
+        </>
+      )}
     </AdminLayout>
+  );
+}
+
+function Stat({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/40 border border-[#d4af37]/20">
+      <span className="text-[10px] uppercase tracking-wider text-[#d4af37]/70 font-bold">{k}</span>
+      <span className="text-[#fff8dc] font-bold text-sm">{v}</span>
+    </div>
   );
 }
 
@@ -838,12 +1003,18 @@ function StatTile({
   sub,
   tone,
   icon: Icon,
+  onClick,
+  prefix = "",
+  digits = 0,
 }: {
   label: string;
-  value: string;
+  value: number;
   sub: string;
   tone: "gold" | "green" | "blue" | "purple";
   icon: typeof Wallet;
+  onClick?: () => void;
+  prefix?: string;
+  digits?: number;
 }) {
   const tones = {
     gold: "from-[#f5d97a]/30 to-[#d4af37]/10 border-[#d4af37]/40 text-[#fff8dc]",
@@ -852,8 +1023,10 @@ function StatTile({
     purple: "from-purple-500/30 to-purple-700/10 border-purple-500/40 text-purple-100",
   };
   return (
-    <div
-      className={`rounded-xl border bg-gradient-to-br ${tones[tone]} p-3 backdrop-blur`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-xl border bg-gradient-to-br ${tones[tone]} p-3 backdrop-blur transition active:scale-[0.97] hover:brightness-110 ${onClick ? "cursor-pointer" : "cursor-default"}`}
     >
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[9px] uppercase tracking-[0.2em] font-bold opacity-70">
@@ -862,10 +1035,10 @@ function StatTile({
         <Icon className="h-3.5 w-3.5 opacity-60" />
       </div>
       <div className="font-display text-xl font-bold leading-tight">
-        {value}
+        <AnimatedNumber value={value} prefix={prefix} digits={digits} />
       </div>
       <div className="text-[10px] opacity-60 mt-0.5">{sub}</div>
-    </div>
+    </button>
   );
 }
 

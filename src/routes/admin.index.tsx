@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { haptic } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -175,8 +177,8 @@ function PeopleCard({
   bucket: Bucket;
 }) {
   return (
-    <Link to={to}>
-      <GoldCard className="p-5 h-full hover:scale-[1.01] transition cursor-pointer">
+    <Link to={to} onClick={() => haptic()}>
+      <GoldCard className="p-5 h-full hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer">
         <div className="flex items-start justify-between mb-3">
           <div
             className="h-11 w-11 rounded-xl grid place-items-center"
@@ -188,16 +190,16 @@ function PeopleCard({
           </div>
           <TrendingUp className="h-4 w-4 text-[#d4af37]/60" />
         </div>
-        <p
-          className="font-display text-4xl font-bold leading-none"
+        <AnimatedNumber
+          value={bucket.total}
+          className="font-display text-4xl font-bold leading-none block"
           style={{
             background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
-          }}
-        >
-          {bucket.total}
-        </p>
+          } as React.CSSProperties}
+          digits={0}
+        />
         <p className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/85 font-bold mt-2">
           Total {label}
         </p>
@@ -259,8 +261,8 @@ function SmallCard({
   to: string;
 }) {
   return (
-    <Link to={to}>
-      <GoldCard className="p-4 h-full hover:scale-[1.02] transition cursor-pointer">
+    <Link to={to} onClick={() => haptic()}>
+      <GoldCard className="p-4 h-full hover:scale-[1.02] active:scale-[0.99] transition cursor-pointer">
         <div className="flex items-center gap-3">
           <div
             className="h-9 w-9 rounded-lg grid place-items-center"
@@ -269,16 +271,16 @@ function SmallCard({
             <Icon className="h-4 w-4 text-[#1a1208]" />
           </div>
           <div>
-            <p
-              className="font-display text-2xl font-bold leading-none"
+            <AnimatedNumber
+              value={value}
+              digits={0}
+              className="font-display text-2xl font-bold leading-none block"
               style={{
                 background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
-            >
-              {value}
-            </p>
+            />
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5d97a]/70 font-bold mt-1">
               {label}
             </p>
