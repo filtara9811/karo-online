@@ -591,6 +591,7 @@ function QuickPage() {
               setTimeout(() => setFindingOpen(true), 200);
               return;
             }
+            setActiveLeadId(lead.id);
             // Fan out: vendors mapped to ANY item in this sub-category
             const subItemIds = subItems.map((it) => it.id);
             const { data: maps } = await supabase
@@ -628,6 +629,7 @@ function QuickPage() {
       <VendorListSheet
         open={vendorListOpen}
         category={selectedSub?.name ?? "Service"}
+        leadId={activeLeadId}
         onClose={() => setVendorListOpen(false)}
       />
 
