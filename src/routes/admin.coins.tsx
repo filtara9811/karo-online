@@ -116,6 +116,7 @@ function LeadXMarketPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tickerPulse, setTickerPulse] = useState(0);
+  const [activeTile, setActiveTile] = useState<null | "supply" | "market" | "returned" | "reserve" | "rate" | "mcap">(null);
 
   const load = async () => {
     setLoading(true);
