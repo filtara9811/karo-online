@@ -233,8 +233,8 @@ function CatalogPage() {
           parent_id: d.parent_id ?? null,
         };
         if (editor.kind === "subcategory") {
-          payload.lead_price_inr = d.lead_price_inr === "" || d.lead_price_inr == null ? null : Number(d.lead_price_inr);
-          payload.max_vendors_per_lead = d.max_vendors_per_lead === "" || d.max_vendors_per_lead == null ? null : Number(d.max_vendors_per_lead);
+          payload.lead_price_inr = d.lead_price_inr == null || (d.lead_price_inr as any) === "" ? null : Number(d.lead_price_inr);
+          payload.max_vendors_per_lead = d.max_vendors_per_lead == null || (d.max_vendors_per_lead as any) === "" ? null : Number(d.max_vendors_per_lead);
         }
         if (d.id) await supabase.from("categories").update(payload).eq("id", d.id);
         else await supabase.from("categories").insert(payload);
