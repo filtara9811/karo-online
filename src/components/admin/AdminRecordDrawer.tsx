@@ -504,7 +504,7 @@ function ActionTile({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border ${map[tone]} active:scale-95 disabled:opacity-50 ${active ? "ring-2 ring-current/40" : ""}`}
+      className={`click-feedback flex flex-col items-center gap-1 px-2 py-3 rounded-xl border ${map[tone]} disabled:opacity-50 ${active ? "ring-2 ring-current/40" : ""}`}
     >
       <Icon className="h-4 w-4" />
       <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
