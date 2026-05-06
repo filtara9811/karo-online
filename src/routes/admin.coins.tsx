@@ -303,31 +303,60 @@ function LeadXMarketPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <StatTile
             label="Total Supply"
-            value={fmt(stats.total_supply)}
-            sub={`₹${fmt(stats.value_inr_total)} value`}
+            value={stats.total_supply}
+            sub={`₹${fmt(stats.value_inr_total)} value · cap 1 Cr`}
             tone="gold"
             icon={Package}
+            onClick={() => { haptic(); setActiveTile("supply"); }}
           />
           <StatTile
             label="In Market"
-            value={fmt(stats.in_circulation)}
+            value={stats.in_circulation}
             sub={`${stats.vendor_count} vendors hold`}
             tone="green"
             icon={ArrowUpRight}
+            onClick={() => { haptic(); setActiveTile("market"); }}
           />
           <StatTile
             label="Returned to Admin"
-            value={fmt(stats.returned)}
+            value={stats.returned}
             sub="used for leads"
             tone="blue"
             icon={ArrowDownLeft}
+            onClick={() => { haptic(); setActiveTile("returned"); }}
           />
           <StatTile
             label="Admin Reserve"
-            value={fmt(stats.admin_holds)}
+            value={stats.admin_holds}
             sub="not yet sold"
             tone="purple"
             icon={Sparkles}
+            onClick={() => { haptic(); setActiveTile("reserve"); }}
+          />
+        </div>
+      )}
+
+      {/* Quick rate + mcap row */}
+      {stats && pricing && (
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <StatTile
+            label="LeadX Rate"
+            value={pricing.coin_rate_inr}
+            sub="₹ per LeadX · tap to edit"
+            tone="gold"
+            icon={TrendingUp}
+            prefix="₹"
+            digits={2}
+            onClick={() => { haptic(); setActiveTile("rate"); }}
+          />
+          <StatTile
+            label="Market Cap"
+            value={stats.value_inr_circulation}
+            sub="circulation × rate"
+            tone="green"
+            icon={Sparkles}
+            prefix="₹"
+            onClick={() => { haptic(); setActiveTile("mcap"); }}
           />
         </div>
       )}
