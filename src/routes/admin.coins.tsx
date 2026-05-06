@@ -717,7 +717,144 @@ function LeadXMarketPage() {
           </GoldCard>
         </>
       )}
+
+      {/* Tile edit bottom-sheets */}
+      {pricing && stats && (
+        <>
+          <TileEditSheet
+            open={activeTile === "supply"}
+            onClose={() => setActiveTile(null)}
+            title="Total Supply"
+            subtitle="Hard-capped at 1 Cr LeadX"
+            details={
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Stat k="Current" v={fmt(stats.total_supply)} />
+                <Stat k="In Market" v={fmt(stats.in_circulation)} />
+                <Stat k="Returned" v={fmt(stats.returned)} />
+                <Stat k="Reserve" v={fmt(stats.admin_holds)} />
+              </div>
+            }
+            fields={[
+              {
+                key: "total_supply",
+                label: "Total Supply (max 1 Cr)",
+                value: pricing.total_supply,
+                min: 0,
+                max: MAX_LEADX_SUPPLY,
+                hint: `Cap: ${fmtShort(MAX_LEADX_SUPPLY)}`,
+              },
+            ]}
+            onSave={async (v) => {
+              const capped = Math.min(MAX_LEADX_SUPPLY, v.total_supply);
+              await supabase
+                .from("coin_pricing_config")
+                .update({ total_supply: capped })
+                .eq("id", pricing.id);
+              await load();
+            }}
+          />
+
+          <TileEditSheet
+            open={activeTile === "rate"}
+            onClose={() => setActiveTile(null)}
+            title="LeadX Rate"
+            subtitle="₹ per 1 LeadX — manual control"
+            details={
+              <div className="text-xs text-[#f5d97a]/70">
+                Current: <b className="text-[#fff8dc]">₹{pricing.coin_rate_inr.toFixed(2)}</b>
+                <span className="ml-3">Market Cap: <b className="text-[#fff8dc]">₹{fmt(stats.value_inr_circulation)}</b></span>
+              </div>
+            }
+            fields={[
+              {
+                key: "rate",
+                label: "Rate (₹ / LeadX)",
+                value: pricing.coin_rate_inr,
+                step: 0.5,
+                min: 0,
+                hint: "Logged in rate history",
+              },
+            ]}
+            onSave={async (v) => {
+              await supabase.rpc("update_coin_rate" as any, { _new_rate: v.rate });
+              await load();
+            }}
+          />
+
+          <TileEditSheet
+            open={activeTile === "mcap"}
+            onClose={() => setActiveTile(null)}
+            title="Market Cap"
+            subtitle="In-circulation × current rate"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Circulation" v={fmt(stats.in_circulation)} />
+                <Stat k="Rate" v={`₹${stats.rate_inr.toFixed(2)}`} />
+                <Stat k="Market Cap" v={`₹${fmt(stats.value_inr_circulation)}`} />
+                <Stat k="Total Cap" v={`₹${fmt(stats.value_inr_total)}`} />
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "market"}
+            onClose={() => setActiveTile(null)}
+            title="In Market"
+            subtitle={`${stats.vendor_count} vendors hold LeadX`}
+            fields={[]}
+            details={
+              <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                {stats.top_vendors.slice(0, 20).map((v) => (
+                  <div key={v.vendor_id} className="flex items-center justify-between text-xs border-b border-[#d4af37]/10 pb-1.5">
+                    <span className="text-[#fff8dc] truncate">{v.business_name || v.owner_name || v.vendor_id.slice(0, 8)}</span>
+                    <span className="text-emerald-300 font-bold">{fmt(v.leadx_coins)}</span>
+                  </div>
+                ))}
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "returned"}
+            onClose={() => setActiveTile(null)}
+            title="Returned to Admin"
+            subtitle="LeadX consumed by vendors for accepting leads"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Returned" v={fmt(stats.returned)} />
+                <Stat k="Value (₹)" v={`₹${fmt(stats.returned * stats.rate_inr)}`} />
+              </div>
+            }
+          />
+
+          <TileEditSheet
+            open={activeTile === "reserve"}
+            onClose={() => setActiveTile(null)}
+            title="Admin Reserve"
+            subtitle="Unsold LeadX in admin pool"
+            fields={[]}
+            details={
+              <div className="space-y-2 text-sm">
+                <Stat k="Reserve" v={fmt(stats.admin_holds)} />
+                <Stat k="Total Supply" v={fmt(stats.total_supply)} />
+                <Stat k="Sold" v={fmt(stats.sold)} />
+              </div>
+            }
+          />
+        </>
+      )}
     </AdminLayout>
+  );
+}
+
+function Stat({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/40 border border-[#d4af37]/20">
+      <span className="text-[10px] uppercase tracking-wider text-[#d4af37]/70 font-bold">{k}</span>
+      <span className="text-[#fff8dc] font-bold text-sm">{v}</span>
+    </div>
   );
 }
 
