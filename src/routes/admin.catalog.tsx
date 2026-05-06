@@ -808,6 +808,29 @@ function EditorForm({
         </Field>
       )}
 
+      {editor.kind === "subcategory" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Lead price ₹ (vendor pays)">
+            <input
+              type="number"
+              value={d.lead_price_inr ?? ""}
+              onChange={(e) => update({ lead_price_inr: e.target.value === "" ? null : parseFloat(e.target.value) })}
+              className={inputCls}
+              placeholder="Default from settings"
+            />
+          </Field>
+          <Field label="Max vendors per lead">
+            <input
+              type="number"
+              value={d.max_vendors_per_lead ?? ""}
+              onChange={(e) => update({ max_vendors_per_lead: e.target.value === "" ? null : parseInt(e.target.value) })}
+              className={inputCls}
+              placeholder="Default 5"
+            />
+          </Field>
+        </div>
+      )}
+
       {showPrice && (
         <div className="grid grid-cols-2 gap-3">
           <Field label="Price min (₹)">
