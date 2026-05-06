@@ -25,6 +25,8 @@ import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { supabase } from "@/integrations/supabase/client";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
@@ -34,6 +36,7 @@ const chatSearchSchema = z.object({
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
   vendorId: fallback(z.string(), "").default(""),
   orderId: fallback(z.string(), "").default(""),
+  leadId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/chat")({
@@ -114,6 +117,12 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+
+  // Real-time lead chat path (customer side): if leadId is provided, render the live thread.
+  if (search.leadId) {
+    return <LeadChatRoute leadId={search.leadId} vendorId={search.vendorId || ""} />;
+  }
+
   const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
   const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
@@ -943,4 +952,36 @@ function ChatPage() {
       </AnimatePresence>
     </div>
   );
+}
+
+function LeadChatRoute({ leadId, vendorId }: { leadId: string; vendorId: string }) {
+  const [peer, setPeer] = useState<LeadChatPeer | null>(null);
+
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      const list = (data ?? []) as Array<{
+        vendor_id: string;
+        business_name: string | null;
+        owner_name: string | null;
+        avatar_url: string | null;
+        whatsapp: string | null;
+        phone: string | null;
+      }>;
+      const v = (vendorId && list.find((x) => x.vendor_id === vendorId)) || list[0];
+      if (!alive || !v) return;
+      setPeer({
+        id: v.vendor_id,
+        name: v.business_name || v.owner_name || "Vendor",
+        avatar_url: v.avatar_url,
+        phone: v.phone || v.whatsapp,
+        subtitle: v.owner_name && v.business_name ? v.owner_name : "Verified vendor",
+      });
+    })();
+    return () => { alive = false; };
+  }, [leadId, vendorId]);
+
+  return <LeadChatThread leadId={leadId} peer={peer} myRole="customer" />;
 }

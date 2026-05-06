@@ -298,6 +298,7 @@ function QuickPage() {
   const [pulseKey, setPulseKey] = useState<string>("");
   const [findingOpen, setFindingOpen] = useState(false);
   const [vendorListOpen, setVendorListOpen] = useState(false);
+  const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
@@ -590,6 +591,7 @@ function QuickPage() {
               setTimeout(() => setFindingOpen(true), 200);
               return;
             }
+            setActiveLeadId(lead.id);
             // Fan out: vendors mapped to ANY item in this sub-category
             const subItemIds = subItems.map((it) => it.id);
             const { data: maps } = await supabase
@@ -627,6 +629,7 @@ function QuickPage() {
       <VendorListSheet
         open={vendorListOpen}
         category={selectedSub?.name ?? "Service"}
+        leadId={activeLeadId}
         onClose={() => setVendorListOpen(false)}
       />
 

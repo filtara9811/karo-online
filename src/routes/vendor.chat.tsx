@@ -22,6 +22,8 @@ import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { supabase } from "@/integrations/supabase/client";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
@@ -31,6 +33,8 @@ const chatSearchSchema = z.object({
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
   vendorId: fallback(z.string(), "").default(""),
   orderId: fallback(z.string(), "").default(""),
+  leadId: fallback(z.string(), "").default(""),
+  customerId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/vendor/chat")({
@@ -111,6 +115,11 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+
+  if (search.leadId) {
+    return <VendorLeadChatRoute leadId={search.leadId} />;
+  }
+
   const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
   const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
@@ -929,4 +938,42 @@ function ChatPage() {
       </AnimatePresence>
     </div>
   );
+}
+
+function VendorLeadChatRoute({ leadId }: { leadId: string }) {
+  const [peer, setPeer] = useState<LeadChatPeer | null>(null);
+
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("customer_id, customer_name, customer_phone")
+        .eq("id", leadId)
+        .maybeSingle();
+      if (!alive || !lead) return;
+      const cust: any = lead;
+      let avatar: string | null = null;
+      const { data: prof } = await supabase
+        .from("customers")
+        .select("name, phone, avatar_url")
+        .eq("user_id", cust.customer_id)
+        .maybeSingle();
+      if (prof) {
+        avatar = (prof as any).avatar_url ?? null;
+      }
+      if (!alive) return;
+      setPeer({
+        id: cust.customer_id,
+        name: (prof as any)?.name || cust.customer_name || "Customer",
+        avatar_url: avatar,
+        phone: (prof as any)?.phone || cust.customer_phone,
+        subtitle: "Customer · Lead chat",
+      });
+    })();
+    return () => { alive = false; };
+  }, [leadId]);
+
+  return <LeadChatThread leadId={leadId} peer={peer} myRole="vendor" />;
 }
