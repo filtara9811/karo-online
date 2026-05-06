@@ -92,7 +92,7 @@ export function AdminRecordDrawer({
     setBusy(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from(entity) as any)
-      .update({ ...patch, updated_at: new Date().toISOString() })
+      .update(entity === "vendors" || entity === "customers" ? { ...patch, updated_at: new Date().toISOString() } : patch)
       .eq("id", record.id)
       .select("id")
       .maybeSingle();
