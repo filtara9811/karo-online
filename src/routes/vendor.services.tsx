@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Check, ChevronRight, Sparkles, Package } from "lucide-react";
+import { Loader2, Check, ChevronRight, Sparkles, Package, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
@@ -23,6 +24,7 @@ const GOLD_BG = "radial-gradient(circle at 20% 0%, oklch(0.22 0.04 80) 0%, oklch
 const GOLD_GRAD = "linear-gradient(180deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 100%)";
 
 function VendorServicesPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [types, setTypes] = useState<Type[]>([]);
@@ -31,6 +33,8 @@ function VendorServicesPage() {
   const [vars, setVars] = useState<Variation[]>([]);
   const [mappedItems, setMappedItems] = useState<Set<string>>(new Set());
   const [mappedVars, setMappedVars] = useState<Set<string>>(new Set());
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   const [path, setPath] = useState<{ type?: Type; cat?: Cat; sub?: Cat; item?: Item }>({});
 
@@ -60,26 +64,56 @@ function VendorServicesPage() {
 
   useEffect(() => { load(); }, []);
 
+  const flashSaved = (key: string, msg: string) => {
+    setSavedKey(key);
+    toast.success(msg);
+    window.setTimeout(() => setSavedKey((current) => (current === key ? null : current)), 1300);
+  };
+
   const toggleItem = async (itemId: string) => {
     if (!userId) return;
+    const key = `item:${itemId}`;
+    setSavingKey(key);
     if (mappedItems.has(itemId)) {
-      await supabase.from("vendor_item_mappings").delete().eq("vendor_id", userId).eq("item_id", itemId);
+      const { error } = await supabase.from("vendor_item_mappings").delete().eq("vendor_id", userId).eq("item_id", itemId);
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.delete(itemId); setMappedItems(n);
+      flashSaved(key, "Service removed");
     } else {
-      await supabase.from("vendor_item_mappings").insert({ vendor_id: userId, item_id: itemId, is_active: true });
+      const { error } = await supabase.from("vendor_item_mappings").insert({ vendor_id: userId, item_id: itemId, is_active: true });
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.add(itemId); setMappedItems(n);
+      flashSaved(key, "Service mapped successfully");
     }
   };
 
   const toggleVar = async (vId: string) => {
     if (!userId) return;
+    const key = `var:${vId}`;
+    setSavingKey(key);
     if (mappedVars.has(vId)) {
-      await supabase.from("vendor_variation_mappings").delete().eq("vendor_id", userId).eq("variation_id", vId);
+      const { error } = await supabase.from("vendor_variation_mappings").delete().eq("vendor_id", userId).eq("variation_id", vId);
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedVars); n.delete(vId); setMappedVars(n);
+      flashSaved(key, "Variation removed");
     } else {
-      await supabase.from("vendor_variation_mappings").insert({ vendor_id: userId, variation_id: vId, is_active: true });
+      const { error } = await supabase.from("vendor_variation_mappings").insert({ vendor_id: userId, variation_id: vId, is_active: true });
+      setSavingKey(null);
+      if (error) return toast.error(error.message);
       const n = new Set(mappedVars); n.add(vId); setMappedVars(n);
+      flashSaved(key, "Variation saved successfully");
     }
+  };
+
+  const goBack = () => {
+    if (path.item) return setPath(({ type, cat, sub }) => ({ type, cat, sub }));
+    if (path.sub) return setPath(({ type, cat }) => ({ type, cat }));
+    if (path.cat) return setPath(({ type }) => ({ type }));
+    if (path.type) return setPath({});
+    navigate({ to: "/vendor/dashboard" });
   };
 
   if (loading) {
