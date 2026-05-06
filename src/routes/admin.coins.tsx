@@ -379,6 +379,72 @@ function CoinsPage() {
           </GoldCard>
         ))}
       </div>
+
+      {/* Source Multipliers */}
+      <SectionHeader
+        icon={Zap}
+        title="Lead Source Multipliers"
+        subtitle="Quick / WhatsApp / Digital Shop — per-source coin rate adjuster"
+        onAdd={addSource}
+      />
+      <div className="grid sm:grid-cols-2 gap-3 mb-6">
+        {sources.map((s) => (
+          <GoldCard key={s.id} className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <div className="text-[9px] uppercase tracking-[0.2em] text-[#f5d97a]/60 font-bold">
+                  {s.source_key}
+                </div>
+                <input
+                  value={s.source_label}
+                  onChange={(e) => updateSource(s.id, { source_label: e.target.value })}
+                  className="w-full bg-transparent text-[#fff8dc] font-display font-bold text-base outline-none border-b border-[#d4af37]/20 focus:border-[#d4af37] pb-1"
+                />
+              </div>
+              <button
+                onClick={() => deleteSource(s.id)}
+                className="p-1.5 rounded-lg text-red-300/80 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <Field
+              label="Multiplier (× base coin cost)"
+              value={s.multiplier}
+              onChange={(v) => updateSource(s.id, { multiplier: v })}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <ActiveToggle
+                value={s.is_active}
+                onChange={(v) => updateSource(s.id, { is_active: v })}
+              />
+              <GoldButton size="sm" onClick={() => saveSource(s)}>Save</GoldButton>
+            </div>
+          </GoldCard>
+        ))}
+      </div>
+
+      {/* Rate History */}
+      <SectionHeader
+        icon={History}
+        title="Coin Rate History"
+        subtitle="Last 20 manual rate changes"
+        onAdd={() => {}}
+      />
+      <GoldCard className="p-4 mb-6">
+        {history.length === 0 ? (
+          <div className="text-center text-[#d4af37]/60 text-sm py-4">No history yet</div>
+        ) : (
+          <div className="space-y-2">
+            {history.map((h) => (
+              <div key={h.id} className="flex items-center justify-between text-sm border-b border-[#d4af37]/10 pb-2 last:border-0">
+                <span className="text-[#fff8dc]">₹{Number(h.rate_inr).toFixed(2)} / coin</span>
+                <span className="text-[#d4af37]/70 text-xs">{new Date(h.recorded_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </GoldCard>
     </AdminLayout>
   );
 }
