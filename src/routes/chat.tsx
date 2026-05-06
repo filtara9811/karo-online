@@ -115,6 +115,12 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+
+  // Real-time lead chat path (customer side): if leadId is provided, render the live thread.
+  if (search.leadId) {
+    return <LeadChatRoute leadId={search.leadId} vendorId={search.vendorId || ""} />;
+  }
+
   const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
   const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
