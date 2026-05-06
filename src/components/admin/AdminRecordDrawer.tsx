@@ -66,6 +66,7 @@ export function AdminRecordDrawer({
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [msgTitle, setMsgTitle] = useState("");
   const [msgBody, setMsgBody] = useState("");
+  const vendorNeedsApproval = entity === "vendors" && (record?.status !== "active" || !record?.verified);
 
   useEffect(() => {
     if (!record) return;
@@ -90,10 +91,18 @@ export function AdminRecordDrawer({
   const update = async (patch: Record<string, unknown>, msg = "Saved") => {
     setBusy(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from(entity) as any).update(patch).eq("id", record.id);
+    const { data, error } = await (supabase.from(entity) as any)
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", record.id)
+      .select("id")
+      .maybeSingle();
     setBusy(false);
     if (error) {
       toast.error(error.message);
+      return false;
+    }
+    if (!data) {
+      toast.error("Permission issue: record update nahi hua");
       return false;
     }
     toast.success(msg);
@@ -107,7 +116,22 @@ export function AdminRecordDrawer({
       record.is_blocked ? "Unblocked" : "Blocked",
     );
 
+  const approveVendor = async () => {
+    if (entity !== "vendors") return false;
+    setBusy(true);
+    const { error } = await supabase.rpc("approve_vendor", { _vendor_user_id: record.user_id });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Vendor approved — dashboard active ho gaya");
+    onMutated();
+    return true;
+  };
+
   const toggleVerify = () => {
+    if (vendorNeedsApproval) return approveVendor();
     const nextVerified = !record.verified;
     const patch: Record<string, unknown> = { verified: nextVerified };
     if (entity === "vendors") patch.status = nextVerified ? "active" : "pending";
