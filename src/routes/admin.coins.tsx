@@ -93,16 +93,44 @@ function CoinsPage() {
   const savePricing = async () => {
     if (!pricing) return;
     setSaving(true);
+    // Log rate change via RPC (records history)
+    await supabase.rpc("update_coin_rate" as any, { _new_rate: pricing.coin_rate_inr });
     await supabase
       .from("coin_pricing_config")
       .update({
-        coin_rate_inr: pricing.coin_rate_inr,
         min_purchase_coins: pricing.min_purchase_coins,
         max_purchase_coins: pricing.max_purchase_coins,
         gst_percent: pricing.gst_percent,
       })
       .eq("id", pricing.id);
     setSaving(false);
+    load();
+  };
+
+  const updateSource = (id: string, patch: Partial<SourceMult>) =>
+    setSources((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const saveSource = async (s: SourceMult) => {
+    await supabase.from("lead_source_multipliers").update({
+      source_label: s.source_label,
+      multiplier: s.multiplier,
+      is_active: s.is_active,
+      sort_order: s.sort_order,
+    }).eq("id", s.id);
+  };
+  const deleteSource = async (id: string) => {
+    await supabase.from("lead_source_multipliers").delete().eq("id", id);
+    load();
+  };
+  const addSource = async () => {
+    const key = prompt("Source key (e.g. quick, whatsapp):")?.trim();
+    if (!key) return;
+    await supabase.from("lead_source_multipliers").insert({
+      source_key: key,
+      source_label: key,
+      multiplier: 1,
+      sort_order: (sources.at(-1)?.sort_order ?? 0) + 10,
+    });
+    load();
   };
 
   const updateCoinPack = (id: string, patch: Partial<CoinPack>) =>
