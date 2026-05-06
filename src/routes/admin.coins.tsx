@@ -866,12 +866,18 @@ function StatTile({
   sub,
   tone,
   icon: Icon,
+  onClick,
+  prefix = "",
+  digits = 0,
 }: {
   label: string;
-  value: string;
+  value: number;
   sub: string;
   tone: "gold" | "green" | "blue" | "purple";
   icon: typeof Wallet;
+  onClick?: () => void;
+  prefix?: string;
+  digits?: number;
 }) {
   const tones = {
     gold: "from-[#f5d97a]/30 to-[#d4af37]/10 border-[#d4af37]/40 text-[#fff8dc]",
@@ -880,8 +886,10 @@ function StatTile({
     purple: "from-purple-500/30 to-purple-700/10 border-purple-500/40 text-purple-100",
   };
   return (
-    <div
-      className={`rounded-xl border bg-gradient-to-br ${tones[tone]} p-3 backdrop-blur`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-xl border bg-gradient-to-br ${tones[tone]} p-3 backdrop-blur transition active:scale-[0.97] hover:brightness-110 ${onClick ? "cursor-pointer" : "cursor-default"}`}
     >
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[9px] uppercase tracking-[0.2em] font-bold opacity-70">
@@ -890,10 +898,10 @@ function StatTile({
         <Icon className="h-3.5 w-3.5 opacity-60" />
       </div>
       <div className="font-display text-xl font-bold leading-tight">
-        {value}
+        <AnimatedNumber value={value} prefix={prefix} digits={digits} />
       </div>
       <div className="text-[10px] opacity-60 mt-0.5">{sub}</div>
-    </div>
+    </button>
   );
 }
 
