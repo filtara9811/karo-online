@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Coins, Loader2, Save, Plus, Trash2, Wallet } from "lucide-react";
+import { Coins, Loader2, Save, Plus, Trash2, Wallet, Zap, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminLayout,
