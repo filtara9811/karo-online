@@ -54,6 +54,7 @@ type Category = {
   is_active: boolean;
   sort_order: number;
   lead_price_inr?: number | null;
+  lead_cost_coins?: number | null;
   max_vendors_per_lead?: number | null;
 };
 type Item = {
