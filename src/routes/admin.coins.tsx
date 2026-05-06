@@ -46,6 +46,21 @@ type WalletPack = {
   sort_order: number;
 };
 
+type SourceMult = {
+  id: string;
+  source_key: string;
+  source_label: string;
+  multiplier: number;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type RateRow = {
+  id: string;
+  rate_inr: number;
+  recorded_at: string;
+};
+
 function CoinsPage() {
   const [pricing, setPricing] = useState<Pricing | null>(null);
   const [coinPacks, setCoinPacks] = useState<CoinPack[]>([]);
