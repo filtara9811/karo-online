@@ -46,8 +46,20 @@ const POTENTIAL = [
 
 function VendorDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("vendors")
+      .select("business_name, owner_name, avatar_url, status, verified")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setVendor(data as any));
+  }, [user]);
 
   const stats = useMemo(() => {
     const total = leads.length;
