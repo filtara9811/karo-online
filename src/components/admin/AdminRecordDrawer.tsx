@@ -245,21 +245,22 @@ export function AdminRecordDrawer({
         <div className="p-4 space-y-4">
           {/* Quick actions */}
           <div className="grid grid-cols-3 gap-2">
-            {entity === "vendors" && record.status === "pending" && !record.verified && (
+            {vendorNeedsApproval && (
               <button
-                onClick={toggleVerify}
+                onClick={approveVendor}
                 disabled={busy}
-                className="col-span-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-3 text-emerald-200 font-bold uppercase tracking-wider text-xs active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="click-feedback col-span-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-3 text-emerald-200 font-bold uppercase tracking-wider text-xs disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="h-4 w-4" /> Approve Vendor & Open Dashboard
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                Approve Vendor & Open Dashboard
               </button>
             )}
             <ActionTile
               onClick={toggleVerify}
               icon={ShieldCheck}
-              label={record.verified ? "Unverify" : "Verify"}
+              label={vendorNeedsApproval ? "Approve" : "Unverify"}
               active={!!record.verified}
-              tone="blue"
+              tone={vendorNeedsApproval ? "green" : "blue"}
               disabled={busy}
             />
             <ActionTile
