@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { haptic } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
