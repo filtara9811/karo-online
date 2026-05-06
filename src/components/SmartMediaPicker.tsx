@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Link as LinkIcon, Smile, Sparkles, Loader2, X, Library } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SmartMedia, detectMediaKind } from "./SmartMedia";
+import { SmartMedia } from "./SmartMedia";
 
 type Tab = "library" | "upload" | "url" | "lottie" | "emoji";
 
