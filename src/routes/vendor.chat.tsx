@@ -22,6 +22,8 @@ import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { supabase } from "@/integrations/supabase/client";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
@@ -31,6 +33,8 @@ const chatSearchSchema = z.object({
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
   vendorId: fallback(z.string(), "").default(""),
   orderId: fallback(z.string(), "").default(""),
+  leadId: fallback(z.string(), "").default(""),
+  customerId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/vendor/chat")({
