@@ -54,6 +54,7 @@ type Category = {
   is_active: boolean;
   sort_order: number;
   lead_price_inr?: number | null;
+  lead_cost_coins?: number | null;
   max_vendors_per_lead?: number | null;
 };
 type Item = {
@@ -234,6 +235,7 @@ function CatalogPage() {
         };
         if (editor.kind === "subcategory") {
           payload.lead_price_inr = d.lead_price_inr == null || (d.lead_price_inr as any) === "" ? null : Number(d.lead_price_inr);
+          payload.lead_cost_coins = d.lead_cost_coins == null || (d.lead_cost_coins as any) === "" ? 0 : Number(d.lead_cost_coins);
           payload.max_vendors_per_lead = d.max_vendors_per_lead == null || (d.max_vendors_per_lead as any) === "" ? null : Number(d.max_vendors_per_lead);
         }
         if (d.id) await supabase.from("categories").update(payload).eq("id", d.id);
@@ -809,23 +811,32 @@ function EditorForm({
       )}
 
       {editor.kind === "subcategory" && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Lead price ₹ (vendor pays)">
+        <div className="grid grid-cols-3 gap-3">
+          <Field label="Lead cost (coins)">
+            <input
+              type="number"
+              value={d.lead_cost_coins ?? ""}
+              onChange={(e) => update({ lead_cost_coins: e.target.value === "" ? null : parseInt(e.target.value) })}
+              className={inputCls}
+              placeholder="0"
+            />
+          </Field>
+          <Field label="Lead price ₹ (legacy)">
             <input
               type="number"
               value={d.lead_price_inr ?? ""}
               onChange={(e) => update({ lead_price_inr: e.target.value === "" ? null : parseFloat(e.target.value) })}
               className={inputCls}
-              placeholder="Default from settings"
+              placeholder="—"
             />
           </Field>
-          <Field label="Max vendors per lead">
+          <Field label="Max vendors / lead">
             <input
               type="number"
               value={d.max_vendors_per_lead ?? ""}
               onChange={(e) => update({ max_vendors_per_lead: e.target.value === "" ? null : parseInt(e.target.value) })}
               className={inputCls}
-              placeholder="Default 5"
+              placeholder="5"
             />
           </Field>
         </div>

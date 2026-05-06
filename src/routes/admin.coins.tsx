@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Coins, Loader2, Save, Plus, Trash2, Wallet } from "lucide-react";
+import { Coins, Loader2, Save, Plus, Trash2, Wallet, Zap, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminLayout,
@@ -46,23 +46,44 @@ type WalletPack = {
   sort_order: number;
 };
 
+type SourceMult = {
+  id: string;
+  source_key: string;
+  source_label: string;
+  multiplier: number;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type RateRow = {
+  id: string;
+  rate_inr: number;
+  recorded_at: string;
+};
+
 function CoinsPage() {
   const [pricing, setPricing] = useState<Pricing | null>(null);
   const [coinPacks, setCoinPacks] = useState<CoinPack[]>([]);
   const [walletPacks, setWalletPacks] = useState<WalletPack[]>([]);
+  const [sources, setSources] = useState<SourceMult[]>([]);
+  const [history, setHistory] = useState<RateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const [p, c, w] = await Promise.all([
+    const [p, c, w, s, h] = await Promise.all([
       supabase.from("coin_pricing_config").select("*").limit(1).maybeSingle(),
       supabase.from("coin_packs").select("*").order("sort_order"),
       supabase.from("wallet_recharge_packs").select("*").order("sort_order"),
+      supabase.from("lead_source_multipliers").select("*").order("sort_order"),
+      supabase.from("leadx_rate_history").select("*").order("recorded_at", { ascending: false }).limit(20),
     ]);
     setPricing((p.data ?? null) as Pricing | null);
     setCoinPacks((c.data ?? []) as CoinPack[]);
     setWalletPacks((w.data ?? []) as WalletPack[]);
+    setSources((s.data ?? []) as SourceMult[]);
+    setHistory((h.data ?? []) as RateRow[]);
     setLoading(false);
   };
   useEffect(() => {
@@ -72,16 +93,44 @@ function CoinsPage() {
   const savePricing = async () => {
     if (!pricing) return;
     setSaving(true);
+    // Log rate change via RPC (records history)
+    await supabase.rpc("update_coin_rate" as any, { _new_rate: pricing.coin_rate_inr });
     await supabase
       .from("coin_pricing_config")
       .update({
-        coin_rate_inr: pricing.coin_rate_inr,
         min_purchase_coins: pricing.min_purchase_coins,
         max_purchase_coins: pricing.max_purchase_coins,
         gst_percent: pricing.gst_percent,
       })
       .eq("id", pricing.id);
     setSaving(false);
+    load();
+  };
+
+  const updateSource = (id: string, patch: Partial<SourceMult>) =>
+    setSources((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const saveSource = async (s: SourceMult) => {
+    await supabase.from("lead_source_multipliers").update({
+      source_label: s.source_label,
+      multiplier: s.multiplier,
+      is_active: s.is_active,
+      sort_order: s.sort_order,
+    }).eq("id", s.id);
+  };
+  const deleteSource = async (id: string) => {
+    await supabase.from("lead_source_multipliers").delete().eq("id", id);
+    load();
+  };
+  const addSource = async () => {
+    const key = prompt("Source key (e.g. quick, whatsapp):")?.trim();
+    if (!key) return;
+    await supabase.from("lead_source_multipliers").insert({
+      source_key: key,
+      source_label: key,
+      multiplier: 1,
+      sort_order: (sources.at(-1)?.sort_order ?? 0) + 10,
+    });
+    load();
   };
 
   const updateCoinPack = (id: string, patch: Partial<CoinPack>) =>
@@ -330,6 +379,72 @@ function CoinsPage() {
           </GoldCard>
         ))}
       </div>
+
+      {/* Source Multipliers */}
+      <SectionHeader
+        icon={Zap}
+        title="Lead Source Multipliers"
+        subtitle="Quick / WhatsApp / Digital Shop — per-source coin rate adjuster"
+        onAdd={addSource}
+      />
+      <div className="grid sm:grid-cols-2 gap-3 mb-6">
+        {sources.map((s) => (
+          <GoldCard key={s.id} className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <div className="text-[9px] uppercase tracking-[0.2em] text-[#f5d97a]/60 font-bold">
+                  {s.source_key}
+                </div>
+                <input
+                  value={s.source_label}
+                  onChange={(e) => updateSource(s.id, { source_label: e.target.value })}
+                  className="w-full bg-transparent text-[#fff8dc] font-display font-bold text-base outline-none border-b border-[#d4af37]/20 focus:border-[#d4af37] pb-1"
+                />
+              </div>
+              <button
+                onClick={() => deleteSource(s.id)}
+                className="p-1.5 rounded-lg text-red-300/80 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <Field
+              label="Multiplier (× base coin cost)"
+              value={s.multiplier}
+              onChange={(v) => updateSource(s.id, { multiplier: v })}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <ActiveToggle
+                value={s.is_active}
+                onChange={(v) => updateSource(s.id, { is_active: v })}
+              />
+              <GoldButton size="sm" onClick={() => saveSource(s)}>Save</GoldButton>
+            </div>
+          </GoldCard>
+        ))}
+      </div>
+
+      {/* Rate History */}
+      <SectionHeader
+        icon={History}
+        title="Coin Rate History"
+        subtitle="Last 20 manual rate changes"
+        onAdd={() => {}}
+      />
+      <GoldCard className="p-4 mb-6">
+        {history.length === 0 ? (
+          <div className="text-center text-[#d4af37]/60 text-sm py-4">No history yet</div>
+        ) : (
+          <div className="space-y-2">
+            {history.map((h) => (
+              <div key={h.id} className="flex items-center justify-between text-sm border-b border-[#d4af37]/10 pb-2 last:border-0">
+                <span className="text-[#fff8dc]">₹{Number(h.rate_inr).toFixed(2)} / coin</span>
+                <span className="text-[#d4af37]/70 text-xs">{new Date(h.recorded_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </GoldCard>
     </AdminLayout>
   );
 }
