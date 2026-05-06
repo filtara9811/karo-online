@@ -411,6 +411,113 @@ export type Database = {
           },
         ]
       }
+      lead_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          responded_at: string | null
+          status: string
+          sub_category_name: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          responded_at?: string | null
+          status?: string
+          sub_category_name: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          responded_at?: string | null
+          status?: string
+          sub_category_name?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          accepted_at: string | null
+          accepted_vendor_id: string | null
+          address: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          images: string[]
+          item_ids: string[]
+          item_names: string[]
+          lat: number | null
+          lng: number | null
+          note: string | null
+          root_category_id: string | null
+          status: string
+          sub_category_id: string
+          sub_category_name: string
+          type_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_vendor_id?: string | null
+          address?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          images?: string[]
+          item_ids?: string[]
+          item_names?: string[]
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          root_category_id?: string | null
+          status?: string
+          sub_category_id: string
+          sub_category_name: string
+          type_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_vendor_id?: string | null
+          address?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          images?: string[]
+          item_ids?: string[]
+          item_names?: string[]
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          root_category_id?: string | null
+          status?: string
+          sub_category_id?: string
+          sub_category_name?: string
+          type_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leadx_rate_history: {
         Row: {
           id: string
@@ -981,6 +1088,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_lead: { Args: { _lead_id: string }; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
@@ -1000,6 +1108,7 @@ export type Database = {
           name: string
         }[]
       }
+      reject_lead: { Args: { _lead_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "moderator" | "support"
