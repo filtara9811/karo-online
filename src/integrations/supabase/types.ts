@@ -169,6 +169,8 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          lead_price_inr: number | null
+          max_vendors_per_lead: number | null
           name: string
           parent_id: string | null
           slug: string
@@ -184,6 +186,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_price_inr?: number | null
+          max_vendors_per_lead?: number | null
           name: string
           parent_id?: string | null
           slug: string
@@ -199,6 +203,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_price_inr?: number | null
+          max_vendors_per_lead?: number | null
           name?: string
           parent_id?: string | null
           slug?: string
@@ -452,7 +458,9 @@ export type Database = {
       leads: {
         Row: {
           accepted_at: string | null
+          accepted_count: number
           accepted_vendor_id: string | null
+          accepted_vendor_ids: string[]
           address: string | null
           created_at: string
           customer_id: string
@@ -463,7 +471,9 @@ export type Database = {
           item_ids: string[]
           item_names: string[]
           lat: number | null
+          lead_price_inr: number
           lng: number | null
+          max_slots: number
           note: string | null
           root_category_id: string | null
           status: string
@@ -474,7 +484,9 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          accepted_count?: number
           accepted_vendor_id?: string | null
+          accepted_vendor_ids?: string[]
           address?: string | null
           created_at?: string
           customer_id: string
@@ -485,7 +497,9 @@ export type Database = {
           item_ids?: string[]
           item_names?: string[]
           lat?: number | null
+          lead_price_inr?: number
           lng?: number | null
+          max_slots?: number
           note?: string | null
           root_category_id?: string | null
           status?: string
@@ -496,7 +510,9 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          accepted_count?: number
           accepted_vendor_id?: string | null
+          accepted_vendor_ids?: string[]
           address?: string | null
           created_at?: string
           customer_id?: string
@@ -507,7 +523,9 @@ export type Database = {
           item_ids?: string[]
           item_names?: string[]
           lat?: number | null
+          lead_price_inr?: number
           lng?: number | null
+          max_slots?: number
           note?: string | null
           root_category_id?: string | null
           status?: string
@@ -1090,6 +1108,17 @@ export type Database = {
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_lead_accepted_vendors: {
+        Args: { _lead_id: string }
+        Returns: {
+          avatar_url: string
+          business_name: string
+          owner_name: string
+          phone: string
+          vendor_id: string
+          whatsapp: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
