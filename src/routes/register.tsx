@@ -9,9 +9,9 @@ export const Route = createFileRoute("/register")({
 
 function Register() {
   const navigate = useNavigate();
-  const { ready, profile } = useAuth();
+  const { isAuthenticated, ready, profile } = useAuth();
   const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
-  const profileComplete = locallyOnboarded || !!(profile?.name && profile?.address);
+  const profileComplete = isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
 
   useEffect(() => {
     if (ready && profileComplete) navigate({ to: "/" });
