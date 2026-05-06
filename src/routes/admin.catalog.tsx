@@ -235,6 +235,7 @@ function CatalogPage() {
         };
         if (editor.kind === "subcategory") {
           payload.lead_price_inr = d.lead_price_inr == null || (d.lead_price_inr as any) === "" ? null : Number(d.lead_price_inr);
+          payload.lead_cost_coins = d.lead_cost_coins == null || (d.lead_cost_coins as any) === "" ? 0 : Number(d.lead_cost_coins);
           payload.max_vendors_per_lead = d.max_vendors_per_lead == null || (d.max_vendors_per_lead as any) === "" ? null : Number(d.max_vendors_per_lead);
         }
         if (d.id) await supabase.from("categories").update(payload).eq("id", d.id);
