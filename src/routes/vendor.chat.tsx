@@ -939,3 +939,41 @@ function ChatPage() {
     </div>
   );
 }
+
+function VendorLeadChatRoute({ leadId }: { leadId: string }) {
+  const [peer, setPeer] = useState<LeadChatPeer | null>(null);
+
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("customer_id, customer_name, customer_phone")
+        .eq("id", leadId)
+        .maybeSingle();
+      if (!alive || !lead) return;
+      const cust: any = lead;
+      let avatar: string | null = null;
+      const { data: prof } = await supabase
+        .from("customers")
+        .select("name, phone, avatar_url")
+        .eq("user_id", cust.customer_id)
+        .maybeSingle();
+      if (prof) {
+        avatar = (prof as any).avatar_url ?? null;
+      }
+      if (!alive) return;
+      setPeer({
+        id: cust.customer_id,
+        name: (prof as any)?.name || cust.customer_name || "Customer",
+        avatar_url: avatar,
+        phone: (prof as any)?.phone || cust.customer_phone,
+        subtitle: "Customer · Lead chat",
+      });
+    })();
+    return () => { alive = false; };
+  }, [leadId]);
+
+  return <LeadChatThread leadId={leadId} peer={peer} myRole="vendor" />;
+}
