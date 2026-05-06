@@ -23,6 +23,9 @@ import {
   GoldButton,
   PageHeader,
 } from "@/components/admin/AdminLayout";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { TileEditSheet, type SheetField } from "@/components/admin/TileEditSheet";
+import { fmtShort, MAX_LEADX_SUPPLY, haptic } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/coins")({
   head: () => ({
