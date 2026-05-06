@@ -63,8 +63,15 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
         { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` },
         () => load(),
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "lead_notifications", filter: `lead_id=eq.${leadId}` },
+        (payload) => { if ((payload.new as any)?.status === "accepted") load(); },
+      )
       .subscribe();
-    return () => { alive = false; supabase.removeChannel(ch); };
+    // Safety: poll every 4s while open in case realtime is delayed
+    const poll = setInterval(load, 4000);
+    return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [open, leadId]);
 
   if (!open) return null;
