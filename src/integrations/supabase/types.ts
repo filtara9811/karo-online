@@ -417,6 +417,45 @@ export type Database = {
           },
         ]
       }
+      lead_messages: {
+        Row: {
+          attachment: Json
+          body: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          lead_id: string
+          read_at: string | null
+          recipient_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          attachment?: Json
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          lead_id: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          attachment?: Json
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          lead_id?: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: []
+      }
       lead_notifications: {
         Row: {
           created_at: string
