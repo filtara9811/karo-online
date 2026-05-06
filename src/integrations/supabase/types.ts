@@ -275,6 +275,7 @@ export type Database = {
           id: string
           max_purchase_coins: number
           min_purchase_coins: number
+          total_supply: number
           updated_at: string
           updated_by: string | null
         }
@@ -284,6 +285,7 @@ export type Database = {
           id?: string
           max_purchase_coins?: number
           min_purchase_coins?: number
+          total_supply?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -293,6 +295,7 @@ export type Database = {
           id?: string
           max_purchase_coins?: number
           min_purchase_coins?: number
+          total_supply?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -1224,6 +1227,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      get_leadx_market_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
