@@ -177,8 +177,8 @@ function PeopleCard({
   bucket: Bucket;
 }) {
   return (
-    <Link to={to}>
-      <GoldCard className="p-5 h-full hover:scale-[1.01] transition cursor-pointer">
+    <Link to={to} onClick={() => haptic()}>
+      <GoldCard className="p-5 h-full hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer">
         <div className="flex items-start justify-between mb-3">
           <div
             className="h-11 w-11 rounded-xl grid place-items-center"
@@ -190,16 +190,12 @@ function PeopleCard({
           </div>
           <TrendingUp className="h-4 w-4 text-[#d4af37]/60" />
         </div>
-        <p
-          className="font-display text-4xl font-bold leading-none"
-          style={{
-            background: "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          {bucket.total}
-        </p>
+        <AnimatedNumber
+          value={bucket.total}
+          className="font-display text-4xl font-bold leading-none block bg-clip-text text-transparent"
+          digits={0}
+        />
+      </GoldCard>
         <p className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/85 font-bold mt-2">
           Total {label}
         </p>
