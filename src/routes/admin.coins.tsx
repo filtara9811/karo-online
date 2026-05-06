@@ -104,12 +104,7 @@ type MarketStats = {
   rate_history: Array<{ rate: number; at: string }>;
 };
 
-function fmt(n: number) {
-  if (n >= 1e7) return (n / 1e7).toFixed(2) + " Cr";
-  if (n >= 1e5) return (n / 1e5).toFixed(2) + " L";
-  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-  return n.toLocaleString("en-IN");
-}
+const fmt = (n: number) => fmtShort(n);
 
 function LeadXMarketPage() {
   const [pricing, setPricing] = useState<Pricing | null>(null);
