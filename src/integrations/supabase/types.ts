@@ -1215,6 +1215,7 @@ export type Database = {
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       get_admin_stats: { Args: never; Returns: Json }
       get_lead_accepted_vendors: {
         Args: { _lead_id: string }
@@ -1252,6 +1253,7 @@ export type Database = {
         Returns: Json
       }
       update_coin_rate: { Args: { _new_rate: number }; Returns: undefined }
+      wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "moderator" | "support"
