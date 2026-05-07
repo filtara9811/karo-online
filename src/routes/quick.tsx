@@ -623,6 +623,14 @@ function QuickPage() {
         open={vendorListOpen}
         category={selectedSub?.name ?? "Service"}
         leadId={activeLeadId}
+        expectedVendors={matchInfo?.notified ?? 0}
+        onTryAgain={async () => {
+          if (!activeLeadId) return;
+          setVendorListOpen(false);
+          setFindingOpen(true);
+          const { data } = await supabase.rpc("match_lead_vendors", { _lead_id: activeLeadId });
+          setMatchInfo({ notified: Number((data as any)?.notified ?? 0), requestedAt: Date.now() });
+        }}
         onClose={() => setVendorListOpen(false)}
       />
 
