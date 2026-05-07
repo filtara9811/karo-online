@@ -1276,6 +1276,7 @@ export type Database = {
           name: string
         }[]
       }
+      match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
