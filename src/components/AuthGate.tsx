@@ -20,8 +20,10 @@ export function AuthGate() {
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
   const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
 
-  // Profile is "complete" when basic fields are filled
-  const profileComplete = isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
+  // Profile is complete when this device was already onboarded, or the signed-in
+  // session has a complete customer profile. This prevents repeated signup sheets
+  // on mobile app reopen while backend auth providers are still being finalized.
+  const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
   const needsGate = !skip && !profileComplete;
 
   // Auto-open ~1.5s after first ready render

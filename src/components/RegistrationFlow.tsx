@@ -116,6 +116,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
   const [lookupBusy, setLookupBusy] = useState(false);
+  const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
+  const [manualPhone, setManualPhone] = useState("");
+  const [existingAccountHint, setExistingAccountHint] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Prefill email/name from Google session
@@ -186,20 +189,29 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handlePhoneVerified = async () => {
     setPhoneVerified(true);
     setLookupBusy(true);
+    setExistingAccountHint(null);
     try {
       const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
-      if (isAuthenticated && !error && data && data.length > 0) {
+      if (!error && data && data.length > 0) {
         const row = data[0] as { name: string | null; gender: string | null; email: string | null; address: string | null };
-        // Already registered → auto login & complete
         if (row.name) setName(row.name);
         if (row.gender) setGender(row.gender);
         if (row.email) setEmail(row.email);
         if (row.address) setAddress(row.address);
-        toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        setTimeout(() => onComplete?.(), 800);
+        if (isAuthenticated) {
+          toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
+          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+          await refreshProfile();
+          setTimeout(() => onComplete?.(), 700);
+          return;
+        }
+        setExistingAccountHint(
+          row.email
+            ? `Account mil gaya: ${row.email}. Continue ke liye Google se sign in karein.`
+            : "Account mil gaya. Continue ke liye Google se sign in karein.",
+        );
+        toast.success("Mobile number registered hai — full form skip hoga.");
         return;
       }
     } catch (e) {
@@ -241,6 +253,18 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setTimeout(fill, 1500);
   };
 
+  const submitManualPhone = () => {
+    const digits = manualPhone.replace(/\D/g, "").slice(-10);
+    if (digits.length !== 10) {
+      toast.error("10 digit mobile number daaliye");
+      return;
+    }
+    setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
+    setManualPhoneOpen(false);
+    setManualPhone("");
+    setTimeout(startInlineOtp, 350);
+  };
+
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
     if (!sim) return;
@@ -248,14 +272,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setPicker(null);
     if (value === "manual") {
       setPhone("");
-      setTimeout(() => {
-        const v = window.prompt("Apna 10-digit mobile number daaliye");
-        if (v && v.replace(/\D/g, "").length >= 10) {
-          const digits = v.replace(/\D/g, "").slice(-10);
-          setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
-          setTimeout(startInlineOtp, 400);
-        }
-      }, 250);
+      setManualPhoneOpen(true);
       return;
     }
     setPhone(sim.number);
@@ -304,22 +321,16 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   const handleFinish = async () => {
     if (user) {
-      const { error } = await supabase
-        .from("customers")
-        .upsert(
-          {
-            user_id: user.id,
-            name: name.trim() || null,
-            gender: gender || null,
-            phone: phone || null,
-            email: email || user.email || null,
-            address: address || null,
-          },
-          { onConflict: "user_id" },
-        );
+      const { error } = await supabase.rpc("save_customer_profile", {
+        _name: name.trim(),
+        _gender: gender ?? "",
+        _phone: phone,
+        _email: email || user.email || "",
+        _address: address,
+      });
       if (error) {
         console.error("[customers upsert]", error);
-        toast.error("Profile save fail hua — phir try karo");
+        toast.error(error.message || "Profile save fail hua — phir try karo");
       } else {
         window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
         window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
@@ -343,6 +354,14 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         return;
       }
       if (result.redirected) return;
+      if (phoneVerified && existingAccountHint) {
+        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+        await refreshProfile();
+        toast.success("Welcome back — profile already exists");
+        onComplete?.();
+        return;
+      }
       toast.success("Google account connected ✓");
     } catch (e) {
       console.error(e);
@@ -516,6 +535,20 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {existingAccountHint && (
+                  <div className="rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/75 px-4 py-3 text-center shadow-gold-glow">
+                    <p className="text-xs font-medium text-[color:oklch(0.30_0.06_85)]">{existingAccountHint}</p>
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleBusy}
+                      className="btn-3d mt-3 w-full rounded-xl py-2.5 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-60"
+                    >
+                      {googleBusy ? "Opening Google…" : "Continue with Google"}
+                    </button>
                   </div>
                 )}
               </div>
@@ -715,6 +748,61 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
+      {manualPhoneOpen && (
+        <div className="fixed inset-0 z-[65] flex items-end justify-center">
+          <button
+            aria-label="Close mobile entry"
+            onClick={() => setManualPhoneOpen(false)}
+            className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.58)] backdrop-blur-md"
+            style={{ animation: "overlay-in 0.25s ease-out" }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-6 pt-4 pb-8"
+            style={{ animation: "sheet-up 0.38s cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
+            <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent opacity-80" />
+            <div className="text-center mb-5">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[color:oklch(0.84_0.15_85/0.7)] mb-1">✦ Mobile ✦</p>
+              <h2 className="font-display text-2xl text-gold-gradient leading-tight">Enter Mobile Number</h2>
+              <p className="mt-1 text-xs text-muted-foreground italic">Existing number milte hi form skip ho jayega</p>
+            </div>
+            <label className="block rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/85 px-4 py-3 shadow-gold-glow">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.50_0.10_82)]">Mobile number</span>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="font-display text-lg text-[color:oklch(0.42_0.10_82)]">+91</span>
+                <input
+                  autoFocus
+                  value={manualPhone}
+                  onChange={(e) => setManualPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitManualPhone(); }}
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="10 digit number"
+                  className="min-w-0 flex-1 bg-transparent border-0 outline-none text-xl font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.45)]"
+                />
+              </div>
+            </label>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setManualPhoneOpen(false)}
+                className="rounded-2xl py-3 text-xs uppercase tracking-[0.24em] text-[color:oklch(0.45_0.08_85)] border border-[color:oklch(0.78_0.14_82/0.35)] bg-white/70"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitManualPhone}
+                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)]"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <LuxPicker
         open={picker === "manager"}
         title="Choose Your Relation Manager"

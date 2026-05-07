@@ -1274,10 +1274,113 @@ export type Database = {
           exists_flag: boolean
           gender: string
           name: string
+          user_id: string
         }[]
       }
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
+      normalize_email: { Args: { _email: string }; Returns: string }
+      normalize_phone10: { Args: { _phone: string }; Returns: string }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
+      save_customer_profile: {
+        Args: {
+          _address: string
+          _email: string
+          _gender: string
+          _name: string
+          _phone: string
+        }
+        Returns: {
+          address: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_url: string | null
+          signup_method: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          verified: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_vendor_profile: {
+        Args: {
+          _aadhaar: string
+          _business_name: string
+          _deals_in: string
+          _entity: string
+          _facebook: string
+          _google_place_id: string
+          _gst: string
+          _instagram: string
+          _manager_email: string
+          _owner_name: string
+          _pan: string
+          _plan: string
+          _referral: string
+          _role: string
+          _trade: string
+          _website: string
+          _whatsapp: string
+        }
+        Returns: {
+          aadhaar: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          auto_accept_leads: boolean
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string
+          deals_in: string | null
+          email: string | null
+          entity: string | null
+          facebook: string | null
+          google_place_id: string | null
+          gst: string | null
+          id: string
+          instagram: string | null
+          is_blocked: boolean
+          lat: number | null
+          lng: number | null
+          manager_email: string | null
+          owner_name: string | null
+          pan: string | null
+          plan: string | null
+          referral: string | null
+          role: string | null
+          service_radius_km: number
+          status: string
+          tags: string[] | null
+          trade: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+          website: string | null
+          whatsapp: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vendors"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
         Returns: Json

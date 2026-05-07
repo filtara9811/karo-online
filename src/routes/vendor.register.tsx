@@ -79,7 +79,7 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 
 function VendorRegister() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, ready } = useAuth();
+  const { user, isAuthenticated, ready, profile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
   const [, setSaving] = useState(false);
@@ -120,6 +120,11 @@ function VendorRegister() {
   useEffect(() => {
     if (dealsIn) setTimeout(() => businessInputRef.current?.focus(), 250);
   }, [dealsIn]);
+
+  useEffect(() => {
+    if (profile?.phone && !whatsapp) setWhatsapp(profile.phone);
+    if ((profile?.email || user?.email) && !managerEmail) setManagerEmail(profile?.email || user?.email || "");
+  }, [managerEmail, profile?.email, profile?.phone, user?.email, whatsapp]);
 
   // Sheet drag
   const [vh, setVh] = useState(800);
@@ -208,34 +213,29 @@ function VendorRegister() {
     }
     setPlanChosen(planId);
     setSaving(true);
-    const { error } = await supabase.from("vendors").upsert(
-      {
-        user_id: user.id,
-        role,
-        owner_name: ownerName.trim() || null,
-        entity,
-        trade,
-        deals_in: dealsIn,
-        business_name: businessName.trim() || null,
-        whatsapp: whatsapp || null,
-        manager_email: managerEmail.trim() || null,
-        referral: referral.trim() || null,
-        instagram: insta.trim() || null,
-        facebook: fb.trim() || null,
-        website: website.trim() || null,
-        google_place_id: gmbPlaceId.trim() || null,
-        aadhaar: aadhaar || null,
-        pan: pan.trim() || null,
-        gst: gst.trim() || null,
-        plan: planId,
-        status: "pending",
-      },
-      { onConflict: "user_id" },
-    );
+    const { error } = await supabase.rpc("save_vendor_profile", {
+      _role: role ?? "",
+      _owner_name: ownerName.trim(),
+      _entity: entity ?? "",
+      _trade: trade ?? "",
+      _deals_in: dealsIn ?? "",
+      _business_name: businessName.trim(),
+      _whatsapp: whatsapp || profile?.phone || "",
+      _manager_email: managerEmail.trim() || user.email || profile?.email || "",
+      _referral: referral.trim(),
+      _instagram: insta.trim(),
+      _facebook: fb.trim(),
+      _website: website.trim(),
+      _google_place_id: gmbPlaceId.trim(),
+      _aadhaar: aadhaar,
+      _pan: pan.trim(),
+      _gst: gst.trim(),
+      _plan: planId,
+    });
     setSaving(false);
     if (error) {
       console.error("[vendors upsert]", error);
-      toast.error("Vendor save fail hua — phir try karein");
+      toast.error(error.message || "Vendor save fail hua — phir try karein");
       return;
     }
     setShowJoined(true);
@@ -375,7 +375,7 @@ function VendorRegister() {
               <div className="mt-10 text-center px-6">
                 <p className="font-display text-2xl text-silver-gradient">Existing vendor?</p>
                 <p className="text-sm text-[color:oklch(0.45_0.01_260)] mt-2 italic">
-                  Login coming next phase. Switch to <strong>Registered</strong> to onboard.
+                  Same customer mobile/email se vendor panel open hoga. Registered tab me apni details complete karein.
                 </p>
               </div>
             ) : step < 3 ? (
