@@ -535,6 +535,20 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                     </div>
                   </div>
                 )}
+
+                {existingAccountHint && (
+                  <div className="rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/75 px-4 py-3 text-center shadow-gold-glow">
+                    <p className="text-xs font-medium text-[color:oklch(0.30_0.06_85)]">{existingAccountHint}</p>
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleBusy}
+                      className="btn-3d mt-3 w-full rounded-xl py-2.5 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-60"
+                    >
+                      {googleBusy ? "Opening Google…" : "Continue with Google"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -732,6 +746,61 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
+      {manualPhoneOpen && (
+        <div className="fixed inset-0 z-[65] flex items-end justify-center">
+          <button
+            aria-label="Close mobile entry"
+            onClick={() => setManualPhoneOpen(false)}
+            className="absolute inset-0 bg-[oklch(0.85_0.03_85/0.58)] backdrop-blur-md"
+            style={{ animation: "overlay-in 0.25s ease-out" }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-6 pt-4 pb-8"
+            style={{ animation: "sheet-up 0.38s cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
+            <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent opacity-80" />
+            <div className="text-center mb-5">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[color:oklch(0.84_0.15_85/0.7)] mb-1">✦ Mobile ✦</p>
+              <h2 className="font-display text-2xl text-gold-gradient leading-tight">Enter Mobile Number</h2>
+              <p className="mt-1 text-xs text-muted-foreground italic">Existing number milte hi form skip ho jayega</p>
+            </div>
+            <label className="block rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/85 px-4 py-3 shadow-gold-glow">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.50_0.10_82)]">Mobile number</span>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="font-display text-lg text-[color:oklch(0.42_0.10_82)]">+91</span>
+                <input
+                  autoFocus
+                  value={manualPhone}
+                  onChange={(e) => setManualPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitManualPhone(); }}
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="10 digit number"
+                  className="min-w-0 flex-1 bg-transparent border-0 outline-none text-xl font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.45)]"
+                />
+              </div>
+            </label>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setManualPhoneOpen(false)}
+                className="rounded-2xl py-3 text-xs uppercase tracking-[0.24em] text-[color:oklch(0.45_0.08_85)] border border-[color:oklch(0.78_0.14_82/0.35)] bg-white/70"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitManualPhone}
+                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)]"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <LuxPicker
         open={picker === "manager"}
         title="Choose Your Relation Manager"
