@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Mic, Plus, Star, ShieldCheck,
+  Mic, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
@@ -11,7 +11,7 @@ import { VariationSheet, type VariationItem } from "@/components/VariationSheet"
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { useGeolocation } from "@/hooks/use-geolocation";
+import { useGeolocation, type GeoState } from "@/hooks/use-geolocation";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -140,6 +140,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 function QuickPage() {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLElement | null>(null);
+  const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
 
@@ -287,11 +288,7 @@ function QuickPage() {
     return () => { cancelled = true; };
   }, [selectedSub, items]);
 
-  const filteredVendors = useMemo(() => {
-    if (realVendors.length > 0) return realVendors;
-    const key = selectedSub ? SLUG_TO_VENDOR_KEY[selectedSub.slug] : "ac";
-    return VENDORS_BY_CAT[key ?? "ac"] ?? DEFAULT_VENDORS;
-  }, [selectedSub, realVendors]);
+  const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
   // ---- UI state ----
   const [needsOpen, setNeedsOpen] = useState(false);
@@ -300,6 +297,7 @@ function QuickPage() {
   const [findingOpen, setFindingOpen] = useState(false);
   const [vendorListOpen, setVendorListOpen] = useState(false);
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+  const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
@@ -334,7 +332,7 @@ function QuickPage() {
     >
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} />
       </section>
 
       {/* MIDDLE — search + service cards */}
@@ -357,13 +355,6 @@ function QuickPage() {
         }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={() => navigate({ to: "/home" })}
-            aria-label="Back"
-            className="h-11 w-11 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
-          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
@@ -583,7 +574,9 @@ function QuickPage() {
                 item_names: itemNames,
                 note: payload.note || null,
                 images: payload.images ?? [],
-                address: (profile as any)?.address ?? null,
+                address: (profile as any)?.address ?? geo.label ?? null,
+                lat: geo.lat,
+                lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
               })
@@ -599,7 +592,8 @@ function QuickPage() {
             const { data: matchRes, error: matchErr } = await supabase.rpc("match_lead_vendors", {
               _lead_id: lead.id,
             });
-            const notified = (matchRes as any)?.notified ?? 0;
+            const notified = Number((matchRes as any)?.notified ?? 0);
+            setMatchInfo({ notified, requestedAt: Date.now() });
             if (matchErr) {
               toast.error(matchErr.message || "Vendor matching fail");
             } else if (notified > 0) {
@@ -629,6 +623,14 @@ function QuickPage() {
         open={vendorListOpen}
         category={selectedSub?.name ?? "Service"}
         leadId={activeLeadId}
+        expectedVendors={matchInfo?.notified ?? 0}
+        onTryAgain={async () => {
+          if (!activeLeadId) return;
+          setVendorListOpen(false);
+          setFindingOpen(true);
+          const { data } = await supabase.rpc("match_lead_vendors", { _lead_id: activeLeadId });
+          setMatchInfo({ notified: Number((data as any)?.notified ?? 0), requestedAt: Date.now() });
+        }}
         onClose={() => setVendorListOpen(false)}
       />
 
@@ -643,9 +645,8 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }) {
+function FakeMap({ vendors, pulseKey, geo }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const geo = useGeolocation();
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
     mode: "none" | "pinch" | "pan";

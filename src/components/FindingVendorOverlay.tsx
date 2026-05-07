@@ -10,11 +10,13 @@ type Step = {
 };
 
 const STEPS: Step[] = [
-  { key: "gold", label: "Gold vendor", km: "1.5 km", tone: "gold" },
-  { key: "silver", label: "Silver vendor", km: "3.5 km", tone: "silver" },
-  { key: "basic", label: "Basic vendor", km: "6.0 km", tone: "basic" },
-  { key: "vendor", label: "Vendor request", km: "broadcast", tone: "vendor" },
+  { key: "near", label: "0–1 km", km: "10 sec", tone: "gold" },
+  { key: "three", label: "3 km", km: "10 sec", tone: "silver" },
+  { key: "five", label: "5 km", km: "10 sec", tone: "basic" },
+  { key: "ten", label: "10 km", km: "10 sec", tone: "vendor" },
 ];
+
+const STEP_MS = 10_000;
 
 type Props = {
   open: boolean;
@@ -43,11 +45,10 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
     if (!open) return;
     setActiveStep(0);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    // Slightly slower per-step so the progress feels smooth
     STEPS.forEach((_, i) => {
-      timers.push(setTimeout(() => setActiveStep(i + 1), (i + 1) * 1100));
+      timers.push(setTimeout(() => setActiveStep(i + 1), (i + 1) * STEP_MS));
     });
-    timers.push(setTimeout(() => onComplete(), STEPS.length * 1100 + 800));
+    timers.push(setTimeout(() => onComplete(), STEPS.length * STEP_MS + 500));
     return () => {
       timers.forEach(clearTimeout);
     };
@@ -209,7 +210,7 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
                   className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-gold-glow font-display text-[11px] font-bold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap"
                 >
                   {activeStep < STEPS.length
-                    ? `Pinging ${STEPS[activeStep].label}…`
+                    ? `Finding vendors in ${STEPS[activeStep].label} radius…`
                     : "Match found! Loading vendors…"}
                 </motion.div>
               </AnimatePresence>
@@ -238,7 +239,7 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: current ? 1.1 : 1, opacity: 1 }}
                     transition={{ delay: i * 0.1, type: "spring", stiffness: 280, damping: 18 }}
-                    className={`h-12 w-12 rounded-2xl grid place-items-center border-2 shadow-md ${
+                    className={`h-9 w-9 rounded-xl grid place-items-center border-2 shadow-md ${
                       done
                         ? "bg-emerald-500 border-emerald-600 text-white"
                         : current
@@ -249,20 +250,20 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
                     {current && (
                       <span
                         aria-hidden
-                        className="absolute inset-0 rounded-2xl border-2 border-[#d4af37]"
+                        className="absolute inset-0 rounded-xl border-2 border-[#d4af37]"
                         style={{ animation: "ping-slow 1.4s ease-out infinite" }}
                       />
                     )}
                     {done ? (
-                      <Check className="h-5 w-5" strokeWidth={3} />
+                      <Check className="h-4 w-4" strokeWidth={3} />
                     ) : s.tone === "vendor" ? (
-                      <BadgeCheck className="h-5 w-5" strokeWidth={2.4} />
+                      <BadgeCheck className="h-4 w-4" strokeWidth={2.4} />
                     ) : s.tone === "gold" ? (
-                      <Star className="h-5 w-5" fill="currentColor" />
+                      <Star className="h-4 w-4" fill="currentColor" />
                     ) : s.tone === "silver" ? (
-                      <Star className="h-5 w-5" />
+                      <Star className="h-4 w-4" />
                     ) : (
-                      <BadgeCheck className="h-5 w-5" strokeWidth={2.4} />
+                      <BadgeCheck className="h-4 w-4" strokeWidth={2.4} />
                     )}
                   </motion.div>
                   <span className="text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)] text-center leading-tight">

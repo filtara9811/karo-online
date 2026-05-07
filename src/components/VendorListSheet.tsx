@@ -21,6 +21,8 @@ type Props = {
   open: boolean;
   category: string | null;
   leadId: string | null;
+  expectedVendors?: number;
+  onTryAgain?: () => Promise<void> | void;
   onClose: () => void;
 };
 
@@ -29,7 +31,7 @@ const FALLBACK_AVATAR =
 const COVER =
   "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
 
-export function VendorListSheet({ open, category, leadId, onClose }: Props) {
+export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
   const navigate = useNavigate();
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,11 +144,29 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
                 <Loader2 className="h-6 w-6 animate-spin text-[color:oklch(0.55_0.10_82)]" />
               </motion.div>
               <p className="mt-4 text-sm font-semibold text-slate-600">
-                {loadError ?? "Abhi kisi vendor ne accept nahi kiya."}
+                {loadError ?? (expectedVendors > 0 ? "Abhi kisi vendor ne accept nahi kiya." : "Yahan vendor available nahi hai.")}
               </p>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                Jaise hi vendor accept karega, uski profile yahin call aur chat option ke saath aa jayegi.
+                {expectedVendors > 0
+                  ? "Jaise hi vendor accept karega, uski profile yahin call aur chat option ke saath aa jayegi."
+                  : "Dobara try karein ya cancel karke home screen par wapas ja sakte hain."}
               </p>
+              <div className="mt-5 flex gap-2 justify-center">
+                {onTryAgain && (
+                  <button
+                    onClick={() => onTryAgain()}
+                    className="px-4 py-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white font-display text-sm font-bold active:scale-95"
+                  >
+                    Try again
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           ) : (
             vendors.map((v, i) => (
