@@ -121,6 +121,11 @@ function VendorRegister() {
     if (dealsIn) setTimeout(() => businessInputRef.current?.focus(), 250);
   }, [dealsIn]);
 
+  useEffect(() => {
+    if (profile?.phone && !whatsapp) setWhatsapp(profile.phone);
+    if ((profile?.email || user?.email) && !managerEmail) setManagerEmail(profile?.email || user?.email || "");
+  }, [managerEmail, profile?.email, profile?.phone, user?.email, whatsapp]);
+
   // Sheet drag
   const [vh, setVh] = useState(800);
   const SNAP_FULL = vh * 0.06;
@@ -370,7 +375,7 @@ function VendorRegister() {
               <div className="mt-10 text-center px-6">
                 <p className="font-display text-2xl text-silver-gradient">Existing vendor?</p>
                 <p className="text-sm text-[color:oklch(0.45_0.01_260)] mt-2 italic">
-                  Login coming next phase. Switch to <strong>Registered</strong> to onboard.
+                  Same customer mobile/email se vendor panel open hoga. Registered tab me apni details complete karein.
                 </p>
               </div>
             ) : step < 3 ? (
