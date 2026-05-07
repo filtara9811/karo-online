@@ -321,22 +321,16 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   const handleFinish = async () => {
     if (user) {
-      const { error } = await supabase
-        .from("customers")
-        .upsert(
-          {
-            user_id: user.id,
-            name: name.trim() || null,
-            gender: gender || null,
-            phone: phone || null,
-            email: email || user.email || null,
-            address: address || null,
-          },
-          { onConflict: "user_id" },
-        );
+      const { error } = await supabase.rpc("save_customer_profile", {
+        _name: name.trim() || null,
+        _gender: gender || null,
+        _phone: phone || null,
+        _email: email || user.email || null,
+        _address: address || null,
+      });
       if (error) {
         console.error("[customers upsert]", error);
-        toast.error("Profile save fail hua — phir try karo");
+        toast.error(error.message || "Profile save fail hua — phir try karo");
       } else {
         window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
         window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
