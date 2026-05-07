@@ -374,6 +374,19 @@ function ProfilePage() {
         {editing && <EditCardSheet card={editing} onClose={() => setEditing(null)} />}
       </AnimatePresence>
 
+      {/* Personal business card editor (single-press = details, long-press = flip) */}
+      <AnimatePresence>
+        {cardSheet && (
+          <BusinessCardSheet
+            mode={cardSheet}
+            userId={user?.id}
+            profile={profile}
+            refreshProfile={refreshProfile}
+            onClose={() => setCardSheet(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Row detail sheet */}
       <AnimatePresence>
         {activeRow && (
