@@ -456,8 +456,12 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
-function DashboardCardVisual({ card }: { card: DashCard }) {
+function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: CustomerProfile | null }) {
   if (card.type === "personal") {
+    const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
+    const showName = vis.name !== false;
+    const showPhone = vis.phone !== false;
+    const showEmail = vis.email !== false;
     return (
       <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
@@ -467,23 +471,23 @@ function DashboardCardVisual({ card }: { card: DashCard }) {
             {card.subtitle}
           </span>
           <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
-            {card.title}
+            {profile?.shop_name || card.title}
           </h3>
         </div>
         <div className="relative px-4 mt-2 flex items-start gap-3">
           <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] flex-shrink-0 shadow-sm">
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <img src={profile?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
-            <MiniRow Icon={User} text="Name" />
-            <MiniRow Icon={Phone} text="Contact" />
-            <MiniRow Icon={Mail} text="Gmail" />
+            {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
+            {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
+            {showEmail && <MiniRow Icon={Mail} text={profile?.email || "Email"} wrap />}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
-        <FooterBand card={card} />
+        <FooterBand card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }} />
       </div>
     );
   }
