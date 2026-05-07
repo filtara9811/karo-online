@@ -30,6 +30,7 @@ import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
@@ -148,6 +149,11 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CCodeRoute = CCodeRouteImport.update({
+  id: '/c/$code',
+  path: '/c/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminVendorsRoute = AdminVendorsRouteImport.update({
   id: '/admin/vendors',
   path: '/admin/vendors',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
@@ -341,6 +350,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
+    | '/c/$code'
     | '/product/$id'
     | '/vendor/chat'
     | '/vendor/dashboard'
@@ -376,6 +386,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
+    | '/c/$code'
     | '/product/$id'
     | '/vendor/chat'
     | '/vendor/dashboard'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/vendors'
+    | '/c/$code'
     | '/product/$id'
     | '/vendor/chat'
     | '/vendor/dashboard'
@@ -447,6 +459,7 @@ export interface RootRouteChildren {
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
+  CCodeRoute: typeof CCodeRoute
   ProductIdRoute: typeof ProductIdRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
@@ -608,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$code': {
+      id: '/c/$code'
+      path: '/c/$code'
+      fullPath: '/c/$code'
+      preLoaderRoute: typeof CCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/vendors': {
       id: '/admin/vendors'
       path: '/admin/vendors'
@@ -719,6 +739,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminVendorsRoute: AdminVendorsRoute,
+  CCodeRoute: CCodeRoute,
   ProductIdRoute: ProductIdRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,

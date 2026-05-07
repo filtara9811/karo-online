@@ -19,7 +19,7 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
 import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth, type CustomerProfile } from "@/hooks/use-auth";
+import { useAuth, type CustomerProfile, type CardFieldVisibility } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
@@ -110,6 +110,9 @@ function ProfilePage() {
   const { signOut, user, profile, refreshProfile } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
+  const [cardSheet, setCardSheet] = useState<null | "edit" | "flip">(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = useRef(false);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
@@ -187,20 +190,48 @@ function ProfilePage() {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {CARDS.map((card) => (
-            <motion.button
-              key={card.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setEditing(card)}
-              className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
-              style={{ aspectRatio: "1.7 / 1" }}
-            >
-              <DashboardCardVisual card={card} />
-              <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
-                <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
-              </span>
-            </motion.button>
-          ))}
+          {CARDS.map((card) => {
+            const isPersonal = card.type === "personal";
+            const startPress = () => {
+              if (!isPersonal) return;
+              longPressedRef.current = false;
+              pressTimer.current = setTimeout(() => {
+                longPressedRef.current = true;
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
+                setCardSheet("flip");
+              }, 480);
+            };
+            const cancelPress = () => {
+              if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+            };
+            const endPress = () => {
+              cancelPress();
+              if (longPressedRef.current) { longPressedRef.current = false; return; }
+            };
+            return (
+              <motion.button
+                key={card.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (longPressedRef.current) { longPressedRef.current = false; return; }
+                  if (isPersonal) setCardSheet("edit");
+                  else setEditing(card);
+                }}
+                onPointerDown={startPress}
+                onPointerUp={endPress}
+                onPointerLeave={cancelPress}
+                onPointerCancel={cancelPress}
+                onContextMenu={(e) => e.preventDefault()}
+                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+                style={{ aspectRatio: "1.7 / 1" }}
+              >
+                <DashboardCardVisual card={card} profile={isPersonal ? profile : null} />
+                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                  <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Dot indicators */}
@@ -227,7 +258,7 @@ function ProfilePage() {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} t={t} />
+            <CardDetails type={activeCard.type} t={t} profile={profile} />
           </motion.section>
         )}
         {activeCard.type === "orders" && (
@@ -343,6 +374,19 @@ function ProfilePage() {
         {editing && <EditCardSheet card={editing} onClose={() => setEditing(null)} />}
       </AnimatePresence>
 
+      {/* Personal business card editor (single-press = details, long-press = flip) */}
+      <AnimatePresence>
+        {cardSheet && (
+          <BusinessCardSheet
+            mode={cardSheet}
+            userId={user?.id}
+            profile={profile}
+            refreshProfile={refreshProfile}
+            onClose={() => setCardSheet(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Row detail sheet */}
       <AnimatePresence>
         {activeRow && (
@@ -425,8 +469,12 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
-function DashboardCardVisual({ card }: { card: DashCard }) {
+function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: CustomerProfile | null }) {
   if (card.type === "personal") {
+    const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
+    const showName = vis.name !== false;
+    const showPhone = vis.phone !== false;
+    const showEmail = vis.email !== false;
     return (
       <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
@@ -436,23 +484,23 @@ function DashboardCardVisual({ card }: { card: DashCard }) {
             {card.subtitle}
           </span>
           <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
-            {card.title}
+            {profile?.shop_name || card.title}
           </h3>
         </div>
         <div className="relative px-4 mt-2 flex items-start gap-3">
           <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] flex-shrink-0 shadow-sm">
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <img src={profile?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
-            <MiniRow Icon={User} text="Name" />
-            <MiniRow Icon={Phone} text="Contact" />
-            <MiniRow Icon={Mail} text="Gmail" />
+            {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
+            {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
+            {showEmail && <MiniRow Icon={Mail} text={profile?.email || "Email"} wrap />}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
-        <FooterBand card={card} />
+        <FooterBand card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }} />
       </div>
     );
   }
@@ -558,27 +606,28 @@ function FooterBand({ card }: { card: DashCard }) {
   );
 }
 
-function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
+function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?: boolean }) {
   return (
-    <div className="flex items-center gap-2">
-      <Icon className="h-3.5 w-3.5 text-slate-700" strokeWidth={2} />
-      <span>{text}</span>
+    <div className="flex items-start gap-2">
+      <Icon className="h-3.5 w-3.5 text-slate-700 mt-0.5 flex-shrink-0" strokeWidth={2} />
+      <span className={wrap ? "break-all leading-tight" : "truncate"}>{text}</span>
     </div>
   );
 }
 
 
 
-function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => string; profile?: CustomerProfile | null }) {
   if (type !== "personal") return null;
+  const dash = "—";
   return (
     <div className="space-y-2.5">
       <SectionTitle>{t("personal_details")}</SectionTitle>
-      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
-      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
-      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
-      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
-      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
+      <DetailRow Icon={User} label={t("full_name")} value={profile?.name || dash} />
+      <DetailRow Icon={Phone} label={t("contact")} value={profile?.phone || dash} />
+      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || dash} wrap />
+      <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || dash} wrap />
+      <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || dash} />
     </div>
   );
 }
@@ -589,15 +638,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; value: string }) {
+function DetailRow({ Icon, label, value, wrap }: { Icon: typeof User; label: string; value: string; wrap?: boolean }) {
   return (
-    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-center gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
-      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-start gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200 flex-shrink-0">
         <Icon className="h-5 w-5 text-amber-700" strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
+        <p className={`text-sm text-slate-800 font-medium ${wrap ? "break-all" : "truncate"}`}>{value}</p>
       </div>
     </div>
   );
@@ -973,3 +1022,248 @@ function SheetActions({
     </div>
   );
 }
+
+/* ===========================================================
+   BUSINESS / VISITING CARD SHEET
+   - mode "edit": edit fields + on/off visibility + link + share
+   - mode "flip": back side image upload + share + counters
+   =========================================================== */
+function BusinessCardSheet({
+  mode, userId, profile, refreshProfile, onClose,
+}: {
+  mode: "edit" | "flip";
+  userId?: string;
+  profile: CustomerProfile | null;
+  refreshProfile: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<"edit" | "flip">(mode);
+  const [name, setName] = useState(profile?.name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [email, setEmail] = useState(profile?.email ?? "");
+  const [address, setAddress] = useState(profile?.address ?? "");
+  const [company, setCompany] = useState(profile?.shop_name ?? "");
+  const [link, setLink] = useState(profile?.card_link_url ?? "");
+  const initialVis: Required<CardFieldVisibility> = {
+    name: profile?.card_field_visibility?.name !== false,
+    phone: profile?.card_field_visibility?.phone !== false,
+    email: profile?.card_field_visibility?.email !== false,
+    address: profile?.card_field_visibility?.address !== false,
+    member_code: profile?.card_field_visibility?.member_code !== false,
+    company: profile?.card_field_visibility?.company !== false,
+  };
+  const [vis, setVis] = useState<Required<CardFieldVisibility>>(initialVis);
+  const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const refCode = profile?.referral_code ?? "";
+  const shareUrl = typeof window !== "undefined" && refCode
+    ? `${window.location.origin}/c/${refCode}`
+    : "";
+
+  const save = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const payload = {
+      name: name.trim() || null,
+      phone: phone.trim() || null,
+      email: email.trim() || null,
+      address: address.trim() || null,
+      shop_name: company.trim() || null,
+      card_link_url: link.trim() || null,
+      card_field_visibility: vis,
+      card_back_image_url: backImage || null,
+    };
+    if (profile?.id) {
+      await supabase.from("customers").update(payload).eq("user_id", userId);
+    } else {
+      await supabase.from("customers").insert({ ...payload, user_id: userId });
+    }
+    await refreshProfile();
+    setSaving(false);
+    onClose();
+  };
+
+  const handleBackUpload = async (file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/back-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        setBackImage(data.publicUrl);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const doShare = async () => {
+    if (!userId || !shareUrl) return;
+    const text = `${name || "My"} — ${company || "Business Card"}\n${shareUrl}`;
+    try {
+      if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title: "My Business Card", text, url: shareUrl });
+      } else {
+        const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(wa, "_blank", "noopener,noreferrer");
+      }
+      await supabase.from("customers")
+        .update({ card_share_count: (profile?.card_share_count ?? 0) + 1 })
+        .eq("user_id", userId);
+      await refreshProfile();
+    } catch { /* user cancelled */ }
+  };
+
+  return (
+    <SheetWrap onClose={onClose}>
+      {/* Tabs */}
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
+        {(["edit", "flip"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`py-2 rounded-xl text-xs font-semibold capitalize transition ${
+              tab === k ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow" : "text-amber-700"
+            }`}
+          >
+            {k === "edit" ? "Front · Details" : "Back · Image & Share"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "edit" && (
+        <div className="space-y-3">
+          <h3 className="font-display text-lg text-amber-700 font-bold">Business Card</h3>
+          <p className="text-xs text-slate-500 -mt-2">
+            Edit any field. Toggle <strong>on/off</strong> to choose what shows on the card.
+          </p>
+
+          <CardFieldEditor Icon={Building2} label="Company" value={company} onChange={setCompany} on={vis.company} onToggle={(v) => setVis({ ...vis, company: v })} />
+          <CardFieldEditor Icon={User} label="Full Name" value={name} onChange={setName} on={vis.name} onToggle={(v) => setVis({ ...vis, name: v })} />
+          <CardFieldEditor Icon={Phone} label="Contact" value={phone} onChange={setPhone} on={vis.phone} onToggle={(v) => setVis({ ...vis, phone: v })} inputMode="tel" />
+          <CardFieldEditor Icon={Mail} label="Email" value={email} onChange={setEmail} on={vis.email} onToggle={(v) => setVis({ ...vis, email: v })} inputMode="email" />
+          <CardFieldEditor Icon={MapPin} label="Address" value={address} onChange={setAddress} on={vis.address} onToggle={(v) => setVis({ ...vis, address: v })} />
+          <CardFieldEditor Icon={IdCard} label="Member Code" value={refCode} readOnly on={vis.member_code} onToggle={(v) => setVis({ ...vis, member_code: v })} />
+
+          <div className="rounded-2xl bg-amber-50/60 border border-amber-200 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">
+              Redirect link (when someone taps your card)
+            </p>
+            <input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="https://karoonline.in/your-page"
+              inputMode="url"
+              className="w-full px-3 py-2.5 rounded-xl bg-white border border-amber-200 focus:border-amber-500 outline-none text-sm"
+            />
+            {shareUrl && (
+              <p className="mt-2 text-[10px] text-slate-500 break-all">
+                Share URL: <span className="text-amber-700">{shareUrl}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "flip" && (
+        <div className="space-y-4">
+          <h3 className="font-display text-lg text-amber-700 font-bold">Card Back · Share</h3>
+
+          {/* Employee-card style preview */}
+          <div className="relative rounded-3xl overflow-hidden border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-amber-100 p-4 shadow-[0_10px_30px_-12px_rgba(212,175,55,0.5)]">
+            <div className="aspect-[1.6/1] rounded-2xl overflow-hidden border border-amber-200 bg-white grid place-items-center">
+              {backImage ? (
+                <img src={backImage} alt="Card back" className="h-full w-full object-cover" />
+              ) : (
+                <div className="text-center text-slate-400 text-xs px-6">
+                  Upload an image for the back side<br/>(QR, banner, photo — anything)
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-2 text-amber-700">
+                <Upload className="h-4 w-4" />
+                <span>Shares <strong>{profile?.card_share_count ?? 0}</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-700">
+                <Users className="h-4 w-4" />
+                <span>Visits <strong>{profile?.card_view_count ?? 0}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <label className="block">
+            <span className="text-[11px] uppercase tracking-wider text-slate-500 ml-1">Upload back image</span>
+            <div className="mt-1 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/40 px-4 py-5 flex flex-col items-center justify-center gap-2 cursor-pointer">
+              <div className="h-10 w-10 rounded-full bg-amber-100 grid place-items-center">
+                <Upload className="h-5 w-5 text-amber-700" />
+              </div>
+              <p className="text-xs text-slate-600">{uploading ? "Uploading…" : "Tap to choose JPG / PNG"}</p>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBackUpload(f); }}
+              />
+            </div>
+          </label>
+
+          <button
+            onClick={doShare}
+            disabled={!shareUrl}
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold shadow-lg active:scale-95 transition disabled:opacity-50"
+          >
+            Share Card on WhatsApp
+          </button>
+          <p className="text-[10px] text-slate-500 text-center">
+            We send your card image + a short link. Tapping the link opens your redirect URL.
+          </p>
+        </div>
+      )}
+
+      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save Card"} />
+    </SheetWrap>
+  );
+}
+
+function CardFieldEditor({
+  Icon, label, value, onChange, on, onToggle, inputMode, readOnly,
+}: {
+  Icon: typeof User;
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+  on: boolean;
+  onToggle: (v: boolean) => void;
+  inputMode?: "text" | "email" | "tel" | "url";
+  readOnly?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border px-3 py-2.5 transition ${on ? "bg-white border-amber-300" : "bg-slate-50 border-slate-200 opacity-70"}`}>
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-amber-700" />
+        <span className="text-[10px] uppercase tracking-wider text-slate-500 flex-1">{label}</span>
+        <button
+          onClick={() => onToggle(!on)}
+          aria-label={`Toggle ${label}`}
+          className={`relative h-5 w-9 rounded-full transition ${on ? "bg-emerald-500" : "bg-slate-300"}`}
+        >
+          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-4" : "left-0.5"}`} />
+        </button>
+      </div>
+      <input
+        value={value}
+        readOnly={readOnly}
+        onChange={(e) => onChange?.(e.target.value)}
+        inputMode={inputMode}
+        placeholder={label}
+        className={`w-full mt-1.5 px-2 py-1.5 rounded-lg outline-none text-sm bg-transparent ${readOnly ? "text-slate-500" : "text-slate-800"}`}
+      />
+    </div>
+  );
+}
+

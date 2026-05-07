@@ -334,6 +334,11 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           avatar_url: string | null
+          card_back_image_url: string | null
+          card_field_visibility: Json
+          card_link_url: string | null
+          card_share_count: number
+          card_view_count: number
           created_at: string
           email: string | null
           gender: string | null
@@ -341,6 +346,7 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          referral_code: string | null
           shop_logo_url: string | null
           shop_name: string | null
           shop_url: string | null
@@ -357,6 +363,11 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
+          card_back_image_url?: string | null
+          card_field_visibility?: Json
+          card_link_url?: string | null
+          card_share_count?: number
+          card_view_count?: number
           created_at?: string
           email?: string | null
           gender?: string | null
@@ -364,6 +375,7 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          referral_code?: string | null
           shop_logo_url?: string | null
           shop_name?: string | null
           shop_url?: string | null
@@ -380,6 +392,11 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
+          card_back_image_url?: string | null
+          card_field_visibility?: Json
+          card_link_url?: string | null
+          card_share_count?: number
+          card_view_count?: number
           created_at?: string
           email?: string | null
           gender?: string | null
@@ -387,6 +404,7 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          referral_code?: string | null
           shop_logo_url?: string | null
           shop_name?: string | null
           shop_url?: string | null
@@ -1237,7 +1255,9 @@ export type Database = {
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
+      bump_card_view: { Args: { _code: string }; Returns: undefined }
       get_admin_stats: { Args: never; Returns: Json }
+      get_card_link: { Args: { _code: string }; Returns: string }
       get_lead_accepted_vendors: {
         Args: { _lead_id: string }
         Returns: {
@@ -1294,6 +1314,11 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           avatar_url: string | null
+          card_back_image_url: string | null
+          card_field_visibility: Json
+          card_link_url: string | null
+          card_share_count: number
+          card_view_count: number
           created_at: string
           email: string | null
           gender: string | null
@@ -1301,6 +1326,7 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          referral_code: string | null
           shop_logo_url: string | null
           shop_name: string | null
           shop_url: string | null
