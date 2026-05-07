@@ -617,16 +617,17 @@ function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?:
 
 
 
-function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => string; profile?: CustomerProfile | null }) {
   if (type !== "personal") return null;
+  const dash = "—";
   return (
     <div className="space-y-2.5">
       <SectionTitle>{t("personal_details")}</SectionTitle>
-      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
-      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
-      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
-      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
-      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
+      <DetailRow Icon={User} label={t("full_name")} value={profile?.name || dash} />
+      <DetailRow Icon={Phone} label={t("contact")} value={profile?.phone || dash} />
+      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || dash} wrap />
+      <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || dash} wrap />
+      <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || dash} />
     </div>
   );
 }
