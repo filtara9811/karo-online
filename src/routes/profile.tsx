@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -106,7 +107,7 @@ function ProfilePage() {
   const router = useRouter();
   const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
-  const { signOut } = useAuth();
+  const { signOut, user, profile, refreshProfile } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
@@ -128,12 +129,20 @@ function ProfilePage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("ko-open-profile-edit") !== "1") return;
+    sessionStorage.removeItem("ko-open-profile-edit");
+    setActiveRow("profile");
+  }, []);
+
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
+    <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
       {/* Premium Top bar with 3 icons */}
-      <header className="sticky top-0 z-30 px-4 py-3 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.3)]">
+      <header className={`sticky top-0 z-30 px-4 py-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => router.history.back()}
@@ -337,7 +346,7 @@ function ProfilePage() {
       {/* Row detail sheet */}
       <AnimatePresence>
         {activeRow && (
-          <RowDetailSheet rowId={activeRow} onClose={() => setActiveRow(null)} />
+          <RowDetailSheet rowId={activeRow} userId={user?.id} profile={profile} refreshProfile={refreshProfile} onClose={() => setActiveRow(null)} />
         )}
       </AnimatePresence>
 
