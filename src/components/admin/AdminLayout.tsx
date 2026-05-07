@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 
 type NavItem = { to: string; label: string; icon: typeof Crown };
 
@@ -273,6 +274,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           </span>
         </header>
 
+        <ActionAlertBanner role="admin" />
         <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-[1400px] w-full mx-auto">
           {children ?? <Outlet />}
         </main>

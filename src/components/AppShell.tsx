@@ -11,6 +11,7 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
+import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
@@ -65,6 +66,7 @@ export function AppShell() {
       <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
+      <ActionAlertBanner role="customer" />
       {!hideTopHeader && <TopHeader />}
 
       <main
