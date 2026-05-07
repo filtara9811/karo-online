@@ -322,11 +322,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handleFinish = async () => {
     if (user) {
       const { error } = await supabase.rpc("save_customer_profile", {
-        _name: name.trim() || null,
-        _gender: gender || null,
-        _phone: phone || null,
-        _email: email || user.email || null,
-        _address: address || null,
+        _name: name.trim(),
+        _gender: gender ?? "",
+        _phone: phone,
+        _email: email || user.email || "",
+        _address: address,
       });
       if (error) {
         console.error("[customers upsert]", error);
