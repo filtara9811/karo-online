@@ -110,6 +110,9 @@ function ProfilePage() {
   const { signOut, user, profile, refreshProfile } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
+  const [cardSheet, setCardSheet] = useState<null | "edit" | "flip">(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = useRef(false);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
