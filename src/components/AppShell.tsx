@@ -77,7 +77,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      {!hideBottomBar && !isQuickRoute && <BottomActionBar loading={isLoading} />}
+      {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
       <AuthGate />
       <VendorLeadAlerts />
