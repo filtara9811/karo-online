@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useVendorLeadAlerts } from "@/hooks/use-vendor-leads";
 import { LeadAlertStack } from "@/components/LeadAlertStack";
+import { unlockLeadAlertAudio } from "@/lib/lead-sound";
 
 export function VendorLeadAlerts() {
   const { alerts, dismiss, acceptLead, rejectLead } = useVendorLeadAlerts();
@@ -8,21 +9,18 @@ export function VendorLeadAlerts() {
   // Unlock Web Audio on first user gesture (required by mobile browsers)
   useEffect(() => {
     const unlock = () => {
-      try {
-        const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
-        if (AC) {
-          const c = new AC();
-          c.resume().catch(() => {});
-        }
-      } catch {}
+      unlockLeadAlertAudio();
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
     };
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });
+    window.addEventListener("click", unlock, { once: true });
     return () => {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
     };
   }, []);
 

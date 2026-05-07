@@ -1,5 +1,6 @@
 // Loud, attention-grabbing chime via Web Audio (no asset needed).
 let ctx: AudioContext | null = null;
+let audioUnlocked = false;
 
 function getCtx() {
   if (typeof window === "undefined") return null;
@@ -12,9 +13,28 @@ function getCtx() {
   return ctx;
 }
 
+export function unlockLeadAlertAudio() {
+  const ac = getCtx();
+  if (!ac || audioUnlocked) return;
+  try {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    g.gain.value = 0.0001;
+    o.frequency.value = 1;
+    o.connect(g).connect(ac.destination);
+    o.start();
+    o.stop(ac.currentTime + 0.03);
+    audioUnlocked = true;
+  } catch {}
+}
+
 export function playLeadAlert() {
   const ac = getCtx();
   if (!ac) return;
+  if (ac.state === "suspended") {
+    navigator.vibrate?.([240, 80, 240, 80, 500]);
+    return;
+  }
   const now = ac.currentTime;
   const master = ac.createGain();
   master.gain.value = 0.0001;

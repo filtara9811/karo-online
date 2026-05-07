@@ -41,6 +41,18 @@ export function useVendorLeadAlerts(): State {
     const handleNotification = async (notifId: string, leadId: string) => {
       if (seen.current.has(notifId)) return;
       seen.current.add(notifId);
+      const fallbackCreatedAt = new Date().toISOString();
+      const fallbackIncoming: IncomingLead = {
+        notificationId: notifId,
+        leadId,
+        subCategoryName: "Service",
+        itemNames: [],
+        images: [],
+        createdAt: fallbackCreatedAt,
+        expiresAt: new Date(Date.now() + 90_000).toISOString(),
+      };
+      setAlerts((p) => [fallbackIncoming, ...p].slice(0, 8));
+      playLeadAlert();
       const { data: lead } = await supabase
         .from("leads")
         .select("id, sub_category_id, sub_category_name, customer_name, customer_phone, item_names, note, images, address, created_at, status")
@@ -72,8 +84,7 @@ export function useVendorLeadAlerts(): State {
         createdAt,
         expiresAt: new Date(new Date(createdAt).getTime() + 90_000).toISOString(),
       };
-      setAlerts((p) => [incoming, ...p].slice(0, 8));
-      playLeadAlert();
+      setAlerts((p) => p.map((a) => (a.notificationId === notifId ? incoming : a)).slice(0, 8));
       showBrowserNotification(
         `🔔 New ${incoming.subCategoryName} lead!`,
         incoming.customerName ? `${incoming.customerName} needs ${incoming.subCategoryName}` : `Tap to view & accept`,
