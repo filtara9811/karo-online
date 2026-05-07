@@ -638,15 +638,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; value: string }) {
+function DetailRow({ Icon, label, value, wrap }: { Icon: typeof User; label: string; value: string; wrap?: boolean }) {
   return (
-    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-center gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
-      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-start gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200 flex-shrink-0">
         <Icon className="h-5 w-5 text-amber-700" strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
+        <p className={`text-sm text-slate-800 font-medium ${wrap ? "break-all" : "truncate"}`}>{value}</p>
       </div>
     </div>
   );
