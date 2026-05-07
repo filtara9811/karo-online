@@ -127,6 +127,10 @@
     min-height: 100vh;
   }
 
+  body.ko-accepted-vendor-open [data-bottom-action-bar] {
+    display: none;
+  }
+
   .dark body {
     background:
       radial-gradient(ellipse at top, oklch(0.28 0.05 85 / 0.55) 0%, transparent 55%),
