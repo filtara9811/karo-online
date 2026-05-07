@@ -24,6 +24,7 @@ import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
 import { supabase } from "@/integrations/supabase/client";
+import { VendorLeadInbox } from "@/components/VendorLeadInbox";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
@@ -116,9 +117,8 @@ function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
 
-  if (search.leadId) {
-    return <VendorLeadChatRoute leadId={search.leadId} />;
-  }
+  // New multi-customer inbox (Screenshot #2 style). Always show this for vendor chat.
+  return <VendorLeadInbox initialLeadId={search.leadId || undefined} />;
 
   const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
