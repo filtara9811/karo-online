@@ -595,25 +595,17 @@ function QuickPage() {
               return;
             }
             setActiveLeadId(lead.id);
-            // Fan out: vendors mapped to ANY item in this sub-category
-            const subItemIds = subItems.map((it) => it.id);
-            const { data: maps } = await supabase
-              .from("vendor_item_mappings")
-              .select("vendor_id")
-              .in("item_id", subItemIds.length ? subItemIds : [selectedSub.id])
-              .eq("is_active", true);
-            const vendorIds = Array.from(new Set((maps ?? []).map((m: any) => m.vendor_id)));
-            if (vendorIds.length > 0) {
-              await supabase.from("lead_notifications").insert(
-                vendorIds.map((vid) => ({
-                  lead_id: lead.id,
-                  vendor_id: vid,
-                  sub_category_name: selectedSub.name,
-                })),
-              );
-              toast.success(`Request ${vendorIds.length} vendor ko bhej di gayi`);
+            // Sequential radius search: 1km → 3km → 5km → 10km → 20km, stop at 5 nearest vendors
+            const { data: matchRes, error: matchErr } = await supabase.rpc("match_lead_vendors", {
+              _lead_id: lead.id,
+            });
+            const notified = (matchRes as any)?.notified ?? 0;
+            if (matchErr) {
+              toast.error(matchErr.message || "Vendor matching fail");
+            } else if (notified > 0) {
+              toast.success(`Aapke nearest ${notified} vendor ko request bhej di gayi`);
             } else {
-              toast.info("Request save ho gayi; is service me vendor mapping abhi add karni hai.");
+              toast.info("Aapke area me abhi vendor available nahi hain.");
             }
           } catch (e) {
             console.error("lead create failed", e);
