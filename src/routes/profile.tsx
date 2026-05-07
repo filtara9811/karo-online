@@ -190,20 +190,48 @@ function ProfilePage() {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {CARDS.map((card) => (
-            <motion.button
-              key={card.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setEditing(card)}
-              className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
-              style={{ aspectRatio: "1.7 / 1" }}
-            >
-              <DashboardCardVisual card={card} />
-              <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
-                <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
-              </span>
-            </motion.button>
-          ))}
+          {CARDS.map((card) => {
+            const isPersonal = card.type === "personal";
+            const startPress = () => {
+              if (!isPersonal) return;
+              longPressedRef.current = false;
+              pressTimer.current = setTimeout(() => {
+                longPressedRef.current = true;
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
+                setCardSheet("flip");
+              }, 480);
+            };
+            const cancelPress = () => {
+              if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+            };
+            const endPress = () => {
+              cancelPress();
+              if (longPressedRef.current) { longPressedRef.current = false; return; }
+            };
+            return (
+              <motion.button
+                key={card.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (longPressedRef.current) { longPressedRef.current = false; return; }
+                  if (isPersonal) setCardSheet("edit");
+                  else setEditing(card);
+                }}
+                onPointerDown={startPress}
+                onPointerUp={endPress}
+                onPointerLeave={cancelPress}
+                onPointerCancel={cancelPress}
+                onContextMenu={(e) => e.preventDefault()}
+                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+                style={{ aspectRatio: "1.7 / 1" }}
+              >
+                <DashboardCardVisual card={card} profile={isPersonal ? profile : null} />
+                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                  <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Dot indicators */}
