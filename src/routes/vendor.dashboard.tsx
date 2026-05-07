@@ -67,6 +67,60 @@ function VendorDashboard() {
       .then(({ data }) => setVendor(data as any));
   }, [user]);
 
+  // Load REAL leads for this vendor: notified or already accepted by them
+  useEffect(() => {
+    if (!user) { setLoadingLeads(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data: notifs } = await supabase
+        .from("lead_notifications")
+        .select("lead_id, status, created_at")
+        .eq("vendor_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
+      if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
+      const { data: rows } = await supabase
+        .from("leads")
+        .select("id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at")
+        .in("id", ids);
+      if (cancelled) return;
+      const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
+      const mapped: Lead[] = (rows ?? []).map((r: any) => {
+        const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
+        const nstatus = notifStatusMap.get(r.id);
+        let st: LeadStatus = "new";
+        if (r.status === "completed" && accepted) st = "success";
+        else if (accepted) st = "process";
+        else if (nstatus === "rejected") st = "rejected";
+        else st = "new";
+        const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
+        return {
+          id: r.id,
+          name: r.customer_name ?? "Customer",
+          phone: r.customer_phone ?? "",
+          address: r.address ?? undefined,
+          service: r.sub_category_name ?? "Service",
+          amount: Number(r.lead_price_inr ?? 0),
+          source: src,
+          status: st,
+          time: timeAgo(r.created_at),
+          note: r.note ?? "",
+          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" }],
+        };
+      }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
+      setLeads(mapped);
+      setLoadingLeads(false);
+    };
+    load();
+    const channel = supabase
+      .channel(`vendor-leads-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` }, () => load())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [user]);
+
   const toggleAutoAccept = async () => {
     if (!user || savingAuto) return;
     const next = !vendor?.auto_accept_leads;
