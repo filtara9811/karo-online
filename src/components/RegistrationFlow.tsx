@@ -116,6 +116,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
   const [lookupBusy, setLookupBusy] = useState(false);
+  const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
+  const [manualPhone, setManualPhone] = useState("");
+  const [existingAccountHint, setExistingAccountHint] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Prefill email/name from Google session
@@ -186,20 +189,29 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handlePhoneVerified = async () => {
     setPhoneVerified(true);
     setLookupBusy(true);
+    setExistingAccountHint(null);
     try {
       const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
-      if (isAuthenticated && !error && data && data.length > 0) {
+      if (!error && data && data.length > 0) {
         const row = data[0] as { name: string | null; gender: string | null; email: string | null; address: string | null };
-        // Already registered → auto login & complete
         if (row.name) setName(row.name);
         if (row.gender) setGender(row.gender);
         if (row.email) setEmail(row.email);
         if (row.address) setAddress(row.address);
-        toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        setTimeout(() => onComplete?.(), 800);
+        if (isAuthenticated) {
+          toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
+          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+          await refreshProfile();
+          setTimeout(() => onComplete?.(), 700);
+          return;
+        }
+        setExistingAccountHint(
+          row.email
+            ? `Account mil gaya: ${row.email}. Continue ke liye Google se sign in karein.`
+            : "Account mil gaya. Continue ke liye Google se sign in karein.",
+        );
+        toast.success("Mobile number registered hai — full form skip hoga.");
         return;
       }
     } catch (e) {
@@ -241,6 +253,18 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setTimeout(fill, 1500);
   };
 
+  const submitManualPhone = () => {
+    const digits = manualPhone.replace(/\D/g, "").slice(-10);
+    if (digits.length !== 10) {
+      toast.error("10 digit mobile number daaliye");
+      return;
+    }
+    setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
+    setManualPhoneOpen(false);
+    setManualPhone("");
+    setTimeout(startInlineOtp, 350);
+  };
+
   const handleSimSelect = (value: string) => {
     const sim = SIM_OPTIONS.find((s) => s.value === value);
     if (!sim) return;
@@ -248,14 +272,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setPicker(null);
     if (value === "manual") {
       setPhone("");
-      setTimeout(() => {
-        const v = window.prompt("Apna 10-digit mobile number daaliye");
-        if (v && v.replace(/\D/g, "").length >= 10) {
-          const digits = v.replace(/\D/g, "").slice(-10);
-          setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
-          setTimeout(startInlineOtp, 400);
-        }
-      }, 250);
+      setManualPhoneOpen(true);
       return;
     }
     setPhone(sim.number);
