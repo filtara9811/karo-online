@@ -2,6 +2,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
+export type CardFieldVisibility = {
+  name?: boolean;
+  phone?: boolean;
+  email?: boolean;
+  address?: boolean;
+  member_code?: boolean;
+  company?: boolean;
+};
+
 export type CustomerProfile = {
   id?: string;
   user_id?: string;
@@ -11,6 +20,13 @@ export type CustomerProfile = {
   email?: string | null;
   address?: string | null;
   avatar_url?: string | null;
+  shop_name?: string | null;
+  card_link_url?: string | null;
+  card_back_image_url?: string | null;
+  card_field_visibility?: CardFieldVisibility | null;
+  card_share_count?: number | null;
+  card_view_count?: number | null;
+  referral_code?: string | null;
 };
 
 type Ctx = {
