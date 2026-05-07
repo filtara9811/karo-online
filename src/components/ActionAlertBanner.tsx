@@ -39,14 +39,14 @@ function Banner({ a, onDismiss }: { a: Alert; onDismiss: () => void }) {
   );
   return (
     <div
-      className={`flex items-stretch backdrop-blur-md bg-gradient-to-r ${tones[a.tone]} border-b shadow-sm`}
+      className={`flex items-stretch pointer-events-auto backdrop-blur-md bg-gradient-to-r ${tones[a.tone]} border-b shadow-sm`}
     >
       {a.to ? (
-        <Link to={a.to} className="flex-1 min-w-0 flex active:opacity-80">
+        <Link to={a.to} className="flex-1 min-w-0 flex active:opacity-80 cursor-pointer">
           {Inner}
         </Link>
       ) : a.onClick ? (
-        <button onClick={a.onClick} className="flex-1 min-w-0 flex text-left active:opacity-80">
+        <button type="button" onClick={a.onClick} className="flex-1 min-w-0 flex text-left active:opacity-80 cursor-pointer">
           {Inner}
         </button>
       ) : (
@@ -83,6 +83,7 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
   const navigate = useNavigate();
   const geo = useGeolocation();
   const [dismissed, setDismissed] = useState<Set<string>>(() => readDismissed());
+  const [gpsReady, setGpsReady] = useState(false);
   const [adminCounts, setAdminCounts] = useState<{ pendingVendors: number; pendingKyc: number }>({
     pendingVendors: 0,
     pendingKyc: 0,
@@ -183,10 +184,26 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
     );
   };
 
+  const openProfileUpdate = () => {
+    try {
+      sessionStorage.setItem("ko-open-profile-edit", "1");
+    } catch {}
+    navigate({ to: "/profile" });
+  };
+
   const requestGps = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      () => window.location.reload(),
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          localStorage.setItem(
+            "ko-geo-cache",
+            JSON.stringify({ lat: latitude, lng: longitude, label: "My current location", ts: Date.now() }),
+          );
+        } catch {}
+        setGpsReady(true);
+      },
       () => {},
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -248,11 +265,11 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
           key: "c-profile",
           tone: "blue",
           icon: <User className="h-3.5 w-3.5" />,
-          text: "👤 Complete your profile (Name/Email) for a better experience.",
+          text: "👤 Name/Email complete करें ताकि request details सही रहें.",
           cta: "Update",
-          to: "/profile",
+          onClick: openProfileUpdate,
         });
-      if (geo.status === "denied" || geo.status === "idle" || geo.status === "error" || geo.status === "unsupported")
+      if (!gpsReady && (geo.status === "denied" || geo.status === "idle" || geo.status === "error" || geo.status === "unsupported"))
         out.push({
           key: "c-gps",
           tone: "amber",
@@ -263,12 +280,12 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
         });
     }
     return out.filter((a) => !dismissed.has(a.key));
-  }, [role, adminCounts, vendorRow, profile, user, geo, dismissed]);
+  }, [role, adminCounts, vendorRow, profile, user, geo, gpsReady, dismissed]);
 
   if (alerts.length === 0) return null;
 
   return (
-    <div className="sticky top-0 z-40 w-full">
+    <div className="fixed top-0 inset-x-0 z-[120] w-full pointer-events-none">
       {alerts.map((a) => (
         <Banner
           key={a.key}

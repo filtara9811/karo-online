@@ -19,10 +19,11 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
 import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, type CustomerProfile } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -106,7 +107,7 @@ function ProfilePage() {
   const router = useRouter();
   const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
-  const { signOut } = useAuth();
+  const { signOut, user, profile, refreshProfile } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
@@ -128,12 +129,20 @@ function ProfilePage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("ko-open-profile-edit") !== "1") return;
+    sessionStorage.removeItem("ko-open-profile-edit");
+    setActiveRow("profile");
+  }, []);
+
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
+    <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
       {/* Premium Top bar with 3 icons */}
-      <header className="sticky top-0 z-30 px-4 py-3 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.3)]">
+      <header className={`sticky top-0 z-30 px-4 py-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => router.history.back()}
@@ -337,7 +346,7 @@ function ProfilePage() {
       {/* Row detail sheet */}
       <AnimatePresence>
         {activeRow && (
-          <RowDetailSheet rowId={activeRow} onClose={() => setActiveRow(null)} />
+          <RowDetailSheet rowId={activeRow} userId={user?.id} profile={profile} refreshProfile={refreshProfile} onClose={() => setActiveRow(null)} />
         )}
       </AnimatePresence>
 
@@ -614,8 +623,11 @@ function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void 
 }
 
 /* -------------------- Row Detail Sheet -------------------- */
-function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
+function RowDetailSheet({
+  rowId, userId, profile, refreshProfile, onClose,
+}: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
+  if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
   if (rowId === "kyc") return <KycSheet onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
@@ -632,6 +644,65 @@ function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void
       </p>
       <SheetActions onClose={onClose} onSave={onClose} />
     </SheetWrap>
+  );
+}
+
+function ProfileDetailsSheet({
+  userId, profile, refreshProfile, onClose,
+}: { userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
+  const [name, setName] = useState(profile?.name ?? "");
+  const [email, setEmail] = useState(profile?.email ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [address, setAddress] = useState(profile?.address ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const payload = { name: name.trim() || null, email: email.trim() || null, phone: phone.trim() || null, address: address.trim() || null };
+    if (profile?.id) {
+      await supabase.from("customers").update(payload).eq("user_id", userId);
+    } else {
+      await supabase.from("customers").insert({ ...payload, user_id: userId });
+    }
+    await refreshProfile();
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <User className="h-7 w-7 text-amber-700" />
+        <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
+      </div>
+      <div className="space-y-3">
+        <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
+        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
+        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
+        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
+      </div>
+      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+    </SheetWrap>
+  );
+}
+
+function EditableField({
+  Icon, label, value, onChange, inputMode,
+}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none" }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
+      <div className="relative mt-1">
+        <Icon className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          inputMode={inputMode}
+          className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
+        />
+      </div>
+    </label>
   );
 }
 
