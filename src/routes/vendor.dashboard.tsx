@@ -106,7 +106,7 @@ function VendorDashboard() {
           status: st,
           time: timeAgo(r.created_at),
           note: r.note ?? "",
-          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" }],
+          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
         };
       }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
       setLeads(mapped);
