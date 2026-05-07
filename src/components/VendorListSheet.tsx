@@ -11,6 +11,10 @@ type AcceptedVendor = {
   avatar_url: string | null;
   whatsapp: string | null;
   phone: string | null;
+  email: string | null;
+  rating: number | null;
+  total_reviews: number | null;
+  distance_km: number | null;
 };
 
 type Props = {
@@ -153,32 +157,33 @@ export function VendorListSheet({ open, category, leadId, onClose }: Props) {
                 transition={{ delay: i * 0.06 }}
                 className="rounded-2xl bg-white border-2 border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm"
               >
-                <button
-                  onClick={() => setActiveContact(v)}
-                  className="relative h-24 w-full overflow-hidden block text-left active:opacity-90"
-                >
-                  <img src={COVER} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 shadow">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold">4.8</span>
-                  </div>
-                </button>
-
                 <div className="px-3 pt-3 pb-2 flex items-center gap-3">
                   <img
                     src={v.avatar_url || FALLBACK_AVATAR}
                     alt={v.business_name ?? ""}
-                    className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                    className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="font-display text-base font-bold text-slate-800 leading-tight truncate">
                       {v.business_name || v.owner_name || "Vendor"}
                     </h4>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {v.owner_name && v.business_name ? v.owner_name : "Verified vendor"}
-                    </p>
+                    {v.email && (
+                      <p className="text-[11px] text-slate-500 truncate">{v.email}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 text-[11px]">
+                      <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
+                        <Star className="h-3 w-3" fill="currentColor" />
+                        {(v.rating ?? 4.8).toFixed(1)}
+                        <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
+                      </span>
+                      {v.distance_km != null && (
+                        <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
+                          📍 {v.distance_km} km
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                  <ShieldCheck className="h-5 w-5 text-emerald-500 flex-shrink-0" />
                 </div>
 
                 <div className="flex items-stretch border-t border-slate-200 bg-[color:oklch(0.13_0.02_85)]">
