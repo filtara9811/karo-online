@@ -577,6 +577,8 @@ export type Database = {
           item_names: string[]
           lat: number | null
           lead_price_inr: number
+          lead_rating: number | null
+          lead_review: string | null
           lng: number | null
           max_slots: number
           note: string | null
@@ -604,6 +606,8 @@ export type Database = {
           item_names?: string[]
           lat?: number | null
           lead_price_inr?: number
+          lead_rating?: number | null
+          lead_review?: string | null
           lng?: number | null
           max_slots?: number
           note?: string | null
@@ -631,6 +635,8 @@ export type Database = {
           item_names?: string[]
           lat?: number | null
           lead_price_inr?: number
+          lead_rating?: number | null
+          lead_review?: string | null
           lng?: number | null
           max_slots?: number
           note?: string | null
@@ -1034,10 +1040,12 @@ export type Database = {
           aadhaar: string | null
           admin_notes: string | null
           assigned_to: string | null
+          auto_accept_leads: boolean
           avatar_url: string | null
           business_name: string | null
           created_at: string
           deals_in: string | null
+          email: string | null
           entity: string | null
           facebook: string | null
           google_place_id: string | null
@@ -1045,12 +1053,15 @@ export type Database = {
           id: string
           instagram: string | null
           is_blocked: boolean
+          lat: number | null
+          lng: number | null
           manager_email: string | null
           owner_name: string | null
           pan: string | null
           plan: string | null
           referral: string | null
           role: string | null
+          service_radius_km: number
           status: string
           tags: string[] | null
           trade: string | null
@@ -1064,10 +1075,12 @@ export type Database = {
           aadhaar?: string | null
           admin_notes?: string | null
           assigned_to?: string | null
+          auto_accept_leads?: boolean
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
           deals_in?: string | null
+          email?: string | null
           entity?: string | null
           facebook?: string | null
           google_place_id?: string | null
@@ -1075,12 +1088,15 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_blocked?: boolean
+          lat?: number | null
+          lng?: number | null
           manager_email?: string | null
           owner_name?: string | null
           pan?: string | null
           plan?: string | null
           referral?: string | null
           role?: string | null
+          service_radius_km?: number
           status?: string
           tags?: string[] | null
           trade?: string | null
@@ -1094,10 +1110,12 @@ export type Database = {
           aadhaar?: string | null
           admin_notes?: string | null
           assigned_to?: string | null
+          auto_accept_leads?: boolean
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
           deals_in?: string | null
+          email?: string | null
           entity?: string | null
           facebook?: string | null
           google_place_id?: string | null
@@ -1105,12 +1123,15 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_blocked?: boolean
+          lat?: number | null
+          lng?: number | null
           manager_email?: string | null
           owner_name?: string | null
           pan?: string | null
           plan?: string | null
           referral?: string | null
           role?: string | null
+          service_radius_km?: number
           status?: string
           tags?: string[] | null
           trade?: string | null
@@ -1222,8 +1243,12 @@ export type Database = {
         Returns: {
           avatar_url: string
           business_name: string
+          distance_km: number
+          email: string
           owner_name: string
           phone: string
+          rating: number
+          total_reviews: number
           vendor_id: string
           whatsapp: string
         }[]

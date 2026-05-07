@@ -51,16 +51,35 @@ function VendorDashboard() {
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>(LEADS);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
+  const [savingAuto, setSavingAuto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
   }, [user]);
+
+  const toggleAutoAccept = async () => {
+    if (!user || savingAuto) return;
+    const next = !vendor?.auto_accept_leads;
+    setSavingAuto(true);
+    setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
+    const { error } = await supabase
+      .from("vendors")
+      .update({ auto_accept_leads: next })
+      .eq("user_id", user.id);
+    setSavingAuto(false);
+    if (error) {
+      setVendor((p) => (p ? { ...p, auto_accept_leads: !next } : p));
+      toast.error("Setting save nahi hua");
+    } else {
+      toast.success(next ? "Auto Accept ON — har lead automatic accept hogi" : "Manual Accept ON — har lead aapko accept karni hogi");
+    }
+  };
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -168,6 +187,32 @@ function VendorDashboard() {
             <WalletIcon className="h-4 w-4 text-[#1a1208]" />
           </Link>
         </section>
+
+        {/* Auto / Manual accept toggle */}
+        <button
+          onClick={toggleAutoAccept}
+          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
+        >
+          <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.auto_accept_leads ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+            <Zap className="h-5 w-5" fill={vendor?.auto_accept_leads ? "currentColor" : "none"} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Lead Acceptance</p>
+            <p className="text-sm font-display font-bold text-slate-800 leading-tight">
+              {vendor?.auto_accept_leads ? "Auto Accept · ON" : "Manual Accept"}
+            </p>
+            <p className="text-[10px] text-slate-500 truncate">
+              {vendor?.auto_accept_leads ? "Har naya lead automatic accept ho raha hai" : "Naye lead pe pop-up aayega — aap accept karein"}
+            </p>
+          </div>
+          <span
+            role="switch"
+            aria-checked={!!vendor?.auto_accept_leads}
+            className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.auto_accept_leads ? "bg-emerald-500" : "bg-slate-300"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.auto_accept_leads ? "translate-x-5" : ""}`} />
+          </span>
+        </button>
 
         {/* Tabs */}
         <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
