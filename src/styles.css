@@ -92,6 +92,24 @@
   --ring: oklch(0.78 0.14 82 / 0.65);
 }
 
+.dark {
+  --wine-deep: oklch(0.14 0.025 85);
+  --wine: oklch(0.18 0.025 85);
+  --wine-light: oklch(0.22 0.03 85);
+  --background: oklch(0.15 0.02 85);
+  --foreground: oklch(0.96 0.02 88);
+  --card: oklch(0.20 0.025 85 / 0.9);
+  --card-foreground: oklch(0.96 0.02 88);
+  --popover: oklch(0.18 0.025 85);
+  --popover-foreground: oklch(0.96 0.02 88);
+  --secondary: oklch(0.25 0.03 85);
+  --secondary-foreground: oklch(0.92 0.02 88);
+  --muted: oklch(0.27 0.025 85);
+  --muted-foreground: oklch(0.76 0.02 88);
+  --border: oklch(0.78 0.14 82 / 0.32);
+  --input: oklch(0.78 0.14 82 / 0.18);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -107,6 +125,12 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     min-height: 100vh;
+  }
+
+  .dark body {
+    background:
+      radial-gradient(ellipse at top, oklch(0.28 0.05 85 / 0.55) 0%, transparent 55%),
+      linear-gradient(160deg, oklch(0.13 0.025 85) 0%, oklch(0.18 0.025 85) 100%);
   }
 
   h1, h2, h3, .font-display {
