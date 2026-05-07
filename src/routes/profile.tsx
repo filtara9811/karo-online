@@ -689,7 +689,7 @@ function ProfileDetailsSheet({
 
 function EditableField({
   Icon, label, value, onChange, inputMode,
-}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: React.HTMLInputTypeAttribute }) {
+}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none" }) {
   return (
     <label className="block">
       <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
