@@ -593,11 +593,11 @@ function FooterBand({ card }: { card: DashCard }) {
   );
 }
 
-function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
+function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?: boolean }) {
   return (
-    <div className="flex items-center gap-2">
-      <Icon className="h-3.5 w-3.5 text-slate-700" strokeWidth={2} />
-      <span>{text}</span>
+    <div className="flex items-start gap-2">
+      <Icon className="h-3.5 w-3.5 text-slate-700 mt-0.5 flex-shrink-0" strokeWidth={2} />
+      <span className={wrap ? "break-all leading-tight" : "truncate"}>{text}</span>
     </div>
   );
 }
