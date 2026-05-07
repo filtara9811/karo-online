@@ -44,11 +44,23 @@ const POTENTIAL = [
   { id: "P-04", title: "Axis Bank Credit Card", earn: 6700, customers: 9, chance: "Medium" },
 ];
 
+function timeAgo(iso: string): string {
+  const d = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(d / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  const days = Math.floor(h / 24);
+  return `${days}d ago`;
+}
+
 function VendorDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
-  const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
