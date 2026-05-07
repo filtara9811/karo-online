@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Mic, Plus, Star, ShieldCheck,
+  Mic, Plus, Star, ShieldCheck,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
@@ -11,7 +11,7 @@ import { VariationSheet, type VariationItem } from "@/components/VariationSheet"
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { useGeolocation } from "@/hooks/use-geolocation";
+import { useGeolocation, type GeoState } from "@/hooks/use-geolocation";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -140,6 +140,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 function QuickPage() {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLElement | null>(null);
+  const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
 
@@ -287,11 +288,7 @@ function QuickPage() {
     return () => { cancelled = true; };
   }, [selectedSub, items]);
 
-  const filteredVendors = useMemo(() => {
-    if (realVendors.length > 0) return realVendors;
-    const key = selectedSub ? SLUG_TO_VENDOR_KEY[selectedSub.slug] : "ac";
-    return VENDORS_BY_CAT[key ?? "ac"] ?? DEFAULT_VENDORS;
-  }, [selectedSub, realVendors]);
+  const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
   // ---- UI state ----
   const [needsOpen, setNeedsOpen] = useState(false);
@@ -300,6 +297,7 @@ function QuickPage() {
   const [findingOpen, setFindingOpen] = useState(false);
   const [vendorListOpen, setVendorListOpen] = useState(false);
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+  const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
