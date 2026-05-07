@@ -35,14 +35,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
   component: VendorDashboard,
 });
 
-const LEADS: Lead[] = SHARED_LEADS;
-
-const POTENTIAL = [
-  { id: "P-01", title: "Kotak 811 Savings Account", earn: 2400, customers: 12, chance: "High" },
-  { id: "P-02", title: "IndusInd Savings Account", earn: 8400, customers: 14, chance: "High" },
-  { id: "P-03", title: "Bajaj Finserv Securities", earn: 800, customers: 16, chance: "High" },
-  { id: "P-04", title: "Axis Bank Credit Card", earn: 6700, customers: 9, chance: "Medium" },
-];
+type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
 
 function timeAgo(iso: string): string {
   const d = Date.now() - new Date(iso).getTime();
