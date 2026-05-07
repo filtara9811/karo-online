@@ -574,7 +574,9 @@ function QuickPage() {
                 item_names: itemNames,
                 note: payload.note || null,
                 images: payload.images ?? [],
-                address: (profile as any)?.address ?? null,
+                address: (profile as any)?.address ?? geo.label ?? null,
+                lat: geo.lat,
+                lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
               })
@@ -590,7 +592,8 @@ function QuickPage() {
             const { data: matchRes, error: matchErr } = await supabase.rpc("match_lead_vendors", {
               _lead_id: lead.id,
             });
-            const notified = (matchRes as any)?.notified ?? 0;
+            const notified = Number((matchRes as any)?.notified ?? 0);
+            setMatchInfo({ notified, requestedAt: Date.now() });
             if (matchErr) {
               toast.error(matchErr.message || "Vendor matching fail");
             } else if (notified > 0) {
@@ -634,9 +637,8 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors, pulseKey }: { vendors: Vendor[]; pulseKey?: string }) {
+function FakeMap({ vendors, pulseKey, geo }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const geo = useGeolocation();
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
     mode: "none" | "pinch" | "pan";
