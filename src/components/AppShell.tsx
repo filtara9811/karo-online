@@ -29,7 +29,7 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
-const HIDE_BOTTOM_BAR_ON = ["/home", "/cart", "/quick"];
+const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
