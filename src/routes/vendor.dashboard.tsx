@@ -355,48 +355,26 @@ function VendorDashboard() {
 
             {/* Lead cards */}
             <div className="space-y-3">
+              {loadingLeads && (
+                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">Leads load ho rahi hain…</div>
+              )}
+              {!loadingLeads && leads.length === 0 && (
+                <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+                  <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
+                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Abhi koi lead nahi</p>
+                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Naya customer request karte hi yahan pop-up aayega.</p>
+                </div>
+              )}
               {leads.map((lead) => (
                 <LeadCard key={lead.id} lead={lead} onAccept={() => acceptLead(lead.id)} />
               ))}
             </div>
           </>
         ) : (
-          <div className="space-y-3">
-            {POTENTIAL.map((p) => (
-              <article
-                key={p.id}
-                className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-14 w-14 rounded-xl grid place-items-center font-display text-xl font-bold text-[color:oklch(0.20_0.01_260)]"
-                    style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3, #a8acb3)" }}
-                  >
-                    {p.title.charAt(0)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)] truncate">
-                      {p.title}
-                    </p>
-                    <p className="text-xs font-bold text-[color:oklch(0.42_0.01_260)]">
-                      Earn upto ₹{p.earn.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between rounded-xl bg-[color:oklch(0.97_0.02_85)] border border-[color:oklch(0.72_0.01_260/0.3)] px-3 py-2">
-                  <div className="text-xs">
-                    <p className="font-bold text-[color:oklch(0.25_0.01_260)]">
-                      Customer Eligible: {p.customers}
-                    </p>
-                    <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-[#a8acb3]" />
-                      {p.customers} customers · {p.chance} approval chance
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
-                </div>
-              </article>
-            ))}
+          <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+            <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
+            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Aapke area ke high-value leads yahan dikhenge.</p>
           </div>
         )}
       </div>
