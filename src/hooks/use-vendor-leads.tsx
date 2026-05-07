@@ -7,6 +7,7 @@ export type IncomingLead = {
   notificationId: string;
   leadId: string;
   subCategoryName: string;
+  subCategoryImage?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
   itemNames: string[];
@@ -14,6 +15,8 @@ export type IncomingLead = {
   images: string[];
   address?: string | null;
   createdAt: string;
+  /** ISO timestamp; alert auto-expires 90 s after this. */
+  expiresAt: string;
 };
 
 type State = {
@@ -40,21 +43,34 @@ export function useVendorLeadAlerts(): State {
       seen.current.add(notifId);
       const { data: lead } = await supabase
         .from("leads")
-        .select("id, sub_category_name, customer_name, customer_phone, item_names, note, images, address, created_at, status")
+        .select("id, sub_category_id, sub_category_name, customer_name, customer_phone, item_names, note, images, address, created_at, status")
         .eq("id", leadId)
         .maybeSingle();
-      if (cancelled || !lead || lead.status !== "new") return;
+      if (cancelled || !lead) return;
+      // Allow 'new' or 'accepted' (auto-accept may flip status before alert renders)
+      let subImage: string | null = null;
+      if ((lead as any).sub_category_id) {
+        const { data: cat } = await supabase
+          .from("categories")
+          .select("image_url, icon")
+          .eq("id", (lead as any).sub_category_id)
+          .maybeSingle();
+        subImage = (cat as any)?.image_url ?? null;
+      }
+      const createdAt = (lead as any).created_at as string;
       const incoming: IncomingLead = {
         notificationId: notifId,
         leadId: lead.id as string,
         subCategoryName: lead.sub_category_name as string,
+        subCategoryImage: subImage,
         customerName: (lead as any).customer_name,
         customerPhone: (lead as any).customer_phone,
         itemNames: ((lead as any).item_names ?? []) as string[],
         note: (lead as any).note,
         images: ((lead as any).images ?? []) as string[],
         address: (lead as any).address,
-        createdAt: (lead as any).created_at,
+        createdAt,
+        expiresAt: new Date(new Date(createdAt).getTime() + 90_000).toISOString(),
       };
       setAlerts((p) => [incoming, ...p].slice(0, 8));
       playLeadAlert();
