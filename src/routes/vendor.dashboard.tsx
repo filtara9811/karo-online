@@ -25,6 +25,7 @@ import {
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
+import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -174,6 +175,7 @@ function VendorDashboard() {
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
+      <ActionAlertBanner role="vendor" />
       {/* Top bar — avatar (opens menu) at left, status banner if pending */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
         <div className="max-w-md mx-auto px-3 py-2 flex items-center justify-between gap-3">
