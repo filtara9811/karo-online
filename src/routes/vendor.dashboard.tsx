@@ -23,7 +23,6 @@ import {
   Wallet as WalletIcon,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
-import { LEADS as SHARED_LEADS } from "@/lib/leads";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 
 export const Route = createFileRoute("/vendor/dashboard")({
@@ -36,20 +35,25 @@ export const Route = createFileRoute("/vendor/dashboard")({
   component: VendorDashboard,
 });
 
-const LEADS: Lead[] = SHARED_LEADS;
+type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
 
-const POTENTIAL = [
-  { id: "P-01", title: "Kotak 811 Savings Account", earn: 2400, customers: 12, chance: "High" },
-  { id: "P-02", title: "IndusInd Savings Account", earn: 8400, customers: 14, chance: "High" },
-  { id: "P-03", title: "Bajaj Finserv Securities", earn: 800, customers: 16, chance: "High" },
-  { id: "P-04", title: "Axis Bank Credit Card", earn: 6700, customers: 9, chance: "Medium" },
-];
+function timeAgo(iso: string): string {
+  const d = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(d / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  const days = Math.floor(h / 24);
+  return `${days}d ago`;
+}
 
 function VendorDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
-  const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
@@ -61,6 +65,60 @@ function VendorDashboard() {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
+  }, [user]);
+
+  // Load REAL leads for this vendor: notified or already accepted by them
+  useEffect(() => {
+    if (!user) { setLoadingLeads(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data: notifs } = await supabase
+        .from("lead_notifications")
+        .select("lead_id, status, created_at")
+        .eq("vendor_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
+      if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
+      const { data: rows } = await supabase
+        .from("leads")
+        .select("id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at")
+        .in("id", ids);
+      if (cancelled) return;
+      const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
+      const mapped: Lead[] = (rows ?? []).map((r: any) => {
+        const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
+        const nstatus = notifStatusMap.get(r.id);
+        let st: LeadStatus = "new";
+        if (r.status === "completed" && accepted) st = "success";
+        else if (accepted) st = "process";
+        else if (nstatus === "rejected") st = "rejected";
+        else st = "new";
+        const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
+        return {
+          id: r.id,
+          name: r.customer_name ?? "Customer",
+          phone: r.customer_phone ?? "",
+          address: r.address ?? undefined,
+          service: r.sub_category_name ?? "Service",
+          amount: Number(r.lead_price_inr ?? 0),
+          source: src,
+          status: st,
+          time: timeAgo(r.created_at),
+          note: r.note ?? "",
+          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
+        };
+      }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
+      setLeads(mapped);
+      setLoadingLeads(false);
+    };
+    load();
+    const channel = supabase
+      .channel(`vendor-leads-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` }, () => load())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [user]);
 
   const toggleAutoAccept = async () => {
@@ -297,48 +355,26 @@ function VendorDashboard() {
 
             {/* Lead cards */}
             <div className="space-y-3">
+              {loadingLeads && (
+                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">Leads load ho rahi hain…</div>
+              )}
+              {!loadingLeads && leads.length === 0 && (
+                <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+                  <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
+                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Abhi koi lead nahi</p>
+                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Naya customer request karte hi yahan pop-up aayega.</p>
+                </div>
+              )}
               {leads.map((lead) => (
                 <LeadCard key={lead.id} lead={lead} onAccept={() => acceptLead(lead.id)} />
               ))}
             </div>
           </>
         ) : (
-          <div className="space-y-3">
-            {POTENTIAL.map((p) => (
-              <article
-                key={p.id}
-                className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-14 w-14 rounded-xl grid place-items-center font-display text-xl font-bold text-[color:oklch(0.20_0.01_260)]"
-                    style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3, #a8acb3)" }}
-                  >
-                    {p.title.charAt(0)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)] truncate">
-                      {p.title}
-                    </p>
-                    <p className="text-xs font-bold text-[color:oklch(0.42_0.01_260)]">
-                      Earn upto ₹{p.earn.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between rounded-xl bg-[color:oklch(0.97_0.02_85)] border border-[color:oklch(0.72_0.01_260/0.3)] px-3 py-2">
-                  <div className="text-xs">
-                    <p className="font-bold text-[color:oklch(0.25_0.01_260)]">
-                      Customer Eligible: {p.customers}
-                    </p>
-                    <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-[#a8acb3]" />
-                      {p.customers} customers · {p.chance} approval chance
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
-                </div>
-              </article>
-            ))}
+          <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+            <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
+            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Aapke area ke high-value leads yahan dikhenge.</p>
           </div>
         )}
       </div>
