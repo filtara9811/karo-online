@@ -218,15 +218,19 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
           </div>
         </div>
 
-        {/* Progress steps — bigger, smoother */}
+        {/* Progress steps — slim, centered, smooth */}
         <div className="flex-shrink-0 px-5 pb-6 pt-2">
           <div className="relative flex items-start justify-between">
-            <div className="absolute left-6 right-6 top-6 h-1.5 bg-[color:oklch(0.78_0.14_82/0.25)] rounded-full overflow-hidden">
+            {/* Hairline track — centered behind the 28px circles (top: 14px - half of h-0.5 = 13px) */}
+            <div
+              className="absolute left-0 right-0 h-[2px] bg-[color:oklch(0.78_0.14_82/0.22)] rounded-full overflow-hidden"
+              style={{ top: "13px" }}
+            >
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-[#d4af37] to-emerald-600"
                 initial={{ width: "0%" }}
                 animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
 
@@ -237,33 +241,33 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
                 <div key={s.key} className="relative z-10 flex flex-col items-center gap-1.5 w-1/4">
                   <motion.div
                     initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: current ? 1.1 : 1, opacity: 1 }}
-                    transition={{ delay: i * 0.1, type: "spring", stiffness: 280, damping: 18 }}
-                    className={`h-9 w-9 rounded-xl grid place-items-center border-2 shadow-md ${
+                    animate={{ scale: current ? 1.08 : 1, opacity: 1 }}
+                    transition={{ delay: i * 0.08, type: "spring", stiffness: 240, damping: 20 }}
+                    className={`relative h-7 w-7 rounded-full grid place-items-center border-2 shadow-sm ${
                       done
                         ? "bg-emerald-500 border-emerald-600 text-white"
                         : current
                         ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] border-[#d97706] text-white"
-                        : "bg-white border-[color:oklch(0.78_0.14_82/0.4)] text-[color:oklch(0.50_0.08_85)]"
+                        : "bg-white border-[color:oklch(0.78_0.14_82/0.45)] text-[color:oklch(0.50_0.08_85)]"
                     }`}
                   >
                     {current && (
                       <span
                         aria-hidden
-                        className="absolute inset-0 rounded-xl border-2 border-[#d4af37]"
-                        style={{ animation: "ping-slow 1.4s ease-out infinite" }}
+                        className="absolute inset-0 rounded-full border-2 border-[#d4af37]"
+                        style={{ animation: "ping-slow 1.6s ease-out infinite" }}
                       />
                     )}
                     {done ? (
-                      <Check className="h-4 w-4" strokeWidth={3} />
+                      <Check className="h-3.5 w-3.5" strokeWidth={3} />
                     ) : s.tone === "vendor" ? (
-                      <BadgeCheck className="h-4 w-4" strokeWidth={2.4} />
+                      <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
                     ) : s.tone === "gold" ? (
-                      <Star className="h-4 w-4" fill="currentColor" />
+                      <Star className="h-3.5 w-3.5" fill="currentColor" />
                     ) : s.tone === "silver" ? (
-                      <Star className="h-4 w-4" />
+                      <Star className="h-3.5 w-3.5" />
                     ) : (
-                      <BadgeCheck className="h-4 w-4" strokeWidth={2.4} />
+                      <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
                     )}
                   </motion.div>
                   <span className="text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)] text-center leading-tight">
