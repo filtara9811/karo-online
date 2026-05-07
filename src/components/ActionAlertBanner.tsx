@@ -81,7 +81,7 @@ function writeDismissed(s: Set<string>) {
 export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "customer" }) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const geo = role === "customer" ? useGeolocation() : null;
+  const geo = useGeolocation();
   const [dismissed, setDismissed] = useState<Set<string>>(() => readDismissed());
   const [adminCounts, setAdminCounts] = useState<{ pendingVendors: number; pendingKyc: number }>({
     pendingVendors: 0,
@@ -252,7 +252,7 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
           cta: "Update",
           to: "/profile",
         });
-      if (geo && (geo.status === "denied" || geo.status === "idle" || geo.status === "error"))
+      if (geo.status === "denied" || geo.status === "idle" || geo.status === "error" || geo.status === "unsupported")
         out.push({
           key: "c-gps",
           tone: "amber",
