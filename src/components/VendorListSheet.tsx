@@ -42,10 +42,12 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
+    document.body.classList.add("ko-accepted-vendor-open");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("ko-accepted-vendor-open");
       document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
