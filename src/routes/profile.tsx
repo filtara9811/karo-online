@@ -19,7 +19,7 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
 import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, type CustomerProfile } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
@@ -623,8 +623,11 @@ function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void 
 }
 
 /* -------------------- Row Detail Sheet -------------------- */
-function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
+function RowDetailSheet({
+  rowId, userId, profile, refreshProfile, onClose,
+}: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
+  if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
   if (rowId === "kyc") return <KycSheet onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
@@ -641,6 +644,65 @@ function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void
       </p>
       <SheetActions onClose={onClose} onSave={onClose} />
     </SheetWrap>
+  );
+}
+
+function ProfileDetailsSheet({
+  userId, profile, refreshProfile, onClose,
+}: { userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
+  const [name, setName] = useState(profile?.name ?? "");
+  const [email, setEmail] = useState(profile?.email ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [address, setAddress] = useState(profile?.address ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const payload = { name: name.trim() || null, email: email.trim() || null, phone: phone.trim() || null, address: address.trim() || null };
+    if (profile?.id) {
+      await supabase.from("customers").update(payload).eq("user_id", userId);
+    } else {
+      await supabase.from("customers").insert({ ...payload, user_id: userId });
+    }
+    await refreshProfile();
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <SheetWrap onClose={onClose}>
+      <div className="flex items-center gap-3 mb-4">
+        <User className="h-7 w-7 text-amber-700" />
+        <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
+      </div>
+      <div className="space-y-3">
+        <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
+        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
+        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
+        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
+      </div>
+      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+    </SheetWrap>
+  );
+}
+
+function EditableField({
+  Icon, label, value, onChange, inputMode,
+}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: React.HTMLInputTypeAttribute }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
+      <div className="relative mt-1">
+        <Icon className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          inputMode={inputMode}
+          className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
+        />
+      </div>
+    </label>
   );
 }
 
