@@ -360,6 +360,14 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         return;
       }
       if (result.redirected) return;
+      if (phoneVerified && existingAccountHint) {
+        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+        await refreshProfile();
+        toast.success("Welcome back — profile already exists");
+        onComplete?.();
+        return;
+      }
       toast.success("Google account connected ✓");
     } catch (e) {
       console.error(e);
