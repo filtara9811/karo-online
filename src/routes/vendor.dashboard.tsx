@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
+import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -193,17 +194,7 @@ function VendorDashboard() {
               {vendor?.business_name || "My Dashboard"}
             </h1>
           </div>
-          <button
-            aria-label="Notifications"
-            className="relative h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90 shrink-0"
-          >
-            <Bell className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
-            {stats.action > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-gradient-to-br from-[#d8dde3] to-[#3f4750] text-[8px] font-bold text-white grid place-items-center">
-                {stats.action}
-              </span>
-            )}
-          </button>
+          <VendorNotificationBell />
         </div>
         {vendor?.status === "pending" && (
           <div className="bg-amber-100 border-t border-amber-300 px-4 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-amber-800">
