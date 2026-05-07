@@ -19,7 +19,7 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
 import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth, type CustomerProfile } from "@/hooks/use-auth";
+import { useAuth, type CustomerProfile, type CardFieldVisibility } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
