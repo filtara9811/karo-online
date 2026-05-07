@@ -332,7 +332,7 @@ function QuickPage() {
     >
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} />
       </section>
 
       {/* MIDDLE — search + service cards */}
@@ -355,13 +355,6 @@ function QuickPage() {
         }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={() => navigate({ to: "/home" })}
-            aria-label="Back"
-            className="h-11 w-11 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
-          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
