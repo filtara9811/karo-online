@@ -51,16 +51,35 @@ function VendorDashboard() {
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>(LEADS);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
+  const [savingAuto, setSavingAuto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
   }, [user]);
+
+  const toggleAutoAccept = async () => {
+    if (!user || savingAuto) return;
+    const next = !vendor?.auto_accept_leads;
+    setSavingAuto(true);
+    setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
+    const { error } = await supabase
+      .from("vendors")
+      .update({ auto_accept_leads: next })
+      .eq("user_id", user.id);
+    setSavingAuto(false);
+    if (error) {
+      setVendor((p) => (p ? { ...p, auto_accept_leads: !next } : p));
+      toast.error("Setting save nahi hua");
+    } else {
+      toast.success(next ? "Auto Accept ON — har lead automatic accept hogi" : "Manual Accept ON — har lead aapko accept karni hogi");
+    }
+  };
 
   const stats = useMemo(() => {
     const total = leads.length;
