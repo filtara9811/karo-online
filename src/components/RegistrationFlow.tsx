@@ -124,16 +124,20 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [user]);
 
   const [vh, setVh] = useState(800);
+  const [isWideScreen, setIsWideScreen] = useState(false);
   // Auth stage = compact peek; signup stage = larger
-  const SNAP_AUTH = vh * 0.55;
-  const SNAP_AUTH_OTP = vh * 0.42;
-  const SNAP_SIGNUP_HALF = vh * 0.25;
-  const SNAP_SIGNUP_FULL = vh * 0.06;
+  const SNAP_AUTH = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.55;
+  const SNAP_AUTH_OTP = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.36;
+  const SNAP_SIGNUP_HALF = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.25;
+  const SNAP_SIGNUP_FULL = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.06;
 
   const y = useMotionValue(SNAP_AUTH);
 
   useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
+    const onResize = () => {
+      setVh(window.innerHeight);
+      setIsWideScreen(window.matchMedia("(min-width: 768px)").matches);
+    };
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
