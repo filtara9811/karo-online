@@ -238,7 +238,7 @@ function ProfilePage() {
 
         {/* Dot indicators */}
         <div className="flex justify-center gap-1.5 mt-1">
-          {CARDS.map((_, i) => (
+          {liveCards.map((_, i) => (
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all ${
