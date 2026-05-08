@@ -21,7 +21,7 @@ type StepKey = "name" | "email" | "address" | "manager" | "referral";
 const STEP_ORDER: StepKey[] = ["name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
-const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v2";
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v3";
 
 type CustomerDraft = {
   gender?: string | null;
@@ -108,6 +108,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   // Inline OTP state
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
+  const [otpRequested, setOtpRequested] = useState(false);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
@@ -124,16 +125,23 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   }, [user]);
 
   const [vh, setVh] = useState(800);
-  // Auth stage = compact peek; signup stage = larger
-  const SNAP_AUTH = vh * 0.55;
-  const SNAP_AUTH_OTP = vh * 0.42;
-  const SNAP_SIGNUP_HALF = vh * 0.25;
-  const SNAP_SIGNUP_FULL = vh * 0.06;
+  const [isWideScreen, setIsWideScreen] = useState(false);
+  const sheetHeight = isWideScreen
+    ? Math.min(vh - 48, stage === "signup" ? 680 : phone ? 560 : 430)
+    : vh;
+  // Mobile stays as bottom sheet; laptop/tablet becomes a centered popup.
+  const SNAP_AUTH = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.55;
+  const SNAP_AUTH_OTP = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.36;
+  const SNAP_SIGNUP_HALF = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.25;
+  const SNAP_SIGNUP_FULL = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.06;
 
   const y = useMotionValue(SNAP_AUTH);
 
   useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
+    const onResize = () => {
+      setVh(window.innerHeight);
+      setIsWideScreen(window.matchMedia("(min-width: 768px)").matches);
+    };
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -233,6 +241,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("10 digit mobile number daaliye");
       return;
     }
+    setOtpRequested(false);
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
     const res = await sendOtpFn({ data: { phone: digits } });
@@ -244,6 +253,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
       return;
     } else {
+      setPhone(formatIndianMobile(digits));
+      setOtpRequested(true);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
       toast.success("OTP sent to " + formatIndianMobile(digits));
     }
   };
@@ -254,19 +266,19 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("10 digit mobile number daaliye");
       return;
     }
-    const formattedPhone = formatIndianMobile(digits);
-    setPhone(formattedPhone);
+    setPhone("");
+    setOtpRequested(false);
     setManualPhoneOpen(false);
     setManualPhone("");
-    setTimeout(() => startInlineOtp(formattedPhone), 350);
+    setTimeout(() => startInlineOtp(digits), 350);
   };
 
   // OTP timer
   useEffect(() => {
-    if (!phone || phoneVerified || otpSeconds <= 0) return;
+    if (!otpRequested || !phone || phoneVerified || otpSeconds <= 0) return;
     const t = setTimeout(() => setOtpSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [phone, phoneVerified, otpSeconds]);
+  }, [otpRequested, phone, phoneVerified, otpSeconds]);
 
   // Auto-verify when 4 digits entered (real server check)
   useEffect(() => {
@@ -300,7 +312,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handleResendOtp = () => {
     setOtpSeconds(45);
     setOtpDigits(["", "", "", ""]);
-    toast.success("OTP resent");
     startInlineOtp();
   };
 
@@ -395,11 +406,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       )}
 
       <motion.section
-        style={{ y, height: vh }}
-        className="absolute inset-x-0 top-0 z-20 will-change-transform"
+        style={{ y, height: sheetHeight }}
+        className="absolute inset-x-0 top-0 z-20 will-change-transform md:px-4"
       >
         <div
-          className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
+          className="relative h-full mx-auto max-w-md rounded-t-[32px] md:rounded-[32px] overflow-hidden"
           style={{
             background:
               "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,253,245,0.92) 35%, rgba(251,243,217,0.94) 100%)",
@@ -462,7 +473,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   }}
                 />
 
-                {phone && (
+                {otpRequested && phone.replace(/\D/g, "").slice(-10).length === 10 && (
                   <div
                     className="relative flex items-start gap-3"
                     style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
@@ -731,7 +742,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onClose={() => setPicker(null)}
       />
       {manualPhoneOpen && (
-        <div className="fixed inset-0 z-[65] flex items-end justify-center">
+        <div className="fixed inset-0 z-[65] flex items-end justify-center md:items-center md:p-6">
           <button
             aria-label="Close mobile entry"
             onClick={() => setManualPhoneOpen(false)}
@@ -741,7 +752,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
           <div
             role="dialog"
             aria-modal="true"
-            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-6 pt-4 pb-8"
+            className="glass-sheet relative w-full max-w-md rounded-t-3xl md:rounded-3xl px-6 pt-4 pb-8"
             style={{ animation: "sheet-up 0.38s cubic-bezier(0.22, 1, 0.36, 1)" }}
           >
             <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent opacity-80" />
@@ -761,6 +772,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   onKeyDown={(e) => { if (e.key === "Enter") submitManualPhone(); }}
                   inputMode="numeric"
                   autoComplete="tel-national"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
                   placeholder="10 digit number"
                   className="min-w-0 flex-1 bg-transparent border-0 outline-none text-xl font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.45)]"
                 />
@@ -777,7 +790,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
               <button
                 type="button"
                 onClick={submitManualPhone}
-                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)]"
+                disabled={manualPhone.length !== 10}
+                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-45 disabled:grayscale"
               >
                 Continue
               </button>

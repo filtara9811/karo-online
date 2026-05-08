@@ -1,10 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useVendorLeadAlerts } from "@/hooks/use-vendor-leads";
 import { LeadAlertStack } from "@/components/LeadAlertStack";
 import { unlockLeadAlertAudio } from "@/lib/lead-sound";
 
 export function VendorLeadAlerts() {
   const { alerts, dismiss, acceptLead, rejectLead } = useVendorLeadAlerts();
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   // Unlock Web Audio on first user gesture (required by mobile browsers)
   useEffect(() => {
@@ -23,6 +28,8 @@ export function VendorLeadAlerts() {
       window.removeEventListener("click", unlock);
     };
   }, []);
+
+  if (!hydrated) return null;
 
   return <LeadAlertStack alerts={alerts} onAccept={acceptLead} onReject={rejectLead} onDismiss={dismiss} />;
 }
