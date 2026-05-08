@@ -7,9 +7,6 @@ import { SuccessOverlay } from "@/components/SuccessOverlay";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
-
-import goldSimJio from "@/assets/gold-sim-jio.png";
-import goldSimAirtel from "@/assets/gold-sim-airtel.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
 import { lovable } from "@/integrations/lovable";
@@ -53,12 +50,6 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "male", label: "Male", sub: "His Highness", icon: goldMale },
   { value: "female", label: "Female", sub: "Her Ladyship", icon: goldFemale },
   { value: "other", label: "Other", sub: "Beyond labels", icon: goldOther },
-];
-
-// Browsers cannot read real SIM numbers for privacy reasons,
-// so we only offer manual entry — no dummy/mock numbers.
-const SIM_OPTIONS: (PickerOption & { number: string })[] = [
-  { value: "manual", label: "Enter Mobile Number", sub: "Type your real 10-digit number", number: "", icon: goldOther },
 ];
 
 const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
