@@ -486,7 +486,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   filled={phoneVerified}
                   readOnly
                   onClick={() => {
-                    if (!phoneVerified) setPicker("sim");
+                    if (!phoneVerified) { setManualPhone(""); setManualPhoneOpen(true); }
                   }}
                 />
 
