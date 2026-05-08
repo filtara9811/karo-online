@@ -1,29 +1,16 @@
-import { createFileRoute, useRouter, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, QrCode, Pencil, Check,
   Facebook, Instagram, Youtube, Linkedin, Send, Twitter,
   IdCard, Wallet, PackageCheck, FileCheck2, Building2,
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
-  Users, Truck, ChevronRight, X, LayoutGrid,
+  Users, Truck, ChevronRight, X,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
 } from "lucide-react";
-import { MyOrdersList } from "@/components/MyOrdersList";
 import avatarUser from "@/assets/avatar-user.png";
-import avatarAryan from "@/assets/avatar-aryan.png";
-import avatarRani from "@/assets/avatar-rani.png";
-import avatarRaj from "@/assets/avatar-raj.png";
-import goldUser from "@/assets/gold-user.png";
-import goldBriefcase from "@/assets/gold-briefcase.png";
-import goldServices from "@/assets/gold-services.png";
-import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth, type CustomerProfile, type CardFieldVisibility } from "@/hooks/use-auth";
-import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
-import { LegalSheet } from "@/components/LegalSheet";
-import { useSocialLinks } from "@/hooks/use-social-links";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -94,30 +81,22 @@ const ROWS = [
   { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
-const SOCIAL_META: Array<{ key: "facebook" | "instagram" | "twitter" | "telegram" | "youtube" | "linkedin" | "whatsapp"; Icon: typeof Facebook; color: string }> = [
-  { key: "facebook", Icon: Facebook, color: "#1877F2" },
-  { key: "instagram", Icon: Instagram, color: "#E4405F" },
-  { key: "twitter", Icon: Twitter, color: "#000" },
-  { key: "telegram", Icon: Send, color: "#0088cc" },
-  { key: "youtube", Icon: Youtube, color: "#FF0000" },
-  { key: "linkedin", Icon: Linkedin, color: "#0A66C2" },
+const SOCIALS = [
+  { Icon: Facebook, color: "#1877F2" },
+  { Icon: Instagram, color: "#E4405F" },
+  { Icon: Twitter, color: "#000" },
+  { Icon: Send, color: "#0088cc" },
+  { Icon: Youtube, color: "#FF0000" },
+  { Icon: Linkedin, color: "#0A66C2" },
 ];
 
 function ProfilePage() {
   const router = useRouter();
-  const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
-  const { signOut, user, profile, refreshProfile } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
-  const [cardSheet, setCardSheet] = useState<null | "edit" | "flip">(null);
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressedRef = useRef(false);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
-  const [panelPicker, setPanelPicker] = useState(false);
-  const [legalSlug, setLegalSlug] = useState<string | null>(null);
-  const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -132,20 +111,12 @@ function ProfilePage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("ko-open-profile-edit") !== "1") return;
-    sessionStorage.removeItem("ko-open-profile-edit");
-    setActiveRow("profile");
-  }, []);
-
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
-  const isDark = theme === "dark";
 
   return (
-    <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
+    <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
       {/* Premium Top bar with 3 icons */}
-      <header className={`sticky top-0 z-30 px-4 py-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
+      <header className="sticky top-0 z-30 px-4 py-3 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.3)]">
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => router.history.back()}
@@ -190,48 +161,20 @@ function ProfilePage() {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {CARDS.map((card) => {
-            const isPersonal = card.type === "personal";
-            const startPress = () => {
-              if (!isPersonal) return;
-              longPressedRef.current = false;
-              pressTimer.current = setTimeout(() => {
-                longPressedRef.current = true;
-                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
-                setCardSheet("flip");
-              }, 480);
-            };
-            const cancelPress = () => {
-              if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
-            };
-            const endPress = () => {
-              cancelPress();
-              if (longPressedRef.current) { longPressedRef.current = false; return; }
-            };
-            return (
-              <motion.button
-                key={card.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (longPressedRef.current) { longPressedRef.current = false; return; }
-                  if (isPersonal) setCardSheet("edit");
-                  else setEditing(card);
-                }}
-                onPointerDown={startPress}
-                onPointerUp={endPress}
-                onPointerLeave={cancelPress}
-                onPointerCancel={cancelPress}
-                onContextMenu={(e) => e.preventDefault()}
-                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
-                style={{ aspectRatio: "1.7 / 1" }}
-              >
-                <DashboardCardVisual card={card} profile={isPersonal ? profile : null} />
-                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
-                  <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
-                </span>
-              </motion.button>
-            );
-          })}
+          {CARDS.map((card) => (
+            <motion.button
+              key={card.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setEditing(card)}
+              className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+              style={{ aspectRatio: "1.7 / 1" }}
+            >
+              <DashboardCardVisual card={card} />
+              <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
+              </span>
+            </motion.button>
+          ))}
         </div>
 
         {/* Dot indicators */}
@@ -258,25 +201,12 @@ function ProfilePage() {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} t={t} profile={profile} />
-          </motion.section>
-        )}
-        {activeCard.type === "orders" && (
-          <motion.section
-            key="orders-list"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="px-4 mt-5"
-          >
-            <MyOrdersList />
+            <CardDetails type={activeCard.type} t={t} />
           </motion.section>
         )}
       </AnimatePresence>
 
-      {/* List rows — hidden when Orders card is active */}
-      {activeCard.type !== "orders" && (
+      {/* List rows */}
       <section className="px-4 mt-5 space-y-3">
         {ROWS.map((r, i) => (
           <motion.button
@@ -285,14 +215,7 @@ function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.06 }}
             whileTap={{ scale: 0.98 }}
-            onClick={async () => {
-              if (r.id === "logout") {
-                await signOut();
-                router.navigate({ to: "/" });
-                return;
-              }
-              setActiveRow(r.id);
-            }}
+            onClick={() => setActiveRow(r.id)}
             className="w-full rounded-2xl bg-white border border-amber-200/70 px-4 py-4 flex items-center gap-4 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] active:shadow-md"
           >
             <div className="h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
@@ -307,47 +230,33 @@ function ProfilePage() {
           </motion.button>
         ))}
       </section>
-      )}
 
       {/* Bottom: T&C + Socials + Help FAB */}
       <section className="mt-8 px-4">
-        <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-200 pl-3 pr-2 py-3 flex items-center gap-2 shadow-inner">
-          <button
-            onClick={() => setLegalSlug("terms")}
-            className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition"
-            aria-label="Legal"
-          >
+        <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-200 px-3 py-3 flex items-center gap-2 shadow-inner">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-amber-300 active:scale-95 transition">
             <FileText className="h-4 w-4 text-amber-700" />
             <ShieldCheck className="h-4 w-4 text-amber-700" />
           </button>
 
-          <div
-            className="flex-1 flex items-center gap-3 overflow-x-auto scrollbar-hide px-1"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {SOCIAL_META.filter(({ key }) => socialLinks[key]).map(({ key, Icon, color }) => (
-              <motion.a
-                key={key}
-                href={socialLinks[key]}
-                target="_blank"
-                rel="noopener noreferrer"
+          <div className="flex-1 flex items-center justify-around">
+            {SOCIALS.map(({ Icon, color }, i) => (
+              <motion.button
+                key={i}
                 whileTap={{ scale: 0.85 }}
                 whileHover={{ y: -2 }}
-                className="flex-shrink-0 h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm"
-                aria-label={key}
+                className="h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm"
+                aria-label="social"
               >
                 <Icon className="h-5 w-5" style={{ color }} />
-              </motion.a>
+              </motion.button>
             ))}
-            {SOCIAL_META.every(({ key }) => !socialLinks[key]) && (
-              <span className="text-[10px] text-slate-400 italic px-2">No social links yet</span>
-            )}
           </div>
 
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setTopSheet("support")}
-            className="flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
+            className="h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg border-2 border-white"
             aria-label="Help"
           >
             <Headphones className="h-6 w-6" />
@@ -355,42 +264,23 @@ function ProfilePage() {
         </div>
 
         <div className="flex justify-center gap-4 mt-3 text-[10px] text-slate-500">
-          <button onClick={() => setLegalSlug("terms")} className="hover:text-amber-700">{t("terms")}</button>
+          <button className="hover:text-amber-700">{t("terms")}</button>
           <span>·</span>
-          <button onClick={() => setLegalSlug("privacy")} className="hover:text-amber-700">{t("privacy")}</button>
+          <button className="hover:text-amber-700">{t("privacy")}</button>
           <span>·</span>
-          <button onClick={() => setLegalSlug("refund")} className="hover:text-amber-700">{t("refund")}</button>
+          <button className="hover:text-amber-700">{t("refund")}</button>
         </div>
       </section>
-
-      <LegalSheet
-        open={legalSlug !== null}
-        initialSlug={legalSlug ?? undefined}
-        onClose={() => setLegalSlug(null)}
-      />
 
       {/* Edit card sheet */}
       <AnimatePresence>
         {editing && <EditCardSheet card={editing} onClose={() => setEditing(null)} />}
       </AnimatePresence>
 
-      {/* Personal business card editor (single-press = details, long-press = flip) */}
-      <AnimatePresence>
-        {cardSheet && (
-          <BusinessCardSheet
-            mode={cardSheet}
-            userId={user?.id}
-            profile={profile}
-            refreshProfile={refreshProfile}
-            onClose={() => setCardSheet(null)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Row detail sheet */}
       <AnimatePresence>
         {activeRow && (
-          <RowDetailSheet rowId={activeRow} userId={user?.id} profile={profile} refreshProfile={refreshProfile} onClose={() => setActiveRow(null)} />
+          <RowDetailSheet rowId={activeRow} onClose={() => setActiveRow(null)} />
         )}
       </AnimatePresence>
 
@@ -399,59 +289,9 @@ function ProfilePage() {
         {topSheet === "support" && <SupportSheet onClose={() => setTopSheet(null)} />}
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
-
-      {/* Floating "Switch Panel" pill — sticks to bottom like home screen action bar */}
-      <div
-        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none"
-        style={{ bottom: 0 }}
-      >
-        <div className="max-w-md mx-auto px-4 pb-3">
-          <button
-            onClick={() => setPanelPicker(true)}
-            className="pointer-events-auto btn-3d w-full relative overflow-hidden rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.45)] backdrop-blur-md flex items-center justify-center gap-2 px-5 py-3 active:scale-[0.98] transition-transform"
-            style={{
-              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,248,220,0.78) 100%)",
-            }}
-            aria-label="Switch panel"
-          >
-            <span className="h-7 w-7 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm">
-              <LayoutGrid className="h-4 w-4 text-[#92400e]" strokeWidth={2.4} />
-            </span>
-            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
-              Switch Panel
-            </span>
-            <span className="text-[color:oklch(0.78_0.14_82)] text-[11px]">▾</span>
-          </button>
-        </div>
-      </div>
-
-      <ActionPicker
-        open={panelPicker}
-        title="Switch Panel"
-        subtitle="Choose your workspace"
-        options={PANEL_OPTIONS}
-        shareMode
-        longPressHint="Long-press to copy or share panel link"
-        onSelect={(value) => {
-          setPanelPicker(false);
-          setTimeout(() => {
-            if (value === "vendor") navigate({ to: "/vendor/dashboard" });
-            else if (value === "admin") navigate({ to: "/admin" });
-            else if (value === "customer") navigate({ to: "/" });
-          }, 220);
-        }}
-        onClose={() => setPanelPicker(false)}
-      />
     </div>
   );
 }
-
-const PANEL_OPTIONS: ActionOption[] = [
-  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile, shareTo: "/" },
-  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase, shareTo: "/vendor/dashboard" },
-  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO", shareTo: "/admin" },
-  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
-];
 
 function TopIconButton({
   children, onClick, ...rest
@@ -469,12 +309,8 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
-function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: CustomerProfile | null }) {
+function DashboardCardVisual({ card }: { card: DashCard }) {
   if (card.type === "personal") {
-    const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
-    const showName = vis.name !== false;
-    const showPhone = vis.phone !== false;
-    const showEmail = vis.email !== false;
     return (
       <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
@@ -484,23 +320,23 @@ function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: Cust
             {card.subtitle}
           </span>
           <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight truncate`}>
-            {profile?.shop_name || card.title}
+            {card.title}
           </h3>
         </div>
         <div className="relative px-4 mt-2 flex items-start gap-3">
           <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] flex-shrink-0 shadow-sm">
-            <img src={profile?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
-            {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
-            {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
-            {showEmail && <MiniRow Icon={Mail} text={profile?.email || "Email"} wrap />}
+            <MiniRow Icon={User} text="Name" />
+            <MiniRow Icon={Phone} text="Contact" />
+            <MiniRow Icon={Mail} text="Gmail" />
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
-        <FooterBand card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }} />
+        <FooterBand card={card} />
       </div>
     );
   }
@@ -606,28 +442,26 @@ function FooterBand({ card }: { card: DashCard }) {
   );
 }
 
-function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?: boolean }) {
+function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
   return (
-    <div className="flex items-start gap-2">
-      <Icon className="h-3.5 w-3.5 text-slate-700 mt-0.5 flex-shrink-0" strokeWidth={2} />
-      <span className={wrap ? "break-all leading-tight" : "truncate"}>{text}</span>
+    <div className="flex items-center gap-2">
+      <Icon className="h-3.5 w-3.5 text-slate-700" strokeWidth={2} />
+      <span>{text}</span>
     </div>
   );
 }
 
-
-
-function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => string; profile?: CustomerProfile | null }) {
+/* -------------------- Dynamic Card Details -------------------- */
+function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
   if (type !== "personal") return null;
-  const dash = "—";
   return (
     <div className="space-y-2.5">
       <SectionTitle>{t("personal_details")}</SectionTitle>
-      <DetailRow Icon={User} label={t("full_name")} value={profile?.name || dash} />
-      <DetailRow Icon={Phone} label={t("contact")} value={profile?.phone || dash} />
-      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || dash} wrap />
-      <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || dash} wrap />
-      <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || dash} />
+      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
+      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
+      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
+      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
+      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
     </div>
   );
 }
@@ -638,15 +472,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DetailRow({ Icon, label, value, wrap }: { Icon: typeof User; label: string; value: string; wrap?: boolean }) {
+function DetailRow({ Icon, label, value }: { Icon: typeof User; label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-start gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
-      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200 flex-shrink-0">
+    <div className="rounded-2xl bg-white border border-amber-200/70 px-4 py-3 flex items-center gap-3 shadow-[0_2px_8px_-4px_rgba(212,175,55,0.3)]">
+      <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
         <Icon className="h-5 w-5 text-amber-700" strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
-        <p className={`text-sm text-slate-800 font-medium ${wrap ? "break-all" : "truncate"}`}>{value}</p>
+        <p className="text-sm text-slate-800 font-medium truncate">{value}</p>
       </div>
     </div>
   );
@@ -672,11 +506,8 @@ function EditCardSheet({ card, onClose }: { card: DashCard; onClose: () => void 
 }
 
 /* -------------------- Row Detail Sheet -------------------- */
-function RowDetailSheet({
-  rowId, userId, profile, refreshProfile, onClose,
-}: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
+function RowDetailSheet({ rowId, onClose }: { rowId: string; onClose: () => void }) {
   const { t } = useAppPrefs();
-  if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
   if (rowId === "kyc") return <KycSheet onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
@@ -693,65 +524,6 @@ function RowDetailSheet({
       </p>
       <SheetActions onClose={onClose} onSave={onClose} />
     </SheetWrap>
-  );
-}
-
-function ProfileDetailsSheet({
-  userId, profile, refreshProfile, onClose,
-}: { userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
-  const [name, setName] = useState(profile?.name ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [address, setAddress] = useState(profile?.address ?? "");
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (!userId) return;
-    setSaving(true);
-    const payload = { name: name.trim() || null, email: email.trim() || null, phone: phone.trim() || null, address: address.trim() || null };
-    if (profile?.id) {
-      await supabase.from("customers").update(payload).eq("user_id", userId);
-    } else {
-      await supabase.from("customers").insert({ ...payload, user_id: userId });
-    }
-    await refreshProfile();
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <SheetWrap onClose={onClose}>
-      <div className="flex items-center gap-3 mb-4">
-        <User className="h-7 w-7 text-amber-700" />
-        <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
-      </div>
-      <div className="space-y-3">
-        <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
-        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
-        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
-        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
-      </div>
-      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
-    </SheetWrap>
-  );
-}
-
-function EditableField({
-  Icon, label, value, onChange, inputMode,
-}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none" }) {
-  return (
-    <label className="block">
-      <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
-      <div className="relative mt-1">
-        <Icon className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          inputMode={inputMode}
-          className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
-        />
-      </div>
-    </label>
   );
 }
 
@@ -1022,248 +794,3 @@ function SheetActions({
     </div>
   );
 }
-
-/* ===========================================================
-   BUSINESS / VISITING CARD SHEET
-   - mode "edit": edit fields + on/off visibility + link + share
-   - mode "flip": back side image upload + share + counters
-   =========================================================== */
-function BusinessCardSheet({
-  mode, userId, profile, refreshProfile, onClose,
-}: {
-  mode: "edit" | "flip";
-  userId?: string;
-  profile: CustomerProfile | null;
-  refreshProfile: () => Promise<void>;
-  onClose: () => void;
-}) {
-  const [tab, setTab] = useState<"edit" | "flip">(mode);
-  const [name, setName] = useState(profile?.name ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
-  const [address, setAddress] = useState(profile?.address ?? "");
-  const [company, setCompany] = useState(profile?.shop_name ?? "");
-  const [link, setLink] = useState(profile?.card_link_url ?? "");
-  const initialVis: Required<CardFieldVisibility> = {
-    name: profile?.card_field_visibility?.name !== false,
-    phone: profile?.card_field_visibility?.phone !== false,
-    email: profile?.card_field_visibility?.email !== false,
-    address: profile?.card_field_visibility?.address !== false,
-    member_code: profile?.card_field_visibility?.member_code !== false,
-    company: profile?.card_field_visibility?.company !== false,
-  };
-  const [vis, setVis] = useState<Required<CardFieldVisibility>>(initialVis);
-  const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const refCode = profile?.referral_code ?? "";
-  const shareUrl = typeof window !== "undefined" && refCode
-    ? `${window.location.origin}/c/${refCode}`
-    : "";
-
-  const save = async () => {
-    if (!userId) return;
-    setSaving(true);
-    const payload = {
-      name: name.trim() || null,
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-      address: address.trim() || null,
-      shop_name: company.trim() || null,
-      card_link_url: link.trim() || null,
-      card_field_visibility: vis,
-      card_back_image_url: backImage || null,
-    };
-    if (profile?.id) {
-      await supabase.from("customers").update(payload).eq("user_id", userId);
-    } else {
-      await supabase.from("customers").insert({ ...payload, user_id: userId });
-    }
-    await refreshProfile();
-    setSaving(false);
-    onClose();
-  };
-
-  const handleBackUpload = async (file: File) => {
-    if (!userId) return;
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/back-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
-      if (!error) {
-        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
-        setBackImage(data.publicUrl);
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const doShare = async () => {
-    if (!userId || !shareUrl) return;
-    const text = `${name || "My"} — ${company || "Business Card"}\n${shareUrl}`;
-    try {
-      if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
-        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title: "My Business Card", text, url: shareUrl });
-      } else {
-        const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(wa, "_blank", "noopener,noreferrer");
-      }
-      await supabase.from("customers")
-        .update({ card_share_count: (profile?.card_share_count ?? 0) + 1 })
-        .eq("user_id", userId);
-      await refreshProfile();
-    } catch { /* user cancelled */ }
-  };
-
-  return (
-    <SheetWrap onClose={onClose}>
-      {/* Tabs */}
-      <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
-        {(["edit", "flip"] as const).map((k) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`py-2 rounded-xl text-xs font-semibold capitalize transition ${
-              tab === k ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow" : "text-amber-700"
-            }`}
-          >
-            {k === "edit" ? "Front · Details" : "Back · Image & Share"}
-          </button>
-        ))}
-      </div>
-
-      {tab === "edit" && (
-        <div className="space-y-3">
-          <h3 className="font-display text-lg text-amber-700 font-bold">Business Card</h3>
-          <p className="text-xs text-slate-500 -mt-2">
-            Edit any field. Toggle <strong>on/off</strong> to choose what shows on the card.
-          </p>
-
-          <CardFieldEditor Icon={Building2} label="Company" value={company} onChange={setCompany} on={vis.company} onToggle={(v) => setVis({ ...vis, company: v })} />
-          <CardFieldEditor Icon={User} label="Full Name" value={name} onChange={setName} on={vis.name} onToggle={(v) => setVis({ ...vis, name: v })} />
-          <CardFieldEditor Icon={Phone} label="Contact" value={phone} onChange={setPhone} on={vis.phone} onToggle={(v) => setVis({ ...vis, phone: v })} inputMode="tel" />
-          <CardFieldEditor Icon={Mail} label="Email" value={email} onChange={setEmail} on={vis.email} onToggle={(v) => setVis({ ...vis, email: v })} inputMode="email" />
-          <CardFieldEditor Icon={MapPin} label="Address" value={address} onChange={setAddress} on={vis.address} onToggle={(v) => setVis({ ...vis, address: v })} />
-          <CardFieldEditor Icon={IdCard} label="Member Code" value={refCode} readOnly on={vis.member_code} onToggle={(v) => setVis({ ...vis, member_code: v })} />
-
-          <div className="rounded-2xl bg-amber-50/60 border border-amber-200 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">
-              Redirect link (when someone taps your card)
-            </p>
-            <input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://karoonline.in/your-page"
-              inputMode="url"
-              className="w-full px-3 py-2.5 rounded-xl bg-white border border-amber-200 focus:border-amber-500 outline-none text-sm"
-            />
-            {shareUrl && (
-              <p className="mt-2 text-[10px] text-slate-500 break-all">
-                Share URL: <span className="text-amber-700">{shareUrl}</span>
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {tab === "flip" && (
-        <div className="space-y-4">
-          <h3 className="font-display text-lg text-amber-700 font-bold">Card Back · Share</h3>
-
-          {/* Employee-card style preview */}
-          <div className="relative rounded-3xl overflow-hidden border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-amber-100 p-4 shadow-[0_10px_30px_-12px_rgba(212,175,55,0.5)]">
-            <div className="aspect-[1.6/1] rounded-2xl overflow-hidden border border-amber-200 bg-white grid place-items-center">
-              {backImage ? (
-                <img src={backImage} alt="Card back" className="h-full w-full object-cover" />
-              ) : (
-                <div className="text-center text-slate-400 text-xs px-6">
-                  Upload an image for the back side<br/>(QR, banner, photo — anything)
-                </div>
-              )}
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px]">
-              <div className="flex items-center gap-2 text-amber-700">
-                <Upload className="h-4 w-4" />
-                <span>Shares <strong>{profile?.card_share_count ?? 0}</strong></span>
-              </div>
-              <div className="flex items-center gap-2 text-emerald-700">
-                <Users className="h-4 w-4" />
-                <span>Visits <strong>{profile?.card_view_count ?? 0}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <label className="block">
-            <span className="text-[11px] uppercase tracking-wider text-slate-500 ml-1">Upload back image</span>
-            <div className="mt-1 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/40 px-4 py-5 flex flex-col items-center justify-center gap-2 cursor-pointer">
-              <div className="h-10 w-10 rounded-full bg-amber-100 grid place-items-center">
-                <Upload className="h-5 w-5 text-amber-700" />
-              </div>
-              <p className="text-xs text-slate-600">{uploading ? "Uploading…" : "Tap to choose JPG / PNG"}</p>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBackUpload(f); }}
-              />
-            </div>
-          </label>
-
-          <button
-            onClick={doShare}
-            disabled={!shareUrl}
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold shadow-lg active:scale-95 transition disabled:opacity-50"
-          >
-            Share Card on WhatsApp
-          </button>
-          <p className="text-[10px] text-slate-500 text-center">
-            We send your card image + a short link. Tapping the link opens your redirect URL.
-          </p>
-        </div>
-      )}
-
-      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save Card"} />
-    </SheetWrap>
-  );
-}
-
-function CardFieldEditor({
-  Icon, label, value, onChange, on, onToggle, inputMode, readOnly,
-}: {
-  Icon: typeof User;
-  label: string;
-  value: string;
-  onChange?: (v: string) => void;
-  on: boolean;
-  onToggle: (v: boolean) => void;
-  inputMode?: "text" | "email" | "tel" | "url";
-  readOnly?: boolean;
-}) {
-  return (
-    <div className={`rounded-2xl border px-3 py-2.5 transition ${on ? "bg-white border-amber-300" : "bg-slate-50 border-slate-200 opacity-70"}`}>
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-amber-700" />
-        <span className="text-[10px] uppercase tracking-wider text-slate-500 flex-1">{label}</span>
-        <button
-          onClick={() => onToggle(!on)}
-          aria-label={`Toggle ${label}`}
-          className={`relative h-5 w-9 rounded-full transition ${on ? "bg-emerald-500" : "bg-slate-300"}`}
-        >
-          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-4" : "left-0.5"}`} />
-        </button>
-      </div>
-      <input
-        value={value}
-        readOnly={readOnly}
-        onChange={(e) => onChange?.(e.target.value)}
-        inputMode={inputMode}
-        placeholder={label}
-        className={`w-full mt-1.5 px-2 py-1.5 rounded-lg outline-none text-sm bg-transparent ${readOnly ? "text-slate-500" : "text-slate-800"}`}
-      />
-    </div>
-  );
-}
-

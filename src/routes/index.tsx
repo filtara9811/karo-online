@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 const ROUTE_FOR: Record<string, string> = {
   quick: "/quick",
-  vendor: "/vendor/register",
+  vendor: "/register",
   all: "/vendors",
 };
 
