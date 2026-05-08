@@ -511,16 +511,17 @@ function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
 }
 
 /* -------------------- Dynamic Card Details -------------------- */
-function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => string; profile: CustomerProfile | null }) {
   if (type !== "personal") return null;
+  const phone = profile?.phone ? (profile.phone.startsWith("+") ? profile.phone : `+91 ${profile.phone}`) : "—";
   return (
     <div className="space-y-2.5">
       <SectionTitle>{t("personal_details")}</SectionTitle>
-      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
-      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
-      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
-      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
-      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
+      <DetailRow Icon={User} label={t("full_name")} value={profile?.name || "—"} />
+      <DetailRow Icon={Phone} label={t("contact")} value={phone} />
+      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || "—"} />
+      <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || "—"} />
+      <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || "—"} />
     </div>
   );
 }
