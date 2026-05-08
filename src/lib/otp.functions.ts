@@ -24,6 +24,27 @@ function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
 }
 
+type SmsTemplate = {
+  event?: string;
+  label?: string;
+  template_id?: string;
+  variables?: string;
+};
+
+function getTemplate(cfg: Record<string, any>, event = "otp") {
+  const templates = Array.isArray(cfg.templates) ? (cfg.templates as SmsTemplate[]) : [];
+  return templates.find((t) => (t.event || "").toLowerCase() === event) ?? templates[0] ?? null;
+}
+
+function renderVariables(pattern: string | undefined, code: string) {
+  const rendered = (pattern || "{otp}").replace(/\{otp\}/gi, code).replace(/\{code\}/gi, code);
+  return rendered
+    .split(/[|,]/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join("|");
+}
+
 async function logSystem(
   kind: "sms" | "otp" | "payment",
   provider: string | null,
@@ -57,30 +78,41 @@ async function getActiveSmsGateway() {
 async function sendViaFast2SMS(
   phone: string,
   code: string,
-  cfg: Record<string, string>,
+  cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const apiKey = cfg.api_key?.trim();
   const senderId = cfg.sender_id?.trim() || "FILPRA";
   const route = cfg.route?.trim() || "dlt";
-  const templateId = cfg.template_id?.trim();
+  const template = getTemplate(cfg);
+  const templateId = (template?.template_id || cfg.template_id || "").trim();
+  const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
   if (route === "dlt" && !templateId) return { ok: false, error: "Fast2SMS template_id required for DLT route" };
 
   const params = new URLSearchParams({
-    authorization: apiKey,
     route,
     sender_id: senderId,
     numbers: phone,
-    variables_values: code,
+    variables_values: variablesValues,
     flash: "0",
   });
-  if (templateId) params.set("template_id", templateId);
+  // Fast2SMS DLT expects the approved template/message id in the `message` parameter.
+  if (templateId) params.set(route === "dlt" ? "message" : "template_id", templateId);
   if (cfg.message_id?.trim()) params.set("message_id", cfg.message_id.trim());
 
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
-    const res = await fetch(url, { method: "GET" });
-    const json = (await res.json().catch(() => ({}))) as { return?: boolean; message?: unknown };
+    const res = await fetch(url, { method: "GET", headers: { authorization: apiKey } });
+    const body = await res.text();
+    const json = (body
+      ? (() => {
+          try {
+            return JSON.parse(body);
+          } catch {
+            return { raw_text: body };
+          }
+        })()
+      : {}) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
       const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `Fast2SMS ${res.status}: ${msg}`, raw: json };
@@ -94,10 +126,11 @@ async function sendViaFast2SMS(
 async function sendViaMSG91(
   phone: string,
   code: string,
-  cfg: Record<string, string>,
+  cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const authKey = cfg.auth_key?.trim();
-  const templateId = cfg.template_id?.trim();
+  const template = getTemplate(cfg);
+  const templateId = (template?.template_id || cfg.template_id || "").trim();
   const country = cfg.country?.trim() || "91";
   if (!authKey) return { ok: false, error: "MSG91 auth_key missing in admin config" };
   if (!templateId) return { ok: false, error: "MSG91 template_id missing in admin config" };
@@ -156,14 +189,14 @@ export const sendOtp = createServerFn({ method: "POST" })
     }
 
     if (gateway.is_test_mode) {
-      await logSystem("otp", gateway.provider, "success", `Test mode OTP issued for ${phone}`, {
+      await logSystem("otp", gateway.provider, "error", "SMS gateway is in test mode; live OTP was not sent", {
         test_mode: true,
       });
-      return { ok: true, test_mode: true, message: "Test mode active — use 1234" };
+      return { ok: false, error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein." };
     }
 
     // Real send
-    const cfg = (gateway.config ?? {}) as Record<string, string>;
+    const cfg = (gateway.config ?? {}) as Record<string, any>;
     const result =
       gateway.provider === "msg91"
         ? await sendViaMSG91(phone, code, cfg)
@@ -172,12 +205,14 @@ export const sendOtp = createServerFn({ method: "POST" })
     if (!result.ok) {
       await logSystem("sms", gateway.provider, "error", result.error ?? "Unknown error", {
         phone_last4: phone.slice(-4),
+        provider_response: result.raw ?? null,
       });
       return { ok: false, error: result.error ?? "SMS delivery failed" };
     }
 
     await logSystem("sms", gateway.provider, "success", `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`, {
       phone_last4: phone.slice(-4),
+      provider_response: result.raw ?? null,
     });
     return { ok: true, test_mode: false };
   });
@@ -187,12 +222,6 @@ export const verifyOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const phone = data.phone;
     const code = data.code;
-
-    // Check active gateway test_mode
-    const gateway = await getActiveSmsGateway();
-    if (gateway?.is_test_mode && code === "1234") {
-      return { ok: true, test_mode: true };
-    }
 
     const { data: rows, error } = await supabaseAdmin
       .from("otp_codes")

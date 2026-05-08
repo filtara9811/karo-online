@@ -24,14 +24,25 @@ type GatewayHealth = {
   is_active: boolean;
   is_test_mode: boolean;
   last_error: string | null;
+  last_error_meta?: Record<string, unknown> | null;
   last_error_at: string | null;
   last_success_at: string | null;
 };
 type Health = {
   sms: GatewayHealth[];
   payment: GatewayHealth[];
-  recent_errors: { id: string; kind: string; provider: string | null; message: string; created_at: string }[];
+  recent_errors: { id: string; kind: string; provider: string | null; message: string; meta?: Record<string, unknown> | null; created_at: string }[];
 };
+
+function fullJson(meta?: Record<string, unknown> | null) {
+  if (!meta) return "";
+  const response = meta.provider_response ?? meta;
+  try {
+    return JSON.stringify(response, null, 2);
+  } catch {
+    return String(response);
+  }
+}
 
 function fmt(t: string | null) {
   if (!t) return "—";
@@ -102,6 +113,11 @@ function SystemStatusPage() {
                       <span>{fmt(e.created_at)}</span>
                     </div>
                     <div className="text-red-300/90 font-mono break-words">{e.message}</div>
+                    {e.meta && (
+                      <pre className="mt-2 max-h-40 overflow-auto rounded bg-black/35 p-2 text-[10px] text-red-100/80 whitespace-pre-wrap">
+                        Full JSON Response: {fullJson(e.meta)}
+                      </pre>
+                    )}
                   </div>
                 ))}
               </div>
@@ -163,6 +179,11 @@ function Section({ title, rows }: { title: string; rows: GatewayHealth[] }) {
                     <div className="font-mono text-[10px] mt-1 text-red-300/70 break-words">
                       {g.last_error}
                     </div>
+                    {g.last_error_meta && (
+                      <pre className="mt-2 max-h-32 overflow-auto rounded bg-black/35 p-2 font-mono text-[10px] text-red-100/75 whitespace-pre-wrap">
+                        Full JSON Response: {fullJson(g.last_error_meta)}
+                      </pre>
+                    )}
                   </div>
                 )}
                 {!g.is_active && (
