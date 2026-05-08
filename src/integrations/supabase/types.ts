@@ -418,45 +418,6 @@ export type Database = {
         }
         Relationships: []
       }
-      integration_providers: {
-        Row: {
-          category: string
-          config: Json
-          created_at: string
-          display_name: string
-          id: string
-          is_active: boolean
-          is_test_mode: boolean
-          notes: string | null
-          provider_key: string
-          updated_at: string
-        }
-        Insert: {
-          category: string
-          config?: Json
-          created_at?: string
-          display_name: string
-          id?: string
-          is_active?: boolean
-          is_test_mode?: boolean
-          notes?: string | null
-          provider_key: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          config?: Json
-          created_at?: string
-          display_name?: string
-          id?: string
-          is_active?: boolean
-          is_test_mode?: boolean
-          notes?: string | null
-          provider_key?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       item_variations: {
         Row: {
           created_at: string
@@ -506,117 +467,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      kyc_providers: {
-        Row: {
-          api_key: string | null
-          base_url: string | null
-          client_id: string | null
-          client_secret: string | null
-          created_at: string
-          display_name: string
-          extra_config: Json
-          id: string
-          is_active: boolean
-          is_sandbox: boolean
-          provider: string
-          supported_checks: Json
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          api_key?: string | null
-          base_url?: string | null
-          client_id?: string | null
-          client_secret?: string | null
-          created_at?: string
-          display_name: string
-          extra_config?: Json
-          id?: string
-          is_active?: boolean
-          is_sandbox?: boolean
-          provider: string
-          supported_checks?: Json
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          api_key?: string | null
-          base_url?: string | null
-          client_id?: string | null
-          client_secret?: string | null
-          created_at?: string
-          display_name?: string
-          extra_config?: Json
-          id?: string
-          is_active?: boolean
-          is_sandbox?: boolean
-          provider?: string
-          supported_checks?: Json
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
-      kyc_verifications: {
-        Row: {
-          check_type: string
-          created_at: string
-          document_number: string | null
-          document_urls: Json
-          id: string
-          method: string
-          provider: string | null
-          reference_id: string | null
-          request_payload: Json
-          response_payload: Json
-          reviewer_id: string | null
-          reviewer_notes: string | null
-          status: string
-          subject_type: string
-          subject_user_id: string | null
-          updated_at: string
-          verified_at: string | null
-        }
-        Insert: {
-          check_type: string
-          created_at?: string
-          document_number?: string | null
-          document_urls?: Json
-          id?: string
-          method?: string
-          provider?: string | null
-          reference_id?: string | null
-          request_payload?: Json
-          response_payload?: Json
-          reviewer_id?: string | null
-          reviewer_notes?: string | null
-          status?: string
-          subject_type: string
-          subject_user_id?: string | null
-          updated_at?: string
-          verified_at?: string | null
-        }
-        Update: {
-          check_type?: string
-          created_at?: string
-          document_number?: string | null
-          document_urls?: Json
-          id?: string
-          method?: string
-          provider?: string | null
-          reference_id?: string | null
-          request_payload?: Json
-          response_payload?: Json
-          reviewer_id?: string | null
-          reviewer_notes?: string | null
-          status?: string
-          subject_type?: string
-          subject_user_id?: string | null
-          updated_at?: string
-          verified_at?: string | null
-        }
-        Relationships: []
       }
       lead_messages: {
         Row: {
@@ -926,39 +776,6 @@ export type Database = {
         }
         Relationships: []
       }
-      otp_codes: {
-        Row: {
-          attempts: number
-          code_hash: string
-          created_at: string
-          expires_at: string
-          id: string
-          phone: string
-          provider: string | null
-          verified_at: string | null
-        }
-        Insert: {
-          attempts?: number
-          code_hash: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone: string
-          provider?: string | null
-          verified_at?: string | null
-        }
-        Update: {
-          attempts?: number
-          code_hash?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone?: string
-          provider?: string | null
-          verified_at?: string | null
-        }
-        Relationships: []
-      }
       payment_gateways: {
         Row: {
           config: Json
@@ -1088,36 +905,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified?: boolean
-        }
-        Relationships: []
-      }
-      system_logs: {
-        Row: {
-          created_at: string
-          id: string
-          kind: string
-          message: string | null
-          meta: Json
-          provider: string | null
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind: string
-          message?: string | null
-          meta?: Json
-          provider?: string | null
-          status: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          message?: string | null
-          meta?: Json
-          provider?: string | null
-          status?: string
         }
         Relationships: []
       }
@@ -1471,7 +1258,6 @@ export type Database = {
       bump_card_view: { Args: { _code: string }; Returns: undefined }
       get_admin_stats: { Args: never; Returns: Json }
       get_card_link: { Args: { _code: string }; Returns: string }
-      get_gateway_health: { Args: never; Returns: Json }
       get_lead_accepted_vendors: {
         Args: { _lead_id: string }
         Returns: {

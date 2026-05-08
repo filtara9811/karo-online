@@ -19,6 +19,8 @@ export const Route = createFileRoute("/admin/payments")({
   component: PaymentsPage,
 });
 
+type GatewayPurpose = "wallet_recharge" | "coin_purchase" | "both";
+
 type Gateway = {
   id: string;
   provider: string;
@@ -26,6 +28,8 @@ type Gateway = {
   is_active: boolean;
   is_test_mode: boolean;
   public_key: string | null;
+  purpose: GatewayPurpose;
+  priority: number;
 };
 
 function PaymentsPage() {
@@ -59,6 +63,8 @@ function PaymentsPage() {
         is_active: g.is_active,
         is_test_mode: g.is_test_mode,
         public_key: g.public_key,
+        purpose: g.purpose,
+        priority: g.priority,
       })
       .eq("id", g.id);
     setSavingId(null);
@@ -68,8 +74,16 @@ function PaymentsPage() {
     <AdminLayout>
       <PageHeader
         title="Payment Gateways"
-        subtitle="Razorpay / Stripe configuration"
+        subtitle="Razorpay / Stripe / PhonePe configuration"
       />
+
+      <GoldCard className="p-4 mb-4">
+        <p className="text-xs text-[#f5d97a]/85 leading-relaxed">
+          💡 <b className="text-[#fff8dc]">Tip:</b> Har gateway ko ek <b>purpose</b> assign karein —
+          ek gateway sirf <b>Wallet Recharge</b> ke liye, dusra sirf <b>LeadX Coin Purchase</b> ke liye.
+          Vendor app me sahi gateway automatically chosen ho jayega.
+        </p>
+      </GoldCard>
 
       {loading ? (
         <GoldCard className="p-16 grid place-items-center">
@@ -137,9 +151,45 @@ function PaymentsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
+                    Purpose
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        { v: "wallet_recharge", l: "Wallet" },
+                        { v: "coin_purchase", l: "Coins" },
+                        { v: "both", l: "Both" },
+                      ] as const
+                    ).map((opt) => {
+                      const active = g.purpose === opt.v;
+                      return (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => update(g.id, { purpose: opt.v })}
+                          className={`px-2 py-2 rounded-xl text-[10px] uppercase tracking-wider font-bold transition border ${
+                            active
+                              ? "text-[#1a1208] border-transparent"
+                              : "text-[#f5d97a]/70 border-[#d4af37]/30 hover:bg-[#d4af37]/10"
+                          }`}
+                          style={
+                            active
+                              ? { background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }
+                              : undefined
+                          }
+                        >
+                          {opt.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
                   <Toggle
-                    label="Test mode"
+                    label="Test"
                     value={g.is_test_mode}
                     onChange={(v) => update(g.id, { is_test_mode: v })}
                   />
@@ -148,6 +198,19 @@ function PaymentsPage() {
                     value={g.is_active}
                     onChange={(v) => update(g.id, { is_active: v })}
                   />
+                  <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-black/40 border border-[#d4af37]/30">
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-[#f5d97a]/80 font-bold">
+                      Priority
+                    </span>
+                    <input
+                      type="number"
+                      value={g.priority}
+                      onChange={(e) =>
+                        update(g.id, { priority: parseInt(e.target.value) || 0 })
+                      }
+                      className="w-full bg-transparent text-[#fff8dc] outline-none text-sm font-bold"
+                    />
+                  </div>
                 </div>
 
                 <GoldButton

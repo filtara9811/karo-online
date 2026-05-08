@@ -160,32 +160,32 @@ function VendorShop() {
       className="relative min-h-dvh overflow-x-hidden overflow-y-auto pb-32 isolate"
       style={{
         background:
-          "radial-gradient(ellipse at top, #fffaf0 0%, transparent 55%), linear-gradient(160deg, #fffdf5 0%, #fbf3d9 60%, #f5e9b8 100%)",
+          "radial-gradient(ellipse at top, #f5f6f8 0%, transparent 55%), linear-gradient(160deg, #f5f6f8 0%, #f5f6f8 60%, #eef0f3 100%)",
       }}
     >
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
 
       {/* Top bar */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate({ to: "/vendor/dashboard" })}
             aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm active:scale-90"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
           >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
           </button>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
-            <h1 className="font-display text-lg text-gold-gradient leading-tight font-bold">
+            <h1 className="font-display text-lg text-silver-gradient leading-tight font-bold">
               Ashhu's Digital Shop
             </h1>
           </div>
           <button
             onClick={() => setPosOpen(true)}
             aria-label="Create Invoice"
-            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-md active:scale-90"
-            style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90"
+            style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
           >
             <Receipt className="h-4 w-4" />
             {cartCount > 0 && (
@@ -208,7 +208,7 @@ function VendorShop() {
         <BannerCarousel />
 
         {/* Pricing mode toggle */}
-        <div className="flex items-center justify-between rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-1 shadow-sm">
+        <div className="flex items-center justify-between rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
           <ModePill
             active={pricingMode === "retail"}
             label="Retail Pricing"
@@ -234,12 +234,12 @@ function VendorShop() {
         {/* Section: All products grid */}
         <section>
           <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="font-display text-base text-gold-gradient font-bold">
+            <h3 className="font-display text-base text-silver-gradient font-bold">
               All Products <span className="font-light">| {filtered.length}</span>
             </h3>
             <button
               onClick={() => setAddingNew(true)}
-              className="text-[10px] font-bold text-[color:oklch(0.42_0.10_82)] uppercase tracking-wider"
+              className="text-[10px] font-bold text-[color:oklch(0.42_0.01_260)] uppercase tracking-wider"
             >
               + Add New
             </button>
@@ -258,12 +258,12 @@ function VendorShop() {
             {/* Add tile */}
             <button
               onClick={() => setAddingNew(true)}
-              className="aspect-[3/4] rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] grid place-items-center bg-white/60 active:scale-[0.97]"
+              className="aspect-[3/4] rounded-2xl border-2 border-dashed border-[color:oklch(0.72_0.01_260/0.6)] grid place-items-center bg-white/60 active:scale-[0.97]"
             >
-              <div className="flex flex-col items-center gap-1.5 text-[color:oklch(0.42_0.10_82)]">
+              <div className="flex flex-col items-center gap-1.5 text-[color:oklch(0.42_0.01_260)]">
                 <span
                   className="h-10 w-10 rounded-full grid place-items-center text-white shadow-md"
-                  style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
+                  style={{ background: "linear-gradient(180deg, #d8dde3, #a8acb3, #3f4750)" }}
                 >
                   <ImagePlus className="h-5 w-5" />
                 </span>
@@ -282,9 +282,9 @@ function VendorShop() {
         >
           <div className="max-w-md mx-auto px-4">
             <div
-              className="pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-2 border border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_10px_28px_-10px_rgba(212,175,55,0.6)]"
+              className="pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-2 border border-[color:oklch(0.72_0.01_260/0.6)] shadow-[0_10px_28px_-10px_rgba(212,175,55,0.6)]"
               style={{
-                background: "linear-gradient(180deg, #fffaeb, #fdf3c8)",
+                background: "linear-gradient(180deg, #f5f6f8, #f5f6f8)",
                 animation: "fade-up 0.4s cubic-bezier(0.22,1,0.36,1) both",
               }}
             >
@@ -296,20 +296,20 @@ function VendorShop() {
               >
                 <span
                   ref={basketRef}
-                  className="relative h-10 w-10 rounded-full grid place-items-center bg-white border-2 border-[#d4af37] shadow-gold-glow"
+                  className="relative h-10 w-10 rounded-full grid place-items-center bg-white border-2 border-[#a8acb3] shadow-silver-glow"
                 >
-                  <ShoppingBasket className="h-4 w-4 text-[#92400e]" strokeWidth={2.4} />
+                  <ShoppingBasket className="h-4 w-4 text-[#3f4750]" strokeWidth={2.4} />
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#f5d97a] via-[#d4af37] to-[#8b6508] text-[9px] font-bold text-white grid place-items-center shadow">
+                    <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-gradient-to-br from-[#d8dde3] via-[#a8acb3] to-[#3f4750] text-[9px] font-bold text-white grid place-items-center shadow">
                       {cartCount}
                     </span>
                   )}
                 </span>
                 <span className="text-left">
-                  <span className="block font-display text-[11px] text-gold-gradient font-bold leading-tight">
+                  <span className="block font-display text-[11px] text-silver-gradient font-bold leading-tight">
                     {cartCount} {cartCount === 1 ? "item" : "items"}
                   </span>
-                  <span className="block text-[9px] text-[color:oklch(0.45_0.08_85)] tabular-nums">
+                  <span className="block text-[9px] text-[color:oklch(0.45_0.01_260)] tabular-nums">
                     ₹{cartTotal.toLocaleString()}
                   </span>
                 </span>
@@ -319,10 +319,10 @@ function VendorShop() {
               <button
                 onClick={() => setScanOpen(true)}
                 aria-label="Scan barcode"
-                className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-gold-glow border-2 border-white active:scale-90"
+                className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-silver-glow border-2 border-white active:scale-90"
                 style={{
                   background:
-                    "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+                    "linear-gradient(180deg, #f5f6f8, #d8dde3, #a8acb3, #3f4750)",
                 }}
               >
                 <ScanBarcode className="h-5 w-5" strokeWidth={2.4} />
@@ -332,8 +332,8 @@ function VendorShop() {
               <button
                 onClick={() => setPosOpen(true)}
                 disabled={cartCount === 0}
-                className="flex-1 h-12 rounded-xl font-display font-bold text-[12px] text-[color:oklch(0.13_0.06_18)] shadow-gold-glow active:scale-[0.98] disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37, #8b6508)" }}
+                className="flex-1 h-12 rounded-xl font-display font-bold text-[12px] text-[color:oklch(0.13_0.06_18)] shadow-silver-glow active:scale-[0.98] disabled:opacity-60"
+                style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3, #3f4750)" }}
               >
                 Bill Now →
               </button>
@@ -433,12 +433,12 @@ function ModePill({
       onClick={onClick}
       className={`flex-1 py-2 rounded-xl text-[11px] font-display font-bold uppercase tracking-wider transition ${
         active
-          ? "text-[color:oklch(0.18_0.06_18)] shadow"
+          ? "text-[color:oklch(0.20_0.01_260)] shadow"
           : "text-[color:oklch(0.55_0.10_82)]"
       }`}
       style={
         active
-          ? { background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }
+          ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }
           : undefined
       }
     >
@@ -460,9 +460,9 @@ function ProductTile({
 }) {
   const themeStyles: Record<NonNullable<VendorProduct["theme"]>, string> = {
     classic: "bg-white",
-    minimal: "bg-[#fffaf0]",
-    bold: "bg-gradient-to-b from-white to-[#fff3c8]",
-    luxe: "bg-gradient-to-b from-[#fff8dc] to-[#f5e9b8]",
+    minimal: "bg-[#f5f6f8]",
+    bold: "bg-gradient-to-b from-white to-[#eef0f3]",
+    luxe: "bg-gradient-to-b from-[#f5f6f8] to-[#eef0f3]",
   };
   const t = product.theme ?? "classic";
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -475,24 +475,24 @@ function ProductTile({
       onMouseLeave={onPressEnd}
       onTouchStart={onPressStart}
       onTouchEnd={onPressEnd}
-      className={`relative aspect-[3/4] rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.97] transition select-none ${themeStyles[t]}`}
+      className={`relative aspect-[3/4] rounded-2xl overflow-hidden border border-[color:oklch(0.72_0.01_260/0.5)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.97] transition select-none ${themeStyles[t]}`}
       style={{ animation: "float-soft 6s ease-in-out infinite" }}
     >
       <div className="relative h-3/5 overflow-hidden">
         {product.image ? (
           <img ref={imgRef} src={product.image} alt={product.name} className="h-full w-full object-cover" />
         ) : (
-          <div ref={fallbackRef} className="h-full w-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]">
-            <ImagePlus className="h-8 w-8 text-[#d4af37]" />
+          <div ref={fallbackRef} className="h-full w-full grid place-items-center bg-gradient-to-br from-[#f5f6f8] to-[#eef0f3]">
+            <ImagePlus className="h-8 w-8 text-[#a8acb3]" />
           </div>
         )}
         {product.badge && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 text-[8px] font-bold text-[color:oklch(0.42_0.10_82)] uppercase tracking-wider shadow">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 text-[8px] font-bold text-[color:oklch(0.42_0.01_260)] uppercase tracking-wider shadow">
             {product.badge}
           </span>
         )}
         <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white/90 grid place-items-center shadow">
-          <Edit3 className="h-3 w-3 text-[color:oklch(0.42_0.10_82)]" />
+          <Edit3 className="h-3 w-3 text-[color:oklch(0.42_0.01_260)]" />
         </span>
 
         <button
@@ -502,21 +502,21 @@ function ProductTile({
             if (src) onQuickAdd(src);
           }}
           aria-label={`Add ${product.name} to billing`}
-          className="absolute -bottom-3 right-2 h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-gold-glow border-2 border-white active:scale-90 transition"
+          className="absolute -bottom-3 right-2 h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.13_0.06_18)] shadow-silver-glow border-2 border-white active:scale-90 transition"
           style={{
-            background: "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+            background: "linear-gradient(180deg, #f5f6f8, #d8dde3, #a8acb3, #3f4750)",
           }}
         >
           <Plus className="h-4 w-4" strokeWidth={3.2} />
         </button>
       </div>
       <div className="p-2 pt-3">
-        <h4 className="font-display text-xs font-bold text-[color:oklch(0.25_0.05_85)] truncate">
+        <h4 className="font-display text-xs font-bold text-[color:oklch(0.25_0.01_260)] truncate">
           {product.name || "Untitled"}
         </h4>
-        <p className="text-[9px] text-[color:oklch(0.45_0.08_85)] truncate">{product.tagline}</p>
+        <p className="text-[9px] text-[color:oklch(0.45_0.01_260)] truncate">{product.tagline}</p>
         <div className="flex items-baseline gap-1 mt-0.5">
-          <span className="font-display text-sm text-gold-gradient font-bold">
+          <span className="font-display text-sm text-silver-gradient font-bold">
             ₹{product.price.toLocaleString()}
           </span>
           {product.mrp > product.price && (
@@ -526,7 +526,7 @@ function ProductTile({
           )}
         </div>
         <div className="flex items-center gap-0.5 mt-0.5">
-          <Star className="h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37]" />
+          <Star className="h-2.5 w-2.5 fill-[#a8acb3] text-[#a8acb3]" />
           <span className="text-[9px] font-bold">{product.rating}</span>
           <span className="text-[9px] text-[color:oklch(0.55_0.10_82)]">({product.reviews})</span>
         </div>
@@ -555,7 +555,7 @@ function FlyImage({ fly }: { fly: FlyEffect }) {
       <img
         src={fly.src}
         alt=""
-        className="h-full w-full object-cover rounded-2xl border-2 border-[#d4af37] shadow-2xl"
+        className="h-full w-full object-cover rounded-2xl border-2 border-[#a8acb3] shadow-2xl"
       />
     </div>
   );

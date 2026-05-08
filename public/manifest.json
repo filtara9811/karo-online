@@ -1,0 +1,36 @@
+{
+  "name": "Karo Online",
+  "short_name": "Karo",
+  "description": "Karo Online — premium services & vendor marketplace.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#000080",
+  "background_color": "#FFFFFF",
+  "lang": "en",
+  "dir": "ltr",
+  "gcm_sender_id": "103953800507",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=app.karoonline.twa",
+      "id": "app.karoonline.twa"
+    }
+  ],
+  "prefer_related_applications": false
+}

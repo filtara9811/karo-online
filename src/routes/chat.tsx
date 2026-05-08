@@ -2,15 +2,31 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Tag, Trash2,
-  Image as ImageIcon, FileText, MapPin, QrCode, Store, CreditCard, User as UserIcon, Pencil,
+  Phone, Camera, Mic, Paperclip, Send, Plus, X, Volume2, Pin, Trash2,
+  Image as ImageIcon, MapPin, MessageSquare, Pencil, Check, Ban, ChevronDown,
 } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import {
+  LocationSheet,
+  LocationBubble, QrPayBubble, ShopBubble, InvoiceBubble,
+  type LocationPayload, type QrPayPayload, type ShopCardPayload, type InvoicePayload,
+} from "@/components/ChatSheets";
+import { MyOrdersList } from "@/components/MyOrdersList";
+import { RatingSheet } from "@/components/RatingSheet";
+import {
+  useOrdersStore, getOrder, getVendor, cancelOrder, clearUnread,
+  STATUS_STEPS, STATUS_BADGE,
+  type OrderStatus,
+} from "@/lib/orders-store";
+import { RotateCcw, IndianRupee, Repeat, Siren, Flag } from "lucide-react";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
 import avatarUser from "@/assets/avatar-user.png";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { supabase } from "@/integrations/supabase/client";
 
 const chatSearchSchema = z.object({
   productId: fallback(z.string(), "").default(""),
@@ -18,6 +34,9 @@ const chatSearchSchema = z.object({
   productImage: fallback(z.string(), "").default(""),
   productPrice: fallback(z.number(), 0).default(0),
   mode: fallback(z.enum(["chat", "inquiry"]), "chat").default("chat"),
+  vendorId: fallback(z.string(), "").default(""),
+  orderId: fallback(z.string(), "").default(""),
+  leadId: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/chat")({
@@ -49,6 +68,10 @@ type Msg = {
   read?: boolean;
   product?: { name: string; image: string; price: number };
   image?: string;
+  location?: LocationPayload;
+  qrPay?: QrPayPayload;
+  shop?: ShopCardPayload;
+  invoice?: InvoicePayload;
   kind?: "inquiry" | "chat";
   edited?: { at: string; original: string } | null;
   deleted?: { at: string; original: string } | null;
@@ -94,13 +117,22 @@ const TAG_STYLES: Record<TagColor, string> = {
 function ChatPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+
+  // Real-time lead chat path (customer side): if leadId is provided, render the live thread.
+  if (search.leadId) {
+    return <LeadChatRoute leadId={search.leadId} vendorId={search.vendorId || ""} />;
+  }
+
+  const ordersStore = useOrdersStore();
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
-  const [activeId, setActiveId] = useState<string>("v1");
+  const [activeId, setActiveId] = useState<string>(search.vendorId || "v1");
+  const [activeOrderId, setActiveOrderId] = useState<string>(search.orderId || "");
   const [threads, setThreads] = useState<Record<string, Msg[]>>(SEED);
   const [draft, setDraft] = useState("");
   const [pendingProduct, setPendingProduct] = useState<{ name: string; image: string; price: number } | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [showAttach, setShowAttach] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<null | "location" | "qrpay" | "shop" | "invoice">(null);
   const [showVendorsSheet, setShowVendorsSheet] = useState(false);
   const [editing, setEditing] = useState<{ msgId: string; text: string } | null>(null);
   const [longPressMsg, setLongPressMsg] = useState<string | null>(null);
@@ -109,6 +141,7 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [chips, setChips] = useState<QuickChip[]>(DEFAULT_CHIPS);
   const [editingChip, setEditingChip] = useState<{ index: number | null; label: string; emoji: string } | null>(null);
+  const [showRating, setShowRating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -119,6 +152,28 @@ function ChatPage() {
   const active = vendors.find((v) => v.id === activeId)!;
   const msgs = threads[activeId] ?? [];
   const sortedVendors = [...vendors].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+
+  // Vendor's orders + currently-selected order
+  const vendorGroup = ordersStore.find((v) => v.vendorId === activeId);
+  const vendorOrders = vendorGroup?.orders ?? [];
+  const currentOrder = vendorOrders.find((o) => o.id === activeOrderId) ?? vendorOrders[0];
+  const pendingApproval = currentOrder?.approvals?.find((a) => a.state === "pending");
+  const allApprovals = currentOrder?.approvals ?? [];
+
+  // Sync activeId/orderId when search params change (e.g. opening from MyOrdersList)
+  useEffect(() => {
+    if (search.vendorId && search.vendorId !== activeId) setActiveId(search.vendorId);
+    if (search.orderId && search.orderId !== activeOrderId) setActiveOrderId(search.orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.vendorId, search.orderId]);
+
+  // Default order on vendor switch
+  useEffect(() => {
+    if (vendorOrders.length > 0 && !vendorOrders.some((o) => o.id === activeOrderId)) {
+      setActiveOrderId(vendorOrders[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, ordersStore]);
 
   // Handle incoming product
   useEffect(() => {
@@ -171,6 +226,17 @@ function ChatPage() {
       };
       setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), reply] }));
     }, 1400);
+  };
+
+  const pushMyMessage = (partial: Partial<Msg>, fallbackText: string) => {
+    const newMsg: Msg = {
+      id: `${Date.now()}`, from: "me",
+      text: partial.text || fallbackText,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: true,
+      ...partial,
+    };
+    setThreads((p) => ({ ...p, [activeId]: [...(p[activeId] ?? []), newMsg] }));
   };
 
   // ===== Voice: hold-to-talk speech-to-text =====
@@ -308,31 +374,109 @@ function ChatPage() {
           })}
           <button
             onClick={() => setShowVendorsSheet(true)}
-            className="flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
-            aria-label="All vendors"
+            className="ml-auto flex-shrink-0 h-12 w-12 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border-2 border-white shadow-sm active:scale-90"
+            aria-label="My Orders"
           >
             <span className="text-xs font-bold text-[color:oklch(0.45_0.08_85)]">{vendors.length}+</span>
           </button>
         </div>
       </div>
 
-      {/* Active vendor header */}
-      <div className="flex-shrink-0 bg-white px-4 py-2.5 flex items-center justify-between border-b-2 border-[#fbbf24]">
-        <div className="flex items-center gap-2.5">
-          <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)]">
+      {/* Active vendor header — WhatsApp + Call + X */}
+      <div className="flex-shrink-0 bg-white px-3 py-2.5 flex items-center justify-between border-b border-[#fbbf24]/60 gap-2">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <span className="h-9 w-9 rounded-full overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] flex-shrink-0">
             <img src={active.avatar} alt={active.name} className="h-full w-full object-cover" />
           </span>
-          <div className="leading-tight">
-            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)]">
+          <div className="leading-tight min-w-0">
+            <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">
               Vander | {active.name.split(" | ")[0]}
             </p>
             <p className="text-[10px] text-emerald-600 font-semibold">{active.status}</p>
           </div>
         </div>
-        <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90">
+        <a
+          href="https://wa.me/919999999999"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="WhatsApp"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-emerald-300 shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <img src={whatsappIcon} alt="" className="h-5 w-5" loading="lazy" width={20} height={20} />
+        </a>
+        <button aria-label="Call" className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0">
           <Phone className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
         </button>
+        <button
+          onClick={() => { try { window.history.length > 1 ? window.history.back() : navigate({ to: "/home" }); } catch { navigate({ to: "/home" }); } }}
+          aria-label="Close chat"
+          className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 flex-shrink-0"
+        >
+          <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+        </button>
       </div>
+
+      {/* Per-vendor order tabs (Option C) + status pipeline */}
+      {vendorOrders.length > 0 && (
+        <div className="flex-shrink-0 bg-gradient-to-b from-white to-amber-50/40 border-b border-amber-100">
+          <div className="px-3 pt-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {vendorOrders.map((o) => {
+              const isActive = o.id === currentOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setActiveOrderId(o.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-t-xl border-b-2 text-[11px] font-semibold transition ${
+                    isActive
+                      ? "bg-white border-amber-500 text-amber-800 shadow-sm"
+                      : "bg-transparent border-transparent text-slate-500"
+                  }`}
+                >
+                  <span className="font-bold">{o.service}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
+                    {STATUS_BADGE[o.status].label}
+                  </span>
+                  {o.unread > 0 && (
+                    <span className="min-w-[16px] h-4 px-1 grid place-items-center text-[9px] font-bold text-white bg-emerald-500 rounded-full">
+                      {o.unread}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Compact order id + cancel/rate strip (stepper moved to /status) */}
+          {currentOrder && (
+            <div className="px-3 pb-2 flex items-center justify-between">
+              <button
+                onClick={() => navigate({ to: "/status", search: { vendorId: activeId, orderId: currentOrder.id } as never })}
+                className="text-[10px] font-bold text-amber-700 underline underline-offset-2 active:scale-95"
+              >
+                #{currentOrder.id} · View live status →
+              </button>
+              <div className="flex items-center gap-2">
+                {currentOrder.status === "delivered" && !currentOrder.rated && (
+                  <button
+                    onClick={() => setShowRating(true)}
+                    className="text-[10px] font-bold text-amber-600 active:scale-95 animate-pulse"
+                  >
+                    ⭐ Rate now
+                  </button>
+                )}
+                {currentOrder.status !== "cancelled" && currentOrder.status !== "delivered" && (
+                  <button
+                    onClick={() => { if (confirm(`Cancel order ${currentOrder.id}?`)) cancelOrder(currentOrder.id); }}
+                    className="text-[10px] font-bold text-red-500 flex items-center gap-0.5 active:scale-95"
+                  >
+                    <Ban className="h-2.5 w-2.5" /> Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
@@ -358,6 +502,10 @@ function ChatPage() {
                 {m.image && !m.deleted && (
                   <img src={m.image} alt="attachment" className="mb-1.5 -mx-1 rounded-xl max-h-48 object-cover" />
                 )}
+                {m.location && !m.deleted && <LocationBubble loc={m.location} />}
+                {m.qrPay && !m.deleted && <QrPayBubble q={m.qrPay} />}
+                {m.shop && !m.deleted && <ShopBubble s={m.shop} />}
+                {m.invoice && !m.deleted && <InvoiceBubble inv={m.invoice} />}
                 {m.product && !m.deleted && (
                   <div className="mb-2 -mx-1 rounded-xl bg-white/90 border border-black/5 overflow-hidden">
                     <div className="flex items-center gap-2 p-2">
@@ -552,17 +700,13 @@ function ChatPage() {
               className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl p-5 pb-8 shadow-2xl"
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-4" />
-              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-4">Share with vendor</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <h3 className="font-display font-bold text-base text-[color:oklch(0.25_0.05_85)] mb-3">Share with vendor</h3>
+              <div className="grid grid-cols-4 gap-3">
                 {[
                   { icon: Camera, label: "Camera", color: "bg-pink-500", action: () => { cameraInputRef.current?.click(); setShowAttach(false); } },
                   { icon: ImageIcon, label: "Gallery", color: "bg-violet-500", action: () => { galleryInputRef.current?.click(); setShowAttach(false); } },
-                  { icon: FileText, label: "Document", color: "bg-indigo-500", action: () => setShowAttach(false) },
-                  { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => setShowAttach(false) },
-                  { icon: QrCode, label: "QR Pay", color: "bg-amber-500", action: () => setShowAttach(false) },
-                  { icon: Store, label: "My Shop", color: "bg-orange-500", action: () => setShowAttach(false) },
-                  { icon: CreditCard, label: "Payment", color: "bg-sky-500", action: () => setShowAttach(false) },
-                  { icon: UserIcon, label: "Catalog", color: "bg-rose-500", action: () => setShowAttach(false) },
+                  { icon: MapPin, label: "Location", color: "bg-emerald-500", action: () => { setShowAttach(false); setActiveSheet("location"); } },
+                  { icon: MessageSquare, label: "Quick Reply", color: "bg-amber-500", action: () => { setShowAttach(false); setEditingChip({ index: null, label: "", emoji: "✨" }); } },
                 ].map((it) => (
                   <button key={it.label} onClick={it.action} className="flex flex-col items-center gap-1.5 active:scale-90">
                     <span className={`h-14 w-14 rounded-2xl grid place-items-center ${it.color} shadow-md`}>
@@ -571,6 +715,27 @@ function ChatPage() {
                     <span className="text-[10px] font-semibold text-[color:oklch(0.30_0.05_85)]">{it.label}</span>
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <h3 className="font-display font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">Need help with order?</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { icon: RotateCcw, label: "Return", color: "bg-blue-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔄 Return request raised for this order." }, "Return request"); } },
+                    { icon: IndianRupee, label: "Refund", color: "bg-emerald-600", action: () => { setShowAttach(false); pushMyMessage({ text: "💸 Refund request raised." }, "Refund request"); } },
+                    { icon: Repeat, label: "Exchange", color: "bg-indigo-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🔁 Exchange request raised." }, "Exchange request"); } },
+                    { icon: Flag, label: "Report", color: "bg-orange-500", action: () => { setShowAttach(false); pushMyMessage({ text: "🚩 Issue reported. Our team will review." }, "Report issue"); } },
+                    { icon: Siren, label: "SOS", color: "bg-red-600", action: () => { setShowAttach(false); if (confirm("Call helpline 1800-000-000?")) window.location.href = "tel:18000000000"; } },
+                  ].map((it) => (
+                    <button key={it.label} onClick={it.action} onContextMenu={(e) => { if (it.label === "SOS") { e.preventDefault(); window.location.href = "tel:18000000000"; } }} className="flex flex-col items-center gap-1 active:scale-90">
+                      <span className={`h-11 w-11 rounded-xl grid place-items-center ${it.color} shadow ${it.label === "SOS" ? "animate-pulse" : ""}`}>
+                        <it.icon className="h-5 w-5 text-white" />
+                      </span>
+                      <span className="text-[9px] font-semibold text-slate-700">{it.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-center text-[9px] italic text-slate-400">Long-press SOS to call helpline directly</p>
               </div>
             </motion.div>
           </>
@@ -591,35 +756,13 @@ function ChatPage() {
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 my-3" />
               <div className="px-5 pb-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">All Vendors ({vendors.length})</h3>
-                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
+                <h3 className="font-display font-bold text-lg text-[color:oklch(0.25_0.05_85)]">My Orders</h3>
+                <button onClick={() => setShowVendorsSheet(false)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90" aria-label="Close">
                   <X className="h-4 w-4 text-gray-600" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                {sortedVendors.map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition">
-                    <button onClick={() => { setActiveId(v.id); setShowVendorsSheet(false); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                      <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-                        <img src={v.avatar} alt="" className="h-full w-full object-cover" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{v.name}</p>
-                          {v.pinned && <Pin className="h-3 w-3 text-[#d97706]" />}
-                          {v.tag && (
-                            <span className={`px-1.5 py-px text-[9px] font-bold rounded-full ${TAG_STYLES[v.tag.color]}`}>{v.tag.label}</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-emerald-600 font-semibold">{v.status}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{(threads[v.id] ?? []).slice(-1)[0]?.text ?? "No messages yet"}</p>
-                      </div>
-                    </button>
-                    <button onClick={() => setVendorActionFor(v.id)} className="h-8 w-8 grid place-items-center rounded-full bg-gray-100 active:scale-90">
-                      <Tag className="h-4 w-4 text-gray-600" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <MyOrdersList onItemClick={() => setShowVendorsSheet(false)} />
               </div>
             </motion.div>
           </>
@@ -784,6 +927,61 @@ function ChatPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ===== Feature sheets: Location / QR Pay / Shop / Invoice ===== */}
+      <AnimatePresence>
+        {activeSheet === "location" && (
+          <LocationSheet
+            onClose={() => setActiveSheet(null)}
+            onSend={(loc) => pushMyMessage({ location: loc, text: loc.live ? "📍 Live location shared" : "📍 Location" }, "📍 Location")}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ===== Rating sheet (Option C — emoji + GMB deep link) ===== */}
+      <AnimatePresence>
+        {showRating && currentOrder && (
+          <RatingSheet
+            orderId={currentOrder.id}
+            vendorName={active.name}
+            vendorAvatar={active.avatar}
+            gmbPlaceId={vendorGroup?.gmbPlaceId}
+            onClose={() => setShowRating(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
+}
+
+function LeadChatRoute({ leadId, vendorId }: { leadId: string; vendorId: string }) {
+  const [peer, setPeer] = useState<LeadChatPeer | null>(null);
+
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      const list = (data ?? []) as Array<{
+        vendor_id: string;
+        business_name: string | null;
+        owner_name: string | null;
+        avatar_url: string | null;
+        whatsapp: string | null;
+        phone: string | null;
+      }>;
+      const v = (vendorId && list.find((x) => x.vendor_id === vendorId)) || list[0];
+      if (!alive || !v) return;
+      setPeer({
+        id: v.vendor_id,
+        name: v.business_name || v.owner_name || "Vendor",
+        avatar_url: v.avatar_url,
+        phone: v.phone || v.whatsapp,
+        subtitle: v.owner_name && v.business_name ? v.owner_name : "Verified vendor",
+      });
+    })();
+    return () => { alive = false; };
+  }, [leadId, vendorId]);
+
+  return <LeadChatThread leadId={leadId} peer={peer} myRole="customer" />;
 }

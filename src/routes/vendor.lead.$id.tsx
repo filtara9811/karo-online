@@ -37,14 +37,14 @@ export const Route = createFileRoute("/vendor/lead/$id")({
   notFoundComponent: () => (
     <div className="min-h-screen grid place-items-center px-6 text-center">
       <div>
-        <h1 className="font-display text-2xl text-gold-gradient font-bold">Lead not found</h1>
-        <p className="text-sm text-[color:oklch(0.45_0.08_85)] mt-2">
+        <h1 className="font-display text-2xl text-silver-gradient font-bold">Lead not found</h1>
+        <p className="text-sm text-[color:oklch(0.45_0.01_260)] mt-2">
           This lead may have been removed.
         </p>
         <Link
           to="/vendor/dashboard"
-          className="inline-block mt-4 px-4 py-2 rounded-xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)]"
-          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+          className="inline-block mt-4 px-4 py-2 rounded-xl font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)]"
+          style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
         >
           Back to Dashboard
         </Link>
@@ -55,11 +55,11 @@ export const Route = createFileRoute("/vendor/lead/$id")({
     <div className="min-h-screen grid place-items-center px-6 text-center">
       <div>
         <h1 className="font-display text-xl font-bold">Something went wrong</h1>
-        <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-1">{error.message}</p>
+        <p className="text-xs text-[color:oklch(0.45_0.01_260)] mt-1">{error.message}</p>
         <button
           onClick={reset}
-          className="mt-4 px-4 py-2 rounded-xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)]"
-          style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
+          className="mt-4 px-4 py-2 rounded-xl font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)]"
+          style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
         >
           Try again
         </button>
@@ -84,8 +84,8 @@ const STATUS_ICON: Record<LeadStatus, React.ReactNode> = {
 };
 
 const STATUS_TINT: Record<LeadStatus, string> = {
-  new: "bg-[#fff3c8] text-[#8b6508] border-[#f5d97a]",
-  process: "bg-[#fff8dc] text-[color:oklch(0.42_0.10_82)] border-[#f5e9b8]",
+  new: "bg-[#eef0f3] text-[#3f4750] border-[#d8dde3]",
+  process: "bg-[#f5f6f8] text-[color:oklch(0.42_0.01_260)] border-[#eef0f3]",
   success: "bg-[#f0fdf4] text-[#15803d] border-[#bbf7d0]",
   rejected: "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]",
 };
@@ -127,32 +127,32 @@ function LeadDetailPage() {
       className="relative min-h-dvh overflow-x-hidden overflow-y-auto pb-40 isolate"
       style={{
         background:
-          "radial-gradient(ellipse at top, #fffaf0 0%, transparent 55%), linear-gradient(160deg, #fffdf5 0%, #fbf3d9 60%, #f5e9b8 100%)",
+          "radial-gradient(ellipse at top, #f5f6f8 0%, transparent 55%), linear-gradient(160deg, #f5f6f8 0%, #f5f6f8 60%, #eef0f3 100%)",
       }}
     >
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
       {/* Top bar */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate({ to: "/vendor/dashboard" })}
             aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm active:scale-90"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
           >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
           </button>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
               ✦ Lead Details ✦
             </p>
-            <h1 className="font-display text-lg text-gold-gradient leading-tight font-bold truncate">
+            <h1 className="font-display text-lg text-silver-gradient leading-tight font-bold truncate">
               {lead.id}
             </h1>
           </div>
-          <span className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm">
-            <Sparkles className="h-4 w-4 text-[#d4af37]" />
+          <span className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm">
+            <Sparkles className="h-4 w-4 text-[#a8acb3]" />
           </span>
         </div>
       </header>
@@ -160,10 +160,10 @@ function LeadDetailPage() {
       <div className="max-w-md mx-auto px-4 pt-4 space-y-4 relative">
         {/* Hero customer card */}
         <section
-          className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.18_0.06_18)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)]"
+          className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)]"
           style={{
             background:
-              "linear-gradient(135deg, #fff8dc 0%, #f5d97a 35%, #d4af37 80%, #b8860b 100%)",
+              "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
             border: "1.5px solid rgba(255,255,255,0.6)",
           }}
         >
@@ -189,18 +189,18 @@ function LeadDetailPage() {
 
           <div className="relative grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-white/90 px-3 py-2">
-              <p className="text-[9px] uppercase tracking-[0.18em] text-[color:oklch(0.45_0.08_85)]">
+              <p className="text-[9px] uppercase tracking-[0.18em] text-[color:oklch(0.45_0.01_260)]">
                 Quote
               </p>
-              <p className="font-display text-lg font-bold text-gold-gradient leading-tight">
+              <p className="font-display text-lg font-bold text-silver-gradient leading-tight">
                 ₹{lead.amount.toLocaleString()}
               </p>
             </div>
             <div className="rounded-xl bg-white/90 px-3 py-2">
-              <p className="text-[9px] uppercase tracking-[0.18em] text-[color:oklch(0.45_0.08_85)]">
+              <p className="text-[9px] uppercase tracking-[0.18em] text-[color:oklch(0.45_0.01_260)]">
                 Source
               </p>
-              <p className="font-display text-sm font-bold flex items-center gap-1 text-[color:oklch(0.18_0.06_18)] leading-tight mt-0.5">
+              <p className="font-display text-sm font-bold flex items-center gap-1 text-[color:oklch(0.20_0.01_260)] leading-tight mt-0.5">
                 {SOURCE_ICON[lead.source]} {SOURCE_LABEL[lead.source]}
               </p>
             </div>
@@ -216,38 +216,46 @@ function LeadDetailPage() {
           </div>
         </section>
 
-        {/* One-tap actions */}
+        {/* One-tap actions: Live Chat + Status update */}
         <section className="grid grid-cols-2 gap-3">
-          <a
-            href={`tel:${lead.phone}`}
-            onClick={() => logContact("call")}
-            className="btn-3d rounded-2xl px-3 py-3 flex items-center gap-2 justify-center font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-gold-glow active:scale-[0.97]"
+          <Link
+            to="/vendor/chat"
+            onClick={() => logContact("wa")}
+            className="btn-3d rounded-2xl px-3 py-3 flex items-center gap-2 justify-center font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] shadow-silver-glow active:scale-[0.97]"
             style={{
-              background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 50%, #d4af37 100%)",
+              background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)",
               border: "1.5px solid rgba(255,255,255,0.6)",
             }}
           >
-            <PhoneCall className="h-4 w-4" />
-            Call Now
-          </a>
-          <a
-            href={`https://wa.me/${lead.phone}?text=${encodeURIComponent(`Hi ${lead.name}, regarding your ${lead.service} request (${lead.id})`)}`}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => logContact("wa")}
+            <MessageCircle className="h-4 w-4" />
+            Live Chat
+          </Link>
+          <button
+            onClick={() => {
+              const next: LeadStatus =
+                lead.status === "process" ? "success" : lead.status === "new" ? "process" : lead.status;
+              pushEvent(
+                {
+                  at: "Just now",
+                  label: `Status updated → ${STATUS_LABEL[next]}`,
+                  kind: next === "success" ? "payment" : "scheduled",
+                },
+                next,
+              );
+            }}
             className="btn-3d rounded-2xl px-3 py-3 flex items-center gap-2 justify-center font-display font-bold text-sm text-white shadow-md active:scale-[0.97]"
             style={{
-              background: "linear-gradient(180deg, #25D366 0%, #128C7E 100%)",
+              background: "linear-gradient(180deg, #16a34a 0%, #15803d 100%)",
               border: "1.5px solid rgba(255,255,255,0.45)",
             }}
           >
-            <MessageCircle className="h-4 w-4" />
-            WhatsApp
-          </a>
+            <CheckCircle2 className="h-4 w-4" />
+            Update Status
+          </button>
         </section>
 
         {/* Contact info */}
-        <section className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-3 shadow-sm space-y-2">
+        <section className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm space-y-2">
           <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">
             Contact Information
           </p>
@@ -263,7 +271,7 @@ function LeadDetailPage() {
         </section>
 
         {/* Note */}
-        <section className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-3 shadow-sm">
+        <section className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm">
           <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold flex items-center gap-1">
             <StickyNote className="h-3 w-3" /> Customer Note
           </p>
@@ -273,11 +281,11 @@ function LeadDetailPage() {
         </section>
 
         {/* Timeline */}
-        <section className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-3 shadow-sm">
+        <section className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm">
           <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold mb-3">
             Activity Timeline
           </p>
-          <ol className="relative pl-6 space-y-3 before:content-[''] before:absolute before:left-2 before:top-1 before:bottom-1 before:w-px before:bg-gradient-to-b before:from-[#f5d97a] before:via-[#d4af37] before:to-transparent">
+          <ol className="relative pl-6 space-y-3 before:content-[''] before:absolute before:left-2 before:top-1 before:bottom-1 before:w-px before:bg-gradient-to-b before:from-[#d8dde3] before:via-[#a8acb3] before:to-transparent">
             {lead.timeline.map((ev, i) => (
               <TimelineItem key={i} event={ev} latest={i === lead.timeline.length - 1} />
             ))}
@@ -289,7 +297,7 @@ function LeadDetailPage() {
       <div className="fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none">
         <div className="max-w-md mx-auto px-4 pb-3 pointer-events-auto">
           <div
-            className="rounded-3xl bg-white/95 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-10px_32px_-8px_rgba(212,175,55,0.4)] p-2 flex items-stretch gap-2"
+            className="rounded-3xl bg-white/95 backdrop-blur-md border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-10px_32px_-8px_rgba(212,175,55,0.4)] p-2 flex items-stretch gap-2"
           >
             {lead.status === "new" ? (
               <>
@@ -301,10 +309,10 @@ function LeadDetailPage() {
                 </button>
                 <button
                   onClick={() => setConfirm("accept")}
-                  className="btn-3d flex-[1.6] py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] active:scale-[0.97] flex items-center justify-center gap-1.5 shadow-gold-glow"
+                  className="btn-3d flex-[1.6] py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] active:scale-[0.97] flex items-center justify-center gap-1.5 shadow-silver-glow"
                   style={{
                     background:
-                      "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 75%, #8b6508 100%)",
+                      "linear-gradient(180deg, #eef0f3 0%, #d8dde3 35%, #a8acb3 75%, #3f4750 100%)",
                   }}
                 >
                   <CheckCircle2 className="h-4 w-4" /> Accept Lead
@@ -318,10 +326,10 @@ function LeadDetailPage() {
                     "success",
                   )
                 }
-                className="btn-3d flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] flex items-center justify-center gap-1.5 shadow-gold-glow"
+                className="btn-3d flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] flex items-center justify-center gap-1.5 shadow-silver-glow"
                 style={{
                   background:
-                    "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 75%, #8b6508 100%)",
+                    "linear-gradient(180deg, #eef0f3 0%, #d8dde3 35%, #a8acb3 75%, #3f4750 100%)",
                 }}
               >
                 <Wallet className="h-4 w-4" /> Mark Completed
@@ -329,7 +337,7 @@ function LeadDetailPage() {
             ) : (
               <button
                 disabled
-                className="flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.55_0.10_82)] bg-[color:oklch(0.97_0.02_85)] border border-[color:oklch(0.78_0.14_82/0.3)]"
+                className="flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.55_0.10_82)] bg-[color:oklch(0.97_0.02_85)] border border-[color:oklch(0.72_0.01_260/0.3)]"
               >
                 {STATUS_LABEL[lead.status]}
               </button>
@@ -352,22 +360,22 @@ function LeadDetailPage() {
             aria-modal="true"
             className="relative w-full max-w-md rounded-t-3xl pb-[env(safe-area-inset-bottom)]"
             style={{
-              background: "linear-gradient(180deg, #ffffff 0%, #fffdf5 35%, #fbf3d9 100%)",
+              background: "linear-gradient(180deg, #ffffff 0%, #f5f6f8 35%, #f5f6f8 100%)",
               boxShadow: "0 -20px 60px -12px rgba(212,175,55,0.45)",
               animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             <div className="pt-3 pb-1 grid place-items-center">
-              <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
+              <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#a8acb3] via-[#d8dde3] to-[#a8acb3]" />
             </div>
             <div className="px-6 py-4 text-center">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
                 ✦ Confirm ✦
               </p>
-              <h3 className="font-display text-xl text-gold-gradient font-bold mt-1">
+              <h3 className="font-display text-xl text-silver-gradient font-bold mt-1">
                 {confirm === "accept" ? "Accept this lead?" : "Reject this lead?"}
               </h3>
-              <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-2">
+              <p className="text-xs text-[color:oklch(0.45_0.01_260)] mt-2">
                 {confirm === "accept"
                   ? `You'll be assigned to ${lead.name}'s ${lead.service} request.`
                   : "This lead will be moved to rejected. You can't undo this."}
@@ -375,19 +383,19 @@ function LeadDetailPage() {
               <div className="mt-5 flex gap-2">
                 <button
                   onClick={() => setConfirm(null)}
-                  className="flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.42_0.10_82)] bg-white border border-[color:oklch(0.78_0.14_82/0.5)]"
+                  className="flex-1 py-2.5 rounded-2xl font-display font-bold text-sm text-[color:oklch(0.42_0.01_260)] bg-white border border-[color:oklch(0.72_0.01_260/0.5)]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirm === "accept" ? handleAccept : handleReject}
-                  className="btn-3d flex-1 py-2.5 rounded-2xl font-display font-bold text-sm shadow-gold-glow"
+                  className="btn-3d flex-1 py-2.5 rounded-2xl font-display font-bold text-sm shadow-silver-glow"
                   style={
                     confirm === "accept"
                       ? {
                           background:
-                            "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 75%, #8b6508 100%)",
-                          color: "oklch(0.18 0.06 18)",
+                            "linear-gradient(180deg, #eef0f3 0%, #d8dde3 35%, #a8acb3 75%, #3f4750 100%)",
+                          color: "oklch(0.20 0.01 260)",
                         }
                       : { background: "linear-gradient(180deg, #ef4444, #b91c1c)", color: "white" }
                   }
@@ -414,14 +422,14 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="h-7 w-7 rounded-full bg-[color:oklch(0.97_0.05_85)] grid place-items-center text-[color:oklch(0.42_0.10_82)] flex-shrink-0 mt-0.5">
+      <span className="h-7 w-7 rounded-full bg-[color:oklch(0.97_0.05_85)] grid place-items-center text-[color:oklch(0.42_0.01_260)] flex-shrink-0 mt-0.5">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[9px] uppercase tracking-[0.2em] text-[color:oklch(0.55_0.10_82)] font-bold">
           {label}
         </p>
-        <p className="text-sm text-[color:oklch(0.25_0.05_85)] font-medium break-words">{value}</p>
+        <p className="text-sm text-[color:oklch(0.25_0.01_260)] font-medium break-words">{value}</p>
       </div>
     </div>
   );
@@ -432,8 +440,8 @@ const KIND_META: Record<
   { color: string; bg: string; icon: React.ReactNode }
 > = {
   created: {
-    color: "text-[color:oklch(0.42_0.10_82)]",
-    bg: "bg-[#fff8dc] border-[#f5d97a]",
+    color: "text-[color:oklch(0.42_0.01_260)]",
+    bg: "bg-[#f5f6f8] border-[#d8dde3]",
     icon: <Sparkles className="h-3 w-3" />,
   },
   accepted: {
@@ -447,23 +455,23 @@ const KIND_META: Record<
     icon: <XCircle className="h-3 w-3" />,
   },
   contacted: {
-    color: "text-[color:oklch(0.42_0.10_82)]",
-    bg: "bg-white border-[color:oklch(0.78_0.14_82/0.5)]",
+    color: "text-[color:oklch(0.42_0.01_260)]",
+    bg: "bg-white border-[color:oklch(0.72_0.01_260/0.5)]",
     icon: <MessageCircle className="h-3 w-3" />,
   },
   scheduled: {
-    color: "text-[color:oklch(0.42_0.10_82)]",
-    bg: "bg-[#fffaf0] border-[#f5e9b8]",
+    color: "text-[color:oklch(0.42_0.01_260)]",
+    bg: "bg-[#f5f6f8] border-[#eef0f3]",
     icon: <CalendarClock className="h-3 w-3" />,
   },
   payment: {
-    color: "text-[#8b6508]",
-    bg: "bg-[#fff3c8] border-[#d4af37]",
+    color: "text-[#3f4750]",
+    bg: "bg-[#eef0f3] border-[#a8acb3]",
     icon: <Wallet className="h-3 w-3" />,
   },
   note: {
-    color: "text-[color:oklch(0.45_0.08_85)]",
-    bg: "bg-white border-[color:oklch(0.78_0.14_82/0.4)]",
+    color: "text-[color:oklch(0.45_0.01_260)]",
+    bg: "bg-white border-[color:oklch(0.72_0.01_260/0.4)]",
     icon: <StickyNote className="h-3 w-3" />,
   },
 };
@@ -474,7 +482,7 @@ function TimelineItem({ event, latest }: { event: LeadEvent; latest: boolean }) 
     <li className="relative">
       <span
         className={`absolute -left-6 top-0.5 h-5 w-5 rounded-full border grid place-items-center ${meta.bg} ${meta.color} ${
-          latest ? "shadow-gold-glow" : ""
+          latest ? "shadow-silver-glow" : ""
         }`}
       >
         {meta.icon}
