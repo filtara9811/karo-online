@@ -466,7 +466,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   }}
                 />
 
-                {phone && (
+                {phone.replace(/\D/g, "").slice(-10).length === 10 && (
                   <div
                     className="relative flex items-start gap-3"
                     style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
@@ -765,6 +765,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   onKeyDown={(e) => { if (e.key === "Enter") submitManualPhone(); }}
                   inputMode="numeric"
                   autoComplete="tel-national"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
                   placeholder="10 digit number"
                   className="min-w-0 flex-1 bg-transparent border-0 outline-none text-xl font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.45)]"
                 />
@@ -781,7 +783,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
               <button
                 type="button"
                 onClick={submitManualPhone}
-                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)]"
+                disabled={manualPhone.length !== 10}
+                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-45 disabled:grayscale"
               >
                 Continue
               </button>
