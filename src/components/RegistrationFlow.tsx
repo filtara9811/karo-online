@@ -101,7 +101,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   });
   const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
-  const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
+  const [picker, setPicker] = useState<null | "gender" | "manager">(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -168,7 +168,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     return STEP_ORDER.slice(0, idx + 1);
   }, [reachedStep]);
 
-  const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
   const managerMeta = MANAGER_OPTIONS.find((m) => m.value === manager);
 
   // Persist draft
@@ -262,20 +261,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setManualPhoneOpen(false);
     setManualPhone("");
     setTimeout(() => startInlineOtp(formattedPhone), 350);
-  };
-
-  const handleSimSelect = (value: string) => {
-    const sim = SIM_OPTIONS.find((s) => s.value === value);
-    if (!sim) return;
-    setOperator(value);
-    setPicker(null);
-    if (value === "manual" || !sim.number) {
-      setPhone("");
-      setManualPhoneOpen(true);
-      return;
-    }
-    setPhone(sim.number);
-    setTimeout(() => startInlineOtp(sim.number), 600);
   };
 
   // OTP timer
