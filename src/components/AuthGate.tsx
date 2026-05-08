@@ -26,10 +26,10 @@ export function AuthGate() {
   const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
   const needsGate = !skip && !profileComplete;
 
-  // Auto-open ~1.5s after first ready render
+  // Auto-open immediately on a fresh device when not authenticated
   useEffect(() => {
     if (!ready || !needsGate) return;
-    const id = window.setTimeout(() => setOpen(true), 1500);
+    const id = window.setTimeout(() => setOpen(true), 250);
     return () => window.clearTimeout(id);
   }, [ready, needsGate]);
 
