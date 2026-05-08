@@ -479,7 +479,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                       ? `${operatorMeta?.label} · verified by OTP`
                       : phone
                         ? "Tap to change"
-                        : "Tap → SIM 1 / SIM 2 / Manual"
+                        : "Tap to enter your real mobile number"
                   }
                   value={phone}
                   placeholder=""
