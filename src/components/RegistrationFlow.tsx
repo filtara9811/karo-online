@@ -21,7 +21,7 @@ type StepKey = "name" | "email" | "address" | "manager" | "referral";
 const STEP_ORDER: StepKey[] = ["name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
-const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v2";
 
 type CustomerDraft = {
   gender?: string | null;
