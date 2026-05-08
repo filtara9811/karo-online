@@ -8,6 +8,7 @@ import {
   FolderTree,
   Shield,
   CreditCard,
+  Plug,
   LogOut,
   Menu,
   X,
