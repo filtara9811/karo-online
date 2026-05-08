@@ -24,6 +24,27 @@ function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
 }
 
+type SmsTemplate = {
+  event?: string;
+  label?: string;
+  template_id?: string;
+  variables?: string;
+};
+
+function getTemplate(cfg: Record<string, any>, event = "otp") {
+  const templates = Array.isArray(cfg.templates) ? (cfg.templates as SmsTemplate[]) : [];
+  return templates.find((t) => (t.event || "").toLowerCase() === event) ?? templates[0] ?? null;
+}
+
+function renderVariables(pattern: string | undefined, code: string) {
+  const rendered = (pattern || "{otp}").replace(/\{otp\}/gi, code).replace(/\{code\}/gi, code);
+  return rendered
+    .split(/[|,]/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join("|");
+}
+
 async function logSystem(
   kind: "sms" | "otp" | "payment",
   provider: string | null,
@@ -62,25 +83,27 @@ async function sendViaFast2SMS(
   const apiKey = cfg.api_key?.trim();
   const senderId = cfg.sender_id?.trim() || "FILPRA";
   const route = cfg.route?.trim() || "dlt";
-  const templateId = cfg.template_id?.trim();
+  const template = getTemplate(cfg);
+  const templateId = (template?.template_id || cfg.template_id || "").trim();
+  const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
   if (route === "dlt" && !templateId) return { ok: false, error: "Fast2SMS template_id required for DLT route" };
 
   const params = new URLSearchParams({
-    authorization: apiKey,
     route,
     sender_id: senderId,
     numbers: phone,
-    variables_values: code,
+    variables_values: variablesValues,
     flash: "0",
   });
-  if (templateId) params.set("template_id", templateId);
+  // Fast2SMS DLT expects the approved template/message id in the `message` parameter.
+  if (templateId) params.set(route === "dlt" ? "message" : "template_id", templateId);
   if (cfg.message_id?.trim()) params.set("message_id", cfg.message_id.trim());
 
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
-    const res = await fetch(url, { method: "GET" });
-    const json = (await res.json().catch(() => ({}))) as { return?: boolean; message?: unknown };
+    const res = await fetch(url, { method: "GET", headers: { authorization: apiKey } });
+    const json = (await res.json().catch(async () => ({ raw_text: await res.text().catch(() => "") }))) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
       const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `Fast2SMS ${res.status}: ${msg}`, raw: json };
