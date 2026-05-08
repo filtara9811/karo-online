@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useVendorLeadAlerts } from "@/hooks/use-vendor-leads";
 import { LeadAlertStack } from "@/components/LeadAlertStack";
 import { unlockLeadAlertAudio } from "@/lib/lead-sound";
