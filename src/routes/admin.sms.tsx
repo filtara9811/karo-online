@@ -70,7 +70,7 @@ function SmsPage() {
       .order("provider");
     setGateways(((data ?? []) as any[]).map((g) => ({
       ...g,
-      config: (g.config ?? {}) as Record<string, string>,
+      config: (g.config ?? {}) as Record<string, any>,
     })));
     setLoading(false);
   };
@@ -87,15 +87,48 @@ function SmsPage() {
     );
   };
 
+  const getTemplates = (g: SmsGateway): SmsTemplate[] => {
+    const templates = Array.isArray(g.config.templates) ? g.config.templates : [];
+    if (templates.length > 0) return templates as SmsTemplate[];
+    return [{ ...defaultTemplate(), template_id: g.config.template_id ?? "" }];
+  };
+
+  const updateTemplate = (id: string, idx: number, key: keyof SmsTemplate, value: string) => {
+    setGateways((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const templates = getTemplates(g).map((t, i) => (i === idx ? { ...t, [key]: value } : t));
+      return { ...g, config: { ...g.config, templates, template_id: templates[0]?.template_id ?? g.config.template_id } };
+    }));
+  };
+
+  const addTemplate = (id: string) => {
+    setGateways((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const templates = [...getTemplates(g), { ...defaultTemplate(), event: "", label: "" }];
+      return { ...g, config: { ...g.config, templates } };
+    }));
+  };
+
+  const removeTemplate = (id: string, idx: number) => {
+    setGateways((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const templates = getTemplates(g).filter((_, i) => i !== idx);
+      const safeTemplates = templates.length ? templates : [defaultTemplate()];
+      return { ...g, config: { ...g.config, templates: safeTemplates, template_id: safeTemplates[0]?.template_id ?? "" } };
+    }));
+  };
+
   const save = async (g: SmsGateway) => {
     setSavingId(g.id);
     const { data: sess } = await supabase.auth.getUser();
+    const templates = getTemplates(g).filter((t) => t.event.trim() || t.label.trim() || t.template_id.trim());
+    const config = { ...g.config, templates, template_id: templates[0]?.template_id ?? g.config.template_id ?? "" };
     const { error } = await supabase
       .from("sms_gateways" as any)
       .update({
         is_active: g.is_active,
         is_test_mode: g.is_test_mode,
-        config: g.config,
+        config,
         updated_by: sess.user?.id,
         updated_at: new Date().toISOString(),
       } as any)
