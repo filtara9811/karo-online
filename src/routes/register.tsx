@@ -471,6 +471,7 @@ function Register() {
 
       <CustomerMobileLoginSheet
         open={!mobileGateVerified}
+        initialPhone={phone}
         onVerified={(mobile) => {
           setPhone(mobile);
           setPhoneVerified(true);
