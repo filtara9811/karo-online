@@ -220,7 +220,7 @@ function ProfilePage() {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {CARDS.map((card) => (
+          {liveCards.map((card) => (
             <motion.button
               key={card.id}
               whileTap={{ scale: 0.98 }}
