@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Shield, Loader2, Plus, X, Mail, Phone, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Shield, Loader2, Plus, X, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminLayout,
@@ -8,15 +8,6 @@ import {
   GoldButton,
   PageHeader,
 } from "@/components/admin/AdminLayout";
-import {
-  AdminListToolbar,
-  applyFilters,
-  downloadCsv,
-  downloadPdf,
-  emptyFilters,
-  type ListFilters,
-} from "@/components/admin/AdminListToolbar";
-import { AdminRecordDrawer, type AdminRecord } from "@/components/admin/AdminRecordDrawer";
 
 export const Route = createFileRoute("/admin/staff")({
   head: () => ({
@@ -45,51 +36,6 @@ function StaffPage() {
   const [newRole, setNewRole] = useState<RoleRow["role"]>("support");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Staff profiles (separate table)
-  type StaffProfile = AdminRecord & { designation: string | null; department: string | null };
-  const [staff, setStaff] = useState<StaffProfile[]>([]);
-  const [staffLoading, setStaffLoading] = useState(true);
-  const [filters, setFilters] = useState<ListFilters>(emptyFilters);
-  const [active, setActive] = useState<StaffProfile | null>(null);
-
-  const loadStaff = async () => {
-    setStaffLoading(true);
-    const { data } = await supabase
-      .from("staff_profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setStaff((data ?? []) as StaffProfile[]);
-    setStaffLoading(false);
-  };
-  useEffect(() => {
-    loadStaff();
-  }, []);
-
-  const filteredStaff = useMemo(
-    () =>
-      applyFilters(staff, filters, (s) => [
-        s.name ?? "",
-        s.email ?? "",
-        s.phone ?? "",
-        s.designation ?? "",
-        s.department ?? "",
-        ...(s.tags ?? []),
-      ]),
-    [staff, filters],
-  );
-  const exportStaffRows = () =>
-    filteredStaff.map((s) => ({
-      name: s.name,
-      email: s.email,
-      phone: s.phone,
-      designation: s.designation,
-      department: s.department,
-      verified: s.verified ? "yes" : "no",
-      blocked: s.is_blocked ? "yes" : "no",
-      tags: (s.tags ?? []).join("|"),
-      created_at: new Date(s.created_at).toISOString(),
-    }));
 
   const load = async () => {
     setLoading(true);
@@ -150,82 +96,6 @@ function StaffPage() {
         }
       />
 
-      {/* Staff Members section */}
-      <div className="mb-6">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d4af37]/70 font-bold mb-2">
-          Staff Members ({staff.length})
-        </p>
-        <AdminListToolbar
-          filters={filters}
-          onChange={setFilters}
-          onRefresh={loadStaff}
-          loading={staffLoading}
-          total={staff.length}
-          filtered={filteredStaff.length}
-          onExportCsv={() => downloadCsv(`staff-${Date.now()}.csv`, exportStaffRows())}
-          onExportPdf={() => downloadPdf("Staff", exportStaffRows())}
-        />
-        {staffLoading ? (
-          <GoldCard className="p-8 text-center">
-            <Loader2 className="h-5 w-5 animate-spin text-[#d4af37] mx-auto" />
-          </GoldCard>
-        ) : filteredStaff.length === 0 ? (
-          <GoldCard className="p-8 text-center">
-            <p className="text-xs text-[#f5d97a]/60">
-              {staff.length === 0 ? "Abhi koi staff member registered nahi hai." : "No matches"}
-            </p>
-          </GoldCard>
-        ) : (
-          <div className="space-y-2">
-            {filteredStaff.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setActive(s)}
-                className="block w-full text-left"
-              >
-                <GoldCard className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full overflow-hidden border border-[#d4af37]/40 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center flex-shrink-0">
-                      {s.avatar_url ? (
-                        <img src={s.avatar_url} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="font-bold text-[#1a1a1a] text-sm">
-                          {(s.name || s.email || "?").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="text-sm font-bold text-[#fff8dc] truncate">
-                          {s.name || "Unnamed"}
-                        </h4>
-                        {s.verified && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                            <ShieldCheck className="h-2 w-2" /> VERIFIED
-                          </span>
-                        )}
-                        {s.is_blocked && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
-                            BLOCKED
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#f5d97a]/70 truncate">
-                        {[s.designation, s.department].filter(Boolean).join(" · ") || s.email || "—"}
-                      </p>
-                    </div>
-                  </div>
-                </GoldCard>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <p className="text-[10px] uppercase tracking-[0.25em] text-[#d4af37]/70 font-bold mb-2">
-        Role Assignments
-      </p>
       <GoldCard className="p-3 sm:p-4">
         {loading ? (
           <div className="grid place-items-center py-16">
@@ -368,22 +238,6 @@ function StaffPage() {
           </div>
         </div>
       )}
-      <AdminRecordDrawer
-        open={!!active}
-        record={active}
-        entity="staff_profiles"
-        entityLabel="Staff"
-        onClose={() => setActive(null)}
-        onMutated={loadStaff}
-        extraFields={
-          active
-            ? [
-                { label: "Designation", value: active.designation },
-                { label: "Department", value: active.department },
-              ]
-            : []
-        }
-      />
     </AdminLayout>
   );
 }

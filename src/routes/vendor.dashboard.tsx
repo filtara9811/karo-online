@@ -1,9 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { VendorSideMenu } from "@/components/VendorSideMenu";
+import { useMemo, useState } from "react";
 import {
   Download,
   TrendingUp,
@@ -20,12 +16,10 @@ import {
   Plus,
   Sparkles,
   ArrowLeft,
-  Wallet as WalletIcon,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
+import { LEADS as SHARED_LEADS } from "@/lib/leads";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
-import { VendorNotificationBell } from "@/components/VendorNotificationBell";
-import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -37,109 +31,19 @@ export const Route = createFileRoute("/vendor/dashboard")({
   component: VendorDashboard,
 });
 
-type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
+const LEADS: Lead[] = SHARED_LEADS;
 
-function timeAgo(iso: string): string {
-  const d = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(d / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} hr ago`;
-  const days = Math.floor(h / 24);
-  return `${days}d ago`;
-}
+const POTENTIAL = [
+  { id: "P-01", title: "Kotak 811 Savings Account", earn: 2400, customers: 12, chance: "High" },
+  { id: "P-02", title: "IndusInd Savings Account", earn: 8400, customers: 14, chance: "High" },
+  { id: "P-03", title: "Bajaj Finserv Securities", earn: 800, customers: 16, chance: "High" },
+  { id: "P-04", title: "Axis Bank Credit Card", earn: 6700, customers: 9, chance: "Medium" },
+];
 
 function VendorDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loadingLeads, setLoadingLeads] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
-  const [savingAuto, setSavingAuto] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setVendor(data as any));
-  }, [user]);
-
-  // Load REAL leads for this vendor: notified or already accepted by them
-  useEffect(() => {
-    if (!user) { setLoadingLeads(false); return; }
-    let cancelled = false;
-    const load = async () => {
-      const { data: notifs } = await supabase
-        .from("lead_notifications")
-        .select("lead_id, status, created_at")
-        .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
-      if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
-      const { data: rows } = await supabase
-        .from("leads")
-        .select("id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at")
-        .in("id", ids);
-      if (cancelled) return;
-      const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
-      const mapped: Lead[] = (rows ?? []).map((r: any) => {
-        const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
-        const nstatus = notifStatusMap.get(r.id);
-        let st: LeadStatus = "new";
-        if (r.status === "completed" && accepted) st = "success";
-        else if (accepted) st = "process";
-        else if (nstatus === "rejected") st = "rejected";
-        else st = "new";
-        const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
-        return {
-          id: r.id,
-          name: r.customer_name ?? "Customer",
-          phone: r.customer_phone ?? "",
-          address: r.address ?? undefined,
-          service: r.sub_category_name ?? "Service",
-          amount: Number(r.lead_price_inr ?? 0),
-          source: src,
-          status: st,
-          time: timeAgo(r.created_at),
-          note: r.note ?? "",
-          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
-        };
-      }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
-      setLeads(mapped);
-      setLoadingLeads(false);
-    };
-    load();
-    const channel = supabase
-      .channel(`vendor-leads-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` }, () => load())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [user]);
-
-  const toggleAutoAccept = async () => {
-    if (!user || savingAuto) return;
-    const next = !vendor?.auto_accept_leads;
-    setSavingAuto(true);
-    setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
-    const { error } = await supabase
-      .from("vendors")
-      .update({ auto_accept_leads: next })
-      .eq("user_id", user.id);
-    setSavingAuto(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, auto_accept_leads: !next } : p));
-      toast.error("Setting save nahi hua");
-    } else {
-      toast.success(next ? "Auto Accept ON — har lead automatic accept hogi" : "Manual Accept ON — har lead aapko accept karni hogi");
-    }
-  };
+  const [leads, setLeads] = useState<Lead[]>(LEADS);
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -150,16 +54,7 @@ function VendorDashboard() {
     return { total, success, process, rejected, action };
   }, [leads]);
 
-  const acceptLead = async (id: string) => {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      const { data, error } = await supabase.rpc("accept_lead", { _lead_id: id });
-      const res = data as any;
-      if (error || !res?.ok) {
-        toast.error(res?.reason === "insufficient_coins" ? "LeadX coins low hain — wallet recharge karein" : "Lead accept nahi ho paayi");
-        return;
-      }
-      toast.success("Lead accept ho gayi — customer ko profile dikh rahi hai");
-    }
+  const acceptLead = (id: string) => {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "process" } : l)));
   };
 
@@ -168,115 +63,71 @@ function VendorDashboard() {
       className="relative min-h-dvh overflow-x-hidden pb-32 isolate"
       style={{
         background:
-          "radial-gradient(ellipse at top, #f5f6f8 0%, transparent 55%), linear-gradient(160deg, #f5f6f8 0%, #f5f6f8 60%, #eef0f3 100%)",
+          "radial-gradient(ellipse at top, #fffaf0 0%, transparent 55%), linear-gradient(160deg, #fffdf5 0%, #fbf3d9 60%, #f5e9b8 100%)",
       }}
     >
       {/* Decorative orbs */}
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
-      <ActionAlertBanner role="vendor" />
-      {/* Top bar — avatar (opens menu) at left, status banner if pending */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
-        <div className="max-w-md mx-auto px-3 py-2 flex items-center justify-between gap-3">
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
+        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
           <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            className="relative h-11 w-11 rounded-full overflow-hidden border-2 shadow-md active:scale-95 shrink-0"
-            style={{ borderColor: "#d4af37" }}
+            onClick={() => navigate({ to: "/" })}
+            aria-label="Back"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm active:scale-90"
           >
-            <img src={vendor?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
-            {vendor?.verified && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
-            )}
+            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
           </button>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ Vendor Panel ✦</p>
-            <h1 className="font-display text-base text-silver-gradient leading-tight font-bold truncate">
-              {vendor?.business_name || "My Dashboard"}
-            </h1>
+            <h1 className="font-display text-lg text-gold-gradient leading-tight font-bold">My Dashboard</h1>
           </div>
-          <VendorNotificationBell />
+          <button
+            aria-label="Notifications"
+            className="relative h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm active:scale-90"
+          >
+            <Bell className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-gradient-to-br from-[#f5d97a] to-[#8b6508] text-[8px] font-bold text-white grid place-items-center">
+              {stats.action}
+            </span>
+          </button>
         </div>
-        {vendor?.status === "pending" && (
-          <div className="bg-amber-100 border-t border-amber-300 px-4 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-amber-800">
-            ⏳ Pending Admin Approval
-          </div>
-        )}
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-4 relative">
-        {/* Compact action chip — Services + Wallet (avatar moved to top) */}
+        {/* Vendor profile chip */}
         <section
-          className="relative rounded-2xl overflow-hidden px-3 py-2 flex items-center gap-2 shadow-silver-glow"
+          className="relative rounded-2xl overflow-hidden p-3 flex items-center gap-3 shadow-gold-glow"
           style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #f5f6f8 60%, #eef0f3 100%)",
+            background: "linear-gradient(135deg, #ffffff 0%, #fff8dc 60%, #f5e9b8 100%)",
             border: "1px solid rgba(212,175,55,0.5)",
           }}
         >
+          <span className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+          </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">
-              {vendor?.verified ? "Verified · ID K-91824" : "Vendor Profile"}
-            </p>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] italic truncate">
-              {vendor?.owner_name || "Quick Service · Beauty"}
-            </p>
+            <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">Verified Vendor · ID K-91824</p>
+            <p className="font-display text-base text-gold-gradient font-bold truncate">Ashhu Qureshi</p>
+            <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] italic truncate">Quick Service · Beauty · Delhi NCR</p>
           </div>
-          <Link
-            to="/vendor/services"
-            className="h-9 px-3 grid place-items-center rounded-full shadow-md active:scale-95 text-[10px] font-display font-bold text-[#1a1208] uppercase tracking-wider"
-            style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
-          >
-            Services
-          </Link>
-          <Link
-            to="/vendor/wallet"
-            aria-label="Wallet"
-            className="h-9 w-9 grid place-items-center rounded-full shadow-md active:scale-90"
-            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
-          >
-            <WalletIcon className="h-4 w-4 text-[#1a1208]" />
-          </Link>
+          <Sparkles className="h-5 w-5 text-[#d4af37]" />
         </section>
 
-        {/* Auto / Manual accept toggle */}
-        <button
-          onClick={toggleAutoAccept}
-          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
-        >
-          <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.auto_accept_leads ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-            <Zap className="h-5 w-5" fill={vendor?.auto_accept_leads ? "currentColor" : "none"} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Lead Acceptance</p>
-            <p className="text-sm font-display font-bold text-slate-800 leading-tight">
-              {vendor?.auto_accept_leads ? "Auto Accept · ON" : "Manual Accept"}
-            </p>
-            <p className="text-[10px] text-slate-500 truncate">
-              {vendor?.auto_accept_leads ? "Har naya lead automatic accept ho raha hai" : "Naye lead pe pop-up aayega — aap accept karein"}
-            </p>
-          </div>
-          <span
-            role="switch"
-            aria-checked={!!vendor?.auto_accept_leads}
-            className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.auto_accept_leads ? "bg-emerald-500" : "bg-slate-300"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.auto_accept_leads ? "translate-x-5" : ""}`} />
-          </span>
-        </button>
-
         {/* Tabs */}
-        <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
+        <div className="flex bg-white rounded-2xl border border-[color:oklch(0.78_0.14_82/0.4)] p-1 shadow-sm">
           <button
             onClick={() => setTab("my")}
             className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
               tab === "my"
-                ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
+                ? "text-[color:oklch(0.18_0.06_18)] shadow-md"
                 : "text-[color:oklch(0.55_0.10_82)]"
             }`}
             style={
               tab === "my"
-                ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
+                ? { background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 60%, #d4af37 100%)" }
                 : undefined
             }
           >
@@ -286,12 +137,12 @@ function VendorDashboard() {
             onClick={() => setTab("potential")}
             className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
               tab === "potential"
-                ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
+                ? "text-[color:oklch(0.18_0.06_18)] shadow-md"
                 : "text-[color:oklch(0.55_0.10_82)]"
             }`}
             style={
               tab === "potential"
-                ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
+                ? { background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 60%, #d4af37 100%)" }
                 : undefined
             }
           >
@@ -303,10 +154,10 @@ function VendorDashboard() {
           <>
             {/* Hero stats card — visiting card style */}
             <section
-              className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)]"
+              className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.18_0.06_18)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)]"
               style={{
                 background:
-                  "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
+                  "linear-gradient(135deg, #fff8dc 0%, #f5d97a 35%, #d4af37 80%, #b8860b 100%)",
                 border: "1.5px solid rgba(255,255,255,0.6)",
               }}
             >
@@ -324,12 +175,12 @@ function VendorDashboard() {
                   <p className="text-xs italic opacity-75">See all leads here</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.20_0.01_260)] grid place-items-center font-display text-2xl font-bold shadow">
+                  <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.18_0.06_18)] grid place-items-center font-display text-2xl font-bold shadow">
                     {stats.total}
                   </span>
                   <button
                     aria-label="Download"
-                    className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
+                    className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.10_82)] shadow active:scale-90"
                   >
                     <Download className="h-5 w-5" />
                   </button>
@@ -348,26 +199,48 @@ function VendorDashboard() {
 
             {/* Lead cards */}
             <div className="space-y-3">
-              {loadingLeads && (
-                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">Leads load ho rahi hain…</div>
-              )}
-              {!loadingLeads && leads.length === 0 && (
-                <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
-                  <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
-                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Abhi koi lead nahi</p>
-                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Naya customer request karte hi yahan pop-up aayega.</p>
-                </div>
-              )}
               {leads.map((lead) => (
                 <LeadCard key={lead.id} lead={lead} onAccept={() => acceptLead(lead.id)} />
               ))}
             </div>
           </>
         ) : (
-          <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
-            <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
-            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Aapke area ke high-value leads yahan dikhenge.</p>
+          <div className="space-y-3">
+            {POTENTIAL.map((p) => (
+              <article
+                key={p.id}
+                className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-3 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-14 w-14 rounded-xl grid place-items-center font-display text-xl font-bold text-[color:oklch(0.18_0.06_18)]"
+                    style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a, #d4af37)" }}
+                  >
+                    {p.title.charAt(0)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">
+                      {p.title}
+                    </p>
+                    <p className="text-xs font-bold text-[color:oklch(0.42_0.10_82)]">
+                      Earn upto ₹{p.earn.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between rounded-xl bg-[color:oklch(0.97_0.02_85)] border border-[color:oklch(0.78_0.14_82/0.3)] px-3 py-2">
+                  <div className="text-xs">
+                    <p className="font-bold text-[color:oklch(0.25_0.05_85)]">
+                      Customer Eligible: {p.customers}
+                    </p>
+                    <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-[#d4af37]" />
+                      {p.customers} customers · {p.chance} approval chance
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </div>
@@ -376,9 +249,9 @@ function VendorDashboard() {
       <Link
         to="/vendor/shop"
         aria-label="Open Digital Shop"
-        className="btn-3d fixed bottom-24 right-5 z-40 h-14 w-14 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-[0_10px_28px_-6px_rgba(212,175,55,0.7)] active:scale-90"
+        className="btn-3d fixed bottom-24 right-5 z-40 h-14 w-14 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-[0_10px_28px_-6px_rgba(212,175,55,0.7)] active:scale-90"
         style={{
-          background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 35%, #a8acb3 75%, #3f4750 100%)",
+          background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 35%, #d4af37 75%, #8b6508 100%)",
           border: "2px solid rgba(255,255,255,0.7)",
           animation: "breathe 2.6s ease-in-out infinite",
         }}
@@ -390,7 +263,7 @@ function VendorDashboard() {
       <div className="fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-6 pb-3">
           <div
-            className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2"
+            className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2"
           >
             <DockItem label="Leads" icon={<TrendingUp className="h-4 w-4" />} active />
             <Link
@@ -398,28 +271,17 @@ function VendorDashboard() {
               className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
             >
               <span
-                className="h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow-md"
-                style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
+                className="h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.18_0.06_18)] shadow-md"
+                style={{ background: "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)" }}
               >
                 <Plus className="h-4 w-4" strokeWidth={3} />
               </span>
-              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
+              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.10_82)]">Shop</span>
             </Link>
-            <Link
-              to="/profile"
-              className="flex flex-col items-center gap-0.5 px-3 py-1"
-            >
-              <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
-                <Store className="h-4 w-4" />
-              </span>
-              <span className="text-[9px] font-bold text-[color:oklch(0.45_0.01_260)]">
-                Profile
-              </span>
-            </Link>
+            <DockItem label="Profile" icon={<Store className="h-4 w-4" />} />
           </div>
         </div>
       </div>
-      <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
     </div>
   );
 }
@@ -427,25 +289,25 @@ function VendorDashboard() {
 function StatCell({ value, label, active }: { value: number; label: string; active?: boolean }) {
   return (
     <div className="px-1">
-      <p className={`font-display font-bold text-xl leading-none ${active ? "text-[#8b1a1a]" : "text-[color:oklch(0.20_0.01_260)]"}`}>
+      <p className={`font-display font-bold text-xl leading-none ${active ? "text-[#8b1a1a]" : "text-[color:oklch(0.18_0.06_18)]"}`}>
         {value}
       </p>
       <p className="text-[8px] uppercase tracking-[0.18em] mt-1 opacity-90">{label}</p>
-      {active && <span className="block mx-auto mt-1 h-0.5 w-6 rounded-full bg-[color:oklch(0.20_0.01_260)]" />}
+      {active && <span className="block mx-auto mt-1 h-0.5 w-6 rounded-full bg-[color:oklch(0.18_0.06_18)]" />}
     </div>
   );
 }
 
 const SOURCE_META: Record<LeadSource, { label: string; icon: React.ReactNode; bg: string; text: string }> = {
-  whatsapp: { label: "WhatsApp", icon: <MessageCircle className="h-2.5 w-2.5" />, bg: "linear-gradient(135deg, #f5f6f8, #eef0f3)", text: "oklch(0.42 0.01 260)" },
-  call:     { label: "Calling",  icon: <Phone className="h-2.5 w-2.5" />,         bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)", text: "oklch(0.30 0.05 85)" },
-  digital:  { label: "Digital Dukan", icon: <Store className="h-2.5 w-2.5" />,    bg: "linear-gradient(135deg, #eef0f3, #a8acb3)", text: "oklch(0.20 0.01 260)" },
-  quick:    { label: "Quick Service", icon: <Zap className="h-2.5 w-2.5" />,      bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)", text: "oklch(0.30 0.05 85)" },
+  whatsapp: { label: "WhatsApp", icon: <MessageCircle className="h-2.5 w-2.5" />, bg: "linear-gradient(135deg, #fff8dc, #f5e9b8)", text: "oklch(0.42 0.10 82)" },
+  call:     { label: "Calling",  icon: <Phone className="h-2.5 w-2.5" />,         bg: "linear-gradient(135deg, #fffaf0, #f5d97a)", text: "oklch(0.30 0.05 85)" },
+  digital:  { label: "Digital Dukan", icon: <Store className="h-2.5 w-2.5" />,    bg: "linear-gradient(135deg, #fff3c8, #d4af37)", text: "oklch(0.18 0.06 18)" },
+  quick:    { label: "Quick Service", icon: <Zap className="h-2.5 w-2.5" />,      bg: "linear-gradient(135deg, #fff8dc, #f5d97a)", text: "oklch(0.30 0.05 85)" },
 };
 
 const STATUS_META: Record<LeadStatus, { label: string; icon: React.ReactNode; tint: string }> = {
-  new:      { label: "Action Required", icon: <AlertCircle className="h-3 w-3" />, tint: "bg-[#eef0f3] text-[#3f4750]" },
-  process:  { label: "In Process",      icon: <Clock className="h-3 w-3" />,       tint: "bg-[#f5f6f8] text-[color:oklch(0.42_0.01_260)]" },
+  new:      { label: "Action Required", icon: <AlertCircle className="h-3 w-3" />, tint: "bg-[#fff3c8] text-[#8b6508]" },
+  process:  { label: "In Process",      icon: <Clock className="h-3 w-3" />,       tint: "bg-[#fff8dc] text-[color:oklch(0.42_0.10_82)]" },
   success:  { label: "Payout Released", icon: <CheckCircle2 className="h-3 w-3" />, tint: "bg-[#f0fdf4] text-[#15803d]" },
   rejected: { label: "Rejected",        icon: <XCircle className="h-3 w-3" />,     tint: "bg-[#fef2f2] text-[#b91c1c]" },
 };
@@ -454,29 +316,28 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   const src = SOURCE_META[lead.source];
   const st = STATUS_META[lead.status];
   return (
-    <article className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm">
-      {lead.status === "new" ? (
-        <div
-          aria-disabled
-          title="Accept this lead to view full details"
-          className="block p-3 cursor-not-allowed select-none"
-        >
+    <article className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] overflow-hidden shadow-sm">
+      <Link
+        to="/vendor/lead/$id"
+        params={{ id: lead.id }}
+        className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
+      >
         <div className="flex items-start gap-3">
           <span
-            className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3)" }}
+            className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.18_0.06_18)] flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #fff8dc, #f5d97a)" }}
           >
             {lead.name.charAt(0)}
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
+              <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] truncate">{lead.name}</p>
               <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
             </div>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone}</p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] truncate">{lead.service} · {lead.phone}</p>
             {/* Source badge */}
             <span
-              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
+              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.78_0.14_82/0.4)]"
               style={{ background: src.bg, color: src.text }}
             >
               {src.icon}
@@ -491,67 +352,24 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
             {st.icon}
             {st.label}
           </span>
-          <span className="font-display text-sm font-bold text-silver-gradient">
+          <span className="font-display text-sm font-bold text-gold-gradient">
             ₹{lead.amount.toLocaleString()}
           </span>
         </div>
 
-        <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.01_260)] truncate">
+        <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.08_85)] truncate">
           “{lead.note}”
         </p>
-        </div>
-      ) : (
-        <Link
-          to="/vendor/lead/$id"
-          params={{ id: lead.id }}
-          className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
-        >
-          <div className="flex items-start gap-3">
-            <span
-              className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3)" }}
-            >
-              {lead.name.charAt(0)}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
-                <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
-              </div>
-              <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone}</p>
-              <span
-                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
-                style={{ background: SOURCE_META[lead.source].bg, color: SOURCE_META[lead.source].text }}
-              >
-                {SOURCE_META[lead.source].icon}
-                via {SOURCE_META[lead.source].label}
-              </span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0 mt-1" />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${STATUS_META[lead.status].tint}`}>
-              {STATUS_META[lead.status].icon}
-              {STATUS_META[lead.status].label}
-            </span>
-            <span className="font-display text-sm font-bold text-silver-gradient">
-              ₹{lead.amount.toLocaleString()}
-            </span>
-          </div>
-          <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.01_260)] truncate">
-            “{lead.note}”
-          </p>
-        </Link>
-      )}
+      </Link>
 
       {/* Action bar */}
-      <div className="flex items-stretch border-t border-[color:oklch(0.72_0.01_260/0.3)]">
+      <div className="flex items-stretch border-t border-[color:oklch(0.78_0.14_82/0.3)]">
         {lead.status === "new" ? (
           <button
             onClick={onAccept}
-            className="btn-3d flex-1 py-2.5 grid place-items-center font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] active:scale-[0.97]"
+            className="btn-3d flex-1 py-2.5 grid place-items-center font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] active:scale-[0.97]"
             style={{
-              background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)",
+              background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 50%, #d4af37 100%)",
             }}
           >
             ✓ Accept Lead
@@ -567,18 +385,18 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
         <a
           href={`tel:${lead.phone}`}
           aria-label="Call"
-          className="px-4 grid place-items-center border-l border-[color:oklch(0.72_0.01_260/0.3)] active:scale-95"
+          className="px-4 grid place-items-center border-l border-[color:oklch(0.78_0.14_82/0.3)] active:scale-95"
         >
-          <Phone className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+          <Phone className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
         </a>
         <a
           href={`https://wa.me/${lead.phone}`}
           target="_blank"
           rel="noreferrer"
           aria-label="WhatsApp"
-          className="px-4 grid place-items-center border-l border-[color:oklch(0.72_0.01_260/0.3)] active:scale-95"
+          className="px-4 grid place-items-center border-l border-[color:oklch(0.78_0.14_82/0.3)] active:scale-95"
         >
-          <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+          <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
         </a>
       </div>
     </article>
@@ -588,10 +406,10 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
 function DockItem({ label, icon, active }: { label: string; icon: React.ReactNode; active?: boolean }) {
   return (
     <button className="flex flex-col items-center gap-0.5 px-3 py-1">
-      <span className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+      <span className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.10_82)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {icon}
       </span>
-      <span className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+      <span className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.10_82)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {label}
       </span>
     </button>

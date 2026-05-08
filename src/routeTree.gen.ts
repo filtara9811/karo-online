@@ -22,26 +22,15 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
-import { Route as VendorStatusRouteImport } from './routes/vendor.status'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
-import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
-import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
-import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
-import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
-import { Route as AdminSmsRouteImport } from './routes/admin.sms'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
-import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
-import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
@@ -110,16 +99,6 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VendorWalletRoute = VendorWalletRouteImport.update({
-  id: '/vendor/wallet',
-  path: '/vendor/wallet',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VendorStatusRoute = VendorStatusRouteImport.update({
-  id: '/vendor/status',
-  path: '/vendor/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const VendorShopRoute = VendorShopRouteImport.update({
   id: '/vendor/shop',
   path: '/vendor/shop',
@@ -130,19 +109,9 @@ const VendorServicesRoute = VendorServicesRouteImport.update({
   path: '/vendor/services',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VendorRegisterRoute = VendorRegisterRouteImport.update({
-  id: '/vendor/register',
-  path: '/vendor/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const VendorDashboardRoute = VendorDashboardRouteImport.update({
   id: '/vendor/dashboard',
   path: '/vendor/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VendorChatRoute = VendorChatRouteImport.update({
-  id: '/vendor/chat',
-  path: '/vendor/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -150,19 +119,9 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CCodeRoute = CCodeRouteImport.update({
-  id: '/c/$code',
-  path: '/c/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminVendorsRoute = AdminVendorsRouteImport.update({
   id: '/admin/vendors',
   path: '/admin/vendors',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSystemStatusRoute = AdminSystemStatusRouteImport.update({
-  id: '/admin/system-status',
-  path: '/admin/system-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
@@ -170,24 +129,9 @@ const AdminStaffRoute = AdminStaffRouteImport.update({
   path: '/admin/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSmsRoute = AdminSmsRouteImport.update({
-  id: '/admin/sms',
-  path: '/admin/sms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/admin/settings',
-  path: '/admin/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   id: '/admin/payments',
   path: '/admin/payments',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLogisticsRoute = AdminLogisticsRouteImport.update({
-  id: '/admin/logistics',
-  path: '/admin/logistics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -195,19 +139,9 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLegalRoute = AdminLegalRouteImport.update({
-  id: '/admin/legal',
-  path: '/admin/legal',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/admin/customers',
   path: '/admin/customers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminCoinsRoute = AdminCoinsRouteImport.update({
-  id: '/admin/coins',
-  path: '/admin/coins',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCatalogRoute = AdminCatalogRouteImport.update({
@@ -235,26 +169,15 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
-  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
-  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
-  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
-  '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
-  '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
-  '/vendor/status': typeof VendorStatusRoute
-  '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -272,26 +195,15 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
-  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
-  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
-  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
-  '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
-  '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
-  '/vendor/status': typeof VendorStatusRoute
-  '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -310,26 +222,15 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
-  '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
-  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
-  '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
-  '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
-  '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
-  '/vendor/status': typeof VendorStatusRoute
-  '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
@@ -349,26 +250,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
-    | '/admin/coins'
     | '/admin/customers'
-    | '/admin/legal'
     | '/admin/login'
-    | '/admin/logistics'
     | '/admin/payments'
-    | '/admin/settings'
-    | '/admin/sms'
     | '/admin/staff'
-    | '/admin/system-status'
     | '/admin/vendors'
-    | '/c/$code'
     | '/product/$id'
-    | '/vendor/chat'
     | '/vendor/dashboard'
-    | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
-    | '/vendor/status'
-    | '/vendor/wallet'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -386,26 +276,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
-    | '/admin/coins'
     | '/admin/customers'
-    | '/admin/legal'
     | '/admin/login'
-    | '/admin/logistics'
     | '/admin/payments'
-    | '/admin/settings'
-    | '/admin/sms'
     | '/admin/staff'
-    | '/admin/system-status'
     | '/admin/vendors'
-    | '/c/$code'
     | '/product/$id'
-    | '/vendor/chat'
     | '/vendor/dashboard'
-    | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
-    | '/vendor/status'
-    | '/vendor/wallet'
     | '/admin'
     | '/vendor/lead/$id'
   id:
@@ -423,26 +302,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/vendors'
     | '/admin/catalog'
-    | '/admin/coins'
     | '/admin/customers'
-    | '/admin/legal'
     | '/admin/login'
-    | '/admin/logistics'
     | '/admin/payments'
-    | '/admin/settings'
-    | '/admin/sms'
     | '/admin/staff'
-    | '/admin/system-status'
     | '/admin/vendors'
-    | '/c/$code'
     | '/product/$id'
-    | '/vendor/chat'
     | '/vendor/dashboard'
-    | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
-    | '/vendor/status'
-    | '/vendor/wallet'
     | '/admin/'
     | '/vendor/lead/$id'
   fileRoutesById: FileRoutesById
@@ -461,26 +329,15 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute
   VendorsRoute: typeof VendorsRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
-  AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
-  AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
-  AdminLogisticsRoute: typeof AdminLogisticsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
-  AdminSettingsRoute: typeof AdminSettingsRoute
-  AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
-  AdminSystemStatusRoute: typeof AdminSystemStatusRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
-  CCodeRoute: typeof CCodeRoute
   ProductIdRoute: typeof ProductIdRoute
-  VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
-  VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
-  VendorStatusRoute: typeof VendorStatusRoute
-  VendorWalletRoute: typeof VendorWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
 }
@@ -578,20 +435,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vendor/wallet': {
-      id: '/vendor/wallet'
-      path: '/vendor/wallet'
-      fullPath: '/vendor/wallet'
-      preLoaderRoute: typeof VendorWalletRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/vendor/status': {
-      id: '/vendor/status'
-      path: '/vendor/status'
-      fullPath: '/vendor/status'
-      preLoaderRoute: typeof VendorStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/vendor/shop': {
       id: '/vendor/shop'
       path: '/vendor/shop'
@@ -606,25 +449,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vendor/register': {
-      id: '/vendor/register'
-      path: '/vendor/register'
-      fullPath: '/vendor/register'
-      preLoaderRoute: typeof VendorRegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/vendor/dashboard': {
       id: '/vendor/dashboard'
       path: '/vendor/dashboard'
       fullPath: '/vendor/dashboard'
       preLoaderRoute: typeof VendorDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/vendor/chat': {
-      id: '/vendor/chat'
-      path: '/vendor/chat'
-      fullPath: '/vendor/chat'
-      preLoaderRoute: typeof VendorChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -634,25 +463,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/c/$code': {
-      id: '/c/$code'
-      path: '/c/$code'
-      fullPath: '/c/$code'
-      preLoaderRoute: typeof CCodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/vendors': {
       id: '/admin/vendors'
       path: '/admin/vendors'
       fullPath: '/admin/vendors'
       preLoaderRoute: typeof AdminVendorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/system-status': {
-      id: '/admin/system-status'
-      path: '/admin/system-status'
-      fullPath: '/admin/system-status'
-      preLoaderRoute: typeof AdminSystemStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/staff': {
@@ -662,32 +477,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStaffRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/sms': {
-      id: '/admin/sms'
-      path: '/admin/sms'
-      fullPath: '/admin/sms'
-      preLoaderRoute: typeof AdminSmsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/payments': {
       id: '/admin/payments'
       path: '/admin/payments'
       fullPath: '/admin/payments'
       preLoaderRoute: typeof AdminPaymentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/logistics': {
-      id: '/admin/logistics'
-      path: '/admin/logistics'
-      fullPath: '/admin/logistics'
-      preLoaderRoute: typeof AdminLogisticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -697,25 +491,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/legal': {
-      id: '/admin/legal'
-      path: '/admin/legal'
-      fullPath: '/admin/legal'
-      preLoaderRoute: typeof AdminLegalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/admin/customers'
       fullPath: '/admin/customers'
       preLoaderRoute: typeof AdminCustomersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/coins': {
-      id: '/admin/coins'
-      path: '/admin/coins'
-      fullPath: '/admin/coins'
-      preLoaderRoute: typeof AdminCoinsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/catalog': {
@@ -749,29 +529,27 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   VendorsRoute: VendorsRoute,
   AdminCatalogRoute: AdminCatalogRoute,
-  AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
-  AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
-  AdminLogisticsRoute: AdminLogisticsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
-  AdminSettingsRoute: AdminSettingsRoute,
-  AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
-  AdminSystemStatusRoute: AdminSystemStatusRoute,
   AdminVendorsRoute: AdminVendorsRoute,
-  CCodeRoute: CCodeRoute,
   ProductIdRoute: ProductIdRoute,
-  VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
-  VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,
-  VendorStatusRoute: VendorStatusRoute,
-  VendorWalletRoute: VendorWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

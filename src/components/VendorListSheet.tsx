@@ -1,95 +1,80 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { X, Star, Phone, MessageCircle, ShieldCheck, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { X, Star, Phone, MessageCircle, MoreVertical, Check, ShieldCheck } from "lucide-react";
+import avatarAryan from "@/assets/avatar-aryan.png";
+import avatarRani from "@/assets/avatar-rani.png";
+import avatarRaj from "@/assets/avatar-raj.png";
+import avatarUser from "@/assets/avatar-user.png";
 
-type AcceptedVendor = {
-  vendor_id: string;
-  business_name: string | null;
-  owner_name: string | null;
-  avatar_url: string | null;
-  whatsapp: string | null;
-  phone: string | null;
-  email: string | null;
-  rating: number | null;
-  total_reviews: number | null;
-  distance_km: number | null;
+type MatchedVendor = {
+  id: string;
+  name: string;
+  body: string;
+  rating: number;
+  avatar: string;
+  cover: string;
+  productTitle: string;
+  productPrice: string;
+  approved?: boolean;
 };
+
+const COVERS = [
+  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=400&q=70",
+  "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&q=70",
+  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70",
+];
+
+const MATCHED: MatchedVendor[] = [
+  { id: "v1", name: "Aryan | Bansal", body: "AC service expert · 6 yrs", rating: 4.9, avatar: avatarAryan, cover: COVERS[0], productTitle: "Ac sarvic", productPrice: "499 | 299", approved: true },
+  { id: "v2", name: "Karan | Bansal", body: "Quick & affordable repair", rating: 4.7, avatar: avatarRaj, cover: COVERS[1], productTitle: "Ac repair", productPrice: "599 | 349" },
+  { id: "v3", name: "Rani | kumari", body: "Premium installation team", rating: 4.8, avatar: avatarRani, cover: COVERS[2], productTitle: "Ac install", productPrice: "799 | 499" },
+  { id: "v4", name: "Ashu | Qureshi", body: "Gas & deep clean specialist", rating: 4.6, avatar: avatarUser, cover: COVERS[0], productTitle: "Gas refill", productPrice: "899 | 599" },
+];
 
 type Props = {
   open: boolean;
   category: string | null;
-  leadId: string | null;
-  expectedVendors?: number;
-  onTryAgain?: () => Promise<void> | void;
   onClose: () => void;
 };
 
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
-const COVER =
-  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
-
-export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
+export function VendorListSheet({ open, category, onClose }: Props) {
   const navigate = useNavigate();
-  const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeContact, setActiveContact] = useState<AcceptedVendor | null>(null);
+  const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set(["v1"]));
+  const [activeContact, setActiveContact] = useState<MatchedVendor | null>(null);
 
-  // Lock scroll
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    document.body.classList.add("ko-accepted-vendor-open");
+    document.body.setAttribute("data-variation-open", "true");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
-      document.body.classList.remove("ko-accepted-vendor-open");
+      document.body.removeAttribute("data-variation-open");
       document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
 
-  // Load + realtime poll on lead acceptance
-  useEffect(() => {
-    if (!open || !leadId) return;
-    let alive = true;
-    const load = async () => {
-      const { data, error } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
-      if (!alive) return;
-      setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
-      setVendors((data ?? []) as AcceptedVendor[]);
-      setLoading(false);
-    };
-    setLoading(true);
-    load();
-    // Subscribe to lead row updates so list grows as vendors accept
-    const ch = supabase
-      .channel(`lead-accepted-${leadId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "lead_notifications", filter: `lead_id=eq.${leadId}` },
-        (payload) => { if ((payload.new as any)?.status === "accepted") load(); },
-      )
-      .subscribe();
-    // Safety: poll every 4s while open in case realtime is delayed
-    const poll = setInterval(load, 4000);
-    return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
-  }, [open, leadId]);
-
   if (!open) return null;
 
-  const goToChat = (v: AcceptedVendor) => {
-    if (!leadId) return;
+  const toggleApprove = (id: string) => {
+    setApprovedIds((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+    // After approving, navigate to status tracking screen
+    setTimeout(() => {
+      onClose();
+      navigate({ to: "/status" });
+    }, 350);
+  };
+
+  const goToChat = () => {
     onClose();
-    navigate({ to: "/chat", search: { leadId, vendorId: v.vendor_id } as any });
+    navigate({ to: "/chat" });
   };
 
   return (
@@ -98,150 +83,158 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.55)] backdrop-blur-sm"
+        style={{ animation: "overlay-in 0.3s ease-out" }}
       />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#f5f6f8] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
+        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#fff8e7] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
         style={{ animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent opacity-80" />
+          <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
         </div>
 
+        {/* Header */}
         <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
-              ✦ Accepted Vendors ✦
+              ✦ Matched ✦
             </p>
-            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
-              {category ?? "Service"}
+            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
+              {category ?? "Ac"} | service vendor
             </h3>
-            <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] mt-0.5">
-              {loading ? "Searching…" : `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready to help`}
-            </p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <Star className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
+              <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">4.9</span>
+              <span className="text-[10px] text-[color:oklch(0.50_0.08_85)]">
+                · {MATCHED.length} vendors found
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
           </button>
         </div>
 
+        <p className="px-5 text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 mb-2">
+          Vander | Profile · tap to contact
+        </p>
+
+        {/* Vendor cards */}
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
-          {loading ? (
-            <div className="grid place-items-center py-16 text-center">
-              <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
-              <p className="mt-3 text-xs font-semibold text-slate-500">Accepted vendors check ho rahe hain…</p>
-            </div>
-          ) : vendors.length === 0 ? (
-            <div className="text-center py-12 px-3">
-              <motion.div
-                className="mx-auto h-14 w-14 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center bg-white shadow-sm"
-                animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
-                transition={{ duration: 1.4, repeat: Infinity }}
-              >
-                <Loader2 className="h-6 w-6 animate-spin text-[color:oklch(0.55_0.10_82)]" />
-              </motion.div>
-              <p className="mt-4 text-sm font-semibold text-slate-600">
-                {loadError ?? (expectedVendors > 0 ? "Abhi kisi vendor ne accept nahi kiya." : "Yahan vendor available nahi hai.")}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                {expectedVendors > 0
-                  ? "Jaise hi vendor accept karega, uski profile yahin call aur chat option ke saath aa jayegi."
-                  : "Dobara try karein ya cancel karke home screen par wapas ja sakte hain."}
-              </p>
-              <div className="mt-5 flex gap-2 justify-center">
-                {onTryAgain && (
-                  <button
-                    onClick={() => onTryAgain()}
-                    className="px-4 py-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white font-display text-sm font-bold active:scale-95"
-                  >
-                    Try again
-                  </button>
-                )}
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            vendors.map((v, i) => (
+          {MATCHED.map((v, i) => {
+            const isApproved = approvedIds.has(v.id);
+            return (
               <motion.article
-                key={v.vendor_id}
+                key={v.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="rounded-2xl bg-white border-2 border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm"
+                transition={{ delay: i * 0.08 }}
+                className="rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.4)] overflow-hidden shadow-sm"
               >
-                <div className="px-3 pt-3 pb-2 flex items-center gap-3">
-                  <img
-                    src={v.avatar_url || FALLBACK_AVATAR}
-                    alt={v.business_name ?? ""}
-                    className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-display text-base font-bold text-slate-800 leading-tight truncate">
-                      {v.business_name || v.owner_name || "Vendor"}
-                    </h4>
-                    {v.email && (
-                      <p className="text-[11px] text-slate-500 truncate">{v.email}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1 text-[11px]">
-                      <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
-                        <Star className="h-3 w-3" fill="currentColor" />
-                        {(v.rating ?? 4.8).toFixed(1)}
-                        <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
-                      </span>
-                      {v.distance_km != null && (
-                        <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
-                          📍 {v.distance_km} km
-                        </span>
-                      )}
+                {/* Cover — tap opens contact popup */}
+                <button
+                  onClick={() => setActiveContact(v)}
+                  className="relative h-28 w-full overflow-hidden block text-left active:opacity-90"
+                  aria-label={`Open ${v.name} profile`}
+                >
+                  <img src={v.cover} alt={v.name} loading="lazy" className="h-full w-full object-cover" />
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow">
+                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                    <span className="text-[10px] font-bold text-[color:oklch(0.25_0.05_85)]">{v.rating}</span>
+                  </div>
+                  <div className="absolute -bottom-3 left-3 right-3 h-9 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706] border-2 border-white shadow-md flex items-center px-2 gap-2">
+                    <span className="h-7 w-7 rounded-full overflow-hidden border border-white flex-shrink-0">
+                      <img src={v.avatar} alt="" className="h-full w-full object-cover" />
+                    </span>
+                    <span className="text-[11px] font-display italic text-white truncate">
+                      Quick message Note….
+                    </span>
+                    <span className="ml-auto flex items-center gap-0.5 text-white text-[10px] font-bold flex-shrink-0">
+                      <Star className="h-3 w-3" fill="currentColor" />
+                      {v.rating}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Body — tap opens popup too */}
+                <button
+                  onClick={() => setActiveContact(v)}
+                  className="px-3 pt-5 pb-2 w-full text-left active:bg-[#fffbeb]"
+                >
+                  <h4 className="font-display text-base font-bold text-[color:oklch(0.25_0.05_85)] leading-tight">
+                    {v.name}
+                  </h4>
+                  <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.body}</p>
+
+                  <div className="mt-2 rounded-xl bg-[#fffbeb] border border-[color:oklch(0.78_0.14_82/0.35)] p-2 flex items-center gap-2">
+                    <div className="h-12 w-14 rounded-lg bg-gradient-to-br from-sky-200 to-emerald-200 grid place-items-center flex-shrink-0">
+                      <span className="text-[18px]">☁️</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)]">
+                        {v.productTitle}
+                      </p>
+                      <p className="text-[11px] text-[color:oklch(0.50_0.08_85)]">{v.productPrice}</p>
+                      <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] truncate">
+                        Add a little bit of body text
+                      </p>
                     </div>
                   </div>
-                  <ShieldCheck className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                </div>
+                </button>
 
-                <div className="flex items-stretch border-t border-slate-200 bg-[color:oklch(0.13_0.02_85)]">
-                  {v.phone || v.whatsapp ? (
-                    <a
-                      href={`tel:${v.phone || v.whatsapp}`}
-                      className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white active:scale-95"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Call
-                    </a>
-                  ) : (
-                    <button disabled className="flex-1 py-2.5 text-white/50 text-sm font-bold">
-                      No Phone
-                    </button>
-                  )}
+                {/* Action bar */}
+                <div className="flex items-stretch border-t border-[color:oklch(0.78_0.14_82/0.3)] bg-[color:oklch(0.13_0.02_85)]">
                   <button
-                    onClick={() => goToChat(v)}
-                    className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white border-l border-white/10 active:scale-95"
+                    onClick={() => toggleApprove(v.id)}
+                    className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm underline underline-offset-2 ${
+                      isApproved ? "text-amber-300" : "text-white"
+                    } active:scale-95 transition`}
                   >
-                    <MessageCircle className="h-4 w-4" />
-                    Chat
+                    {isApproved && <Check className="h-4 w-4" strokeWidth={3} />}
+                    {isApproved ? "Aproved" : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => setActiveContact(v)}
+                    aria-label="Call"
+                    className="px-4 grid place-items-center border-l border-white/10 active:scale-95"
+                  >
+                    <Phone className="h-4 w-4 text-white" strokeWidth={2.4} />
+                  </button>
+                  <button
+                    onClick={goToChat}
+                    aria-label="Chat"
+                    className="px-4 grid place-items-center border-l border-white/10 active:scale-95"
+                  >
+                    <MessageCircle className="h-4 w-4 text-white" strokeWidth={2.4} />
+                  </button>
+                  <button
+                    onClick={() => setActiveContact(v)}
+                    aria-label="More"
+                    className="px-3 grid place-items-center border-l border-white/10 active:scale-95"
+                  >
+                    <MoreVertical className="h-4 w-4 text-white" strokeWidth={2.4} />
                   </button>
                 </div>
               </motion.article>
-            ))
-          )}
+            );
+          })}
         </div>
       </div>
 
+      {/* Contact action popup */}
       <AnimatePresence>
         {activeContact && (
-          <ContactPopup
+          <ContactActionPopup
             vendor={activeContact}
             onClose={() => setActiveContact(null)}
-            onChat={() => { const v = activeContact; setActiveContact(null); goToChat(v); }}
+            onChat={() => { setActiveContact(null); goToChat(); }}
+            onApprove={() => { setActiveContact(null); toggleApprove(activeContact.id); }}
           />
         )}
       </AnimatePresence>
@@ -249,9 +242,17 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
   );
 }
 
-function ContactPopup({
-  vendor, onClose, onChat,
-}: { vendor: AcceptedVendor; onClose: () => void; onChat: () => void }) {
+function ContactActionPopup({
+  vendor,
+  onClose,
+  onChat,
+  onApprove,
+}: {
+  vendor: MatchedVendor;
+  onClose: () => void;
+  onChat: () => void;
+  onApprove: () => void;
+}) {
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
       <motion.button
@@ -267,53 +268,99 @@ function ContactPopup({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        className="relative w-full max-w-sm rounded-3xl bg-white border-2 border-slate-200 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-white to-[#fff8e7] border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)] overflow-hidden"
       >
-        <div className="relative h-28">
-          <img src={COVER} alt="" className="h-full w-full object-cover" />
+        {/* Hero */}
+        <div className="relative h-32 w-full">
+          <img src={vendor.cover} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent" />
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white shadow active:scale-90"
+            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/95 border border-white shadow active:scale-90"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-[color:oklch(0.25_0.05_85)]" />
           </button>
           <div className="absolute -bottom-8 left-4 h-16 w-16 rounded-2xl overflow-hidden border-4 border-white shadow-lg">
-            <img src={vendor.avatar_url || FALLBACK_AVATAR} alt="" className="h-full w-full object-cover" />
+            <img src={vendor.avatar} alt={vendor.name} className="h-full w-full object-cover" />
           </div>
         </div>
+
         <div className="px-4 pt-10 pb-3">
-          <h3 className="font-display text-lg font-bold">
-            {vendor.business_name || vendor.owner_name || "Vendor"}
+          <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
+            {vendor.name}
           </h3>
-          <p className="text-xs text-slate-500">{vendor.owner_name ?? "Verified vendor"}</p>
+          <p className="text-xs text-[color:oklch(0.50_0.08_85)]">{vendor.body}</p>
           <div className="flex items-center gap-2 mt-1.5">
-            {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />)}
-            <span className="text-xs font-bold text-slate-700">4.8</span>
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />
+              ))}
+            </div>
+            <span className="text-xs font-bold text-[color:oklch(0.30_0.05_85)]">{vendor.rating}</span>
+            <span className="text-[10px] text-[color:oklch(0.50_0.08_85)]">· verified</span>
           </div>
         </div>
-        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-          {vendor.phone || vendor.whatsapp ? (
-            <a
-              href={`tel:${vendor.phone || vendor.whatsapp}`}
-              className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white active:scale-95"
-            >
-              <Phone className="h-5 w-5" />
-              <span className="text-[11px] font-display font-bold">Call</span>
-            </a>
-          ) : (
-            <div className="py-3 text-center text-[11px] text-slate-400 rounded-2xl bg-slate-100">No phone</div>
-          )}
-          <button
+
+        {/* Action grid */}
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          <ActionTile
+            icon={<Phone className="h-5 w-5" strokeWidth={2.4} />}
+            label="Call"
+            tone="emerald"
+            onClick={onClose}
+          />
+          <ActionTile
+            icon={<MessageCircle className="h-5 w-5" strokeWidth={2.4} />}
+            label="Chat"
+            tone="sky"
             onClick={onChat}
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-sky-500 to-sky-600 text-white active:scale-95"
+          />
+          <ActionTile
+            icon={<ShieldCheck className="h-5 w-5" strokeWidth={2.4} />}
+            label="Proof"
+            tone="gold"
+            onClick={onClose}
+          />
+        </div>
+
+        <div className="px-4 pb-4">
+          <button
+            onClick={onApprove}
+            className="w-full py-2.5 rounded-2xl bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)] active:scale-95 underline underline-offset-2"
           >
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-[11px] font-display font-bold">Chat</span>
+            Approve | Vendor
           </button>
         </div>
       </motion.div>
     </div>
+  );
+}
+
+function ActionTile({
+  icon,
+  label,
+  tone,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  tone: "emerald" | "sky" | "gold";
+  onClick: () => void;
+}) {
+  const styles =
+    tone === "emerald"
+      ? "from-emerald-400 to-emerald-600 shadow-[0_4px_12px_-2px_rgba(5,150,105,0.5)]"
+      : tone === "sky"
+      ? "from-sky-400 to-sky-600 shadow-[0_4px_12px_-2px_rgba(2,132,199,0.5)]"
+      : "from-[#fbbf24] to-[#d97706] shadow-[0_4px_12px_-2px_rgba(217,119,6,0.5)]";
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b ${styles} text-white active:scale-95 transition`}
+    >
+      {icon}
+      <span className="text-[11px] font-display font-bold">{label}</span>
+    </button>
   );
 }

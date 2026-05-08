@@ -8,18 +8,12 @@ import {
   FolderTree,
   Shield,
   CreditCard,
-  MessageSquare,
-  Truck,
-  Coins,
-  FileText,
-  Settings as SettingsIcon,
   LogOut,
   Menu,
   X,
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 
 type NavItem = { to: string; label: string; icon: typeof Crown };
 
@@ -30,12 +24,6 @@ const NAV: NavItem[] = [
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
-  { to: "/admin/sms", label: "SMS Gateways", icon: MessageSquare },
-  { to: "/admin/system-status", label: "System Status", icon: Shield },
-  { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
-  { to: "/admin/coins", label: "LeadX Market", icon: Coins },
-  { to: "/admin/legal", label: "Legal Pages", icon: FileText },
-  { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
 ];
 
 const GOLD_BG =
@@ -275,7 +263,6 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           </span>
         </header>
 
-        <ActionAlertBanner role="admin" />
         <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-[1400px] w-full mx-auto">
           {children ?? <Outlet />}
         </main>
