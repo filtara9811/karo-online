@@ -108,6 +108,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   // Inline OTP state
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
+  const [otpRequested, setOtpRequested] = useState(false);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
@@ -240,6 +241,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("10 digit mobile number daaliye");
       return;
     }
+    setOtpRequested(false);
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
     const res = await sendOtpFn({ data: { phone: digits } });
@@ -251,6 +253,9 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
       return;
     } else {
+      setPhone(formatIndianMobile(digits));
+      setOtpRequested(true);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
       toast.success("OTP sent to " + formatIndianMobile(digits));
     }
   };
@@ -261,19 +266,19 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("10 digit mobile number daaliye");
       return;
     }
-    const formattedPhone = formatIndianMobile(digits);
-    setPhone(formattedPhone);
+    setPhone("");
+    setOtpRequested(false);
     setManualPhoneOpen(false);
     setManualPhone("");
-    setTimeout(() => startInlineOtp(formattedPhone), 350);
+    setTimeout(() => startInlineOtp(digits), 350);
   };
 
   // OTP timer
   useEffect(() => {
-    if (!phone || phoneVerified || otpSeconds <= 0) return;
+    if (!otpRequested || !phone || phoneVerified || otpSeconds <= 0) return;
     const t = setTimeout(() => setOtpSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [phone, phoneVerified, otpSeconds]);
+  }, [otpRequested, phone, phoneVerified, otpSeconds]);
 
   // Auto-verify when 4 digits entered (real server check)
   useEffect(() => {
@@ -307,7 +312,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const handleResendOtp = () => {
     setOtpSeconds(45);
     setOtpDigits(["", "", "", ""]);
-    toast.success("OTP resent");
     startInlineOtp();
   };
 
