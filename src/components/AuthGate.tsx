@@ -59,6 +59,8 @@ export function AuthGate() {
     if (!needsGate) setOpen(false);
   }, [needsGate]);
 
+  if (!ready) return null;
+
   if (!needsGate) return null;
 
   if (!open) {
