@@ -476,7 +476,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   label="Pick and enter mobile number"
                   hint={
                     operator
-                      ? `${operatorMeta?.label} · auto-filled`
+                      ? `${operatorMeta?.label} · verified by OTP`
                       : phone
                         ? "Tap to change"
                         : "Tap → SIM 1 / SIM 2 / Manual"
@@ -761,7 +761,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       <LuxPicker
         open={picker === "sim"}
         title="Select Your SIM"
-        subtitle="Tap a SIM — we'll auto-fill & verify"
+        subtitle="Choose slot, then enter your real mobile"
         options={SIM_OPTIONS}
         onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
