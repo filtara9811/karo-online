@@ -4,17 +4,18 @@ import { OtpModal } from "@/components/OtpModal";
 
 type Props = {
   open: boolean;
+  initialPhone?: string;
   onVerified: (phone: string) => void;
 };
 
-export function CustomerMobileLoginSheet({ open, onVerified }: Props) {
+export function CustomerMobileLoginSheet({ open, initialPhone = "", onVerified }: Props) {
   const [phone, setPhone] = useState("");
   const [otpOpen, setOtpOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setPhone("");
+    setPhone(initialPhone.replace(/\D/g, "").slice(-10));
     setOtpOpen(false);
     document.body.style.overflow = "hidden";
     const id = window.setTimeout(() => inputRef.current?.focus(), 250);
@@ -22,7 +23,7 @@ export function CustomerMobileLoginSheet({ open, onVerified }: Props) {
       window.clearTimeout(id);
       document.body.style.overflow = "";
     };
-  }, [open]);
+  }, [open, initialPhone]);
 
   useEffect(() => {
     if (!open || phone.length !== 10 || otpOpen) return;
