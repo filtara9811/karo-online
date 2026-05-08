@@ -30,7 +30,6 @@ import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
@@ -140,11 +139,6 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminKycRoute = AdminKycRouteImport.update({
-  id: '/admin/kyc',
-  path: '/admin/kyc',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/admin/customers',
   path: '/admin/customers',
@@ -176,7 +170,6 @@ export interface FileRoutesByFullPath {
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/kyc': typeof AdminKycRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -203,7 +196,6 @@ export interface FileRoutesByTo {
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/kyc': typeof AdminKycRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -231,7 +223,6 @@ export interface FileRoutesById {
   '/vendors': typeof VendorsRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/kyc': typeof AdminKycRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -260,7 +251,6 @@ export interface FileRouteTypes {
     | '/vendors'
     | '/admin/catalog'
     | '/admin/customers'
-    | '/admin/kyc'
     | '/admin/login'
     | '/admin/payments'
     | '/admin/staff'
@@ -287,7 +277,6 @@ export interface FileRouteTypes {
     | '/vendors'
     | '/admin/catalog'
     | '/admin/customers'
-    | '/admin/kyc'
     | '/admin/login'
     | '/admin/payments'
     | '/admin/staff'
@@ -314,7 +303,6 @@ export interface FileRouteTypes {
     | '/vendors'
     | '/admin/catalog'
     | '/admin/customers'
-    | '/admin/kyc'
     | '/admin/login'
     | '/admin/payments'
     | '/admin/staff'
@@ -342,7 +330,6 @@ export interface RootRouteChildren {
   VendorsRoute: typeof VendorsRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
-  AdminKycRoute: typeof AdminKycRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminStaffRoute: typeof AdminStaffRoute
@@ -504,13 +491,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/kyc': {
-      id: '/admin/kyc'
-      path: '/admin/kyc'
-      fullPath: '/admin/kyc'
-      preLoaderRoute: typeof AdminKycRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/admin/customers'
@@ -550,7 +530,6 @@ const rootRouteChildren: RootRouteChildren = {
   VendorsRoute: VendorsRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCustomersRoute: AdminCustomersRoute,
-  AdminKycRoute: AdminKycRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminStaffRoute: AdminStaffRoute,
