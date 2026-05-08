@@ -418,6 +418,51 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_modules: {
+        Row: {
+          category: string
+          config: Json
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_configured: boolean
+          is_enabled: boolean
+          last_checked_at: string | null
+          module_key: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_configured?: boolean
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          module_key: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_configured?: boolean
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          module_key?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_providers: {
         Row: {
           category: string
