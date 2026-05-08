@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       catalog_items: {
         Row: {
           category_id: string
@@ -115,6 +169,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          lead_cost_coins: number
+          lead_price_inr: number | null
+          max_vendors_per_lead: number | null
           name: string
           parent_id: string | null
           slug: string
@@ -130,6 +187,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_cost_coins?: number
+          lead_price_inr?: number | null
+          max_vendors_per_lead?: number | null
           name: string
           parent_id?: string | null
           slug: string
@@ -145,6 +205,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lead_cost_coins?: number
+          lead_price_inr?: number | null
+          max_vendors_per_lead?: number | null
           name?: string
           parent_id?: string | null
           slug?: string
@@ -168,6 +231,192 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coin_packs: {
+        Row: {
+          bonus_coins: number
+          coins: number
+          created_at: string
+          id: string
+          is_active: boolean
+          pack_name: string
+          price_inr: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_coins?: number
+          coins: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pack_name: string
+          price_inr: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_coins?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pack_name?: string
+          price_inr?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coin_pricing_config: {
+        Row: {
+          coin_rate_inr: number
+          gst_percent: number
+          id: string
+          max_purchase_coins: number
+          min_purchase_coins: number
+          total_supply: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          coin_rate_inr?: number
+          gst_percent?: number
+          id?: string
+          max_purchase_coins?: number
+          min_purchase_coins?: number
+          total_supply?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          coin_rate_inr?: number
+          gst_percent?: number
+          id?: string
+          max_purchase_coins?: number
+          min_purchase_coins?: number
+          total_supply?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      coin_transfers: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          note: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          avatar_url: string | null
+          card_back_image_url: string | null
+          card_field_visibility: Json
+          card_link_url: string | null
+          card_share_count: number
+          card_view_count: number
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          referral_code: string | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_url: string | null
+          signup_method: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          avatar_url?: string | null
+          card_back_image_url?: string | null
+          card_field_visibility?: Json
+          card_link_url?: string | null
+          card_share_count?: number
+          card_view_count?: number
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          referral_code?: string | null
+          shop_logo_url?: string | null
+          shop_name?: string | null
+          shop_url?: string | null
+          signup_method?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          avatar_url?: string | null
+          card_back_image_url?: string | null
+          card_field_visibility?: Json
+          card_link_url?: string | null
+          card_share_count?: number
+          card_view_count?: number
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          referral_code?: string | null
+          shop_logo_url?: string | null
+          shop_name?: string | null
+          shop_url?: string | null
+          signup_method?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
       }
       item_variations: {
         Row: {
@@ -219,6 +468,347 @@ export type Database = {
           },
         ]
       }
+      lead_messages: {
+        Row: {
+          attachment: Json
+          body: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          lead_id: string
+          read_at: string | null
+          recipient_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          attachment?: Json
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          lead_id: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          attachment?: Json
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          lead_id?: string
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: []
+      }
+      lead_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          responded_at: string | null
+          status: string
+          sub_category_name: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          responded_at?: string | null
+          status?: string
+          sub_category_name: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          responded_at?: string | null
+          status?: string
+          sub_category_name?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_source_multipliers: {
+        Row: {
+          id: string
+          is_active: boolean
+          multiplier: number
+          sort_order: number
+          source_key: string
+          source_label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          sort_order?: number
+          source_key: string
+          source_label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          sort_order?: number
+          source_key?: string
+          source_label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          accepted_at: string | null
+          accepted_count: number
+          accepted_vendor_id: string | null
+          accepted_vendor_ids: string[]
+          address: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          images: string[]
+          item_ids: string[]
+          item_names: string[]
+          lat: number | null
+          lead_price_inr: number
+          lead_rating: number | null
+          lead_review: string | null
+          lng: number | null
+          max_slots: number
+          note: string | null
+          root_category_id: string | null
+          source: string
+          status: string
+          sub_category_id: string
+          sub_category_name: string
+          type_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_count?: number
+          accepted_vendor_id?: string | null
+          accepted_vendor_ids?: string[]
+          address?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          images?: string[]
+          item_ids?: string[]
+          item_names?: string[]
+          lat?: number | null
+          lead_price_inr?: number
+          lead_rating?: number | null
+          lead_review?: string | null
+          lng?: number | null
+          max_slots?: number
+          note?: string | null
+          root_category_id?: string | null
+          source?: string
+          status?: string
+          sub_category_id: string
+          sub_category_name: string
+          type_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_count?: number
+          accepted_vendor_id?: string | null
+          accepted_vendor_ids?: string[]
+          address?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          images?: string[]
+          item_ids?: string[]
+          item_names?: string[]
+          lat?: number | null
+          lead_price_inr?: number
+          lead_rating?: number | null
+          lead_review?: string | null
+          lng?: number | null
+          max_slots?: number
+          note?: string | null
+          root_category_id?: string | null
+          source?: string
+          status?: string
+          sub_category_id?: string
+          sub_category_name?: string
+          type_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      leadx_rate_history: {
+        Row: {
+          id: string
+          rate_inr: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          rate_inr: number
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          rate_inr?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
+      legal_pages: {
+        Row: {
+          body: string
+          created_at: string
+          hero_image_url: string | null
+          id: string
+          is_active: boolean
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+          video_url: string | null
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      logistics_gateways: {
+        Row: {
+          config: Json
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          priority: number
+          provider: string
+          public_key: string | null
+          supports_hyperlocal: boolean
+          supports_intercity: boolean
+          supports_international: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider: string
+          public_key?: string | null
+          supports_hyperlocal?: boolean
+          supports_intercity?: boolean
+          supports_international?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider?: string
+          public_key?: string | null
+          supports_hyperlocal?: boolean
+          supports_intercity?: boolean
+          supports_international?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          provider: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          provider?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          provider?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       payment_gateways: {
         Row: {
           config: Json
@@ -226,8 +816,49 @@ export type Database = {
           id: string
           is_active: boolean
           is_test_mode: boolean
+          priority: number
           provider: string
           public_key: string | null
+          purpose: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider: string
+          public_key?: string | null
+          purpose?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider?: string
+          public_key?: string | null
+          purpose?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sms_gateways: {
+        Row: {
+          config: Json
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          provider: string
           updated_at: string
           updated_by: string | null
         }
@@ -238,7 +869,6 @@ export type Database = {
           is_active?: boolean
           is_test_mode?: boolean
           provider: string
-          public_key?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -249,9 +879,95 @@ export type Database = {
           is_active?: boolean
           is_test_mode?: boolean
           provider?: string
-          public_key?: string | null
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      staff_profiles: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          designation: string | null
+          email: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          is_blocked?: boolean
+          name?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      system_logs: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string | null
+          meta: Json
+          provider: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message?: string | null
+          meta?: Json
+          provider?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          meta?: Json
+          provider?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -349,11 +1065,279 @@ export type Database = {
           },
         ]
       }
+      vendor_wallets: {
+        Row: {
+          auto_topup_enabled: boolean
+          created_at: string
+          id: string
+          leads_total: number
+          leads_used: number
+          leadx_coins: number
+          lifetime_coins_purchased: number
+          lifetime_coins_used: number
+          lifetime_recharged_paise: number
+          lifetime_spent_paise: number
+          low_balance_threshold_paise: number
+          service_balance_paise: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          auto_topup_enabled?: boolean
+          created_at?: string
+          id?: string
+          leads_total?: number
+          leads_used?: number
+          leadx_coins?: number
+          lifetime_coins_purchased?: number
+          lifetime_coins_used?: number
+          lifetime_recharged_paise?: number
+          lifetime_spent_paise?: number
+          low_balance_threshold_paise?: number
+          service_balance_paise?: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          auto_topup_enabled?: boolean
+          created_at?: string
+          id?: string
+          leads_total?: number
+          leads_used?: number
+          leadx_coins?: number
+          lifetime_coins_purchased?: number
+          lifetime_coins_used?: number
+          lifetime_recharged_paise?: number
+          lifetime_spent_paise?: number
+          low_balance_threshold_paise?: number
+          service_balance_paise?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          aadhaar: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          auto_accept_leads: boolean
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string
+          deals_in: string | null
+          email: string | null
+          entity: string | null
+          facebook: string | null
+          google_place_id: string | null
+          gst: string | null
+          id: string
+          instagram: string | null
+          is_blocked: boolean
+          lat: number | null
+          lng: number | null
+          manager_email: string | null
+          owner_name: string | null
+          pan: string | null
+          plan: string | null
+          referral: string | null
+          role: string | null
+          service_radius_km: number
+          status: string
+          tags: string[] | null
+          trade: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          aadhaar?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          auto_accept_leads?: boolean
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          deals_in?: string | null
+          email?: string | null
+          entity?: string | null
+          facebook?: string | null
+          google_place_id?: string | null
+          gst?: string | null
+          id?: string
+          instagram?: string | null
+          is_blocked?: boolean
+          lat?: number | null
+          lng?: number | null
+          manager_email?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          plan?: string | null
+          referral?: string | null
+          role?: string | null
+          service_radius_km?: number
+          status?: string
+          tags?: string[] | null
+          trade?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          aadhaar?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          auto_accept_leads?: boolean
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          deals_in?: string | null
+          email?: string | null
+          entity?: string | null
+          facebook?: string | null
+          google_place_id?: string | null
+          gst?: string | null
+          id?: string
+          instagram?: string | null
+          is_blocked?: boolean
+          lat?: number | null
+          lng?: number | null
+          manager_email?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          plan?: string | null
+          referral?: string | null
+          role?: string | null
+          service_radius_km?: number
+          status?: string
+          tags?: string[] | null
+          trade?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      wallet_recharge_packs: {
+        Row: {
+          amount_inr: number
+          bonus_inr: number
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          amount_inr: number
+          bonus_inr?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_inr?: number
+          bonus_inr?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount_paise: number
+          balance_after_paise: number | null
+          coin_balance_after: number | null
+          coins: number
+          created_at: string
+          description: string | null
+          direction: string
+          gateway: string | null
+          id: string
+          metadata: Json
+          reference_id: string | null
+          status: string
+          txn_type: string
+          vendor_id: string
+          wallet_kind: string
+        }
+        Insert: {
+          amount_paise?: number
+          balance_after_paise?: number | null
+          coin_balance_after?: number | null
+          coins?: number
+          created_at?: string
+          description?: string | null
+          direction: string
+          gateway?: string | null
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          status?: string
+          txn_type: string
+          vendor_id: string
+          wallet_kind: string
+        }
+        Update: {
+          amount_paise?: number
+          balance_after_paise?: number | null
+          coin_balance_after?: number | null
+          coins?: number
+          created_at?: string
+          description?: string | null
+          direction?: string
+          gateway?: string | null
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          status?: string
+          txn_type?: string
+          vendor_id?: string
+          wallet_kind?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
+      bump_card_view: { Args: { _code: string }; Returns: undefined }
+      get_admin_stats: { Args: never; Returns: Json }
+      get_card_link: { Args: { _code: string }; Returns: string }
+      get_gateway_health: { Args: never; Returns: Json }
+      get_lead_accepted_vendors: {
+        Args: { _lead_id: string }
+        Returns: {
+          avatar_url: string
+          business_name: string
+          distance_km: number
+          email: string
+          owner_name: string
+          phone: string
+          rating: number
+          total_reviews: number
+          vendor_id: string
+          whatsapp: string
+        }[]
+      }
+      get_leadx_market_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -362,6 +1346,137 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      is_lead_owner: {
+        Args: { _lead_id: string; _user_id: string }
+        Returns: boolean
+      }
+      lookup_customer_by_phone: {
+        Args: { _phone: string }
+        Returns: {
+          address: string
+          email: string
+          exists_flag: boolean
+          gender: string
+          name: string
+          user_id: string
+        }[]
+      }
+      match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
+      normalize_email: { Args: { _email: string }; Returns: string }
+      normalize_phone10: { Args: { _phone: string }; Returns: string }
+      reject_lead: { Args: { _lead_id: string }; Returns: undefined }
+      save_customer_profile: {
+        Args: {
+          _address: string
+          _email: string
+          _gender: string
+          _name: string
+          _phone: string
+        }
+        Returns: {
+          address: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          avatar_url: string | null
+          card_back_image_url: string | null
+          card_field_visibility: Json
+          card_link_url: string | null
+          card_share_count: number
+          card_view_count: number
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          referral_code: string | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_url: string | null
+          signup_method: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          verified: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_vendor_profile: {
+        Args: {
+          _aadhaar: string
+          _business_name: string
+          _deals_in: string
+          _entity: string
+          _facebook: string
+          _google_place_id: string
+          _gst: string
+          _instagram: string
+          _manager_email: string
+          _owner_name: string
+          _pan: string
+          _plan: string
+          _referral: string
+          _role: string
+          _trade: string
+          _website: string
+          _whatsapp: string
+        }
+        Returns: {
+          aadhaar: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          auto_accept_leads: boolean
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string
+          deals_in: string | null
+          email: string | null
+          entity: string | null
+          facebook: string | null
+          google_place_id: string | null
+          gst: string | null
+          id: string
+          instagram: string | null
+          is_blocked: boolean
+          lat: number | null
+          lng: number | null
+          manager_email: string | null
+          owner_name: string | null
+          pan: string | null
+          plan: string | null
+          referral: string | null
+          role: string | null
+          service_radius_km: number
+          status: string
+          tags: string[] | null
+          trade: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+          website: string | null
+          whatsapp: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vendors"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transfer_coins: {
+        Args: { _coins: number; _note?: string; _receiver_id: string }
+        Returns: Json
+      }
+      update_coin_rate: { Args: { _new_rate: number }; Returns: undefined }
+      wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "moderator" | "support"
