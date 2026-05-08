@@ -8,9 +8,6 @@ type Props = {
   onClose: () => void;
 };
 
-const AUTO_OTP = "482917";
-const AUTO_DELAY = 3200; // ms before auto-verify
-
 export function OtpModal({ open, phone, onVerified, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [seconds, setSeconds] = useState(45);
@@ -35,49 +32,6 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [open, seconds, verified]);
-
-  // auto-fill OTP and auto-verify
-  useEffect(() => {
-    if (!open) return;
-    let idx = 0;
-    const timeouts: number[] = [];
-    const start = window.setTimeout(() => {
-      const tick = () => {
-        if (idx >= AUTO_OTP.length) return;
-        setDigits((prev) => {
-          const next = [...prev];
-          next[idx] = AUTO_OTP[idx];
-          return next;
-        });
-        idx += 1;
-        if (idx < AUTO_OTP.length) {
-          timeouts.push(window.setTimeout(tick, 220));
-        } else {
-          // all filled — auto verify
-          timeouts.push(
-            window.setTimeout(() => {
-              setVerifying(true);
-              timeouts.push(
-                window.setTimeout(() => {
-                  setVerified(true);
-                  timeouts.push(
-                    window.setTimeout(() => {
-                      onVerified(AUTO_OTP);
-                    }, 900),
-                  );
-                }, 1100),
-              );
-            }, 350),
-          );
-        }
-      };
-      tick();
-    }, AUTO_DELAY);
-    return () => {
-      window.clearTimeout(start);
-      timeouts.forEach((t) => window.clearTimeout(t));
-    };
-  }, [open, onVerified]);
 
   if (!open) return null;
 
@@ -163,7 +117,7 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
           <div className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${verified ? "bg-emerald-500" : "bg-[color:oklch(0.78_0.14_82)]"}`} style={{ animation: "pulse-dot 1.4s ease-in-out infinite" }} />
             <span className="text-muted-foreground">
-              {verified ? "OTP matched" : verifying ? "Auto-verifying..." : "Awaiting auto-fill"}
+              {verified ? "OTP matched" : verifying ? "Verifying..." : "Waiting for OTP"}
             </span>
           </div>
           <div className="font-display text-[color:oklch(0.45_0.10_82)] tabular-nums">
