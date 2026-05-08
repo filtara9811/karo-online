@@ -88,7 +88,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const draft = useMemo(readCustomerDraft, []);
   const [googleBusy, setGoogleBusy] = useState(false);
 
-  const [stage, setStage] = useState<Stage>(draft.phoneVerified ? "signup" : "auth");
+  const [stage, setStage] = useState<Stage>("auth");
 
   // Profile fields
   const [agreed, setAgreed] = useState(!!draft.agreed);
@@ -96,7 +96,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [name, setName] = useState(draft.name ?? "");
   const [operator, setOperator] = useState<string | null>(draft.operator ?? null);
   const [phone, setPhone] = useState(draft.phone ?? "");
-  const [phoneVerified, setPhoneVerified] = useState(!!draft.phoneVerified);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState(draft.email ?? "");
   const [address, setAddress] = useState(draft.address ?? "");
   const [manager, setManager] = useState<string | null>(draft.manager ?? null);
