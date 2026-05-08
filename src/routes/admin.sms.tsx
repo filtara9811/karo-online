@@ -43,8 +43,10 @@ const FIELDS: Record<string, Array<{ key: string; label: string; placeholder: st
   ],
   fast2sms: [
     { key: "api_key", label: "API Key", placeholder: "Fast2SMS Authorization key", help: "Fast2SMS dashboard → Dev API" },
-    { key: "sender_id", label: "Sender ID", placeholder: "FSTSMS" },
-    { key: "route", label: "Route", placeholder: "otp", help: "otp / dlt / q" },
+    { key: "sender_id", label: "Sender ID", placeholder: "FILPRA", help: "DLT-approved 6-letter header" },
+    { key: "route", label: "Route", placeholder: "dlt", help: "otp / dlt / q (use 'dlt' for DLT templates)" },
+    { key: "template_id", label: "DLT Template ID", placeholder: "1707171446342898950", help: "DLT-approved numeric template ID (required for route=dlt)" },
+    { key: "message_id", label: "Message ID (optional)", placeholder: "", help: "Some Fast2SMS DLT setups need this; leave blank if not provided" },
   ],
 };
 
