@@ -82,7 +82,7 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const geo = useGeolocation();
-  const [dismissed, setDismissed] = useState<Set<string>>(() => readDismissed());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
   const [gpsReady, setGpsReady] = useState(false);
   const [adminCounts, setAdminCounts] = useState<{ pendingVendors: number; pendingKyc: number }>({
     pendingVendors: 0,
@@ -94,6 +94,10 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
     lng?: number | null;
     mappings?: number;
   } | null>(null);
+
+  useEffect(() => {
+    setDismissed(readDismissed());
+  }, []);
 
   // Admin data
   useEffect(() => {
