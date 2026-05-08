@@ -103,7 +103,8 @@ async function sendViaFast2SMS(
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
     const res = await fetch(url, { method: "GET", headers: { authorization: apiKey } });
-    const json = (await res.json().catch(async () => ({ raw_text: await res.text().catch(() => "") }))) as { return?: boolean; message?: unknown };
+    const body = await res.text();
+    const json = (body ? JSON.parse(body) : {}) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
       const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `Fast2SMS ${res.status}: ${msg}`, raw: json };
@@ -179,14 +180,14 @@ export const sendOtp = createServerFn({ method: "POST" })
     }
 
     if (gateway.is_test_mode) {
-      await logSystem("otp", gateway.provider, "success", `Test mode OTP issued for ${phone}`, {
+      await logSystem("otp", gateway.provider, "error", "SMS gateway is in test mode; live OTP was not sent", {
         test_mode: true,
       });
-      return { ok: true, test_mode: true, message: "Test mode active — use 1234" };
+      return { ok: false, error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein." };
     }
 
     // Real send
-    const cfg = (gateway.config ?? {}) as Record<string, string>;
+    const cfg = (gateway.config ?? {}) as Record<string, any>;
     const result =
       gateway.provider === "msg91"
         ? await sendViaMSG91(phone, code, cfg)
@@ -212,12 +213,6 @@ export const verifyOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const phone = data.phone;
     const code = data.code;
-
-    // Check active gateway test_mode
-    const gateway = await getActiveSmsGateway();
-    if (gateway?.is_test_mode && code === "1234") {
-      return { ok: true, test_mode: true };
-    }
 
     const { data: rows, error } = await supabaseAdmin
       .from("otp_codes")
