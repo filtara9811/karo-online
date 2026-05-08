@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { MessageSquare, Loader2, Save, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Loader2, Save, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -30,14 +30,20 @@ type SmsGateway = {
   display_name: string;
   is_active: boolean;
   is_test_mode: boolean;
-  config: Record<string, string>;
+  config: Record<string, any>;
+};
+
+type SmsTemplate = {
+  event: string;
+  label: string;
+  template_id: string;
+  variables: string;
 };
 
 const FIELDS: Record<string, Array<{ key: string; label: string; placeholder: string; help?: string }>> = {
   msg91: [
     { key: "auth_key", label: "Auth Key", placeholder: "MSG91 Auth Key", help: "MSG91 dashboard → Auth Key" },
     { key: "sender_id", label: "Sender ID", placeholder: "KARONL", help: "6-letter DLT-approved sender" },
-    { key: "template_id", label: "OTP Template ID", placeholder: "65xxxxxxxxxxxxxxxx", help: "DLT-approved OTP template ID" },
     { key: "route", label: "Route", placeholder: "4" },
     { key: "country", label: "Country Code", placeholder: "91" },
   ],
@@ -45,10 +51,11 @@ const FIELDS: Record<string, Array<{ key: string; label: string; placeholder: st
     { key: "api_key", label: "API Key", placeholder: "Fast2SMS Authorization key", help: "Fast2SMS dashboard → Dev API" },
     { key: "sender_id", label: "Sender ID", placeholder: "FILPRA", help: "DLT-approved 6-letter header" },
     { key: "route", label: "Route", placeholder: "dlt", help: "otp / dlt / q (use 'dlt' for DLT templates)" },
-    { key: "template_id", label: "DLT Template ID", placeholder: "1707171446342898950", help: "DLT-approved numeric template ID (required for route=dlt)" },
     { key: "message_id", label: "Message ID (optional)", placeholder: "", help: "Some Fast2SMS DLT setups need this; leave blank if not provided" },
   ],
 };
+
+const defaultTemplate = (): SmsTemplate => ({ event: "otp", label: "OTP Login", template_id: "", variables: "{otp}" });
 
 function SmsPage() {
   const [gateways, setGateways] = useState<SmsGateway[]>([]);
