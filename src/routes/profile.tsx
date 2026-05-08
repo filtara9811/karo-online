@@ -260,7 +260,7 @@ function ProfilePage() {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} t={t} />
+            <CardDetails type={activeCard.type} t={t} profile={profile} />
           </motion.section>
         )}
       </AnimatePresence>
