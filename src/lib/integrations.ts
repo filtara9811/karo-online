@@ -73,13 +73,17 @@ export async function setActiveProvider(id: string) {
 
 export async function updateProvider(
   id: string,
-  patch: Partial<
-    Pick<IntegrationProvider, "is_test_mode" | "config" | "notes" | "display_name">
-  >,
+  patch: {
+    is_test_mode?: boolean;
+    config?: Record<string, unknown>;
+    notes?: string | null;
+    display_name?: string;
+  },
 ) {
   const { error } = await supabase
     .from("integration_providers")
-    .update(patch)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(patch as any)
     .eq("id", id);
   if (error) throw error;
 }
