@@ -66,7 +66,7 @@ const RunSchema = z.object({
   subject_user_id: z.string().uuid().nullable().optional(),
   subject_type: z.enum(["vendor", "customer", "staff", "manual"]).default("manual"),
   // Per-check fields (loose; provider validates)
-  pan?: z.any() as unknown as z.ZodOptional<z.ZodString>,
+  pan: z.string().optional(),
   name: z.string().optional(),
   aadhaar_number: z.string().optional(),
   ref_id: z.string().optional(),
