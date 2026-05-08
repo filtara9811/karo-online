@@ -11,6 +11,52 @@ import {
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
+import { supabase } from "@/integrations/supabase/client";
+
+type CustomerProfile = {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  avatar_url: string | null;
+  shop_name: string | null;
+  referral_code: string | null;
+};
+
+function useCustomerProfile() {
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { if (active) setLoading(false); return; }
+      const { data } = await supabase
+        .from("customers")
+        .select("name, phone, email, address, avatar_url, shop_name, referral_code")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (!active) return;
+      setProfile((data as CustomerProfile) ?? {
+        name: userData.user?.user_metadata?.full_name ?? userData.user?.user_metadata?.name ?? null,
+        phone: userData.user?.phone ?? null,
+        email: userData.user?.email ?? null,
+        address: null,
+        avatar_url: userData.user?.user_metadata?.avatar_url ?? null,
+        shop_name: null,
+        referral_code: null,
+      });
+      setLoading(false);
+    };
+    load();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    return () => { active = false; sub.subscription.unsubscribe(); };
+  }, []);
+
+  return { profile, loading };
+}
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
