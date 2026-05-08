@@ -55,10 +55,10 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "other", label: "Other", sub: "Beyond labels", icon: goldOther },
 ];
 
+// Browsers cannot read real SIM numbers for privacy reasons,
+// so we only offer manual entry — no dummy/mock numbers.
 const SIM_OPTIONS: (PickerOption & { number: string })[] = [
-  { value: "sim1", label: "SIM 1", sub: "Enter real mobile number", number: "", icon: goldSimJio },
-  { value: "sim2", label: "SIM 2", sub: "Enter real mobile number", number: "", icon: goldSimAirtel },
-  { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
+  { value: "manual", label: "Enter Mobile Number", sub: "Type your real 10-digit number", number: "", icon: goldOther },
 ];
 
 const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
