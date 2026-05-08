@@ -78,7 +78,7 @@ async function getActiveSmsGateway() {
 async function sendViaFast2SMS(
   phone: string,
   code: string,
-  cfg: Record<string, string>,
+  cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const apiKey = cfg.api_key?.trim();
   const senderId = cfg.sender_id?.trim() || "FILPRA";
@@ -117,7 +117,7 @@ async function sendViaFast2SMS(
 async function sendViaMSG91(
   phone: string,
   code: string,
-  cfg: Record<string, string>,
+  cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const authKey = cfg.auth_key?.trim();
   const templateId = cfg.template_id?.trim();
@@ -195,12 +195,14 @@ export const sendOtp = createServerFn({ method: "POST" })
     if (!result.ok) {
       await logSystem("sms", gateway.provider, "error", result.error ?? "Unknown error", {
         phone_last4: phone.slice(-4),
+        provider_response: result.raw ?? null,
       });
       return { ok: false, error: result.error ?? "SMS delivery failed" };
     }
 
     await logSystem("sms", gateway.provider, "success", `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`, {
       phone_last4: phone.slice(-4),
+      provider_response: result.raw ?? null,
     });
     return { ok: true, test_mode: false };
   });
