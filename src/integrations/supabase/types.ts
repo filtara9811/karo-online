@@ -776,6 +776,39 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          provider: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          provider?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          provider?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       payment_gateways: {
         Row: {
           config: Json
@@ -905,6 +938,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      system_logs: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string | null
+          meta: Json
+          provider: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message?: string | null
+          meta?: Json
+          provider?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          meta?: Json
+          provider?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -1258,6 +1321,7 @@ export type Database = {
       bump_card_view: { Args: { _code: string }; Returns: undefined }
       get_admin_stats: { Args: never; Returns: Json }
       get_card_link: { Args: { _code: string }; Returns: string }
+      get_gateway_health: { Args: never; Returns: Json }
       get_lead_accepted_vendors: {
         Args: { _lead_id: string }
         Returns: {
