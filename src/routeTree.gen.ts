@@ -32,6 +32,7 @@ import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
+import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -159,6 +160,11 @@ const AdminVendorsRoute = AdminVendorsRouteImport.update({
   path: '/admin/vendors',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSystemStatusRoute = AdminSystemStatusRouteImport.update({
+  id: '/admin/system-status',
+  path: '/admin/system-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/admin/staff',
   path: '/admin/staff',
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/system-status'
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
@@ -385,6 +395,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/system-status'
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/system-status'
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
@@ -458,6 +470,7 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminSystemStatusRoute: typeof AdminSystemStatusRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
   CCodeRoute: typeof CCodeRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -635,6 +648,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/system-status': {
+      id: '/admin/system-status'
+      path: '/admin/system-status'
+      fullPath: '/admin/system-status'
+      preLoaderRoute: typeof AdminSystemStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/admin/staff'
@@ -738,6 +758,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminSystemStatusRoute: AdminSystemStatusRoute,
   AdminVendorsRoute: AdminVendorsRoute,
   CCodeRoute: CCodeRoute,
   ProductIdRoute: ProductIdRoute,
