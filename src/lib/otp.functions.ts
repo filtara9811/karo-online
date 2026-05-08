@@ -32,13 +32,12 @@ async function logSystem(
   meta: Record<string, unknown> = {},
 ) {
   try {
-    await supabaseAdmin.from("system_logs").insert([{
+    await (supabaseAdmin.from("system_logs") as any).insert({
       kind,
       provider,
       status,
       message: message.slice(0, 500),
       meta,
-    }] as any);
     });
   } catch (e) {
     console.error("[system_logs.insert] failed", e);
