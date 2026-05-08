@@ -28,6 +28,7 @@ type Gateway = {
   is_active: boolean;
   is_test_mode: boolean;
   public_key: string | null;
+  config: Record<string, string>;
   purpose: GatewayPurpose;
   priority: number;
 };
@@ -43,7 +44,10 @@ function PaymentsPage() {
       .from("payment_gateways")
       .select("*")
       .order("provider");
-    setGateways((data ?? []) as Gateway[]);
+    setGateways(((data ?? []) as any[]).map((g) => ({
+      ...g,
+      config: (g.config ?? {}) as Record<string, string>,
+    })) as Gateway[]);
     setLoading(false);
   };
 
@@ -63,9 +67,10 @@ function PaymentsPage() {
         is_active: g.is_active,
         is_test_mode: g.is_test_mode,
         public_key: g.public_key,
+        config: g.config as any,
         purpose: g.purpose,
         priority: g.priority,
-      })
+      } as any)
       .eq("id", g.id);
     setSavingId(null);
   };
