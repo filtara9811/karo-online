@@ -90,6 +90,9 @@ async function sendViaFast2SMS(
   if (route === "dlt" && !templateId) return { ok: false, error: "Fast2SMS template_id required for DLT route" };
 
   const params = new URLSearchParams({
+    // Fast2SMS requires `authorization` in the query string for GET requests.
+    // Header auth is only documented for POST, and returns 401/412 for GET.
+    authorization: apiKey,
     route,
     sender_id: senderId,
     numbers: phone,
@@ -102,7 +105,7 @@ async function sendViaFast2SMS(
 
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
-    const res = await fetch(url, { method: "GET", headers: { authorization: apiKey } });
+    const res = await fetch(url, { method: "GET" });
     const body = await res.text();
     const json = (body
       ? (() => {
