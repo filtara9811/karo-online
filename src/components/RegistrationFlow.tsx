@@ -399,11 +399,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       )}
 
       <motion.section
-        style={{ y, height: vh }}
-        className="absolute inset-x-0 top-0 z-20 will-change-transform"
+        style={{ y, height: isWideScreen ? Math.min(vh - 48, 680) : vh }}
+        className="absolute inset-x-0 top-0 z-20 will-change-transform md:px-4"
       >
         <div
-          className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
+          className="relative h-full mx-auto max-w-md rounded-t-[32px] md:rounded-[32px] overflow-hidden"
           style={{
             background:
               "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,253,245,0.92) 35%, rgba(251,243,217,0.94) 100%)",
