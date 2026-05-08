@@ -104,7 +104,15 @@ async function sendViaFast2SMS(
   try {
     const res = await fetch(url, { method: "GET", headers: { authorization: apiKey } });
     const body = await res.text();
-    const json = (body ? JSON.parse(body) : {}) as { return?: boolean; message?: unknown };
+    const json = (body
+      ? (() => {
+          try {
+            return JSON.parse(body);
+          } catch {
+            return { raw_text: body };
+          }
+        })()
+      : {}) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
       const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `Fast2SMS ${res.status}: ${msg}`, raw: json };
