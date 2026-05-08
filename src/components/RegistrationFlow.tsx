@@ -56,10 +56,12 @@ const GENDER_OPTIONS: PickerOption[] = [
 ];
 
 const SIM_OPTIONS: (PickerOption & { number: string })[] = [
-  { value: "jio", label: "Jio · SIM 1", sub: "+91 89 2847 6391", number: "+91 89284 76391", icon: goldSimJio },
-  { value: "airtel", label: "Airtel · SIM 2", sub: "+91 98 1156 7204", number: "+91 98115 67204", icon: goldSimAirtel },
+  { value: "sim1", label: "SIM 1", sub: "Enter real mobile number", number: "", icon: goldSimJio },
+  { value: "sim2", label: "SIM 2", sub: "Enter real mobile number", number: "", icon: goldSimAirtel },
   { value: "manual", label: "Other · Manual", sub: "Type number yourself", number: "", icon: goldOther },
 ];
+
+const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
 
 const MANAGER_OPTIONS: (PickerOption & { rating: number; vendors: number })[] = [
   { value: "aryan", label: "Aryan Sharma", sub: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, icon: goldMale },
@@ -237,18 +239,24 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
 
-  const startInlineOtp = async () => {
+  const startInlineOtp = async (targetPhone = phone) => {
+    const digits = targetPhone.replace(/\D/g, "").slice(-10);
+    if (digits.length !== 10) {
+      toast.error("10 digit mobile number daaliye");
+      return;
+    }
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
-    const res = await sendOtpFn({ data: { phone } });
+    const res = await sendOtpFn({ data: { phone: digits } });
     if (!res.ok) {
       toast.error(res.error || "Could not send OTP");
       return;
     }
     if (res.test_mode) {
-      toast.info("Test mode active — use 1234");
+      toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
+      return;
     } else {
-      toast.success("OTP sent to " + phone);
+      toast.success("OTP sent to " + formatIndianMobile(digits));
     }
   };
 
@@ -258,10 +266,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       toast.error("10 digit mobile number daaliye");
       return;
     }
-    setPhone("+91 " + digits.slice(0, 5) + " " + digits.slice(5));
+    const formattedPhone = formatIndianMobile(digits);
+    setPhone(formattedPhone);
     setManualPhoneOpen(false);
     setManualPhone("");
-    setTimeout(startInlineOtp, 350);
+    setTimeout(() => startInlineOtp(formattedPhone), 350);
   };
 
   const handleSimSelect = (value: string) => {
@@ -269,13 +278,13 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     if (!sim) return;
     setOperator(value);
     setPicker(null);
-    if (value === "manual") {
+    if (value === "manual" || !sim.number) {
       setPhone("");
       setManualPhoneOpen(true);
       return;
     }
     setPhone(sim.number);
-    setTimeout(startInlineOtp, 600);
+    setTimeout(() => startInlineOtp(sim.number), 600);
   };
 
   // OTP timer
