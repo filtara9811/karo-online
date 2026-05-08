@@ -129,7 +129,8 @@ async function sendViaMSG91(
   cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const authKey = cfg.auth_key?.trim();
-  const templateId = cfg.template_id?.trim();
+  const template = getTemplate(cfg);
+  const templateId = (template?.template_id || cfg.template_id || "").trim();
   const country = cfg.country?.trim() || "91";
   if (!authKey) return { ok: false, error: "MSG91 auth_key missing in admin config" };
   if (!templateId) return { ok: false, error: "MSG91 template_id missing in admin config" };
