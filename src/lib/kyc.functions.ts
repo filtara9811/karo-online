@@ -162,7 +162,7 @@ export const testKycProvider = createServerFn({ method: "POST" }).handler(async 
       reachable: true,
       auth_ok: r.status !== 401 && r.status !== 403,
       status: r.status,
-      sample: r.data,
+      sample: JSON.stringify(r.data),
     };
   } catch (e) {
     return { ok: false, reachable: false, error: (e as Error).message };
