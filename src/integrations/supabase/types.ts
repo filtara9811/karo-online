@@ -418,6 +418,45 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_providers: {
+        Row: {
+          category: string
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          notes: string | null
+          provider_key: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          notes?: string | null
+          provider_key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          notes?: string | null
+          provider_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       item_variations: {
         Row: {
           created_at: string

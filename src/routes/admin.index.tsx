@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, Store, FolderTree, Shield, CreditCard, TrendingUp } from "lucide-react";
+import { Users, Store, FolderTree, Shield, CreditCard, TrendingUp, Plug } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 
@@ -52,6 +52,7 @@ function AdminHome() {
     { label: "Staff", value: stats?.staff ?? 0, icon: Shield, to: "/admin/staff", hint: "Admin accounts" },
     { label: "Catalog", value: stats?.categories ?? 0, icon: FolderTree, to: "/admin/catalog", hint: "Types, categories, items" },
     { label: "Payment Gateways", value: stats?.activeGateways ?? 0, icon: CreditCard, to: "/admin/payments", hint: "Active providers" },
+    { label: "Integrations", value: "Hub", icon: Plug, to: "/admin/integrations", hint: "Maps, KYC, WhatsApp…" },
   ];
 
   return (

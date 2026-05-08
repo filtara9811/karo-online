@@ -8,6 +8,7 @@ import {
   FolderTree,
   Shield,
   CreditCard,
+  Plug,
   LogOut,
   Menu,
   X,
@@ -24,6 +25,7 @@ const NAV: NavItem[] = [
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
+  { to: "/admin/integrations", label: "Integrations", icon: Plug },
 ];
 
 const GOLD_BG =
