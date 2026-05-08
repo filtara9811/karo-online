@@ -7,6 +7,7 @@ import {
   Store,
   FolderTree,
   Shield,
+  ShieldCheck,
   CreditCard,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ const NAV: NavItem[] = [
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/vendors", label: "Vendors", icon: Store },
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
+  { to: "/admin/kyc", label: "KYC Center", icon: ShieldCheck },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
 ];
