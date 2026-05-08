@@ -212,6 +212,53 @@ function SmsPage() {
                     </div>
                   ))}
 
+                  <div className="rounded-xl border border-[#d4af37]/25 bg-black/25 p-3 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-[#f5d97a]/80 font-bold">DLT Templates</p>
+                        <p className="text-[9px] text-[#d4af37]/50 mt-0.5">OTP, login, payment jaise events ke approved IDs</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addTemplate(g.id)}
+                        className="h-8 w-8 rounded-lg bg-[#d4af37]/15 border border-[#d4af37]/35 grid place-items-center text-[#f5d97a]"
+                        aria-label="Add DLT template"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {getTemplates(g).map((t, idx) => (
+                      <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                        <input
+                          value={t.event}
+                          onChange={(e) => updateTemplate(g.id, idx, "event", e.target.value)}
+                          placeholder="event: otp"
+                          className="px-2.5 py-2 rounded-lg bg-black/40 border border-[#d4af37]/25 text-[#fff8dc] placeholder:text-[#f5d97a]/25 outline-none text-[11px] font-mono"
+                        />
+                        <input
+                          value={t.template_id}
+                          onChange={(e) => updateTemplate(g.id, idx, "template_id", e.target.value)}
+                          placeholder="Template ID"
+                          className="px-2.5 py-2 rounded-lg bg-black/40 border border-[#d4af37]/25 text-[#fff8dc] placeholder:text-[#f5d97a]/25 outline-none text-[11px] font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeTemplate(g.id, idx)}
+                          className="h-8 w-8 rounded-lg bg-red-500/10 border border-red-400/25 grid place-items-center text-red-200"
+                          aria-label="Remove DLT template"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                        <input
+                          value={t.variables || "{otp}"}
+                          onChange={(e) => updateTemplate(g.id, idx, "variables", e.target.value)}
+                          placeholder="variables: {otp}"
+                          className="col-span-3 px-2.5 py-2 rounded-lg bg-black/40 border border-[#d4af37]/25 text-[#fff8dc] placeholder:text-[#f5d97a]/25 outline-none text-[11px] font-mono"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <Toggle
                       label="Test mode"
@@ -245,7 +292,7 @@ function SmsPage() {
           📲 <strong className="text-[#fff8dc]">Kaise kaam karta hai:</strong> Jo gateway "Active" hoga
           uske keys se OTP bhejega. Ek samay par sirf ek active rah sakta hai —
           dusra activate karte hi pehla automatic inactive ho jayega. Test mode
-          ON ho to OTP <strong>1234</strong> use hoga (bina SMS bheje).
+          ON ho to live OTP block rahega. Launch ke liye Test mode OFF rakhein.
         </p>
       </GoldCard>
     </div>
