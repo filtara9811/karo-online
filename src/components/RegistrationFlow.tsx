@@ -26,7 +26,6 @@ const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
 type CustomerDraft = {
   gender?: string | null;
   name?: string;
-  operator?: string | null;
   phone?: string;
   phoneVerified?: boolean;
   email?: string;
@@ -85,7 +84,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [agreed, setAgreed] = useState(!!draft.agreed);
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
   const [name, setName] = useState(draft.name ?? "");
-  const [operator, setOperator] = useState<string | null>(draft.operator ?? null);
   const [phone, setPhone] = useState(draft.phone ?? "");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState(draft.email ?? "");
@@ -174,10 +172,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: CustomerDraft = {
-      gender, name, operator, phone, phoneVerified, email, address, manager, referral, referralVerified, agreed,
+      gender, name, phone, phoneVerified, email, address, manager, referral, referralVerified, agreed,
     };
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
-  }, [address, agreed, email, gender, name, operator, phone, phoneVerified, manager, referral, referralVerified]);
+  }, [address, agreed, email, gender, name, phone, phoneVerified, manager, referral, referralVerified]);
 
   // After OTP verified → check if mobile already registered
   const handlePhoneVerified = async () => {
