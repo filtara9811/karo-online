@@ -7,6 +7,7 @@ import { OtpModal } from "@/components/OtpModal";
 import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
 import { MpinLogin } from "@/components/MpinLogin";
+import { CustomerMobileLoginSheet } from "@/components/CustomerMobileLoginSheet";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
@@ -58,6 +59,7 @@ function Register() {
   const [otpOpen, setOtpOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [mobileGateVerified, setMobileGateVerified] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // Bottom-sheet drag setup — three snap points based on viewport height
@@ -182,6 +184,7 @@ function Register() {
       </div>
 
       {/* Draggable bottom sheet */}
+      {mobileGateVerified && (
       <motion.section
         drag="y"
         dragConstraints={{ top: SNAP_FULL, bottom: SNAP_PEEK }}
@@ -413,16 +416,17 @@ function Register() {
           </div>
         </div>
       </motion.section>
+      )}
 
       {/* Pickers */}
-      <LuxPicker
+      {mobileGateVerified && <LuxPicker
         open={picker === "gender"}
         title="Choose Your Salutation"
         subtitle="A discreet preference"
         options={GENDER_OPTIONS}
         onSelect={(v) => { setGender(v); setPicker(null); }}
         onClose={() => setPicker(null)}
-      />
+      />}
       <LuxPicker
         open={picker === "sim"}
         title="Select Your SIM"
@@ -462,6 +466,16 @@ function Register() {
         onDone={() => {
           setSuccessOpen(false);
           navigate({ to: "/vendor/dashboard" });
+        }}
+      />
+
+      <CustomerMobileLoginSheet
+        open={!mobileGateVerified}
+        initialPhone={phone}
+        onVerified={(mobile) => {
+          setPhone(mobile);
+          setPhoneVerified(true);
+          setMobileGateVerified(true);
         }}
       />
     </main>

@@ -8,6 +8,7 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import avatarUser from "@/assets/avatar-user.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
+import { CustomerMobileLoginSheet } from "@/components/CustomerMobileLoginSheet";
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
@@ -26,19 +27,34 @@ export function AppShell() {
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
   const isQuickRoute = location.pathname.startsWith("/quick");
+  const shouldGateCustomer = ["/quick", "/vendors", "/home", "/cart", "/checkout"].some((p) => location.pathname.startsWith(p));
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
+  const [mobileLoginOpen, setMobileLoginOpen] = useState(false);
+  const [customerVerified, setCustomerVerified] = useState(false);
   useEffect(() => {
     setFadeKey(location.pathname);
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCustomerVerified(localStorage.getItem("ko-customer-mobile-verified") === "true");
+  }, []);
+
+  const requestCustomerLogin = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!shouldGateCustomer || customerVerified || mobileLoginOpen) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileLoginOpen(true);
+  };
 
   if (hideShell) {
     return <Outlet />;
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative" onClickCapture={requestCustomerLogin}>
       <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
@@ -53,6 +69,16 @@ export function AppShell() {
       </main>
 
       {!hideBottomBar && <BottomActionBar loading={isLoading} />}
+      <CustomerMobileLoginSheet
+        open={mobileLoginOpen && !customerVerified}
+        onVerified={() => {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("ko-customer-mobile-verified", "true");
+          }
+          setCustomerVerified(true);
+          setMobileLoginOpen(false);
+        }}
+      />
     </div>
   );
 }
