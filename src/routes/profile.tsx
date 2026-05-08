@@ -139,11 +139,24 @@ const SOCIALS = [
 function ProfilePage() {
   const router = useRouter();
   const { t, theme, toggleTheme } = useAppPrefs();
+  const { profile } = useCustomerProfile();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Derive cards from live customer profile (fallback to placeholders if missing)
+  const liveCards: DashCard[] = CARDS.map((c) => {
+    if (c.type === "personal") {
+      return {
+        ...c,
+        title: profile?.shop_name || profile?.name || c.title,
+        code: profile?.referral_code || profile?.phone ? `${profile?.name ?? ""} ${profile?.phone?.slice(-4) ?? ""}`.trim() || c.code : c.code,
+      };
+    }
+    return c;
+  });
 
   useEffect(() => {
     const el = scrollerRef.current;
