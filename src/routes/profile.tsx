@@ -170,7 +170,7 @@ function ProfilePage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const activeCard = CARDS[activeIdx] ?? CARDS[0];
+  const activeCard = liveCards[activeIdx] ?? liveCards[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
