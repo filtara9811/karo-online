@@ -184,6 +184,7 @@ function Register() {
       </div>
 
       {/* Draggable bottom sheet */}
+      {mobileGateVerified && (
       <motion.section
         drag="y"
         dragConstraints={{ top: SNAP_FULL, bottom: SNAP_PEEK }}
@@ -415,16 +416,17 @@ function Register() {
           </div>
         </div>
       </motion.section>
+      )}
 
       {/* Pickers */}
-      <LuxPicker
+      {mobileGateVerified && <LuxPicker
         open={picker === "gender"}
         title="Choose Your Salutation"
         subtitle="A discreet preference"
         options={GENDER_OPTIONS}
         onSelect={(v) => { setGender(v); setPicker(null); }}
         onClose={() => setPicker(null)}
-      />
+      />}
       <LuxPicker
         open={picker === "sim"}
         title="Select Your SIM"
