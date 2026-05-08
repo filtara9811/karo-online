@@ -11,6 +11,52 @@ import {
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
+import { supabase } from "@/integrations/supabase/client";
+
+type CustomerProfile = {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  avatar_url: string | null;
+  shop_name: string | null;
+  referral_code: string | null;
+};
+
+function useCustomerProfile() {
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { if (active) setLoading(false); return; }
+      const { data } = await supabase
+        .from("customers")
+        .select("name, phone, email, address, avatar_url, shop_name, referral_code")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (!active) return;
+      setProfile((data as CustomerProfile) ?? {
+        name: userData.user?.user_metadata?.full_name ?? userData.user?.user_metadata?.name ?? null,
+        phone: userData.user?.phone ?? null,
+        email: userData.user?.email ?? null,
+        address: null,
+        avatar_url: userData.user?.user_metadata?.avatar_url ?? null,
+        shop_name: null,
+        referral_code: null,
+      });
+      setLoading(false);
+    };
+    load();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    return () => { active = false; sub.subscription.unsubscribe(); };
+  }, []);
+
+  return { profile, loading };
+}
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -93,11 +139,24 @@ const SOCIALS = [
 function ProfilePage() {
   const router = useRouter();
   const { t, theme, toggleTheme } = useAppPrefs();
+  const { profile } = useCustomerProfile();
   const [activeIdx, setActiveIdx] = useState(0);
   const [editing, setEditing] = useState<DashCard | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Derive cards from live customer profile (fallback to placeholders if missing)
+  const liveCards: DashCard[] = CARDS.map((c) => {
+    if (c.type === "personal") {
+      return {
+        ...c,
+        title: profile?.shop_name || profile?.name || c.title,
+        code: profile?.referral_code || profile?.phone ? `${profile?.name ?? ""} ${profile?.phone?.slice(-4) ?? ""}`.trim() || c.code : c.code,
+      };
+    }
+    return c;
+  });
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -111,7 +170,7 @@ function ProfilePage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const activeCard = CARDS[activeIdx] ?? CARDS[0];
+  const activeCard = liveCards[activeIdx] ?? liveCards[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)] pb-32">
@@ -161,7 +220,7 @@ function ProfilePage() {
           className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
-          {CARDS.map((card) => (
+          {liveCards.map((card) => (
             <motion.button
               key={card.id}
               whileTap={{ scale: 0.98 }}
@@ -179,7 +238,7 @@ function ProfilePage() {
 
         {/* Dot indicators */}
         <div className="flex justify-center gap-1.5 mt-1">
-          {CARDS.map((_, i) => (
+          {liveCards.map((_, i) => (
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all ${
@@ -201,7 +260,7 @@ function ProfilePage() {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <CardDetails type={activeCard.type} t={t} />
+            <CardDetails type={activeCard.type} t={t} profile={profile} />
           </motion.section>
         )}
       </AnimatePresence>
@@ -452,16 +511,17 @@ function MiniRow({ Icon, text }: { Icon: typeof User; text: string }) {
 }
 
 /* -------------------- Dynamic Card Details -------------------- */
-function CardDetails({ type, t }: { type: CardType; t: (k: string) => string }) {
+function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => string; profile: CustomerProfile | null }) {
   if (type !== "personal") return null;
+  const phone = profile?.phone ? (profile.phone.startsWith("+") ? profile.phone : `+91 ${profile.phone}`) : "—";
   return (
     <div className="space-y-2.5">
       <SectionTitle>{t("personal_details")}</SectionTitle>
-      <DetailRow Icon={User} label={t("full_name")} value="Ashutosh Sharma" />
-      <DetailRow Icon={Phone} label={t("contact")} value="+91 98xxx xxxxx" />
-      <DetailRow Icon={Mail} label={t("email")} value="filipra@karo.online" />
-      <DetailRow Icon={MapPin} label={t("address")} value="Delhi 6, India" />
-      <DetailRow Icon={IdCard} label={t("member_code")} value="Ashu 9811" />
+      <DetailRow Icon={User} label={t("full_name")} value={profile?.name || "—"} />
+      <DetailRow Icon={Phone} label={t("contact")} value={phone} />
+      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || "—"} />
+      <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || "—"} />
+      <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || "—"} />
     </div>
   );
 }
