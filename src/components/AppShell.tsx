@@ -42,8 +42,10 @@ export function AppShell() {
     setCustomerVerified(localStorage.getItem("ko-customer-mobile-verified") === "true");
   }, []);
 
-  const requestCustomerLogin = () => {
+  const requestCustomerLogin = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!shouldGateCustomer || customerVerified || mobileLoginOpen) return;
+    event.preventDefault();
+    event.stopPropagation();
     setMobileLoginOpen(true);
   };
 
