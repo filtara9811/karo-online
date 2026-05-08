@@ -51,7 +51,26 @@ export function AuthGate() {
     if (!needsGate) setOpen(false);
   }, [needsGate]);
 
-  if (!open || !needsGate) return null;
+  if (!needsGate) return null;
+
+  if (!open) {
+    // Persistent floating CTA so the user can always find Sign Up / Login.
+    return (
+      <button
+        data-auth-gate
+        onClick={() => setOpen(true)}
+        aria-label="Sign Up or Login"
+        className="fixed z-[60] right-4 bottom-24 px-4 py-2.5 rounded-full font-display font-bold text-sm text-[color:oklch(0.18_0.06_18)] shadow-[0_10px_30px_-8px_rgba(212,175,55,0.6)] active:scale-95"
+        style={{
+          background: "linear-gradient(180deg,#fff3c8 0%,#f5d97a 45%,#d4af37 100%)",
+          border: "1.5px solid rgba(255,255,255,0.7)",
+          animation: "breathe 2.6s ease-in-out infinite",
+        }}
+      >
+        ✦ Sign Up / Login
+      </button>
+    );
+  }
 
   return (
     <div
