@@ -16,9 +16,17 @@ export function AuthGate() {
   const { isAuthenticated, ready, profile } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [locallyOnboarded, setLocallyOnboarded] = useState(false);
 
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
-  const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
+
+  useEffect(() => {
+    try {
+      setLocallyOnboarded(window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true");
+    } catch {
+      setLocallyOnboarded(false);
+    }
+  }, [location.pathname]);
 
   // Profile is complete when this device was already onboarded, or the signed-in
   // session has a complete customer profile. This prevents repeated signup sheets
@@ -50,6 +58,8 @@ export function AuthGate() {
   useEffect(() => {
     if (!needsGate) setOpen(false);
   }, [needsGate]);
+
+  if (!ready) return null;
 
   if (!needsGate) return null;
 

@@ -7,9 +7,6 @@ import { SuccessOverlay } from "@/components/SuccessOverlay";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
-
-import goldSimJio from "@/assets/gold-sim-jio.png";
-import goldSimAirtel from "@/assets/gold-sim-airtel.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
 import { lovable } from "@/integrations/lovable";
@@ -24,12 +21,11 @@ type StepKey = "name" | "email" | "address" | "manager" | "referral";
 const STEP_ORDER: StepKey[] = ["name", "email", "address", "manager", "referral"];
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
 
-const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft";
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v2";
 
 type CustomerDraft = {
   gender?: string | null;
   name?: string;
-  operator?: string | null;
   phone?: string;
   phoneVerified?: boolean;
   email?: string;
@@ -53,12 +49,6 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "male", label: "Male", sub: "His Highness", icon: goldMale },
   { value: "female", label: "Female", sub: "Her Ladyship", icon: goldFemale },
   { value: "other", label: "Other", sub: "Beyond labels", icon: goldOther },
-];
-
-// Browsers cannot read real SIM numbers for privacy reasons,
-// so we only offer manual entry — no dummy/mock numbers.
-const SIM_OPTIONS: (PickerOption & { number: string })[] = [
-  { value: "manual", label: "Enter Mobile Number", sub: "Type your real 10-digit number", number: "", icon: goldOther },
 ];
 
 const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
@@ -94,7 +84,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [agreed, setAgreed] = useState(!!draft.agreed);
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
   const [name, setName] = useState(draft.name ?? "");
-  const [operator, setOperator] = useState<string | null>(draft.operator ?? null);
   const [phone, setPhone] = useState(draft.phone ?? "");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState(draft.email ?? "");
@@ -110,7 +99,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   });
   const [referralVerified, setReferralVerified] = useState(!!draft.referralVerified);
 
-  const [picker, setPicker] = useState<null | "gender" | "sim" | "manager">(null);
+  const [picker, setPicker] = useState<null | "gender" | "manager">(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -177,17 +166,16 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     return STEP_ORDER.slice(0, idx + 1);
   }, [reachedStep]);
 
-  const operatorMeta = SIM_OPTIONS.find((o) => o.value === operator);
   const managerMeta = MANAGER_OPTIONS.find((m) => m.value === manager);
 
   // Persist draft
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: CustomerDraft = {
-      gender, name, operator, phone, phoneVerified, email, address, manager, referral, referralVerified, agreed,
+      gender, name, phone, phoneVerified, email, address, manager, referral, referralVerified, agreed,
     };
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
-  }, [address, agreed, email, gender, name, operator, phone, phoneVerified, manager, referral, referralVerified]);
+  }, [address, agreed, email, gender, name, phone, phoneVerified, manager, referral, referralVerified]);
 
   // After OTP verified → check if mobile already registered
   const handlePhoneVerified = async () => {
@@ -271,20 +259,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     setManualPhoneOpen(false);
     setManualPhone("");
     setTimeout(() => startInlineOtp(formattedPhone), 350);
-  };
-
-  const handleSimSelect = (value: string) => {
-    const sim = SIM_OPTIONS.find((s) => s.value === value);
-    if (!sim) return;
-    setOperator(value);
-    setPicker(null);
-    if (value === "manual" || !sim.number) {
-      setPhone("");
-      setManualPhoneOpen(true);
-      return;
-    }
-    setPhone(sim.number);
-    setTimeout(() => startInlineOtp(sim.number), 600);
   };
 
   // OTP timer
@@ -475,9 +449,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   Icon={Phone}
                   label="Pick and enter mobile number"
                   hint={
-                    operator
-                      ? `${operatorMeta?.label} · verified by OTP`
-                      : phone
+                    phone
                         ? "Tap to change"
                         : "Tap to enter your real mobile number"
                   }
@@ -756,14 +728,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         subtitle="A discreet preference"
         options={GENDER_OPTIONS}
         onSelect={(v) => { setGender(v); setPicker(null); }}
-        onClose={() => setPicker(null)}
-      />
-      <LuxPicker
-        open={picker === "sim"}
-        title="Select Your SIM"
-        subtitle="Choose slot, then enter your real mobile"
-        options={SIM_OPTIONS}
-        onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
       {manualPhoneOpen && (
