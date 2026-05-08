@@ -451,9 +451,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   Icon={Phone}
                   label="Pick and enter mobile number"
                   hint={
-                    operator
-                      ? `${operatorMeta?.label} · verified by OTP`
-                      : phone
+                    phone
                         ? "Tap to change"
                         : "Tap to enter your real mobile number"
                   }
@@ -732,14 +730,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         subtitle="A discreet preference"
         options={GENDER_OPTIONS}
         onSelect={(v) => { setGender(v); setPicker(null); }}
-        onClose={() => setPicker(null)}
-      />
-      <LuxPicker
-        open={picker === "sim"}
-        title="Select Your SIM"
-        subtitle="Choose slot, then enter your real mobile"
-        options={SIM_OPTIONS}
-        onSelect={handleSimSelect}
         onClose={() => setPicker(null)}
       />
       {manualPhoneOpen && (
