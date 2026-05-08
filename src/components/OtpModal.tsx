@@ -100,7 +100,7 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
   const secs = String(seconds % 60).padStart(2, "0");
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center">
+    <div className="fixed inset-0 z-[90] flex items-end justify-center">
       <button
         aria-label="Close"
         onClick={onClose}
