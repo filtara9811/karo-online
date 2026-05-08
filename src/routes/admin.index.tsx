@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, Store, FolderTree, Shield, CreditCard, TrendingUp } from "lucide-react";
+import { Users, Store, FolderTree, Shield, CreditCard, TrendingUp, Plug } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 
