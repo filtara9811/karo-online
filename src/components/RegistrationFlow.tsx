@@ -473,7 +473,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   }}
                 />
 
-                {phone.replace(/\D/g, "").slice(-10).length === 10 && (
+                {otpRequested && phone.replace(/\D/g, "").slice(-10).length === 10 && (
                   <div
                     className="relative flex items-start gap-3"
                     style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
