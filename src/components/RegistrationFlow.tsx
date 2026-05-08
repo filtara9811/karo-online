@@ -234,25 +234,22 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     }
   }, [stage, phoneVerified, name]);
 
-  const startInlineOtp = () => {
+  const sendOtpFn = useServerFn(sendOtp);
+  const verifyOtpFn = useServerFn(verifyOtp);
+
+  const startInlineOtp = async () => {
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
-    const AUTO = "4829";
-    let i = 0;
-    const fill = () => {
-      if (i >= AUTO.length) {
-        setTimeout(handlePhoneVerified, 500);
-        return;
-      }
-      setOtpDigits((prev) => {
-        const next = [...prev];
-        next[i] = AUTO[i];
-        return next;
-      });
-      i++;
-      setTimeout(fill, 280);
-    };
-    setTimeout(fill, 1500);
+    const res = await sendOtpFn({ data: { phone } });
+    if (!res.ok) {
+      toast.error(res.error || "Could not send OTP");
+      return;
+    }
+    if (res.test_mode) {
+      toast.info("Test mode active — use 1234");
+    } else {
+      toast.success("OTP sent to " + phone);
+    }
   };
 
   const submitManualPhone = () => {
@@ -288,11 +285,21 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     return () => clearTimeout(t);
   }, [phone, phoneVerified, otpSeconds]);
 
-  // Auto-verify when 4 digits manually entered
+  // Auto-verify when 4 digits entered (real server check)
   useEffect(() => {
     if (phoneVerified) return;
-    if (otpDigits.every((d) => d !== "") && otpDigits.join("").length === 4) {
-      setTimeout(handlePhoneVerified, 400);
+    const code = otpDigits.join("");
+    if (code.length === 4 && otpDigits.every((d) => d !== "")) {
+      (async () => {
+        const res = await verifyOtpFn({ data: { phone, code } });
+        if (res.ok) {
+          handlePhoneVerified();
+        } else {
+          toast.error(res.error || "Wrong OTP");
+          setOtpDigits(["", "", "", ""]);
+          setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otpDigits, phoneVerified]);
