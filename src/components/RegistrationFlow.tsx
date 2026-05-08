@@ -125,11 +125,14 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   const [vh, setVh] = useState(800);
   const [isWideScreen, setIsWideScreen] = useState(false);
-  // Auth stage = compact peek; signup stage = larger
-  const SNAP_AUTH = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.55;
-  const SNAP_AUTH_OTP = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.36;
-  const SNAP_SIGNUP_HALF = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.25;
-  const SNAP_SIGNUP_FULL = isWideScreen ? Math.max(24, vh * 0.08) : vh * 0.06;
+  const sheetHeight = isWideScreen
+    ? Math.min(vh - 48, stage === "signup" ? 680 : phone ? 560 : 430)
+    : vh;
+  // Mobile stays as bottom sheet; laptop/tablet becomes a centered popup.
+  const SNAP_AUTH = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.55;
+  const SNAP_AUTH_OTP = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.36;
+  const SNAP_SIGNUP_HALF = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.25;
+  const SNAP_SIGNUP_FULL = isWideScreen ? Math.max(24, (vh - sheetHeight) / 2) : vh * 0.06;
 
   const y = useMotionValue(SNAP_AUTH);
 
@@ -399,7 +402,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       )}
 
       <motion.section
-        style={{ y, height: isWideScreen ? Math.min(vh - 48, 680) : vh }}
+        style={{ y, height: sheetHeight }}
         className="absolute inset-x-0 top-0 z-20 will-change-transform md:px-4"
       >
         <div
@@ -735,7 +738,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         onClose={() => setPicker(null)}
       />
       {manualPhoneOpen && (
-        <div className="fixed inset-0 z-[65] flex items-end justify-center">
+        <div className="fixed inset-0 z-[65] flex items-end justify-center md:items-center md:p-6">
           <button
             aria-label="Close mobile entry"
             onClick={() => setManualPhoneOpen(false)}
@@ -745,7 +748,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
           <div
             role="dialog"
             aria-modal="true"
-            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-6 pt-4 pb-8"
+            className="glass-sheet relative w-full max-w-md rounded-t-3xl md:rounded-3xl px-6 pt-4 pb-8"
             style={{ animation: "sheet-up 0.38s cubic-bezier(0.22, 1, 0.36, 1)" }}
           >
             <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent opacity-80" />
