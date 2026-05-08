@@ -158,6 +158,22 @@ function PaymentsPage() {
 
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
+                    Secret Key {g.provider === "razorpay" ? "(Key Secret)" : "(API Secret)"}
+                  </label>
+                  <input
+                    type="password"
+                    value={g.config?.secret_key ?? ""}
+                    onChange={(e) =>
+                      update(g.id, { config: { ...(g.config ?? {}), secret_key: e.target.value } })
+                    }
+                    placeholder="••••••••••••••••"
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] placeholder:text-[#f5d97a]/30 outline-none focus:border-[#d4af37] text-xs font-mono"
+                  />
+                  <p className="text-[9px] text-[#d4af37]/50 mt-1">Server-side only — never exposed to browser</p>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-1.5 block">
                     Purpose
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
