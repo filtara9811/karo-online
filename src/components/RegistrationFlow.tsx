@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { sendOtp, verifyOtp } from "@/lib/otp.functions";
 
 /** Stage A = phone + OTP only. Stage B = full signup progress. */
 type Stage = "auth" | "signup";
