@@ -296,9 +296,57 @@ function ProfilePage() {
         {topSheet === "support" && <SupportSheet onClose={() => setTopSheet(null)} />}
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
+
+      {/* Floating Switch Panel pill */}
+      <div
+        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none"
+        style={{ bottom: 0 }}
+      >
+        <div className="max-w-md mx-auto px-4 pb-3">
+          <button
+            onClick={() => setPanelPicker(true)}
+            className="pointer-events-auto w-full relative overflow-hidden rounded-full border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.45)] backdrop-blur-md flex items-center justify-center gap-2 px-5 py-3 active:scale-[0.98] transition-transform"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,248,220,0.78) 100%)",
+            }}
+            aria-label="Switch panel"
+          >
+            <span className="h-7 w-7 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm">
+              <LayoutGrid className="h-4 w-4 text-[#92400e]" strokeWidth={2.4} />
+            </span>
+            <span className="font-display text-[13px] font-bold italic tracking-tight bg-gradient-to-b from-[#fff8dc] via-[#d4af37] to-[#8b6508] bg-clip-text text-transparent">
+              Switch Panel
+            </span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-[11px]">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <ActionPicker
+        open={panelPicker}
+        title="Switch Panel"
+        subtitle="Choose your workspace"
+        options={PANEL_OPTIONS}
+        onSelect={(value) => {
+          setPanelPicker(false);
+          setTimeout(() => {
+            if (value === "vendor") navigate({ to: "/vendor/dashboard" });
+            else if (value === "admin") navigate({ to: "/admin" });
+            else if (value === "customer") navigate({ to: "/" });
+          }, 220);
+        }}
+        onClose={() => setPanelPicker(false)}
+      />
     </div>
   );
 }
+
+const PANEL_OPTIONS: ActionOption[] = [
+  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile },
+  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase },
+  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO" },
+  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks (coming soon)", icon: goldUser, badge: "SOON" },
+];
 
 function TopIconButton({
   children, onClick, ...rest
