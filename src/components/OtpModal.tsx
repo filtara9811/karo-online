@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function OtpModal({ open, phone, onVerified, onClose }: Props) {
+export function OtpModal({ open, phone, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [seconds, setSeconds] = useState(45);
   const [verifying, setVerifying] = useState(false);
