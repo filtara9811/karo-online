@@ -85,11 +85,7 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
     const v = val.replace(/\D/g, "").slice(-1);
     const nextDigits = [...digits];
     nextDigits[i] = v;
-    setDigits(() => {
-      const next = [...prev];
-      next[i] = v;
-      return next;
-    });
+    setDigits(nextDigits);
     if (v && i < 5) inputs.current[i + 1]?.focus();
     if (nextDigits.join("").length === 6) {
       setVerifying(true);
