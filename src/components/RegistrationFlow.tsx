@@ -9,7 +9,6 @@ import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -74,9 +73,8 @@ export type RegistrationFlowProps = {
 };
 
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
-  const { user, isAuthenticated, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const draft = useMemo(readCustomerDraft, []);
-  const [googleBusy, setGoogleBusy] = useState(false);
 
   const [stage, setStage] = useState<Stage>("auth");
 
@@ -114,7 +112,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
-  const [existingAccountHint, setExistingAccountHint] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Prefill email/name from Google session
