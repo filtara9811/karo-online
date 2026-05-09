@@ -89,11 +89,13 @@ async function sendViaFast2SMS(
   const template = getTemplate(cfg);
   const templateId = (template?.template_id || cfg.template_id || "").trim();
   const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
+  const messageId = (cfg.message_id || "").trim();
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
-  if (route === "dlt" && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
+  // If a Fast2SMS-approved message_id is provided, sender is auto-assigned — skip strict sender check.
+  if (route === "dlt" && !messageId && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
     return { ok: false, error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header" };
   }
-  if (route === "dlt" && !templateId) return { ok: false, error: "Fast2SMS template_id required for DLT route" };
+  if (route === "dlt" && !templateId && !messageId) return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
 
   const params = new URLSearchParams({
     // Fast2SMS requires `authorization` in the query string for GET requests.
