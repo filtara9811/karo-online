@@ -350,6 +350,12 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         toast.error(result.error || "Profile save fail hua — phir try karo");
         return;
       }
+      if (result.session?.access_token && result.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+      }
       window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
       window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
       try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -40,6 +40,38 @@ function hash(code: string, phone: string) {
 function customerUuidFromPhone(phone: string) {
   const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+function phoneAuthEmail(phone: string) {
+  return `phone-${phone}@auth.karoonline.local`;
+}
+
+async function ensurePhoneAuthUser(phone: string) {
+  const { data: existingCustomer } = await supabaseAdmin
+    .from("customers")
+    .select("user_id")
+    .eq("phone", phone)
+    .maybeSingle();
+  const userId = existingCustomer?.user_id ?? customerUuidFromPhone(phone);
+  const email = phoneAuthEmail(phone);
+  const password = `${randomBytes(24).toString("base64url")}Aa1!`;
+  const userData = {
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { phone, signup_method: "phone_otp" },
+  };
+
+  const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData as never);
+  if (updateErr) {
+    const { error: createErr } = await supabaseAdmin.auth.admin.createUser({ id: userId, ...userData } as never);
+    if (createErr) {
+      const { error: retryErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData);
+      if (retryErr) throw new Error(createErr.message || retryErr.message || "Could not create login session");
+    }
+  }
+
+  return { userId, email, password };
 }
 
 type SmsTemplate = {
@@ -366,15 +398,28 @@ export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
       status: "active",
       signup_method: "phone_otp",
     };
-    const { data: existing } = await supabaseAdmin
-      .from("customers")
-      .select("id, user_id")
-      .eq("phone", phone)
-      .maybeSingle();
-    const userId = existing?.user_id ?? customerUuidFromPhone(phone);
-    const { error } = existing
-      ? await supabaseAdmin.from("customers").update(payload).eq("id", existing.id)
-      : await supabaseAdmin.from("customers").insert({ ...payload, user_id: userId });
+    let authUser: { userId: string; email: string; password: string };
+    try {
+      authUser = await ensurePhoneAuthUser(phone);
+    } catch (e) {
+      return { ok: false, error: (e as Error).message || "Login session create nahi ho paya" };
+    }
+
+    const { error } = await (supabaseAdmin as any).rpc("save_customer_profile_as_user", {
+      _uid: authUser.userId,
+      _name: payload.name,
+      _gender: payload.gender ?? "",
+      _phone: payload.phone,
+      _email: payload.email || authUser.email,
+      _address: payload.address,
+    } as never);
     if (error) return { ok: false, error: error.message };
-    return { ok: true, customer_id: userId };
+
+    const { data: signedIn, error: signErr } = await supabaseAdmin.auth.signInWithPassword({
+      email: authUser.email,
+      password: authUser.password,
+    });
+    if (signErr || !signedIn.session) return { ok: false, error: signErr?.message || "Login session start nahi ho paya" };
+
+    return { ok: true, customer_id: authUser.userId, session: signedIn.session };
   });

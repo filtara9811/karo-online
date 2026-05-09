@@ -1652,6 +1652,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_customer_profile_as_user: {
+        Args: {
+          _address: string
+          _email: string
+          _gender: string
+          _name: string
+          _phone: string
+          _uid: string
+        }
+        Returns: {
+          address: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          avatar_url: string | null
+          card_back_image_url: string | null
+          card_field_visibility: Json
+          card_link_url: string | null
+          card_share_count: number
+          card_view_count: number
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          is_blocked: boolean
+          name: string | null
+          phone: string | null
+          referral_code: string | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_url: string | null
+          signup_method: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          verified: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_vendor_profile: {
         Args: {
           _aadhaar: string
