@@ -86,7 +86,7 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
       await logSys("error", `No active Cashfree service for ${data.purpose}`);
       return {
         ok: false as const,
-        error: `Cashfree configured nahi hai (${data.purpose}). Admin → Cashfree Services me service ko Active karke App ID & Secret bharein.`,
+        error: `Cashfree configured nahi hai. Admin Panel → Cashfree Services me jaayein, "Payment Gateway" row me App ID & Secret Key bharein, Active toggle ON karein, aur Save dabayein.`,
       };
     }
 
