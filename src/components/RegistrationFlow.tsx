@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
 
 /** Stage A = phone + OTP only. Stage B = full signup progress. */
 type Stage = "auth" | "signup";
@@ -184,11 +184,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
   }, [address, agreed, email, gender, name, phone, phoneVerified, manager, referral, referralVerified]);
 
-  // After OTP verified → check if mobile already registered
+  // After OTP verified → keep the same bottom-sheet flow and continue to profile details.
   const handlePhoneVerified = async () => {
     setPhoneVerified(true);
     setLookupBusy(true);
-    setExistingAccountHint(null);
     try {
       const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
       if (!error && data && data.length > 0) {
@@ -197,28 +196,13 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         if (row.gender) setGender(row.gender);
         if (row.email) setEmail(row.email);
         if (row.address) setAddress(row.address);
-        if (isAuthenticated) {
-          toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
-          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-          await refreshProfile();
-          setTimeout(() => onComplete?.(), 700);
-          return;
-        }
-        setExistingAccountHint(
-          row.email
-            ? `Account mil gaya: ${row.email}. Continue ke liye Google se sign in karein.`
-            : "Account mil gaya. Continue ke liye Google se sign in karein.",
-        );
-        toast.success("Mobile number registered hai — full form skip hoga.");
-        return;
+        toast.success("Mobile verified ✓");
       }
     } catch (e) {
       toast.error("Account check fail hua — signup form open kar rahe hain.");
     } finally {
       setLookupBusy(false);
     }
-    // New user → move to signup progress
     setTimeout(() => {
       setStage("signup");
       setTimeout(() => nameInputRef.current?.focus(), 350);
