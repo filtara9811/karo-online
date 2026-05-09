@@ -341,3 +341,36 @@ export const verifyOtp = createServerFn({ method: "POST" })
       .eq("id", row.id);
     return { ok: true, test_mode: false };
   });
+
+export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
+  .inputValidator((d) => FinalizeCustomerSchema.parse(d))
+  .handler(async ({ data }) => {
+    const phone = data.phone;
+    const { data: verifiedRows, error: otpErr } = await supabaseAdmin
+      .from("otp_codes")
+      .select("id, verified_at")
+      .eq("phone", phone)
+      .not("verified_at", "is", null)
+      .order("verified_at", { ascending: false })
+      .limit(1);
+    if (otpErr) return { ok: false, error: "OTP verify check fail hua" };
+    if (!verifiedRows?.[0]) return { ok: false, error: "Pehle mobile OTP verify karein" };
+
+    const userId = customerUuidFromPhone(phone);
+    const { error } = await supabaseAdmin.from("customers").upsert(
+      {
+        user_id: userId,
+        name: data.name.trim(),
+        gender: data.gender?.trim() || null,
+        phone,
+        email: data.email?.trim() || null,
+        address: data.address.trim(),
+        verified: true,
+        status: "active",
+        signup_method: "phone_otp",
+      },
+      { onConflict: "user_id" },
+    );
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, customer_id: userId };
+  });
