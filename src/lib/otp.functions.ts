@@ -37,7 +37,10 @@ function getTemplate(cfg: Record<string, any>, event = "otp") {
 }
 
 function renderVariables(pattern: string | undefined, code: string) {
-  const rendered = (pattern || "{otp}").replace(/\{otp\}/gi, code).replace(/\{code\}/gi, code);
+  const rendered = (pattern || "{otp}")
+    .replace(/\{otp\}/gi, code)
+    .replace(/\{code\}/gi, code)
+    .replace(/#VAR#/gi, code);
   return rendered
     .split(/[|,]/)
     .map((part) => part.trim())
@@ -81,12 +84,15 @@ async function sendViaFast2SMS(
   cfg: Record<string, any>,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const apiKey = cfg.api_key?.trim();
-  const senderId = cfg.sender_id?.trim() || "FILPRA";
+  const senderId = cfg.sender_id?.trim().toUpperCase();
   const route = cfg.route?.trim() || "dlt";
   const template = getTemplate(cfg);
   const templateId = (template?.template_id || cfg.template_id || "").trim();
   const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
+  if (route === "dlt" && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
+    return { ok: false, error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header" };
+  }
   if (route === "dlt" && !templateId) return { ok: false, error: "Fast2SMS template_id required for DLT route" };
 
   const params = new URLSearchParams({
@@ -118,6 +124,13 @@ async function sendViaFast2SMS(
       : {}) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
       const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
+      if (/invalid sender id/i.test(msg)) {
+        return {
+          ok: false,
+          error: "Fast2SMS Invalid Sender ID: Admin SMS settings me wahi 6-character DLT Header daalein jo Fast2SMS account me approved/active hai.",
+          raw: json,
+        };
+      }
       return { ok: false, error: `Fast2SMS ${res.status}: ${msg}`, raw: json };
     }
     return { ok: true, raw: json };
