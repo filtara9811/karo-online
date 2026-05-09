@@ -334,10 +334,10 @@ function WalletPage() {
 
       {/* Recharge sheet */}
       {sheet === "recharge" && (
-        <RechargeSheet packs={walletPacks} onClose={() => setSheet(null)} />
+        <RechargeSheet packs={walletPacks} onClose={() => setSheet(null)} onPaid={reloadWallet} />
       )}
       {sheet === "buy" && (
-        <BuyCoinsSheet packs={coinPacks} rate={liveRate} onClose={() => setSheet(null)} />
+        <BuyCoinsSheet packs={coinPacks} rate={liveRate} onClose={() => setSheet(null)} onPaid={reloadWallet} />
       )}
     </div>
   );
