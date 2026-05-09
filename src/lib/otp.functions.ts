@@ -104,7 +104,7 @@ async function sendViaFast2SMS(
     variables_values: variablesValues,
     flash: "0",
   });
-  if (senderId) params.set("sender_id", senderId);
+  if (senderId && !messageId) params.set("sender_id", senderId);
   // Fast2SMS DLT expects the approved Message/Template ID in the `message` parameter.
   if (route === "dlt") params.set("message", messageId || templateId);
   else if (messageId) params.set("message_id", messageId);
