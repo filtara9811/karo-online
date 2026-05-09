@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
@@ -6,17 +6,23 @@ import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/Registrat
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
 
+const DISMISS_KEY = "ko-auth-gate-dismissed-at";
+const FIRST_SHOW_DELAY_MS = 2 * 60 * 1000; // 2 minutes after app open
+const REAPPEAR_AFTER_MS = 17 * 60 * 1000; // ~15-20 minutes
+
 /**
  * Customer auth gate:
- * - On app open (after 1.5s) → show signup sheet if not signed in.
- * - Any tap anywhere while unauthenticated → also opens it (capture-phase listener).
- * - Sheet has a fully translucent backdrop so the home screen stays visible behind.
+ * - Auto-opens ~2 minutes after app open if not signed in / KYC incomplete.
+ * - X button closes the sheet → stores timestamp; sheet won't re-open for 15-20 min.
+ * - After the cool-down, sheet auto-reappears.
+ * - A persistent floating "Sign Up / Login" CTA is always visible while gate is needed.
  */
 export function AuthGate() {
   const { isAuthenticated, ready, profile } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [locallyOnboarded, setLocallyOnboarded] = useState(false);
+  const dismissTimerRef = useRef<number | null>(null);
 
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
 
@@ -28,43 +34,48 @@ export function AuthGate() {
     }
   }, [location.pathname]);
 
-  // Profile is complete when this device was already onboarded, or the signed-in
-  // session has a complete customer profile. This prevents repeated signup sheets
-  // on mobile app reopen while backend auth providers are still being finalized.
   const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
   const needsGate = !skip && !profileComplete;
 
-  // Auto-open immediately on a fresh device when not authenticated
+  // Schedule auto-open: respects 15-20 min dismiss cool-down
   useEffect(() => {
     if (!ready || !needsGate) return;
-    const id = window.setTimeout(() => setOpen(true), 250);
-    return () => window.clearTimeout(id);
-  }, [ready, needsGate]);
-
-  // Intercept first click anywhere (capture phase) while gate is needed
-  useEffect(() => {
-    if (!ready || !needsGate) return;
-
-    const handler = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest("[data-auth-gate]")) return;
-      setOpen(true);
+    const scheduleOpen = () => {
+      let dismissedAt = 0;
+      try {
+        dismissedAt = Number(window.localStorage.getItem(DISMISS_KEY) || "0");
+      } catch {/* noop */}
+      const sinceDismiss = Date.now() - dismissedAt;
+      const wait = dismissedAt
+        ? Math.max(REAPPEAR_AFTER_MS - sinceDismiss, 5000)
+        : FIRST_SHOW_DELAY_MS;
+      if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = window.setTimeout(() => setOpen(true), wait);
     };
-    document.addEventListener("pointerdown", handler as EventListener, { capture: true });
-    return () => document.removeEventListener("pointerdown", handler as EventListener, { capture: true } as EventListenerOptions);
+    scheduleOpen();
+    return () => {
+      if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
+    };
   }, [ready, needsGate]);
 
-  // Auto-close once profile is complete
+  // Close once profile is complete
   useEffect(() => {
     if (!needsGate) setOpen(false);
   }, [needsGate]);
 
-  if (!ready) return null;
+  const handleDismiss = () => {
+    try { window.localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {/* noop */}
+    setOpen(false);
+    // Reschedule next auto-open
+    if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = window.setTimeout(() => setOpen(true), REAPPEAR_AFTER_MS);
+  };
 
+  if (!ready) return null;
   if (!needsGate) return null;
 
   if (!open) {
-    // Persistent floating CTA so the user can always find Sign Up / Login.
+    // Persistent floating CTA — user can always tap to open
     return (
       <button
         data-auth-gate
@@ -87,7 +98,6 @@ export function AuthGate() {
       data-auth-gate
       className="fixed inset-0 z-[60]"
       style={{
-        // Translucent backdrop so the home screen behind stays visible
         background: "linear-gradient(180deg, rgba(255,250,235,0.18) 0%, rgba(245,217,122,0.22) 100%)",
         backdropFilter: "blur(2px)",
         WebkitBackdropFilter: "blur(2px)",
@@ -96,8 +106,8 @@ export function AuthGate() {
       <RegistrationFlow
         transparent
         hideBack={false}
-        onBack={() => setOpen(false)}
-        onComplete={() => setOpen(false)}
+        onBack={handleDismiss}
+        onComplete={handleDismiss}
       />
     </div>
   );
