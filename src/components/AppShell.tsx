@@ -12,6 +12,7 @@ import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
+import { useAuth } from "@/hooks/use-auth";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
@@ -86,6 +87,7 @@ export function AppShell() {
 }
 
 function TopHeader() {
+  const { profile } = useAuth();
   return (
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
@@ -108,10 +110,15 @@ function TopHeader() {
         {/* User chip */}
         <Link to="/profile" className="flex items-center gap-2 flex-1 min-w-0">
           <span className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow flex-shrink-0 bg-white">
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <img
+              src={profile?.avatar_url || avatarUser}
+              alt=""
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+              className="h-full w-full object-cover"
+            />
           </span>
           <span className="flex flex-col leading-tight min-w-0">
-            <span className="font-display text-sm text-gold-gradient truncate">Ashhu Qureshi</span>
+            <span className="font-display text-sm text-gold-gradient truncate">{profile?.name || "Welcome"}</span>
             <span className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.45_0.08_85/0.8)]">
               Reselling | Affiliate
             </span>

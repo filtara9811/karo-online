@@ -15,6 +15,7 @@ import { useGeolocation, type GeoState } from "@/hooks/use-geolocation";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -139,6 +140,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 
 function QuickPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
@@ -368,7 +370,12 @@ function QuickPage() {
             className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
             aria-label="Profile"
           >
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <img
+              src={profile?.avatar_url || avatarUser}
+              alt=""
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+              className="h-full w-full object-cover"
+            />
           </button>
         </div>
 
