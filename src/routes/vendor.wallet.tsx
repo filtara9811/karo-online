@@ -23,6 +23,41 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
+import { toast } from "sonner";
+
+declare global {
+  interface Window {
+    Cashfree?: any;
+  }
+}
+
+let cashfreeSdkPromise: Promise<void> | null = null;
+function loadCashfreeSdk(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.Cashfree) return Promise.resolve();
+  if (cashfreeSdkPromise) return cashfreeSdkPromise;
+  cashfreeSdkPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      cashfreeSdkPromise = null;
+      reject(new Error("Cashfree SDK load failed"));
+    };
+    document.head.appendChild(s);
+  });
+  return cashfreeSdkPromise;
+}
+
+async function openCashfreeCheckout(paymentSessionId: string, mode: "sandbox" | "production") {
+  await loadCashfreeSdk();
+  if (!window.Cashfree) throw new Error("Cashfree SDK not available");
+  const cf = window.Cashfree({ mode });
+  return cf.checkout({ paymentSessionId, redirectTarget: "_modal" });
+}
 
 export const Route = createFileRoute("/vendor/wallet")({
   head: () => ({
@@ -104,6 +139,16 @@ function WalletPage() {
   const [walletPacks, setWalletPacks] = useState<WalletPack[]>([]);
   const [coinRate, setCoinRate] = useState(20);
 
+  const reloadWallet = async () => {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id;
+    if (!uid) return;
+    const w = await supabase.from("vendor_wallets").select("*").eq("vendor_id", uid).maybeSingle();
+    if (w.data) setWallet(w.data as Wallet);
+    const t = await supabase.from("wallet_transactions").select("*").eq("vendor_id", uid).order("created_at", { ascending: false }).limit(200);
+    if (t.data && t.data.length) setTxns(t.data as Txn[]);
+  };
+
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
@@ -126,6 +171,24 @@ function WalletPage() {
       }
       setLoading(false);
     })();
+  }, []);
+
+  // Handle return-from-Cashfree URLs (?cf_order_id=...&cf_purpose=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("cf_order_id");
+    const purpose = params.get("cf_purpose") as "vendor_wallet_recharge" | "leadx_purchase" | null;
+    if (orderId && purpose) {
+      window.history.replaceState({}, "", window.location.pathname);
+      verifyCashfreeOrder({ data: { order_id: orderId, purpose } }).then((r) => {
+        if (r.ok) {
+          toast.success("Payment successful");
+          reloadWallet();
+        } else {
+          toast.error(r.error ?? "Payment not completed");
+        }
+      });
+    }
   }, []);
 
   const liveRate = rate.length ? rate[rate.length - 1].rate_inr : coinRate;
@@ -271,10 +334,10 @@ function WalletPage() {
 
       {/* Recharge sheet */}
       {sheet === "recharge" && (
-        <RechargeSheet packs={walletPacks} onClose={() => setSheet(null)} />
+        <RechargeSheet packs={walletPacks} onClose={() => setSheet(null)} onPaid={reloadWallet} />
       )}
       {sheet === "buy" && (
-        <BuyCoinsSheet packs={coinPacks} rate={liveRate} onClose={() => setSheet(null)} />
+        <BuyCoinsSheet packs={coinPacks} rate={liveRate} onClose={() => setSheet(null)} onPaid={reloadWallet} />
       )}
     </div>
   );
@@ -449,17 +512,51 @@ function txnIcon(type: string) {
   }
 }
 
-function RechargeSheet({ packs, onClose }: { packs: WalletPack[]; onClose: () => void }) {
+function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClose: () => void; onPaid: () => void | Promise<void> }) {
   const [custom, setCustom] = useState("");
+  const [selected, setSelected] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const createOrder = useServerFn(createCashfreeOrder);
+  const verify = useServerFn(verifyCashfreeOrder);
+  const amount = selected ?? Number(custom || 0);
+
+  const pay = async () => {
+    if (!amount || amount < 1) {
+      toast.error("Amount enter karein");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await createOrder({ data: { amount_inr: amount, purpose: "vendor_wallet_recharge" } });
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      await openCashfreeCheckout(r.payment_session_id, r.mode);
+      const v = await verify({ data: { order_id: r.order_id, purpose: "vendor_wallet_recharge" } });
+      if (v.ok) {
+        toast.success("Wallet recharged");
+        await onPaid();
+        onClose();
+      } else {
+        toast.error(v.error ?? "Payment pending — refresh after a moment");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Sheet title="Recharge Service Wallet" onClose={onClose}>
       <p className="text-[11px] text-[#f5d97a]/70 mb-3">Real ₹ for shipping, SMS & gateway fees. Auto-debited on use.</p>
       <div className="grid grid-cols-2 gap-2 mb-3">
         {packs.length === 0 && [500, 1000, 2000, 5000].map((a) => (
-          <PackBtn key={a} title={`₹${a}`} subtitle="Quick add" />
+          <PackBtn key={a} title={`₹${a}`} subtitle="Quick add" active={selected === a} onClick={() => { setSelected(a); setCustom(""); }} />
         ))}
         {packs.map((p) => (
-          <PackBtn key={p.id} title={p.label} subtitle={p.bonus_inr ? `+₹${p.bonus_inr} bonus` : `₹${p.amount_inr.toLocaleString()}`} />
+          <PackBtn key={p.id} title={p.label} subtitle={p.bonus_inr ? `+₹${p.bonus_inr} bonus` : `₹${p.amount_inr.toLocaleString()}`} active={selected === p.amount_inr} onClick={() => { setSelected(p.amount_inr); setCustom(""); }} />
         ))}
       </div>
       <label className="block">
@@ -467,30 +564,68 @@ function RechargeSheet({ packs, onClose }: { packs: WalletPack[]; onClose: () =>
         <input
           type="number"
           value={custom}
-          onChange={(e) => setCustom(e.target.value)}
+          onChange={(e) => { setCustom(e.target.value); setSelected(null); }}
           placeholder="500"
           className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] outline-none focus:border-[#d4af37] text-sm"
         />
       </label>
-      <button className="mt-4 w-full py-3 rounded-xl text-[#1a1208] font-bold text-sm" style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}>
-        Pay with Razorpay
+      <button onClick={pay} disabled={busy || !amount} className="mt-4 w-full py-3 rounded-xl text-[#1a1208] font-bold text-sm disabled:opacity-50" style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}>
+        {busy ? "Opening Cashfree…" : amount ? `Pay ₹${amount} with Cashfree` : "Select / Enter Amount"}
       </button>
     </Sheet>
   );
 }
 
-function BuyCoinsSheet({ packs, rate, onClose }: { packs: CoinPack[]; rate: number; onClose: () => void }) {
+function BuyCoinsSheet({ packs, rate, onClose, onPaid }: { packs: CoinPack[]; rate: number; onClose: () => void; onPaid: () => void | Promise<void> }) {
   const [custom, setCustom] = useState("");
-  const customCost = custom ? Number(custom) * rate : 0;
+  const [selectedCoins, setSelectedCoins] = useState<number | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const createOrder = useServerFn(createCashfreeOrder);
+  const verify = useServerFn(verifyCashfreeOrder);
+
+  const customCoins = Number(custom || 0);
+  const customCost = customCoins * rate;
+  const coins = selectedCoins ?? customCoins;
+  const price = selectedPrice ?? Math.round(customCost);
+
+  const pay = async () => {
+    if (!coins || !price) {
+      toast.error("Coins enter karein");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await createOrder({ data: { amount_inr: price, purpose: "leadx_purchase", coins } });
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      await openCashfreeCheckout(r.payment_session_id, r.mode);
+      const v = await verify({ data: { order_id: r.order_id, purpose: "leadx_purchase" } });
+      if (v.ok) {
+        toast.success(`+${coins} LeadX added`);
+        await onPaid();
+        onClose();
+      } else {
+        toast.error(v.error ?? "Payment pending");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Sheet title="Buy LeadX Coins" onClose={onClose}>
       <p className="text-[11px] text-[#f5d97a]/70 mb-3">Live rate: <b className="text-[#fff8dc]">₹{rate.toFixed(2)}</b> / coin · 2-5 coins per lead</p>
       <div className="grid grid-cols-2 gap-2 mb-3">
         {packs.length === 0 && [50, 100, 250, 500].map((c) => (
-          <PackBtn key={c} title={`${c} coins`} subtitle={`₹${(c * rate).toFixed(0)}`} />
+          <PackBtn key={c} title={`${c} coins`} subtitle={`₹${(c * rate).toFixed(0)}`} active={selectedCoins === c} onClick={() => { setSelectedCoins(c); setSelectedPrice(Math.round(c * rate)); setCustom(""); }} />
         ))}
         {packs.map((p) => (
-          <PackBtn key={p.id} title={`${p.coins} coins`} subtitle={`₹${p.price_inr.toLocaleString()}${p.bonus_coins ? ` · +${p.bonus_coins}` : ""}`} />
+          <PackBtn key={p.id} title={`${p.coins} coins`} subtitle={`₹${p.price_inr.toLocaleString()}${p.bonus_coins ? ` · +${p.bonus_coins}` : ""}`} active={selectedCoins === p.coins + (p.bonus_coins ?? 0)} onClick={() => { setSelectedCoins(p.coins + (p.bonus_coins ?? 0)); setSelectedPrice(p.price_inr); setCustom(""); }} />
         ))}
       </div>
       <label className="block">
@@ -498,22 +633,26 @@ function BuyCoinsSheet({ packs, rate, onClose }: { packs: CoinPack[]; rate: numb
         <input
           type="number"
           value={custom}
-          onChange={(e) => setCustom(e.target.value)}
+          onChange={(e) => { setCustom(e.target.value); setSelectedCoins(null); setSelectedPrice(null); }}
           placeholder="100"
           className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] outline-none focus:border-[#d4af37] text-sm"
         />
         {custom && <p className="text-[10px] text-[#f5d97a]/70 mt-1">Total: <b className="text-[#fff8dc]">₹{customCost.toFixed(2)}</b></p>}
       </label>
-      <button className="mt-4 w-full py-3 rounded-xl text-[#1a1208] font-bold text-sm" style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}>
-        Buy Coins
+      <button onClick={pay} disabled={busy || !coins} className="mt-4 w-full py-3 rounded-xl text-[#1a1208] font-bold text-sm disabled:opacity-50" style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}>
+        {busy ? "Opening Cashfree…" : coins ? `Pay ₹${price} for ${coins} LeadX` : "Select Coins"}
       </button>
     </Sheet>
   );
 }
 
-function PackBtn({ title, subtitle }: { title: string; subtitle: string }) {
+function PackBtn({ title, subtitle, active, onClick }: { title: string; subtitle: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button className="text-left rounded-2xl bg-black/40 border border-[#d4af37]/30 p-3 hover:border-[#d4af37] active:scale-95 transition">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl p-3 active:scale-95 transition border ${active ? "border-[#f5d97a] bg-[#d4af37]/15" : "border-[#d4af37]/30 bg-black/40 hover:border-[#d4af37]"}`}
+    >
       <p className="font-display text-base font-bold text-[#fff8dc]">{title}</p>
       <p className="text-[10px] text-[#f5d97a]/60">{subtitle}</p>
     </button>
