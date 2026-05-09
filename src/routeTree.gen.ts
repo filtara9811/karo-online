@@ -41,6 +41,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
@@ -207,6 +208,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminKycRoute = AdminKycRouteImport.update({
+  id: '/kyc',
+  path: '/kyc',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -370,6 +379,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -408,6 +418,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -721,6 +733,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLegalRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/kyc': {
+      id: '/admin/kyc'
+      path: '/kyc'
+      fullPath: '/admin/kyc'
+      preLoaderRoute: typeof AdminKycRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/customers'
@@ -764,6 +783,7 @@ interface AdminRouteChildren {
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminKycRoute: typeof AdminKycRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
@@ -781,6 +801,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminKycRoute: AdminKycRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,

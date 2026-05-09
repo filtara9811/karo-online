@@ -12,6 +12,8 @@ import {
   Truck,
   Coins,
   FileText,
+  Zap,
+  ShieldCheck,
   Settings as SettingsIcon,
   LogOut,
   Menu,
