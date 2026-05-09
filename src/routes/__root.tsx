@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -92,6 +93,7 @@ function RootComponent() {
       <AuthProvider>
         <CartProvider>
           <AppShell />
+          <Toaster position="top-center" richColors closeButton />
         </CartProvider>
       </AuthProvider>
     </AppPrefsProvider>
