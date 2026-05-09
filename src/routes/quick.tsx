@@ -362,7 +362,7 @@ function QuickPage() {
       >
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => setSearchOpen(true)}
+            onClick={() => requireAuth(() => setSearchOpen(true))}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
             aria-label="Open search"
           >
