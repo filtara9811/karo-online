@@ -26,6 +26,7 @@ import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
