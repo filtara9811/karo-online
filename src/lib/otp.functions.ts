@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash, randomInt } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 
 const PhoneSchema = z.object({
   phone: z
@@ -31,13 +32,39 @@ type SmsTemplate = {
   variables?: string;
 };
 
-function getTemplate(cfg: Record<string, any>, event = "otp") {
-  const templates = Array.isArray(cfg.templates) ? (cfg.templates as SmsTemplate[]) : [];
+type SmsConfig = Record<string, unknown> & {
+  api_key?: string;
+  auth_key?: string;
+  country?: string;
+  message_id?: string;
+  route?: string;
+  sender_id?: string;
+  template_id?: string;
+  templates?: SmsTemplate[];
+  variables?: string;
+  variables_values?: string;
+};
+
+function getTemplate(cfg: SmsConfig, event = "otp") {
+  const templates = Array.isArray(cfg.templates) ? cfg.templates : [];
   return templates.find((t) => (t.event || "").toLowerCase() === event) ?? templates[0] ?? null;
+}
+
+function asSmsConfig(value: unknown): SmsConfig {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as SmsConfig) : {};
+}
+
+function asJson(value: unknown): Json {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Json;
+  } catch {
+    return null;
+  }
 }
 
 function renderVariables(pattern: string | undefined, code: string) {
   const rendered = (pattern || "{otp}")
+    .replace(/\{#var#\}/gi, code)
     .replace(/\{otp\}/gi, code)
     .replace(/\{code\}/gi, code)
     .replace(/#VAR#/gi, code);
@@ -53,10 +80,10 @@ async function logSystem(
   provider: string | null,
   status: "success" | "error",
   message: string,
-  meta: Record<string, unknown> = {},
+  meta: Json = {},
 ) {
   try {
-    await (supabaseAdmin.from("system_logs") as any).insert({
+    await supabaseAdmin.from("system_logs").insert({
       kind,
       provider,
       status,
@@ -81,21 +108,27 @@ async function getActiveSmsGateway() {
 async function sendViaFast2SMS(
   phone: string,
   code: string,
-  cfg: Record<string, any>,
+  cfg: SmsConfig,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const apiKey = cfg.api_key?.trim();
   const senderId = cfg.sender_id?.trim().toUpperCase();
   const route = cfg.route?.trim() || "dlt";
   const template = getTemplate(cfg);
   const templateId = (template?.template_id || cfg.template_id || "").trim();
-  const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
+  const variablesValues = renderVariables(
+    template?.variables || cfg.variables_values || cfg.variables,
+    code,
+  );
   const messageId = (cfg.message_id || "").trim();
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
-  // If a Fast2SMS-approved message_id is provided, sender is auto-assigned — skip strict sender check.
-  if (route === "dlt" && !messageId && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
-    return { ok: false, error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header" };
+  if (route === "dlt" && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
+    return {
+      ok: false,
+      error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header",
+    };
   }
-  if (route === "dlt" && !templateId && !messageId) return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
+  if (route === "dlt" && !templateId && !messageId)
+    return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
 
   const params = new URLSearchParams({
     authorization: apiKey,
@@ -104,7 +137,7 @@ async function sendViaFast2SMS(
     variables_values: variablesValues,
     flash: "0",
   });
-  if (senderId && !messageId) params.set("sender_id", senderId);
+  if (senderId) params.set("sender_id", senderId);
   // Fast2SMS DLT expects the approved Message/Template ID in the `message` parameter.
   if (route === "dlt") params.set("message", messageId || templateId);
   else if (messageId) params.set("message_id", messageId);
@@ -114,21 +147,25 @@ async function sendViaFast2SMS(
   try {
     const res = await fetch(url, { method: "GET" });
     const body = await res.text();
-    const json = (body
-      ? (() => {
-          try {
-            return JSON.parse(body);
-          } catch {
-            return { raw_text: body };
-          }
-        })()
-      : {}) as { return?: boolean; message?: unknown };
+    const json = (
+      body
+        ? (() => {
+            try {
+              return JSON.parse(body);
+            } catch {
+              return { raw_text: body };
+            }
+          })()
+        : {}
+    ) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
-      const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
+      const msg =
+        typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       if (/invalid sender id/i.test(msg)) {
         return {
           ok: false,
-          error: "Fast2SMS Invalid Sender ID: Admin SMS settings me wahi 6-character DLT Header daalein jo Fast2SMS account me approved/active hai.",
+          error:
+            "Fast2SMS Invalid Sender ID: Admin SMS settings me wahi 6-character DLT Header daalein jo Fast2SMS account me approved/active hai.",
           raw: json,
         };
       }
@@ -143,7 +180,7 @@ async function sendViaFast2SMS(
 async function sendViaMSG91(
   phone: string,
   code: string,
-  cfg: Record<string, any>,
+  cfg: SmsConfig,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const authKey = cfg.auth_key?.trim();
   const template = getTemplate(cfg);
@@ -162,7 +199,8 @@ async function sendViaMSG91(
     });
     const json = (await res.json().catch(() => ({}))) as { type?: string; message?: unknown };
     if (!res.ok || json.type === "error") {
-      const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
+      const msg =
+        typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `MSG91 ${res.status}: ${msg}`, raw: json };
     }
     return { ok: true, raw: json };
@@ -182,18 +220,17 @@ export const sendOtp = createServerFn({ method: "POST" })
     const gateway = await getActiveSmsGateway();
     if (!gateway) {
       await logSystem("otp", null, "error", "No active SMS gateway configured");
-      return { ok: false, error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein." };
+      return {
+        ok: false,
+        error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
+      };
     }
 
     const code = String(randomInt(1000, 10000));
     const codeHash = hash(code, phone);
 
     // Invalidate any previous unverified codes for this phone
-    await supabaseAdmin
-      .from("otp_codes")
-      .delete()
-      .eq("phone", phone)
-      .is("verified_at", null);
+    await supabaseAdmin.from("otp_codes").delete().eq("phone", phone).is("verified_at", null);
 
     const { error: insErr } = await supabaseAdmin.from("otp_codes").insert({
       phone,
@@ -206,14 +243,23 @@ export const sendOtp = createServerFn({ method: "POST" })
     }
 
     if (gateway.is_test_mode) {
-      await logSystem("otp", gateway.provider, "error", "SMS gateway is in test mode; live OTP was not sent", {
-        test_mode: true,
-      });
-      return { ok: false, error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein." };
+      await logSystem(
+        "otp",
+        gateway.provider,
+        "error",
+        "SMS gateway is in test mode; live OTP was not sent",
+        {
+          test_mode: true,
+        },
+      );
+      return {
+        ok: false,
+        error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein.",
+      };
     }
 
     // Real send
-    const cfg = (gateway.config ?? {}) as Record<string, any>;
+    const cfg = asSmsConfig(gateway.config);
     const result =
       gateway.provider === "msg91"
         ? await sendViaMSG91(phone, code, cfg)
@@ -222,15 +268,21 @@ export const sendOtp = createServerFn({ method: "POST" })
     if (!result.ok) {
       await logSystem("sms", gateway.provider, "error", result.error ?? "Unknown error", {
         phone_last4: phone.slice(-4),
-        provider_response: result.raw ?? null,
+        provider_response: asJson(result.raw),
       });
       return { ok: false, error: result.error ?? "SMS delivery failed" };
     }
 
-    await logSystem("sms", gateway.provider, "success", `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`, {
-      phone_last4: phone.slice(-4),
-      provider_response: result.raw ?? null,
-    });
+    await logSystem(
+      "sms",
+      gateway.provider,
+      "success",
+      `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`,
+      {
+        phone_last4: phone.slice(-4),
+        provider_response: asJson(result.raw),
+      },
+    );
     return { ok: true, test_mode: false };
   });
 
