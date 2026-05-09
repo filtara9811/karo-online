@@ -24,6 +24,7 @@ import {
 } from "@/components/QuickAddVariationSheet";
 import { BarcodeScannerOverlay } from "@/components/BarcodeScannerOverlay";
 import { POSInvoiceSheet, type CartLine } from "@/components/POSInvoiceSheet";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 export const Route = createFileRoute("/vendor/shop")({
   head: () => ({
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/vendor/shop")({
       { name: "description", content: "Manage your digital shop products and create POS invoices." },
     ],
   }),
-  component: VendorShop,
+  component: () => (<VendorAuthGate><VendorShop /></VendorAuthGate>),
 });
 
 type VendorProduct = EditorProduct;
