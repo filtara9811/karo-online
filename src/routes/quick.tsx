@@ -370,7 +370,12 @@ function QuickPage() {
             className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
             aria-label="Profile"
           >
-            <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+            <img
+              src={profile?.avatar_url || avatarUser}
+              alt=""
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+              className="h-full w-full object-cover"
+            />
           </button>
         </div>
 
