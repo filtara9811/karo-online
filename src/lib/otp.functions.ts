@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -40,6 +40,40 @@ function hash(code: string, phone: string) {
 function customerUuidFromPhone(phone: string) {
   const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+function phoneAuthEmail(phone: string) {
+  return `phone-${phone}@auth.karoonline.local`;
+}
+
+async function ensurePhoneAuthUser(phone: string) {
+  const { data: existingCustomer } = await supabaseAdmin
+    .from("customers")
+    .select("user_id")
+    .eq("phone", phone)
+    .maybeSingle();
+  const userId = existingCustomer?.user_id ?? customerUuidFromPhone(phone);
+  const email = phoneAuthEmail(phone);
+  const password = `${randomBytes(24).toString("base64url")}Aa1!`;
+  const userData = {
+    email,
+    password,
+    email_confirm: true,
+    phone: `+91${phone}`,
+    phone_confirm: true,
+    user_metadata: { phone, signup_method: "phone_otp" },
+  };
+
+  const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData);
+  if (updateErr) {
+    const { error: createErr } = await supabaseAdmin.auth.admin.createUser({ id: userId, ...userData } as never);
+    if (createErr) {
+      const { error: retryErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData);
+      if (retryErr) throw new Error(createErr.message || retryErr.message || "Could not create login session");
+    }
+  }
+
+  return { userId, email, password };
 }
 
 type SmsTemplate = {
