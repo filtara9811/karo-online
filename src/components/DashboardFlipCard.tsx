@@ -45,9 +45,9 @@ export function DashboardFlipCard({ items }: { items: EditorProduct[] }) {
               setFlipped(true);
             }}
             aria-label="Show history"
-            className="absolute top-3.5 right-[88px] h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90 z-10"
+            className="absolute top-3.5 right-[88px] h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90 z-10"
           >
-            <RotateCcw className="h-3 w-3 text-[color:oklch(0.42_0.01_260)]" />
+            <RotateCcw className="h-3 w-3 text-[color:oklch(0.42_0.10_82)]" />
           </button>
         </div>
 

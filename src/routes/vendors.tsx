@@ -370,7 +370,7 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
           <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#e7c764] via-[#d4af37] to-[#e7c764]" />
           <span className="mt-1 text-[9px] uppercase tracking-[0.2em] text-[color:oklch(0.55_0.10_82)] font-bold">
-            All Digital Shops
+            All Digital Shops · Drag
           </span>
         </div>
 

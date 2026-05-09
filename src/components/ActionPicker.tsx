@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Home as HomeIcon, Pin, Copy, Share2, Check, Link2, X } from "lucide-react";
+import { Home as HomeIcon, Pin } from "lucide-react";
 
 export type ActionOption = {
   value: string;
@@ -7,9 +7,6 @@ export type ActionOption = {
   sub?: string;
   icon: string;
   badge?: string;
-  disabled?: boolean;
-  /** Optional deep-link path (e.g. "/vendor/dashboard"). When provided & shareMode is on, long-press opens a share/copy menu. */
-  shareTo?: string;
 };
 
 type Props = {
@@ -24,12 +21,6 @@ type Props = {
   defaultValue?: string;
   /** Fires when the user long-presses an option to pin it as default home. */
   onSetDefault?: (value: string) => void;
-  /** Optional element rendered in the top-right corner of the sheet (e.g. Admin chip). */
-  topRightAction?: React.ReactNode;
-  /** When true, long-press opens a Copy/Share link menu instead of pinning. Requires options to have shareTo. */
-  shareMode?: boolean;
-  /** Long-press hint text (override default). */
-  longPressHint?: string;
 };
 
 export function ActionPicker({
@@ -41,15 +32,10 @@ export function ActionPicker({
   onClose,
   defaultValue,
   onSetDefault,
-  topRightAction,
-  shareMode,
-  longPressHint,
 }: Props) {
   const [pressing, setPressing] = useState<string | null>(null);
   const longPressFiredRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [shareFor, setShareFor] = useState<ActionOption | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -64,30 +50,19 @@ export function ActionPicker({
 
   if (!open) return null;
 
-  const buildShareUrl = (path?: string) => {
-    if (!path) return "";
-    if (typeof window === "undefined") return path;
-    return `${window.location.origin}${path}`;
-  };
-
-  const startPress = (opt: ActionOption) => {
-    const canShare = shareMode && opt.shareTo;
-    if (!onSetDefault && !canShare) return;
+  const startPress = (value: string) => {
+    if (!onSetDefault) return;
     longPressFiredRef.current = false;
-    setPressing(opt.value);
+    setPressing(value);
     timerRef.current = setTimeout(() => {
       longPressFiredRef.current = true;
+      onSetDefault(value);
       setPressing(null);
+      // haptic feedback if available
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try { navigator.vibrate?.(40); } catch { /* noop */ }
       }
-      if (canShare) {
-        setShareFor(opt);
-        setCopied(false);
-      } else if (onSetDefault) {
-        onSetDefault(opt.value);
-      }
-    }, 600);
+    }, 650);
   };
 
   const cancelPress = () => {
@@ -118,18 +93,15 @@ export function ActionPicker({
         <div className="absolute top-5 left-4 h-5 w-5 border-t border-l border-[color:oklch(0.78_0.14_82/0.6)] rounded-tl-lg" />
         <div className="absolute top-5 right-4 h-5 w-5 border-t border-r border-[color:oklch(0.78_0.14_82/0.6)] rounded-tr-lg" />
 
-        {topRightAction && (
-          <div className="absolute top-3 right-3 z-10">{topRightAction}</div>
-        )}
         <div className="text-center mb-5">
           <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.55_0.10_82)] mb-1">
             ✦ Select ✦
           </p>
           <h2 className="font-display text-2xl text-gold-gradient leading-tight">{title}</h2>
           {subtitle && <p className="mt-1 text-xs text-muted-foreground italic">{subtitle}</p>}
-          {(onSetDefault || shareMode) && (
+          {onSetDefault && (
             <p className="mt-1.5 text-[9px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82/0.85)]">
-              ✦ {longPressHint ?? (shareMode ? "Long-press to copy or share link" : "Long-press to pin as Home")} ✦
+              ✦ Long-press to pin as Home ✦
             </p>
           )}
         </div>
@@ -141,24 +113,20 @@ export function ActionPicker({
             return (
               <button
                 key={opt.value}
-                disabled={opt.disabled}
                 onClick={() => {
-                  if (opt.disabled) return;
                   if (longPressFiredRef.current) {
                     longPressFiredRef.current = false;
                     return;
                   }
                   onSelect(opt.value);
                 }}
-                onPointerDown={() => !opt.disabled && startPress(opt)}
+                onPointerDown={() => startPress(opt.value)}
                 onPointerUp={cancelPress}
                 onPointerLeave={cancelPress}
                 onPointerCancel={cancelPress}
                 onContextMenu={(e) => e.preventDefault()}
                 className={`btn-3d group relative w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 bg-white/90 border transition-all overflow-hidden ${
-                  opt.disabled
-                    ? "opacity-60 grayscale cursor-not-allowed border-[color:oklch(0.78_0.14_82/0.3)]"
-                    : isDefault
+                  isDefault
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.45)] hover:border-[color:oklch(0.78_0.14_82)] hover:shadow-gold-glow"
                 }`}
@@ -218,104 +186,6 @@ export function ActionPicker({
           Cancel
         </button>
       </div>
-
-      {/* Long-press share/copy popover */}
-      {shareFor && (
-        <div
-          className="absolute inset-0 z-[80] flex items-end justify-center"
-          onClick={() => setShareFor(null)}
-        >
-          <div
-            className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.55)] backdrop-blur-sm"
-            style={{ animation: "overlay-in 0.2s ease-out" }}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            className="glass-sheet relative w-full max-w-md rounded-t-3xl px-5 pt-4 pb-7 mb-0"
-            style={{ animation: "sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1)" }}
-          >
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-70" />
-            <button
-              onClick={() => setShareFor(null)}
-              aria-label="Close"
-              className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/80 border border-[color:oklch(0.78_0.14_82/0.5)]"
-            >
-              <X className="h-4 w-4 text-[#92400e]" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <img src={shareFor.icon} alt="" className="h-10 w-10 object-contain" />
-              <div className="min-w-0">
-                <p className="font-display text-base text-gold-gradient leading-tight">{shareFor.label}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{shareFor.sub}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/85 px-3 py-2.5 flex items-center gap-2 mb-4">
-              <Link2 className="h-4 w-4 text-[#92400e] flex-shrink-0" />
-              <span className="text-[11px] text-slate-700 truncate flex-1 font-mono">
-                {buildShareUrl(shareFor.shareTo)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                onClick={async () => {
-                  const url = buildShareUrl(shareFor.shareTo);
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    setCopied(true);
-                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-                      try { navigator.vibrate?.(20); } catch { /* noop */ }
-                    }
-                    setTimeout(() => setCopied(false), 1500);
-                  } catch { /* noop */ }
-                }}
-                className="btn-3d flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-white border border-[color:oklch(0.78_0.14_82/0.55)] active:scale-[0.97] transition"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 text-[#92400e]" />
-                    <span className="text-xs font-semibold text-[#92400e] uppercase tracking-wider">Copy Link</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={async () => {
-                  const url = buildShareUrl(shareFor.shareTo);
-                  const shareData = {
-                    title: shareFor.label,
-                    text: `${shareFor.label} — ${shareFor.sub ?? ""}`.trim(),
-                    url,
-                  };
-                  if (typeof navigator !== "undefined" && navigator.share) {
-                    try { await navigator.share(shareData); } catch { /* noop */ }
-                  } else {
-                    // Fallback: WhatsApp share
-                    const wa = `https://wa.me/?text=${encodeURIComponent(`${shareData.text}\n${url}`)}`;
-                    window.open(wa, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                className="btn-3d flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-gradient-to-br from-[#d4af37] to-[#8b6508] text-white active:scale-[0.97] transition shadow-gold-glow"
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Share Link</span>
-              </button>
-            </div>
-
-            <p className="mt-3 text-center text-[10px] text-muted-foreground italic">
-              Anyone with this link will land directly on the {shareFor.label}.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
