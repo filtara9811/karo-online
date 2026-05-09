@@ -1,115 +1,67 @@
-# Phase 1 — Admin Panel Foundation
+## Customer Login & Signup Flow — Implementation Plan
 
-हम Phase 1 से शुरू कर रहे हैं। Admin panel में 3 नए section जोड़ेंगे, जो Phase 2 (vendor wallet) और Phase 3 (Shiprocket/Porter) की foundation बनेंगे।
+### क्या बनेगा (User Flow)
 
----
+**Step 1 — App खुलते ही / कहीं भी touch करते ही:**
+- जब customer signed-in नहीं है और कोई भी action करे (search, service tap, request, cart, profile, chat — कुछ भी), तुरंत bottom-sheet खुलेगी।
+- Sheet में सिर्फ **एक field: Mobile Number (10 digit)** + **Continue** button।
+- Top-right में **X** button — close करने पर सिर्फ वो action रुकेगा, page नहीं बदलेगा।
+- 2-minute auto-open और floating "Sign Up / Login" button — दोनों हटा दिए जाएंगे (अब "tap to act → gate" model)।
 
-## आपकी key requirement (samajh li)
+**Step 2 — OTP Sheet:**
+- सिर्फ **6 OTP boxes** + **timer (00:45)** + **Resend OTP** (timer 0 होने पर enable)।
+- **Auto-detect**: Web OTP API (`<input autocomplete="one-time-code" inputmode="numeric">`) — Android Chrome पर SMS से auto-fill होगा।
+- Manual entry भी allowed। 6 digits डालते ही auto-verify।
+- Back arrow (←) — mobile screen पर वापस; X — पूरी sheet close।
 
-> "हर payment gateway अलग तरीके से — एक gateway **Wallet recharge** के लिए, दूसरा **LeadX Coin buy** के लिए।"
+**Step 3 — Already Registered Check (OTP verify के बाद):**
+- अगर customer profile पहले से complete है (`name + address` मौजूद):
+  → **Green tick + "Welcome back, {name}"** 1.2 sec दिखेगा → sheet close → home पर रहेगा/redirect।
+  - कोई form नहीं खुलेगा।
+- अगर **first time** / profile incomplete:
+  → पूरा existing **RegistrationFlow progress** चलेगा (Email → Address auto-detect → Referral/Manager → Terms) — जैसा अभी चल रहा है, कुछ नहीं बदलेगा।
 
-इसका मतलब है `payment_gateways` table में हर gateway को एक **purpose** assign करना है:
-- `wallet_recharge` — vendor Service Wallet (₹) recharge करने के लिए
-- `coin_purchase` — vendor LeadX Coins खरीदने के लिए
-- `both` — agar same gateway दोनों के लिए use करना चाहें
+**Step 4 — Logout:**
+- Menu bar से logout → session clear → अगली बार किसी action पर वही mobile-number sheet खुलेगी।
 
-So vendor app में जब "Add Funds" दबाएगा → सिर्फ `wallet_recharge` वाला gateway खुलेगा। जब "Buy Coins" दबाएगा → सिर्फ `coin_purchase` वाला खुलेगा।
+### Files में Changes
 
----
+1. **`src/components/AuthGate.tsx`** — पूरा rewrite:
+   - 2-min auto-open + floating CTA हटाएं।
+   - नया `useAuthGate()` context expose करेगा: `requireAuth(callback)` — कोई भी component इसे call करे, gate खुले, success पर callback चले।
+   - Internal state: `mobile` step → `otp` step → `registered? welcome : registration`।
 
-## क्या-क्या बनेगा (Phase 1 scope)
+2. **`src/components/MobileLoginSheet.tsx`** (नया) — mobile + OTP combined bottom-sheet:
+   - Glass sheet, X top-right, back arrow OTP step पर।
+   - OTP input: `autocomplete="one-time-code"` for auto-fill।
+   - Timer 45s, resend।
+   - Calls existing `sendOtp` / `verifyOtp` server functions।
 
-### A. Database (one migration)
+3. **Trigger points** — इन जगह `requireAuth()` से wrap करेंगे:
+   - `src/routes/index.tsx` / `quick.tsx` — service card tap, "+" Add button, search submit।
+   - `src/components/HomeBasket.tsx` — cart actions।
+   - `src/routes/chat.tsx` — chat send।
+   - `src/components/NeedsSheet.tsx` — request raise।
+   - बाकी जगह तब add करेंगे जब आप कहें।
 
-1. **`payment_gateways` में 2 नए columns**
-   - `purpose` text — values: `wallet_recharge` | `coin_purchase` | `both` (default `both`)
-   - `priority` int — agar same purpose पर 2 gateway active हों तो कौनसा pehle use हो
+4. **`src/components/RegistrationFlow.tsx`** — सिर्फ entry point: mobile + OTP steps **skip** होंगे जब AuthGate से आए (already verified)। बाकी progress (email/address/referral/terms) वैसा ही।
 
-2. **New table `logistics_gateways`** (बिल्कुल `payment_gateways` जैसी shape)
-   - `id, provider, display_name, is_active, is_test_mode, config jsonb, public_key, supports_hyperlocal bool, supports_intercity bool, supports_international bool, priority int`
-   - Seed rows: Shiprocket, Porter, Delhivery (inactive by default — admin enable करेगा)
-   - RLS: same pattern (admin view, super_admin write)
+### Suggestions (आपकी राय चाहिए — implement करने से पहले)
 
-3. **New table `coin_pricing_config`** (single-row config)
-   - `id, coin_rate_inr numeric (default 20)` — 1 coin = ₹20
-   - `min_purchase_coins int (default 50)`, `max_purchase_coins int (default 5000)`
-   - `gst_percent numeric (default 18)`
-   - `updated_at, updated_by`
-   - Seed 1 default row
+1. **"कहीं भी touch" का दायरा** — मेरा suggestion: सिर्फ **action-based triggers** (service tap, search, cart, chat, +) पर gate खोलें। पूरे screen पर random touch detect करना UX के लिए annoying होगा (scroll भी touch है)। ठीक है?
 
-4. **New table `coin_packs`** (predefined recharge packs जैसा "Buy 100 coins ₹1800 (Save 10%)")
-   - `id, pack_name, coins int, price_inr numeric, bonus_coins int, is_active bool, sort_order int`
+2. **OTP Auto-fill** — Web OTP API सिर्फ **HTTPS + Android Chrome + correct SMS format** (`<#> Your code is 123456 @karoonline.in #123456`) पर काम करता है। Fast2SMS template में ये format नहीं है, इसलिए auto-fill **partially** ही चलेगा (Android keyboard suggestion bar में OTP दिखेगा — 1 tap में fill)। पूरा silent auto-fill के लिए template बदलनी पड़ेगी। अभी keyboard-suggestion वाला approach ठीक है?
 
-5. **New table `wallet_recharge_packs`** (Service Wallet ke liye — "Add ₹500 / ₹1000 / ₹2000")
-   - `id, label, amount_inr numeric, bonus_inr numeric default 0, is_active bool, sort_order int`
+3. **Welcome screen duration** — 1.2 sec ठीक है या आप 2 sec चाहेंगे?
 
-> Note: Actual `vendor_wallets` और `wallet_transactions` tables Phase 2 में बनेंगे (जब vendor-facing UI बनाएंगे)। Phase 1 सिर्फ admin config foundation है।
+4. **Already-registered detection** — `customers` table में `name + address` दोनों होने पर "registered" मानूं? या सिर्फ `name`?
 
-### B. Admin UI — 3 नए pages + sidebar updates
-
-1. **`/admin/logistics`** (नई route file `admin.logistics.tsx`)
-   - Bilkul `/admin/payments` जैसा design (gold theme, GoldCard grid)
-   - Per-gateway: enable/disable, test mode, public key/auth token field, hyperlocal/intercity/international toggles, priority
-   - Sidebar में नया item "Delivery Gateways" (Truck icon)
-
-2. **`/admin/payments`** (existing file update)
-   - हर gateway card में नया **Purpose selector**: 3 radio buttons → "Wallet Recharge" / "Coin Purchase" / "Both"
-   - Priority field (number input, lower = higher priority)
-   - Header में helper banner समझाने के लिए कि ek gateway wallet ke liye, dusra coins ke liye assign करो
-   - Validation: कम-से-कम 1 active gateway हर purpose के लिए होना चाहिए (warning, hard block नहीं)
-
-3. **`/admin/coins`** (नई route file `admin.coins.tsx`) — "Coin & Wallet Pricing"
-   - Section 1: **Coin rate** — ₹ per coin, GST %, min/max purchase
-   - Section 2: **Coin Packs** CRUD list (50/100/250/500 coins के preset packs)
-   - Section 3: **Wallet Recharge Packs** CRUD (₹500/₹1000/₹2000 quick-add buttons + bonus)
-   - Sidebar item "Coins & Wallet" (Coins icon)
-
-4. **`/admin` (Dashboard)** — small additions
-   - 2 नए stat cards: "Active Logistics Gateways", "Coin Rate (₹/coin)"
-
-### C. Sidebar order (final)
-```
-Dashboard
-Customers
-Vendors
-Catalog
-Staff & Roles
-Payment Gateways
-SMS Gateways
-Delivery Gateways    ← new
-Coins & Wallet       ← new
-Legal Pages
-App Settings
-```
+### Technical Details
+- AuthGate को context provider बनाऊंगा ताकि कोई भी component `useAuthGate().requireAuth(fn)` call कर सके।
+- Mobile + OTP एक ही sheet में steps के form में (smooth transition)।
+- Registration steps वही reuse होंगे — duplicate code नहीं।
+- localStorage dismiss-timer logic हटेगी (अब manual trigger model)।
 
 ---
 
-## Technical notes
-
-- कोई edge function Phase 1 में नहीं — सिर्फ DB + admin UI।
-- सभी secret keys (Shiprocket API token, Porter secret, Razorpay key_secret) Supabase **secrets** में जाएंगी, public key/token सिर्फ DB में। Admin UI पर helper text दिखेगा।
-- Migrations पर RLS policies pehle से tested pattern से (`is_admin_user`, `has_role(super_admin)`) लगेंगी।
-
----
-
-## आगे क्या (after आप approve करेंगे)
-
-Phase 1 deploy होने के बाद Phase 2 शुरू करूंगा:
-- `vendor_wallets`, `wallet_transactions` tables
-- Vendor dashboard में 2 wallet cards (Coins + Service Wallet)
-- Razorpay/PhonePe checkout flow दोनों purposes के लिए अलग
-- Auto-top-up toggle
-
-Phase 3 में Shiprocket + Porter live integration + auto-debit।
-
----
-
-## Quick clarifying questions (आप develop के दौरान बता सकते हैं — मैं रुकूँगा नहीं)
-
-1. **Default coin rate** ₹20/coin रखें या आप कुछ और बताएंगे?
-2. **Logistics providers seed list** — Shiprocket + Porter के अलावा Delhivery भी रखूँ या सिर्फ ये 2?
-3. **Existing payment gateways** का default `purpose` क्या set करूँ — `both` (safe) या आप manually assign करेंगे?
-
-ये default values से शुरू करूँगा, आप बाद में admin से change कर सकते हैं।
-
-**Approve करें तो मैं Phase 1 implement करना शुरू करता हूँ।**
+**आप 4 suggestions पर हाँ/ना बता दीजिए, फिर मैं implement शुरू करूंगा।**

@@ -55,34 +55,35 @@ export function AppShell() {
 
   if (hideShell) {
     return (
-      <>
+      <AuthGate>
         <Outlet />
         <VendorLeadAlerts />
-      </>
+      </AuthGate>
     );
   }
 
   return (
-    <div className="min-h-screen relative">
-      <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
+    <AuthGate>
+      <div className="min-h-screen relative">
+        <div className="pointer-events-none fixed -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
+        <div className="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
 
-      <ActionAlertBanner role="customer" />
-      {!hideTopHeader && <TopHeader />}
+        <ActionAlertBanner role="customer" />
+        {!hideTopHeader && <TopHeader />}
 
-      <main
-        key={fadeKey}
-        className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} ${isQuickRoute ? "pb-0" : "pb-36"}`}
-        style={isQuickRoute ? undefined : { animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
-      >
-        <Outlet />
-      </main>
+        <main
+          key={fadeKey}
+          className={`relative ${hideTopHeader ? "" : "max-w-md mx-auto px-4 pt-3"} ${isQuickRoute ? "pb-0" : "pb-36"}`}
+          style={isQuickRoute ? undefined : { animation: "lux-fade 0.22s cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform, opacity" }}
+        >
+          <Outlet />
+        </main>
 
-      {!hideBottomBar && <BottomActionBar loading={isLoading} />}
+        {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
-      <AuthGate />
-      <VendorLeadAlerts />
-    </div>
+        <VendorLeadAlerts />
+      </div>
+    </AuthGate>
   );
 }
 

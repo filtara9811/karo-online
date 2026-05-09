@@ -16,6 +16,7 @@ import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthGate } from "@/components/AuthGate";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -141,6 +142,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { requireAuth } = useAuthGate();
   const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
@@ -311,13 +313,15 @@ function QuickPage() {
 
   // Tap a service card (sub-category): 1st tap selects + filters map; 2nd tap on same → variations
   const handleServiceCardTap = (subId: string) => {
-    if (selectedSubId === subId) {
-      setVariationOpen(true);
-      return;
-    }
-    setSelectedSubId(subId);
-    const sub = subCategories.find((c) => c.id === subId);
-    if (sub) setPulseKey(`${sub.slug}-${Date.now()}`);
+    requireAuth(() => {
+      if (selectedSubId === subId) {
+        setVariationOpen(true);
+        return;
+      }
+      setSelectedSubId(subId);
+      const sub = subCategories.find((c) => c.id === subId);
+      if (sub) setPulseKey(`${sub.slug}-${Date.now()}`);
+    });
   };
 
   useEffect(() => {
@@ -358,7 +362,7 @@ function QuickPage() {
       >
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => setSearchOpen(true)}
+            onClick={() => requireAuth(() => setSearchOpen(true))}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
             aria-label="Open search"
           >
@@ -519,7 +523,7 @@ function QuickPage() {
 
       {/* Floating + button */}
       <button
-        onClick={() => setNeedsOpen(true)}
+        onClick={() => requireAuth(() => setNeedsOpen(true))}
         aria-label="Add need"
         className="btn-3d fixed z-40 right-5 grid place-items-center"
         style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
