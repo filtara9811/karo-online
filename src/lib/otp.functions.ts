@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash, randomInt } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 
 const PhoneSchema = z.object({
   phone: z
@@ -31,9 +32,34 @@ type SmsTemplate = {
   variables?: string;
 };
 
-function getTemplate(cfg: Record<string, any>, event = "otp") {
-  const templates = Array.isArray(cfg.templates) ? (cfg.templates as SmsTemplate[]) : [];
+type SmsConfig = Record<string, unknown> & {
+  api_key?: string;
+  auth_key?: string;
+  country?: string;
+  message_id?: string;
+  route?: string;
+  sender_id?: string;
+  template_id?: string;
+  templates?: SmsTemplate[];
+  variables?: string;
+  variables_values?: string;
+};
+
+function getTemplate(cfg: SmsConfig, event = "otp") {
+  const templates = Array.isArray(cfg.templates) ? cfg.templates : [];
   return templates.find((t) => (t.event || "").toLowerCase() === event) ?? templates[0] ?? null;
+}
+
+function asSmsConfig(value: unknown): SmsConfig {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as SmsConfig) : {};
+}
+
+function asJson(value: unknown): Json {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Json;
+  } catch {
+    return null;
+  }
 }
 
 function renderVariables(pattern: string | undefined, code: string) {
@@ -54,10 +80,10 @@ async function logSystem(
   provider: string | null,
   status: "success" | "error",
   message: string,
-  meta: Record<string, unknown> = {},
+  meta: Json = {},
 ) {
   try {
-    await (supabaseAdmin.from("system_logs") as any).insert({
+    await supabaseAdmin.from("system_logs").insert({
       kind,
       provider,
       status,
