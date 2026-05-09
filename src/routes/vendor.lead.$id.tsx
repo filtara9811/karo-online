@@ -67,7 +67,7 @@ export const Route = createFileRoute("/vendor/lead/$id")({
       </div>
     </div>
   ),
-  component: LeadDetailPage,
+  component: () => (<VendorAuthGate><LeadDetailPage /></VendorAuthGate>),
 });
 
 const SOURCE_ICON: Record<LeadSource, React.ReactNode> = {
