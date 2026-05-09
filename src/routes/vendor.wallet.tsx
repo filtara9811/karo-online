@@ -74,7 +74,7 @@ export const Route = createFileRoute("/vendor/wallet")({
       { name: "description", content: "Service wallet, LeadX coins, live rate and full transaction history." },
     ],
   }),
-  component: WalletPage,
+  component: () => (<VendorAuthGate><WalletPage /></VendorAuthGate>),
 });
 
 type Wallet = {
