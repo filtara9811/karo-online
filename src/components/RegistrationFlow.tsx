@@ -784,53 +784,45 @@ function NameStep({ name, gender, onName, onGenderClick, onNext }: {
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
-    if (!gender) {
-      // Auto-open gender sheet on entry
-      setTimeout(() => onGenderClick(), 250);
-    } else {
+    if (gender) {
       setTimeout(() => ref.current?.focus(), 320);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gender]);
 
   const genderChip = GENDER_CHIPS.find((g) => g.value === gender);
 
   return (
     <div>
-      <StepHeader Icon={UserCircle2} title="Enter full name" subtitle="As you'd like to be addressed" />
+      <StepHeader Icon={UserCircle2} title="Enter full name" subtitle={gender ? "As you'd like to be addressed" : "Tap the box — choose gender first"} />
 
-      {/* Gender pill — always visible, tap to change */}
-      <button
-        onClick={onGenderClick}
-        className="mx-auto mb-3 flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] active:scale-[0.97]"
-      >
-        {genderChip ? (
-          <>
-            <img src={genderChip.icon} alt="" className="h-5 w-5" />
-            <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">{genderChip.label}</span>
-            <span className="text-[10px] text-[color:oklch(0.45_0.10_82)] underline ml-1">change</span>
-          </>
-        ) : (
-          <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">Tap to choose gender</span>
-        )}
-      </button>
+      {/* Gender pill — visible state, tap to change */}
+      {gender && (
+        <button
+          onClick={onGenderClick}
+          className="mx-auto mb-3 flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] active:scale-[0.97]"
+        >
+          {genderChip && <img src={genderChip.icon} alt="" className="h-5 w-5" />}
+          <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">{genderChip?.label}</span>
+          <span className="text-[10px] text-[color:oklch(0.45_0.10_82)] underline ml-1">change</span>
+        </button>
+      )}
 
-      <div onClick={() => !gender && onGenderClick()}>
-        <FieldShell Icon={UserCircle2}>
-          <input
-            ref={ref}
-            value={name}
-            disabled={!gender}
-            onChange={(e) => onName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && name.trim() && gender) onNext(); }}
-            inputMode="text"
-            autoCapitalize="words"
-            autoComplete="name"
-            placeholder={gender ? "Your full name" : "Choose gender first…"}
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] disabled:cursor-pointer"
-          />
-        </FieldShell>
-      </div>
+      <FieldShell Icon={UserCircle2}>
+        <input
+          ref={ref}
+          value={name}
+          readOnly={!gender}
+          onFocus={() => { if (!gender) { ref.current?.blur(); onGenderClick(); } }}
+          onClick={() => { if (!gender) onGenderClick(); }}
+          onChange={(e) => onName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim() && gender) onNext(); }}
+          inputMode="text"
+          autoCapitalize="words"
+          autoComplete="name"
+          placeholder={gender ? "Your full name" : "Tap to choose gender…"}
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] cursor-pointer read-only:cursor-pointer"
+        />
+      </FieldShell>
 
       <NextButton disabled={!name.trim() || !gender} onClick={onNext} />
     </div>
