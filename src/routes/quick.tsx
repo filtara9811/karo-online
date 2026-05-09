@@ -142,7 +142,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { requireAuth } = useAuthGate();
+  const { requireAuth, isReady } = useAuthGate();
   const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
@@ -382,6 +382,17 @@ function QuickPage() {
             />
           </button>
         </div>
+
+        {!isReady && (
+          <button
+            type="button"
+            onClick={() => requireAuth()}
+            className="mb-3 w-full rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-gradient-to-r from-[#fff8dc] via-white to-[#fff3c8] px-4 py-3 text-left shadow-[0_5px_18px_-10px_rgba(212,175,55,0.7)] active:scale-[0.99]"
+          >
+            <span className="block font-display text-base font-bold text-gold-gradient">Login / Sign up</span>
+            <span className="block text-xs text-[color:oklch(0.45_0.08_85)]">Mobile number se OTP check karein</span>
+          </button>
+        )}
 
         <div className="flex items-center justify-between px-2 mb-3">
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[color:oklch(0.45_0.08_85)]">
