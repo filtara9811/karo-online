@@ -45,10 +45,10 @@ const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " "
 
 type Manager = { value: string; name: string; area: string; rating: number; vendors: number; customers: number; reviews: number; avatar: string };
 const MANAGERS: Manager[] = [
-  { value: "aryan", name: "Aryan Sharma", area: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, customers: 980, reviews: 312, avatar: goldMale },
-  { value: "priya", name: "Priya Verma", area: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, customers: 740, reviews: 245, avatar: goldFemale },
-  { value: "rahul", name: "Rahul Mehta", area: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, customers: 510, reviews: 198, avatar: goldMale },
-  { value: "neha", name: "Neha Singh", area: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, customers: 1240, reviews: 402, avatar: goldFemale },
+  { value: "aryan", name: "Aryan Sharma", area: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, customers: 980, reviews: 312, avatar: avatarAryan },
+  { value: "priya", name: "Priya Verma", area: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, customers: 740, reviews: 245, avatar: avatarRani },
+  { value: "rahul", name: "Rahul Mehta", area: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, customers: 510, reviews: 198, avatar: avatarRaj },
+  { value: "neha", name: "Neha Singh", area: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, customers: 1240, reviews: 402, avatar: avatarUser },
 ];
 
 const GENDER_CHIPS: { value: string; label: string; icon: string }[] = [
