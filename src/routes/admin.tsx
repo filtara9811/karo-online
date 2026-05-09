@@ -5,8 +5,12 @@ const ADMIN_ROLES = new Set(["super_admin", "admin", "moderator", "support"]);
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ location }) => {
-    // Allow login page through without admin check
-    if (location.pathname === "/admin/login") return;
+    // Allow login & reset-password pages through without admin check
+    if (
+      location.pathname === "/admin/login" ||
+      location.pathname === "/admin/reset-password"
+    )
+      return;
 
     // Check session client-side (supabase persists session in localStorage)
     const { data: sessionData } = await supabase.auth.getSession();

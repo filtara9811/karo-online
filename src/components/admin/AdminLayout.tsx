@@ -196,14 +196,17 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
 
       {/* Footer / user */}
       <div className="px-4 py-4 border-t border-[#d4af37]/20 space-y-3">
-        <div className="rounded-xl px-3 py-2.5 border border-[#d4af37]/20 bg-black/30">
+        <Link
+          to="/admin/profile"
+          className="block rounded-xl px-3 py-2.5 border border-[#d4af37]/20 bg-black/30 hover:bg-[#d4af37]/10 transition"
+        >
           <p className="text-[9px] uppercase tracking-[0.3em] text-[#d4af37]/70 mb-0.5">
-            Signed in as
+            Signed in as · Tap to manage
           </p>
           <p className="text-xs text-[#fff8dc] truncate font-medium">
             {email}
           </p>
-        </div>
+        </Link>
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#d4af37]/40 text-[#f5d97a] text-xs font-bold uppercase tracking-widest hover:bg-[#d4af37]/10 transition"
@@ -256,14 +259,16 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div
+          <Link
+            to="/admin/profile"
             className="h-9 w-9 rounded-lg grid place-items-center"
             style={{
               background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
             }}
+            aria-label="Profile"
           >
             <Crown className="h-4 w-4 text-[#1a1208]" />
-          </div>
+          </Link>
           <h1
             className="font-display text-base font-bold"
             style={{
@@ -274,9 +279,12 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           >
             Admin Panel
           </h1>
-          <span className="ml-auto text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80 font-bold px-2 py-1 rounded-full border border-[#d4af37]/30">
+          <Link
+            to="/admin/profile"
+            className="ml-auto text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80 font-bold px-2 py-1 rounded-full border border-[#d4af37]/30 hover:bg-[#d4af37]/10"
+          >
             {topRole}
-          </span>
+          </Link>
         </header>
 
         <ActionAlertBanner role="admin" />
