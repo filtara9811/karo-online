@@ -66,28 +66,27 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 export function useGeolocation(): GeoState {
-  const [state, setState] = useState<GeoState>(() => {
+  const [state, setState] = useState<GeoState>({
+    status: "idle",
+    lat: null,
+    lng: null,
+    label: "Detecting your location…",
+    accuracyKm: null,
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     const cached = readCache();
     if (cached) {
-      return {
+      setState({
         status: "ready",
         lat: cached.lat,
         lng: cached.lng,
         label: cached.label,
         accuracyKm: null,
-      };
+      });
+      return;
     }
-    return {
-      status: "idle",
-      lat: null,
-      lng: null,
-      label: "Detecting your location…",
-      accuracyKm: null,
-    };
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     if (!("geolocation" in navigator)) {
       setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
       return;

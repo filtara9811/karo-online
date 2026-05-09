@@ -1,0 +1,477 @@
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
+
+export type LeadChatPeer = {
+  id: string;
+  name: string;
+  avatar_url?: string | null;
+  phone?: string | null;
+  subtitle?: string | null;
+};
+
+type Msg = {
+  id: string;
+  lead_id: string;
+  sender_id: string;
+  sender_role: "customer" | "vendor";
+  recipient_id: string | null;
+  body: string | null;
+  image_url: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+type Props = {
+  leadId: string;
+  peer: LeadChatPeer | null;
+  myRole: "customer" | "vendor";
+  onBack?: () => void;
+};
+
+const QUICK_CHIPS_CUSTOMER = [
+  { label: "When can you reach?", emoji: "⏰" },
+  { label: "Send price quote", emoji: "💰" },
+  { label: "Share location", emoji: "📍" },
+  { label: "Confirm booking", emoji: "✅" },
+];
+const QUICK_CHIPS_VENDOR = [
+  { label: "On the way 🛵", emoji: "🛵" },
+  { label: "Reaching in 15 min", emoji: "⏰" },
+  { label: "Service complete ✅", emoji: "✅" },
+  { label: "Share invoice", emoji: "🧾" },
+];
+
+const STATUS_FLOW = [
+  { key: "pending", label: "Pending" },
+  { key: "approved", label: "Approved" },
+  { key: "in_progress", label: "In Progress" },
+  { key: "completed", label: "Completed" },
+] as const;
+
+const fmtTime = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch { return ""; }
+};
+
+export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
+  const navigate = useNavigate();
+  const [me, setMe] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [leadStatus, setLeadStatus] = useState<string>("pending");
+  const [acting, setActing] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [rated, setRated] = useState<number>(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const chips = myRole === "vendor" ? QUICK_CHIPS_VENDOR : QUICK_CHIPS_CUSTOMER;
+
+  // Identify self
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMe(data.user?.id ?? null));
+  }, []);
+
+  // Load lead status
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("leads").select("status").eq("id", leadId).maybeSingle();
+      if (alive && data?.status) setLeadStatus(data.status);
+    })();
+    const ch = supabase
+      .channel(`lead-status-${leadId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` },
+        (p) => { const s = (p.new as any)?.status; if (s) setLeadStatus(s); })
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [leadId]);
+
+  // Initial messages
+  useEffect(() => {
+    if (!leadId) return;
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      const query = supabase
+        .from("lead_messages")
+        .select("*")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: true });
+      const { data } = peer?.id
+        ? await query.or(`sender_id.eq.${peer.id},recipient_id.eq.${peer.id}`)
+        : await query;
+      if (!alive) return;
+      setMessages((data ?? []) as Msg[]);
+      setLoading(false);
+      requestAnimationFrame(() => scrollerRef.current?.scrollTo({ top: 9e6 }));
+    })();
+    return () => { alive = false; };
+  }, [leadId, peer?.id]);
+
+  // Realtime messages
+  useEffect(() => {
+    if (!leadId) return;
+    const ch = supabase
+      .channel(`lead-msg-${leadId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "lead_messages", filter: `lead_id=eq.${leadId}` },
+        (payload) => {
+          const m = payload.new as Msg;
+          if (peer?.id && m.sender_id !== peer.id && m.recipient_id !== peer.id) return;
+          setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          requestAnimationFrame(() => scrollerRef.current?.scrollTo({ top: 9e6, behavior: "smooth" }));
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [leadId, peer?.id]);
+
+  const send = async (override?: string) => {
+    const body = (override ?? text).trim();
+    if (!body || !me || sending) return;
+    setSending(true);
+    if (!override) setText("");
+    const optimistic: Msg = {
+      id: `tmp-${Date.now()}`, lead_id: leadId, sender_id: me, sender_role: myRole,
+      recipient_id: peer?.id ?? null, body, image_url: null, read_at: null,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((p) => [...p, optimistic]);
+    requestAnimationFrame(() => scrollerRef.current?.scrollTo({ top: 9e6, behavior: "smooth" }));
+    const { data, error } = await supabase
+      .from("lead_messages")
+      .insert({ lead_id: leadId, sender_id: me, sender_role: myRole, recipient_id: peer?.id ?? null, body })
+      .select("*").single();
+    setSending(false);
+    if (error) {
+      setMessages((p) => p.filter((m) => m.id !== optimistic.id));
+      if (!override) setText(body);
+      toast.error("Message bhej nahi paaye. Dobara try karein.");
+      return;
+    }
+    setMessages((p) => p.map((m) => (m.id === optimistic.id ? (data as Msg) : m)));
+  };
+
+  const updateLeadStatus = async (next: string, successMsg: string) => {
+    if (acting) return;
+    setActing(true);
+    const { error } = await supabase.from("leads").update({ status: next }).eq("id", leadId);
+    setActing(false);
+    if (error) { toast.error("Update nahi ho paya. Dobara try karein."); return; }
+    setLeadStatus(next);
+    toast.success(successMsg);
+    if (next === "completed" && myRole === "customer") setShowRating(true);
+  };
+
+  const stepIndex = Math.max(0, STATUS_FLOW.findIndex((s) => s.key === leadStatus));
+  const isPending = leadStatus === "pending" || leadStatus === "new" || leadStatus === "accepted";
+  const showApproveBanner = myRole === "customer" && isPending;
+  const showCompleteBanner = myRole === "customer" && (leadStatus === "approved" || leadStatus === "in_progress");
+  const showVendorComplete = myRole === "vendor" && leadStatus === "approved";
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee]">
+      {/* Header — gold accent like classic chat */}
+      <header className="flex-shrink-0 bg-gradient-to-b from-[#3f4750] to-[#1a1d22] text-white shadow-md">
+        <div className="flex items-center gap-2.5 px-3 py-3">
+          <button
+            onClick={() => (onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }))}
+            aria-label="Back"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/10 active:scale-90"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          {peer?.avatar_url ? (
+            <img src={peer.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border-2 border-[#d4af37]/70" />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#d4af37] to-[#92400e] grid place-items-center text-sm font-display font-bold border-2 border-[#d4af37]/70">
+              {peer?.name?.charAt(0)?.toUpperCase() ?? "?"}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold truncate flex items-center gap-1.5">
+              {peer?.name ?? "Vendor"}
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            </p>
+            <p className="text-[11px] opacity-80 truncate flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {peer?.subtitle ?? "Live · Lead chat"}
+            </p>
+          </div>
+          {peer?.phone && (
+            <>
+              <a
+                href={`https://wa.me/${(peer.phone || "").replace(/\D/g, "")}`}
+                target="_blank" rel="noreferrer" aria-label="WhatsApp"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white border border-emerald-300 active:scale-90"
+              >
+                <img src={whatsappIcon} alt="" className="h-5 w-5" />
+              </a>
+              <a
+                href={`tel:${peer.phone}`}
+                aria-label="Call"
+                className="h-9 w-9 grid place-items-center rounded-full bg-emerald-500 active:scale-90"
+              >
+                <Phone className="h-4 w-4" />
+              </a>
+            </>
+          )}
+        </div>
+
+        {/* Status pipeline */}
+        <div className="px-3 pb-2.5 flex items-center gap-1.5">
+          {STATUS_FLOW.map((s, i) => {
+            const done = i <= stepIndex;
+            const active = i === stepIndex;
+            return (
+              <div key={s.key} className="flex items-center gap-1.5 flex-1 min-w-0">
+                <motion.span
+                  animate={active ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                  transition={{ duration: 1.4, repeat: active ? Infinity : 0 }}
+                  className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                    done ? "bg-[#fbbf24]" : "bg-white/25"
+                  } ${active ? "ring-2 ring-[#fbbf24]/40" : ""}`}
+                />
+                <span className={`text-[9px] font-display font-semibold uppercase tracking-wider truncate ${done ? "text-[#fde68a]" : "text-white/45"}`}>
+                  {s.label}
+                </span>
+                {i < STATUS_FLOW.length - 1 && (
+                  <span className={`flex-1 h-px ${done ? "bg-[#fbbf24]/60" : "bg-white/15"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </header>
+
+      {/* Approve / Complete action banner */}
+      <AnimatePresence>
+        {(showApproveBanner || showCompleteBanner || showVendorComplete) && (
+          <motion.div
+            initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }}
+            className="flex-shrink-0 bg-gradient-to-r from-[#fff8dc] via-[#fde68a] to-[#fff8dc] border-b-2 border-[#d4af37]/60 shadow-sm"
+          >
+            <div className="px-3 py-2.5 flex items-center gap-2.5">
+              <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#d97706] to-[#92400e] grid place-items-center shadow flex-shrink-0">
+                <Sparkles className="h-4 w-4 text-white" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-display font-bold uppercase tracking-wider text-[#92400e]">
+                  Action required
+                </p>
+                <p className="text-[12px] font-semibold text-[#7c2d12] leading-tight truncate">
+                  {showApproveBanner && "Vendor ko approve karein agar baat ho gayi ho."}
+                  {showCompleteBanner && "Service complete ho gayi? Mark karein."}
+                  {showVendorComplete && "Customer se approve hua. Service complete hone par mark karein."}
+                </p>
+              </div>
+              {showApproveBanner && (
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button
+                    disabled={acting}
+                    onClick={() => updateLeadStatus("declined", "Vendor declined")}
+                    className="h-8 px-3 rounded-full bg-white border border-red-300 text-red-600 text-[11px] font-bold flex items-center gap-1 active:scale-95 disabled:opacity-50"
+                  >
+                    <X className="h-3 w-3" /> No
+                  </button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    disabled={acting}
+                    onClick={() => updateLeadStatus("approved", "Vendor approved! ✅")}
+                    className="h-8 px-3.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-[11px] font-bold shadow flex items-center gap-1 active:scale-95 disabled:opacity-50"
+                  >
+                    {acting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Approve
+                  </motion.button>
+                </div>
+              )}
+              {(showCompleteBanner || showVendorComplete) && (
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  disabled={acting}
+                  onClick={() => updateLeadStatus("completed", "Marked as completed 🎉")}
+                  className="h-8 px-3.5 rounded-full bg-gradient-to-r from-[#d97706] to-[#92400e] text-white text-[11px] font-bold shadow flex items-center gap-1 active:scale-95 disabled:opacity-50 flex-shrink-0"
+                >
+                  {acting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Mark Complete
+                </motion.button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Completed → Rate strip (customer side) */}
+      {myRole === "customer" && leadStatus === "completed" && rated === 0 && (
+        <button
+          onClick={() => setShowRating(true)}
+          className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-amber-100 to-yellow-100 border-b border-amber-300 flex items-center justify-center gap-2 active:scale-[0.99]"
+        >
+          <Star className="h-4 w-4 text-amber-600" fill="currentColor" />
+          <span className="text-xs font-display font-bold text-amber-800">Rate karein — vendor ki service kaisi rahi?</span>
+        </button>
+      )}
+
+      {/* Messages */}
+      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {loading ? (
+          <div className="grid place-items-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin text-[#d97706]" />
+          </div>
+        ) : messages.length === 0 ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center text-xs text-slate-500 py-20">
+            <span className="inline-block text-4xl mb-2">👋</span>
+            <p className="font-semibold">Say hi — start the conversation.</p>
+            <p className="text-[10px] text-slate-400 mt-1">Aapki messages secure aur live sync hote hain.</p>
+          </motion.div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {messages.map((m) => {
+              const mine = m.sender_id === me;
+              return (
+                <motion.div
+                  key={m.id} layout
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[78%] px-3.5 py-2 rounded-2xl shadow-sm ${
+                      mine
+                        ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-sm"
+                        : "bg-white border border-[color:oklch(0.78_0.14_82/0.30)] text-slate-800 rounded-bl-sm"
+                    }`}
+                  >
+                    {m.body && <p className="text-sm leading-snug whitespace-pre-wrap break-words">{m.body}</p>}
+                    {m.image_url && (
+                      <img src={m.image_url} alt="" className="mt-1 rounded-lg max-h-60 object-cover" />
+                    )}
+                    <p className={`text-[10px] mt-0.5 text-right ${mine ? "text-white/75" : "text-slate-400"}`}>
+                      {fmtTime(m.created_at)}
+                      {mine && <span className="ml-1 font-bold">✓✓</span>}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
+      </div>
+
+      {/* Quick-reply chips */}
+      <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-1.5 w-max">
+          {chips.map((c, i) => (
+            <motion.button
+              key={c.label}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              onClick={() => send(c.label)}
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-95"
+            >
+              <span className="text-xs">{c.emoji}</span>
+              <span className="text-[11px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap">{c.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* Composer */}
+      <div className="flex-shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] bg-transparent">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
+              placeholder="| Type a message…"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:italic placeholder:text-[#9ca3af]"
+            />
+            <button aria-label="Mic" className="h-8 w-8 grid place-items-center rounded-full bg-[#f3f4f6] active:scale-90">
+              <Mic className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+            </button>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            onClick={() => send()}
+            disabled={!text.trim() || sending}
+            aria-label="Send"
+            className="h-11 w-11 grid place-items-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md active:scale-90 disabled:opacity-50"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Rating sheet */}
+      <AnimatePresence>
+        {showRating && (
+          <InlineRatingSheet
+            vendorName={peer?.name ?? "Vendor"}
+            onClose={() => setShowRating(false)}
+            onSubmit={(stars) => { setRated(stars); setShowRating(false); toast.success(`Thanks for rating ${stars}★`); }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function InlineRatingSheet({
+  vendorName, onClose, onSubmit,
+}: { vendorName: string; onClose: () => void; onSubmit: (stars: number) => void }) {
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="fixed inset-0 z-[95] flex items-end justify-center">
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 280 }}
+        className="relative w-full max-w-md bg-white rounded-t-3xl p-6 pb-8 shadow-2xl"
+      >
+        <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-4" />
+        <h3 className="font-display text-lg font-bold text-center text-slate-800">Rate {vendorName}</h3>
+        <p className="text-xs text-slate-500 text-center mt-1">Aapka feedback baaki customers ki help karega.</p>
+        <div className="flex items-center justify-center gap-2 mt-5">
+          {[1,2,3,4,5].map((i) => {
+            const filled = i <= (hover || stars);
+            return (
+              <motion.button
+                key={i} whileTap={{ scale: 0.85 }}
+                onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(0)}
+                onClick={() => setStars(i)}
+                className="active:scale-90"
+              >
+                <Star
+                  className={`h-10 w-10 transition ${filled ? "text-amber-400" : "text-slate-200"}`}
+                  fill={filled ? "currentColor" : "none"}
+                  strokeWidth={1.5}
+                />
+              </motion.button>
+            );
+          })}
+        </div>
+        <button
+          disabled={stars === 0}
+          onClick={() => onSubmit(stars)}
+          className="mt-6 w-full h-12 rounded-full bg-gradient-to-r from-[#d97706] to-[#92400e] text-white font-display font-bold shadow-md active:scale-95 disabled:opacity-50"
+        >
+          Submit Rating
+        </button>
+      </motion.div>
+    </div>
+  );
+}
