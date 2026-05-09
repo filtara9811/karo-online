@@ -400,15 +400,28 @@ export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
       status: "active",
       signup_method: "phone_otp",
     };
-    const { data: existing } = await supabaseAdmin
-      .from("customers")
-      .select("id, user_id")
-      .eq("phone", phone)
-      .maybeSingle();
-    const userId = existing?.user_id ?? customerUuidFromPhone(phone);
-    const { error } = existing
-      ? await supabaseAdmin.from("customers").update(payload).eq("id", existing.id)
-      : await supabaseAdmin.from("customers").insert({ ...payload, user_id: userId });
+    let authUser: { userId: string; email: string; password: string };
+    try {
+      authUser = await ensurePhoneAuthUser(phone);
+    } catch (e) {
+      return { ok: false, error: (e as Error).message || "Login session create nahi ho paya" };
+    }
+
+    const { error } = await supabaseAdmin.rpc("save_customer_profile_as_user", {
+      _uid: authUser.userId,
+      _name: payload.name,
+      _gender: payload.gender ?? "",
+      _phone: payload.phone,
+      _email: payload.email || authUser.email,
+      _address: payload.address,
+    } as never);
     if (error) return { ok: false, error: error.message };
-    return { ok: true, customer_id: userId };
+
+    const { data: signedIn, error: signErr } = await supabaseAdmin.auth.signInWithPassword({
+      email: authUser.email,
+      password: authUser.password,
+    });
+    if (signErr || !signedIn.session) return { ok: false, error: signErr?.message || "Login session start nahi ho paya" };
+
+    return { ok: true, customer_id: authUser.userId, session: signedIn.session };
   });
