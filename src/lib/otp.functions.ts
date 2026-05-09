@@ -98,18 +98,16 @@ async function sendViaFast2SMS(
   if (route === "dlt" && !templateId && !messageId) return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
 
   const params = new URLSearchParams({
-    // Fast2SMS requires `authorization` in the query string for GET requests.
-    // Header auth is only documented for POST, and returns 401/412 for GET.
     authorization: apiKey,
     route,
-    sender_id: senderId,
     numbers: phone,
     variables_values: variablesValues,
     flash: "0",
   });
-  // Fast2SMS DLT expects the approved template/message id in the `message` parameter.
-  if (templateId) params.set(route === "dlt" ? "message" : "template_id", templateId);
-  if (cfg.message_id?.trim()) params.set("message_id", cfg.message_id.trim());
+  if (senderId) params.set("sender_id", senderId);
+  // Fast2SMS DLT: prefer message_id (Fast2SMS-approved sample) when given; else use template id in `message`.
+  if (messageId) params.set("message_id", messageId);
+  else if (templateId) params.set(route === "dlt" ? "message" : "template_id", templateId);
 
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
