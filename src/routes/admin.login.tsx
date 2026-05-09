@@ -270,20 +270,49 @@ function AdminLoginPage() {
               />
             </div>
 
-            <div>
-              <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold flex items-center gap-1.5 mb-1.5">
-                <Lock className="h-3 w-3" /> Password
-              </label>
-              <input
-                type="password"
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={mode === "signup" ? "Min 6 characters" : "••••••••"}
-                minLength={6}
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] placeholder:text-[#f5d97a]/30 outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/20 transition text-sm"
-              />
-            </div>
+            {mode !== "forgot" && (
+              <div>
+                <label className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold flex items-center gap-1.5 mb-1.5">
+                  <Lock className="h-3 w-3" /> Password
+                </label>
+                <input
+                  type="password"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={mode === "signup" ? "Min 6 characters" : "••••••••"}
+                  minLength={6}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] placeholder:text-[#f5d97a]/30 outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/20 transition text-sm"
+                />
+              </div>
+            )}
+
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setError(null);
+                  setInfo(null);
+                }}
+                className="text-[11px] text-[#f5d97a]/70 hover:text-[#f5d97a] underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </button>
+            )}
+            {mode === "forgot" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setError(null);
+                  setInfo(null);
+                }}
+                className="text-[11px] text-[#f5d97a]/70 hover:text-[#f5d97a] underline-offset-4 hover:underline"
+              >
+                ← Back to Sign In
+              </button>
+            )}
 
             {error && (
               <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
@@ -310,12 +339,18 @@ function AdminLoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Verifying...
+                  {mode === "forgot" ? "Sending..." : "Verifying..."}
                 </>
               ) : (
                 <>
                   <Shield className="h-4 w-4" />
-                  {mode === "signin" ? "Enter Admin Panel" : "Request Access"}
+                  {mode === "signin"
+                    ? "Enter Admin Panel"
+                    : mode === "signup"
+                    ? "Request Access"
+                    : info
+                    ? "Resend Reset Link"
+                    : "Send Reset Link"}
                 </>
               )}
             </button>
@@ -324,7 +359,9 @@ function AdminLoginPage() {
           <p className="text-center text-[10px] text-[#f5d97a]/50 mt-5 leading-relaxed">
             {mode === "signin"
               ? "Sirf authorized admin / staff hi access kar sakte hain."
-              : "Account ban-ne ke baad Super Admin aapko role assign karenge."}
+              : mode === "signup"
+              ? "Account ban-ne ke baad Super Admin aapko role assign karenge."
+              : "Reset link aapke registered email par jayega. Spam folder bhi check kariye."}
           </p>
         </div>
 
