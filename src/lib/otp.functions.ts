@@ -38,6 +38,7 @@ function getTemplate(cfg: Record<string, any>, event = "otp") {
 
 function renderVariables(pattern: string | undefined, code: string) {
   const rendered = (pattern || "{otp}")
+    .replace(/\{#var#\}/gi, code)
     .replace(/\{otp\}/gi, code)
     .replace(/\{code\}/gi, code)
     .replace(/#VAR#/gi, code);
@@ -91,8 +92,7 @@ async function sendViaFast2SMS(
   const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
   const messageId = (cfg.message_id || "").trim();
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
-  // If a Fast2SMS-approved message_id is provided, sender is auto-assigned — skip strict sender check.
-  if (route === "dlt" && !messageId && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
+  if (route === "dlt" && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
     return { ok: false, error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header" };
   }
   if (route === "dlt" && !templateId && !messageId) return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
@@ -104,7 +104,7 @@ async function sendViaFast2SMS(
     variables_values: variablesValues,
     flash: "0",
   });
-  if (senderId && !messageId) params.set("sender_id", senderId);
+  if (senderId) params.set("sender_id", senderId);
   // Fast2SMS DLT expects the approved Message/Template ID in the `message` parameter.
   if (route === "dlt") params.set("message", messageId || templateId);
   else if (messageId) params.set("message_id", messageId);
