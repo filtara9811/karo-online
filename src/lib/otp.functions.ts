@@ -21,8 +21,25 @@ const VerifySchema = z.object({
   code: z.string().min(4).max(6).regex(/^\d+$/),
 });
 
+const FinalizeCustomerSchema = z.object({
+  name: z.string().min(2).max(120),
+  gender: z.string().max(40).optional().default(""),
+  phone: z
+    .string()
+    .min(8)
+    .max(20)
+    .transform((s) => s.replace(/\D/g, "").slice(-10)),
+  email: z.string().max(160).optional().default(""),
+  address: z.string().min(3).max(500),
+});
+
 function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
+}
+
+function customerUuidFromPhone(phone: string) {
+  const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
 type SmsTemplate = {
@@ -323,4 +340,41 @@ export const verifyOtp = createServerFn({ method: "POST" })
       .update({ verified_at: new Date().toISOString() })
       .eq("id", row.id);
     return { ok: true, test_mode: false };
+  });
+
+export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
+  .inputValidator((d) => FinalizeCustomerSchema.parse(d))
+  .handler(async ({ data }) => {
+    const phone = data.phone;
+    const { data: verifiedRows, error: otpErr } = await supabaseAdmin
+      .from("otp_codes")
+      .select("id, verified_at")
+      .eq("phone", phone)
+      .not("verified_at", "is", null)
+      .order("verified_at", { ascending: false })
+      .limit(1);
+    if (otpErr) return { ok: false, error: "OTP verify check fail hua" };
+    if (!verifiedRows?.[0]) return { ok: false, error: "Pehle mobile OTP verify karein" };
+
+    const payload = {
+      name: data.name.trim(),
+      gender: data.gender?.trim() || null,
+      phone,
+      email: data.email?.trim() || null,
+      address: data.address.trim(),
+      verified: true,
+      status: "active",
+      signup_method: "phone_otp",
+    };
+    const { data: existing } = await supabaseAdmin
+      .from("customers")
+      .select("id, user_id")
+      .eq("phone", phone)
+      .maybeSingle();
+    const userId = existing?.user_id ?? customerUuidFromPhone(phone);
+    const { error } = existing
+      ? await supabaseAdmin.from("customers").update(payload).eq("id", existing.id)
+      : await supabaseAdmin.from("customers").insert({ ...payload, user_id: userId });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, customer_id: userId };
   });

@@ -9,11 +9,10 @@ import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 import { useAuth } from "@/hooks/use-auth";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
 
 /** Stage A = phone + OTP only. Stage B = full signup progress. */
 type Stage = "auth" | "signup";
@@ -74,9 +73,8 @@ export type RegistrationFlowProps = {
 };
 
 export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: RegistrationFlowProps) {
-  const { user, isAuthenticated, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const draft = useMemo(readCustomerDraft, []);
-  const [googleBusy, setGoogleBusy] = useState(false);
 
   const [stage, setStage] = useState<Stage>("auth");
 
@@ -114,7 +112,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
-  const [existingAccountHint, setExistingAccountHint] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Prefill email/name from Google session
@@ -187,11 +184,10 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify(payload));
   }, [address, agreed, email, gender, name, phone, phoneVerified, manager, referral, referralVerified]);
 
-  // After OTP verified → check if mobile already registered
+  // After OTP verified → keep the same bottom-sheet flow and continue to profile details.
   const handlePhoneVerified = async () => {
     setPhoneVerified(true);
     setLookupBusy(true);
-    setExistingAccountHint(null);
     try {
       const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
       if (!error && data && data.length > 0) {
@@ -200,28 +196,13 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         if (row.gender) setGender(row.gender);
         if (row.email) setEmail(row.email);
         if (row.address) setAddress(row.address);
-        if (isAuthenticated) {
-          toast.success(`Welcome back${row.name ? ", " + row.name : ""}!`);
-          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-          await refreshProfile();
-          setTimeout(() => onComplete?.(), 700);
-          return;
-        }
-        setExistingAccountHint(
-          row.email
-            ? `Account mil gaya: ${row.email}. Continue ke liye Google se sign in karein.`
-            : "Account mil gaya. Continue ke liye Google se sign in karein.",
-        );
-        toast.success("Mobile number registered hai — full form skip hoga.");
-        return;
+        toast.success("Mobile verified ✓");
       }
     } catch (e) {
       toast.error("Account check fail hua — signup form open kar rahe hain.");
     } finally {
       setLookupBusy(false);
     }
-    // New user → move to signup progress
     setTimeout(() => {
       setStage("signup");
       setTimeout(() => nameInputRef.current?.focus(), 350);
@@ -236,6 +217,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
+  const finalizeCustomerFn = useServerFn(finalizeCustomerRegistration);
 
   const startInlineOtp = async (targetPhone = phone): Promise<boolean> => {
     const digits = targetPhone.replace(/\D/g, "").slice(-10);
@@ -352,37 +334,25 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
       }
     } else {
-      toast.error("Pehle Gmail se login karein — tabhi request real vendor tak jayegi.");
-      return;
+      const result = await finalizeCustomerFn({
+        data: {
+          name: name.trim(),
+          gender: gender ?? "",
+          phone,
+          email,
+          address,
+        },
+      });
+      if (!result.ok) {
+        toast.error(result.error || "Profile save fail hua — phir try karo");
+        return;
+      }
+      window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+      window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+      try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
     }
     setSuccessOpen(false);
     onComplete?.();
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleBusy(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google");
-      if (result.error) {
-        toast.error("Google sign-in fail hua. Phir try karo.");
-        setGoogleBusy(false);
-        return;
-      }
-      if (result.redirected) return;
-      if (phoneVerified && existingAccountHint) {
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        toast.success("Welcome back — profile already exists");
-        onComplete?.();
-        return;
-      }
-      toast.success("Google account connected ✓");
-    } catch (e) {
-      toast.error("Google sign-in fail hua");
-    } finally {
-      setGoogleBusy(false);
-    }
   };
 
   return (
@@ -552,19 +522,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   </div>
                 )}
 
-                {existingAccountHint && (
-                  <div className="rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/75 px-4 py-3 text-center shadow-gold-glow">
-                    <p className="text-xs font-medium text-[color:oklch(0.30_0.06_85)]">{existingAccountHint}</p>
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignIn}
-                      disabled={googleBusy}
-                      className="btn-3d mt-3 w-full rounded-xl py-2.5 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-60"
-                    >
-                      {googleBusy ? "Opening Google…" : "Continue with Google"}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -595,21 +552,12 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   {visibleSteps.includes("email") && (
                     <GoldField
                       Icon={Mail}
-                      label="Gmail account choice"
-                      hint={
-                        isAuthenticated
-                          ? "Verified ✓"
-                          : googleBusy
-                            ? "Opening Google…"
-                            : "Tap to sign in with Google"
-                      }
+                      label="Enter email address"
+                      hint={email ? "Email added" : "Type your email"}
                       value={email}
                       placeholder=""
-                      filled={!!email.trim() && isAuthenticated}
-                      readOnly
-                      onClick={() => {
-                        if (!isAuthenticated && !googleBusy) handleGoogleSignIn();
-                      }}
+                      filled={!!email.trim()}
+                      onChange={setEmail}
                     />
                   )}
 

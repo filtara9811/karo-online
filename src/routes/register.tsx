@@ -11,7 +11,7 @@ function Register() {
   const navigate = useNavigate();
   const { isAuthenticated, ready, profile } = useAuth();
   const locallyOnboarded = typeof window !== "undefined" && window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
-  const profileComplete = isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
+  const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
 
   useEffect(() => {
     if (ready && profileComplete) navigate({ to: "/" });
