@@ -274,7 +274,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    try { navigate({ to: "/" }); } catch { /* ignore */ }
+    try { navigate({ to: "/home" }); } catch { /* ignore */ }
   };
 
   const detectLocation = () => {
