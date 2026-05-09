@@ -140,7 +140,7 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
             customer_name: vendor?.owner_name ?? "Vendor",
           },
           order_meta: {
-            return_url: `${process.env.SUPABASE_URL?.includes("localhost") ? "http://localhost:8080" : "https://karoonline.in"}/vendor/wallet?cf_order_id={order_id}`,
+            return_url: `${process.env.SUPABASE_URL?.includes("localhost") ? "http://localhost:8080" : "https://karoonline.in"}/vendor/wallet?cf_order_id={order_id}&cf_purpose=${data.purpose}`,
           },
           order_note: data.purpose === "vendor_wallet_recharge" ? "Wallet Recharge" : `LeadX Purchase ${data.coins ?? 0} coins`,
         }),
