@@ -105,9 +105,10 @@ async function sendViaFast2SMS(
     flash: "0",
   });
   if (senderId) params.set("sender_id", senderId);
-  // Fast2SMS DLT: prefer message_id (Fast2SMS-approved sample) when given; else use template id in `message`.
-  if (messageId) params.set("message_id", messageId);
-  else if (templateId) params.set(route === "dlt" ? "message" : "template_id", templateId);
+  // Fast2SMS DLT expects the approved Message/Template ID in the `message` parameter.
+  if (route === "dlt") params.set("message", messageId || templateId);
+  else if (messageId) params.set("message_id", messageId);
+  else if (templateId) params.set("template_id", templateId);
 
   const url = `https://www.fast2sms.com/dev/bulkV2?${params.toString()}`;
   try {
