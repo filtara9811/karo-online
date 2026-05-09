@@ -313,13 +313,15 @@ function QuickPage() {
 
   // Tap a service card (sub-category): 1st tap selects + filters map; 2nd tap on same → variations
   const handleServiceCardTap = (subId: string) => {
-    if (selectedSubId === subId) {
-      setVariationOpen(true);
-      return;
-    }
-    setSelectedSubId(subId);
-    const sub = subCategories.find((c) => c.id === subId);
-    if (sub) setPulseKey(`${sub.slug}-${Date.now()}`);
+    requireAuth(() => {
+      if (selectedSubId === subId) {
+        setVariationOpen(true);
+        return;
+      }
+      setSelectedSubId(subId);
+      const sub = subCategories.find((c) => c.id === subId);
+      if (sub) setPulseKey(`${sub.slug}-${Date.now()}`);
+    });
   };
 
   useEffect(() => {
