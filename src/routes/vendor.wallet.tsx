@@ -139,6 +139,16 @@ function WalletPage() {
   const [walletPacks, setWalletPacks] = useState<WalletPack[]>([]);
   const [coinRate, setCoinRate] = useState(20);
 
+  const reloadWallet = async () => {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id;
+    if (!uid) return;
+    const w = await supabase.from("vendor_wallets").select("*").eq("vendor_id", uid).maybeSingle();
+    if (w.data) setWallet(w.data as Wallet);
+    const t = await supabase.from("wallet_transactions").select("*").eq("vendor_id", uid).order("created_at", { ascending: false }).limit(200);
+    if (t.data && t.data.length) setTxns(t.data as Txn[]);
+  };
+
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
@@ -161,6 +171,24 @@ function WalletPage() {
       }
       setLoading(false);
     })();
+  }, []);
+
+  // Handle return-from-Cashfree URLs (?cf_order_id=...&cf_purpose=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("cf_order_id");
+    const purpose = params.get("cf_purpose") as "vendor_wallet_recharge" | "leadx_purchase" | null;
+    if (orderId && purpose) {
+      window.history.replaceState({}, "", window.location.pathname);
+      verifyCashfreeOrder({ data: { order_id: orderId, purpose } }).then((r) => {
+        if (r.ok) {
+          toast.success("Payment successful");
+          reloadWallet();
+        } else {
+          toast.error(r.error ?? "Payment not completed");
+        }
+      });
+    }
   }, []);
 
   const liveRate = rate.length ? rate[rate.length - 1].rate_inr : coinRate;
