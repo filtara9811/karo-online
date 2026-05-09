@@ -3,6 +3,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useOrdersStore } from "@/lib/orders-store";
 import { VerticalOrderTimeline } from "@/components/VerticalOrderTimeline";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 const searchSchema = z.object({
   vendorId: fallback(z.string(), "").default(""),
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/vendor/status")({
       { name: "description", content: "Live timeline for the customer order with approvals and chat." },
     ],
   }),
-  component: VendorStatusPage,
+  component: () => (<VendorAuthGate><VendorStatusPage /></VendorAuthGate>),
 });
 
 function VendorStatusPage() {
