@@ -64,7 +64,7 @@ async function ensurePhoneAuthUser(phone: string) {
     user_metadata: { phone, signup_method: "phone_otp" },
   };
 
-  const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData);
+  const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, userData as never);
   if (updateErr) {
     const { error: createErr } = await supabaseAdmin.auth.admin.createUser({ id: userId, ...userData } as never);
     if (createErr) {
@@ -407,7 +407,7 @@ export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
       return { ok: false, error: (e as Error).message || "Login session create nahi ho paya" };
     }
 
-    const { error } = await supabaseAdmin.rpc("save_customer_profile_as_user", {
+    const { error } = await (supabaseAdmin as any).rpc("save_customer_profile_as_user", {
       _uid: authUser.userId,
       _name: payload.name,
       _gender: payload.gender ?? "",
