@@ -173,7 +173,7 @@ export const verifyCashfreeOrder = createServerFn({ method: "POST" })
         return { ok: false as const, error: `Order status: ${status || "UNKNOWN"}` };
       }
 
-      const amountPaise = Math.round(Number(json?.order_amount ?? pending?.amount_paise / 100 ?? 0) * 100);
+      const amountPaise = Math.round(Number(json?.order_amount ?? (pending?.amount_paise ? pending.amount_paise / 100 : 0)) * 100);
 
       // Ensure wallet row
       await (supabaseAdmin as any)
