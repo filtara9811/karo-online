@@ -46,12 +46,21 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
-    try {
-      setLocallyOnboarded(window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true");
-    } catch {
-      setLocallyOnboarded(false);
-    }
-  }, [location.pathname, isAuthenticated]);
+    const sync = () => {
+      try {
+        setLocallyOnboarded(window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true");
+      } catch {
+        setLocallyOnboarded(false);
+      }
+    };
+    sync();
+    window.addEventListener("ko-customer-onboarded", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("ko-customer-onboarded", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, [location.pathname, isAuthenticated, profile?.name, profile?.address]);
 
   const profileComplete =
     isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
