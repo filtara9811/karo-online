@@ -108,7 +108,7 @@ async function getActiveSmsGateway() {
 async function sendViaFast2SMS(
   phone: string,
   code: string,
-  cfg: Record<string, any>,
+  cfg: SmsConfig,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const apiKey = cfg.api_key?.trim();
   const senderId = cfg.sender_id?.trim().toUpperCase();
@@ -180,7 +180,7 @@ async function sendViaFast2SMS(
 async function sendViaMSG91(
   phone: string,
   code: string,
-  cfg: Record<string, any>,
+  cfg: SmsConfig,
 ): Promise<{ ok: boolean; error?: string; raw?: unknown }> {
   const authKey = cfg.auth_key?.trim();
   const template = getTemplate(cfg);
@@ -259,7 +259,7 @@ export const sendOtp = createServerFn({ method: "POST" })
     }
 
     // Real send
-    const cfg = (gateway.config ?? {}) as Record<string, any>;
+    const cfg = asSmsConfig(gateway.config);
     const result =
       gateway.provider === "msg91"
         ? await sendViaMSG91(phone, code, cfg)
@@ -268,7 +268,7 @@ export const sendOtp = createServerFn({ method: "POST" })
     if (!result.ok) {
       await logSystem("sms", gateway.provider, "error", result.error ?? "Unknown error", {
         phone_last4: phone.slice(-4),
-        provider_response: result.raw ?? null,
+        provider_response: asJson(result.raw),
       });
       return { ok: false, error: result.error ?? "SMS delivery failed" };
     }
@@ -280,7 +280,7 @@ export const sendOtp = createServerFn({ method: "POST" })
       `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`,
       {
         phone_last4: phone.slice(-4),
-        provider_response: result.raw ?? null,
+        provider_response: asJson(result.raw),
       },
     );
     return { ok: true, test_mode: false };
