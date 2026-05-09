@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin/login")({
   component: AdminLoginPage,
 });
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot";
 
 async function resolveRoleRedirect(userId: string): Promise<string> {
   // Check user_roles for highest privilege
