@@ -59,8 +59,6 @@ async function ensurePhoneAuthUser(phone: string) {
     email,
     password,
     email_confirm: true,
-    phone: `+91${phone}`,
-    phone_confirm: true,
     user_metadata: { phone, signup_method: "phone_otp" },
   };
 
