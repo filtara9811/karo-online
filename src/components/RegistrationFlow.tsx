@@ -217,7 +217,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         return;
       }
     } catch (e) {
-      console.error("[lookup_customer_by_phone]", e);
+      toast.error("Account check fail hua — signup form open kar rahe hain.");
     } finally {
       setLookupBusy(false);
     }
@@ -378,7 +378,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       }
       toast.success("Google account connected ✓");
     } catch (e) {
-      console.error(e);
       toast.error("Google sign-in fail hua");
     } finally {
       setGoogleBusy(false);
