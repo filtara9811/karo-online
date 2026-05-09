@@ -72,7 +72,12 @@ function AdminLoginPage() {
     setError(null);
     setInfo(null);
 
-    if (!email.trim() || !password) {
+    if (mode === "forgot") {
+      if (!email.trim()) {
+        setError("Email daaliye.");
+        return;
+      }
+    } else if (!email.trim() || !password) {
       setError("Email aur password dono daaliye.");
       return;
     }
@@ -97,8 +102,7 @@ function AdminLoginPage() {
           return;
         }
         navigate({ to: target });
-      } else {
-        // Sign up — creates auth user. Role assignment will be done by Super Admin separately.
+      } else if (mode === "signup") {
         const { error: signErr } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -111,6 +115,18 @@ function AdminLoginPage() {
           "Account ban gaya. Apna email Super Admin ko bhejiye taaki wo aapko role assign kar sakein.",
         );
         setMode("signin");
+      } else {
+        // forgot password — send reset email (resend = clicking again)
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+          email.trim(),
+          {
+            redirectTo: `${window.location.origin}/admin/reset-password`,
+          },
+        );
+        if (resetErr) throw resetErr;
+        setInfo(
+          "Password reset link aapke email par bhej diya gaya. Inbox / Spam check kariye. Dobara bhejne ke liye 'Send Reset Link' phir se dabaiye.",
+        );
       }
     } catch (err: any) {
       setError(err?.message ?? "Kuch galat ho gaya.");
