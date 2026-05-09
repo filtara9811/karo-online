@@ -1,0 +1,242 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+type AssignedUse = "vendor_wallet_recharge" | "leadx_purchase";
+
+const CreateSchema = z.object({
+  amount_inr: z.number().min(1).max(500000),
+  purpose: z.enum(["vendor_wallet_recharge", "leadx_purchase"]),
+  coins: z.number().int().min(0).max(100000).optional(),
+});
+
+const VerifySchema = z.object({
+  order_id: z.string().min(3).max(80),
+  purpose: z.enum(["vendor_wallet_recharge", "leadx_purchase"]),
+});
+
+async function logSys(status: "success" | "error", message: string, meta: Record<string, unknown> = {}) {
+  try {
+    await (supabaseAdmin.from("system_logs") as any).insert({
+      kind: "payment",
+      provider: "cashfree",
+      status,
+      message: message.slice(0, 500),
+      meta,
+    });
+  } catch {}
+}
+
+async function pickService(use: AssignedUse) {
+  const { data } = await (supabaseAdmin as any)
+    .from("cashfree_services")
+    .select("*")
+    .eq("assigned_use", use)
+    .eq("is_active", true)
+    .order("priority")
+    .limit(1)
+    .maybeSingle();
+  return data as null | {
+    app_id: string | null;
+    secret_key: string | null;
+    is_test_mode: boolean;
+    display_name: string;
+  };
+}
+
+function cfBase(testMode: boolean) {
+  return testMode ? "https://sandbox.cashfree.com/pg" : "https://api.cashfree.com/pg";
+}
+
+export const createCashfreeOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => CreateSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context as { userId: string };
+    const svc = await pickService(data.purpose);
+    if (!svc || !svc.app_id || !svc.secret_key) {
+      await logSys("error", `No active Cashfree service for ${data.purpose}`);
+      return {
+        ok: false as const,
+        error: `Cashfree configured nahi hai (${data.purpose}). Admin → Cashfree Services me service ko Active karke App ID & Secret bharein.`,
+      };
+    }
+
+    // vendor profile for customer details
+    const { data: vendor } = await (supabaseAdmin as any)
+      .from("vendors")
+      .select("owner_name, email, whatsapp")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const order_id = `KO_${data.purpose === "vendor_wallet_recharge" ? "WAL" : "COIN"}_${Date.now()}_${userId.slice(0, 6)}`;
+    const phone = (vendor?.whatsapp ?? "").toString().replace(/\D/g, "").slice(-10) || "9999999999";
+    const email = vendor?.email ?? `vendor_${userId.slice(0, 8)}@karoonline.in`;
+
+    try {
+      const res = await fetch(`${cfBase(svc.is_test_mode)}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-version": "2023-08-01",
+          "x-client-id": svc.app_id,
+          "x-client-secret": svc.secret_key,
+        },
+        body: JSON.stringify({
+          order_id,
+          order_amount: data.amount_inr,
+          order_currency: "INR",
+          customer_details: {
+            customer_id: userId,
+            customer_email: email,
+            customer_phone: phone,
+            customer_name: vendor?.owner_name ?? "Vendor",
+          },
+          order_meta: {
+            return_url: `${process.env.SUPABASE_URL?.includes("localhost") ? "http://localhost:8080" : "https://karoonline.in"}/vendor/wallet?cf_order_id={order_id}`,
+          },
+          order_note: data.purpose === "vendor_wallet_recharge" ? "Wallet Recharge" : `LeadX Purchase ${data.coins ?? 0} coins`,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as any;
+      if (!res.ok || !json.payment_session_id) {
+        const msg = json?.message || json?.error?.description || `HTTP ${res.status}`;
+        await logSys("error", `Order create failed: ${msg}`, { order_id });
+        return { ok: false as const, error: `Cashfree: ${msg}` };
+      }
+
+      // remember pending coin amount so verify can credit
+      await (supabaseAdmin as any).from("wallet_transactions").insert({
+        vendor_id: userId,
+        wallet_kind: data.purpose === "vendor_wallet_recharge" ? "service" : "coin",
+        txn_type: data.purpose === "vendor_wallet_recharge" ? "recharge" : "coin_purchase",
+        direction: "credit",
+        amount_paise: data.purpose === "vendor_wallet_recharge" ? Math.round(data.amount_inr * 100) : 0,
+        coins: data.purpose === "leadx_purchase" ? data.coins ?? 0 : 0,
+        status: "pending",
+        reference_id: order_id,
+        gateway: "cashfree",
+        description: data.purpose === "vendor_wallet_recharge" ? "Cashfree wallet recharge (pending)" : `LeadX coin purchase (pending)`,
+      });
+
+      await logSys("success", `Order created ${order_id}`, { amount: data.amount_inr });
+      return {
+        ok: true as const,
+        order_id,
+        payment_session_id: json.payment_session_id as string,
+        mode: svc.is_test_mode ? ("sandbox" as const) : ("production" as const),
+      };
+    } catch (e) {
+      const msg = (e as Error).message;
+      await logSys("error", `Network: ${msg}`);
+      return { ok: false as const, error: `Network: ${msg}` };
+    }
+  });
+
+export const verifyCashfreeOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => VerifySchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context as { userId: string };
+    const svc = await pickService(data.purpose);
+    if (!svc || !svc.app_id || !svc.secret_key) {
+      return { ok: false as const, error: "Cashfree service inactive" };
+    }
+
+    // Fetch pending txn for this order
+    const { data: pending } = await (supabaseAdmin as any)
+      .from("wallet_transactions")
+      .select("*")
+      .eq("reference_id", data.order_id)
+      .eq("vendor_id", userId)
+      .maybeSingle();
+
+    if (pending && pending.status === "success") {
+      return { ok: true as const, already: true as const };
+    }
+
+    try {
+      const res = await fetch(`${cfBase(svc.is_test_mode)}/orders/${data.order_id}`, {
+        headers: {
+          "x-api-version": "2023-08-01",
+          "x-client-id": svc.app_id,
+          "x-client-secret": svc.secret_key,
+        },
+      });
+      const json = (await res.json().catch(() => ({}))) as any;
+      if (!res.ok) {
+        return { ok: false as const, error: json?.message || `HTTP ${res.status}` };
+      }
+      const status = String(json?.order_status ?? "").toUpperCase();
+      if (status !== "PAID") {
+        return { ok: false as const, error: `Order status: ${status || "UNKNOWN"}` };
+      }
+
+      const amountPaise = Math.round(Number(json?.order_amount ?? pending?.amount_paise / 100 ?? 0) * 100);
+
+      // Ensure wallet row
+      await (supabaseAdmin as any)
+        .from("vendor_wallets")
+        .upsert({ vendor_id: userId }, { onConflict: "vendor_id", ignoreDuplicates: true });
+      const { data: wallet } = await (supabaseAdmin as any)
+        .from("vendor_wallets")
+        .select("*")
+        .eq("vendor_id", userId)
+        .maybeSingle();
+
+      if (data.purpose === "vendor_wallet_recharge") {
+        const newBal = (wallet?.service_balance_paise ?? 0) + amountPaise;
+        const newLifetime = (wallet?.lifetime_recharged_paise ?? 0) + amountPaise;
+        await (supabaseAdmin as any)
+          .from("vendor_wallets")
+          .update({
+            service_balance_paise: newBal,
+            lifetime_recharged_paise: newLifetime,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("vendor_id", userId);
+
+        if (pending) {
+          await (supabaseAdmin as any)
+            .from("wallet_transactions")
+            .update({
+              status: "success",
+              balance_after_paise: newBal,
+              description: "Cashfree wallet recharge",
+            })
+            .eq("id", pending.id);
+        }
+        await logSys("success", `Wallet credited ₹${amountPaise / 100}`, { order: data.order_id });
+        return { ok: true as const, credited_paise: amountPaise };
+      } else {
+        const coins = pending?.coins ?? 0;
+        const newCoins = (wallet?.leadx_coins ?? 0) + coins;
+        const newLifeCoins = (wallet?.lifetime_coins_purchased ?? 0) + coins;
+        await (supabaseAdmin as any)
+          .from("vendor_wallets")
+          .update({
+            leadx_coins: newCoins,
+            lifetime_coins_purchased: newLifeCoins,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("vendor_id", userId);
+        if (pending) {
+          await (supabaseAdmin as any)
+            .from("wallet_transactions")
+            .update({
+              status: "success",
+              coin_balance_after: newCoins,
+              description: `Bought ${coins} LeadX coins`,
+            })
+            .eq("id", pending.id);
+        }
+        await logSys("success", `Coins credited ${coins}`, { order: data.order_id });
+        return { ok: true as const, credited_coins: coins };
+      }
+    } catch (e) {
+      const msg = (e as Error).message;
+      await logSys("error", `Verify failed: ${msg}`);
+      return { ok: false as const, error: msg };
+    }
+  });
