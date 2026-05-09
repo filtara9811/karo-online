@@ -834,27 +834,42 @@ function NameStep({ name, gender, onName, onGenderClick, onNext }: {
 // ============================================================
 function EmailStep({ email, onEmail, onPick, onNext }: { email: string; onEmail: (v: string) => void; onPick: () => void; onNext: () => void }) {
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  const [manual, setManual] = useState(!!email);
+  // Auto-open picker on entry if no email yet & not manual
+  useEffect(() => {
+    if (!email && !manual) {
+      const t = setTimeout(() => onPick(), 280);
+      return () => clearTimeout(t);
+    }
+    if (manual) setTimeout(() => ref.current?.focus(), 320);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manual]);
   const valid = /^\S+@\S+\.\S+$/.test(email);
   return (
     <div>
-      <StepHeader Icon={Mail} title="Choose email ID" subtitle="For receipts & lead updates" />
-      <button onClick={onPick} className="w-full mb-2 text-[11px] underline text-[color:oklch(0.45_0.10_82)] text-right pr-1">
-        Pick from accounts
-      </button>
+      <StepHeader Icon={Mail} title="Choose email ID" subtitle="Tap the box to pick from your accounts" />
       <FieldShell Icon={Mail}>
         <input
           ref={ref}
           value={email}
-          onChange={(e) => onEmail(e.target.value)}
+          readOnly={!manual && !email}
+          onFocus={() => { if (!manual && !email) { ref.current?.blur(); onPick(); } }}
+          onClick={() => { if (!manual && !email) onPick(); }}
+          onChange={(e) => { setManual(true); onEmail(e.target.value); }}
           onKeyDown={(e) => { if (e.key === "Enter" && valid) onNext(); }}
           inputMode="email"
           autoComplete="email"
           autoCapitalize="off"
-          placeholder="you@gmail.com"
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)]"
+          placeholder="Tap to pick Gmail / email…"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] cursor-pointer"
         />
+        {email && (
+          <button onClick={onPick} className="text-[10px] underline text-[color:oklch(0.45_0.10_82)] flex-shrink-0">change</button>
+        )}
       </FieldShell>
+      <button onClick={() => { setManual(true); setTimeout(() => ref.current?.focus(), 50); }} className="w-full mt-2 text-[11px] underline text-[color:oklch(0.45_0.10_82)] text-center">
+        Type manually
+      </button>
       <NextButton disabled={!valid} onClick={onNext} />
     </div>
   );
