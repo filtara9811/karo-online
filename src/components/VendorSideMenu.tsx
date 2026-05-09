@@ -1,12 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
-  X, User, Wallet, Store, Bell, LifeBuoy, FileText, ShieldCheck,
+  X, User, Wallet, Store, Bell, LifeBuoy, FileText,
   LogOut, Gift, Megaphone, Settings as SettingsIcon, ChevronRight,
-  LayoutGrid, Briefcase,
+  LayoutGrid, Briefcase, ShieldCheck,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Vendor = {
   business_name?: string | null;
@@ -16,12 +19,17 @@ type Vendor = {
   verified?: boolean | null;
 };
 
+const KYC_FIELDS = [
+  "business_name", "owner_name", "role", "entity", "trade",
+  "deals_in", "email", "whatsapp", "gst", "pan", "aadhaar",
+] as const;
+
 const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string }> = [
   { id: "dashboard", label: "Dashboard", sub: "Leads · stats", Icon: LayoutGrid, to: "/vendor/dashboard" },
   { id: "services", label: "My Services", sub: "Categories", Icon: Briefcase, to: "/vendor/services" },
   { id: "wallet", label: "Wallet", sub: "Coins · recharge", Icon: Wallet, to: "/vendor/wallet" },
   { id: "shop", label: "Digital Shop", sub: "Products · variations", Icon: Store, to: "/vendor/shop" },
-  { id: "business", label: "Business Details", sub: "KYC · profile", Icon: User, to: "/vendor/register" },
+  { id: "business", label: "Business Details · KYC", sub: "Complete your profile", Icon: User, to: "/vendor/register" },
   { id: "notifications", label: "Notifications", sub: "Alerts", Icon: Bell },
   { id: "promotions", label: "Promotions", sub: "Offers · banners", Icon: Megaphone },
   { id: "referral", label: "Refer & Earn", sub: "Invite vendors", Icon: Gift },
@@ -34,11 +42,37 @@ export function VendorSideMenu({
   open, onClose, vendor,
 }: { open: boolean; onClose: () => void; vendor?: Vendor | null }) {
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user } = useAuth();
+  const [kycPct, setKycPct] = useState<number>(0);
+  const [fullVendor, setFullVendor] = useState<Record<string, any> | null>(null);
 
-  const name = vendor?.business_name || profile?.name || "My Business";
-  const owner = vendor?.owner_name || profile?.name || "Vendor";
-  const avatar = vendor?.avatar_url || profile?.avatar_url || avatarUser;
+  // Fetch full vendor row to compute KYC progress when menu opens
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase
+      .from("vendors")
+      .select("business_name, owner_name, role, entity, trade, deals_in, email, whatsapp, gst, pan, aadhaar, avatar_url, status, verified")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setFullVendor(data as any);
+        if (data) {
+          const filled = KYC_FIELDS.filter((f) => {
+            const v = (data as any)[f];
+            return typeof v === "string" ? v.trim().length > 0 : v != null;
+          }).length;
+          setKycPct(Math.round((filled / KYC_FIELDS.length) * 100));
+        } else {
+          setKycPct(0);
+        }
+      });
+  }, [open, user]);
+
+  const v = fullVendor ?? vendor ?? null;
+  const name = v?.business_name || profile?.name || "My Business";
+  const owner = v?.owner_name || profile?.name || "Vendor";
+  const avatar = v?.avatar_url || profile?.avatar_url || avatarUser;
+  const verified = !!v?.verified;
 
   return (
     <AnimatePresence>
