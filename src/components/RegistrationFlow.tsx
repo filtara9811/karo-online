@@ -109,6 +109,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
   const [otpRequested, setOtpRequested] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpSendError, setOtpSendError] = useState<string | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
@@ -235,42 +237,51 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
 
-  const startInlineOtp = async (targetPhone = phone) => {
+  const startInlineOtp = async (targetPhone = phone): Promise<boolean> => {
     const digits = targetPhone.replace(/\D/g, "").slice(-10);
     if (digits.length !== 10) {
+      setOtpSendError("10 digit mobile number daaliye");
       toast.error("10 digit mobile number daaliye");
-      return;
+      return false;
     }
+    setOtpSending(true);
+    setOtpSendError(null);
     setOtpRequested(false);
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
-    const res = await sendOtpFn({ data: { phone: digits } });
+    const res = await sendOtpFn({ data: { phone: digits } }).finally(() => setOtpSending(false));
     if (!res.ok) {
-      toast.error(res.error || "Could not send OTP");
-      return;
+      const message = res.error || "Could not send OTP";
+      setOtpSendError(message);
+      toast.error(message);
+      return false;
     }
     if (res.test_mode) {
-      toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
-      return;
+      const message = "Live OTP blocked: Admin SMS Test mode OFF karein.";
+      setOtpSendError(message);
+      toast.error(message);
+      return false;
     } else {
       setPhone(formatIndianMobile(digits));
       setOtpRequested(true);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
       toast.success("OTP sent to " + formatIndianMobile(digits));
+      return true;
     }
   };
 
-  const submitManualPhone = () => {
+  const submitManualPhone = async () => {
     const digits = manualPhone.replace(/\D/g, "").slice(-10);
     if (digits.length !== 10) {
+      setOtpSendError("10 digit mobile number daaliye");
       toast.error("10 digit mobile number daaliye");
       return;
     }
-    setPhone("");
-    setOtpRequested(false);
-    setManualPhoneOpen(false);
-    setManualPhone("");
-    setTimeout(() => startInlineOtp(digits), 350);
+    const ok = await startInlineOtp(digits);
+    if (ok) {
+      setManualPhoneOpen(false);
+      setManualPhone("");
+    }
   };
 
   // OTP timer
