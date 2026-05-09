@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { LEADS, SOURCE_LABEL, STATUS_LABEL } from "@/lib/leads";
 import type { Lead, LeadEvent, LeadStatus, LeadSource } from "@/lib/leads";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 export const Route = createFileRoute("/vendor/lead/$id")({
   head: () => ({
