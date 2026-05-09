@@ -508,6 +508,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                               value={otpDigits[i]}
                               onChange={(e) => handleOtpChange(i, e.target.value)}
                               inputMode="numeric"
+                              autoComplete="one-time-code"
+                              name={i === 0 ? "otp" : undefined}
                               maxLength={1}
                               disabled={phoneVerified}
                               className={`h-14 w-12 text-center text-3xl font-display rounded-lg border-2 outline-none ${
