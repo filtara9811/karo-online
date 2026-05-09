@@ -217,6 +217,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
+  const finalizeCustomerFn = useServerFn(finalizeCustomerRegistration);
 
   const startInlineOtp = async (targetPhone = phone): Promise<boolean> => {
     const digits = targetPhone.replace(/\D/g, "").slice(-10);
@@ -333,37 +334,25 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
       }
     } else {
-      toast.error("Pehle Gmail se login karein — tabhi request real vendor tak jayegi.");
-      return;
+      const result = await finalizeCustomerFn({
+        data: {
+          name: name.trim(),
+          gender: gender ?? "",
+          phone,
+          email,
+          address,
+        },
+      });
+      if (!result.ok) {
+        toast.error(result.error || "Profile save fail hua — phir try karo");
+        return;
+      }
+      window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+      window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+      try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
     }
     setSuccessOpen(false);
     onComplete?.();
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleBusy(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google");
-      if (result.error) {
-        toast.error("Google sign-in fail hua. Phir try karo.");
-        setGoogleBusy(false);
-        return;
-      }
-      if (result.redirected) return;
-      if (phoneVerified && existingAccountHint) {
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        toast.success("Welcome back — profile already exists");
-        onComplete?.();
-        return;
-      }
-      toast.success("Google account connected ✓");
-    } catch (e) {
-      toast.error("Google sign-in fail hua");
-    } finally {
-      setGoogleBusy(false);
-    }
   };
 
   return (
