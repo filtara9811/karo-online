@@ -646,9 +646,13 @@ function BuyCoinsSheet({ packs, rate, onClose, onPaid }: { packs: CoinPack[]; ra
   );
 }
 
-function PackBtn({ title, subtitle }: { title: string; subtitle: string }) {
+function PackBtn({ title, subtitle, active, onClick }: { title: string; subtitle: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button className="text-left rounded-2xl bg-black/40 border border-[#d4af37]/30 p-3 hover:border-[#d4af37] active:scale-95 transition">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl p-3 active:scale-95 transition border ${active ? "border-[#f5d97a] bg-[#d4af37]/15" : "border-[#d4af37]/30 bg-black/40 hover:border-[#d4af37]"}`}
+    >
       <p className="font-display text-base font-bold text-[#fff8dc]">{title}</p>
       <p className="text-[10px] text-[#f5d97a]/60">{subtitle}</p>
     </button>
