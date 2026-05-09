@@ -522,19 +522,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   </div>
                 )}
 
-                {existingAccountHint && (
-                  <div className="rounded-2xl border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/75 px-4 py-3 text-center shadow-gold-glow">
-                    <p className="text-xs font-medium text-[color:oklch(0.30_0.06_85)]">{existingAccountHint}</p>
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignIn}
-                      disabled={googleBusy}
-                      className="btn-3d mt-3 w-full rounded-xl py-2.5 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-60"
-                    >
-                      {googleBusy ? "Opening Google…" : "Continue with Google"}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -565,21 +552,12 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                   {visibleSteps.includes("email") && (
                     <GoldField
                       Icon={Mail}
-                      label="Gmail account choice"
-                      hint={
-                        isAuthenticated
-                          ? "Verified ✓"
-                          : googleBusy
-                            ? "Opening Google…"
-                            : "Tap to sign in with Google"
-                      }
+                      label="Enter email address"
+                      hint={email ? "Email added" : "Type your email"}
                       value={email}
                       placeholder=""
-                      filled={!!email.trim() && isAuthenticated}
-                      readOnly
-                      onClick={() => {
-                        if (!isAuthenticated && !googleBusy) handleGoogleSignIn();
-                      }}
+                      filled={!!email.trim()}
+                      onChange={setEmail}
                     />
                   )}
 
