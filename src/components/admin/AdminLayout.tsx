@@ -196,14 +196,17 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
 
       {/* Footer / user */}
       <div className="px-4 py-4 border-t border-[#d4af37]/20 space-y-3">
-        <div className="rounded-xl px-3 py-2.5 border border-[#d4af37]/20 bg-black/30">
+        <Link
+          to="/admin/profile"
+          className="block rounded-xl px-3 py-2.5 border border-[#d4af37]/20 bg-black/30 hover:bg-[#d4af37]/10 transition"
+        >
           <p className="text-[9px] uppercase tracking-[0.3em] text-[#d4af37]/70 mb-0.5">
-            Signed in as
+            Signed in as · Tap to manage
           </p>
           <p className="text-xs text-[#fff8dc] truncate font-medium">
             {email}
           </p>
-        </div>
+        </Link>
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#d4af37]/40 text-[#f5d97a] text-xs font-bold uppercase tracking-widest hover:bg-[#d4af37]/10 transition"
