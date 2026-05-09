@@ -109,6 +109,8 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [otpSeconds, setOtpSeconds] = useState(45);
   const [otpRequested, setOtpRequested] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpSendError, setOtpSendError] = useState<string | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [manualPhoneOpen, setManualPhoneOpen] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
@@ -215,7 +217,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         return;
       }
     } catch (e) {
-      console.error("[lookup_customer_by_phone]", e);
+      toast.error("Account check fail hua — signup form open kar rahe hain.");
     } finally {
       setLookupBusy(false);
     }
@@ -235,42 +237,51 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
 
-  const startInlineOtp = async (targetPhone = phone) => {
+  const startInlineOtp = async (targetPhone = phone): Promise<boolean> => {
     const digits = targetPhone.replace(/\D/g, "").slice(-10);
     if (digits.length !== 10) {
+      setOtpSendError("10 digit mobile number daaliye");
       toast.error("10 digit mobile number daaliye");
-      return;
+      return false;
     }
+    setOtpSending(true);
+    setOtpSendError(null);
     setOtpRequested(false);
     setOtpDigits(["", "", "", ""]);
     setOtpSeconds(45);
-    const res = await sendOtpFn({ data: { phone: digits } });
+    const res = await sendOtpFn({ data: { phone: digits } }).finally(() => setOtpSending(false));
     if (!res.ok) {
-      toast.error(res.error || "Could not send OTP");
-      return;
+      const message = res.error || "Could not send OTP";
+      setOtpSendError(message);
+      toast.error(message);
+      return false;
     }
     if (res.test_mode) {
-      toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
-      return;
+      const message = "Live OTP blocked: Admin SMS Test mode OFF karein.";
+      setOtpSendError(message);
+      toast.error(message);
+      return false;
     } else {
       setPhone(formatIndianMobile(digits));
       setOtpRequested(true);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
       toast.success("OTP sent to " + formatIndianMobile(digits));
+      return true;
     }
   };
 
-  const submitManualPhone = () => {
+  const submitManualPhone = async () => {
     const digits = manualPhone.replace(/\D/g, "").slice(-10);
     if (digits.length !== 10) {
+      setOtpSendError("10 digit mobile number daaliye");
       toast.error("10 digit mobile number daaliye");
       return;
     }
-    setPhone("");
-    setOtpRequested(false);
-    setManualPhoneOpen(false);
-    setManualPhone("");
-    setTimeout(() => startInlineOtp(digits), 350);
+    const ok = await startInlineOtp(digits);
+    if (ok) {
+      setManualPhoneOpen(false);
+      setManualPhone("");
+    }
   };
 
   // OTP timer
@@ -367,7 +378,6 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       }
       toast.success("Google account connected ✓");
     } catch (e) {
-      console.error(e);
       toast.error("Google sign-in fail hua");
     } finally {
       setGoogleBusy(false);
@@ -757,6 +767,16 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
             className="glass-sheet relative w-full max-w-md rounded-t-3xl md:rounded-3xl px-6 pt-4 pb-8"
             style={{ animation: "sheet-up 0.38s cubic-bezier(0.22, 1, 0.36, 1)" }}
           >
+            <button
+              type="button"
+              onClick={() => setManualPhoneOpen(false)}
+              className="absolute right-4 top-4 h-10 w-10 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)] bg-white/85 text-[color:oklch(0.42_0.10_82)] shadow-sm grid place-items-center active:scale-90"
+              aria-label="Close"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
             <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#f5d97a] to-transparent opacity-80" />
             <div className="text-center mb-5">
               <p className="text-[10px] uppercase tracking-[0.35em] text-[color:oklch(0.84_0.15_85/0.7)] mb-1">✦ Mobile ✦</p>
@@ -781,21 +801,19 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
                 />
               </div>
             </label>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setManualPhoneOpen(false)}
-                className="rounded-2xl py-3 text-xs uppercase tracking-[0.24em] text-[color:oklch(0.45_0.08_85)] border border-[color:oklch(0.78_0.14_82/0.35)] bg-white/70"
-              >
-                Cancel
-              </button>
+            {otpSendError && (
+              <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {otpSendError}
+              </p>
+            )}
+            <div className="mt-4">
               <button
                 type="button"
                 onClick={submitManualPhone}
-                disabled={manualPhone.length !== 10}
-                className="btn-3d rounded-2xl py-3 bg-gold-bar font-display font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-45 disabled:grayscale"
+                disabled={manualPhone.length !== 10 || otpSending}
+                className="btn-3d w-full rounded-2xl py-4 bg-gold-bar font-display text-xl font-bold text-[color:oklch(0.18_0.06_18)] disabled:opacity-45 disabled:grayscale"
               >
-                Continue
+                {otpSending ? "Sending OTP…" : "Continue"}
               </button>
             </div>
           </div>
