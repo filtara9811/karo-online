@@ -349,6 +349,7 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
         window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
         window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
         await refreshProfile();
+        try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
       }
     } else {
       toast.error("Pehle Gmail se login karein — tabhi request real vendor tak jayegi.");
