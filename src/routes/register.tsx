@@ -14,15 +14,15 @@ function Register() {
   const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
 
   useEffect(() => {
-    if (ready && profileComplete) navigate({ to: "/" });
+    if (ready && profileComplete) navigate({ to: "/home" });
   }, [navigate, profileComplete, ready]);
 
   if (ready && profileComplete) return null;
 
   return (
     <RegistrationFlow
-      onBack={() => navigate({ to: "/" })}
-      onComplete={() => navigate({ to: "/" })}
+      onBack={() => navigate({ to: "/home" })}
+      onComplete={() => navigate({ to: "/home" })}
     />
   );
 }

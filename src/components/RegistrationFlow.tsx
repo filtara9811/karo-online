@@ -8,6 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
+import avatarAryan from "@/assets/avatar-aryan.png";
+import avatarRani from "@/assets/avatar-rani.png";
+import avatarRaj from "@/assets/avatar-raj.png";
+import avatarUser from "@/assets/avatar-user.png";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,10 +45,10 @@ const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " "
 
 type Manager = { value: string; name: string; area: string; rating: number; vendors: number; customers: number; reviews: number; avatar: string };
 const MANAGERS: Manager[] = [
-  { value: "aryan", name: "Aryan Sharma", area: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, customers: 980, reviews: 312, avatar: goldMale },
-  { value: "priya", name: "Priya Verma", area: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, customers: 740, reviews: 245, avatar: goldFemale },
-  { value: "rahul", name: "Rahul Mehta", area: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, customers: 510, reviews: 198, avatar: goldMale },
-  { value: "neha", name: "Neha Singh", area: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, customers: 1240, reviews: 402, avatar: goldFemale },
+  { value: "aryan", name: "Aryan Sharma", area: "Karol Bagh · 1.2 km", rating: 4.8, vendors: 142, customers: 980, reviews: 312, avatar: avatarAryan },
+  { value: "priya", name: "Priya Verma", area: "Old Delhi · 2.1 km", rating: 4.7, vendors: 98, customers: 740, reviews: 245, avatar: avatarRani },
+  { value: "rahul", name: "Rahul Mehta", area: "Patel Nagar · 3.4 km", rating: 4.6, vendors: 76, customers: 510, reviews: 198, avatar: avatarRaj },
+  { value: "neha", name: "Neha Singh", area: "Rajouri · 4.0 km", rating: 4.9, vendors: 184, customers: 1240, reviews: 402, avatar: avatarUser },
 ];
 
 const GENDER_CHIPS: { value: string; label: string; icon: string }[] = [
@@ -270,7 +274,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    try { navigate({ to: "/" }); } catch { /* ignore */ }
+    try { navigate({ to: "/home" }); } catch { /* ignore */ }
   };
 
   const detectLocation = () => {
@@ -421,21 +425,28 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         </div>
       </motion.section>
 
-      {/* Gender sheet */}
+      {/* Gender sheet — vertical list */}
       <BottomSheet open={genderSheet} title="Choose Gender" subtitle="Helps personalise your experience" onClose={() => setGenderSheet(false)}>
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="flex flex-col gap-2.5 mt-2">
           {GENDER_CHIPS.map((g) => (
             <button
               key={g.value}
               onClick={() => { setGender(g.value); setGenderSheet(false); }}
-              className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-5 transition-all ${
+              className={`w-full flex items-center gap-4 rounded-2xl border-2 px-4 py-4 transition-all active:scale-[0.99] ${
                 gender === g.value
                   ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.6)]"
-                  : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80"
+                  : "border-[color:oklch(0.78_0.14_82/0.4)] bg-white/85"
               }`}
             >
-              <img src={g.icon} alt="" className="h-12 w-12" />
-              <span className="text-sm font-display font-semibold text-[color:oklch(0.32_0.06_85)]">{g.label}</span>
+              <span className="h-14 w-14 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_10px_-3px_rgba(212,175,55,0.5)] flex-shrink-0">
+                <img src={g.icon} alt="" className="h-10 w-10 object-contain" />
+              </span>
+              <span className="flex-1 text-left font-display text-lg font-bold text-[color:oklch(0.28_0.06_85)]">{g.label}</span>
+              {gender === g.value ? (
+                <span className="h-6 w-6 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8b6508] grid place-items-center text-white text-xs">✓</span>
+              ) : (
+                <ChevronRight className="h-5 w-5 text-[color:oklch(0.50_0.10_82)]" />
+              )}
             </button>
           ))}
         </div>
@@ -485,8 +496,8 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
                   : "border-[color:oklch(0.78_0.14_82/0.4)] bg-white/85"
               }`}
             >
-              <div className="relative h-14 w-14 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] grid place-items-center border-2 border-[color:oklch(0.78_0.14_82/0.5)]">
-                <img src={m.avatar} alt="" className="h-12 w-12 object-contain" />
+              <div className="relative h-14 w-14 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_4px_10px_-3px_rgba(212,175,55,0.55)]">
+                <img src={m.avatar} alt={m.name} className="absolute inset-0 h-full w-full object-cover" />
               </div>
               <div className="flex-1 text-left min-w-0">
                 <div className="font-display text-base font-bold text-[color:oklch(0.28_0.06_85)] leading-tight truncate">{m.name}</div>
@@ -773,53 +784,45 @@ function NameStep({ name, gender, onName, onGenderClick, onNext }: {
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
-    if (!gender) {
-      // Auto-open gender sheet on entry
-      setTimeout(() => onGenderClick(), 250);
-    } else {
+    if (gender) {
       setTimeout(() => ref.current?.focus(), 320);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gender]);
 
   const genderChip = GENDER_CHIPS.find((g) => g.value === gender);
 
   return (
     <div>
-      <StepHeader Icon={UserCircle2} title="Enter full name" subtitle="As you'd like to be addressed" />
+      <StepHeader Icon={UserCircle2} title="Enter full name" subtitle={gender ? "As you'd like to be addressed" : "Tap the box — choose gender first"} />
 
-      {/* Gender pill — always visible, tap to change */}
-      <button
-        onClick={onGenderClick}
-        className="mx-auto mb-3 flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] active:scale-[0.97]"
-      >
-        {genderChip ? (
-          <>
-            <img src={genderChip.icon} alt="" className="h-5 w-5" />
-            <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">{genderChip.label}</span>
-            <span className="text-[10px] text-[color:oklch(0.45_0.10_82)] underline ml-1">change</span>
-          </>
-        ) : (
-          <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">Tap to choose gender</span>
-        )}
-      </button>
+      {/* Gender pill — visible state, tap to change */}
+      {gender && (
+        <button
+          onClick={onGenderClick}
+          className="mx-auto mb-3 flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] active:scale-[0.97]"
+        >
+          {genderChip && <img src={genderChip.icon} alt="" className="h-5 w-5" />}
+          <span className="text-xs font-display font-semibold text-[color:oklch(0.30_0.10_82)]">{genderChip?.label}</span>
+          <span className="text-[10px] text-[color:oklch(0.45_0.10_82)] underline ml-1">change</span>
+        </button>
+      )}
 
-      <div onClick={() => !gender && onGenderClick()}>
-        <FieldShell Icon={UserCircle2}>
-          <input
-            ref={ref}
-            value={name}
-            disabled={!gender}
-            onChange={(e) => onName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && name.trim() && gender) onNext(); }}
-            inputMode="text"
-            autoCapitalize="words"
-            autoComplete="name"
-            placeholder={gender ? "Your full name" : "Choose gender first…"}
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] disabled:cursor-pointer"
-          />
-        </FieldShell>
-      </div>
+      <FieldShell Icon={UserCircle2}>
+        <input
+          ref={ref}
+          value={name}
+          readOnly={!gender}
+          onFocus={() => { if (!gender) { ref.current?.blur(); onGenderClick(); } }}
+          onClick={() => { if (!gender) onGenderClick(); }}
+          onChange={(e) => onName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim() && gender) onNext(); }}
+          inputMode="text"
+          autoCapitalize="words"
+          autoComplete="name"
+          placeholder={gender ? "Your full name" : "Tap to choose gender…"}
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] cursor-pointer read-only:cursor-pointer"
+        />
+      </FieldShell>
 
       <NextButton disabled={!name.trim() || !gender} onClick={onNext} />
     </div>
@@ -831,27 +834,42 @@ function NameStep({ name, gender, onName, onGenderClick, onNext }: {
 // ============================================================
 function EmailStep({ email, onEmail, onPick, onNext }: { email: string; onEmail: (v: string) => void; onPick: () => void; onNext: () => void }) {
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  const [manual, setManual] = useState(!!email);
+  // Auto-open picker on entry if no email yet & not manual
+  useEffect(() => {
+    if (!email && !manual) {
+      const t = setTimeout(() => onPick(), 280);
+      return () => clearTimeout(t);
+    }
+    if (manual) setTimeout(() => ref.current?.focus(), 320);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manual]);
   const valid = /^\S+@\S+\.\S+$/.test(email);
   return (
     <div>
-      <StepHeader Icon={Mail} title="Choose email ID" subtitle="For receipts & lead updates" />
-      <button onClick={onPick} className="w-full mb-2 text-[11px] underline text-[color:oklch(0.45_0.10_82)] text-right pr-1">
-        Pick from accounts
-      </button>
+      <StepHeader Icon={Mail} title="Choose email ID" subtitle="Tap the box to pick from your accounts" />
       <FieldShell Icon={Mail}>
         <input
           ref={ref}
           value={email}
-          onChange={(e) => onEmail(e.target.value)}
+          readOnly={!manual && !email}
+          onFocus={() => { if (!manual && !email) { ref.current?.blur(); onPick(); } }}
+          onClick={() => { if (!manual && !email) onPick(); }}
+          onChange={(e) => { setManual(true); onEmail(e.target.value); }}
           onKeyDown={(e) => { if (e.key === "Enter" && valid) onNext(); }}
           inputMode="email"
           autoComplete="email"
           autoCapitalize="off"
-          placeholder="you@gmail.com"
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)]"
+          placeholder="Tap to pick Gmail / email…"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] cursor-pointer"
         />
+        {email && (
+          <button onClick={onPick} className="text-[10px] underline text-[color:oklch(0.45_0.10_82)] flex-shrink-0">change</button>
+        )}
       </FieldShell>
+      <button onClick={() => { setManual(true); setTimeout(() => ref.current?.focus(), 50); }} className="w-full mt-2 text-[11px] underline text-[color:oklch(0.45_0.10_82)] text-center">
+        Type manually
+      </button>
       <NextButton disabled={!valid} onClick={onNext} />
     </div>
   );
@@ -940,8 +958,8 @@ function ManagerStep({ manager, onOpenPicker, onNext }: {
       >
         {manager ? (
           <>
-            <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] grid place-items-center border-2 border-[color:oklch(0.78_0.14_82/0.5)]">
-              <img src={manager.avatar} alt="" className="h-10 w-10 object-contain" />
+            <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_4px_10px_-3px_rgba(212,175,55,0.55)]">
+              <img src={manager.avatar} alt={manager.name} className="absolute inset-0 h-full w-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-display text-sm font-bold text-[color:oklch(0.28_0.06_85)] truncate">{manager.name}</div>
@@ -1003,26 +1021,34 @@ function ReferralStep({ referral, onReferral, agreed, onAgreed, onScan, submitti
         </button>
       </div>
 
-      <label className="mt-5 flex items-start gap-3 cursor-pointer">
+      <button
+        type="button"
+        onClick={() => onAgreed(!agreed)}
+        aria-pressed={agreed}
+        className={`mt-5 w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-all active:scale-[0.99] ${
+          agreed
+            ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]"
+            : "border-dashed border-[color:oklch(0.78_0.14_82/0.7)] bg-white/85 animate-[pulse_2.4s_ease-in-out_infinite]"
+        }`}
+      >
         <span
-          onClick={() => onAgreed(!agreed)}
-          className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
+          className={`h-7 w-7 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
             agreed
               ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
-              : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
+              : "border-[color:oklch(0.55_0.10_82/0.7)] bg-white"
           }`}
         >
           {agreed && (
-            <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
+            <svg viewBox="0 0 16 16" className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </span>
-        <input type="checkbox" checked={agreed} onChange={(e) => onAgreed(e.target.checked)} className="sr-only" />
-        <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
-          I accept Terms &amp; Conditions and Privacy Policy
+        <span className="flex-1 text-sm font-semibold text-[color:oklch(0.32_0.06_85)] leading-snug">
+          {agreed ? "Accepted — " : "Tap here to accept "}
+          <span className="underline decoration-[color:oklch(0.78_0.14_82)]">Terms &amp; Conditions</span> and Privacy Policy
         </span>
-      </label>
+      </button>
 
       <NextButton disabled={!agreed || submitting} label={submitting ? "Saving…" : "Sign Up"} icon={false} onClick={onSubmit} />
       {agreed && !submitting && (
