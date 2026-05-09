@@ -29,15 +29,42 @@ async function logSys(status: "success" | "error", message: string, meta: Record
 }
 
 async function pickService(use: AssignedUse) {
-  const { data } = await (supabaseAdmin as any)
+  // 1) Try exact assigned_use match
+  const exact = await (supabaseAdmin as any)
     .from("cashfree_services")
     .select("*")
     .eq("assigned_use", use)
     .eq("is_active", true)
+    .not("app_id", "is", null)
+    .not("secret_key", "is", null)
     .order("priority")
     .limit(1)
     .maybeSingle();
-  return data as null | {
+  if (exact.data && exact.data.app_id && exact.data.secret_key) return exact.data;
+
+  // 2) Fallback to active Payment Gateway (customer_payment) — one PG can handle all flows
+  const fallback = await (supabaseAdmin as any)
+    .from("cashfree_services")
+    .select("*")
+    .eq("service_key", "payment_gateway")
+    .eq("is_active", true)
+    .not("app_id", "is", null)
+    .not("secret_key", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (fallback.data && fallback.data.app_id && fallback.data.secret_key) return fallback.data;
+
+  // 3) Any active service with credentials as last resort
+  const any = await (supabaseAdmin as any)
+    .from("cashfree_services")
+    .select("*")
+    .eq("is_active", true)
+    .not("app_id", "is", null)
+    .not("secret_key", "is", null)
+    .order("priority")
+    .limit(1)
+    .maybeSingle();
+  return (any.data ?? null) as null | {
     app_id: string | null;
     secret_key: string | null;
     is_test_mode: boolean;
