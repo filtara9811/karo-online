@@ -185,7 +185,17 @@ export function VendorSideMenu({
                 <LayoutGrid className="h-3.5 w-3.5" /> Switch to Customer
               </Link>
               <button
-                onClick={async () => { await signOut(); onClose(); navigate({ to: "/" }); }}
+                onClick={async () => {
+                  try {
+                    await signOut();
+                    toast.success("Logged out");
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Logout failed");
+                  } finally {
+                    onClose();
+                    navigate({ to: "/" });
+                  }
+                }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[#1a1208] text-[11px] font-bold uppercase tracking-widest"
                 style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
               >
