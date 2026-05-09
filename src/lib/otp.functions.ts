@@ -356,21 +356,25 @@ export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
     if (otpErr) return { ok: false, error: "OTP verify check fail hua" };
     if (!verifiedRows?.[0]) return { ok: false, error: "Pehle mobile OTP verify karein" };
 
-    const userId = customerUuidFromPhone(phone);
-    const { error } = await supabaseAdmin.from("customers").upsert(
-      {
-        user_id: userId,
-        name: data.name.trim(),
-        gender: data.gender?.trim() || null,
-        phone,
-        email: data.email?.trim() || null,
-        address: data.address.trim(),
-        verified: true,
-        status: "active",
-        signup_method: "phone_otp",
-      },
-      { onConflict: "user_id" },
-    );
+    const payload = {
+      name: data.name.trim(),
+      gender: data.gender?.trim() || null,
+      phone,
+      email: data.email?.trim() || null,
+      address: data.address.trim(),
+      verified: true,
+      status: "active",
+      signup_method: "phone_otp",
+    };
+    const { data: existing } = await supabaseAdmin
+      .from("customers")
+      .select("id, user_id")
+      .eq("phone", phone)
+      .maybeSingle();
+    const userId = existing?.user_id ?? customerUuidFromPhone(phone);
+    const { error } = existing
+      ? await supabaseAdmin.from("customers").update(payload).eq("id", existing.id)
+      : await supabaseAdmin.from("customers").insert({ ...payload, user_id: userId });
     if (error) return { ok: false, error: error.message };
     return { ok: true, customer_id: userId };
   });
