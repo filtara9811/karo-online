@@ -89,13 +89,20 @@ async function sendViaFast2SMS(
   const route = cfg.route?.trim() || "dlt";
   const template = getTemplate(cfg);
   const templateId = (template?.template_id || cfg.template_id || "").trim();
-  const variablesValues = renderVariables(template?.variables || cfg.variables_values || cfg.variables, code);
+  const variablesValues = renderVariables(
+    template?.variables || cfg.variables_values || cfg.variables,
+    code,
+  );
   const messageId = (cfg.message_id || "").trim();
   if (!apiKey) return { ok: false, error: "Fast2SMS api_key missing in admin config" };
   if (route === "dlt" && !/^[A-Z0-9]{6}$/.test(senderId || "")) {
-    return { ok: false, error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header" };
+    return {
+      ok: false,
+      error: "Fast2SMS Sender ID must be the exact 6-character DLT-approved header",
+    };
   }
-  if (route === "dlt" && !templateId && !messageId) return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
+  if (route === "dlt" && !templateId && !messageId)
+    return { ok: false, error: "Fast2SMS template_id or message_id required for DLT route" };
 
   const params = new URLSearchParams({
     authorization: apiKey,
@@ -114,21 +121,25 @@ async function sendViaFast2SMS(
   try {
     const res = await fetch(url, { method: "GET" });
     const body = await res.text();
-    const json = (body
-      ? (() => {
-          try {
-            return JSON.parse(body);
-          } catch {
-            return { raw_text: body };
-          }
-        })()
-      : {}) as { return?: boolean; message?: unknown };
+    const json = (
+      body
+        ? (() => {
+            try {
+              return JSON.parse(body);
+            } catch {
+              return { raw_text: body };
+            }
+          })()
+        : {}
+    ) as { return?: boolean; message?: unknown };
     if (!res.ok || json.return === false) {
-      const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
+      const msg =
+        typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       if (/invalid sender id/i.test(msg)) {
         return {
           ok: false,
-          error: "Fast2SMS Invalid Sender ID: Admin SMS settings me wahi 6-character DLT Header daalein jo Fast2SMS account me approved/active hai.",
+          error:
+            "Fast2SMS Invalid Sender ID: Admin SMS settings me wahi 6-character DLT Header daalein jo Fast2SMS account me approved/active hai.",
           raw: json,
         };
       }
@@ -162,7 +173,8 @@ async function sendViaMSG91(
     });
     const json = (await res.json().catch(() => ({}))) as { type?: string; message?: unknown };
     if (!res.ok || json.type === "error") {
-      const msg = typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
+      const msg =
+        typeof json.message === "string" ? json.message : JSON.stringify(json).slice(0, 300);
       return { ok: false, error: `MSG91 ${res.status}: ${msg}`, raw: json };
     }
     return { ok: true, raw: json };
@@ -182,18 +194,17 @@ export const sendOtp = createServerFn({ method: "POST" })
     const gateway = await getActiveSmsGateway();
     if (!gateway) {
       await logSystem("otp", null, "error", "No active SMS gateway configured");
-      return { ok: false, error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein." };
+      return {
+        ok: false,
+        error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
+      };
     }
 
     const code = String(randomInt(1000, 10000));
     const codeHash = hash(code, phone);
 
     // Invalidate any previous unverified codes for this phone
-    await supabaseAdmin
-      .from("otp_codes")
-      .delete()
-      .eq("phone", phone)
-      .is("verified_at", null);
+    await supabaseAdmin.from("otp_codes").delete().eq("phone", phone).is("verified_at", null);
 
     const { error: insErr } = await supabaseAdmin.from("otp_codes").insert({
       phone,
@@ -206,10 +217,19 @@ export const sendOtp = createServerFn({ method: "POST" })
     }
 
     if (gateway.is_test_mode) {
-      await logSystem("otp", gateway.provider, "error", "SMS gateway is in test mode; live OTP was not sent", {
-        test_mode: true,
-      });
-      return { ok: false, error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein." };
+      await logSystem(
+        "otp",
+        gateway.provider,
+        "error",
+        "SMS gateway is in test mode; live OTP was not sent",
+        {
+          test_mode: true,
+        },
+      );
+      return {
+        ok: false,
+        error: "SMS Test mode ON hai. Live OTP ke liye Admin SMS settings me Test mode OFF karein.",
+      };
     }
 
     // Real send
@@ -227,10 +247,16 @@ export const sendOtp = createServerFn({ method: "POST" })
       return { ok: false, error: result.error ?? "SMS delivery failed" };
     }
 
-    await logSystem("sms", gateway.provider, "success", `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`, {
-      phone_last4: phone.slice(-4),
-      provider_response: result.raw ?? null,
-    });
+    await logSystem(
+      "sms",
+      gateway.provider,
+      "success",
+      `OTP delivered to ${phone.slice(-4).padStart(10, "•")}`,
+      {
+        phone_last4: phone.slice(-4),
+        provider_response: result.raw ?? null,
+      },
+    );
     return { ok: true, test_mode: false };
   });
 
