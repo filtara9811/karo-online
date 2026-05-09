@@ -327,12 +327,15 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       if (error) {
         console.error("[customers upsert]", error);
         toast.error(error.message || "Profile save fail hua — phir try karo");
-      } else {
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
+        // Don't trap the user on the success screen — let them continue.
+        setSuccessOpen(false);
+        onComplete?.();
+        return;
       }
+      window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+      window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+      await refreshProfile();
+      try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
     } else {
       const result = await finalizeCustomerFn({
         data: {
