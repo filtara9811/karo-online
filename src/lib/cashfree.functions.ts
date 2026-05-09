@@ -54,7 +54,7 @@ async function pickService(use: AssignedUse) {
     .maybeSingle();
   if (fallback.data && fallback.data.app_id && fallback.data.secret_key) return fallback.data;
 
-  // 3) Any active service with credentials as last resort
+  // 3) Any active row in cashfree_services
   const any = await (supabaseAdmin as any)
     .from("cashfree_services")
     .select("*")
@@ -64,12 +64,31 @@ async function pickService(use: AssignedUse) {
     .order("priority")
     .limit(1)
     .maybeSingle();
-  return (any.data ?? null) as null | {
-    app_id: string | null;
-    secret_key: string | null;
-    is_test_mode: boolean;
-    display_name: string;
+  if (any.data && any.data.app_id && any.data.secret_key) return any.data;
+
+  // 4) Fallback to legacy `payment_gateways` table (admin/payments page)
+  const purposeMap: Record<AssignedUse, string[]> = {
+    vendor_wallet_recharge: ["wallet_recharge", "both"],
+    leadx_purchase: ["coin_purchase", "both"],
   };
+  const legacy = await (supabaseAdmin as any)
+    .from("payment_gateways")
+    .select("*")
+    .eq("provider", "cashfree")
+    .eq("is_active", true)
+    .in("purpose", purposeMap[use])
+    .order("priority")
+    .limit(1)
+    .maybeSingle();
+  if (legacy.data && legacy.data.public_key && legacy.data?.config?.secret_key) {
+    return {
+      app_id: legacy.data.public_key,
+      secret_key: legacy.data.config.secret_key,
+      is_test_mode: !!legacy.data.is_test_mode,
+      display_name: legacy.data.display_name ?? "Cashfree",
+    };
+  }
+  return null;
 }
 
 function cfBase(testMode: boolean) {
