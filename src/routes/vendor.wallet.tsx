@@ -59,6 +59,13 @@ async function openCashfreeCheckout(paymentSessionId: string, mode: "sandbox" | 
   return cf.checkout({ paymentSessionId, redirectTarget: "_modal" });
 }
 
+function getPaymentError(e: unknown) {
+  if (e instanceof Response && e.status === 401) return "Vendor login required — pehle vendor sign in / registration complete karein.";
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "string") return e;
+  return "Payment start nahi ho paya — please dobara try karein.";
+}
+
 export const Route = createFileRoute("/vendor/wallet")({
   head: () => ({
     meta: [
@@ -525,6 +532,11 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
       toast.error("Amount enter karein");
       return;
     }
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      toast.error("Vendor login required — pehle vendor sign in / registration complete karein.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await createOrder({ data: { amount_inr: amount, purpose: "vendor_wallet_recharge" } });
@@ -542,7 +554,7 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
         toast.error(v.error ?? "Payment pending — refresh after a moment");
       }
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(getPaymentError(e));
     } finally {
       setBusy(false);
     }
@@ -594,6 +606,11 @@ function BuyCoinsSheet({ packs, rate, onClose, onPaid }: { packs: CoinPack[]; ra
       toast.error("Coins enter karein");
       return;
     }
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      toast.error("Vendor login required — pehle vendor sign in / registration complete karein.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await createOrder({ data: { amount_inr: price, purpose: "leadx_purchase", coins } });
@@ -611,7 +628,7 @@ function BuyCoinsSheet({ packs, rate, onClose, onPaid }: { packs: CoinPack[]; ra
         toast.error(v.error ?? "Payment pending");
       }
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(getPaymentError(e));
     } finally {
       setBusy(false);
     }
