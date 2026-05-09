@@ -1,12 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
-  X, User, Wallet, Store, Bell, LifeBuoy, FileText, ShieldCheck,
+  X, User, Wallet, Store, Bell, LifeBuoy, FileText,
   LogOut, Gift, Megaphone, Settings as SettingsIcon, ChevronRight,
-  LayoutGrid, Briefcase,
+  LayoutGrid, Briefcase, ShieldCheck,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Vendor = {
   business_name?: string | null;
@@ -16,12 +19,17 @@ type Vendor = {
   verified?: boolean | null;
 };
 
+const KYC_FIELDS = [
+  "business_name", "owner_name", "role", "entity", "trade",
+  "deals_in", "email", "whatsapp", "gst", "pan", "aadhaar",
+] as const;
+
 const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string }> = [
   { id: "dashboard", label: "Dashboard", sub: "Leads · stats", Icon: LayoutGrid, to: "/vendor/dashboard" },
   { id: "services", label: "My Services", sub: "Categories", Icon: Briefcase, to: "/vendor/services" },
   { id: "wallet", label: "Wallet", sub: "Coins · recharge", Icon: Wallet, to: "/vendor/wallet" },
   { id: "shop", label: "Digital Shop", sub: "Products · variations", Icon: Store, to: "/vendor/shop" },
-  { id: "business", label: "Business Details", sub: "KYC · profile", Icon: User, to: "/vendor/register" },
+  { id: "business", label: "Business Details · KYC", sub: "Complete your profile", Icon: User, to: "/vendor/register" },
   { id: "notifications", label: "Notifications", sub: "Alerts", Icon: Bell },
   { id: "promotions", label: "Promotions", sub: "Offers · banners", Icon: Megaphone },
   { id: "referral", label: "Refer & Earn", sub: "Invite vendors", Icon: Gift },
@@ -34,11 +42,37 @@ export function VendorSideMenu({
   open, onClose, vendor,
 }: { open: boolean; onClose: () => void; vendor?: Vendor | null }) {
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user } = useAuth();
+  const [kycPct, setKycPct] = useState<number>(0);
+  const [fullVendor, setFullVendor] = useState<Record<string, any> | null>(null);
 
-  const name = vendor?.business_name || profile?.name || "My Business";
-  const owner = vendor?.owner_name || profile?.name || "Vendor";
-  const avatar = vendor?.avatar_url || profile?.avatar_url || avatarUser;
+  // Fetch full vendor row to compute KYC progress when menu opens
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase
+      .from("vendors")
+      .select("business_name, owner_name, role, entity, trade, deals_in, email, whatsapp, gst, pan, aadhaar, avatar_url, status, verified")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setFullVendor(data as any);
+        if (data) {
+          const filled = KYC_FIELDS.filter((f) => {
+            const v = (data as any)[f];
+            return typeof v === "string" ? v.trim().length > 0 : v != null;
+          }).length;
+          setKycPct(Math.round((filled / KYC_FIELDS.length) * 100));
+        } else {
+          setKycPct(0);
+        }
+      });
+  }, [open, user]);
+
+  const v = fullVendor ?? vendor ?? null;
+  const name = v?.business_name || profile?.name || "My Business";
+  const owner = v?.owner_name || profile?.name || "Vendor";
+  const avatar = v?.avatar_url || profile?.avatar_url || avatarUser;
+  const verified = !!v?.verified;
 
   return (
     <AnimatePresence>
@@ -72,11 +106,17 @@ export function VendorSideMenu({
                   className="h-16 w-16 rounded-full overflow-hidden border-2 shrink-0"
                   style={{ borderColor: "#d4af37" }}
                 >
-                  <img src={avatar} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={avatar}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+                  />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80">
-                    {vendor?.verified ? "Verified Vendor" : (vendor?.status === "pending" ? "Pending Approval" : "Vendor")}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80 inline-flex items-center gap-1">
+                    {verified && <ShieldCheck className="h-3 w-3 text-emerald-400" />}
+                    {verified ? "Verified Vendor" : (v?.status === "pending" ? "Pending Approval" : "Vendor")}
                   </p>
                   <h2 className="font-display text-lg font-bold text-[#fff8dc] truncate leading-tight">
                     {name}
@@ -84,6 +124,29 @@ export function VendorSideMenu({
                   <p className="text-[11px] text-[#f5d97a]/80 truncate italic">{owner}</p>
                 </div>
               </div>
+
+              {/* KYC progress */}
+              <Link
+                to="/vendor/register"
+                onClick={onClose}
+                className="block mt-3 rounded-xl border border-[#d4af37]/30 bg-black/40 px-3 py-2.5"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold inline-flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3 text-[#d4af37]" /> KYC Progress
+                  </span>
+                  <span className="text-[10px] font-bold text-[#fff8dc]">{kycPct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-black/60 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${kycPct}%`, background: "linear-gradient(90deg,#f5d97a,#d4af37,#8b6508)" }}
+                  />
+                </div>
+                <p className="text-[9px] text-[#d4af37]/60 mt-1.5">
+                  {kycPct >= 100 ? "All details submitted" : "Tap to complete your KYC"}
+                </p>
+              </Link>
             </div>
 
             {/* Rows */}
@@ -122,7 +185,17 @@ export function VendorSideMenu({
                 <LayoutGrid className="h-3.5 w-3.5" /> Switch to Customer
               </Link>
               <button
-                onClick={async () => { await signOut(); onClose(); navigate({ to: "/" }); }}
+                onClick={async () => {
+                  try {
+                    await signOut();
+                    toast.success("Logged out");
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Logout failed");
+                  } finally {
+                    onClose();
+                    navigate({ to: "/" });
+                  }
+                }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[#1a1208] text-[11px] font-bold uppercase tracking-widest"
                 style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
               >

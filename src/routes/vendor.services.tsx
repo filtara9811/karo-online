@@ -4,6 +4,7 @@ import { Loader2, Check, ChevronRight, Sparkles, Package, ArrowLeft } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
 import { toast } from "sonner";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/vendor/services")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: VendorServicesPage,
+  component: () => (<VendorAuthGate><VendorServicesPage /></VendorAuthGate>),
 });
 
 type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean };

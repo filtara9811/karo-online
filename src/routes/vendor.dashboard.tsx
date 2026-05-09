@@ -26,6 +26,7 @@ import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
       { name: "description", content: "Manage your leads, products and digital shop." },
     ],
   }),
-  component: VendorDashboard,
+  component: () => (<VendorAuthGate><VendorDashboard /></VendorAuthGate>),
 });
 
 type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
