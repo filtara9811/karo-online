@@ -142,6 +142,7 @@ const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { requireAuth } = useAuthGate();
   const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
