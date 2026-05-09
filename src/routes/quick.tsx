@@ -523,7 +523,7 @@ function QuickPage() {
 
       {/* Floating + button */}
       <button
-        onClick={() => setNeedsOpen(true)}
+        onClick={() => requireAuth(() => setNeedsOpen(true))}
         aria-label="Add need"
         className="btn-3d fixed z-40 right-5 grid place-items-center"
         style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
