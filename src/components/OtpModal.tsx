@@ -8,10 +8,7 @@ type Props = {
   onClose: () => void;
 };
 
-const AUTO_OTP = "482917";
-const AUTO_DELAY = 900; // ms before demo OTP auto-verify
-
-export function OtpModal({ open, phone, onVerified, onClose }: Props) {
+export function OtpModal({ open, phone, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [seconds, setSeconds] = useState(45);
   const [verifying, setVerifying] = useState(false);
@@ -36,71 +33,23 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
     return () => clearTimeout(t);
   }, [open, seconds, verified]);
 
-  // auto-fill OTP and auto-verify
-  useEffect(() => {
-    if (!open) return;
-    let idx = 0;
-    const timeouts: number[] = [];
-    const start = window.setTimeout(() => {
-      const tick = () => {
-        if (idx >= AUTO_OTP.length) return;
-        setDigits((prev) => {
-          const next = [...prev];
-          next[idx] = AUTO_OTP[idx];
-          return next;
-        });
-        idx += 1;
-        if (idx < AUTO_OTP.length) {
-          timeouts.push(window.setTimeout(tick, 220));
-        } else {
-          // all filled — auto verify
-          timeouts.push(
-            window.setTimeout(() => {
-              setVerifying(true);
-              timeouts.push(
-                window.setTimeout(() => {
-                  setVerified(true);
-                  timeouts.push(
-                    window.setTimeout(() => {
-                      onVerified(AUTO_OTP);
-                    }, 900),
-                  );
-                }, 1100),
-              );
-            }, 350),
-          );
-        }
-      };
-      tick();
-    }, AUTO_DELAY);
-    return () => {
-      window.clearTimeout(start);
-      timeouts.forEach((t) => window.clearTimeout(t));
-    };
-  }, [open, onVerified]);
-
   if (!open) return null;
 
   const handleChange = (i: number, val: string) => {
     const v = val.replace(/\D/g, "").slice(-1);
-    const nextDigits = [...digits];
-    nextDigits[i] = v;
-    setDigits(nextDigits);
+    setDigits((prev) => {
+      const next = [...prev];
+      next[i] = v;
+      return next;
+    });
     if (v && i < 5) inputs.current[i + 1]?.focus();
-    if (nextDigits.join("").length === 6) {
-      setVerifying(true);
-      window.setTimeout(() => {
-        setVerified(true);
-        window.setTimeout(() => onVerified(nextDigits.join("")), 500);
-      }, 650);
-    }
   };
 
   const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
   const secs = String(seconds % 60).padStart(2, "0");
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <button
         aria-label="Close"
         onClick={onClose}
@@ -135,7 +84,7 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
               ? "Welcome to the Maison"
               : verifying
               ? "Verifying your code..."
-              : `Demo OTP: ${AUTO_OTP} · ${phone}`}
+              : `Code sent to ${phone}`}
           </p>
         </div>
 
@@ -168,7 +117,7 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
           <div className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${verified ? "bg-emerald-500" : "bg-[color:oklch(0.78_0.14_82)]"}`} style={{ animation: "pulse-dot 1.4s ease-in-out infinite" }} />
             <span className="text-muted-foreground">
-              {verified ? "OTP matched" : verifying ? "Verifying..." : "Auto OTP filling"}
+              {verified ? "OTP matched" : verifying ? "Verifying..." : "Waiting for OTP"}
             </span>
           </div>
           <div className="font-display text-[color:oklch(0.45_0.10_82)] tabular-nums">
@@ -176,7 +125,13 @@ export function OtpModal({ open, phone, onVerified, onClose }: Props) {
           </div>
         </div>
 
-        <div className="h-3" />
+        <button
+          onClick={onClose}
+          disabled={verifying || verified}
+          className="w-full text-center text-xs uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)] hover:text-[color:oklch(0.78_0.14_82)] py-2 transition-colors disabled:opacity-40"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

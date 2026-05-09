@@ -71,10 +71,10 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
   return (
     <>
       <article
-        className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.78_0.14_82/0.45)]"
+        className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.45)]"
         style={{
           /* Calm cream — no metallic gradient reflection */
-          background: "linear-gradient(180deg, #fffefb 0%, #fdfaf0 100%)",
+          background: "linear-gradient(180deg, #f5f6f8 0%, #f5f6f8 100%)",
           boxShadow:
             "0 10px 30px -14px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -82,34 +82,34 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
         {/* === Brand identity header === */}
         <header className="relative px-4 pt-3.5 pb-2 flex items-start gap-3">
           <span
-            className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.18_0.06_18)] shadow border-2 border-white"
+            className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow border-2 border-white"
             style={{
               background:
-                "linear-gradient(180deg, #fff8dc, #f5d97a, #d4af37, #8b6508)",
+                "linear-gradient(180deg, #f5f6f8, #d8dde3, #a8acb3, #3f4750)",
             }}
           >
             <span className="font-display font-bold text-base">A</span>
           </span>
           <div className="flex-1 min-w-0">
-            <h2 className="font-display text-lg text-gold-gradient font-bold leading-tight tracking-wide truncate uppercase">
+            <h2 className="font-display text-lg text-silver-gradient font-bold leading-tight tracking-wide truncate uppercase">
               Ashhu&apos;s | Dukan
             </h2>
-            <p className="text-[10px] text-[color:oklch(0.45_0.10_82)] font-bold flex items-center gap-1 leading-tight">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] font-bold flex items-center gap-1 leading-tight">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-1000" />
               {stamp}
             </p>
           </div>
           <button
             aria-label="Filter"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+            className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
           >
-            <Filter className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" />
+            <Filter className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
           </button>
           <button
             aria-label="Order book"
-            className="relative h-8 px-2 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-95"
+            className="relative h-8 px-2 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-95"
           >
-            <BookOpenCheck className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" />
+            <BookOpenCheck className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
             <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[8px] font-bold grid place-items-center">
               {(items.length * 9 + 467) % 1000}
             </span>
@@ -118,21 +118,21 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
 
         {/* Range filter strip */}
         <div className="relative px-3 pb-2">
-          <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/80 p-1 border border-[color:oklch(0.78_0.14_82/0.3)]">
+          <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/80 p-1 border border-[color:oklch(0.72_0.01_260/0.3)]">
             {RANGES.map((r) => (
               <button
                 key={r.key}
                 onClick={() => setRange(r.key)}
                 className={`py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition ${
                   range === r.key
-                    ? "text-[color:oklch(0.18_0.06_18)] shadow"
+                    ? "text-[color:oklch(0.20_0.01_260)] shadow"
                     : "text-[color:oklch(0.55_0.10_82)]"
                 }`}
                 style={
                   range === r.key
                     ? {
                         background:
-                          "linear-gradient(180deg, #fff3c8, #f5d97a, #d4af37)",
+                          "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)",
                       }
                     : undefined
                 }
@@ -151,7 +151,7 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
           <p className="font-display text-base font-bold text-[color:oklch(0.40_0.10_82)] tracking-wide">
             Live | Sales Desbord
           </p>
-          <span className="block mx-auto mt-0.5 h-px w-3/4 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+          <span className="block mx-auto mt-0.5 h-px w-3/4 bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent" />
         </div>
 
         {/* === 5-tile metric strip === */}
@@ -192,10 +192,10 @@ export function VendorDashboardCard({ items }: { items: EditorProduct[] }) {
         </div>
 
         {/* Footer micro-trend */}
-        <div className="relative px-4 pb-3 flex items-center justify-between text-[10px] text-[color:oklch(0.45_0.10_82)] font-bold">
+        <div className="relative px-4 pb-3 flex items-center justify-between text-[10px] text-[color:oklch(0.45_0.01_260)] font-bold">
           <span className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 text-emerald-600" />
-            <span className="text-emerald-700">+27%</span> margin
+            <TrendingUp className="h-3 w-3 text-slate-600" />
+            <span className="text-slate-700">+27%</span> margin
           </span>
           <span className="font-display">
             Sale: ₹{stats.sales.toLocaleString()}
@@ -229,14 +229,14 @@ function InnerProductStrip({ items }: { items: EditorProduct[] }) {
   return (
     <div className="relative px-3 pb-1">
       <div
-        className="overflow-hidden rounded-xl border border-[color:oklch(0.78_0.14_82/0.25)] bg-white/60"
+        className="overflow-hidden rounded-xl border border-[color:oklch(0.72_0.01_260/0.25)] bg-white/60"
         style={{ maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)" }}
       >
         <div className="marquee-x flex gap-2 w-max py-1.5 px-1.5" style={{ animationDuration: "42s" }}>
           {loop.map((p, i) => (
             <div
               key={`${p.id}-${i}`}
-              className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.78_0.14_82/0.4)] bg-white flex-shrink-0"
+              className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.72_0.01_260/0.4)] bg-white flex-shrink-0"
             >
               <img
                 src={p.image}
@@ -274,9 +274,9 @@ function MetricTile({
   onTap?: () => void;
 }) {
   const numberColor: Record<typeof tone, string> = {
-    gold: "text-gold-gradient",
-    emerald: "text-emerald-700",
-    rose: "text-[#92400e]",
+    gold: "text-silver-gradient",
+    emerald: "text-slate-700",
+    rose: "text-[#3f4750]",
     indigo: "text-indigo-700",
   };
 
@@ -285,7 +285,7 @@ function MetricTile({
       type="button"
       onClick={onTap}
       disabled={!tappable}
-      className={`group relative rounded-xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] py-2 px-1 flex flex-col items-center text-center ${
+      className={`group relative rounded-xl bg-white/90 border border-[color:oklch(0.72_0.01_260/0.4)] py-2 px-1 flex flex-col items-center text-center ${
         tappable ? "active:scale-[0.96] transition cursor-pointer" : ""
       }`}
       style={{
@@ -296,7 +296,7 @@ function MetricTile({
       }}
     >
       <span
-        className="h-7 w-7 grid place-items-center rounded-lg bg-gradient-to-br from-[#fff3c8] to-[#d4af37] text-[color:oklch(0.18_0.06_18)] shadow"
+        className="h-7 w-7 grid place-items-center rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#a8acb3] text-[color:oklch(0.20_0.01_260)] shadow"
       >
         <Box className="h-3.5 w-3.5" strokeWidth={2.4} />
       </span>
@@ -316,7 +316,7 @@ function MetricTile({
         </p>
       )}
       {tappable && (
-        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-slate-1000" />
       )}
     </button>
   );
