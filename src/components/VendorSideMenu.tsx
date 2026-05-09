@@ -106,11 +106,17 @@ export function VendorSideMenu({
                   className="h-16 w-16 rounded-full overflow-hidden border-2 shrink-0"
                   style={{ borderColor: "#d4af37" }}
                 >
-                  <img src={avatar} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={avatar}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+                  />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80">
-                    {vendor?.verified ? "Verified Vendor" : (vendor?.status === "pending" ? "Pending Approval" : "Vendor")}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] uppercase tracking-[0.25em] text-[#d4af37]/80 inline-flex items-center gap-1">
+                    {verified && <ShieldCheck className="h-3 w-3 text-emerald-400" />}
+                    {verified ? "Verified Vendor" : (v?.status === "pending" ? "Pending Approval" : "Vendor")}
                   </p>
                   <h2 className="font-display text-lg font-bold text-[#fff8dc] truncate leading-tight">
                     {name}
@@ -118,6 +124,29 @@ export function VendorSideMenu({
                   <p className="text-[11px] text-[#f5d97a]/80 truncate italic">{owner}</p>
                 </div>
               </div>
+
+              {/* KYC progress */}
+              <Link
+                to="/vendor/register"
+                onClick={onClose}
+                className="block mt-3 rounded-xl border border-[#d4af37]/30 bg-black/40 px-3 py-2.5"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold inline-flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3 text-[#d4af37]" /> KYC Progress
+                  </span>
+                  <span className="text-[10px] font-bold text-[#fff8dc]">{kycPct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-black/60 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${kycPct}%`, background: "linear-gradient(90deg,#f5d97a,#d4af37,#8b6508)" }}
+                  />
+                </div>
+                <p className="text-[9px] text-[#d4af37]/60 mt-1.5">
+                  {kycPct >= 100 ? "All details submitted" : "Tap to complete your KYC"}
+                </p>
+              </Link>
             </div>
 
             {/* Rows */}
