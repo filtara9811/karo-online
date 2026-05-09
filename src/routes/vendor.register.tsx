@@ -198,6 +198,17 @@ function VendorRegister() {
     setPicker(null);
   };
 
+  const handleVendorAuthComplete = async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const { data: existingVendor } = await supabase
+      .from("vendors")
+      .select("user_id")
+      .eq("user_id", auth.user.id)
+      .maybeSingle();
+    if (existingVendor) navigate({ to: "/vendor/dashboard" });
+  };
+
   const pickerConfig = useMemo(() => {
     if (picker === "role") return { title: "Your Role", subtitle: "Who are you in this business?", options: ROLE_OPTIONS };
     if (picker === "entity") return { title: "Business Type", subtitle: "How is your business registered?", options: ENTITY_OPTIONS };
@@ -265,7 +276,7 @@ function VendorRegister() {
         <RegistrationFlow
           transparent
           onBack={() => navigate({ to: "/" })}
-          onComplete={() => navigate({ to: "/vendor/dashboard" })}
+          onComplete={handleVendorAuthComplete}
         />
       </main>
     );
