@@ -944,8 +944,8 @@ function ManagerStep({ manager, onOpenPicker, onNext }: {
       >
         {manager ? (
           <>
-            <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] grid place-items-center border-2 border-[color:oklch(0.78_0.14_82/0.5)]">
-              <img src={manager.avatar} alt="" className="h-10 w-10 object-contain" />
+            <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-[0_4px_10px_-3px_rgba(212,175,55,0.55)]">
+              <img src={manager.avatar} alt={manager.name} className="absolute inset-0 h-full w-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-display text-sm font-bold text-[color:oklch(0.28_0.06_85)] truncate">{manager.name}</div>
