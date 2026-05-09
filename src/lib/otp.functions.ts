@@ -21,8 +21,25 @@ const VerifySchema = z.object({
   code: z.string().min(4).max(6).regex(/^\d+$/),
 });
 
+const FinalizeCustomerSchema = z.object({
+  name: z.string().min(2).max(120),
+  gender: z.string().max(40).optional().default(""),
+  phone: z
+    .string()
+    .min(8)
+    .max(20)
+    .transform((s) => s.replace(/\D/g, "").slice(-10)),
+  email: z.string().max(160).optional().default(""),
+  address: z.string().min(3).max(500),
+});
+
 function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
+}
+
+function customerUuidFromPhone(phone: string) {
+  const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
 type SmsTemplate = {
