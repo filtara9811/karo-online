@@ -57,14 +57,14 @@ export function AuthGate({ children }: { children?: ReactNode }) {
     isAuthenticated && (locallyOnboarded || !!(profile?.name && profile?.address));
 
   useEffect(() => {
-    if (isAuthenticated) return;
+    if (!ready || isAuthenticated) return;
     setLocallyOnboarded(false);
     try {
       window.localStorage.removeItem(CUSTOMER_ONBOARDED_KEY);
     } catch {
       // Ignore storage issues; the auth gate will still require a live session.
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, ready]);
 
   const isReady = !skip ? profileComplete : true;
 
