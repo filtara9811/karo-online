@@ -1021,26 +1021,34 @@ function ReferralStep({ referral, onReferral, agreed, onAgreed, onScan, submitti
         </button>
       </div>
 
-      <label className="mt-5 flex items-start gap-3 cursor-pointer">
+      <button
+        type="button"
+        onClick={() => onAgreed(!agreed)}
+        aria-pressed={agreed}
+        className={`mt-5 w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-all active:scale-[0.99] ${
+          agreed
+            ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]"
+            : "border-dashed border-[color:oklch(0.78_0.14_82/0.7)] bg-white/85 animate-[pulse_2.4s_ease-in-out_infinite]"
+        }`}
+      >
         <span
-          onClick={() => onAgreed(!agreed)}
-          className={`mt-0.5 h-5 w-5 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
+          className={`h-7 w-7 rounded-md border-2 flex-shrink-0 grid place-items-center transition-all ${
             agreed
               ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#d4af37]"
-              : "border-[color:oklch(0.55_0.10_82/0.5)] bg-white/70"
+              : "border-[color:oklch(0.55_0.10_82/0.7)] bg-white"
           }`}
         >
           {agreed && (
-            <svg viewBox="0 0 16 16" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="3">
+            <svg viewBox="0 0 16 16" className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </span>
-        <input type="checkbox" checked={agreed} onChange={(e) => onAgreed(e.target.checked)} className="sr-only" />
-        <span className="text-sm text-[color:oklch(0.35_0.06_85)] leading-snug">
-          I accept Terms &amp; Conditions and Privacy Policy
+        <span className="flex-1 text-sm font-semibold text-[color:oklch(0.32_0.06_85)] leading-snug">
+          {agreed ? "Accepted — " : "Tap here to accept "}
+          <span className="underline decoration-[color:oklch(0.78_0.14_82)]">Terms &amp; Conditions</span> and Privacy Policy
         </span>
-      </label>
+      </button>
 
       <NextButton disabled={!agreed || submitting} label={submitting ? "Saving…" : "Sign Up"} icon={false} onClick={onSubmit} />
       {agreed && !submitting && (
