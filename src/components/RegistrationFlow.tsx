@@ -396,11 +396,11 @@ export function RegistrationFlow({ transparent, hideBack, onBack, onComplete }: 
       {!hideBack && (
         <button
           onClick={onBack}
-          className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-white/80 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center shadow-md"
+          className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/90 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center shadow-lg active:scale-90"
           aria-label="Close"
         >
-          <svg className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          <svg className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       )}
