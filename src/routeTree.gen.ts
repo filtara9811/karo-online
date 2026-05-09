@@ -41,9 +41,11 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
+import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -206,6 +208,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminKycRoute = AdminKycRouteImport.update({
+  id: '/kyc',
+  path: '/kyc',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -219,6 +226,11 @@ const AdminCoinsRoute = AdminCoinsRouteImport.update({
 const AdminCatalogRoute = AdminCatalogRouteImport.update({
   id: '/catalog',
   path: '/catalog',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCashfreeRoute = AdminCashfreeRouteImport.update({
+  id: '/cashfree',
+  path: '/cashfree',
   getParentRoute: () => AdminRoute,
 } as any)
 const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
@@ -241,9 +253,11 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -278,9 +292,11 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -317,9 +333,11 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -357,9 +375,11 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -394,9 +414,11 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -432,9 +454,11 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -709,6 +733,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLegalRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/kyc': {
+      id: '/admin/kyc'
+      path: '/kyc'
+      fullPath: '/admin/kyc'
+      preLoaderRoute: typeof AdminKycRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/customers'
@@ -730,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/cashfree': {
+      id: '/admin/cashfree'
+      path: '/cashfree'
+      fullPath: '/admin/cashfree'
+      preLoaderRoute: typeof AdminCashfreeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/vendor/lead/$id': {
       id: '/vendor/lead/$id'
       path: '/vendor/lead/$id'
@@ -741,9 +779,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminCashfreeRoute: typeof AdminCashfreeRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminKycRoute: typeof AdminKycRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
@@ -757,9 +797,11 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCashfreeRoute: AdminCashfreeRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminKycRoute: AdminKycRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
@@ -802,12 +844,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

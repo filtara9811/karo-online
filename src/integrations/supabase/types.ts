@@ -68,6 +68,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cashfree_services: {
+        Row: {
+          app_id: string | null
+          assigned_use: string
+          config: Json
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          priority: number
+          secret_key: string | null
+          service_key: string
+          updated_at: string
+        }
+        Insert: {
+          app_id?: string | null
+          assigned_use?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          secret_key?: string | null
+          service_key: string
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string | null
+          assigned_use?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          secret_key?: string | null
+          service_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       catalog_items: {
         Row: {
           category_id: string
