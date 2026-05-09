@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
 import { toast } from "sonner";
+import { VendorAuthGate } from "@/components/VendorAuthGate";
 
 declare global {
   interface Window {
