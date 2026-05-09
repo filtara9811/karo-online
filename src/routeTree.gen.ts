@@ -44,6 +44,7 @@ import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
+import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -221,6 +222,11 @@ const AdminCatalogRoute = AdminCatalogRouteImport.update({
   path: '/catalog',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCashfreeRoute = AdminCashfreeRouteImport.update({
+  id: '/cashfree',
+  path: '/cashfree',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   id: '/vendor/lead/$id',
   path: '/vendor/lead/$id',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
@@ -730,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/cashfree': {
+      id: '/admin/cashfree'
+      path: '/cashfree'
+      fullPath: '/admin/cashfree'
+      preLoaderRoute: typeof AdminCashfreeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/vendor/lead/$id': {
       id: '/vendor/lead/$id'
       path: '/vendor/lead/$id'
@@ -741,6 +760,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminCashfreeRoute: typeof AdminCashfreeRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
@@ -757,6 +777,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCashfreeRoute: AdminCashfreeRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
