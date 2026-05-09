@@ -425,21 +425,28 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         </div>
       </motion.section>
 
-      {/* Gender sheet */}
+      {/* Gender sheet — vertical list */}
       <BottomSheet open={genderSheet} title="Choose Gender" subtitle="Helps personalise your experience" onClose={() => setGenderSheet(false)}>
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="flex flex-col gap-2.5 mt-2">
           {GENDER_CHIPS.map((g) => (
             <button
               key={g.value}
               onClick={() => { setGender(g.value); setGenderSheet(false); }}
-              className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-5 transition-all ${
+              className={`w-full flex items-center gap-4 rounded-2xl border-2 px-4 py-4 transition-all active:scale-[0.99] ${
                 gender === g.value
                   ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.6)]"
-                  : "border-[color:oklch(0.78_0.14_82/0.35)] bg-white/80"
+                  : "border-[color:oklch(0.78_0.14_82/0.4)] bg-white/85"
               }`}
             >
-              <img src={g.icon} alt="" className="h-12 w-12" />
-              <span className="text-sm font-display font-semibold text-[color:oklch(0.32_0.06_85)]">{g.label}</span>
+              <span className="h-14 w-14 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-[0_4px_10px_-3px_rgba(212,175,55,0.5)] flex-shrink-0">
+                <img src={g.icon} alt="" className="h-10 w-10 object-contain" />
+              </span>
+              <span className="flex-1 text-left font-display text-lg font-bold text-[color:oklch(0.28_0.06_85)]">{g.label}</span>
+              {gender === g.value ? (
+                <span className="h-6 w-6 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8b6508] grid place-items-center text-white text-xs">✓</span>
+              ) : (
+                <ChevronRight className="h-5 w-5 text-[color:oklch(0.50_0.10_82)]" />
+              )}
             </button>
           ))}
         </div>
