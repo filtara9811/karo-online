@@ -13,6 +13,7 @@ import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ReferralRouteImport } from './routes/referral'
 import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OrdersRouteImport } from './routes/orders'
@@ -30,6 +31,7 @@ import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
+import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
@@ -68,6 +70,11 @@ const ServicesRoute = ServicesRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralRoute = ReferralRouteImport.update({
+  id: '/referral',
+  path: '/referral',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuickRoute = QuickRouteImport.update({
@@ -153,6 +160,11 @@ const VendorDashboardRoute = VendorDashboardRouteImport.update({
 const VendorChatRoute = VendorChatRouteImport.update({
   id: '/vendor/chat',
   path: '/vendor/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -261,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
+  '/referral': typeof ReferralRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
@@ -283,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
+  '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/register': typeof VendorRegisterRoute
@@ -302,6 +316,7 @@ export interface FileRoutesByTo {
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
+  '/referral': typeof ReferralRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
@@ -324,6 +339,7 @@ export interface FileRoutesByTo {
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
+  '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/register': typeof VendorRegisterRoute
@@ -345,6 +361,7 @@ export interface FileRoutesById {
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
+  '/referral': typeof ReferralRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
@@ -367,6 +384,7 @@ export interface FileRoutesById {
   '/admin/vendors': typeof AdminVendorsRoute
   '/c/$code': typeof CCodeRoute
   '/product/$id': typeof ProductIdRoute
+  '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/register': typeof VendorRegisterRoute
@@ -389,6 +407,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/profile'
     | '/quick'
+    | '/referral'
     | '/register'
     | '/services'
     | '/status'
@@ -411,6 +430,7 @@ export interface FileRouteTypes {
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
+    | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/register'
@@ -430,6 +450,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/profile'
     | '/quick'
+    | '/referral'
     | '/register'
     | '/services'
     | '/status'
@@ -452,6 +473,7 @@ export interface FileRouteTypes {
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
+    | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/register'
@@ -472,6 +494,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/profile'
     | '/quick'
+    | '/referral'
     | '/register'
     | '/services'
     | '/status'
@@ -494,6 +517,7 @@ export interface FileRouteTypes {
     | '/admin/vendors'
     | '/c/$code'
     | '/product/$id'
+    | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/register'
@@ -515,12 +539,14 @@ export interface RootRouteChildren {
   OrdersRoute: typeof OrdersRoute
   ProfileRoute: typeof ProfileRoute
   QuickRoute: typeof QuickRoute
+  ReferralRoute: typeof ReferralRoute
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
   StatusRoute: typeof StatusRoute
   VendorsRoute: typeof VendorsRoute
   CCodeRoute: typeof CCodeRoute
   ProductIdRoute: typeof ProductIdRoute
+  RCodeRoute: typeof RCodeRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorRegisterRoute: typeof VendorRegisterRoute
@@ -559,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referral': {
+      id: '/referral'
+      path: '/referral'
+      fullPath: '/referral'
+      preLoaderRoute: typeof ReferralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quick': {
@@ -678,6 +711,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/chat'
       fullPath: '/vendor/chat'
       preLoaderRoute: typeof VendorChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -868,12 +908,14 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersRoute: OrdersRoute,
   ProfileRoute: ProfileRoute,
   QuickRoute: QuickRoute,
+  ReferralRoute: ReferralRoute,
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
   StatusRoute: StatusRoute,
   VendorsRoute: VendorsRoute,
   CCodeRoute: CCodeRoute,
   ProductIdRoute: ProductIdRoute,
+  RCodeRoute: RCodeRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   VendorRegisterRoute: VendorRegisterRoute,
@@ -886,12 +928,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

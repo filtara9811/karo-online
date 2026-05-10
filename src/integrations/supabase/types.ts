@@ -1094,6 +1094,271 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_campaigns: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          max_per_user: number | null
+          min_order_value: number | null
+          name: string
+          release_trigger: string
+          reward_amount: number
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          max_per_user?: number | null
+          min_order_value?: number | null
+          name: string
+          release_trigger?: string
+          reward_amount?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          max_per_user?: number | null
+          min_order_value?: number | null
+          name?: string
+          release_trigger?: string
+          reward_amount?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_progress: {
+        Row: {
+          became_seller: boolean
+          became_seller_at: string | null
+          first_order_placed: boolean
+          first_order_placed_at: string | null
+          id: string
+          installed: boolean
+          installed_at: string | null
+          kyc_completed: boolean
+          kyc_completed_at: string | null
+          otp_verified: boolean
+          otp_verified_at: string | null
+          payment_completed: boolean
+          payment_completed_at: string | null
+          referral_id: string
+          registered: boolean
+          registered_at: string | null
+          reward_released: boolean
+          reward_released_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          became_seller?: boolean
+          became_seller_at?: string | null
+          first_order_placed?: boolean
+          first_order_placed_at?: string | null
+          id?: string
+          installed?: boolean
+          installed_at?: string | null
+          kyc_completed?: boolean
+          kyc_completed_at?: string | null
+          otp_verified?: boolean
+          otp_verified_at?: string | null
+          payment_completed?: boolean
+          payment_completed_at?: string | null
+          referral_id: string
+          registered?: boolean
+          registered_at?: string | null
+          reward_released?: boolean
+          reward_released_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          became_seller?: boolean
+          became_seller_at?: string | null
+          first_order_placed?: boolean
+          first_order_placed_at?: string | null
+          id?: string
+          installed?: boolean
+          installed_at?: string | null
+          kyc_completed?: boolean
+          kyc_completed_at?: string | null
+          otp_verified?: boolean
+          otp_verified_at?: string | null
+          payment_completed?: boolean
+          payment_completed_at?: string | null
+          referral_id?: string
+          registered?: boolean
+          registered_at?: string | null
+          reward_released?: boolean
+          reward_released_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_progress_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: true
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_rewards: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          notes: string | null
+          referral_id: string
+          released_at: string | null
+          status: string
+          trigger: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          referral_id: string
+          released_at?: string | null
+          status?: string
+          trigger: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          referral_id?: string
+          released_at?: string | null
+          status?: string
+          trigger?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_settings: {
+        Row: {
+          default_customer_reward: number
+          default_vendor_reward: number
+          fraud_max_per_device: number
+          fraud_max_per_ip: number
+          id: number
+          terms_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          default_customer_reward?: number
+          default_vendor_reward?: number
+          fraud_max_per_device?: number
+          fraud_max_per_ip?: number
+          id?: number
+          terms_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          default_customer_reward?: number
+          default_vendor_reward?: number
+          fraud_max_per_device?: number
+          fraud_max_per_ip?: number
+          id?: number
+          terms_text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          id: string
+          ip_address: string | null
+          kind: string
+          referred_phone: string | null
+          referred_user_id: string | null
+          referrer_user_id: string
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          kind?: string
+          referred_phone?: string | null
+          referred_user_id?: string | null
+          referrer_user_id: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          kind?: string
+          referred_phone?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_gateways: {
         Row: {
           config: Json
@@ -1560,8 +1825,29 @@ export type Database = {
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      apply_referral_code: {
+        Args: { _code: string; _device?: string; _ip?: string; _kind?: string }
+        Returns: Json
+      }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
+      ensure_my_referral_code: {
+        Args: { _kind?: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "referral_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      generate_referral_code: { Args: { _prefix?: string }; Returns: string }
       get_admin_stats: { Args: never; Returns: Json }
       get_card_link: { Args: { _code: string }; Returns: string }
       get_gateway_health: { Args: never; Returns: Json }
@@ -1581,6 +1867,7 @@ export type Database = {
         }[]
       }
       get_leadx_market_stats: { Args: never; Returns: Json }
+      get_my_referral_overview: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1603,6 +1890,10 @@ export type Database = {
           name: string
           user_id: string
         }[]
+      }
+      mark_referral_checkpoint: {
+        Args: { _checkpoint: string; _referred_user_id: string }
+        Returns: Json
       }
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       normalize_email: { Args: { _email: string }; Returns: string }

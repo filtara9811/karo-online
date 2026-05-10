@@ -96,6 +96,7 @@ const ROWS = [
   { id: "kyc", labelKey: "kyc", subKey: "details", Icon: FileCheck2 },
   { id: "bank", labelKey: "bank", subKey: "details", Icon: Building2 },
   { id: "business", labelKey: "business", subKey: "details", Icon: Store },
+  { id: "referral", labelKey: "Refer", subKey: "Earn", Icon: Star },
   { id: "logout", labelKey: "account", subKey: "logout", Icon: LogOut },
 ] as const;
 
@@ -378,6 +379,10 @@ function ProfilePage() {
               if (r.id === "logout") {
                 await signOut();
                 router.navigate({ to: "/" });
+                return;
+              }
+              if (r.id === "referral") {
+                router.navigate({ to: "/referral" });
                 return;
               }
               setActiveRow(r.id);
