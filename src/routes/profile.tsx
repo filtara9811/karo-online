@@ -688,30 +688,62 @@ function DashboardCardVisual({
     );
   }
 
-  // orders
+  // orders — premium stats card with real values
+  const s = orderStats ?? { total: 0, pending: 0, active: 0, done: 0, cancelled: 0, ratingAvg: 0, reviewCount: 0 };
+  const successRate = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+  const code = profile?.referral_code || "—";
   return (
     <div className="relative h-full w-full rounded-2xl overflow-hidden border border-sky-300 bg-gradient-to-br from-sky-50 via-white to-sky-100 shadow-[0_8px_24px_-8px_rgba(14,165,233,0.55)]">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-300/40 to-transparent" />
-      <div className="relative px-4 pt-3">
-        <span className="text-[9px] uppercase tracking-[0.22em] text-sky-700 italic font-semibold">
-          {card.subtitle}
-        </span>
-        <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight`}>
-          {card.title}
-        </h3>
+      <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-sky-300/40 to-transparent" />
+      <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-sky-200/30 blur-2xl" />
+      <div className="relative px-4 pt-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-sky-700 italic font-semibold">
+            {card.subtitle}
+          </span>
+          <h3 className="font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r from-sky-600 to-sky-800 bg-clip-text text-transparent leading-tight truncate">
+            {card.title}
+          </h3>
+        </div>
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300">
+          <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+          <span className="text-[10px] font-bold text-amber-800">{s.ratingAvg.toFixed(1)}</span>
+          <span className="text-[8px] text-amber-700/70">({s.reviewCount})</span>
+        </div>
       </div>
-      <div className="relative px-4 mt-2 flex items-end justify-between">
-        <div>
+      <div className="relative px-4 mt-1.5 flex items-end justify-between">
+        <div className="min-w-0">
           <p className="text-[9px] text-slate-500 uppercase tracking-wider">Total Orders</p>
-          <p className="font-display text-2xl font-bold text-sky-700">{card.badge}</p>
-          <p className="text-[10px] text-slate-600 mt-0.5">{card.code}</p>
+          <p className="font-display text-[28px] leading-none font-bold text-sky-700">{s.total}</p>
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <StatPill color="amber" label="Pending" value={s.pending} />
+            <StatPill color="sky" label="Active" value={s.active} />
+            <StatPill color="emerald" label="Done" value={s.done} />
+          </div>
         </div>
-        <div className="h-14 w-14 rounded-full bg-sky-500 grid place-items-center text-white shadow-lg">
-          <PackageCheck className="h-7 w-7" />
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 grid place-items-center text-white shadow-lg">
+            <PackageCheck className="h-6 w-6" />
+          </div>
+          <span className="text-[9px] font-bold text-sky-700">{successRate}% success</span>
         </div>
       </div>
-      <FooterBand card={card} />
+      <FooterBand card={{ ...card, code, badge: String(s.total) }} avatarUrl={avatarUrl ?? profile?.avatar_url ?? null} />
     </div>
+  );
+}
+
+function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald"; label: string; value: number }) {
+  const cls = color === "amber"
+    ? "bg-amber-100 text-amber-800 border-amber-300"
+    : color === "emerald"
+      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+      : "bg-sky-100 text-sky-800 border-sky-300";
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[9px] font-bold ${cls}`}>
+      <span className="opacity-70">{label}</span>
+      <span>{value}</span>
+    </span>
   );
 }
 
