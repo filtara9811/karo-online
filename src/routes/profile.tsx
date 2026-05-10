@@ -143,44 +143,61 @@ function ProfilePage() {
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
   const isDark = theme === "dark";
 
+  const scrollToCard = (idx: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  };
+
+  const TAB_META: Array<{ type: CardType; label: string; Icon: typeof User }> = [
+    { type: "personal", label: "Profile", Icon: User },
+    { type: "orders", label: "My orders", Icon: PackageCheck },
+    { type: "wallet", label: "My wallet", Icon: Wallet },
+    { type: "reselling", label: "My earning program", Icon: Users },
+  ];
+
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar with 3 icons */}
-      <header className={`sticky top-0 z-30 px-4 py-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={() => router.history.back()}
-            className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition"
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5 text-[#b45309]" />
-          </button>
-
-          <h1 className="font-display text-lg bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
-            {t("my_account")}
-          </h1>
-
-          <div className="flex items-center gap-1.5">
-            <TopIconButton
-              onClick={() => setTopSheet("support")}
-              aria-label={t("customer_support")}
-            >
-              <LifeBuoy className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
-            </TopIconButton>
-            <TopIconButton onClick={toggleTheme} aria-label={t("theme")}>
-              {theme === "light" ? (
-                <Moon className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
-              ) : (
-                <Sun className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
-              )}
-            </TopIconButton>
-            <TopIconButton
-              onClick={() => setTopSheet("language")}
-              aria-label={t("language")}
-            >
-              <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
-            </TopIconButton>
-          </div>
+      {/* Premium Top bar — 4 card switcher tabs */}
+      <header className={`sticky top-0 z-30 px-3 pt-3 pb-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
+        <div className="flex items-start justify-around gap-1">
+          {TAB_META.map((tab, i) => {
+            const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
+            const active = activeIdx === cardIdx;
+            const isProfile = tab.type === "personal";
+            return (
+              <motion.button
+                key={tab.type}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => scrollToCard(cardIdx)}
+                className="flex flex-col items-center gap-1 flex-1 min-w-0"
+                aria-label={tab.label}
+              >
+                <motion.span
+                  animate={{ scale: active ? 1.08 : 1 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 22 }}
+                  className={`relative h-12 w-12 rounded-full grid place-items-center overflow-hidden transition-all ${
+                    active
+                      ? "ring-2 ring-[#d4af37] ring-offset-2 ring-offset-white shadow-[0_4px_14px_-4px_rgba(212,175,55,0.7)]"
+                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.3)]"
+                  } ${isProfile ? "bg-white" : "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]"}`}
+                >
+                  {isProfile ? (
+                    <img
+                      src={profile?.avatar_url || avatarUser}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <tab.Icon className="h-5 w-5 text-[#92400e]" strokeWidth={2.2} />
+                  )}
+                </motion.span>
+                <span className={`text-[9px] leading-tight text-center font-semibold transition-colors ${active ? "text-[#b45309]" : "text-slate-500"}`}>
+                  {tab.label}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </header>
 
@@ -247,6 +264,38 @@ function ProfilePage() {
           ))}
         </div>
       </section>
+
+      {/* My Account sub-bar (back + title + theme/lang/support) */}
+      <section className="px-4 mt-4">
+        <div className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border ${isDark ? "bg-[oklch(0.20_0.03_85)] border-amber-200/20" : "bg-white border-[color:oklch(0.78_0.14_82/0.35)] shadow-[0_4px_14px_-8px_rgba(212,175,55,0.45)]"}`}>
+          <button
+            onClick={() => router.history.back()}
+            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4 text-[#b45309]" />
+          </button>
+          <h1 className="flex-1 text-center font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
+            {t("my_account")}
+          </h1>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <TopIconButton onClick={() => setTopSheet("support")} aria-label={t("customer_support")}>
+              <LifeBuoy className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+            <TopIconButton onClick={toggleTheme} aria-label={t("theme")}>
+              {theme === "light" ? (
+                <Moon className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              ) : (
+                <Sun className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+              )}
+            </TopIconButton>
+            <TopIconButton onClick={() => setTopSheet("language")} aria-label={t("language")}>
+              <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
+            </TopIconButton>
+          </div>
+        </div>
+      </section>
+
 
       {/* Personal details only — shown when personal card is active */}
       <AnimatePresence mode="wait">
