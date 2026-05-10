@@ -1242,6 +1242,35 @@ function BusinessCardSheet({
             Edit any field. Toggle <strong>on/off</strong> to choose what shows on the card.
           </p>
 
+          {/* Profile picture uploader */}
+          <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3">
+            <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-amber-300 flex-shrink-0 bg-white">
+              <img
+                src={profile?.avatar_url || avatarUser}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-amber-700 font-semibold">
+                Profile picture
+              </p>
+              <p className="text-[10px] text-slate-500">JPG / PNG · square works best</p>
+            </div>
+            <label className="flex-shrink-0 cursor-pointer">
+              <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-600 text-white text-xs font-semibold shadow active:scale-95 transition">
+                <Camera className="h-4 w-4" />
+                {uploading ? "…" : "Change"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
+              />
+            </label>
+          </div>
+
           <CardFieldEditor Icon={Building2} label="Company" value={company} onChange={setCompany} on={vis.company} onToggle={(v) => setVis({ ...vis, company: v })} />
           <CardFieldEditor Icon={User} label="Full Name" value={name} onChange={setName} on={vis.name} onToggle={(v) => setVis({ ...vis, name: v })} />
           <CardFieldEditor Icon={Phone} label="Contact" value={phone} onChange={setPhone} on={vis.phone} onToggle={(v) => setVis({ ...vis, phone: v })} inputMode="tel" />
