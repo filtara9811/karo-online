@@ -26,8 +26,8 @@ function ReferralPage() {
   const [activeRow, setActiveRow] = useState<ReferralRow | null>(null);
 
   const shareUrl = useMemo(() => {
-    if (!data?.code || typeof window === "undefined") return "";
-    return `${window.location.origin}/r/${data.code}`;
+    if (!data?.code) return "";
+    return `https://karoonline.in/r/${data.code}`;
   }, [data?.code]);
 
   const shareText = data?.code
