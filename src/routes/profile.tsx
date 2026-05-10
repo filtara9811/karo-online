@@ -367,22 +367,10 @@ function ProfilePage() {
             <MyOrdersList />
           </motion.section>
         )}
-        {activeCard.type === "reselling" && (
-          <motion.section
-            key="referral-inline"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="px-4 mt-5"
-          >
-            <ReferralInline code={profile?.referral_code ?? ""} />
-          </motion.section>
-        )}
       </AnimatePresence>
 
-      {/* List rows — hidden when Orders or Earning card is active */}
-      {activeCard.type !== "orders" && activeCard.type !== "reselling" && (
+      {/* List rows — hidden when Orders card is active */}
+      {activeCard.type !== "orders" && (
       <section className="px-4 mt-5 space-y-3">
         {ROWS.map((r, i) => (
           <motion.button
