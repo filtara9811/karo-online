@@ -43,6 +43,7 @@ import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-pas
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -225,6 +226,11 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMapsRoute = AdminMapsRouteImport.update({
   id: '/maps',
   path: '/maps',
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -400,6 +408,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/logistics'
     | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/logistics'
     | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/logistics'
     | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -833,6 +845,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/maps': {
       id: '/admin/maps'
       path: '/maps'
@@ -924,6 +943,7 @@ interface AdminRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
   AdminMapsRoute: typeof AdminMapsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -947,6 +967,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
   AdminMapsRoute: AdminMapsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReferralsRoute: AdminReferralsRoute,
