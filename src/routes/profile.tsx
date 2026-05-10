@@ -381,6 +381,10 @@ function ProfilePage() {
                 router.navigate({ to: "/" });
                 return;
               }
+              if (r.id === "referral") {
+                router.navigate({ to: "/referral" });
+                return;
+              }
               setActiveRow(r.id);
             }}
             className="w-full rounded-2xl bg-white border border-amber-200/70 px-4 py-4 flex items-center gap-4 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] active:shadow-md"
