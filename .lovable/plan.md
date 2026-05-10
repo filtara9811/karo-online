@@ -1,89 +1,115 @@
-## Customer Onboarding UI — Premium Step-by-Step Bottom Sheets
+# Referral & Rewards System — Extension Plan
 
-### क्या बनेगा
+This is an **extension-only** build. No existing pages, components, wallet logic, dashboards, sidebars, or themes will be modified. All new work lives in new files and is linked from existing entry points via small, additive insertions only.
 
-Existing single sheet को **6 अलग-अलग bottom sheets** में तोड़ेंगे — हर step home screen के नीचे से smooth slide-up होगा। Home screen background दिखता रहेगा (जैसा screenshots में है)।
+---
 
-### Flow (Customer)
+## 1. Database (new tables only — no existing tables touched)
 
-**Step 1 — Mobile Number Sheet**
-- Title: "Enter mobile number"
-- Single input with phone icon
-- `inputMode="numeric"` + `pattern="[0-9]*"` → numeric keyboard auto
-- 10 digits डालते ही → auto next (OTP send + Step 2)
-- कोई picker नहीं (PWA में native picker काम नहीं करता) — सिर्फ manual input
+New migration adds:
 
-**Step 2 — OTP Sheet**
-- Top में mobile number + ✏️ edit (← back to Step 1) + "Resend OTP" (timer के बाद)
-- 4 OTP boxes, numeric keyboard
-- 45-sec countdown timer
-- सही OTP → backend check: **already registered?**
-  - **हाँ** → "Welcome back, {name}" 1.2 sec → sheet close → home (skip Steps 3-6)
-  - **नहीं** → Step 3 खुले
+- **`referral_codes`** — one row per user (customer/vendor). Fields: `user_id`, `code` (unique, e.g. `REF-AS9811`), `kind` ('customer' | 'vendor'), `created_at`.
+- **`referrals`** — tracks each referred signup. Fields: `referrer_user_id`, `referred_user_id`, `referred_phone`, `kind`, `status` ('pending' | 'approved' | 'rejected' | 'locked'), `device_fingerprint`, `ip_address`, `created_at`, `updated_at`.
+- **`referral_progress`** — per-referral journey checkpoints. Boolean fields: `installed`, `registered`, `otp_verified`, `kyc_completed`, `became_seller`, `first_order_placed`, `payment_completed`, `reward_released`, plus timestamps for each.
+- **`referral_rewards`** — ledger of reward events. Fields: `referral_id`, `user_id` (recipient), `amount`, `currency`, `trigger` (which checkpoint released it), `status` ('pending' | 'locked' | 'approved' | 'rejected'), `released_at`, `notes`.
+- **`referral_campaigns`** — admin-controlled campaign config. Fields: `name`, `kind` ('customer' | 'vendor'), `is_active`, `reward_amount`, `release_trigger` (e.g. `first_order_placed`), `min_order_value`, `max_per_user`, `starts_at`, `ends_at`.
+- **`referral_settings`** — single-row table for global rules (fraud thresholds, default reward, T&C text).
 
-**Step 3 — Name Sheet**
-- "Enter full name" + person icon
-- Input पर tap → keyboard alphabet
-- Next button (golden gradient, bottom)
-- *Note: gender picker आपने mention किया था — मैं name input के साथ एक छोटा gender chip row (Male/Female/Other) रखूंगा, separate picker नहीं (UX तेज़ रहे)*
+**RLS** on all tables: users see only their own rows; admins (existing `user_roles` check) see everything. A `has_role()`-style policy is reused.
 
-**Step 4 — Email Sheet**
-- "Choose email ID" + envelope icon
-- Manual type (alphabet keyboard) + अगर Google session है तो auto-suggest chip ऊपर
-- Next button
+A trigger auto-creates a `referral_codes` row when a customer or vendor profile is created.
 
-**Step 5 — Manager Sheet**
-- "Choose manager" + tap → manager picker bottom sheet (LuxPicker reuse)
-- Selected manager card show with name/area/rating
-- Next button
+## 2. Wallet integration (additive)
 
-**Step 6 — Referral + Terms Sheet**
-- Gift icon + "Enter referral code" input + QR scan icon (right)
-- T&C checkbox
-- "Thanks for you" button (gold gradient) → success overlay → home
+The existing wallet system is **not changed**. A new view/RPC `wallet_referral_summary(user_id)` aggregates `referral_rewards` by status and surfaces:
+- Pending rewards
+- Locked rewards
+- Approved (claimable / credited) rewards
+- Rejected rewards
 
-### Step 7 — Success
-- "🎉 Thanks {name}!" with name → 1.5 sec → home (logged in)
+Approved rewards post into the existing wallet via the existing wallet insert path (whatever function the current wallet uses) — invoked from a server function, not by editing the wallet UI.
 
-### Already-Registered Logic
+## 3. New routes (no existing routes edited except 1-line link insertions)
 
-Step 2 में OTP verify के बाद RPC `lookup_customer_by_phone` call:
-- अगर `name + email + address` सब हैं → **direct login**, profile claim, skip 3-6
-- वरना Step 3 से form continue
+- `src/routes/referral.tsx` — Customer "Invite & Earn" page. Top: banner + code + Copy + WhatsApp + Share. Middle: 4 stat tiles (Total earnings, Pending, Successful referrals, Total invited). List of progress cards per referred user with the 8-step journey. Bottom: T&C + rules accordion.
+- `src/routes/r.$code.tsx` — Public landing page for `/r/REF-XXXX` deep links. Captures code into localStorage + cookie, then redirects to `/register`.
+- `src/routes/vendor.referral.tsx` — Vendor invite page (vendor-styled, same component skeleton).
+- `src/routes/admin.referrals.tsx` — Admin control panel: Campaigns tab, Rewards approval queue, Fraud reports, Analytics (top referrers, funnel, payouts, growth chart), Settings.
 
-Logout/uninstall के बाद वही mobile number डालने पर → auto-detect → instant login।
+All new pages reuse existing tokens (`#d4af37` gold, `font-display`, `GoldCard`, existing card/button classes) so they look native.
 
-### Files में Changes
+## 4. Server functions (`src/lib/referral.functions.ts`)
 
-1. **`src/components/RegistrationFlow.tsx`** — पूरा rewrite step-machine model में:
-   - State: `step: 1 | 2 | 3 | 4 | 5 | 6 | "done"`
-   - हर step एक dedicated section, smooth `motion.div` slide transition
-   - Old single-sheet सब hata दें
-   - Premium golden styling रहेगी जैसी अभी है
+- `getMyReferralOverview` — code, stats, list of referrals with progress.
+- `applyReferralCode({ code })` — called during registration if a code is stored; creates `referrals` row + initial `referral_progress`.
+- `markReferralCheckpoint({ referredUserId, checkpoint })` — called by existing flows (registration completed, KYC approved, first order paid) via small hooks. Idempotent.
+- `releaseEligibleRewards()` — evaluates active campaigns + progress and inserts `referral_rewards` with the right status.
+- Admin-only: `listReferralsAdmin`, `approveReward`, `rejectReward`, `upsertCampaign`, `getReferralAnalytics`.
 
-2. **`src/components/StepSheet.tsx`** (नया) — reusable premium bottom-sheet wrapper:
-   - Smooth spring slide-up animation
-   - Gold gradient border, glass-morphism
-   - Title + content + bottom CTA slot
-   - Backdrop click = close
+## 5. Fraud controls
 
-3. **`src/components/AuthGate.tsx`** — small tweak:
-   - Same `requireAuth(cb)` API रहेगी
-   - लेकिन अब RegistrationFlow को `transparent` mode में render (home screen दिखे background में) — already working
+Inside `applyReferralCode` and `markReferralCheckpoint`:
+- Reject self-referral (same `user_id`).
+- Capture device fingerprint (simple hash of UA + screen + tz from client) and IP (from request headers in server fn).
+- Flag duplicates: if same fingerprint or IP appears > N times for one referrer within 24h → mark referral `locked` for admin review.
+- OTP-verified gate before any reward becomes eligible.
 
-4. **Keyboard hints** — हर input पर proper `inputMode`:
-   - Phone/OTP: `numeric`
-   - Name/Email/Referral: `text` / `email`
+## 6. Hook points into existing flows (minimal, additive)
 
-### Technical Details
+These are the **only** edits to existing files — each is a single function call insertion, no UI/logic rewrite:
 
-- `framer-motion` से slide animations (spring stiffness 260, damping 30)
-- हर step पर URL नहीं बदलेगा (single overlay flow)
-- localStorage draft persistence बनी रहेगी (refresh पर resume)
-- `lookup_customer_by_phone` RPC + `save_customer_profile` flow already exists — reuse
+- `RegistrationFlow.tsx` — after successful signup, read stored ref code from localStorage and call `applyReferralCode`. Then call `markReferralCheckpoint('registered')` and `'otp_verified'`.
+- KYC approval path (existing) — call `markReferralCheckpoint('kyc_completed')`.
+- First successful order path (existing orders store/server fn) — call `'first_order_placed'` + `'payment_completed'`.
+- Vendor approval path — call `'became_seller'`.
 
-### कन्फर्म कीजिए
+If a hook point isn't easily reachable without refactor, we add a tiny wrapper rather than modifying existing logic.
 
-1. Gender selection — separate picker step बनाऊं या Step 3 (Name) में inline chips? **(मेरी सलाह: inline chips, तेज़ flow)**
-2. Address step — आपके 6 screenshots में address नहीं है, लेकिन auto-detect address अभी flow में है। **रखूं या हटा दूं?** (अगर रखें तो Step 5 बनेगा, Manager Step 6 हो जाएगा)
-3. Manager step में search bar चाहिए (multiple managers होंगे) या सिर्फ list?
+## 7. Menu / Programs entry (the screenshot ask)
+
+In the existing **Programs** screen inside the menu bar, add a new banner card "Invite & Earn — Referral Program" styled to match the existing Made-in-Family banners. Tapping it routes to `/referral`. This is a single additive card — surrounding banners untouched.
+
+## 8. Sharing
+
+- WhatsApp: `https://wa.me/?text=...` deep link with referral URL.
+- Native share: `navigator.share` fallback.
+- Copy code: `navigator.clipboard`.
+- Share link format: `https://karoonline.in/r/REF-XXXX`.
+
+(Firebase Dynamic Links is deprecated by Google as of Aug 2025 — using our own `/r/:code` route is the recommended replacement and works for both web and PWA installs. FCM/Analytics are out of scope for this turn unless you ask separately.)
+
+## 9. Out of scope (intentionally not included)
+
+- Native FCM push delivery wiring
+- Any change to existing wallet UI / dashboard / sidebar
+- Changes to existing color tokens or fonts
+
+---
+
+## File summary
+
+**New files:**
+- `supabase/migrations/<ts>_referral_system.sql`
+- `src/lib/referral.functions.ts`
+- `src/lib/referral-fraud.ts`
+- `src/hooks/use-referral.ts`
+- `src/components/referral/ReferralHeroCard.tsx`
+- `src/components/referral/ReferralProgressCard.tsx`
+- `src/components/referral/ReferralStatsRow.tsx`
+- `src/components/referral/ReferralRulesSheet.tsx`
+- `src/components/referral/ProgramsReferralBanner.tsx` (the Programs-page banner)
+- `src/components/admin/ReferralCampaignEditor.tsx`
+- `src/routes/referral.tsx`
+- `src/routes/r.$code.tsx`
+- `src/routes/vendor.referral.tsx`
+- `src/routes/admin.referrals.tsx`
+
+**Edited (additive only, ≤5 lines each):**
+- Programs menu screen → insert `<ProgramsReferralBanner />`
+- `RegistrationFlow.tsx` → call `applyReferralCode` + checkpoints
+- KYC approve path → checkpoint call
+- Order paid path → checkpoint call
+- Vendor approve path → checkpoint call
+- Admin sidebar → one new link to `/admin/referrals`
+
+Approve and I'll ship it in one go (migration first, then code).
