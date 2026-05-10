@@ -40,6 +40,7 @@ import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
+import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
@@ -207,6 +208,11 @@ const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReferralsRoute = AdminReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -288,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -376,6 +384,7 @@ export interface FileRoutesById {
   '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
@@ -422,6 +431,7 @@ export interface FileRouteTypes {
     | '/admin/logistics'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
     | '/admin/sms'
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/admin/logistics'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
     | '/admin/sms'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/admin/logistics'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
     | '/admin/sms'
@@ -776,6 +788,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminResetPasswordRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/referrals': {
+      id: '/admin/referrals'
+      path: '/referrals'
+      fullPath: '/admin/referrals'
+      preLoaderRoute: typeof AdminReferralsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/profile': {
       id: '/admin/profile'
       path: '/profile'
@@ -867,6 +886,7 @@ interface AdminRouteChildren {
   AdminLogisticsRoute: typeof AdminLogisticsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminReferralsRoute: typeof AdminReferralsRoute
   AdminResetPasswordRoute: typeof AdminResetPasswordRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
@@ -887,6 +907,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogisticsRoute: AdminLogisticsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminReferralsRoute: AdminReferralsRoute,
   AdminResetPasswordRoute: AdminResetPasswordRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,
