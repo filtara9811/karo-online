@@ -11,6 +11,8 @@ import {
   Download, Share2, Camera,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { ImageCropper } from "@/components/ImageCropper";
+import { ShareCardSheet } from "@/components/ShareCardSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
