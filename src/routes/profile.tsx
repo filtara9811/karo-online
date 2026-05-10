@@ -378,8 +378,8 @@ function ProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* List rows — hidden when Orders card is active */}
-      {activeCard.type !== "orders" && (
+      {/* List rows — hidden when Orders or Earning card is active */}
+      {activeCard.type !== "orders" && activeCard.type !== "reselling" && (
       <section className="px-4 mt-5 space-y-3">
         {ROWS.map((r, i) => (
           <motion.button
