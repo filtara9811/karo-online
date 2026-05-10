@@ -8,6 +8,7 @@ import {
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
+  Download, Share2, Camera,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
 import avatarUser from "@/assets/avatar-user.png";
