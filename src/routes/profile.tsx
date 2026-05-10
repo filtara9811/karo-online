@@ -300,7 +300,7 @@ function ProfilePage() {
                   >
                     <DashboardCardVisual
                       card={card}
-                      profile={isPersonal ? profile : null}
+                      profile={profile}
                       onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
                       onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
                       orderStats={card.type === "orders" ? orderStats : undefined}
