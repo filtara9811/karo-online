@@ -1278,6 +1278,7 @@ function BusinessCardSheet({
   const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
 
   const refCode = profile?.referral_code ?? "";
   const shareUrl = typeof window !== "undefined" && refCode
