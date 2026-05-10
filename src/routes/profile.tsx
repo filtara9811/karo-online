@@ -148,24 +148,52 @@ function ProfilePage() {
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
   const isDark = theme === "dark";
 
-  const scrollToCard = (idx: number) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
-  };
+  // ---- Real order stats from shared store ----
+  const vendors = useOrdersStore();
+  const orderStats = useMemo(() => {
+    const all = vendors.flatMap((v) => v.orders);
+    const total = all.length;
+    const pending = all.filter((o) => o.status === "placed").length;
+    const active = all.filter((o) =>
+      ["accepted", "processing", "packed", "shipped"].includes(o.status)
+    ).length;
+    const done = all.filter((o) => o.status === "delivered").length;
+    const cancelled = all.filter((o) => o.status === "cancelled").length;
+    const ratingAvg = 4.8; // placeholder until reviews wired
+    const reviewCount = done; // 1 review per completed order placeholder
+    return { total, pending, active, done, cancelled, ratingAvg, reviewCount };
+  }, [vendors]);
+
+  // Inject live values into the visible cards
+  const liveCards: DashCard[] = useMemo(() => {
+    return CARDS.map((c) =>
+      c.type === "orders"
+        ? { ...c, code: `${orderStats.active} Active`, badge: String(orderStats.total) }
+        : c
+    );
+  }, [orderStats]);
 
   const TAB_META: Array<{ type: CardType; label: string; Icon: typeof User }> = [
     { type: "personal", label: "Profile", Icon: User },
     { type: "orders", label: "My orders", Icon: PackageCheck },
     { type: "wallet", label: "My wallet", Icon: Wallet },
-    { type: "reselling", label: "My earning program", Icon: Users },
+    { type: "reselling", label: "Earning", Icon: Users },
   ];
+
+  const goToCard = (idx: number) => setActiveIdx(idx);
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar — 4 card switcher tabs with sliding pill */}
-      <header className={`sticky top-0 z-30 px-3 pt-3 pb-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
-        <div className="relative grid grid-cols-4 gap-1">
+      {/* Premium Top bar — glass switcher, icon-only with active label */}
+      <header
+        className={`sticky top-0 z-30 px-3 pt-3 pb-2 backdrop-blur-2xl border-b transition-colors duration-300 ${
+          isDark
+            ? "bg-[oklch(0.22_0.01_85/0.55)] border-white/10"
+            : "bg-[oklch(0.94_0.005_85/0.55)] border-[color:oklch(0.78_0.14_82/0.18)]"
+        }`}
+        style={{ WebkitBackdropFilter: "blur(20px) saturate(160%)" }}
+      >
+        <div className="relative flex items-center justify-around gap-1">
           {TAB_META.map((tab) => {
             const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
             const active = activeIdx === cardIdx;
@@ -173,27 +201,21 @@ function ProfilePage() {
             return (
               <motion.button
                 key={tab.type}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => scrollToCard(cardIdx)}
-                className="relative flex flex-col items-center gap-1 py-1.5 rounded-2xl"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToCard(cardIdx)}
+                className="relative flex flex-col items-center gap-0.5 py-1 px-1 flex-1 min-w-0"
                 aria-label={tab.label}
               >
-                {/* sliding pill background */}
-                {active && (
-                  <motion.span
-                    layoutId="tab-pill"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[oklch(0.97_0.06_88)] to-[oklch(0.92_0.10_85)] border border-[#d4af37]/60 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.7)]"
-                  />
-                )}
                 <motion.span
-                  animate={{ scale: active ? 1.05 : 1, y: active ? -1 : 0 }}
+                  animate={{ scale: active ? 1.08 : 1 }}
                   transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden transition-all ${
+                  className={`relative h-9 w-9 rounded-full grid place-items-center overflow-hidden transition-colors ${
                     active
-                      ? "ring-2 ring-[#d4af37] ring-offset-2 ring-offset-white shadow-[0_4px_14px_-4px_rgba(212,175,55,0.7)]"
-                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.35)]"
-                  } ${isProfile ? "bg-white" : "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]"}`}
+                      ? "bg-gradient-to-br from-[#fff3c4] to-[#f5d76e] shadow-[0_4px_12px_-4px_rgba(212,175,55,0.6)]"
+                      : isDark
+                        ? "bg-white/10"
+                        : "bg-white/55"
+                  }`}
                 >
                   {isProfile ? (
                     <img
@@ -202,15 +224,26 @@ function ProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <tab.Icon className="h-[18px] w-[18px] text-[#92400e]" strokeWidth={2.2} />
+                    <tab.Icon
+                      className={`h-[16px] w-[16px] ${active ? "text-[#92400e]" : isDark ? "text-amber-200/80" : "text-[#b45309]/75"}`}
+                      strokeWidth={2.2}
+                    />
                   )}
                 </motion.span>
-                <motion.span
-                  animate={{ color: active ? "#b45309" : "#94a3b8" }}
-                  className="relative text-[10px] leading-tight text-center font-semibold tracking-tight"
-                >
-                  {tab.label}
-                </motion.span>
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.span
+                      key="lbl"
+                      initial={{ opacity: 0, y: -2, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -2, height: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="text-[9px] font-semibold tracking-tight text-[#b45309] leading-none whitespace-nowrap"
+                    >
+                      {tab.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </motion.button>
             );
           })}
