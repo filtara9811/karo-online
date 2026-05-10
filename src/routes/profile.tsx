@@ -801,7 +801,7 @@ function RowDetailSheet({
 }: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
   if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
-  if (rowId === "kyc") return <KycSheet onClose={onClose} />;
+  if (rowId === "kyc" || rowId === "bank") return <KycSheet onClose={onClose} initialTab={rowId === "bank" ? "bank" : "aadhaar"} />;
 
   const row = ROWS.find((r) => r.id === rowId);
   return (
@@ -828,6 +828,9 @@ function ProfileDetailsSheet({
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [address, setAddress] = useState(profile?.address ?? "");
   const [saving, setSaving] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [subSheet, setSubSheet] = useState<null | "kyc" | "bank">(null);
 
   const save = async () => {
     if (!userId) return;
@@ -843,19 +846,107 @@ function ProfileDetailsSheet({
     onClose();
   };
 
+  const uploadCroppedAvatar = async (file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true, contentType: "image/jpeg" });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        await supabase.from("customers").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
+        await refreshProfile();
+      }
+    } finally {
+      setUploading(false);
+      setPendingFile(null);
+    }
+  };
+
   return (
     <SheetWrap onClose={onClose}>
       <div className="flex items-center gap-3 mb-4">
         <User className="h-7 w-7 text-amber-700" />
         <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
       </div>
+
+      {/* Avatar uploader with crop */}
+      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3 mb-4">
+        <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-amber-300 flex-shrink-0 bg-white">
+          <img src={profile?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] uppercase tracking-wider text-amber-700 font-semibold">Profile picture</p>
+          <p className="text-[10px] text-slate-500">Pick from gallery, then crop to fit</p>
+        </div>
+        <label className="flex-shrink-0 cursor-pointer">
+          <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-600 text-white text-xs font-semibold shadow active:scale-95 transition">
+            {uploading ? "…" : "Change"}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingFile(f); e.currentTarget.value = ""; }}
+          />
+        </label>
+      </div>
+
       <div className="space-y-3">
         <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
         <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
         <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
         <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
       </div>
+
+      {/* KYC + Bank quick links */}
+      <div className="grid grid-cols-2 gap-2 mt-4">
+        <button
+          onClick={() => setSubSheet("kyc")}
+          className="rounded-2xl bg-white border border-amber-200 px-3 py-3 flex items-center gap-2 active:scale-95 transition shadow-sm"
+        >
+          <div className="h-9 w-9 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+            <FileCheck2 className="h-4 w-4 text-amber-700" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">KYC</p>
+            <p className="text-xs font-semibold text-slate-800">Aadhaar · PAN · GST</p>
+          </div>
+        </button>
+        <button
+          onClick={() => setSubSheet("bank")}
+          className="rounded-2xl bg-white border border-amber-200 px-3 py-3 flex items-center gap-2 active:scale-95 transition shadow-sm"
+        >
+          <div className="h-9 w-9 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+            <Building2 className="h-4 w-4 text-amber-700" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Bank KYC</p>
+            <p className="text-xs font-semibold text-slate-800">Account · IFSC · UPI</p>
+          </div>
+        </button>
+      </div>
+
       <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+
+      <AnimatePresence>
+        {pendingFile && (
+          <ImageCropper
+            file={pendingFile}
+            shape="circle"
+            onCancel={() => setPendingFile(null)}
+            onCropped={uploadCroppedAvatar}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {subSheet && (
+          <KycSheet
+            onClose={() => setSubSheet(null)}
+            initialTab={subSheet === "bank" ? "bank" : "aadhaar"}
+          />
+        )}
+      </AnimatePresence>
     </SheetWrap>
   );
 }
