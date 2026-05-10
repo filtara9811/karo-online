@@ -12,6 +12,7 @@ import {
   Truck,
   Coins,
   FileText,
+  Gift,
   Zap,
   ShieldCheck,
   Settings as SettingsIcon,
