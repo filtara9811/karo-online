@@ -1328,9 +1328,8 @@ function BusinessCardSheet({
     if (!userId) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/avatar-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true, contentType: "image/jpeg" });
       if (!error) {
         const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
         await supabase.from("customers").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
@@ -1338,6 +1337,7 @@ function BusinessCardSheet({
       }
     } finally {
       setUploading(false);
+      setPendingAvatar(null);
     }
   };
 
