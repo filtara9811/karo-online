@@ -1151,6 +1151,56 @@ function BusinessCardSheet({
     }
   };
 
+  const handleAvatarUpload = async (file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        await supabase.from("customers").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
+        await refreshProfile();
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const qrSrc = shareUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(link.trim() || shareUrl)}`
+    : "";
+
+  const downloadQR = async () => {
+    if (!qrSrc) return;
+    try {
+      const res = await fetch(qrSrc);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `karo-card-${refCode || "qr"}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  };
+
+  const shareQR = async () => {
+    if (!shareUrl) return;
+    const text = `Scan my Karo Online card\n${link.trim() || shareUrl}`;
+    try {
+      const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
+      if (nav.share) {
+        await nav.share({ title: "My Card QR", text, url: link.trim() || shareUrl });
+      } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+      }
+    } catch { /* cancelled */ }
+  };
+
   const doShare = async () => {
     if (!userId || !shareUrl) return;
     const text = `${name || "My"} — ${company || "Business Card"}\n${shareUrl}`;
