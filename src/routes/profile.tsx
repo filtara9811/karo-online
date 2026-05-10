@@ -322,20 +322,8 @@ function ProfilePage() {
       </section>
 
 
-      {/* Personal details only — shown when personal card is active */}
+      {/* Orders list when Orders card is active. Personal details now live inside My Profile sheet. */}
       <AnimatePresence mode="wait">
-        {activeCard.type === "personal" && (
-          <motion.section
-            key="personal-details"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="px-4 mt-5"
-          >
-            <CardDetails type={activeCard.type} t={t} profile={profile} />
-          </motion.section>
-        )}
         {activeCard.type === "orders" && (
           <motion.section
             key="orders-list"
