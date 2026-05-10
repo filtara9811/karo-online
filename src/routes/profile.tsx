@@ -1439,7 +1439,7 @@ function BusinessCardSheet({
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingAvatar(f); e.currentTarget.value = ""; }}
               />
             </label>
           </div>
