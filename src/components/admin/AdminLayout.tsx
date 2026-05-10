@@ -39,6 +39,7 @@ const NAV: NavItem[] = [
   { to: "/admin/system-status", label: "System Status", icon: Shield },
   { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
   { to: "/admin/coins", label: "LeadX Market", icon: Coins },
+  { to: "/admin/referrals", label: "Referral Program", icon: Gift },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
 ];
