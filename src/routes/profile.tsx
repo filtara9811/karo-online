@@ -350,7 +350,7 @@ function ProfilePage() {
       </section>
 
 
-      {/* Orders list when Orders card is active. Personal details now live inside My Profile sheet. */}
+      {/* Inline content per active card */}
       <AnimatePresence mode="wait">
         {activeCard.type === "orders" && (
           <motion.section
@@ -362,6 +362,18 @@ function ProfilePage() {
             className="px-4 mt-5"
           >
             <MyOrdersList />
+          </motion.section>
+        )}
+        {activeCard.type === "reselling" && (
+          <motion.section
+            key="referral-inline"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className="px-4 mt-5"
+          >
+            <ReferralInline code={profile?.referral_code ?? ""} />
           </motion.section>
         )}
       </AnimatePresence>
