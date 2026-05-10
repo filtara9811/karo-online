@@ -264,6 +264,10 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
         try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
       }
+      try {
+        const { applyPendingReferralCode } = await import("@/hooks/use-referral");
+        await applyPendingReferralCode();
+      } catch { /* ignore */ }
       // Show success → user clicks Home
       setSuccessOpen(true);
     } finally {
