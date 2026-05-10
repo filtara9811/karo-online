@@ -120,6 +120,7 @@ function ProfilePage() {
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
