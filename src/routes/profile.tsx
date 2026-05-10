@@ -580,14 +580,19 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
+type OrderStats = {
+  total: number; pending: number; active: number; done: number;
+  cancelled: number; ratingAvg: number; reviewCount: number;
+};
 function DashboardCardVisual({
-  card, profile, onCodeTap, onShareTap, avatarUrl,
+  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats,
 }: {
   card: DashCard;
   profile?: CustomerProfile | null;
   onCodeTap?: () => void;
   onShareTap?: () => void;
   avatarUrl?: string | null;
+  orderStats?: OrderStats;
 }) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
