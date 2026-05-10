@@ -269,7 +269,7 @@ function CampaignsTab() {
   const save = async () => {
     if (!editing) return;
     await supabase.rpc("admin_upsert_referral_campaign", {
-      _id: editing.id ?? null,
+      _id: (editing.id ?? null) as any,
       _name: editing.name,
       _kind: editing.kind,
       _is_active: editing.is_active,
@@ -277,8 +277,8 @@ function CampaignsTab() {
       _release_trigger: editing.release_trigger,
       _min_order_value: editing.min_order_value,
       _max_per_user: editing.max_per_user,
-      _starts_at: editing.starts_at,
-      _ends_at: editing.ends_at,
+      _starts_at: (editing.starts_at ?? null) as any,
+      _ends_at: (editing.ends_at ?? null) as any,
     });
     setEditing(null);
     refresh();
