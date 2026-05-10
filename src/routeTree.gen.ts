@@ -43,6 +43,7 @@ import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-pas
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
@@ -224,6 +225,11 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMapsRoute = AdminMapsRouteImport.update({
+  id: '/maps',
+  path: '/maps',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLogisticsRoute = AdminLogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -391,6 +399,7 @@ export interface FileRoutesById {
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -439,6 +448,7 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -821,6 +833,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/maps': {
+      id: '/admin/maps'
+      path: '/maps'
+      fullPath: '/admin/maps'
+      preLoaderRoute: typeof AdminMapsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/logistics': {
       id: '/admin/logistics'
       path: '/logistics'
@@ -904,6 +923,7 @@ interface AdminRouteChildren {
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
+  AdminMapsRoute: typeof AdminMapsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -926,6 +946,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
+  AdminMapsRoute: AdminMapsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReferralsRoute: AdminReferralsRoute,
