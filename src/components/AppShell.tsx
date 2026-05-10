@@ -29,7 +29,7 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
   icon: t.iconImg,
 }));
 
-const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
+const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/referral", "/r/"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
 
