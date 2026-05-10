@@ -1559,6 +1559,17 @@ function BusinessCardSheet({
       )}
 
       <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save Card"} />
+
+      <AnimatePresence>
+        {pendingAvatar && (
+          <ImageCropper
+            file={pendingAvatar}
+            shape="circle"
+            onCancel={() => setPendingAvatar(null)}
+            onCropped={handleAvatarUpload}
+          />
+        )}
+      </AnimatePresence>
     </SheetWrap>
   );
 }
