@@ -1295,6 +1295,37 @@ function BusinessCardSheet({
               </p>
             )}
           </div>
+
+          {/* QR code · download · share */}
+          {shareUrl && (
+            <div className="rounded-2xl bg-white border border-amber-200 p-3 flex gap-3 items-center">
+              <div className="h-24 w-24 rounded-xl overflow-hidden border border-amber-200 bg-white flex-shrink-0 grid place-items-center">
+                <img src={qrSrc} alt="QR" className="h-full w-full object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] uppercase tracking-wider text-amber-700 font-semibold">
+                  Scan QR
+                </p>
+                <p className="text-[10px] text-slate-500 leading-snug mb-2">
+                  Opens your redirect link (or card page if blank).
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={downloadQR}
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold active:scale-95 transition"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Save
+                  </button>
+                  <button
+                    onClick={shareQR}
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-[11px] font-semibold active:scale-95 transition"
+                  >
+                    <Share2 className="h-3.5 w-3.5" /> Share
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
