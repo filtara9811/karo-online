@@ -1692,3 +1692,71 @@ function CardFieldEditor({
   );
 }
 
+
+function ReferralInline({ code }: { code: string }) {
+  const router = useRouter();
+  const [copied, setCopied] = useState(false);
+  const shareUrl = useMemo(() => {
+    if (!code || typeof window === "undefined") return "";
+    return `${window.location.origin}/r/${code}`;
+  }, [code]);
+  const shareText = `Join me on Karo Online! Use my code ${code} to sign up: ${shareUrl}`;
+  const copyCode = async () => {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const openWhatsApp = () =>
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+  const nativeShare = async () => {
+    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
+    if (nav.share) try { await nav.share({ title: "Karo Online", text: shareText, url: shareUrl }); } catch { /* ignore */ }
+    else openWhatsApp();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-amber-50 border border-rose-200 p-4 shadow-sm">
+        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-rose-600">Your Referral Code</p>
+        <div className="flex items-center gap-3 mt-2">
+          <p className="font-mono text-xl font-bold text-rose-700 flex-1">{code || "—"}</p>
+          <button onClick={copyCode} className="h-9 w-9 grid place-items-center rounded-xl bg-white border border-rose-200 shadow-sm active:scale-95">
+            {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <QrCode className="h-4 w-4 text-rose-600" />}
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <button onClick={openWhatsApp} className="rounded-xl bg-emerald-500 text-white px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
+            WhatsApp
+          </button>
+          <button onClick={nativeShare} className="rounded-xl bg-rose-500 text-white px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
+            <Share2 className="h-4 w-4" /> Share
+          </button>
+        </div>
+      </div>
+
+      <button
+        onClick={() => router.navigate({ to: "/referral" })}
+        className="w-full rounded-2xl bg-white border border-amber-200/70 px-4 py-4 flex items-center gap-4 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] active:shadow-md"
+      >
+        <div className="h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-rose-50 to-amber-100 border border-amber-200">
+          <Users className="h-6 w-6 text-rose-600" strokeWidth={1.8} />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-display text-lg text-slate-700 font-semibold">Open Referral Dashboard</p>
+          <p className="text-xs text-slate-500 mt-0.5">Track invites, progress &amp; rewards</p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-amber-400" />
+      </button>
+
+      <div className="rounded-2xl bg-white border border-amber-200/70 p-4">
+        <p className="font-display text-base font-bold text-slate-800 mb-2">How to refer</p>
+        <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
+          <li>Tap WhatsApp or Share to send your code.</li>
+          <li>Friend installs and signs up with your code.</li>
+          <li>Once they complete the milestone, your reward lands in your wallet.</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
