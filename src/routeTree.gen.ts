@@ -43,10 +43,13 @@ import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-pas
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
+import { Route as AdminFirebaseRouteImport } from './routes/admin.firebase'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
@@ -223,6 +226,16 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMapsRoute = AdminMapsRouteImport.update({
+  id: '/maps',
+  path: '/maps',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLogisticsRoute = AdminLogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -241,6 +254,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
 const AdminKycRoute = AdminKycRouteImport.update({
   id: '/kyc',
   path: '/kyc',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFirebaseRoute = AdminFirebaseRouteImport.update({
+  id: '/firebase',
+  path: '/firebase',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
@@ -288,10 +306,13 @@ export interface FileRoutesByFullPath {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -332,10 +353,13 @@ export interface FileRoutesByTo {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -378,10 +402,13 @@ export interface FileRoutesById {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
+  '/admin/maps': typeof AdminMapsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -425,10 +452,13 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/firebase'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -469,10 +499,13 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/firebase'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -514,10 +547,13 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/firebase'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
+    | '/admin/maps'
+    | '/admin/notifications'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -809,6 +845,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/maps': {
+      id: '/admin/maps'
+      path: '/maps'
+      fullPath: '/admin/maps'
+      preLoaderRoute: typeof AdminMapsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/logistics': {
       id: '/admin/logistics'
       path: '/logistics'
@@ -835,6 +885,13 @@ declare module '@tanstack/react-router' {
       path: '/kyc'
       fullPath: '/admin/kyc'
       preLoaderRoute: typeof AdminKycRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/firebase': {
+      id: '/admin/firebase'
+      path: '/firebase'
+      fullPath: '/admin/firebase'
+      preLoaderRoute: typeof AdminFirebaseRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/customers': {
@@ -880,10 +937,13 @@ interface AdminRouteChildren {
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminFirebaseRoute: typeof AdminFirebaseRoute
   AdminKycRoute: typeof AdminKycRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
+  AdminMapsRoute: typeof AdminMapsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -901,10 +961,13 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminFirebaseRoute: AdminFirebaseRoute,
   AdminKycRoute: AdminKycRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
+  AdminMapsRoute: AdminMapsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReferralsRoute: AdminReferralsRoute,
@@ -949,12 +1012,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

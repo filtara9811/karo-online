@@ -466,6 +466,102 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_seen_at: string
+          platform: string
+          token: string
+          topics: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          platform?: string
+          token: string
+          topics?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          topics?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      firebase_services: {
+        Row: {
+          app_id: string | null
+          assigned_use: string
+          config: Json
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          priority: number
+          project_id: string | null
+          sender_id: string | null
+          server_key: string | null
+          service_account_json: string | null
+          service_key: string
+          updated_at: string
+          web_api_key: string | null
+        }
+        Insert: {
+          app_id?: string | null
+          assigned_use?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          project_id?: string | null
+          sender_id?: string | null
+          server_key?: string | null
+          service_account_json?: string | null
+          service_key: string
+          updated_at?: string
+          web_api_key?: string | null
+        }
+        Update: {
+          app_id?: string | null
+          assigned_use?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          project_id?: string | null
+          sender_id?: string | null
+          server_key?: string | null
+          service_account_json?: string | null
+          service_key?: string
+          updated_at?: string
+          web_api_key?: string | null
+        }
+        Relationships: []
+      }
       integration_modules: {
         Row: {
           category: string
@@ -1019,6 +1115,237 @@ export type Database = {
         }
         Relationships: []
       }
+      maps_services: {
+        Row: {
+          api_key: string | null
+          assigned_use: string
+          client_id: string | null
+          client_secret: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          map_sdk_key: string | null
+          priority: number
+          provider: string
+          rest_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          assigned_use?: string
+          client_id?: string | null
+          client_secret?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          map_sdk_key?: string | null
+          priority?: number
+          provider: string
+          rest_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          assigned_use?: string
+          client_id?: string | null
+          client_secret?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          map_sdk_key?: string | null
+          priority?: number
+          provider?: string
+          rest_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_campaigns: {
+        Row: {
+          action_url: string | null
+          body: string
+          channels: Json
+          created_at: string
+          created_by: string | null
+          delivered_count: number
+          failed_count: number
+          geo_filter: Json | null
+          id: string
+          image_url: string | null
+          name: string
+          notification_type: string
+          schedule_at: string | null
+          sent_count: number
+          status: string
+          target_segment: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          channels?: Json
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
+          geo_filter?: Json | null
+          id?: string
+          image_url?: string | null
+          name: string
+          notification_type?: string
+          schedule_at?: string | null
+          sent_count?: number
+          status?: string
+          target_segment?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          channels?: Json
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
+          geo_filter?: Json | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          notification_type?: string
+          schedule_at?: string | null
+          sent_count?: number
+          status?: string
+          target_segment?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_logs: {
+        Row: {
+          campaign_id: string | null
+          channel: string | null
+          created_at: string
+          device_token: string | null
+          error: string | null
+          id: string
+          payload: Json | null
+          provider: string | null
+          status: string
+          trigger_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          device_token?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          provider?: string | null
+          status: string
+          trigger_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          device_token?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          provider?: string | null
+          status?: string
+          trigger_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "notification_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_triggers: {
+        Row: {
+          action_url: string | null
+          audience: string
+          body: string
+          channels: Json
+          created_at: string
+          display_name: string
+          event_key: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          last_fired_at: string | null
+          notification_type: string
+          schedule_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_url?: string | null
+          audience?: string
+          body?: string
+          channels?: Json
+          created_at?: string
+          display_name: string
+          event_key: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          last_fired_at?: string | null
+          notification_type?: string
+          schedule_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          action_url?: string | null
+          audience?: string
+          body?: string
+          channels?: Json
+          created_at?: string
+          display_name?: string
+          event_key?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          last_fired_at?: string | null
+          notification_type?: string
+          schedule_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           attempts: number
@@ -1518,6 +1845,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_geo: {
+        Row: {
+          accuracy: number | null
+          geohash: string | null
+          lat: number | null
+          lng: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          geohash?: string | null
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          geohash?: string | null
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1873,6 +2227,49 @@ export type Database = {
         Args: { _notes?: string; _reward_id: string }
         Returns: Json
       }
+      admin_test_notification: {
+        Args: { _trigger_id: string; _user_id?: string }
+        Returns: Json
+      }
+      admin_upsert_notification_trigger: {
+        Args: {
+          _action_url: string
+          _audience: string
+          _body: string
+          _channels: Json
+          _display_name: string
+          _event_key: string
+          _id: string
+          _image_url: string
+          _is_active: boolean
+          _notification_type: string
+          _schedule_at: string
+          _title: string
+        }
+        Returns: {
+          action_url: string | null
+          audience: string
+          body: string
+          channels: Json
+          created_at: string
+          display_name: string
+          event_key: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          last_fired_at: string | null
+          notification_type: string
+          schedule_at: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notification_triggers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_upsert_referral_campaign: {
         Args: {
           _ends_at: string
@@ -1950,6 +2347,7 @@ export type Database = {
       }
       get_leadx_market_stats: { Args: never; Returns: Json }
       get_my_referral_overview: { Args: never; Returns: Json }
+      get_notification_analytics: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1980,6 +2378,10 @@ export type Database = {
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       normalize_email: { Args: { _email: string }; Returns: string }
       normalize_phone10: { Args: { _phone: string }; Returns: string }
+      register_device_token: {
+        Args: { _platform?: string; _token: string; _topics?: string[] }
+        Returns: Json
+      }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
       save_customer_profile: {
         Args: {
@@ -2137,6 +2539,10 @@ export type Database = {
         Returns: Json
       }
       update_coin_rate: { Args: { _new_rate: number }; Returns: undefined }
+      update_my_geo: {
+        Args: { _accuracy?: number; _lat: number; _lng: number }
+        Returns: Json
+      }
       wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {
