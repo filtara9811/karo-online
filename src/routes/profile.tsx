@@ -11,6 +11,8 @@ import {
   Download, Share2, Camera,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { useOrdersStore } from "@/lib/orders-store";
+import { Star } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { ShareCardSheet } from "@/components/ShareCardSheet";
 import avatarUser from "@/assets/avatar-user.png";
@@ -146,24 +148,52 @@ function ProfilePage() {
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
   const isDark = theme === "dark";
 
-  const scrollToCard = (idx: number) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
-  };
+  // ---- Real order stats from shared store ----
+  const vendors = useOrdersStore();
+  const orderStats = useMemo(() => {
+    const all = vendors.flatMap((v) => v.orders);
+    const total = all.length;
+    const pending = all.filter((o) => o.status === "placed").length;
+    const active = all.filter((o) =>
+      ["accepted", "processing", "packed", "shipped"].includes(o.status)
+    ).length;
+    const done = all.filter((o) => o.status === "delivered").length;
+    const cancelled = all.filter((o) => o.status === "cancelled").length;
+    const ratingAvg = 4.8; // placeholder until reviews wired
+    const reviewCount = done; // 1 review per completed order placeholder
+    return { total, pending, active, done, cancelled, ratingAvg, reviewCount };
+  }, [vendors]);
+
+  // Inject live values into the visible cards
+  const liveCards: DashCard[] = useMemo(() => {
+    return CARDS.map((c) =>
+      c.type === "orders"
+        ? { ...c, code: `${orderStats.active} Active`, badge: String(orderStats.total) }
+        : c
+    );
+  }, [orderStats]);
 
   const TAB_META: Array<{ type: CardType; label: string; Icon: typeof User }> = [
     { type: "personal", label: "Profile", Icon: User },
     { type: "orders", label: "My orders", Icon: PackageCheck },
     { type: "wallet", label: "My wallet", Icon: Wallet },
-    { type: "reselling", label: "My earning program", Icon: Users },
+    { type: "reselling", label: "Earning", Icon: Users },
   ];
+
+  const goToCard = (idx: number) => setActiveIdx(idx);
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar — 4 card switcher tabs with sliding pill */}
-      <header className={`sticky top-0 z-30 px-3 pt-3 pb-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
-        <div className="relative grid grid-cols-4 gap-1">
+      {/* Premium Top bar — glass switcher, icon-only with active label */}
+      <header
+        className={`sticky top-0 z-30 px-3 pt-3 pb-2 backdrop-blur-2xl border-b transition-colors duration-300 ${
+          isDark
+            ? "bg-[oklch(0.22_0.01_85/0.55)] border-white/10"
+            : "bg-[oklch(0.94_0.005_85/0.55)] border-[color:oklch(0.78_0.14_82/0.18)]"
+        }`}
+        style={{ WebkitBackdropFilter: "blur(20px) saturate(160%)" }}
+      >
+        <div className="relative flex items-center justify-around gap-1">
           {TAB_META.map((tab) => {
             const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
             const active = activeIdx === cardIdx;
@@ -171,27 +201,21 @@ function ProfilePage() {
             return (
               <motion.button
                 key={tab.type}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => scrollToCard(cardIdx)}
-                className="relative flex flex-col items-center gap-1 py-1.5 rounded-2xl"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToCard(cardIdx)}
+                className="relative flex flex-col items-center gap-0.5 py-1 px-1 flex-1 min-w-0"
                 aria-label={tab.label}
               >
-                {/* sliding pill background */}
-                {active && (
-                  <motion.span
-                    layoutId="tab-pill"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[oklch(0.97_0.06_88)] to-[oklch(0.92_0.10_85)] border border-[#d4af37]/60 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.7)]"
-                  />
-                )}
                 <motion.span
-                  animate={{ scale: active ? 1.05 : 1, y: active ? -1 : 0 }}
+                  animate={{ scale: active ? 1.08 : 1 }}
                   transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden transition-all ${
+                  className={`relative h-9 w-9 rounded-full grid place-items-center overflow-hidden transition-colors ${
                     active
-                      ? "ring-2 ring-[#d4af37] ring-offset-2 ring-offset-white shadow-[0_4px_14px_-4px_rgba(212,175,55,0.7)]"
-                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.35)]"
-                  } ${isProfile ? "bg-white" : "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]"}`}
+                      ? "bg-gradient-to-br from-[#fff3c4] to-[#f5d76e] shadow-[0_4px_12px_-4px_rgba(212,175,55,0.6)]"
+                      : isDark
+                        ? "bg-white/10"
+                        : "bg-white/55"
+                  }`}
                 >
                   {isProfile ? (
                     <img
@@ -200,93 +224,95 @@ function ProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <tab.Icon className="h-[18px] w-[18px] text-[#92400e]" strokeWidth={2.2} />
+                    <tab.Icon
+                      className={`h-[16px] w-[16px] ${active ? "text-[#92400e]" : isDark ? "text-amber-200/80" : "text-[#b45309]/75"}`}
+                      strokeWidth={2.2}
+                    />
                   )}
                 </motion.span>
-                <motion.span
-                  animate={{ color: active ? "#b45309" : "#94a3b8" }}
-                  className="relative text-[10px] leading-tight text-center font-semibold tracking-tight"
-                >
-                  {tab.label}
-                </motion.span>
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.span
+                      key="lbl"
+                      initial={{ opacity: 0, y: -2, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -2, height: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="text-[9px] font-semibold tracking-tight text-[#b45309] leading-none whitespace-nowrap"
+                    >
+                      {tab.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </motion.button>
             );
           })}
         </div>
       </header>
 
-      {/* Swipeable dashboard cards — wider, credit-card-ish */}
-      <section className="pt-5">
-        <div
-          ref={scrollerRef}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {CARDS.map((card) => {
-            const isPersonal = card.type === "personal";
-            const startPress = () => {
-              if (!isPersonal) return;
-              longPressedRef.current = false;
-              pressTimer.current = setTimeout(() => {
-                longPressedRef.current = true;
-                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
-                setCardSheet("flip");
-              }, 480);
-            };
-            const cancelPress = () => {
-              if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
-            };
-            const endPress = () => {
-              cancelPress();
-              if (longPressedRef.current) { longPressedRef.current = false; return; }
-            };
-            return (
-              <motion.div
-                key={card.id}
-                whileTap={{ scale: 0.98 }}
-                onPointerDown={startPress}
-                onPointerUp={endPress}
-                onPointerLeave={cancelPress}
-                onPointerCancel={cancelPress}
-                onContextMenu={(e) => e.preventDefault()}
-                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px]"
-                style={{ aspectRatio: "1.7 / 1" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (longPressedRef.current) { longPressedRef.current = false; return; }
-                    if (isPersonal) setCardSheet("edit");
-                    else setEditing(card);
-                  }}
-                  className="absolute inset-0 text-left"
-                  aria-label={`${card.title} card`}
+      {/* Dashboard card — slides up from bottom on tab switch */}
+      <section className="pt-4 px-4 overflow-hidden">
+        <div className="relative w-full max-w-[400px] mx-auto" style={{ aspectRatio: "1.7 / 1" }}>
+          <AnimatePresence mode="wait" initial={false}>
+            {(() => {
+              const card = liveCards[activeIdx] ?? liveCards[0];
+              const isPersonal = card.type === "personal";
+              const startPress = () => {
+                if (!isPersonal) return;
+                longPressedRef.current = false;
+                pressTimer.current = setTimeout(() => {
+                  longPressedRef.current = true;
+                  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
+                  setCardSheet("flip");
+                }, 480);
+              };
+              const cancelPress = () => {
+                if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+              };
+              const endPress = () => {
+                cancelPress();
+                if (longPressedRef.current) { longPressedRef.current = false; return; }
+              };
+              return (
+                <motion.div
+                  key={card.id}
+                  initial={{ y: "110%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "-12%", opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 30, mass: 0.7 }}
+                  whileTap={{ scale: 0.985 }}
+                  onPointerDown={startPress}
+                  onPointerUp={endPress}
+                  onPointerLeave={cancelPress}
+                  onPointerCancel={cancelPress}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="absolute inset-0"
                 >
-                  <DashboardCardVisual
-                    card={card}
-                    profile={isPersonal ? profile : null}
-                    onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
-                    onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
-                  />
-                </button>
-                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
-                  <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Dot indicators */}
-        <div className="flex justify-center gap-1.5 mt-1">
-          {CARDS.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === activeIdx ? "w-6 bg-[#d4af37]" : "w-1.5 bg-[color:oklch(0.78_0.14_82/0.4)]"
-              }`}
-            />
-          ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (longPressedRef.current) { longPressedRef.current = false; return; }
+                      if (isPersonal) setCardSheet("edit");
+                      else setEditing(card);
+                    }}
+                    className="absolute inset-0 text-left"
+                    aria-label={`${card.title} card`}
+                  >
+                    <DashboardCardVisual
+                      card={card}
+                      profile={profile}
+                      onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                      onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
+                      orderStats={card.type === "orders" ? orderStats : undefined}
+                    />
+                  </button>
+                  <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
+                    <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
+                  </span>
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -554,14 +580,19 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
+type OrderStats = {
+  total: number; pending: number; active: number; done: number;
+  cancelled: number; ratingAvg: number; reviewCount: number;
+};
 function DashboardCardVisual({
-  card, profile, onCodeTap, onShareTap, avatarUrl,
+  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats,
 }: {
   card: DashCard;
   profile?: CustomerProfile | null;
   onCodeTap?: () => void;
   onShareTap?: () => void;
   avatarUrl?: string | null;
+  orderStats?: OrderStats;
 }) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
@@ -657,30 +688,62 @@ function DashboardCardVisual({
     );
   }
 
-  // orders
+  // orders — premium stats card with real values
+  const s = orderStats ?? { total: 0, pending: 0, active: 0, done: 0, cancelled: 0, ratingAvg: 0, reviewCount: 0 };
+  const successRate = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+  const code = profile?.referral_code || "—";
   return (
     <div className="relative h-full w-full rounded-2xl overflow-hidden border border-sky-300 bg-gradient-to-br from-sky-50 via-white to-sky-100 shadow-[0_8px_24px_-8px_rgba(14,165,233,0.55)]">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-300/40 to-transparent" />
-      <div className="relative px-4 pt-3">
-        <span className="text-[9px] uppercase tracking-[0.22em] text-sky-700 italic font-semibold">
-          {card.subtitle}
-        </span>
-        <h3 className={`font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r ${card.accent} bg-clip-text text-transparent leading-tight`}>
-          {card.title}
-        </h3>
+      <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-sky-300/40 to-transparent" />
+      <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-sky-200/30 blur-2xl" />
+      <div className="relative px-4 pt-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-sky-700 italic font-semibold">
+            {card.subtitle}
+          </span>
+          <h3 className="font-display text-[15px] font-bold mt-0.5 bg-gradient-to-r from-sky-600 to-sky-800 bg-clip-text text-transparent leading-tight truncate">
+            {card.title}
+          </h3>
+        </div>
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300">
+          <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+          <span className="text-[10px] font-bold text-amber-800">{s.ratingAvg.toFixed(1)}</span>
+          <span className="text-[8px] text-amber-700/70">({s.reviewCount})</span>
+        </div>
       </div>
-      <div className="relative px-4 mt-2 flex items-end justify-between">
-        <div>
+      <div className="relative px-4 mt-1.5 flex items-end justify-between">
+        <div className="min-w-0">
           <p className="text-[9px] text-slate-500 uppercase tracking-wider">Total Orders</p>
-          <p className="font-display text-2xl font-bold text-sky-700">{card.badge}</p>
-          <p className="text-[10px] text-slate-600 mt-0.5">{card.code}</p>
+          <p className="font-display text-[28px] leading-none font-bold text-sky-700">{s.total}</p>
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <StatPill color="amber" label="Pending" value={s.pending} />
+            <StatPill color="sky" label="Active" value={s.active} />
+            <StatPill color="emerald" label="Done" value={s.done} />
+          </div>
         </div>
-        <div className="h-14 w-14 rounded-full bg-sky-500 grid place-items-center text-white shadow-lg">
-          <PackageCheck className="h-7 w-7" />
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 grid place-items-center text-white shadow-lg">
+            <PackageCheck className="h-6 w-6" />
+          </div>
+          <span className="text-[9px] font-bold text-sky-700">{successRate}% success</span>
         </div>
       </div>
-      <FooterBand card={card} />
+      <FooterBand card={{ ...card, code, badge: String(s.total) }} avatarUrl={avatarUrl ?? profile?.avatar_url ?? null} />
     </div>
+  );
+}
+
+function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald"; label: string; value: number }) {
+  const cls = color === "amber"
+    ? "bg-amber-100 text-amber-800 border-amber-300"
+    : color === "emerald"
+      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+      : "bg-sky-100 text-sky-800 border-sky-300";
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[9px] font-bold ${cls}`}>
+      <span className="opacity-70">{label}</span>
+      <span>{value}</span>
+    </span>
   );
 }
 
