@@ -1070,64 +1070,71 @@ function LanguageSheet({ onClose }: { onClose: () => void }) {
 
 
 /* -------------------- KYC Sheet -------------------- */
-function KycSheet({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<"aadhaar" | "pan" | "gst">("aadhaar");
+type KycTab = "aadhaar" | "pan" | "gst" | "bank";
+function KycSheet({ onClose, initialTab = "aadhaar" }: { onClose: () => void; initialTab?: KycTab }) {
+  const [tab, setTab] = useState<KycTab>(initialTab);
   return (
     <SheetWrap onClose={onClose}>
       <div className="flex items-center gap-3 mb-1">
         <FileCheck2 className="h-7 w-7 text-amber-700" />
-        <h3 className="font-display text-xl text-amber-700 font-bold">KYC Verification</h3>
+        <h3 className="font-display text-xl text-amber-700 font-bold">
+          {tab === "bank" ? "Bank KYC" : "KYC Verification"}
+        </h3>
       </div>
       <p className="text-xs text-slate-500 mb-4">
-        Upload documents to verify your business identity.
+        {tab === "bank"
+          ? "Add your bank account details for payouts."
+          : "Upload documents to verify your business identity."}
       </p>
 
       {/* Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
-        {(["aadhaar", "pan", "gst"] as const).map((t) => (
+      <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
+        {(["aadhaar", "pan", "gst", "bank"] as const).map((k) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`py-2 rounded-xl text-xs font-semibold capitalize transition ${
-              tab === t
+            key={k}
+            onClick={() => setTab(k)}
+            className={`py-2 rounded-xl text-[11px] font-semibold capitalize transition ${
+              tab === k
                 ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow"
                 : "text-amber-700"
             }`}
           >
-            {t === "gst" ? "GST" : t}
+            {k === "gst" ? "GST" : k === "bank" ? "Bank" : k}
           </button>
         ))}
       </div>
 
       {tab === "aadhaar" && (
-        <KycForm
-          numberLabel="Aadhaar Number"
-          placeholder="XXXX XXXX XXXX"
-          maxLength={14}
-          uploadLabel="Upload Aadhaar (front & back)"
-        />
+        <KycForm numberLabel="Aadhaar Number" placeholder="XXXX XXXX XXXX" maxLength={14} uploadLabel="Upload Aadhaar (front & back)" />
       )}
       {tab === "pan" && (
-        <KycForm
-          numberLabel="PAN Number"
-          placeholder="ABCDE1234F"
-          maxLength={10}
-          uploadLabel="Upload PAN Card"
-        />
+        <KycForm numberLabel="PAN Number" placeholder="ABCDE1234F" maxLength={10} uploadLabel="Upload PAN Card" />
       )}
       {tab === "gst" && (
-        <KycForm
-          numberLabel="GSTIN"
-          placeholder="22AAAAA0000A1Z5"
-          maxLength={15}
-          uploadLabel="Upload GST Certificate"
-        />
+        <KycForm numberLabel="GSTIN" placeholder="22AAAAA0000A1Z5" maxLength={15} uploadLabel="Upload GST Certificate" />
       )}
+      {tab === "bank" && <BankForm />}
 
       <SheetActions onClose={onClose} onSave={onClose} saveLabel="Submit for Review" />
     </SheetWrap>
   );
 }
+
+function BankForm() {
+  const [acc, setAcc] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [holder, setHolder] = useState("");
+  const [upi, setUpi] = useState("");
+  return (
+    <div className="space-y-3">
+      <EditableField Icon={User} label="Account holder name" value={holder} onChange={setHolder} />
+      <EditableField Icon={Building2} label="Account number" value={acc} onChange={setAcc} inputMode="numeric" />
+      <EditableField Icon={IdCard} label="IFSC code" value={ifsc} onChange={(v) => setIfsc(v.toUpperCase())} />
+      <EditableField Icon={AtSign} label="UPI ID (optional)" value={upi} onChange={setUpi} />
+    </div>
+  );
+}
+
 
 function KycForm({
   numberLabel, placeholder, maxLength, uploadLabel,
