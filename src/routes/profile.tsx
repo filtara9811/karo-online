@@ -11,6 +11,8 @@ import {
   Download, Share2, Camera,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { ImageCropper } from "@/components/ImageCropper";
+import { ShareCardSheet } from "@/components/ShareCardSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -118,6 +120,7 @@ function ProfilePage() {
   const [topSheet, setTopSheet] = useState<null | "support" | "language">(null);
   const [panelPicker, setPanelPicker] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -158,28 +161,36 @@ function ProfilePage() {
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar — 4 card switcher tabs */}
+      {/* Premium Top bar — 4 card switcher tabs with sliding pill */}
       <header className={`sticky top-0 z-30 px-3 pt-3 pb-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
-        <div className="flex items-start justify-around gap-1">
-          {TAB_META.map((tab, i) => {
+        <div className="relative grid grid-cols-4 gap-1">
+          {TAB_META.map((tab) => {
             const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
             const active = activeIdx === cardIdx;
             const isProfile = tab.type === "personal";
             return (
               <motion.button
                 key={tab.type}
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={() => scrollToCard(cardIdx)}
-                className="flex flex-col items-center gap-1 flex-1 min-w-0"
+                className="relative flex flex-col items-center gap-1 py-1.5 rounded-2xl"
                 aria-label={tab.label}
               >
+                {/* sliding pill background */}
+                {active && (
+                  <motion.span
+                    layoutId="tab-pill"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[oklch(0.97_0.06_88)] to-[oklch(0.92_0.10_85)] border border-[#d4af37]/60 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.7)]"
+                  />
+                )}
                 <motion.span
-                  animate={{ scale: active ? 1.08 : 1 }}
+                  animate={{ scale: active ? 1.05 : 1, y: active ? -1 : 0 }}
                   transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`relative h-12 w-12 rounded-full grid place-items-center overflow-hidden transition-all ${
+                  className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden transition-all ${
                     active
                       ? "ring-2 ring-[#d4af37] ring-offset-2 ring-offset-white shadow-[0_4px_14px_-4px_rgba(212,175,55,0.7)]"
-                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.3)]"
+                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.35)]"
                   } ${isProfile ? "bg-white" : "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]"}`}
                 >
                   {isProfile ? (
@@ -189,12 +200,15 @@ function ProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <tab.Icon className="h-5 w-5 text-[#92400e]" strokeWidth={2.2} />
+                    <tab.Icon className="h-[18px] w-[18px] text-[#92400e]" strokeWidth={2.2} />
                   )}
                 </motion.span>
-                <span className={`text-[9px] leading-tight text-center font-semibold transition-colors ${active ? "text-[#b45309]" : "text-slate-500"}`}>
+                <motion.span
+                  animate={{ color: active ? "#b45309" : "#94a3b8" }}
+                  className="relative text-[10px] leading-tight text-center font-semibold tracking-tight"
+                >
                   {tab.label}
-                </span>
+                </motion.span>
               </motion.button>
             );
           })}
@@ -227,27 +241,38 @@ function ProfilePage() {
               if (longPressedRef.current) { longPressedRef.current = false; return; }
             };
             return (
-              <motion.button
+              <motion.div
                 key={card.id}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (longPressedRef.current) { longPressedRef.current = false; return; }
-                  if (isPersonal) setCardSheet("edit");
-                  else setEditing(card);
-                }}
                 onPointerDown={startPress}
                 onPointerUp={endPress}
                 onPointerLeave={cancelPress}
                 onPointerCancel={cancelPress}
                 onContextMenu={(e) => e.preventDefault()}
-                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px]"
                 style={{ aspectRatio: "1.7 / 1" }}
               >
-                <DashboardCardVisual card={card} profile={isPersonal ? profile : null} />
-                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (longPressedRef.current) { longPressedRef.current = false; return; }
+                    if (isPersonal) setCardSheet("edit");
+                    else setEditing(card);
+                  }}
+                  className="absolute inset-0 text-left"
+                  aria-label={`${card.title} card`}
+                >
+                  <DashboardCardVisual
+                    card={card}
+                    profile={isPersonal ? profile : null}
+                    onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                    onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
+                  />
+                </button>
+                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
                   <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
                 </span>
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
@@ -297,20 +322,8 @@ function ProfilePage() {
       </section>
 
 
-      {/* Personal details only — shown when personal card is active */}
+      {/* Orders list when Orders card is active. Personal details now live inside My Profile sheet. */}
       <AnimatePresence mode="wait">
-        {activeCard.type === "personal" && (
-          <motion.section
-            key="personal-details"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="px-4 mt-5"
-          >
-            <CardDetails type={activeCard.type} t={t} profile={profile} />
-          </motion.section>
-        )}
         {activeCard.type === "orders" && (
           <motion.section
             key="orders-list"
@@ -450,6 +463,28 @@ function ProfilePage() {
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
 
+      {/* Card share sheet (WhatsApp / copy / download) */}
+      <AnimatePresence>
+        {shareOpen && (() => {
+          const refCode = profile?.referral_code ?? "";
+          const shareUrl = typeof window !== "undefined" && refCode
+            ? (profile?.card_link_url?.trim() || `${window.location.origin}/c/${refCode}`)
+            : "";
+          const qrSrc = shareUrl
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(shareUrl)}`
+            : undefined;
+          return (
+            <ShareCardSheet
+              shareUrl={shareUrl || (typeof window !== "undefined" ? window.location.origin : "")}
+              title={`${profile?.name || "My"} — ${profile?.shop_name || "Karo Online Card"}`}
+              imageUrl={qrSrc}
+              downloadFilename={`karo-card-${refCode || "qr"}.png`}
+              onClose={() => setShareOpen(false)}
+            />
+          );
+        })()}
+      </AnimatePresence>
+
       {/* Floating "Switch Panel" pill — sticks to bottom like home screen action bar */}
       <div
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none"
@@ -519,7 +554,15 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
-function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: CustomerProfile | null }) {
+function DashboardCardVisual({
+  card, profile, onCodeTap, onShareTap, avatarUrl,
+}: {
+  card: DashCard;
+  profile?: CustomerProfile | null;
+  onCodeTap?: () => void;
+  onShareTap?: () => void;
+  avatarUrl?: string | null;
+}) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
     const showName = vis.name !== false;
@@ -550,7 +593,12 @@ function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: Cust
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
-        <FooterBand card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }} />
+        <FooterBand
+          card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }}
+          avatarUrl={avatarUrl ?? profile?.avatar_url ?? null}
+          onCodeTap={onCodeTap}
+          onShareTap={onShareTap}
+        />
       </div>
     );
   }
@@ -636,22 +684,47 @@ function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: Cust
   );
 }
 
-function FooterBand({ card }: { card: DashCard }) {
+function FooterBand({
+  card, avatarUrl, onCodeTap, onShareTap,
+}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
+  const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
   return (
-    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-3 py-2 flex items-center justify-between text-white`}>
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="h-7 w-7 rounded-full overflow-hidden border border-white/80 bg-white flex-shrink-0">
-          <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-2 py-1.5 flex items-center justify-between text-white`}>
+      <button
+        type="button"
+        onClick={(e) => { stop(e); onCodeTap?.(); }}
+        onPointerDown={stop}
+        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-0.5 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
+        aria-label={onCodeTap ? "Open profile details" : undefined}
+      >
+        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10">
+          <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
         </div>
-        <div className="leading-tight min-w-0">
+        <div className="leading-tight min-w-0 text-left">
           <p className="text-[10px] font-bold truncate">{card.subtitle}</p>
-          <p className="text-[8px] opacity-90 truncate">Code : {card.code}</p>
+          <p className="text-[9px] opacity-90 truncate">Code : {card.code}</p>
         </div>
-      </div>
-      <div className="text-right leading-tight flex-shrink-0">
-        <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
-        <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
-      </div>
+      </button>
+
+      {onShareTap ? (
+        <motion.button
+          whileTap={{ scale: 0.92 }}
+          type="button"
+          onClick={(e) => { stop(e); onShareTap(); }}
+          onPointerDown={stop}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#b45309] font-bold text-[11px] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)] border border-white/80"
+          aria-label="Share card"
+        >
+          <Share2 className="h-3.5 w-3.5" strokeWidth={2.6} />
+          <span>Share</span>
+          <span className="text-[9px] font-semibold opacity-70">· {card.badge}</span>
+        </motion.button>
+      ) : (
+        <div className="text-right leading-tight flex-shrink-0 pr-1">
+          <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
+          <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -664,6 +737,7 @@ function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?:
     </div>
   );
 }
+
 
 
 
@@ -727,7 +801,7 @@ function RowDetailSheet({
 }: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
   if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
-  if (rowId === "kyc") return <KycSheet onClose={onClose} />;
+  if (rowId === "kyc" || rowId === "bank") return <KycSheet onClose={onClose} initialTab={rowId === "bank" ? "bank" : "aadhaar"} />;
 
   const row = ROWS.find((r) => r.id === rowId);
   return (
@@ -754,6 +828,9 @@ function ProfileDetailsSheet({
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [address, setAddress] = useState(profile?.address ?? "");
   const [saving, setSaving] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [subSheet, setSubSheet] = useState<null | "kyc" | "bank">(null);
 
   const save = async () => {
     if (!userId) return;
@@ -769,19 +846,107 @@ function ProfileDetailsSheet({
     onClose();
   };
 
+  const uploadCroppedAvatar = async (file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true, contentType: "image/jpeg" });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        await supabase.from("customers").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
+        await refreshProfile();
+      }
+    } finally {
+      setUploading(false);
+      setPendingFile(null);
+    }
+  };
+
   return (
     <SheetWrap onClose={onClose}>
       <div className="flex items-center gap-3 mb-4">
         <User className="h-7 w-7 text-amber-700" />
         <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
       </div>
+
+      {/* Avatar uploader with crop */}
+      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3 mb-4">
+        <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-amber-300 flex-shrink-0 bg-white">
+          <img src={profile?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] uppercase tracking-wider text-amber-700 font-semibold">Profile picture</p>
+          <p className="text-[10px] text-slate-500">Pick from gallery, then crop to fit</p>
+        </div>
+        <label className="flex-shrink-0 cursor-pointer">
+          <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-600 text-white text-xs font-semibold shadow active:scale-95 transition">
+            {uploading ? "…" : "Change"}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingFile(f); e.currentTarget.value = ""; }}
+          />
+        </label>
+      </div>
+
       <div className="space-y-3">
         <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
         <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
         <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
         <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
       </div>
+
+      {/* KYC + Bank quick links */}
+      <div className="grid grid-cols-2 gap-2 mt-4">
+        <button
+          onClick={() => setSubSheet("kyc")}
+          className="rounded-2xl bg-white border border-amber-200 px-3 py-3 flex items-center gap-2 active:scale-95 transition shadow-sm"
+        >
+          <div className="h-9 w-9 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+            <FileCheck2 className="h-4 w-4 text-amber-700" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">KYC</p>
+            <p className="text-xs font-semibold text-slate-800">Aadhaar · PAN · GST</p>
+          </div>
+        </button>
+        <button
+          onClick={() => setSubSheet("bank")}
+          className="rounded-2xl bg-white border border-amber-200 px-3 py-3 flex items-center gap-2 active:scale-95 transition shadow-sm"
+        >
+          <div className="h-9 w-9 rounded-xl grid place-items-center bg-amber-50 border border-amber-200">
+            <Building2 className="h-4 w-4 text-amber-700" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Bank KYC</p>
+            <p className="text-xs font-semibold text-slate-800">Account · IFSC · UPI</p>
+          </div>
+        </button>
+      </div>
+
       <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+
+      <AnimatePresence>
+        {pendingFile && (
+          <ImageCropper
+            file={pendingFile}
+            shape="circle"
+            onCancel={() => setPendingFile(null)}
+            onCropped={uploadCroppedAvatar}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {subSheet && (
+          <KycSheet
+            onClose={() => setSubSheet(null)}
+            initialTab={subSheet === "bank" ? "bank" : "aadhaar"}
+          />
+        )}
+      </AnimatePresence>
     </SheetWrap>
   );
 }
@@ -905,64 +1070,71 @@ function LanguageSheet({ onClose }: { onClose: () => void }) {
 
 
 /* -------------------- KYC Sheet -------------------- */
-function KycSheet({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<"aadhaar" | "pan" | "gst">("aadhaar");
+type KycTab = "aadhaar" | "pan" | "gst" | "bank";
+function KycSheet({ onClose, initialTab = "aadhaar" }: { onClose: () => void; initialTab?: KycTab }) {
+  const [tab, setTab] = useState<KycTab>(initialTab);
   return (
     <SheetWrap onClose={onClose}>
       <div className="flex items-center gap-3 mb-1">
         <FileCheck2 className="h-7 w-7 text-amber-700" />
-        <h3 className="font-display text-xl text-amber-700 font-bold">KYC Verification</h3>
+        <h3 className="font-display text-xl text-amber-700 font-bold">
+          {tab === "bank" ? "Bank KYC" : "KYC Verification"}
+        </h3>
       </div>
       <p className="text-xs text-slate-500 mb-4">
-        Upload documents to verify your business identity.
+        {tab === "bank"
+          ? "Add your bank account details for payouts."
+          : "Upload documents to verify your business identity."}
       </p>
 
       {/* Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
-        {(["aadhaar", "pan", "gst"] as const).map((t) => (
+      <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-amber-50 border border-amber-200 mb-4">
+        {(["aadhaar", "pan", "gst", "bank"] as const).map((k) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`py-2 rounded-xl text-xs font-semibold capitalize transition ${
-              tab === t
+            key={k}
+            onClick={() => setTab(k)}
+            className={`py-2 rounded-xl text-[11px] font-semibold capitalize transition ${
+              tab === k
                 ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow"
                 : "text-amber-700"
             }`}
           >
-            {t === "gst" ? "GST" : t}
+            {k === "gst" ? "GST" : k === "bank" ? "Bank" : k}
           </button>
         ))}
       </div>
 
       {tab === "aadhaar" && (
-        <KycForm
-          numberLabel="Aadhaar Number"
-          placeholder="XXXX XXXX XXXX"
-          maxLength={14}
-          uploadLabel="Upload Aadhaar (front & back)"
-        />
+        <KycForm numberLabel="Aadhaar Number" placeholder="XXXX XXXX XXXX" maxLength={14} uploadLabel="Upload Aadhaar (front & back)" />
       )}
       {tab === "pan" && (
-        <KycForm
-          numberLabel="PAN Number"
-          placeholder="ABCDE1234F"
-          maxLength={10}
-          uploadLabel="Upload PAN Card"
-        />
+        <KycForm numberLabel="PAN Number" placeholder="ABCDE1234F" maxLength={10} uploadLabel="Upload PAN Card" />
       )}
       {tab === "gst" && (
-        <KycForm
-          numberLabel="GSTIN"
-          placeholder="22AAAAA0000A1Z5"
-          maxLength={15}
-          uploadLabel="Upload GST Certificate"
-        />
+        <KycForm numberLabel="GSTIN" placeholder="22AAAAA0000A1Z5" maxLength={15} uploadLabel="Upload GST Certificate" />
       )}
+      {tab === "bank" && <BankForm />}
 
       <SheetActions onClose={onClose} onSave={onClose} saveLabel="Submit for Review" />
     </SheetWrap>
   );
 }
+
+function BankForm() {
+  const [acc, setAcc] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [holder, setHolder] = useState("");
+  const [upi, setUpi] = useState("");
+  return (
+    <div className="space-y-3">
+      <EditableField Icon={User} label="Account holder name" value={holder} onChange={setHolder} />
+      <EditableField Icon={Building2} label="Account number" value={acc} onChange={setAcc} inputMode="numeric" />
+      <EditableField Icon={IdCard} label="IFSC code" value={ifsc} onChange={(v) => setIfsc(v.toUpperCase())} />
+      <EditableField Icon={AtSign} label="UPI ID (optional)" value={upi} onChange={setUpi} />
+    </div>
+  );
+}
+
 
 function KycForm({
   numberLabel, placeholder, maxLength, uploadLabel,
@@ -1106,6 +1278,7 @@ function BusinessCardSheet({
   const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
 
   const refCode = profile?.referral_code ?? "";
   const shareUrl = typeof window !== "undefined" && refCode
@@ -1155,9 +1328,8 @@ function BusinessCardSheet({
     if (!userId) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/avatar-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true, contentType: "image/jpeg" });
       if (!error) {
         const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
         await supabase.from("customers").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
@@ -1165,6 +1337,7 @@ function BusinessCardSheet({
       }
     } finally {
       setUploading(false);
+      setPendingAvatar(null);
     }
   };
 
@@ -1266,7 +1439,7 @@ function BusinessCardSheet({
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingAvatar(f); e.currentTarget.value = ""; }}
               />
             </label>
           </div>
@@ -1386,6 +1559,17 @@ function BusinessCardSheet({
       )}
 
       <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save Card"} />
+
+      <AnimatePresence>
+        {pendingAvatar && (
+          <ImageCropper
+            file={pendingAvatar}
+            shape="circle"
+            onCancel={() => setPendingAvatar(null)}
+            onCropped={handleAvatarUpload}
+          />
+        )}
+      </AnimatePresence>
     </SheetWrap>
   );
 }
