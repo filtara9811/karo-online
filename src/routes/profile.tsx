@@ -161,28 +161,36 @@ function ProfilePage() {
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar — 4 card switcher tabs */}
+      {/* Premium Top bar — 4 card switcher tabs with sliding pill */}
       <header className={`sticky top-0 z-30 px-3 pt-3 pb-3 backdrop-blur-xl border-b transition-colors duration-300 ${isDark ? "bg-[oklch(0.18_0.03_85/0.9)] border-amber-200/20" : "bg-white/85 border-[color:oklch(0.78_0.14_82/0.3)]"}`}>
-        <div className="flex items-start justify-around gap-1">
-          {TAB_META.map((tab, i) => {
+        <div className="relative grid grid-cols-4 gap-1">
+          {TAB_META.map((tab) => {
             const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
             const active = activeIdx === cardIdx;
             const isProfile = tab.type === "personal";
             return (
               <motion.button
                 key={tab.type}
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={() => scrollToCard(cardIdx)}
-                className="flex flex-col items-center gap-1 flex-1 min-w-0"
+                className="relative flex flex-col items-center gap-1 py-1.5 rounded-2xl"
                 aria-label={tab.label}
               >
+                {/* sliding pill background */}
+                {active && (
+                  <motion.span
+                    layoutId="tab-pill"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[oklch(0.97_0.06_88)] to-[oklch(0.92_0.10_85)] border border-[#d4af37]/60 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.7)]"
+                  />
+                )}
                 <motion.span
-                  animate={{ scale: active ? 1.08 : 1 }}
+                  animate={{ scale: active ? 1.05 : 1, y: active ? -1 : 0 }}
                   transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`relative h-12 w-12 rounded-full grid place-items-center overflow-hidden transition-all ${
+                  className={`relative h-11 w-11 rounded-full grid place-items-center overflow-hidden transition-all ${
                     active
                       ? "ring-2 ring-[#d4af37] ring-offset-2 ring-offset-white shadow-[0_4px_14px_-4px_rgba(212,175,55,0.7)]"
-                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.3)]"
+                      : "ring-1 ring-[color:oklch(0.78_0.14_82/0.35)]"
                   } ${isProfile ? "bg-white" : "bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8]"}`}
                 >
                   {isProfile ? (
@@ -192,12 +200,15 @@ function ProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <tab.Icon className="h-5 w-5 text-[#92400e]" strokeWidth={2.2} />
+                    <tab.Icon className="h-[18px] w-[18px] text-[#92400e]" strokeWidth={2.2} />
                   )}
                 </motion.span>
-                <span className={`text-[9px] leading-tight text-center font-semibold transition-colors ${active ? "text-[#b45309]" : "text-slate-500"}`}>
+                <motion.span
+                  animate={{ color: active ? "#b45309" : "#94a3b8" }}
+                  className="relative text-[10px] leading-tight text-center font-semibold tracking-tight"
+                >
                   {tab.label}
-                </span>
+                </motion.span>
               </motion.button>
             );
           })}
@@ -230,27 +241,38 @@ function ProfilePage() {
               if (longPressedRef.current) { longPressedRef.current = false; return; }
             };
             return (
-              <motion.button
+              <motion.div
                 key={card.id}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (longPressedRef.current) { longPressedRef.current = false; return; }
-                  if (isPersonal) setCardSheet("edit");
-                  else setEditing(card);
-                }}
                 onPointerDown={startPress}
                 onPointerUp={endPress}
                 onPointerLeave={cancelPress}
                 onPointerCancel={cancelPress}
                 onContextMenu={(e) => e.preventDefault()}
-                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px] text-left"
+                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px]"
                 style={{ aspectRatio: "1.7 / 1" }}
               >
-                <DashboardCardVisual card={card} profile={isPersonal ? profile : null} />
-                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (longPressedRef.current) { longPressedRef.current = false; return; }
+                    if (isPersonal) setCardSheet("edit");
+                    else setEditing(card);
+                  }}
+                  className="absolute inset-0 text-left"
+                  aria-label={`${card.title} card`}
+                >
+                  <DashboardCardVisual
+                    card={card}
+                    profile={isPersonal ? profile : null}
+                    onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                    onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
+                  />
+                </button>
+                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
                   <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
                 </span>
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
