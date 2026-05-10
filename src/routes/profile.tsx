@@ -203,7 +203,10 @@ function ProfilePage() {
               <motion.button
                 key={tab.type}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => goToCard(cardIdx)}
+                onClick={() => {
+                  if (tab.type === "reselling") { router.navigate({ to: "/referral" }); return; }
+                  goToCard(cardIdx);
+                }}
                 className="relative flex flex-col items-center gap-0.5 py-1 px-1 flex-1 min-w-0"
                 aria-label={tab.label}
               >
