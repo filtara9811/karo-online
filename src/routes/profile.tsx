@@ -463,6 +463,28 @@ function ProfilePage() {
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
 
+      {/* Card share sheet (WhatsApp / copy / download) */}
+      <AnimatePresence>
+        {shareOpen && (() => {
+          const refCode = profile?.referral_code ?? "";
+          const shareUrl = typeof window !== "undefined" && refCode
+            ? (profile?.card_link_url?.trim() || `${window.location.origin}/c/${refCode}`)
+            : "";
+          const qrSrc = shareUrl
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(shareUrl)}`
+            : undefined;
+          return (
+            <ShareCardSheet
+              shareUrl={shareUrl || (typeof window !== "undefined" ? window.location.origin : "")}
+              title={`${profile?.name || "My"} — ${profile?.shop_name || "Karo Online Card"}`}
+              imageUrl={qrSrc}
+              downloadFilename={`karo-card-${refCode || "qr"}.png`}
+              onClose={() => setShareOpen(false)}
+            />
+          );
+        })()}
+      </AnimatePresence>
+
       {/* Floating "Switch Panel" pill — sticks to bottom like home screen action bar */}
       <div
         className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] pointer-events-none"
