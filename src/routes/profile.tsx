@@ -532,7 +532,15 @@ function TopIconButton({
 }
 
 /* -------------------- Card Visual -------------------- */
-function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: CustomerProfile | null }) {
+function DashboardCardVisual({
+  card, profile, onCodeTap, onShareTap, avatarUrl,
+}: {
+  card: DashCard;
+  profile?: CustomerProfile | null;
+  onCodeTap?: () => void;
+  onShareTap?: () => void;
+  avatarUrl?: string | null;
+}) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
     const showName = vis.name !== false;
@@ -563,7 +571,12 @@ function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: Cust
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
-        <FooterBand card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }} />
+        <FooterBand
+          card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }}
+          avatarUrl={avatarUrl ?? profile?.avatar_url ?? null}
+          onCodeTap={onCodeTap}
+          onShareTap={onShareTap}
+        />
       </div>
     );
   }
@@ -649,22 +662,47 @@ function DashboardCardVisual({ card, profile }: { card: DashCard; profile?: Cust
   );
 }
 
-function FooterBand({ card }: { card: DashCard }) {
+function FooterBand({
+  card, avatarUrl, onCodeTap, onShareTap,
+}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
+  const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
   return (
-    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-3 py-2 flex items-center justify-between text-white`}>
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="h-7 w-7 rounded-full overflow-hidden border border-white/80 bg-white flex-shrink-0">
-          <img src={avatarUser} alt="" className="h-full w-full object-cover" />
+    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-2 py-1.5 flex items-center justify-between text-white`}>
+      <button
+        type="button"
+        onClick={(e) => { stop(e); onCodeTap?.(); }}
+        onPointerDown={stop}
+        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-0.5 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
+        aria-label={onCodeTap ? "Open profile details" : undefined}
+      >
+        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10">
+          <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
         </div>
-        <div className="leading-tight min-w-0">
+        <div className="leading-tight min-w-0 text-left">
           <p className="text-[10px] font-bold truncate">{card.subtitle}</p>
-          <p className="text-[8px] opacity-90 truncate">Code : {card.code}</p>
+          <p className="text-[9px] opacity-90 truncate">Code : {card.code}</p>
         </div>
-      </div>
-      <div className="text-right leading-tight flex-shrink-0">
-        <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
-        <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
-      </div>
+      </button>
+
+      {onShareTap ? (
+        <motion.button
+          whileTap={{ scale: 0.92 }}
+          type="button"
+          onClick={(e) => { stop(e); onShareTap(); }}
+          onPointerDown={stop}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#b45309] font-bold text-[11px] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)] border border-white/80"
+          aria-label="Share card"
+        >
+          <Share2 className="h-3.5 w-3.5" strokeWidth={2.6} />
+          <span>Share</span>
+          <span className="text-[9px] font-semibold opacity-70">· {card.badge}</span>
+        </motion.button>
+      ) : (
+        <div className="text-right leading-tight flex-shrink-0 pr-1">
+          <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
+          <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -677,6 +715,7 @@ function MiniRow({ Icon, text, wrap }: { Icon: typeof User; text: string; wrap?:
     </div>
   );
 }
+
 
 
 
