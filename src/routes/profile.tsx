@@ -250,78 +250,69 @@ function ProfilePage() {
         </div>
       </header>
 
-      {/* Swipeable dashboard cards — wider, credit-card-ish */}
-      <section className="pt-5">
-        <div
-          ref={scrollerRef}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 scrollbar-hide"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {CARDS.map((card) => {
-            const isPersonal = card.type === "personal";
-            const startPress = () => {
-              if (!isPersonal) return;
-              longPressedRef.current = false;
-              pressTimer.current = setTimeout(() => {
-                longPressedRef.current = true;
-                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
-                setCardSheet("flip");
-              }, 480);
-            };
-            const cancelPress = () => {
-              if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
-            };
-            const endPress = () => {
-              cancelPress();
-              if (longPressedRef.current) { longPressedRef.current = false; return; }
-            };
-            return (
-              <motion.div
-                key={card.id}
-                whileTap={{ scale: 0.98 }}
-                onPointerDown={startPress}
-                onPointerUp={endPress}
-                onPointerLeave={cancelPress}
-                onPointerCancel={cancelPress}
-                onContextMenu={(e) => e.preventDefault()}
-                className="relative snap-center flex-shrink-0 w-[92%] max-w-[400px]"
-                style={{ aspectRatio: "1.7 / 1" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (longPressedRef.current) { longPressedRef.current = false; return; }
-                    if (isPersonal) setCardSheet("edit");
-                    else setEditing(card);
-                  }}
-                  className="absolute inset-0 text-left"
-                  aria-label={`${card.title} card`}
+      {/* Dashboard card — slides up from bottom on tab switch */}
+      <section className="pt-4 px-4 overflow-hidden">
+        <div className="relative w-full max-w-[400px] mx-auto" style={{ aspectRatio: "1.7 / 1" }}>
+          <AnimatePresence mode="wait" initial={false}>
+            {(() => {
+              const card = liveCards[activeIdx] ?? liveCards[0];
+              const isPersonal = card.type === "personal";
+              const startPress = () => {
+                if (!isPersonal) return;
+                longPressedRef.current = false;
+                pressTimer.current = setTimeout(() => {
+                  longPressedRef.current = true;
+                  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(30);
+                  setCardSheet("flip");
+                }, 480);
+              };
+              const cancelPress = () => {
+                if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+              };
+              const endPress = () => {
+                cancelPress();
+                if (longPressedRef.current) { longPressedRef.current = false; return; }
+              };
+              return (
+                <motion.div
+                  key={card.id}
+                  initial={{ y: "110%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "-12%", opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 30, mass: 0.7 }}
+                  whileTap={{ scale: 0.985 }}
+                  onPointerDown={startPress}
+                  onPointerUp={endPress}
+                  onPointerLeave={cancelPress}
+                  onPointerCancel={cancelPress}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="absolute inset-0"
                 >
-                  <DashboardCardVisual
-                    card={card}
-                    profile={isPersonal ? profile : null}
-                    onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
-                    onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
-                  />
-                </button>
-                <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
-                  <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Dot indicators */}
-        <div className="flex justify-center gap-1.5 mt-1">
-          {CARDS.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === activeIdx ? "w-6 bg-[#d4af37]" : "w-1.5 bg-[color:oklch(0.78_0.14_82/0.4)]"
-              }`}
-            />
-          ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (longPressedRef.current) { longPressedRef.current = false; return; }
+                      if (isPersonal) setCardSheet("edit");
+                      else setEditing(card);
+                    }}
+                    className="absolute inset-0 text-left"
+                    aria-label={`${card.title} card`}
+                  >
+                    <DashboardCardVisual
+                      card={card}
+                      profile={isPersonal ? profile : null}
+                      onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                      onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
+                      orderStats={card.type === "orders" ? orderStats : undefined}
+                    />
+                  </button>
+                  <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
+                    <Pencil className="h-3.5 w-3.5 text-[#b45309]" />
+                  </span>
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
         </div>
       </section>
 
