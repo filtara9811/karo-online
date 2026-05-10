@@ -340,8 +340,8 @@ function CampaignsTab() {
             </Field>
             <Field label="Min Order Value (₹)"><input type="number" className={inp} value={editing.min_order_value} onChange={(e) => setEditing({ ...editing, min_order_value: Number(e.target.value) })} /></Field>
             <Field label="Max Per User (0 = unlimited)"><input type="number" className={inp} value={editing.max_per_user} onChange={(e) => setEditing({ ...editing, max_per_user: Number(e.target.value) })} /></Field>
-            <Field label="Starts At"><input type="datetime-local" className={inp} value={editing.starts_at?.slice(0,16) ?? ""} onChange={(e) => setEditing({ ...editing, starts_at: e.target.value || null })} /></Field>
-            <Field label="Ends At"><input type="datetime-local" className={inp} value={editing.ends_at?.slice(0,16) ?? ""} onChange={(e) => setEditing({ ...editing, ends_at: e.target.value || null })} /></Field>
+            <Field label="Starts At"><input type="datetime-local" className={inp} value={editing.starts_at ? editing.starts_at.slice(0,16) : ""} onChange={(e) => editing && setEditing({ ...editing, starts_at: e.target.value || null })} /></Field>
+            <Field label="Ends At"><input type="datetime-local" className={inp} value={editing.ends_at ? editing.ends_at.slice(0,16) : ""} onChange={(e) => editing && setEditing({ ...editing, ends_at: e.target.value || null })} /></Field>
             <Field label="Active">
               <label className="flex items-center gap-2 text-[#fff8dc] text-sm">
                 <input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} /> Enabled
