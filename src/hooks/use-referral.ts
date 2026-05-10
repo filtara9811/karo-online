@@ -67,7 +67,7 @@ export async function applyPendingReferralCode(): Promise<void> {
     await supabase.rpc("apply_referral_code", {
       _code: code,
       _device: deviceFingerprint(),
-      _ip: null,
+      _ip: undefined,
       _kind: "customer",
     });
   } finally {
