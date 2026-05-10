@@ -1094,6 +1094,45 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_banners: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          cta_link: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          sort_order: number
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_campaigns: {
         Row: {
           created_at: string
@@ -1825,6 +1864,49 @@ export type Database = {
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      admin_approve_referral_reward: {
+        Args: { _reward_id: string }
+        Returns: Json
+      }
+      admin_get_referral_overview: { Args: never; Returns: Json }
+      admin_reject_referral_reward: {
+        Args: { _notes?: string; _reward_id: string }
+        Returns: Json
+      }
+      admin_upsert_referral_campaign: {
+        Args: {
+          _ends_at: string
+          _id: string
+          _is_active: boolean
+          _kind: string
+          _max_per_user: number
+          _min_order_value: number
+          _name: string
+          _release_trigger: string
+          _reward_amount: number
+          _starts_at: string
+        }
+        Returns: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          max_per_user: number | null
+          min_order_value: number | null
+          name: string
+          release_trigger: string
+          reward_amount: number
+          starts_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "referral_campaigns"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_referral_code: {
         Args: { _code: string; _device?: string; _ip?: string; _kind?: string }
         Returns: Json
