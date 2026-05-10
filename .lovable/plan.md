@@ -1,115 +1,129 @@
-# Referral & Rewards System — Extension Plan
+## Goal
+Add two new admin-managed provider systems following the existing Cashfree/SMS panel pattern — without changing any existing UI.
 
-This is an **extension-only** build. No existing pages, components, wallet logic, dashboards, sidebars, or themes will be modified. All new work lives in new files and is linked from existing entry points via small, additive insertions only.
+1. **Firebase Provider Hub** (Auth, FCM Push, Analytics, Crashlytics, Dynamic Links, Remote Config)
+2. **Maps Provider Hub** (Google Maps + Mappls India)
 
----
-
-## 1. Database (new tables only — no existing tables touched)
-
-New migration adds:
-
-- **`referral_codes`** — one row per user (customer/vendor). Fields: `user_id`, `code` (unique, e.g. `REF-AS9811`), `kind` ('customer' | 'vendor'), `created_at`.
-- **`referrals`** — tracks each referred signup. Fields: `referrer_user_id`, `referred_user_id`, `referred_phone`, `kind`, `status` ('pending' | 'approved' | 'rejected' | 'locked'), `device_fingerprint`, `ip_address`, `created_at`, `updated_at`.
-- **`referral_progress`** — per-referral journey checkpoints. Boolean fields: `installed`, `registered`, `otp_verified`, `kyc_completed`, `became_seller`, `first_order_placed`, `payment_completed`, `reward_released`, plus timestamps for each.
-- **`referral_rewards`** — ledger of reward events. Fields: `referral_id`, `user_id` (recipient), `amount`, `currency`, `trigger` (which checkpoint released it), `status` ('pending' | 'locked' | 'approved' | 'rejected'), `released_at`, `notes`.
-- **`referral_campaigns`** — admin-controlled campaign config. Fields: `name`, `kind` ('customer' | 'vendor'), `is_active`, `reward_amount`, `release_trigger` (e.g. `first_order_placed`), `min_order_value`, `max_per_user`, `starts_at`, `ends_at`.
-- **`referral_settings`** — single-row table for global rules (fraud thresholds, default reward, T&C text).
-
-**RLS** on all tables: users see only their own rows; admins (existing `user_roles` check) see everything. A `has_role()`-style policy is reused.
-
-A trigger auto-creates a `referral_codes` row when a customer or vendor profile is created.
-
-## 2. Wallet integration (additive)
-
-The existing wallet system is **not changed**. A new view/RPC `wallet_referral_summary(user_id)` aggregates `referral_rewards` by status and surfaces:
-- Pending rewards
-- Locked rewards
-- Approved (claimable / credited) rewards
-- Rejected rewards
-
-Approved rewards post into the existing wallet via the existing wallet insert path (whatever function the current wallet uses) — invoked from a server function, not by editing the wallet UI.
-
-## 3. New routes (no existing routes edited except 1-line link insertions)
-
-- `src/routes/referral.tsx` — Customer "Invite & Earn" page. Top: banner + code + Copy + WhatsApp + Share. Middle: 4 stat tiles (Total earnings, Pending, Successful referrals, Total invited). List of progress cards per referred user with the 8-step journey. Bottom: T&C + rules accordion.
-- `src/routes/r.$code.tsx` — Public landing page for `/r/REF-XXXX` deep links. Captures code into localStorage + cookie, then redirects to `/register`.
-- `src/routes/vendor.referral.tsx` — Vendor invite page (vendor-styled, same component skeleton).
-- `src/routes/admin.referrals.tsx` — Admin control panel: Campaigns tab, Rewards approval queue, Fraud reports, Analytics (top referrers, funnel, payouts, growth chart), Settings.
-
-All new pages reuse existing tokens (`#d4af37` gold, `font-display`, `GoldCard`, existing card/button classes) so they look native.
-
-## 4. Server functions (`src/lib/referral.functions.ts`)
-
-- `getMyReferralOverview` — code, stats, list of referrals with progress.
-- `applyReferralCode({ code })` — called during registration if a code is stored; creates `referrals` row + initial `referral_progress`.
-- `markReferralCheckpoint({ referredUserId, checkpoint })` — called by existing flows (registration completed, KYC approved, first order paid) via small hooks. Idempotent.
-- `releaseEligibleRewards()` — evaluates active campaigns + progress and inserts `referral_rewards` with the right status.
-- Admin-only: `listReferralsAdmin`, `approveReward`, `rejectReward`, `upsertCampaign`, `getReferralAnalytics`.
-
-## 5. Fraud controls
-
-Inside `applyReferralCode` and `markReferralCheckpoint`:
-- Reject self-referral (same `user_id`).
-- Capture device fingerprint (simple hash of UA + screen + tz from client) and IP (from request headers in server fn).
-- Flag duplicates: if same fingerprint or IP appears > N times for one referrer within 24h → mark referral `locked` for admin review.
-- OTP-verified gate before any reward becomes eligible.
-
-## 6. Hook points into existing flows (minimal, additive)
-
-These are the **only** edits to existing files — each is a single function call insertion, no UI/logic rewrite:
-
-- `RegistrationFlow.tsx` — after successful signup, read stored ref code from localStorage and call `applyReferralCode`. Then call `markReferralCheckpoint('registered')` and `'otp_verified'`.
-- KYC approval path (existing) — call `markReferralCheckpoint('kyc_completed')`.
-- First successful order path (existing orders store/server fn) — call `'first_order_placed'` + `'payment_completed'`.
-- Vendor approval path — call `'became_seller'`.
-
-If a hook point isn't easily reachable without refactor, we add a tiny wrapper rather than modifying existing logic.
-
-## 7. Menu / Programs entry (the screenshot ask)
-
-In the existing **Programs** screen inside the menu bar, add a new banner card "Invite & Earn — Referral Program" styled to match the existing Made-in-Family banners. Tapping it routes to `/referral`. This is a single additive card — surrounding banners untouched.
-
-## 8. Sharing
-
-- WhatsApp: `https://wa.me/?text=...` deep link with referral URL.
-- Native share: `navigator.share` fallback.
-- Copy code: `navigator.clipboard`.
-- Share link format: `https://karoonline.in/r/REF-XXXX`.
-
-(Firebase Dynamic Links is deprecated by Google as of Aug 2025 — using our own `/r/:code` route is the recommended replacement and works for both web and PWA installs. FCM/Analytics are out of scope for this turn unless you ask separately.)
-
-## 9. Out of scope (intentionally not included)
-
-- Native FCM push delivery wiring
-- Any change to existing wallet UI / dashboard / sidebar
-- Changes to existing color tokens or fonts
+Plus a **Notification Engine** that uses FCM with SMS/WhatsApp fallback and trigger automation.
 
 ---
 
-## File summary
+## 1. Database (single migration)
 
-**New files:**
-- `supabase/migrations/<ts>_referral_system.sql`
-- `src/lib/referral.functions.ts`
-- `src/lib/referral-fraud.ts`
-- `src/hooks/use-referral.ts`
-- `src/components/referral/ReferralHeroCard.tsx`
-- `src/components/referral/ReferralProgressCard.tsx`
-- `src/components/referral/ReferralStatsRow.tsx`
-- `src/components/referral/ReferralRulesSheet.tsx`
-- `src/components/referral/ProgramsReferralBanner.tsx` (the Programs-page banner)
-- `src/components/admin/ReferralCampaignEditor.tsx`
-- `src/routes/referral.tsx`
-- `src/routes/r.$code.tsx`
-- `src/routes/vendor.referral.tsx`
-- `src/routes/admin.referrals.tsx`
+### `firebase_services`
+Multi-row config table (mirrors `cashfree_services`):
+- `service_key` (auth | fcm | analytics | crashlytics | dynamic_links | remote_config)
+- `display_name`, `description`
+- `server_key`, `service_account_json` (text, encrypted via vault if available)
+- `project_id`, `app_id`, `sender_id`, `web_api_key`
+- `is_active`, `is_test_mode`, `priority`
+- `config jsonb` (per-service extras: VAPID key, dynamic-link domain, etc.)
 
-**Edited (additive only, ≤5 lines each):**
-- Programs menu screen → insert `<ProgramsReferralBanner />`
-- `RegistrationFlow.tsx` → call `applyReferralCode` + checkpoints
-- KYC approve path → checkpoint call
-- Order paid path → checkpoint call
-- Vendor approve path → checkpoint call
-- Admin sidebar → one new link to `/admin/referrals`
+Seed 6 rows on creation.
 
-Approve and I'll ship it in one go (migration first, then code).
+### `maps_services`
+- `provider` (google_maps | mappls)
+- `display_name`, `description`
+- `api_key`, `client_id`, `client_secret` (mappls), `rest_key`, `map_sdk_key`
+- `assigned_use` (geocoding | nearby | directions | autocomplete | static_map | none)
+- `is_active`, `is_test_mode`, `priority`
+- `config jsonb`
+
+Seed 2 rows.
+
+### `notification_triggers`
+Admin-defined automation:
+- `event_key` (order_placed | payment_success | payment_failed | kyc_approved | vendor_approved | referral_reward_released | delivery_assigned | order_delivered + custom)
+- `title`, `body`, `image_url`, `action_url` (deep link)
+- `notification_type` (basic | banner | big_image | action | silent)
+- `channels jsonb` (push, sms, whatsapp flags + fallback order)
+- `audience` (user | vendor | topic:<name> | segment:<id>)
+- `is_active`, `schedule_at`, `last_fired_at`
+
+### `notification_campaigns`
+Manual/bulk campaigns with same fields + `target_segment`, `geo_filter jsonb`, `status`, `sent_count`, `delivered_count`, `failed_count`.
+
+### `notification_logs`
+Per-send record: `trigger_id`, `campaign_id`, `user_id`, `device_token`, `provider`, `status` (sent | delivered | failed), `error`, `payload jsonb`, `created_at`.
+
+### `device_tokens`
+- `user_id`, `token`, `platform` (web | android | ios), `last_seen_at`, `is_active`, `topics text[]`.
+
+### `user_geo`
+- `user_id`, `lat`, `lng`, `accuracy`, `geohash`, `updated_at` (for nearby/geo-fencing).
+
+All admin-only RLS using existing `has_role`. Users can insert/update their own `device_tokens` and `user_geo`.
+
+### RPCs
+- `admin_upsert_firebase_service`, `admin_upsert_maps_service`
+- `admin_upsert_notification_trigger`, `admin_test_notification`
+- `register_device_token`, `update_my_geo`
+- `get_notification_analytics` (counts by status/provider/day)
+
+---
+
+## 2. Edge / Server Functions
+
+`src/lib/notifications.functions.ts` (server-only, admin-gated):
+- `sendPushToUser(userId, payload)` — picks active FCM service, sends via HTTP v1 API using service-account JWT, logs to `notification_logs`, falls back to WhatsApp/SMS on failure if trigger says so.
+- `sendCampaign(campaignId)` — bulk loop with batching.
+- `fireTrigger(eventKey, context)` — looked up by event, called from existing flows (orders, payments, kyc, referrals).
+
+`src/lib/maps.functions.ts`:
+- `geocode(address)`, `reverseGeocode(lat,lng)`, `nearbyVendors(lat,lng,radius)` — picks active maps provider by `assigned_use` with failover.
+
+Hook `fireTrigger()` calls into existing key flows (no UI change): order placed, payment success/fail, KYC approve, vendor approve, referral reward release in admin RPC, delivery assignment, order delivered.
+
+---
+
+## 3. Admin Panel (new pages, existing layout/styles)
+
+All use `AdminLayout`, `GoldCard`, `PageHeader` exactly like `admin.cashfree.tsx`.
+
+- **`/admin/firebase`** — list of 6 service cards, each with App ID/Server Key/Service Account JSON textarea, Test/Active toggles, priority, Save. Header tip about smart routing.
+- **`/admin/maps`** — 2 cards (Google + Mappls), API key + assigned-use selector (Geocoding / Nearby / Directions / Autocomplete / Static Map), Test/Active/Priority, Save.
+- **`/admin/notifications`** — 4 tabs:
+  1. **Triggers** — table of events, edit drawer (title/body/image/deep link/channels/audience/type), Test-send button.
+  2. **Campaigns** — create/schedule bulk push, segment filter, geo filter, run, status.
+  3. **Logs** — recent sends with status, provider, error.
+  4. **Analytics** — KPI tiles (sent, delivered, failed, CTR), chart by day/provider.
+- Add 3 entries to `AdminLayout` sidebar: **Firebase**, **Maps**, **Notifications** (with appropriate lucide icons: Flame, Map, Bell).
+
+---
+
+## 4. Customer-side glue (no visible UI change)
+
+- On app boot (in existing root or auth hook): if Firebase web config exists in `firebase_services` (active), initialize FCM, request permission silently only when user opts-in elsewhere; register token via `register_device_token`.
+- Periodic (debounced) `update_my_geo` from existing geolocation hook — store only when user already shared location.
+- Deep-link handler reads `notification.data.action_url` and routes via TanStack router.
+
+No changes to existing screens, cards, switches, or flows.
+
+---
+
+## 5. Failover & multi-provider rules
+- Push: try active FCM service ordered by priority; on error mark provider unhealthy and fall back per trigger config (SMS via existing SMS panel, WhatsApp via existing provider).
+- Maps: per `assigned_use`, pick highest-priority active provider; on 4xx/5xx, try next.
+- All errors logged to `notification_logs` / a new `gateway_errors` row reused by existing System Status page.
+
+---
+
+## Files to add
+- `supabase/migrations/<ts>_firebase_maps_notifications.sql`
+- `src/routes/admin.firebase.tsx`
+- `src/routes/admin.maps.tsx`
+- `src/routes/admin.notifications.tsx`
+- `src/lib/notifications.functions.ts`
+- `src/lib/maps.functions.ts`
+- `src/lib/firebase-admin.server.ts` (FCM HTTP v1 sender, JWT signing using service account)
+- `src/hooks/use-fcm.ts` (browser FCM init + token registration)
+
+## Files to edit
+- `src/components/admin/AdminLayout.tsx` — add 3 sidebar links
+- Existing flows that should fire triggers (orders/payments/kyc/vendor approve/referral release/delivery) — add 1-line `fireTrigger("event_key", {...})` call
+
+No existing UI/components/cards/switches are modified. Existing referral, wallet, dashboard, sidebar, theme remain untouched.
+
+---
+
+This is a large piece of work (~1 migration + 8 new files + ~6 trigger hookups). Approve and I'll ship in one pass starting with the migration.
