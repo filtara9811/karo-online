@@ -291,11 +291,12 @@ function ProfilePage() {
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      if (longPressedRef.current) { longPressedRef.current = false; return; }
-                      if (isPersonal) setCardSheet("edit");
-                      else setEditing(card);
-                    }}
+                     onClick={() => {
+                       if (longPressedRef.current) { longPressedRef.current = false; return; }
+                       if (isPersonal) setCardSheet("edit");
+                       else if (card.type === "reselling") router.navigate({ to: "/referral" });
+                       else setEditing(card);
+                     }}
                     className="absolute inset-0 text-left"
                     aria-label={`${card.title} card`}
                   >
