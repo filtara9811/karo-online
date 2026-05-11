@@ -218,12 +218,22 @@ function isStepDone(row: ReferralRow, step: MacroStep) {
 
 function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () => void; shareText: string }) {
   const initials = (row.name ?? "U").slice(0, 1).toUpperCase();
-  const completed = STEPS.filter((s) => row.progress[s.key]).length;
+  const completed = STEPS.filter((s) => isStepDone(row, s)).length;
   const pct = Math.round((completed / STEPS.length) * 100);
   const statusColor =
     row.status === "approved" ? "bg-emerald-500"
       : row.status === "rejected" ? "bg-rose-500"
       : row.status === "locked" ? "bg-amber-500" : "bg-slate-400";
+
+  // Coin sound + wallet pulse when reward gets released
+  const lastReleased = useRef<boolean>(row.progress.reward_released);
+  useEffect(() => {
+    if (!lastReleased.current && row.progress.reward_released) {
+      playCoinDrop();
+      toast.success(`₹200 added to your wallet — from ${row.name ?? "your friend"}!`, { duration: 4000 });
+    }
+    lastReleased.current = row.progress.reward_released;
+  }, [row.progress.reward_released, row.name]);
 
   const callCustomer = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -257,19 +267,46 @@ function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () =
         }`}>{row.status}</span>
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-[10px] mb-1">
-          <span className="text-slate-500 font-semibold">{completed}/{STEPS.length} steps complete</span>
+      {/* 3-step horizontal progress */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between text-[10px] mb-2">
+          <span className="text-slate-500 font-semibold">{completed}/3 milestones</span>
           <span className="text-amber-700 font-bold">{pct}%</span>
         </div>
-        <div className="h-2 rounded-full bg-amber-100 overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-600"
-          />
+        <div className="relative flex items-center justify-between">
+          {/* track */}
+          <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 rounded-full bg-amber-100 overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-600"
+            />
+          </div>
+          {STEPS.map((s, i) => {
+            const done = isStepDone(row, s);
+            const next = !done && STEPS.slice(0, i).every((p) => isStepDone(row, p));
+            return (
+              <motion.div
+                key={s.key}
+                initial={false}
+                animate={done ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className={`relative z-10 h-6 w-6 rounded-full grid place-items-center border-2 text-[10px] font-bold ${
+                  done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-300"
+                    : next ? "bg-white border-amber-400 text-amber-700 animate-pulse"
+                    : "bg-white border-slate-200 text-slate-300"
+                }`}
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </motion.div>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-3 gap-1 mt-1.5">
+          {STEPS.map((s) => (
+            <p key={s.key} className="text-[9px] text-center text-slate-500 font-semibold leading-tight">{s.label.split(" — ")[0]}</p>
+          ))}
         </div>
       </div>
 
@@ -279,7 +316,7 @@ function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () =
           <Phone className="h-3.5 w-3.5" /> Call
         </button>
         <button onClick={nudgeWhatsApp} className="rounded-lg border border-amber-200 bg-amber-50 text-amber-700 px-2 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95">
-          <MessageCircle className="h-3.5 w-3.5" /> Nudge
+          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
         </button>
       </div>
     </button>
