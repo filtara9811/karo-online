@@ -4,10 +4,11 @@ import {
   Copy, Share2, MessageCircle, Check, Gift, Users, Wallet, Clock,
   ChevronLeft, Sparkles, Phone, Download, TrendingUp, AlertCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useReferralOverview, type ReferralRow } from "@/hooks/use-referral";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { playCoinDrop } from "@/lib/coin-sound";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
