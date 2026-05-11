@@ -148,10 +148,9 @@ function ReferralPage() {
             <Sparkles className="h-4 w-4 text-amber-600" /> How rewards work
           </h3>
           <ul className="text-xs text-slate-600 space-y-1.5">
-            <li>✅ Friend installs &amp; signs up — step 1 ticked</li>
-            <li>✅ Friend completes KYC — step 2 ticked</li>
-            <li>✅ Friend places first order — step 3 ticked</li>
-            <li>✅ When they become a seller &amp; buy first lead — <b className="text-emerald-700">₹200 added to your wallet</b></li>
+            <li><b className="text-slate-800">1.</b> Friend signs up &amp; their first request gets accepted by a vendor</li>
+            <li><b className="text-slate-800">2.</b> Friend joins as a vendor &amp; recharges wallet (first subscription)</li>
+            <li><b className="text-slate-800">3.</b> Friend's KYC is approved — <b className="text-emerald-700">₹200 instantly locked into your wallet</b> 🎉</li>
             <li className="text-rose-600 flex gap-1.5"><AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" /> Self-referrals &amp; duplicate device/IP signups are rejected.</li>
           </ul>
         </section>
