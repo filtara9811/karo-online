@@ -24,13 +24,17 @@ function CardRedirectPage() {
         supabase.rpc("bump_card_view", { _code: code });
         const { data } = await supabase.rpc("get_card_link", { _code: code });
         if (cancelled) return;
-        const url = (data as string | null)?.trim();
-        if (url) {
-          // ensure scheme
-          const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        const targetUrl = `${window.location.origin}/home`;
+        if (targetUrl) {
+          // Business-card links always open the app's digital dukaan.
+          const target = targetUrl.startsWith("/")
+            ? `${window.location.origin}${targetUrl}`
+            : /^https?:\/\//i.test(targetUrl)
+            ? targetUrl
+            : `https://${targetUrl}`;
           window.location.replace(target);
         } else {
-          setMsg("No link set for this card yet.");
+          setMsg("Opening digital dukaan…");
         }
       } catch {
         setMsg("Couldn't open this card.");
