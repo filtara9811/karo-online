@@ -24,13 +24,15 @@ function CardRedirectPage() {
         supabase.rpc("bump_card_view", { _code: code });
         const { data } = await supabase.rpc("get_card_link", { _code: code });
         if (cancelled) return;
-        const url = (data as string | null)?.trim();
-        if (url) {
-          // ensure scheme
-          const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        const savedUrl = (data as string | null)?.trim();
+        const digitalShopUrl = `${window.location.origin}/home`;
+        const targetUrl = savedUrl || digitalShopUrl;
+        if (targetUrl) {
+          // ensure scheme for custom URLs; internal digital dukaan stays on the app domain.
+          const target = /^https?:\/\//i.test(targetUrl) ? targetUrl : `https://${targetUrl}`;
           window.location.replace(target);
         } else {
-          setMsg("No link set for this card yet.");
+          setMsg("Opening digital dukaan…");
         }
       } catch {
         setMsg("Couldn't open this card.");
