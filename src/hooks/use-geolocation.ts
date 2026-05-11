@@ -87,78 +87,79 @@ export function useGeolocation(): GeoState {
     let cancelled = false;
     let watchId: number | null = null;
 
-    const start = () => {
-    const cached = readCache();
-    if (cached) {
-      setState({
-        status: "ready",
-        lat: cached.lat,
-        lng: cached.lng,
-        label: cached.label,
-        accuracyKm: null,
-      });
-      return;
-    }
-    if (!("geolocation" in navigator)) {
-      setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
-      return;
-    }
+    const start = (forceFresh = false) => {
+      if (!forceFresh) {
+        const cached = readCache();
+        if (cached) {
+          setState({
+            status: "ready",
+            lat: cached.lat,
+            lng: cached.lng,
+            label: cached.label,
+            accuracyKm: null,
+          });
+          return;
+        }
+      }
+      if (!("geolocation" in navigator)) {
+        setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
+        return;
+      }
 
-    let cancelled = false;
-    setState((s) => (s.status === "ready" ? s : { ...s, status: "loading" }));
+      setState((s) => (s.status === "ready" && !forceFresh ? s : { ...s, status: "loading", label: "Detecting your location…" }));
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        if (cancelled) return;
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const accuracyKm = pos.coords.accuracy / 1000;
-        setState({
-          status: "ready",
-          lat,
-          lng,
-          label: "Locating address…",
-          accuracyKm,
-        });
-        const label = await reverseGeocode(lat, lng);
-        if (cancelled) return;
-        writeCache({ lat, lng, label, ts: Date.now() });
-        setState({ status: "ready", lat, lng, label, accuracyKm });
-      },
-      (err) => {
-        if (cancelled) return;
-        setState((s) => ({
-          ...s,
-          status: err.code === err.PERMISSION_DENIED ? "denied" : "error",
-          label:
-            err.code === err.PERMISSION_DENIED
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          if (cancelled) return;
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const accuracyKm = pos.coords.accuracy / 1000;
+          setState({ status: "ready", lat, lng, label: "Locating address…", accuracyKm });
+          const label = await reverseGeocode(lat, lng);
+          if (cancelled) return;
+          writeCache({ lat, lng, label, ts: Date.now() });
+          setState({ status: "ready", lat, lng, label, accuracyKm });
+        },
+        (err) => {
+          if (cancelled) return;
+          setState((s) => ({
+            ...s,
+            status: err.code === err.PERMISSION_DENIED ? "denied" : "error",
+            label: err.code === err.PERMISSION_DENIED
               ? "Enable location to detect address"
               : "Location unavailable",
-        }));
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    );
+          }));
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      );
 
-    // Continuously refine accuracy while the user is here (best-effort, single watcher).
-    const watchId = navigator.geolocation.watchPosition(
-      async (pos) => {
-        if (cancelled) return;
-        if (pos.coords.accuracy > 100) return; // ignore very loose fixes
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setState((s) => ({ ...s, lat, lng, accuracyKm: pos.coords.accuracy / 1000 }));
-        const label = await reverseGeocode(lat, lng);
-        if (cancelled) return;
-        writeCache({ lat, lng, label, ts: Date.now() });
-        setState({ status: "ready", lat, lng, label, accuracyKm: pos.coords.accuracy / 1000 });
-      },
-      () => {},
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      watchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          if (cancelled) return;
+          if (pos.coords.accuracy > 100) return;
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setState((s) => ({ ...s, lat, lng, accuracyKm: pos.coords.accuracy / 1000 }));
+          const label = await reverseGeocode(lat, lng);
+          if (cancelled) return;
+          writeCache({ lat, lng, label, ts: Date.now() });
+          setState({ status: "ready", lat, lng, label, accuracyKm: pos.coords.accuracy / 1000 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+      );
+    };
+
+    start();
+
+    const onRefresh = () => start(true);
+    window.addEventListener("ko-geo-refresh", onRefresh);
 
     return () => {
       cancelled = true;
-      navigator.geolocation.clearWatch(watchId);
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      window.removeEventListener("ko-geo-refresh", onRefresh);
     };
   }, []);
 
