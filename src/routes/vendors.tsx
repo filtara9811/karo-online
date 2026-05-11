@@ -44,6 +44,7 @@ import svcAc from "@/assets/svc-ac.png";
 import svcCarpenter from "@/assets/svc-carpenter.png";
 import svcElectronics from "@/assets/svc-electronics.png";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { useDistanceMatrix } from "@/hooks/use-distance-matrix";
 import productCosmetics from "@/assets/product-cosmetics.jpg";
 import productCleaning from "@/assets/product-cleaning.jpg";
 import productPerfume from "@/assets/product-perfume.jpg";
@@ -83,6 +84,8 @@ type Vendor = {
   rating: number;
   reviews: number;
   km: number;
+  lat: number;
+  lng: number;
   address: string;
   verified: boolean;
   avatar: string;
@@ -102,6 +105,8 @@ const VENDORS: Vendor[] = [
     rating: 4.9,
     reviews: 628,
     km: 1.2,
+    lat: 28.6614,
+    lng: 77.2199,
     address: "Sadar Bazar, Delhi",
     verified: true,
     avatar: avatarRani,
@@ -119,6 +124,8 @@ const VENDORS: Vendor[] = [
     rating: 4.6,
     reviews: 287,
     km: 2.4,
+    lat: 28.6519,
+    lng: 77.1909,
     address: "Karol Bagh, Delhi",
     verified: true,
     avatar: avatarUser,
@@ -136,6 +143,8 @@ const VENDORS: Vendor[] = [
     rating: 4.8,
     reviews: 555,
     km: 0.8,
+    lat: 28.6448,
+    lng: 77.2167,
     address: "Paharganj, Delhi",
     verified: true,
     avatar: avatarRaj,
@@ -153,6 +162,8 @@ const VENDORS: Vendor[] = [
     rating: 4.9,
     reviews: 412,
     km: 3.1,
+    lat: 28.6315,
+    lng: 77.2167,
     address: "Connaught Place, Delhi",
     verified: true,
     avatar: avatarAryan,
@@ -170,6 +181,8 @@ const VENDORS: Vendor[] = [
     rating: 4.7,
     reviews: 318,
     km: 4.6,
+    lat: 28.5677,
+    lng: 77.2436,
     address: "Lajpat Nagar, Delhi",
     verified: true,
     avatar: avatarAryan,
@@ -186,6 +199,8 @@ const VENDORS: Vendor[] = [
     rating: 4.8,
     reviews: 246,
     km: 5.2,
+    lat: 28.6469,
+    lng: 77.1199,
     address: "Rajouri Garden, Delhi",
     verified: true,
     avatar: avatarRani,
@@ -215,6 +230,20 @@ function VendorsPage() {
     const q = query.toLowerCase();
     return VENDORS.filter((v) => v.title.toLowerCase().includes(q));
   }, [query]);
+
+  // Live driving distance + ETA from user's location to every vendor
+  const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+  const dests = useMemo(() => filtered.map((v) => ({ lat: v.lat, lng: v.lng })), [filtered]);
+  const etaList = useDistanceMatrix(origin, dests);
+  const etas = useMemo(() => {
+    const map: Record<string, { km: string; eta: string; live: boolean }> = {};
+    filtered.forEach((v, i) => {
+      const e = etaList[i];
+      if (e) map[v.id] = { km: e.kmText, eta: e.etaText, live: e.source === "google" };
+    });
+    return map;
+  }, [filtered, etaList]);
+
 
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
@@ -283,6 +312,7 @@ function VendorsPage() {
           query={query}
           setQuery={setQuery}
           filtered={filtered}
+          etas={etas}
           onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
           onInquiry={(v) => navigate({
             to: "/chat",
@@ -391,11 +421,12 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
 /* -------- Sheet body -------- */
 
 function SheetBody({
-  query, setQuery, filtered, onOpen, onInquiry,
+  query, setQuery, filtered, etas, onOpen, onInquiry,
 }: {
   query: string;
   setQuery: (s: string) => void;
   filtered: Vendor[];
+  etas: Record<string, { km: string; eta: string; live: boolean }>;
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
 }) {
@@ -462,7 +493,7 @@ function SheetBody({
               viewport={{ once: true, margin: "-40px" }}
               transition={{ delay: i * 0.04 }}
             >
-              <ShopCard3D vendor={v} onOpen={onOpen} onInquiry={onInquiry} />
+              <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
             </motion.div>
           ))}
         </div>
@@ -585,9 +616,10 @@ function SheetBody({
 /* -------- 3D Shop Card with auto-sliding media -------- */
 
 function ShopCard3D({
-  vendor, onOpen, onInquiry, featured = false,
+  vendor, eta, onOpen, onInquiry, featured = false,
 }: {
   vendor: Vendor;
+  eta?: { km: string; eta: string; live: boolean };
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
   featured?: boolean;
@@ -635,10 +667,17 @@ function ShopCard3D({
         </div>
       )}
 
-      {/* Distance chip */}
+      {/* Distance chip — live driving km + ETA from Google Distance Matrix */}
       <div className="absolute top-3 right-3 z-20 px-2 py-1 rounded-full bg-white/95 backdrop-blur border border-[color:oklch(0.78_0.14_82/0.5)] text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] shadow flex items-center gap-1">
         <MapPin className="h-2.5 w-2.5 text-[color:oklch(0.55_0.18_55)]" />
-        {vendor.km} km
+        {eta ? (
+          <span className="flex items-center gap-1">
+            {eta.km} · {eta.eta}
+            {eta.live && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+          </span>
+        ) : (
+          <span>{vendor.km} km</span>
+        )}
       </div>
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
