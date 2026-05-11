@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import goldHome from "@/assets/gold-home.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldOther from "@/assets/gold-other.png";
+import { PlacesAutocomplete } from "@/components/PlacesAutocomplete";
 
 export type AddressKind = "home" | "office" | "other";
 
@@ -117,14 +118,19 @@ export function AddressPicker({ open, onSelect, onClose }: Props) {
 
         {mode === "other" && (
           <div className="space-y-3">
+            <PlacesAutocomplete
+              value={manual}
+              onChange={setManual}
+              onSelect={(r) => setManual(r.address)}
+              placeholder="Search address, area, landmark…"
+            />
             <div className="flex items-start gap-3 rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/80 px-4 py-3">
               <MapPin className="mt-1 h-5 w-5 text-[color:oklch(0.55_0.15_82)]" strokeWidth={2.4} />
               <textarea
-                autoFocus
                 value={manual}
                 onChange={(e) => setManual(e.target.value)}
-                rows={3}
-                placeholder="Flat / House no., Street, Area, City, Pincode"
+                rows={2}
+                placeholder="Flat / House no., Street (refine if needed)"
                 className="flex-1 resize-none bg-transparent text-sm text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.08_85/0.7)] outline-none"
               />
             </div>
