@@ -176,16 +176,45 @@ function MiniStat({ label, value, tone }: { label: string; value: number | strin
   );
 }
 
-const STEPS: Array<{ key: keyof ReferralRow["progress"]; label: string; desc: string }> = [
-  { key: "installed", label: "Installed", desc: "App opened via your link" },
-  { key: "registered", label: "Registered", desc: "Created an account" },
-  { key: "otp_verified", label: "OTP Verified", desc: "Phone number verified" },
-  { key: "kyc_completed", label: "KYC Completed", desc: "Identity verified" },
-  { key: "first_order_placed", label: "First Order", desc: "Placed first order" },
-  { key: "became_seller", label: "Became Seller", desc: "Joined as a vendor" },
-  { key: "payment_completed", label: "First Lead Bought", desc: "Vendor purchased lead" },
-  { key: "reward_released", label: "Reward Released", desc: "₹200 added to your wallet" },
+type ProgressKey = keyof ReferralRow["progress"];
+
+type MacroStep = {
+  key: "request" | "vendor" | "kyc";
+  label: string;
+  desc: string;
+  cta: string;
+  // All these progress flags must be true for the macro step to be complete
+  requires: ProgressKey[];
+};
+
+const STEPS: MacroStep[] = [
+  {
+    key: "request",
+    label: "First Request Accepted",
+    desc: "Friend signed up & a vendor accepted their request",
+    cta: "Help them place a request",
+    requires: ["registered", "first_order_placed"],
+  },
+  {
+    key: "vendor",
+    label: "Joined as Vendor",
+    desc: "Became a vendor & made first wallet payment",
+    cta: "Nudge to join as vendor",
+    requires: ["became_seller", "payment_completed"],
+  },
+  {
+    key: "kyc",
+    label: "KYC Cleared — ₹200 Locked",
+    desc: "KYC approved · ₹200 added to your wallet (locked)",
+    cta: "Remind to complete KYC",
+    requires: ["kyc_completed"],
+  },
 ];
+
+function isStepDone(row: ReferralRow, step: MacroStep) {
+  return step.requires.every((k) => row.progress[k]);
+}
+
 
 function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () => void; shareText: string }) {
   const initials = (row.name ?? "U").slice(0, 1).toUpperCase();
