@@ -2308,6 +2308,78 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_providers: {
+        Row: {
+          access_token: string | null
+          api_base_url: string | null
+          app_id: string | null
+          app_secret: string | null
+          assigned_use: string
+          business_account_id: string | null
+          config: Json
+          created_at: string
+          default_template: string | null
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          phone_number_id: string | null
+          priority: number
+          provider: string
+          quality_rating: string | null
+          template_namespace: string | null
+          updated_at: string
+          webhook_verify_token: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          api_base_url?: string | null
+          app_id?: string | null
+          app_secret?: string | null
+          assigned_use?: string
+          business_account_id?: string | null
+          config?: Json
+          created_at?: string
+          default_template?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          phone_number_id?: string | null
+          priority?: number
+          provider: string
+          quality_rating?: string | null
+          template_namespace?: string | null
+          updated_at?: string
+          webhook_verify_token?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          api_base_url?: string | null
+          app_id?: string | null
+          app_secret?: string | null
+          assigned_use?: string
+          business_account_id?: string | null
+          config?: Json
+          created_at?: string
+          default_template?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          phone_number_id?: string | null
+          priority?: number
+          provider?: string
+          quality_rating?: string | null
+          template_namespace?: string | null
+          updated_at?: string
+          webhook_verify_token?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
