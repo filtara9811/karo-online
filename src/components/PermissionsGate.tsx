@@ -1,7 +1,34 @@
 import { useEffect, useState } from "react";
-import { MapPin, Bell, Check, X, Loader2, ShieldCheck } from "lucide-react";
+import { MapPin, Bell, Check, X, Loader2, ShieldCheck, Settings, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+function detectBrowser(): "chrome" | "firefox" | "safari" | "edge" | "samsung" | "other" {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("samsungbrowser")) return "samsung";
+  if (ua.includes("edg/")) return "edge";
+  if (ua.includes("firefox")) return "firefox";
+  if (ua.includes("chrome")) return "chrome";
+  if (ua.includes("safari")) return "safari";
+  return "other";
+}
+
+function settingsHint(): string {
+  switch (detectBrowser()) {
+    case "chrome":
+    case "edge":
+      return "Address bar के 🔒 lock icon पर tap करें → Permissions → Location → Allow";
+    case "samsung":
+      return "Address bar के 🔒 icon पर tap करें → Permissions → Location → Allow";
+    case "firefox":
+      return "Address bar के shield/lock icon → More information → Permissions → Access your location → Allow";
+    case "safari":
+      return "Settings app → Safari → Location → Allow, फिर page reload करें";
+    default:
+      return "Browser के address bar के lock icon से location को Allow करें";
+  }
+}
 
 const ACK_KEY = "ko-permissions-ack-v1";
 
