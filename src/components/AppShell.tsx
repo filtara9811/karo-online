@@ -14,6 +14,7 @@ import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { PermissionsGate } from "@/components/PermissionsGate";
 import { useAuth } from "@/hooks/use-auth";
+import { useFcmToken } from "@/hooks/use-fcm-token";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
