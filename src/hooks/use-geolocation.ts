@@ -84,6 +84,10 @@ export function useGeolocation(): GeoState {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    let cancelled = false;
+    let watchId: number | null = null;
+
+    const start = () => {
     const cached = readCache();
     if (cached) {
       setState({
