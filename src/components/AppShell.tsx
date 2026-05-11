@@ -44,6 +44,7 @@ const RESELLING_OPTIONS: ActionOption[] = [
 export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
+  useFcmToken();
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
