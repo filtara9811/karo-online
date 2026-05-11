@@ -4,10 +4,11 @@ import {
   Copy, Share2, MessageCircle, Check, Gift, Users, Wallet, Clock,
   ChevronLeft, Sparkles, Phone, Download, TrendingUp, AlertCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useReferralOverview, type ReferralRow } from "@/hooks/use-referral";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { playCoinDrop } from "@/lib/coin-sound";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
@@ -147,10 +148,9 @@ function ReferralPage() {
             <Sparkles className="h-4 w-4 text-amber-600" /> How rewards work
           </h3>
           <ul className="text-xs text-slate-600 space-y-1.5">
-            <li>✅ Friend installs &amp; signs up — step 1 ticked</li>
-            <li>✅ Friend completes KYC — step 2 ticked</li>
-            <li>✅ Friend places first order — step 3 ticked</li>
-            <li>✅ When they become a seller &amp; buy first lead — <b className="text-emerald-700">₹200 added to your wallet</b></li>
+            <li><b className="text-slate-800">1.</b> Friend signs up &amp; their first request gets accepted by a vendor</li>
+            <li><b className="text-slate-800">2.</b> Friend joins as a vendor &amp; recharges wallet (first subscription)</li>
+            <li><b className="text-slate-800">3.</b> Friend's KYC is approved — <b className="text-emerald-700">₹200 instantly locked into your wallet</b> 🎉</li>
             <li className="text-rose-600 flex gap-1.5"><AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" /> Self-referrals &amp; duplicate device/IP signups are rejected.</li>
           </ul>
         </section>
@@ -175,25 +175,64 @@ function MiniStat({ label, value, tone }: { label: string; value: number | strin
   );
 }
 
-const STEPS: Array<{ key: keyof ReferralRow["progress"]; label: string; desc: string }> = [
-  { key: "installed", label: "Installed", desc: "App opened via your link" },
-  { key: "registered", label: "Registered", desc: "Created an account" },
-  { key: "otp_verified", label: "OTP Verified", desc: "Phone number verified" },
-  { key: "kyc_completed", label: "KYC Completed", desc: "Identity verified" },
-  { key: "first_order_placed", label: "First Order", desc: "Placed first order" },
-  { key: "became_seller", label: "Became Seller", desc: "Joined as a vendor" },
-  { key: "payment_completed", label: "First Lead Bought", desc: "Vendor purchased lead" },
-  { key: "reward_released", label: "Reward Released", desc: "₹200 added to your wallet" },
+type ProgressKey = keyof ReferralRow["progress"];
+
+type MacroStep = {
+  key: "request" | "vendor" | "kyc";
+  label: string;
+  desc: string;
+  cta: string;
+  // All these progress flags must be true for the macro step to be complete
+  requires: ProgressKey[];
+};
+
+const STEPS: MacroStep[] = [
+  {
+    key: "request",
+    label: "First Request Accepted",
+    desc: "Friend signed up & a vendor accepted their request",
+    cta: "Help them place a request",
+    requires: ["registered", "first_order_placed"],
+  },
+  {
+    key: "vendor",
+    label: "Joined as Vendor",
+    desc: "Became a vendor & made first wallet payment",
+    cta: "Nudge to join as vendor",
+    requires: ["became_seller", "payment_completed"],
+  },
+  {
+    key: "kyc",
+    label: "KYC Cleared — ₹200 Locked",
+    desc: "KYC approved · ₹200 added to your wallet (locked)",
+    cta: "Remind to complete KYC",
+    requires: ["kyc_completed"],
+  },
 ];
+
+function isStepDone(row: ReferralRow, step: MacroStep) {
+  return step.requires.every((k) => row.progress[k]);
+}
+
 
 function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () => void; shareText: string }) {
   const initials = (row.name ?? "U").slice(0, 1).toUpperCase();
-  const completed = STEPS.filter((s) => row.progress[s.key]).length;
+  const completed = STEPS.filter((s) => isStepDone(row, s)).length;
   const pct = Math.round((completed / STEPS.length) * 100);
   const statusColor =
     row.status === "approved" ? "bg-emerald-500"
       : row.status === "rejected" ? "bg-rose-500"
       : row.status === "locked" ? "bg-amber-500" : "bg-slate-400";
+
+  // Coin sound + wallet pulse when reward gets released
+  const lastReleased = useRef<boolean>(row.progress.reward_released);
+  useEffect(() => {
+    if (!lastReleased.current && row.progress.reward_released) {
+      playCoinDrop();
+      toast.success(`₹200 added to your wallet — from ${row.name ?? "your friend"}!`, { duration: 4000 });
+    }
+    lastReleased.current = row.progress.reward_released;
+  }, [row.progress.reward_released, row.name]);
 
   const callCustomer = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -227,19 +266,46 @@ function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () =
         }`}>{row.status}</span>
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-[10px] mb-1">
-          <span className="text-slate-500 font-semibold">{completed}/{STEPS.length} steps complete</span>
+      {/* 3-step horizontal progress */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between text-[10px] mb-2">
+          <span className="text-slate-500 font-semibold">{completed}/3 milestones</span>
           <span className="text-amber-700 font-bold">{pct}%</span>
         </div>
-        <div className="h-2 rounded-full bg-amber-100 overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-600"
-          />
+        <div className="relative flex items-center justify-between">
+          {/* track */}
+          <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 rounded-full bg-amber-100 overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-600"
+            />
+          </div>
+          {STEPS.map((s, i) => {
+            const done = isStepDone(row, s);
+            const next = !done && STEPS.slice(0, i).every((p) => isStepDone(row, p));
+            return (
+              <motion.div
+                key={s.key}
+                initial={false}
+                animate={done ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className={`relative z-10 h-6 w-6 rounded-full grid place-items-center border-2 text-[10px] font-bold ${
+                  done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-300"
+                    : next ? "bg-white border-amber-400 text-amber-700 animate-pulse"
+                    : "bg-white border-slate-200 text-slate-300"
+                }`}
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </motion.div>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-3 gap-1 mt-1.5">
+          {STEPS.map((s) => (
+            <p key={s.key} className="text-[9px] text-center text-slate-500 font-semibold leading-tight">{s.label.split(" — ")[0]}</p>
+          ))}
         </div>
       </div>
 
@@ -249,7 +315,7 @@ function ReferralCard({ row, onTap, shareText }: { row: ReferralRow; onTap: () =
           <Phone className="h-3.5 w-3.5" /> Call
         </button>
         <button onClick={nudgeWhatsApp} className="rounded-lg border border-amber-200 bg-amber-50 text-amber-700 px-2 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95">
-          <MessageCircle className="h-3.5 w-3.5" /> Nudge
+          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
         </button>
       </div>
     </button>
@@ -301,22 +367,44 @@ function ProgressSheet({ row, shareText }: { row: ReferralRow; shareText: string
         </span>
       </div>
 
-      {/* Vertical timeline */}
-      <ol className="relative border-l-2 border-dashed border-amber-200 pl-5 space-y-4">
+      {/* Vertical 3-step timeline with per-step WhatsApp action */}
+      <ol className="relative border-l-2 border-dashed border-amber-200 pl-5 space-y-5">
         {STEPS.map((s, i) => {
-          const done = !!row.progress[s.key];
-          const next = !done && STEPS.slice(0, i).every((p) => row.progress[p.key]);
+          const done = isStepDone(row, s);
+          const next = !done && STEPS.slice(0, i).every((p) => isStepDone(row, p));
+          const stepNudge = () => {
+            const text = `Hi${row.name ? " " + row.name : ""}! 👋\n\n${s.cta} on Karo Online — you're just one step away from "${s.label}".\n\n${shareText}`;
+            const phone = (row.phone ?? "").replace(/\D/g, "");
+            window.open(
+              phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          };
           return (
             <li key={s.key} className="relative">
-              <span className={`absolute -left-[28px] top-0 h-6 w-6 rounded-full grid place-items-center border-2 ${
-                done ? "bg-emerald-500 border-emerald-500 text-white"
-                  : next ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse"
-                  : "bg-white border-slate-200 text-slate-300"
-              }`}>
-                {done ? <Check className="h-3.5 w-3.5" /> : <Clock className="h-3 w-3" />}
-              </span>
-              <p className={`text-sm font-semibold ${done ? "text-slate-800" : next ? "text-amber-700" : "text-slate-400"}`}>{s.label}</p>
+              <motion.span
+                initial={false}
+                animate={done ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                transition={{ duration: 0.6 }}
+                className={`absolute -left-[30px] top-0 h-7 w-7 rounded-full grid place-items-center border-2 text-xs font-bold ${
+                  done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-300"
+                    : next ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse"
+                    : "bg-white border-slate-200 text-slate-300"
+                }`}
+              >
+                {done ? <Check className="h-4 w-4" /> : i + 1}
+              </motion.span>
+              <p className={`text-sm font-bold ${done ? "text-slate-800" : next ? "text-amber-700" : "text-slate-400"}`}>{s.label}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{s.desc}</p>
+              {!done && (
+                <button
+                  onClick={stepNudge}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 text-white text-[11px] font-semibold px-2.5 py-1.5 active:scale-95 shadow"
+                >
+                  <MessageCircle className="h-3 w-3" /> WhatsApp nudge
+                </button>
+              )}
             </li>
           );
         })}
