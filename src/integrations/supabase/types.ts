@@ -562,6 +562,51 @@ export type Database = {
         }
         Relationships: []
       }
+      form_schemas: {
+        Row: {
+          created_at: string
+          form_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          payment_after_step: number | null
+          payment_amount_inr: number | null
+          payment_purpose: string | null
+          schema: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          form_type: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payment_after_step?: number | null
+          payment_amount_inr?: number | null
+          payment_purpose?: string | null
+          schema?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payment_after_step?: number | null
+          payment_amount_inr?: number | null
+          payment_purpose?: string | null
+          schema?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       integration_modules: {
         Row: {
           category: string
@@ -1842,6 +1887,57 @@ export type Database = {
           meta?: Json
           provider?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      theme_settings: {
+        Row: {
+          animation_speed: number
+          assets: Json
+          created_at: string
+          fonts: Json
+          icons_pack: string
+          id: string
+          is_active: boolean
+          preset_name: string | null
+          radius_scale: number
+          scope: string
+          shadow_intensity: number
+          tokens: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          animation_speed?: number
+          assets?: Json
+          created_at?: string
+          fonts?: Json
+          icons_pack?: string
+          id?: string
+          is_active?: boolean
+          preset_name?: string | null
+          radius_scale?: number
+          scope: string
+          shadow_intensity?: number
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          animation_speed?: number
+          assets?: Json
+          created_at?: string
+          fonts?: Json
+          icons_pack?: string
+          id?: string
+          is_active?: boolean
+          preset_name?: string | null
+          radius_scale?: number
+          scope?: string
+          shadow_intensity?: number
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
