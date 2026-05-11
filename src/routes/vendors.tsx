@@ -421,11 +421,12 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
 /* -------- Sheet body -------- */
 
 function SheetBody({
-  query, setQuery, filtered, onOpen, onInquiry,
+  query, setQuery, filtered, etas, onOpen, onInquiry,
 }: {
   query: string;
   setQuery: (s: string) => void;
   filtered: Vendor[];
+  etas: Record<string, { km: string; eta: string; live: boolean }>;
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
 }) {
