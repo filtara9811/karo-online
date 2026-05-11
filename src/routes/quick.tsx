@@ -789,7 +789,7 @@ function FakeMap({ vendors, pulseKey, geo, userAvatar }: { vendors: Vendor[]; pu
                 <circle cx="16" cy="15" r="9" fill="white" />
               </svg>
               <span className="absolute top-[6px] left-1/2 -translate-x-1/2 h-[18px] w-[18px] rounded-full overflow-hidden border border-white">
-                <img src={profile?.avatar_url || avatarUser} alt="You" className="h-full w-full object-cover" />
+                <img src={userAvatar} alt="You" className="h-full w-full object-cover" />
               </span>
             </div>
           </div>
