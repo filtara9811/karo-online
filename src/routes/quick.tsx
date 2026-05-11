@@ -655,7 +655,7 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors, pulseKey, geo }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState }) {
+function FakeMap({ vendors, pulseKey, geo, userAvatar }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState; userAvatar: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
