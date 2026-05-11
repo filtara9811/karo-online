@@ -493,7 +493,7 @@ function SheetBody({
               viewport={{ once: true, margin: "-40px" }}
               transition={{ delay: i * 0.04 }}
             >
-              <ShopCard3D vendor={v} onOpen={onOpen} onInquiry={onInquiry} />
+              <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
             </motion.div>
           ))}
         </div>
