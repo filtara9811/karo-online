@@ -29,8 +29,7 @@ export function PermissionsGate() {
       let locOk = false;
       let notifOk = false;
       try {
-        // @ts-expect-error — Permissions API
-        const p = await navigator.permissions?.query?.({ name: "geolocation" });
+        const p = await navigator.permissions?.query?.({ name: "geolocation" as PermissionName });
         if (p?.state === "granted") { setLoc("granted"); locOk = true; }
         else if (p?.state === "denied") setLoc("denied");
       } catch { /* */ }
