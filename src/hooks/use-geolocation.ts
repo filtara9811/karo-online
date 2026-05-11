@@ -19,8 +19,8 @@ function readCache(): Cache | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Cache;
-    // 30 min cache
-    if (Date.now() - parsed.ts > 30 * 60 * 1000) return null;
+    // 2 min cache (location can change quickly when user moves)
+    if (Date.now() - parsed.ts > 2 * 60 * 1000) return null;
     return parsed;
   } catch {
     return null;
