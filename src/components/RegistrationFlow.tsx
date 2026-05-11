@@ -278,7 +278,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    try { navigate({ to: "/home" }); } catch { /* ignore */ }
+    try { navigate({ to: "/quick" }); } catch { /* ignore */ }
   };
 
   const detectLocation = () => {
@@ -543,7 +543,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         </div>
       )}
 
-      <SuccessOverlay open={successOpen} name={name} ctaLabel="Go to Home" onDone={handleSuccessHome} />
+      <SuccessOverlay open={successOpen} name={name} ctaLabel="Open Services" onDone={handleSuccessHome} />
     </main>
   );
 }
