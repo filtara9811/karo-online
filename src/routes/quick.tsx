@@ -338,7 +338,7 @@ function QuickPage() {
     >
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} userAvatar={profile?.avatar_url || avatarUser} />
       </section>
 
       {/* MIDDLE — search + service cards */}
@@ -655,7 +655,7 @@ function QuickPage() {
   );
 }
 
-function FakeMap({ vendors, pulseKey, geo }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState }) {
+function FakeMap({ vendors, pulseKey, geo, userAvatar }: { vendors: Vendor[]; pulseKey?: string; geo: GeoState; userAvatar: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const gestureRef = useRef<{
@@ -788,8 +788,8 @@ function FakeMap({ vendors, pulseKey, geo }: { vendors: Vendor[]; pulseKey?: str
                 <path d="M16 0 C7 0 0 7 0 16 C0 28 16 40 16 40 C16 40 32 28 32 16 C32 7 25 0 16 0 Z" fill="#dc2626" stroke="white" strokeWidth="1.5" />
                 <circle cx="16" cy="15" r="9" fill="white" />
               </svg>
-              <span className="absolute top-[6px] left-1/2 -translate-x-1/2 h-[18px] w-[18px] rounded-full overflow-hidden">
-                <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
+              <span className="absolute top-[6px] left-1/2 -translate-x-1/2 h-[18px] w-[18px] rounded-full overflow-hidden border border-white">
+                <img src={userAvatar} alt="You" className="h-full w-full object-cover" />
               </span>
             </div>
           </div>
