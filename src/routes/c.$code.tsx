@@ -24,11 +24,9 @@ function CardRedirectPage() {
         supabase.rpc("bump_card_view", { _code: code });
         const { data } = await supabase.rpc("get_card_link", { _code: code });
         if (cancelled) return;
-        const savedUrl = (data as string | null)?.trim();
-        const digitalShopUrl = `${window.location.origin}/home`;
-        const targetUrl = savedUrl || digitalShopUrl;
+        const targetUrl = `${window.location.origin}/home`;
         if (targetUrl) {
-          // ensure scheme for custom URLs; internal digital dukaan stays on the app domain.
+          // Business-card links always open the app's digital dukaan.
           const target = targetUrl.startsWith("/")
             ? `${window.location.origin}${targetUrl}`
             : /^https?:\/\//i.test(targetUrl)
