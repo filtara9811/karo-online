@@ -368,22 +368,44 @@ function ProgressSheet({ row, shareText }: { row: ReferralRow; shareText: string
         </span>
       </div>
 
-      {/* Vertical timeline */}
-      <ol className="relative border-l-2 border-dashed border-amber-200 pl-5 space-y-4">
+      {/* Vertical 3-step timeline with per-step WhatsApp action */}
+      <ol className="relative border-l-2 border-dashed border-amber-200 pl-5 space-y-5">
         {STEPS.map((s, i) => {
-          const done = !!row.progress[s.key];
-          const next = !done && STEPS.slice(0, i).every((p) => row.progress[p.key]);
+          const done = isStepDone(row, s);
+          const next = !done && STEPS.slice(0, i).every((p) => isStepDone(row, p));
+          const stepNudge = () => {
+            const text = `Hi${row.name ? " " + row.name : ""}! 👋\n\n${s.cta} on Karo Online — you're just one step away from "${s.label}".\n\n${shareText}`;
+            const phone = (row.phone ?? "").replace(/\D/g, "");
+            window.open(
+              phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          };
           return (
             <li key={s.key} className="relative">
-              <span className={`absolute -left-[28px] top-0 h-6 w-6 rounded-full grid place-items-center border-2 ${
-                done ? "bg-emerald-500 border-emerald-500 text-white"
-                  : next ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse"
-                  : "bg-white border-slate-200 text-slate-300"
-              }`}>
-                {done ? <Check className="h-3.5 w-3.5" /> : <Clock className="h-3 w-3" />}
-              </span>
-              <p className={`text-sm font-semibold ${done ? "text-slate-800" : next ? "text-amber-700" : "text-slate-400"}`}>{s.label}</p>
+              <motion.span
+                initial={false}
+                animate={done ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                transition={{ duration: 0.6 }}
+                className={`absolute -left-[30px] top-0 h-7 w-7 rounded-full grid place-items-center border-2 text-xs font-bold ${
+                  done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-300"
+                    : next ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse"
+                    : "bg-white border-slate-200 text-slate-300"
+                }`}
+              >
+                {done ? <Check className="h-4 w-4" /> : i + 1}
+              </motion.span>
+              <p className={`text-sm font-bold ${done ? "text-slate-800" : next ? "text-amber-700" : "text-slate-400"}`}>{s.label}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{s.desc}</p>
+              {!done && (
+                <button
+                  onClick={stepNudge}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 text-white text-[11px] font-semibold px-2.5 py-1.5 active:scale-95 shadow"
+                >
+                  <MessageCircle className="h-3 w-3" /> WhatsApp nudge
+                </button>
+              )}
             </li>
           );
         })}
