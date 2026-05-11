@@ -205,7 +205,7 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
     try {
       const p = await navigator.permissions?.query?.({ name: "geolocation" as PermissionName });
       if (p?.state === "denied") {
-        toast.error("Location blocked. Open browser settings → Site settings → Location → Allow.", { duration: 6000 });
+        toast.error("Location blocked. Browser के 🔒 icon → Permissions → Location → Allow करें, फिर reload करें.", { id: "perm-loc", duration: 6000 });
         return;
       }
     } catch { /* */ }
