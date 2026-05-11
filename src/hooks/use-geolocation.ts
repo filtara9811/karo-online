@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { reverseGeocode as googleReverseGeocode } from "@/lib/google-maps";
 
 export type GeoState = {
   status: "idle" | "loading" | "ready" | "denied" | "unsupported" | "error";
@@ -35,8 +36,15 @@ function writeCache(c: Cache) {
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  // 1) Try Google (faster, more accurate, India-friendly)
   try {
-    // OpenStreetMap Nominatim — no API key required, free for low volume.
+    const g = await googleReverseGeocode(lat, lng);
+    if (g) return g;
+  } catch {
+    /* fall through to OSM */
+  }
+  try {
+    // 2) Fallback: OpenStreetMap Nominatim — no API key required.
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
