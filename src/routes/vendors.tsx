@@ -83,6 +83,8 @@ type Vendor = {
   rating: number;
   reviews: number;
   km: number;
+  lat: number;
+  lng: number;
   address: string;
   verified: boolean;
   avatar: string;
