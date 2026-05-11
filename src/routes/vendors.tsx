@@ -230,6 +230,20 @@ function VendorsPage() {
     return VENDORS.filter((v) => v.title.toLowerCase().includes(q));
   }, [query]);
 
+  // Live driving distance + ETA from user's location to every vendor
+  const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+  const dests = useMemo(() => filtered.map((v) => ({ lat: v.lat, lng: v.lng })), [filtered]);
+  const etaList = useDistanceMatrix(origin, dests);
+  const etas = useMemo(() => {
+    const map: Record<string, { km: string; eta: string; live: boolean }> = {};
+    filtered.forEach((v, i) => {
+      const e = etaList[i];
+      if (e) map[v.id] = { km: e.kmText, eta: e.etaText, live: e.source === "google" };
+    });
+    return map;
+  }, [filtered, etaList]);
+
+
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
       {/* MAP — fills entire screen, sheet sits on top */}
