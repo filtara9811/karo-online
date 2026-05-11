@@ -377,8 +377,8 @@ export async function staticMapUrl(opts: {
 }
 
 // ─── JS SDK loader ────────────────────────────────────────────────────────
-let _sdkPromise: Promise<typeof google | null> | null = null;
-export function loadMapsSdk(libs: string[] = ["places"]): Promise<typeof google | null> {
+let _sdkPromise: Promise<any> | null = null;
+export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   if (typeof window === "undefined") return Promise.resolve(null);
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (_sdkPromise) return _sdkPromise;
