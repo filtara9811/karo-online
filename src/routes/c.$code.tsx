@@ -29,7 +29,11 @@ function CardRedirectPage() {
         const targetUrl = savedUrl || digitalShopUrl;
         if (targetUrl) {
           // ensure scheme for custom URLs; internal digital dukaan stays on the app domain.
-          const target = /^https?:\/\//i.test(targetUrl) ? targetUrl : `https://${targetUrl}`;
+          const target = targetUrl.startsWith("/")
+            ? `${window.location.origin}${targetUrl}`
+            : /^https?:\/\//i.test(targetUrl)
+            ? targetUrl
+            : `https://${targetUrl}`;
           window.location.replace(target);
         } else {
           setMsg("Opening digital dukaan…");
