@@ -1,0 +1,1 @@
+UPDATE public.firebase_services SET server_key = 'BMut5fwHoLIM-lzKED2sPDJ-nVjLGirWrJXXThDlRYx6K1nTF_BlljdP7FkTgfeb1iBqof5NympM0WYoDKJN4BA', is_active = true WHERE service_key = 'fcm';
