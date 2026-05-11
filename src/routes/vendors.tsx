@@ -667,10 +667,17 @@ function ShopCard3D({
         </div>
       )}
 
-      {/* Distance chip */}
+      {/* Distance chip — live driving km + ETA from Google Distance Matrix */}
       <div className="absolute top-3 right-3 z-20 px-2 py-1 rounded-full bg-white/95 backdrop-blur border border-[color:oklch(0.78_0.14_82/0.5)] text-[9px] font-bold text-[color:oklch(0.30_0.05_85)] shadow flex items-center gap-1">
         <MapPin className="h-2.5 w-2.5 text-[color:oklch(0.55_0.18_55)]" />
-        {vendor.km} km
+        {eta ? (
+          <span className="flex items-center gap-1">
+            {eta.km} · {eta.eta}
+            {eta.live && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+          </span>
+        ) : (
+          <span>{vendor.km} km</span>
+        )}
       </div>
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
