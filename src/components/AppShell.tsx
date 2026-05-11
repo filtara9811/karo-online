@@ -59,6 +59,7 @@ export function AppShell() {
       <AuthGate>
         <Outlet />
         <VendorLeadAlerts />
+        <PermissionsGate />
       </AuthGate>
     );
   }
