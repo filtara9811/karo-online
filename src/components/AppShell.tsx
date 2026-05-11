@@ -12,6 +12,7 @@ import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
+import { PermissionsGate } from "@/components/PermissionsGate";
 import { useAuth } from "@/hooks/use-auth";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
@@ -58,6 +59,7 @@ export function AppShell() {
       <AuthGate>
         <Outlet />
         <VendorLeadAlerts />
+        <PermissionsGate />
       </AuthGate>
     );
   }
@@ -82,6 +84,7 @@ export function AppShell() {
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
         <VendorLeadAlerts />
+        <PermissionsGate />
       </div>
     </AuthGate>
   );

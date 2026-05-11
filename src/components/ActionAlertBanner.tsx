@@ -4,6 +4,7 @@ import { X, MapPin, Wrench, Clock, User, Bell, FileCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { toast } from "sonner";
 
 type Tone = "amber" | "blue" | "slate";
 type Alert = {
@@ -195,21 +196,42 @@ export function ActionAlertBanner({ role }: { role: "admin" | "vendor" | "custom
     navigate({ to: "/profile" });
   };
 
-  const requestGps = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+  const requestGps = async () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      toast.error("Location not supported on this device");
+      return;
+    }
+    // Check if already permanently denied → guide user to settings
+    try {
+      const p = await navigator.permissions?.query?.({ name: "geolocation" as PermissionName });
+      if (p?.state === "denied") {
+        toast.error("Location blocked. Open browser settings → Site settings → Location → Allow.", { duration: 6000 });
+        return;
+      }
+    } catch { /* */ }
+    toast.loading("Detecting location…", { id: "gps" });
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
           localStorage.setItem(
             "ko-geo-cache",
-            JSON.stringify({ lat: latitude, lng: longitude, label: "My current location", ts: Date.now() }),
+            JSON.stringify({ lat: latitude, lng: longitude, label: "Locating address…", ts: Date.now() }),
           );
+          window.dispatchEvent(new Event("ko-geo-refresh"));
         } catch {}
         setGpsReady(true);
+        toast.success("Location enabled ✓", { id: "gps" });
       },
-      () => {},
-      { enableHighAccuracy: true, timeout: 10000 },
+      (err) => {
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? "Permission denied. Allow location in browser settings."
+            : "Couldn't detect location. Please try again.",
+          { id: "gps", duration: 5000 },
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
 

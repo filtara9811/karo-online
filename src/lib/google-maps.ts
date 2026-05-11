@@ -110,7 +110,16 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
       pick("sublocality") ||
       pick("neighborhood");
     const locality = pick("locality") || pick("administrative_area_level_2");
-    const parts = [number && street ? `${number} ${street}` : street, sublocal, locality].filter(Boolean);
+    // Pincode: try the chosen result first, then fall back to ANY result that has one
+    let pincode = pick("postal_code");
+    if (!pincode) {
+      for (const r of j.results as any[]) {
+        const c = (r.address_components ?? []).find((c: any) => c.types?.includes("postal_code"));
+        if (c?.long_name) { pincode = c.long_name; break; }
+      }
+    }
+    const localityWithPin = locality && pincode ? `${locality} ${pincode}` : (locality || pincode);
+    const parts = [number && street ? `${number} ${street}` : street, sublocal, localityWithPin].filter(Boolean);
     const out = parts.length ? parts.join(", ") : (best.formatted_address ?? null);
     if (out) cacheSet(k, out);
     return out;
