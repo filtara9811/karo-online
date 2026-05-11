@@ -88,12 +88,30 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
       return null;
     }
     if (j.status !== "OK" || !j.results?.length) return null;
-    const best = j.results[0];
+    // Prefer the most specific result (street_address > premise > sublocality_level_3/2/1 > route)
+    const priority = [
+      "street_address", "premise", "subpremise",
+      "sublocality_level_3", "sublocality_level_2", "sublocality_level_1",
+      "route", "neighborhood", "locality",
+    ];
+    const ranked = [...j.results].sort((a: any, b: any) => {
+      const ra = Math.min(...(a.types ?? []).map((t: string) => { const i = priority.indexOf(t); return i < 0 ? 99 : i; }), 99);
+      const rb = Math.min(...(b.types ?? []).map((t: string) => { const i = priority.indexOf(t); return i < 0 ? 99 : i; }), 99);
+      return ra - rb;
+    });
+    const best = ranked[0];
     const comps: Array<{ long_name: string; types: string[] }> = best.address_components ?? [];
     const pick = (t: string) => comps.find((c) => c.types.includes(t))?.long_name;
-    const locality = pick("sublocality") || pick("locality") || pick("administrative_area_level_2");
-    const region = pick("administrative_area_level_1");
-    const out = locality && region ? `${locality}, ${region}` : (best.formatted_address ?? null);
+    const street = pick("route");
+    const number = pick("street_number");
+    const sublocal =
+      pick("sublocality_level_2") ||
+      pick("sublocality_level_1") ||
+      pick("sublocality") ||
+      pick("neighborhood");
+    const locality = pick("locality") || pick("administrative_area_level_2");
+    const parts = [number && street ? `${number} ${street}` : street, sublocal, locality].filter(Boolean);
+    const out = parts.length ? parts.join(", ") : (best.formatted_address ?? null);
     if (out) cacheSet(k, out);
     return out;
   } catch {
