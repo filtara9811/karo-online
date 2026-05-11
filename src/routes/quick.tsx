@@ -338,7 +338,7 @@ function QuickPage() {
     >
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} />
+        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} userAvatar={profile?.avatar_url || avatarUser} />
       </section>
 
       {/* MIDDLE — search + service cards */}
