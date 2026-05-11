@@ -132,11 +132,29 @@ export function useGeolocation(): GeoState {
               : "Location unavailable",
         }));
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 5 * 60 * 1000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+
+    // Continuously refine accuracy while the user is here (best-effort, single watcher).
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        if (cancelled) return;
+        if (pos.coords.accuracy > 100) return; // ignore very loose fixes
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setState((s) => ({ ...s, lat, lng, accuracyKm: pos.coords.accuracy / 1000 }));
+        const label = await reverseGeocode(lat, lng);
+        if (cancelled) return;
+        writeCache({ lat, lng, label, ts: Date.now() });
+        setState({ status: "ready", lat, lng, label, accuracyKm: pos.coords.accuracy / 1000 });
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
     );
 
     return () => {
       cancelled = true;
+      navigator.geolocation.clearWatch(watchId);
     };
   }, []);
 
