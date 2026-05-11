@@ -4,6 +4,7 @@ import { X, MapPin, Wrench, Clock, User, Bell, FileCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { toast } from "sonner";
 
 type Tone = "amber" | "blue" | "slate";
 type Alert = {
