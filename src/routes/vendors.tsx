@@ -616,9 +616,10 @@ function SheetBody({
 /* -------- 3D Shop Card with auto-sliding media -------- */
 
 function ShopCard3D({
-  vendor, onOpen, onInquiry, featured = false,
+  vendor, eta, onOpen, onInquiry, featured = false,
 }: {
   vendor: Vendor;
+  eta?: { km: string; eta: string; live: boolean };
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
   featured?: boolean;
