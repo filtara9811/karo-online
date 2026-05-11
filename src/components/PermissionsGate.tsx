@@ -1,7 +1,34 @@
 import { useEffect, useState } from "react";
-import { MapPin, Bell, Check, X, Loader2, ShieldCheck } from "lucide-react";
+import { MapPin, Bell, Check, X, Loader2, ShieldCheck, Settings, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+function detectBrowser(): "chrome" | "firefox" | "safari" | "edge" | "samsung" | "other" {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("samsungbrowser")) return "samsung";
+  if (ua.includes("edg/")) return "edge";
+  if (ua.includes("firefox")) return "firefox";
+  if (ua.includes("chrome")) return "chrome";
+  if (ua.includes("safari")) return "safari";
+  return "other";
+}
+
+function settingsHint(): string {
+  switch (detectBrowser()) {
+    case "chrome":
+    case "edge":
+      return "Address bar के 🔒 lock icon पर tap करें → Permissions → Location → Allow";
+    case "samsung":
+      return "Address bar के 🔒 icon पर tap करें → Permissions → Location → Allow";
+    case "firefox":
+      return "Address bar के shield/lock icon → More information → Permissions → Access your location → Allow";
+    case "safari":
+      return "Settings app → Safari → Location → Allow, फिर page reload करें";
+    default:
+      return "Browser के address bar के lock icon से location को Allow करें";
+  }
+}
 
 const ACK_KEY = "ko-permissions-ack-v1";
 
@@ -50,46 +77,53 @@ export function PermissionsGate() {
   const askLocation = () => {
     if (!("geolocation" in navigator)) {
       setLoc("denied");
-      toast.error("Location not supported on this device");
+      toast.error("Location not supported on this device", { id: "perm-loc" });
       return;
     }
-    setLoc("asking");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        try {
-          localStorage.setItem(
-            "ko-geo-cache",
-            JSON.stringify({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              label: "Locating address…",
-              ts: Date.now(),
-            }),
-          );
-          window.dispatchEvent(new Event("ko-geo-refresh"));
-        } catch { /* */ }
-        setLoc("granted");
-        toast.success("Location enabled ✓");
-      },
-      (err) => {
-        setLoc("denied");
-        toast.error(
-          err.code === err.PERMISSION_DENIED
-            ? "Permission denied. Enable from browser/site settings."
-            : "Couldn't read location. Try again.",
-        );
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
+    // If already permanently denied, don't fire prompt — show inline help instead
+    (async () => {
+      try {
+        const p = await navigator.permissions?.query?.({ name: "geolocation" as PermissionName });
+        if (p?.state === "denied") {
+          setLoc("denied");
+          return;
+        }
+      } catch { /* */ }
+      setLoc("asking");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          try {
+            localStorage.setItem(
+              "ko-geo-cache",
+              JSON.stringify({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                label: "Locating address…",
+                ts: Date.now(),
+              }),
+            );
+            window.dispatchEvent(new Event("ko-geo-refresh"));
+          } catch { /* */ }
+          setLoc("granted");
+          toast.success("Location enabled ✓", { id: "perm-loc" });
+        },
+        () => {
+          setLoc("denied");
+          // No toast — inline help row already shows the steps
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+      );
+    })();
   };
 
   const askNotifications = async () => {
     if (!("Notification" in window)) { setNotif("granted"); return; }
+    if (Notification.permission === "denied") { setNotif("denied"); return; }
     setNotif("asking");
     try {
       const r = await Notification.requestPermission();
-      if (r === "granted") { setNotif("granted"); toast.success("Notifications on ✓"); }
-      else { setNotif("denied"); toast.error("Notifications blocked"); }
+      if (r === "granted") { setNotif("granted"); toast.success("Notifications on ✓", { id: "perm-notif" }); }
+      else { setNotif("denied"); }
     } catch {
       setNotif("denied");
     }
@@ -100,23 +134,30 @@ export function PermissionsGate() {
     setOpen(false);
   };
 
+  const reloadPage = () => {
+    localStorage.setItem(ACK_KEY, "1");
+    window.location.reload();
+  };
+
   if (!open) return null;
 
-  const allHandled =
-    (loc === "granted" || loc === "denied") &&
-    (notif === "granted" || notif === "denied");
+  // Mandatory: must be granted to continue (notifications optional on unsupported devices)
+  const locOk = loc === "granted";
+  const notifOk = notif === "granted" || !("Notification" in window);
+  const allGranted = locOk && notifOk;
+  const anyDenied = loc === "denied" || notif === "denied";
 
   return (
     <div className="fixed inset-0 z-[200] grid place-items-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
+      <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         <div className="px-5 pt-6 pb-4 bg-gradient-to-br from-amber-50 via-white to-amber-50 text-center">
           <div className="mx-auto h-14 w-14 rounded-2xl grid place-items-center bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg">
             <ShieldCheck className="h-7 w-7 text-white" />
           </div>
           <h2 className="mt-3 text-lg font-bold text-slate-900">Quick setup</h2>
           <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-            App ko sahi se chalane ke liye 2 permissions chahiye. Aap kabhi bhi
-            phone settings se badal sakte hain.
+            Aage badhne ke liye 2 permissions zaroori hain. Allow karein —
+            yeh sirf ek baar puchhega.
           </p>
         </div>
 
@@ -135,23 +176,40 @@ export function PermissionsGate() {
             status={notif}
             onAsk={askNotifications}
           />
+
+          {anyDenied && !allGranted && (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <Settings className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[12px] font-bold text-amber-900">
+                    Browser ne block kar diya hai
+                  </p>
+                  <p className="text-[11px] text-amber-800 leading-snug mt-0.5">
+                    {settingsHint()}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={reloadPage}
+                className="w-full py-2 rounded-xl bg-amber-600 text-white text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Setting badalne ke baad — Reload
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="px-4 pb-4">
           <button
             type="button"
             onClick={finish}
-            disabled={!allHandled}
+            disabled={!allGranted}
             className="w-full py-3 rounded-2xl font-bold text-sm bg-gradient-to-r from-amber-500 to-amber-600 text-white disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] shadow-lg shadow-amber-500/30"
           >
-            {allHandled ? "Continue →" : "Grant permissions to continue"}
-          </button>
-          <button
-            type="button"
-            onClick={finish}
-            className="w-full mt-2 py-2 text-[11px] text-slate-500 hover:text-slate-700"
-          >
-            Skip for now
+            {allGranted ? "Continue →" : "Allow karke aage badhein"}
           </button>
         </div>
       </div>
