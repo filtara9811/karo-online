@@ -312,6 +312,7 @@ function VendorsPage() {
           query={query}
           setQuery={setQuery}
           filtered={filtered}
+          etas={etas}
           onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
           onInquiry={(v) => navigate({
             to: "/chat",
