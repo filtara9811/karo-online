@@ -49,11 +49,13 @@ import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
+import { Route as AdminFormsRouteImport } from './routes/admin.forms'
 import { Route as AdminFirebaseRouteImport } from './routes/admin.firebase'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
+import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -256,6 +258,11 @@ const AdminKycRoute = AdminKycRouteImport.update({
   path: '/kyc',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFormsRoute = AdminFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFirebaseRoute = AdminFirebaseRouteImport.update({
   id: '/firebase',
   path: '/firebase',
@@ -281,6 +288,11 @@ const AdminCashfreeRoute = AdminCashfreeRouteImport.update({
   path: '/cashfree',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBrandingRoute = AdminBrandingRouteImport.update({
+  id: '/branding',
+  path: '/branding',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   id: '/vendor/lead/$id',
   path: '/vendor/lead/$id',
@@ -302,11 +314,13 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/firebase': typeof AdminFirebaseRoute
+  '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
@@ -349,11 +363,13 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/firebase': typeof AdminFirebaseRoute
+  '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
@@ -398,11 +414,13 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/status': typeof StatusRoute
   '/vendors': typeof VendorsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/firebase': typeof AdminFirebaseRoute
+  '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
@@ -448,11 +466,13 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
     | '/admin/firebase'
+    | '/admin/forms'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
@@ -495,11 +515,13 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
     | '/admin/firebase'
+    | '/admin/forms'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
@@ -543,11 +565,13 @@ export interface FileRouteTypes {
     | '/services'
     | '/status'
     | '/vendors'
+    | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
     | '/admin/firebase'
+    | '/admin/forms'
     | '/admin/kyc'
     | '/admin/legal'
     | '/admin/login'
@@ -887,6 +911,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKycRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/forms': {
+      id: '/admin/forms'
+      path: '/forms'
+      fullPath: '/admin/forms'
+      preLoaderRoute: typeof AdminFormsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/firebase': {
       id: '/admin/firebase'
       path: '/firebase'
@@ -922,6 +953,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCashfreeRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/branding': {
+      id: '/admin/branding'
+      path: '/branding'
+      fullPath: '/admin/branding'
+      preLoaderRoute: typeof AdminBrandingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/vendor/lead/$id': {
       id: '/vendor/lead/$id'
       path: '/vendor/lead/$id'
@@ -933,11 +971,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminBrandingRoute: typeof AdminBrandingRoute
   AdminCashfreeRoute: typeof AdminCashfreeRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminFirebaseRoute: typeof AdminFirebaseRoute
+  AdminFormsRoute: typeof AdminFormsRoute
   AdminKycRoute: typeof AdminKycRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -957,11 +997,13 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBrandingRoute: AdminBrandingRoute,
   AdminCashfreeRoute: AdminCashfreeRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminFirebaseRoute: AdminFirebaseRoute,
+  AdminFormsRoute: AdminFormsRoute,
   AdminKycRoute: AdminKycRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
