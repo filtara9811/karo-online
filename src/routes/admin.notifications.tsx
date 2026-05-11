@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { Bell, Loader2, Save, Send, AlertTriangle, CheckCircle2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, GoldButton, PageHeader } from "@/components/admin/AdminLayout";
+import { useServerFn } from "@tanstack/react-start";
+import { sendTestPush } from "@/lib/push.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -84,9 +87,23 @@ function NotificationsPage() {
     setSavingId(null);
   };
 
+  const sendTest = useServerFn(sendTestPush);
   const testSend = async (g: Trigger) => {
     setTestingId(g.id);
-    await (supabase as any).rpc("admin_test_notification", { _trigger_id: g.id, _user_id: null });
+    try {
+      const res: any = await sendTest({ data: { trigger_id: g.id } });
+      if (res?.ok) {
+        toast.success(`Push sent to ${res.sent} device(s)`);
+      } else if (res?.reason === "no_device_tokens") {
+        toast.error("No active device tokens for your account. Allow notifications in the app first.");
+      } else if (res?.reason === "fcm_not_configured") {
+        toast.error("FCM not configured (missing service account / project id).");
+      } else {
+        toast.error(`Send failed: ${res?.reason ?? "unknown"}${res?.error ? ` — ${res.error}` : ""}`);
+      }
+    } catch (e: any) {
+      toast.error(`Test failed: ${e?.message ?? e}`);
+    }
     setTestingId(null);
     load();
   };
