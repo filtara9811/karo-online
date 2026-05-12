@@ -241,42 +241,54 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         email: override?.email ?? email,
         address: override?.address ?? address,
       };
-      if (user) {
-        const { error } = await supabase.rpc("save_customer_profile", {
-          _name: payload.name,
-          _gender: payload.gender,
-          _phone: payload.phone,
-          _email: payload.email || user.email || "",
-          _address: payload.address,
-        });
-        if (error) {
-          toast.error(error.message || "Profile save fail hua");
-          return;
-        }
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        await refreshProfile();
-        try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
-      } else {
-        const result = await finalizeCustomerFn({ data: payload });
-        if (!result.ok) {
-          toast.error(result.error || "Profile save fail hua");
-          return;
-        }
-        if (result.session?.access_token && result.session?.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: result.session.access_token,
-            refresh_token: result.session.refresh_token,
-          });
-        }
-        window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
-        window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
-        try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
-      }
       try {
+        if (user) {
+          const { error } = await supabase.rpc("save_customer_profile", {
+            _name: payload.name,
+            _gender: payload.gender,
+            _phone: payload.phone,
+            _email: payload.email || user.email || "",
+            _address: payload.address,
+          });
+          if (error) {
+            console.error("save_customer_profile error", error);
+            toast.error(error.message || "Profile save fail hua");
+            return;
+          }
+          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+          await refreshProfile();
+          try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
+        } else {
+          const result = await finalizeCustomerFn({ data: payload });
+          if (!result.ok) {
+            console.error("finalizeCustomer error", result.error);
+            toast.error(result.error || "Profile save fail hua");
+            return;
+          }
+          if (result.session?.access_token && result.session?.refresh_token) {
+            await supabase.auth.setSession({
+              access_token: result.session.access_token,
+              refresh_token: result.session.refresh_token,
+            });
+          }
+          window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true");
+          window.localStorage.removeItem(CUSTOMER_DRAFT_KEY);
+          try { window.dispatchEvent(new Event("ko-customer-onboarded")); } catch { /* ignore */ }
+        }
+      } catch (err) {
+        console.error("finalizeNow exception", err);
+        toast.error((err as Error)?.message || "Sign up fail hua, dobara try karein");
+        return;
+      }
+      // Apply referral code (typed in UI takes priority over pending)
+      try {
+        if (referral && referral.trim()) {
+          window.localStorage.setItem("ko-pending-referral-code", referral.trim().toUpperCase());
+        }
         const { applyPendingReferralCode } = await import("@/hooks/use-referral");
         await applyPendingReferralCode();
-      } catch { /* ignore */ }
+      } catch (err) { console.error("apply referral error", err); }
       // Show success → user clicks Home
       setSuccessOpen(true);
     } finally {
