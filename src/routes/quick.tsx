@@ -262,7 +262,12 @@ function QuickPage() {
     [categories, activeType],
   );
 
-  const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
+  const defaultRootId = useMemo(
+    () => (rootCategories.find((c) => c.slug === "basic-services") ?? rootCategories[0] ?? null)?.id ?? null,
+    [rootCategories],
+  );
+
+  const [selectedRootId, setSelectedRootId] = useState<string | null>(defaultRootId);
   useEffect(() => {
     if (!rootCategories.length) {
       setSelectedRootId(null);
@@ -275,8 +280,8 @@ function QuickPage() {
   }, [rootCategories, selectedRootId]);
 
   const selectedRoot = useMemo(
-    () => rootCategories.find((c) => c.id === selectedRootId) ?? null,
-    [rootCategories, selectedRootId],
+    () => rootCategories.find((c) => c.id === (selectedRootId ?? defaultRootId)) ?? null,
+    [rootCategories, selectedRootId, defaultRootId],
   );
 
   // Sub-categories under the selected root (AC, Carpenter, Painter…)
@@ -285,14 +290,15 @@ function QuickPage() {
     [categories, selectedRoot],
   );
 
-  const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
+  const defaultSubId = subCategories[0]?.id ?? null;
+  const [selectedSubId, setSelectedSubId] = useState<string | null>(defaultSubId);
   useEffect(() => {
     setSelectedSubId(subCategories[0]?.id ?? null);
   }, [selectedRootId, subCategories.length]);
 
   const selectedSub = useMemo(
-    () => subCategories.find((c) => c.id === selectedSubId) ?? null,
-    [subCategories, selectedSubId],
+    () => subCategories.find((c) => c.id === (selectedSubId ?? defaultSubId)) ?? null,
+    [subCategories, selectedSubId, defaultSubId],
   );
 
   // Items under selected sub-category (AC Service / Repair / Installation)
