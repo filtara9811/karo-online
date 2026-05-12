@@ -83,7 +83,16 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
     if (draft.referral) return draft.referral;
     if (typeof window !== "undefined") {
       const u = new URLSearchParams(window.location.search);
-      return u.get("ref") || u.get("referral") || "";
+      const fromUrl = u.get("ref") || u.get("referral");
+      if (fromUrl) return fromUrl.toUpperCase();
+      try {
+        const fromStorage = window.localStorage.getItem("ko-pending-referral-code");
+        if (fromStorage) return fromStorage.toUpperCase();
+      } catch { /* ignore */ }
+      const m = document.cookie.match(/(?:^|;\s*)ko_ref=([^;]+)/);
+      if (m) {
+        try { return decodeURIComponent(m[1]).toUpperCase(); } catch { return m[1].toUpperCase(); }
+      }
     }
     return "";
   });
