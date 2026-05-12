@@ -217,8 +217,7 @@ function QuickPage() {
   const typeCode = activeTypeCode ?? "service";
 
   // ---- DB-loaded catalog ----
-  const cachedCatalog = useMemo(() => loadCachedCatalog(), []);
-  const initialCatalog = useMemo(() => cachedCatalog ?? fallbackCatalog(), [cachedCatalog]);
+  const initialCatalog = useMemo<CatalogData>(() => loadCachedCatalog() ?? fallbackCatalog(), []);
   const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
   const [categories, setCategories] = useState<DBCategory[]>(initialCatalog.categories);
   const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
