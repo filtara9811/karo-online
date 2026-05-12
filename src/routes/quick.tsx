@@ -39,6 +39,7 @@ export const Route = createFileRoute("/quick")({
 type DBType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
 type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number };
 type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number };
+type CatalogData = { types: DBType[]; categories: DBCategory[]; items: DBItem[] };
 
 type Vendor = {
   id: string;
@@ -170,7 +171,7 @@ const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
     sort_order: idx + 1,
   }));
 
-function fallbackCatalog(types: DBType[] = STATIC_TYPES) {
+function fallbackCatalog(types: DBType[] = STATIC_TYPES): CatalogData {
   const fallbackType = types.find((t) => t.code === "service") ?? types[0] ?? STATIC_TYPES[0];
   const basicId = `static-basic-${fallbackType.id}`;
   const categories = STATIC_CATEGORIES.map((c) => {
@@ -179,18 +180,21 @@ function fallbackCatalog(types: DBType[] = STATIC_TYPES) {
   });
   const items = categories
     .filter((c) => c.parent_id === basicId)
-    .map((c, idx) => ({ ...STATIC_ITEMS[idx % STATIC_ITEMS.length], id: `static-item-${c.slug}-${fallbackType.id}`, category_id: c.id }));
+    .map((c, idx) => {
+      const fallbackItem = STATIC_ITEMS[idx % STATIC_ITEMS.length] ?? STATIC_ITEMS[0];
+      return { ...fallbackItem, id: `static-item-${c.slug}-${fallbackType.id}`, category_id: c.id };
+    });
   return { types, categories, items };
 }
 
-function loadCachedCatalog() {
+function loadCachedCatalog(): CatalogData | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { types?: DBType[]; categories?: DBCategory[]; items?: DBItem[] };
+    const parsed = JSON.parse(raw) as Partial<CatalogData>;
     if (!parsed.types?.length || !parsed.categories?.length) return null;
-    return parsed;
+    return { types: parsed.types, categories: parsed.categories, items: parsed.items ?? STATIC_ITEMS };
   } catch {
     return null;
   }
