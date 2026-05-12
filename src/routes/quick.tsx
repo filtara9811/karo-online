@@ -211,10 +211,10 @@ function QuickPage() {
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
-  const initialCatalog = useMemo(() => cachedCatalog ?? fallbackCatalog(), [cachedCatalog]);
 
   // ---- DB-loaded catalog ----
   const cachedCatalog = useMemo(() => loadCachedCatalog(), []);
+  const initialCatalog = useMemo(() => cachedCatalog ?? fallbackCatalog(), [cachedCatalog]);
   const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
   const [categories, setCategories] = useState<DBCategory[]>(initialCatalog.categories);
   const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
