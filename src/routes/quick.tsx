@@ -458,9 +458,9 @@ function QuickPage() {
 
         {/* Service cards = sub-categories of the selected root */}
         <div className="space-y-2.5 pb-4">
-          {loading && (
+          {loading && subCategories.length === 0 && (
             <div className="text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
-              Loading services…
+              Opening services…
             </div>
           )}
           {!loading && subCategories.length === 0 && (
@@ -576,6 +576,11 @@ function QuickPage() {
                 </button>
               );
             })}
+            {loading && rootCategories.length > 0 && (
+              <span className="text-[10px] text-[color:oklch(0.45_0.08_85)] py-3 px-2 whitespace-nowrap">
+                Updating…
+              </span>
+            )}
             {!loading && rootCategories.length === 0 && (
               <span className="text-xs text-[color:oklch(0.45_0.08_85)] py-3 px-2">
                 No categories — add some from Admin → Catalog.
