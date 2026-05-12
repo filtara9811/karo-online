@@ -139,6 +139,57 @@ const VENDORS_BY_CAT: Record<string, Vendor[]> = {
 };
 const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 
+const CATALOG_CACHE_KEY = "ko-quick-catalog-v2";
+const STATIC_TYPES: DBType[] = [
+  { id: "static-service", code: "service", name: "Service", icon: "⚡", sort_order: 1 },
+];
+const STATIC_CATEGORIES: DBCategory[] = [
+  { id: "static-basic", type_id: "static-service", parent_id: null, name: "Basic Services", slug: "basic-services", icon: "⚡", image_url: null, sort_order: 1 },
+  { id: "static-legal", type_id: "static-service", parent_id: null, name: "Legal Services", slug: "legal-services", icon: "📄", image_url: null, sort_order: 2 },
+  { id: "static-finance", type_id: "static-service", parent_id: null, name: "Finance Services", slug: "finance-services", icon: "🏦", image_url: null, sort_order: 3 },
+  { id: "static-more", type_id: "static-service", parent_id: null, name: "More Services", slug: "more-services", icon: "✨", image_url: null, sort_order: 4 },
+  { id: "static-ac", type_id: null, parent_id: "static-basic", name: "AC", slug: "basic-ac", icon: "⚡", image_url: null, sort_order: 1 },
+  { id: "static-carpenter", type_id: null, parent_id: "static-basic", name: "Carpenter", slug: "basic-carpenter", icon: "🔨", image_url: null, sort_order: 2 },
+  { id: "static-electronics", type_id: null, parent_id: "static-basic", name: "Electronics", slug: "basic-electronics", icon: "✨", image_url: null, sort_order: 3 },
+  { id: "static-plumber", type_id: null, parent_id: "static-basic", name: "Plumber", slug: "basic-plumber", icon: "🔧", image_url: null, sort_order: 4 },
+  { id: "static-painter", type_id: null, parent_id: "static-basic", name: "Painter", slug: "basic-painter", icon: "🎨", image_url: null, sort_order: 5 },
+  { id: "static-cleaner", type_id: null, parent_id: "static-basic", name: "Cleaner", slug: "basic-cleaner", icon: "✨", image_url: null, sort_order: 6 },
+];
+const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
+  .filter((c) => c.parent_id === "static-basic")
+  .map((c, idx) => ({
+    id: `static-item-${c.slug}`,
+    category_id: c.id,
+    name: `${c.name} Service`,
+    slug: `${c.slug}-service`,
+    description: "Fast nearby service",
+    icon: c.icon,
+    image_url: null,
+    price_min: null,
+    price_max: null,
+    sort_order: idx + 1,
+  }));
+
+function loadCachedCatalog() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { types?: DBType[]; categories?: DBCategory[]; items?: DBItem[] };
+    if (!parsed.types?.length || !parsed.categories?.length) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms = 1200): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error("Catalog request timed out")), ms)),
+  ]);
+}
+
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -149,23 +200,37 @@ function QuickPage() {
   const typeCode = activeTypeCode ?? "service";
 
   // ---- DB-loaded catalog ----
-  const [types, setTypes] = useState<DBType[]>([]);
-  const [categories, setCategories] = useState<DBCategory[]>([]);
-  const [items, setItems] = useState<DBItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedCatalog = useMemo(() => loadCachedCatalog(), []);
+  const [types, setTypes] = useState<DBType[]>(cachedCatalog?.types ?? STATIC_TYPES);
+  const [categories, setCategories] = useState<DBCategory[]>(cachedCatalog?.categories ?? STATIC_CATEGORIES);
+  const [items, setItems] = useState<DBItem[]>(cachedCatalog?.items ?? STATIC_ITEMS);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const [t, c, i] = await Promise.all([
-        supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
-        supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
-        supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
-      ]);
-      setTypes((t.data ?? []) as DBType[]);
-      setCategories((c.data ?? []) as DBCategory[]);
-      setItems((i.data ?? []) as DBItem[]);
-      setLoading(false);
+      setLoading(true);
+      try {
+        const [t, c, i] = await withTimeout(Promise.all([
+          supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
+        ]));
+        if (cancelled) return;
+        const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
+        const nextCategories = ((c.data ?? []) as DBCategory[]).length ? (c.data ?? []) as DBCategory[] : STATIC_CATEGORIES;
+        const nextItems = ((i.data ?? []) as DBItem[]).length ? (i.data ?? []) as DBItem[] : STATIC_ITEMS;
+        setTypes(nextTypes);
+        setCategories(nextCategories);
+        setItems(nextItems);
+        window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ types: nextTypes, categories: nextCategories, items: nextItems }));
+      } catch (e) {
+        console.warn("Quick catalog using cached/static data", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const activeType = useMemo(
