@@ -170,6 +170,19 @@ const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
     sort_order: idx + 1,
   }));
 
+function fallbackCatalog(types: DBType[] = STATIC_TYPES) {
+  const fallbackType = types.find((t) => t.code === "service") ?? types[0] ?? STATIC_TYPES[0];
+  const basicId = `static-basic-${fallbackType.id}`;
+  const categories = STATIC_CATEGORIES.map((c) => {
+    if (!c.parent_id) return { ...c, id: `${c.id}-${fallbackType.id}`, type_id: fallbackType.id };
+    return { ...c, id: `${c.id}-${fallbackType.id}`, parent_id: basicId };
+  });
+  const items = categories
+    .filter((c) => c.parent_id === basicId)
+    .map((c, idx) => ({ ...STATIC_ITEMS[idx % STATIC_ITEMS.length], id: `static-item-${c.slug}-${fallbackType.id}`, category_id: c.id }));
+  return { types, categories, items };
+}
+
 function loadCachedCatalog() {
   if (typeof window === "undefined") return null;
   try {
@@ -198,12 +211,13 @@ function QuickPage() {
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
+  const initialCatalog = useMemo(() => cachedCatalog ?? fallbackCatalog(), [cachedCatalog]);
 
   // ---- DB-loaded catalog ----
   const cachedCatalog = useMemo(() => loadCachedCatalog(), []);
-  const [types, setTypes] = useState<DBType[]>(cachedCatalog?.types ?? STATIC_TYPES);
-  const [categories, setCategories] = useState<DBCategory[]>(cachedCatalog?.categories ?? STATIC_CATEGORIES);
-  const [items, setItems] = useState<DBItem[]>(cachedCatalog?.items ?? STATIC_ITEMS);
+  const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
+  const [categories, setCategories] = useState<DBCategory[]>(initialCatalog.categories);
+  const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -218,8 +232,9 @@ function QuickPage() {
         ]));
         if (cancelled) return;
         const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
-        const nextCategories = ((c.data ?? []) as DBCategory[]).length ? (c.data ?? []) as DBCategory[] : STATIC_CATEGORIES;
-        const nextItems = ((i.data ?? []) as DBItem[]).length ? (i.data ?? []) as DBItem[] : STATIC_ITEMS;
+        const fb = fallbackCatalog(nextTypes);
+        const nextCategories = ((c.data ?? []) as DBCategory[]).length ? (c.data ?? []) as DBCategory[] : fb.categories;
+        const nextItems = ((i.data ?? []) as DBItem[]).length ? (i.data ?? []) as DBItem[] : fb.items;
         setTypes(nextTypes);
         setCategories(nextCategories);
         setItems(nextItems);
