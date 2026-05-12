@@ -376,6 +376,30 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_form_toggles: {
+        Row: {
+          enabled: boolean
+          field_key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          field_key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          field_key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
