@@ -564,7 +564,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         </div>
       )}
 
-      <SuccessOverlay open={successOpen} name={name} ctaLabel="Open Services" onDone={handleSuccessHome} />
+      <SuccessOverlay open={successOpen} name={name} ctaLabel="Go to Home" autoClose onDone={handleSuccessHome} />
     </main>
   );
 }
