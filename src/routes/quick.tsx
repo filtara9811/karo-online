@@ -39,6 +39,7 @@ export const Route = createFileRoute("/quick")({
 type DBType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
 type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number };
 type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number };
+type CatalogData = { types: DBType[]; categories: DBCategory[]; items: DBItem[] };
 
 type Vendor = {
   id: string;
@@ -139,6 +140,73 @@ const VENDORS_BY_CAT: Record<string, Vendor[]> = {
 };
 const DEFAULT_VENDORS: Vendor[] = VENDORS_BY_CAT.ac;
 
+const CATALOG_CACHE_KEY = "ko-quick-catalog-v2";
+const STATIC_TYPES: DBType[] = [
+  { id: "static-service", code: "service", name: "Service", icon: "⚡", sort_order: 1 },
+];
+const STATIC_CATEGORIES: DBCategory[] = [
+  { id: "static-basic", type_id: "static-service", parent_id: null, name: "Basic Services", slug: "basic-services", icon: "⚡", image_url: null, sort_order: 1 },
+  { id: "static-legal", type_id: "static-service", parent_id: null, name: "Legal Services", slug: "legal-services", icon: "📄", image_url: null, sort_order: 2 },
+  { id: "static-finance", type_id: "static-service", parent_id: null, name: "Finance Services", slug: "finance-services", icon: "🏦", image_url: null, sort_order: 3 },
+  { id: "static-more", type_id: "static-service", parent_id: null, name: "More Services", slug: "more-services", icon: "✨", image_url: null, sort_order: 4 },
+  { id: "static-ac", type_id: null, parent_id: "static-basic", name: "AC", slug: "basic-ac", icon: "⚡", image_url: null, sort_order: 1 },
+  { id: "static-carpenter", type_id: null, parent_id: "static-basic", name: "Carpenter", slug: "basic-carpenter", icon: "🔨", image_url: null, sort_order: 2 },
+  { id: "static-electronics", type_id: null, parent_id: "static-basic", name: "Electronics", slug: "basic-electronics", icon: "✨", image_url: null, sort_order: 3 },
+  { id: "static-plumber", type_id: null, parent_id: "static-basic", name: "Plumber", slug: "basic-plumber", icon: "🔧", image_url: null, sort_order: 4 },
+  { id: "static-painter", type_id: null, parent_id: "static-basic", name: "Painter", slug: "basic-painter", icon: "🎨", image_url: null, sort_order: 5 },
+  { id: "static-cleaner", type_id: null, parent_id: "static-basic", name: "Cleaner", slug: "basic-cleaner", icon: "✨", image_url: null, sort_order: 6 },
+];
+const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
+  .filter((c) => c.parent_id === "static-basic")
+  .map((c, idx) => ({
+    id: `static-item-${c.slug}`,
+    category_id: c.id,
+    name: `${c.name} Service`,
+    slug: `${c.slug}-service`,
+    description: "Fast nearby service",
+    icon: c.icon,
+    image_url: null,
+    price_min: null,
+    price_max: null,
+    sort_order: idx + 1,
+  }));
+
+function fallbackCatalog(types: DBType[] = STATIC_TYPES): CatalogData {
+  const fallbackType = types.find((t) => t.code === "service") ?? types[0] ?? STATIC_TYPES[0];
+  const basicId = `static-basic-${fallbackType.id}`;
+  const categories = STATIC_CATEGORIES.map((c) => {
+    if (!c.parent_id) return { ...c, id: `${c.id}-${fallbackType.id}`, type_id: fallbackType.id };
+    return { ...c, id: `${c.id}-${fallbackType.id}`, parent_id: basicId };
+  });
+  const items = categories
+    .filter((c) => c.parent_id === basicId)
+    .map((c, idx) => {
+      const fallbackItem = STATIC_ITEMS[idx % STATIC_ITEMS.length] ?? STATIC_ITEMS[0];
+      return { ...fallbackItem, id: `static-item-${c.slug}-${fallbackType.id}`, category_id: c.id };
+    });
+  return { types, categories, items };
+}
+
+function loadCachedCatalog(): CatalogData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CatalogData>;
+    if (!parsed.types?.length || !parsed.categories?.length) return null;
+    return { types: parsed.types, categories: parsed.categories, items: parsed.items ?? STATIC_ITEMS };
+  } catch {
+    return null;
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms = 1200): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error("Catalog request timed out")), ms)),
+  ]);
+}
+
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -149,23 +217,38 @@ function QuickPage() {
   const typeCode = activeTypeCode ?? "service";
 
   // ---- DB-loaded catalog ----
-  const [types, setTypes] = useState<DBType[]>([]);
-  const [categories, setCategories] = useState<DBCategory[]>([]);
-  const [items, setItems] = useState<DBItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialCatalog = useMemo<CatalogData>(() => loadCachedCatalog() ?? fallbackCatalog(), []);
+  const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
+  const [categories, setCategories] = useState<DBCategory[]>(initialCatalog.categories);
+  const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const [t, c, i] = await Promise.all([
-        supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
-        supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
-        supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
-      ]);
-      setTypes((t.data ?? []) as DBType[]);
-      setCategories((c.data ?? []) as DBCategory[]);
-      setItems((i.data ?? []) as DBItem[]);
-      setLoading(false);
+      setLoading(true);
+      try {
+        const [t, c, i] = await withTimeout(Promise.all([
+          supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
+        ]));
+        if (cancelled) return;
+        const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
+        const fb = fallbackCatalog(nextTypes);
+        const nextCategories = ((c.data ?? []) as DBCategory[]).length ? (c.data ?? []) as DBCategory[] : fb.categories;
+        const nextItems = ((i.data ?? []) as DBItem[]).length ? (i.data ?? []) as DBItem[] : fb.items;
+        setTypes(nextTypes);
+        setCategories(nextCategories);
+        setItems(nextItems);
+        window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ types: nextTypes, categories: nextCategories, items: nextItems }));
+      } catch (e) {
+        console.warn("Quick catalog using cached/static data", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const activeType = useMemo(
@@ -179,7 +262,12 @@ function QuickPage() {
     [categories, activeType],
   );
 
-  const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
+  const defaultRootId = useMemo(
+    () => (rootCategories.find((c) => c.slug === "basic-services") ?? rootCategories[0] ?? null)?.id ?? null,
+    [rootCategories],
+  );
+
+  const [selectedRootId, setSelectedRootId] = useState<string | null>(defaultRootId);
   useEffect(() => {
     if (!rootCategories.length) {
       setSelectedRootId(null);
@@ -192,8 +280,8 @@ function QuickPage() {
   }, [rootCategories, selectedRootId]);
 
   const selectedRoot = useMemo(
-    () => rootCategories.find((c) => c.id === selectedRootId) ?? null,
-    [rootCategories, selectedRootId],
+    () => rootCategories.find((c) => c.id === (selectedRootId ?? defaultRootId)) ?? null,
+    [rootCategories, selectedRootId, defaultRootId],
   );
 
   // Sub-categories under the selected root (AC, Carpenter, Painter…)
@@ -202,14 +290,15 @@ function QuickPage() {
     [categories, selectedRoot],
   );
 
-  const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
+  const defaultSubId = subCategories[0]?.id ?? null;
+  const [selectedSubId, setSelectedSubId] = useState<string | null>(defaultSubId);
   useEffect(() => {
     setSelectedSubId(subCategories[0]?.id ?? null);
   }, [selectedRootId, subCategories.length]);
 
   const selectedSub = useMemo(
-    () => subCategories.find((c) => c.id === selectedSubId) ?? null,
-    [subCategories, selectedSubId],
+    () => subCategories.find((c) => c.id === (selectedSubId ?? defaultSubId)) ?? null,
+    [subCategories, selectedSubId, defaultSubId],
   );
 
   // Items under selected sub-category (AC Service / Repair / Installation)
@@ -393,9 +482,9 @@ function QuickPage() {
 
         {/* Service cards = sub-categories of the selected root */}
         <div className="space-y-2.5 pb-4">
-          {loading && (
+          {loading && subCategories.length === 0 && (
             <div className="text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
-              Loading services…
+              Opening services…
             </div>
           )}
           {!loading && subCategories.length === 0 && (
@@ -511,6 +600,11 @@ function QuickPage() {
                 </button>
               );
             })}
+            {loading && rootCategories.length > 0 && (
+              <span className="text-[10px] text-[color:oklch(0.45_0.08_85)] py-3 px-2 whitespace-nowrap">
+                Updating…
+              </span>
+            )}
             {!loading && rootCategories.length === 0 && (
               <span className="text-xs text-[color:oklch(0.45_0.08_85)] py-3 px-2">
                 No categories — add some from Admin → Catalog.
