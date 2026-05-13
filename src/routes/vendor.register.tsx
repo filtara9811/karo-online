@@ -513,7 +513,7 @@ function VendorRegister() {
                 </div>
               </>
             ) : (
-              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} />
+              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={paying} />
             )}
           </div>
         </div>
