@@ -100,7 +100,13 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
   .inputValidator((d) => CreateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context as { userId: string };
-    const svc = await pickService(data.purpose);
+    let svc: any = null;
+    try {
+      svc = await pickService(data.purpose);
+    } catch (e) {
+      console.error("[cashfree] pickService threw", e);
+    }
+    console.log("[cashfree] purpose=", data.purpose, "svc=", svc ? { service_key: svc.service_key, has_app: !!svc.app_id, has_sec: !!svc.secret_key, test: svc.is_test_mode } : null);
     if (!svc || !svc.app_id || !svc.secret_key) {
       await logSys("error", `No active Cashfree service for ${data.purpose}`);
       return {
