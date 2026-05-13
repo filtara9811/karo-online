@@ -129,13 +129,14 @@ function VendorRegister() {
 
   useEffect(() => {
     if (profile?.phone && !whatsapp) setWhatsapp(profile.phone);
-    if ((profile?.email || user?.email) && !managerEmail) setManagerEmail(profile?.email || user?.email || "");
+    if ((profile?.email || user?.email) && !managerEmail)
+      setManagerEmail(profile?.email || user?.email || "");
   }, [managerEmail, profile?.email, profile?.phone, user?.email, whatsapp]);
 
   // Sheet drag
   const [vh, setVh] = useState(800);
   const SNAP_FULL = vh * 0.06;
-  const SNAP_HALF = vh * 0.30;
+  const SNAP_HALF = vh * 0.3;
   const SNAP_PEEK = vh * 0.55;
   const SNAPS = useMemo(() => [SNAP_FULL, SNAP_HALF, SNAP_PEEK], [SNAP_FULL, SNAP_HALF, SNAP_PEEK]);
   const y = useMotionValue(SNAP_HALF);
@@ -175,8 +176,11 @@ function VendorRegister() {
 
   // Validation per step
   const step1Valid =
-    !!role && ownerName.trim().length > 1 &&
-    !!entity && !!trade && !!dealsIn &&
+    !!role &&
+    ownerName.trim().length > 1 &&
+    !!entity &&
+    !!trade &&
+    !!dealsIn &&
     businessName.trim().length > 1 &&
     whatsapp.replace(/\D/g, "").length >= 10 &&
     managerEmail.includes("@");
@@ -184,16 +188,17 @@ function VendorRegister() {
   const step2Valid = insta.trim().length > 0 || fb.trim().length > 0 || website.trim().length > 0;
   const step3Valid = aadhaar.replace(/\D/g, "").length === 12 && pan.trim().length === 10;
 
-  const canNext = step === 0 ? step1Valid : step === 1 ? step2Valid : step === 2 ? step3Valid : false;
+  const canNext =
+    step === 0 ? step1Valid : step === 1 ? step2Valid : step === 2 ? step3Valid : false;
 
   const goNext = () => {
-    if (step < 2) setStep(((step + 1) as StepIdx));
+    if (step < 2) setStep((step + 1) as StepIdx);
     else if (step === 2 && step3Valid) setStep(3);
   };
 
   const goBack = () => {
     if (step === 0) navigate({ to: "/" });
-    else setStep(((step - 1) as StepIdx));
+    else setStep((step - 1) as StepIdx);
   };
 
   const handlePickerSelect = (value: string) => {
@@ -216,10 +221,26 @@ function VendorRegister() {
   };
 
   const pickerConfig = useMemo(() => {
-    if (picker === "role") return { title: "Your Role", subtitle: "Who are you in this business?", options: ROLE_OPTIONS };
-    if (picker === "entity") return { title: "Business Type", subtitle: "How is your business registered?", options: ENTITY_OPTIONS };
-    if (picker === "trade") return { title: "What you do", subtitle: "Pick your trade line", options: TRADE_OPTIONS };
-    if (picker === "dealsIn") return { title: "Deals In", subtitle: "Products, services, or both?", options: DEALS_IN_OPTIONS };
+    if (picker === "role")
+      return {
+        title: "Your Role",
+        subtitle: "Who are you in this business?",
+        options: ROLE_OPTIONS,
+      };
+    if (picker === "entity")
+      return {
+        title: "Business Type",
+        subtitle: "How is your business registered?",
+        options: ENTITY_OPTIONS,
+      };
+    if (picker === "trade")
+      return { title: "What you do", subtitle: "Pick your trade line", options: TRADE_OPTIONS };
+    if (picker === "dealsIn")
+      return {
+        title: "Deals In",
+        subtitle: "Products, services, or both?",
+        options: DEALS_IN_OPTIONS,
+      };
     return null;
   }, [picker]);
 
@@ -294,7 +315,9 @@ function VendorRegister() {
       });
       if (!r.ok) {
         if (/cashfree configured nahi hai/i.test(r.error || "")) {
-          toast.success("Training complete ho gayi — Cashfree configure hote hi payment gateway active ho jayega.");
+          toast.success(
+            "Training complete ho gayi — Cashfree configure hote hi payment gateway active ho jayega.",
+          );
           setShowJoined(true);
           setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1400);
           return;
@@ -370,7 +393,13 @@ function VendorRegister() {
         className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-white/90 backdrop-blur-md border border-[color:oklch(0.72_0.01_260/0.5)] grid place-items-center shadow-md"
         aria-label="Close"
       >
-        <svg className="h-5 w-5 text-[color:oklch(0.42_0.01_260)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+        <svg
+          className="h-5 w-5 text-[color:oklch(0.42_0.01_260)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+        >
           <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
@@ -397,8 +426,7 @@ function VendorRegister() {
         <div
           className="relative h-full mx-auto max-w-md rounded-t-[32px] overflow-hidden"
           style={{
-            background:
-              "linear-gradient(180deg, #ffffff 0%, #f0fdf4 35%, #bbf7d0 100%)",
+            background: "linear-gradient(180deg, #ffffff 0%, #f0fdf4 35%, #bbf7d0 100%)",
             boxShadow:
               "0 -20px 60px -12px rgba(37,99,235,0.45), 0 0 0 1.5px rgba(255,255,255,0.7) inset",
           }}
@@ -419,18 +447,30 @@ function VendorRegister() {
                 <button
                   onClick={() => setMode("register")}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
-                    mode === "register" ? "text-[color:oklch(0.20_0.01_260)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
+                    mode === "register"
+                      ? "text-[color:oklch(0.20_0.01_260)] shadow"
+                      : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "register" ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" } : undefined}
+                  style={
+                    mode === "register"
+                      ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }
+                      : undefined
+                  }
                 >
                   Registered | vendor
                 </button>
                 <button
                   onClick={() => setMode("login")}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition ${
-                    mode === "login" ? "text-[color:oklch(0.20_0.01_260)] shadow" : "text-[color:oklch(0.55_0.10_82)]"
+                    mode === "login"
+                      ? "text-[color:oklch(0.20_0.01_260)] shadow"
+                      : "text-[color:oklch(0.55_0.10_82)]"
                   }`}
-                  style={mode === "login" ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" } : undefined}
+                  style={
+                    mode === "login"
+                      ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }
+                      : undefined
+                  }
                 >
                   Login
                 </button>
@@ -447,7 +487,10 @@ function VendorRegister() {
                   className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#f5f6f8] to-[#d8dde3] border border-[color:oklch(0.72_0.01_260/0.6)] grid place-items-center shadow-md"
                   aria-label="Language"
                 >
-                  <Languages className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+                  <Languages
+                    className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]"
+                    strokeWidth={2.4}
+                  />
                 </button>
               </div>
             </div>
@@ -456,7 +499,8 @@ function VendorRegister() {
               <div className="mt-10 text-center px-6">
                 <p className="font-display text-2xl text-silver-gradient">Existing vendor?</p>
                 <p className="text-sm text-[color:oklch(0.45_0.01_260)] mt-2 italic">
-                  Same customer mobile/email se vendor panel open hoga. Registered tab me apni details complete karein.
+                  Same customer mobile/email se vendor panel open hoga. Registered tab me apni
+                  details complete karein.
                 </p>
               </div>
             ) : step < 3 ? (
@@ -570,7 +614,9 @@ function VendorRegister() {
             <div className="h-16 w-16 mx-auto rounded-full bg-white grid place-items-center mb-3 shadow-lg">
               <Check className="h-9 w-9 text-[color:oklch(0.42_0.01_260)]" strokeWidth={3} />
             </div>
-            <p className="font-display text-2xl text-[color:oklch(0.20_0.01_260)] font-bold">Joined!</p>
+            <p className="font-display text-2xl text-[color:oklch(0.20_0.01_260)] font-bold">
+              Joined!
+            </p>
             <p className="text-xs text-[color:oklch(0.30_0.06_18)] mt-1 italic">
               Redirecting to vendor dashboard…
             </p>
@@ -597,8 +643,7 @@ function Stepper({ current, labels }: { current: number; labels: string[] }) {
               style={
                 i <= current
                   ? {
-                      background:
-                        "linear-gradient(135deg, #d8dde3 0%, #a8acb3 50%, #3f4750 100%)",
+                      background: "linear-gradient(135deg, #d8dde3 0%, #a8acb3 50%, #3f4750 100%)",
                       boxShadow: "0 4px 10px -2px rgba(37,99,235,0.6)",
                     }
                   : undefined
@@ -784,10 +829,23 @@ function Step1Business(p: Step1Props) {
 
 /* ─────────── Step 2 ─────────── */
 function Step2Social({
-  insta, fb, website, gmbPlaceId, setInsta, setFb, setWebsite, setGmbPlaceId,
+  insta,
+  fb,
+  website,
+  gmbPlaceId,
+  setInsta,
+  setFb,
+  setWebsite,
+  setGmbPlaceId,
 }: {
-  insta: string; fb: string; website: string; gmbPlaceId: string;
-  setInsta: (v: string) => void; setFb: (v: string) => void; setWebsite: (v: string) => void; setGmbPlaceId: (v: string) => void;
+  insta: string;
+  fb: string;
+  website: string;
+  gmbPlaceId: string;
+  setInsta: (v: string) => void;
+  setFb: (v: string) => void;
+  setWebsite: (v: string) => void;
+  setGmbPlaceId: (v: string) => void;
 }) {
   return (
     <div className="space-y-1">
@@ -851,10 +909,19 @@ function Step2Social({
 
 /* ─────────── Step 3 ─────────── */
 function Step3Kyc({
-  aadhaar, pan, gst, setAadhaar, setPan, setGst,
+  aadhaar,
+  pan,
+  gst,
+  setAadhaar,
+  setPan,
+  setGst,
 }: {
-  aadhaar: string; pan: string; gst: string;
-  setAadhaar: (v: string) => void; setPan: (v: string) => void; setGst: (v: string) => void;
+  aadhaar: string;
+  pan: string;
+  gst: string;
+  setAadhaar: (v: string) => void;
+  setPan: (v: string) => void;
+  setGst: (v: string) => void;
 }) {
   return (
     <div className="space-y-1">
@@ -931,12 +998,24 @@ const PLANS = [
   },
 ];
 
-function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; chosen: string | null; busy?: boolean }) {
+function PlanStep({
+  onChoose,
+  chosen,
+  busy,
+}: {
+  onChoose: (id: string) => void;
+  chosen: string | null;
+  busy?: boolean;
+}) {
   return (
     <div className="mt-2">
       <div className="text-center mb-4">
-        <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">✦ Final Step ✦</p>
-        <h2 className="font-display text-3xl text-silver-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
+        <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">
+          ✦ Final Step ✦
+        </p>
+        <h2 className="font-display text-3xl text-silver-gradient font-bold mt-1">
+          Pick your Lead Coin plan
+        </h2>
         <p className="text-xs italic text-[color:oklch(0.45_0.01_260)] mt-1">
           {busy ? "Opening Cashfree…" : "Coins unlock leads. Top up anytime."}
         </p>
@@ -963,8 +1042,10 @@ function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; 
               }}
             >
               {p.popular && (
-                <span className="absolute -top-2 right-4 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white"
-                  style={{ background: "linear-gradient(90deg, #a8acb3, #3f4750)" }}>
+                <span
+                  className="absolute -top-2 right-4 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white"
+                  style={{ background: "linear-gradient(90deg, #a8acb3, #3f4750)" }}
+                >
                   Most Popular
                 </span>
               )}
@@ -989,7 +1070,10 @@ function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; 
                   </p>
                   <ul className="mt-2 space-y-1">
                     {p.perks.map((perk) => (
-                      <li key={perk} className="flex items-start gap-1.5 text-[11px] text-[color:oklch(0.25_0.06_18)]">
+                      <li
+                        key={perk}
+                        className="flex items-start gap-1.5 text-[11px] text-[color:oklch(0.25_0.06_18)]"
+                      >
                         <Check className="h-3 w-3 mt-0.5 flex-shrink-0" strokeWidth={3} />
                         <span>{perk}</span>
                       </li>
@@ -1016,17 +1100,25 @@ function VendorAppDownloadCard() {
   useEffect(() => {
     let cancel = false;
     import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.from("app_settings").select("value").eq("key", "vendor_app").maybeSingle().then(({ data }) => {
-        if (!cancel && data) setUrls(((data as any).value ?? {}) as any);
-      });
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "vendor_app")
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!cancel && data) setUrls(((data as any).value ?? {}) as any);
+        });
     });
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, []);
 
   if (!urls.apk_url && !urls.play_store_url) return null;
 
   return (
-    <div className="mt-6 rounded-2xl p-4 border-2 border-emerald-300"
+    <div
+      className="mt-6 rounded-2xl p-4 border-2 border-emerald-300"
       style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" }}
     >
       <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-700 font-bold text-center">
@@ -1040,14 +1132,22 @@ function VendorAppDownloadCard() {
       </p>
       <div className="flex gap-2">
         {urls.play_store_url && (
-          <a href={urls.play_store_url} target="_blank" rel="noopener noreferrer"
-            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-600 text-white font-display font-bold text-sm text-center active:scale-95">
+          <a
+            href={urls.play_store_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-600 text-white font-display font-bold text-sm text-center active:scale-95"
+          >
             ▶ Play Store
           </a>
         )}
         {urls.apk_url && (
-          <a href={urls.apk_url} target="_blank" rel="noopener noreferrer"
-            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-900 text-white font-display font-bold text-sm text-center active:scale-95">
+          <a
+            href={urls.apk_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-900 text-white font-display font-bold text-sm text-center active:scale-95"
+          >
             ⬇ APK
           </a>
         )}
@@ -1074,7 +1174,19 @@ type FieldProps = {
 };
 
 function Field({
-  Icon, label, hint, value, filled, isLast, readOnly, onClick, onChange, inputRef, showInput, placeholder, inputMode,
+  Icon,
+  label,
+  hint,
+  value,
+  filled,
+  isLast,
+  readOnly,
+  onClick,
+  onChange,
+  inputRef,
+  showInput,
+  placeholder,
+  inputMode,
 }: FieldProps) {
   return (
     <div
@@ -1095,7 +1207,10 @@ function Field({
               : "inset 0 1px 0 rgba(255,255,255,0.8)",
           }}
         >
-          <Icon className={filled ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.01_260)]"} strokeWidth={2.4} />
+          <Icon
+            className={filled ? "h-4 w-4 text-white" : "h-4 w-4 text-[color:oklch(0.42_0.01_260)]"}
+            strokeWidth={2.4}
+          />
           {filled && (
             <span
               className="absolute -top-1 -right-1 h-4 w-4 rounded-full grid place-items-center border border-white"
@@ -1120,7 +1235,7 @@ function Field({
             value={value}
             readOnly={readOnly || !showInput}
             onChange={(e) => onChange?.(e.target.value)}
-            placeholder={showInput ? placeholder ?? label : label}
+            placeholder={showInput ? (placeholder ?? label) : label}
             inputMode={inputMode}
             className="w-full bg-transparent border-0 text-[15px] font-medium text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.45_0.01_260/0.7)] outline-none py-0.5"
           />
