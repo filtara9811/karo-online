@@ -42,8 +42,7 @@ export async function openCashfreeCheckout(
 
 export function getPaymentError(e: unknown): string {
   if (e instanceof Response) {
-    if (e.status === 401)
-      return "Login required — pehle sign in / registration complete karein.";
+    if (e.status === 401) return "Login required — pehle sign in / registration complete karein.";
     return `Payment service error (${e.status})`;
   }
   if (e instanceof Error && e.message) return e.message;
