@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -16,7 +17,11 @@ const VerifySchema = z.object({
   purpose: z.enum(["vendor_wallet_recharge", "leadx_purchase"]),
 });
 
-async function logSys(status: "success" | "error", message: string, meta: Record<string, unknown> = {}) {
+async function logSys(
+  status: "success" | "error",
+  message: string,
+  meta: Record<string, unknown> = {},
+) {
   try {
     await (supabaseAdmin.from("system_logs") as any).insert({
       kind: "payment",
@@ -106,7 +111,19 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
     } catch (e) {
       console.error("[cashfree] pickService threw", e);
     }
-    console.log("[cashfree] purpose=", data.purpose, "svc=", svc ? { service_key: svc.service_key, has_app: !!svc.app_id, has_sec: !!svc.secret_key, test: svc.is_test_mode } : null);
+    console.log(
+      "[cashfree] purpose=",
+      data.purpose,
+      "svc=",
+      svc
+        ? {
+            service_key: svc.service_key,
+            has_app: !!svc.app_id,
+            has_sec: !!svc.secret_key,
+            test: svc.is_test_mode,
+          }
+        : null,
+    );
     if (!svc || !svc.app_id || !svc.secret_key) {
       await logSys("error", `No active Cashfree service for ${data.purpose}`);
       return {
@@ -127,6 +144,10 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
     const email = vendor?.email ?? `vendor_${userId.slice(0, 8)}@karoonline.in`;
 
     try {
+      const request = getRequest();
+      const appOrigin =
+        request?.headers.get("origin") ??
+        (request?.url ? new URL(request.url).origin : "https://karoonline.in");
       const res = await fetch(`${cfBase(svc.is_test_mode)}/orders`, {
         method: "POST",
         headers: {
@@ -146,9 +167,12 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
             customer_name: vendor?.owner_name ?? "Vendor",
           },
           order_meta: {
-            return_url: `${process.env.SUPABASE_URL?.includes("localhost") ? "http://localhost:8080" : "https://karoonline.in"}/vendor/wallet?cf_order_id={order_id}&cf_purpose=${data.purpose}`,
+            return_url: `${appOrigin}/vendor/wallet?cf_order_id={order_id}&cf_purpose=${data.purpose}`,
           },
-          order_note: data.purpose === "vendor_wallet_recharge" ? "Wallet Recharge" : `LeadX Purchase ${data.coins ?? 0} coins`,
+          order_note:
+            data.purpose === "vendor_wallet_recharge"
+              ? "Wallet Recharge"
+              : `LeadX Purchase ${data.coins ?? 0} coins`,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as any;
@@ -164,12 +188,16 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
         wallet_kind: data.purpose === "vendor_wallet_recharge" ? "service" : "coin",
         txn_type: data.purpose === "vendor_wallet_recharge" ? "recharge" : "coin_purchase",
         direction: "credit",
-        amount_paise: data.purpose === "vendor_wallet_recharge" ? Math.round(data.amount_inr * 100) : 0,
-        coins: data.purpose === "leadx_purchase" ? data.coins ?? 0 : 0,
+        amount_paise:
+          data.purpose === "vendor_wallet_recharge" ? Math.round(data.amount_inr * 100) : 0,
+        coins: data.purpose === "leadx_purchase" ? (data.coins ?? 0) : 0,
         status: "pending",
         reference_id: order_id,
         gateway: "cashfree",
-        description: data.purpose === "vendor_wallet_recharge" ? "Cashfree wallet recharge (pending)" : `LeadX coin purchase (pending)`,
+        description:
+          data.purpose === "vendor_wallet_recharge"
+            ? "Cashfree wallet recharge (pending)"
+            : `LeadX coin purchase (pending)`,
       });
 
       await logSys("success", `Order created ${order_id}`, { amount: data.amount_inr });
@@ -225,7 +253,10 @@ export const verifyCashfreeOrder = createServerFn({ method: "POST" })
         return { ok: false as const, error: `Order status: ${status || "UNKNOWN"}` };
       }
 
-      const amountPaise = Math.round(Number(json?.order_amount ?? (pending?.amount_paise ? pending.amount_paise / 100 : 0)) * 100);
+      const amountPaise = Math.round(
+        Number(json?.order_amount ?? (pending?.amount_paise ? pending.amount_paise / 100 : 0)) *
+          100,
+      );
 
       // Ensure wallet row
       await (supabaseAdmin as any)
