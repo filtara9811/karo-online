@@ -292,6 +292,12 @@ function VendorRegister() {
         data: { amount_inr: priceInr, purpose: "leadx_purchase", coins: totalCoins },
       });
       if (!r.ok) {
+        if (/cashfree configured nahi hai/i.test(r.error || "")) {
+          toast.success("Training complete ho gayi — Cashfree configure hote hi payment gateway active ho jayega.");
+          setShowJoined(true);
+          setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1400);
+          return;
+        }
         toast.error(r.error || "Payment start nahi ho paya");
         setPlanChosen(null);
         return;
@@ -996,7 +1002,7 @@ function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; 
       </div>
 
       <p className="text-center text-[10px] text-[color:oklch(0.50_0.08_85)] italic mt-4">
-        Real payment integration coming next phase. For now this completes onboarding.
+        Cashfree ready hone par yahi plan direct payment gateway open karega.
       </p>
 
       <VendorAppDownloadCard />
