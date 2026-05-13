@@ -85,7 +85,7 @@ function VendorRegister() {
   const { user, isAuthenticated, ready, profile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
-  const [, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
@@ -224,6 +224,7 @@ function VendorRegister() {
   }, [picker]);
 
   const handleJoinPlan = async (planId: string) => {
+    if (saving || paying) return;
     if (!user) {
       toast.error("Pehle sign in karein");
       return;
@@ -539,7 +540,7 @@ function VendorRegister() {
                 </div>
               </>
             ) : (
-              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={paying} />
+              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={saving || paying} />
             )}
           </div>
         </div>
