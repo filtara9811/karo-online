@@ -28,11 +28,16 @@ export function loadCashfreeSdk(): Promise<void> {
 export async function openCashfreeCheckout(
   paymentSessionId: string,
   mode: "sandbox" | "production",
+  options: { redirectTarget?: "_modal" | "_self" } = {},
 ) {
   await loadCashfreeSdk();
   if (!window.Cashfree) throw new Error("Cashfree SDK not available");
   const cf = window.Cashfree({ mode });
-  return cf.checkout({ paymentSessionId, redirectTarget: "_modal" });
+  const isSmallTouchScreen =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(max-width: 768px), (pointer: coarse)").matches;
+  const redirectTarget = options.redirectTarget ?? (isSmallTouchScreen ? "_self" : "_modal");
+  return cf.checkout({ paymentSessionId, redirectTarget });
 }
 
 export function getPaymentError(e: unknown): string {
