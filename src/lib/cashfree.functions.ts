@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -127,6 +128,8 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
     const email = vendor?.email ?? `vendor_${userId.slice(0, 8)}@karoonline.in`;
 
     try {
+      const request = getRequest();
+      const appOrigin = request?.headers.get("origin") ?? (request?.url ? new URL(request.url).origin : "https://karoonline.in");
       const res = await fetch(`${cfBase(svc.is_test_mode)}/orders`, {
         method: "POST",
         headers: {
@@ -146,7 +149,7 @@ export const createCashfreeOrder = createServerFn({ method: "POST" })
             customer_name: vendor?.owner_name ?? "Vendor",
           },
           order_meta: {
-            return_url: `${process.env.SUPABASE_URL?.includes("localhost") ? "http://localhost:8080" : "https://karoonline.in"}/vendor/wallet?cf_order_id={order_id}&cf_purpose=${data.purpose}`,
+            return_url: `${appOrigin}/vendor/wallet?cf_order_id={order_id}&cf_purpose=${data.purpose}`,
           },
           order_note: data.purpose === "vendor_wallet_recharge" ? "Wallet Recharge" : `LeadX Purchase ${data.coins ?? 0} coins`,
         }),
