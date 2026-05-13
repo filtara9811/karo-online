@@ -25,6 +25,9 @@ import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
 import { RegistrationFlow } from "@/components/RegistrationFlow";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
+import { openCashfreeCheckout, getPaymentError } from "@/lib/cashfree-client";
 import { toast } from "sonner";
 import goldUser from "@/assets/gold-user.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
@@ -109,6 +112,9 @@ function VendorRegister() {
   const [picker, setPicker] = useState<Picker>(null);
   const [planChosen, setPlanChosen] = useState<string | null>(null);
   const [showJoined, setShowJoined] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const createOrder = useServerFn(createCashfreeOrder);
+  const verifyOrder = useServerFn(verifyCashfreeOrder);
 
   const ownerInputRef = useRef<HTMLInputElement | null>(null);
   const businessInputRef = useRef<HTMLInputElement | null>(null);
@@ -222,6 +228,14 @@ function VendorRegister() {
       toast.error("Pehle sign in karein");
       return;
     }
+    const plan = PLANS.find((p) => p.id === planId);
+    if (!plan) {
+      toast.error("Invalid plan");
+      return;
+    }
+    const priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
+    const totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
+
     setPlanChosen(planId);
     setSaving(true);
     const { error } = await supabase.rpc("save_vendor_profile", {
@@ -247,10 +261,39 @@ function VendorRegister() {
     if (error) {
       console.error("[vendors upsert]", error);
       toast.error(error.message || "Vendor save fail hua — phir try karein");
+      setPlanChosen(null);
       return;
     }
-    setShowJoined(true);
-    setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
+
+    // Open Cashfree for plan payment (LeadX coin pack)
+    setPaying(true);
+    try {
+      const r = await createOrder({
+        data: { amount_inr: priceInr, purpose: "leadx_purchase", coins: totalCoins },
+      });
+      if (!r.ok) {
+        toast.error(r.error || "Payment start nahi ho paya");
+        setPlanChosen(null);
+        return;
+      }
+      await openCashfreeCheckout(r.payment_session_id, r.mode);
+      const v = await verifyOrder({
+        data: { order_id: r.order_id, purpose: "leadx_purchase" },
+      });
+      if (!v.ok) {
+        toast.error(v.error || "Payment pending — wallet se phir try karein");
+        setPlanChosen(null);
+        return;
+      }
+      toast.success(`Plan activated · +${totalCoins} LeadX added`);
+      setShowJoined(true);
+      setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
+    } catch (e) {
+      toast.error(getPaymentError(e));
+      setPlanChosen(null);
+    } finally {
+      setPaying(false);
+    }
   };
 
   const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
@@ -470,7 +513,7 @@ function VendorRegister() {
                 </div>
               </>
             ) : (
-              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} />
+              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={paying} />
             )}
           </div>
         </div>
@@ -861,14 +904,14 @@ const PLANS = [
   },
 ];
 
-function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen: string | null }) {
+function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; chosen: string | null; busy?: boolean }) {
   return (
     <div className="mt-2">
       <div className="text-center mb-4">
         <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">✦ Final Step ✦</p>
         <h2 className="font-display text-3xl text-silver-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
         <p className="text-xs italic text-[color:oklch(0.45_0.01_260)] mt-1">
-          Coins unlock leads. Top up anytime.
+          {busy ? "Opening Cashfree…" : "Coins unlock leads. Top up anytime."}
         </p>
       </div>
 
@@ -879,6 +922,7 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
           return (
             <button
               key={p.id}
+              disabled={busy}
               onClick={() => onChoose(p.id)}
               className="relative w-full text-left rounded-2xl p-4 border-2 transition-all"
               style={{
