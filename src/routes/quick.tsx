@@ -217,7 +217,7 @@ function QuickPage() {
   const typeCode = activeTypeCode ?? "service";
 
   // ---- DB-loaded catalog ----
-  const initialCatalog = useMemo<CatalogData>(() => loadCachedCatalog() ?? fallbackCatalog(), []);
+  const initialCatalog = useMemo<CatalogData>(() => fallbackCatalog(), []);
   const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
   const [categories, setCategories] = useState<DBCategory[]>(initialCatalog.categories);
   const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
@@ -228,6 +228,12 @@ function QuickPage() {
     (async () => {
       setLoading(true);
       try {
+        const cached = loadCachedCatalog();
+        if (cached && !cancelled) {
+          setTypes(cached.types);
+          setCategories(cached.categories);
+          setItems(cached.items);
+        }
         const [t, c, i] = await withTimeout(Promise.all([
           supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
           supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
