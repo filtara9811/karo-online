@@ -112,6 +112,9 @@ function VendorRegister() {
   const [picker, setPicker] = useState<Picker>(null);
   const [planChosen, setPlanChosen] = useState<string | null>(null);
   const [showJoined, setShowJoined] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const createOrder = useServerFn(createCashfreeOrder);
+  const verifyOrder = useServerFn(verifyCashfreeOrder);
 
   const ownerInputRef = useRef<HTMLInputElement | null>(null);
   const businessInputRef = useRef<HTMLInputElement | null>(null);
