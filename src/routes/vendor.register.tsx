@@ -904,14 +904,14 @@ const PLANS = [
   },
 ];
 
-function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen: string | null }) {
+function PlanStep({ onChoose, chosen, busy }: { onChoose: (id: string) => void; chosen: string | null; busy?: boolean }) {
   return (
     <div className="mt-2">
       <div className="text-center mb-4">
         <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.84_0.15_85)]">✦ Final Step ✦</p>
         <h2 className="font-display text-3xl text-silver-gradient font-bold mt-1">Pick your Lead Coin plan</h2>
         <p className="text-xs italic text-[color:oklch(0.45_0.01_260)] mt-1">
-          Coins unlock leads. Top up anytime.
+          {busy ? "Opening Cashfree…" : "Coins unlock leads. Top up anytime."}
         </p>
       </div>
 
@@ -922,6 +922,7 @@ function PlanStep({ onChoose, chosen }: { onChoose: (id: string) => void; chosen
           return (
             <button
               key={p.id}
+              disabled={busy}
               onClick={() => onChoose(p.id)}
               className="relative w-full text-left rounded-2xl p-4 border-2 transition-all"
               style={{
