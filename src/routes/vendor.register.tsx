@@ -228,6 +228,14 @@ function VendorRegister() {
       toast.error("Pehle sign in karein");
       return;
     }
+    const plan = PLANS.find((p) => p.id === planId);
+    if (!plan) {
+      toast.error("Invalid plan");
+      return;
+    }
+    const priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
+    const totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
+
     setPlanChosen(planId);
     setSaving(true);
     const { error } = await supabase.rpc("save_vendor_profile", {
@@ -253,10 +261,39 @@ function VendorRegister() {
     if (error) {
       console.error("[vendors upsert]", error);
       toast.error(error.message || "Vendor save fail hua — phir try karein");
+      setPlanChosen(null);
       return;
     }
-    setShowJoined(true);
-    setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
+
+    // Open Cashfree for plan payment (LeadX coin pack)
+    setPaying(true);
+    try {
+      const r = await createOrder({
+        data: { amount_inr: priceInr, purpose: "leadx_purchase", coins: totalCoins },
+      });
+      if (!r.ok) {
+        toast.error(r.error || "Payment start nahi ho paya");
+        setPlanChosen(null);
+        return;
+      }
+      await openCashfreeCheckout(r.payment_session_id, r.mode);
+      const v = await verifyOrder({
+        data: { order_id: r.order_id, purpose: "leadx_purchase" },
+      });
+      if (!v.ok) {
+        toast.error(v.error || "Payment pending — wallet se phir try karein");
+        setPlanChosen(null);
+        return;
+      }
+      toast.success(`Plan activated · +${totalCoins} LeadX added`);
+      setShowJoined(true);
+      setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);
+    } catch (e) {
+      toast.error(getPaymentError(e));
+      setPlanChosen(null);
+    } finally {
+      setPaying(false);
+    }
   };
 
   const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
