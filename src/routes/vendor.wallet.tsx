@@ -25,47 +25,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
+import { openCashfreeCheckout, getPaymentError } from "@/lib/cashfree-client";
 import { toast } from "sonner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 
-declare global {
-  interface Window {
-    Cashfree?: any;
-  }
-}
-
-let cashfreeSdkPromise: Promise<void> | null = null;
-function loadCashfreeSdk(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (window.Cashfree) return Promise.resolve();
-  if (cashfreeSdkPromise) return cashfreeSdkPromise;
-  cashfreeSdkPromise = new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => {
-      cashfreeSdkPromise = null;
-      reject(new Error("Cashfree SDK load failed"));
-    };
-    document.head.appendChild(s);
-  });
-  return cashfreeSdkPromise;
-}
-
-async function openCashfreeCheckout(paymentSessionId: string, mode: "sandbox" | "production") {
-  await loadCashfreeSdk();
-  if (!window.Cashfree) throw new Error("Cashfree SDK not available");
-  const cf = window.Cashfree({ mode });
-  return cf.checkout({ paymentSessionId, redirectTarget: "_modal" });
-}
-
-function getPaymentError(e: unknown) {
-  if (e instanceof Response && e.status === 401) return "Vendor login required — pehle vendor sign in / registration complete karein.";
-  if (e instanceof Error && e.message) return e.message;
-  if (typeof e === "string") return e;
-  return "Payment start nahi ho paya — please dobara try karein.";
-}
 
 export const Route = createFileRoute("/vendor/wallet")({
   head: () => ({
