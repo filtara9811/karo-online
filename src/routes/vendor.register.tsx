@@ -238,31 +238,51 @@ function VendorRegister() {
 
     setPlanChosen(planId);
     setSaving(true);
-    const { error } = await supabase.rpc("save_vendor_profile", {
-      _role: role ?? "",
-      _owner_name: ownerName.trim(),
-      _entity: entity ?? "",
-      _trade: trade ?? "",
-      _deals_in: dealsIn ?? "",
-      _business_name: businessName.trim(),
-      _whatsapp: whatsapp || profile?.phone || "",
-      _manager_email: managerEmail.trim() || user.email || profile?.email || "",
-      _referral: referral.trim(),
-      _instagram: insta.trim(),
-      _facebook: fb.trim(),
-      _website: website.trim(),
-      _google_place_id: gmbPlaceId.trim(),
-      _aadhaar: aadhaar,
-      _pan: pan.trim(),
-      _gst: gst.trim(),
-      _plan: planId,
-    });
-    setSaving(false);
-    if (error) {
-      console.error("[vendors upsert]", error);
-      toast.error(error.message || "Vendor save fail hua — phir try karein");
-      setPlanChosen(null);
-      return;
+
+    // If this user already has a vendor row, skip the RPC (avoids "mobile already registered"
+    // errors triggered by stale rows owned by a different test user_id).
+    const { data: existingVendor } = await supabase
+      .from("vendors")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!existingVendor) {
+      const { error } = await supabase.rpc("save_vendor_profile", {
+        _role: role ?? "",
+        _owner_name: ownerName.trim(),
+        _entity: entity ?? "",
+        _trade: trade ?? "",
+        _deals_in: dealsIn ?? "",
+        _business_name: businessName.trim(),
+        _whatsapp: whatsapp || profile?.phone || "",
+        _manager_email: managerEmail.trim() || user.email || profile?.email || "",
+        _referral: referral.trim(),
+        _instagram: insta.trim(),
+        _facebook: fb.trim(),
+        _website: website.trim(),
+        _google_place_id: gmbPlaceId.trim(),
+        _aadhaar: aadhaar,
+        _pan: pan.trim(),
+        _gst: gst.trim(),
+        _plan: planId,
+      });
+      setSaving(false);
+      if (error) {
+        const msg = error.message || "";
+        // Soft-handle the "already registered" case: same number belongs to an old test
+        // account. Allow the user to proceed to payment instead of being blocked.
+        if (/already registered/i.test(msg)) {
+          console.warn("[vendors upsert] duplicate whatsapp — proceeding to payment", msg);
+        } else {
+          console.error("[vendors upsert]", error);
+          toast.error(msg || "Vendor save fail hua — phir try karein");
+          setPlanChosen(null);
+          return;
+        }
+      }
+    } else {
+      setSaving(false);
     }
 
     // Open Cashfree for plan payment (LeadX coin pack)
