@@ -1315,7 +1315,97 @@ function SheetWrap({ onClose, children }: { onClose: () => void; children: React
   );
 }
 
-function FormField({
+type QuickSheetKey = "orders" | "referral" | "leads" | "support";
+
+function QuickTiles({ onPick }: { onPick: (s: QuickSheetKey) => void }) {
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey }> = [
+    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" },
+    { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" },
+    { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" },
+    { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" },
+  ];
+  return (
+    <section className="px-4 mt-4">
+      <div className="grid grid-cols-4 gap-2">
+        {TILES.map((t2) => {
+          const active = revealed === t2.id;
+          return (
+            <motion.button
+              key={t2.id}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                setRevealed(t2.id);
+                window.setTimeout(() => onPick(t2.sheet), 260);
+                window.setTimeout(() => setRevealed(null), 900);
+              }}
+              className={`rounded-2xl border py-3 px-1.5 flex flex-col items-center gap-1 transition-colors ${
+                active
+                  ? "bg-gradient-to-br from-amber-100 to-amber-200 border-amber-500 shadow-md"
+                  : "bg-white border-amber-200 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)]"
+              }`}
+            >
+              <div className={`h-8 w-8 grid place-items-center rounded-xl border transition-colors ${
+                active
+                  ? "bg-gradient-to-br from-amber-400 to-amber-600 border-amber-700"
+                  : "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200"
+              }`}>
+                <t2.Icon className={`h-5 w-5 ${active ? "text-white" : "text-amber-800"}`} strokeWidth={2} />
+              </div>
+              <AnimatePresence initial={false}>
+                {active && (
+                  <motion.span
+                    initial={{ opacity: 0, y: -2, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -2, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="text-[9px] font-bold leading-tight text-center truncate max-w-full text-amber-900"
+                  >
+                    {t2.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ReferralSheetWrap({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 30, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden"
+        style={{ height: "95vh" }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-50 h-10 w-10 grid place-items-center rounded-full bg-white border border-amber-300 shadow-lg active:scale-90 transition"
+          aria-label="Close referral"
+        >
+          <X className="h-5 w-5 text-[#b45309]" strokeWidth={2.4} />
+        </button>
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-amber-200 z-50" />
+        <div className="h-full overflow-y-auto pt-4">
+          <ReferralPage />
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
   Icon, placeholder, defaultValue,
 }: { Icon: typeof User; placeholder: string; defaultValue?: string }) {
   return (
