@@ -45,7 +45,8 @@ export async function requestFcmToken(): Promise<string | null> {
   // Register our SW (firebase-messaging-sw.js must live at site root)
   let reg: ServiceWorkerRegistration | undefined;
   try {
-    reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none" });
+    await reg.update().catch(() => undefined);
   } catch (e) {
     console.warn("[fcm] SW register failed", e);
     return null;

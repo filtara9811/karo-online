@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
 import { Sparkles, Gift, Wallet, Users, ShieldCheck, Download } from "lucide-react";
@@ -31,7 +31,6 @@ export const Route = createFileRoute("/r/$code")({
 
 function RefAttribution() {
   const { code } = Route.useParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     try {
@@ -39,8 +38,6 @@ function RefAttribution() {
       document.cookie = `ko_ref=${encodeURIComponent(code)}; path=/; max-age=${60 * 60 * 24 * 30}`;
     } catch { /* ignore */ }
   }, [code]);
-
-  const handleJoin = () => navigate({ to: "/register" });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 px-4 pb-10">
@@ -59,7 +56,7 @@ function RefAttribution() {
           <h1 className="mt-2 font-display text-2xl font-bold text-slate-900 leading-tight">
             Join Karo Online & unlock rewards
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600">
             Your friend invited you with code{" "}
             <span className="font-mono font-bold text-amber-700">{code}</span>. Sign up now and both of you earn rewards in your wallet.
           </p>
@@ -70,22 +67,22 @@ function RefAttribution() {
             <Perk icon={Users} label="Refer & earn more" />
           </div>
 
-          <button
-            onClick={handleJoin}
+          <Link
+            to="/register"
+            search={{ ref: code } as never}
             className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#b45309] via-[#d4af37] to-[#f59e0b] text-white font-bold py-3.5 shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2"
           >
             <Download className="h-5 w-5" /> Join Karo Online
-          </button>
-          <p className="mt-2 text-center text-[11px] text-slate-400">By joining you agree to our terms & privacy.</p>
+          </Link>
+          <p className="mt-2 text-center text-[11px] text-slate-400">Referral code will be applied automatically.</p>
         </div>
 
         <div className="mt-4 rounded-2xl bg-amber-50 border border-amber-200 p-4">
           <p className="font-display text-base font-bold text-slate-800 flex items-center gap-2"><Gift className="h-4 w-4 text-amber-700" /> How it works</p>
           <ol className="mt-2 text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
-            <li>Sign up with mobile + OTP.</li>
-            <li>Complete your profile / KYC.</li>
-            <li>Place your first order or become a seller.</li>
-            <li>You and your inviter both get rewarded.</li>
+            <li>Enter mobile number and verify OTP.</li>
+            <li>Add name, gender and the locked referral code.</li>
+            <li>Tap Sign Up to open Karo Online.</li>
           </ol>
         </div>
       </div>
