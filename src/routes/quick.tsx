@@ -435,8 +435,13 @@ function QuickPage() {
       style={{ paddingBottom: "calc(150px + env(safe-area-inset-bottom))" }}
     >
       {/* MAP */}
-      <section className="relative flex-shrink-0" style={{ height: "calc(30vh + env(safe-area-inset-top))", minHeight: 230 }}>
-        <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} userAvatar={profile?.avatar_url || avatarUser} />
+      <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
+        <QuickServiceMap
+          center={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null}
+          vendors={filteredVendors.map((v) => ({ id: v.id, name: v.name, avatar: v.avatar, x: v.x, y: v.y }))}
+          userAvatar={profile?.avatar_url || avatarUser}
+          userLabel={geo.label}
+        />
       </section>
 
       {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
