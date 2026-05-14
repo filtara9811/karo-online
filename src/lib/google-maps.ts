@@ -31,6 +31,7 @@ export function getGoogleMapsKey(): Promise<string | null> {
 }
 
 const BASE = "https://maps.googleapis.com/maps/api";
+export const GOOGLE_MAPS_AUTH_FAILURE_EVENT = "ko-google-maps-auth-failure";
 
 export type LatLng = { lat: number; lng: number };
 
@@ -403,23 +404,37 @@ export async function staticMapUrl(opts: {
 let _sdkPromise: Promise<any> | null = null;
 export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   if (typeof window === "undefined") return Promise.resolve(null);
+  if (window.location.hostname.endsWith(".lovableproject.com")) return Promise.resolve(null);
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (_sdkPromise) return _sdkPromise;
   _sdkPromise = (async () => {
     const key = await getGoogleMapsKey();
     if (!key) return null;
     return new Promise((resolve) => {
+      let settled = false;
+      const resolveOnce = (value: any) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const previousAuthFailure = (window as any).gm_authFailure;
+      (window as any).gm_authFailure = () => {
+        try { window.dispatchEvent(new Event(GOOGLE_MAPS_AUTH_FAILURE_EVENT)); } catch { /* noop */ }
+        if (typeof previousAuthFailure === "function") previousAuthFailure();
+        resolveOnce(null);
+      };
       const cbName = `__gmaps_cb_${Date.now()}`;
       (window as any)[cbName] = () => {
-        resolve((window as any).google ?? null);
+        resolveOnce((window as any).google ?? null);
         try { delete (window as any)[cbName]; } catch { /* */ }
       };
       const s = document.createElement("script");
       s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=${libs.join(",")}&callback=${cbName}&loading=async`;
       s.async = true;
       s.defer = true;
-      s.onerror = () => resolve(null);
+      s.onerror = () => resolveOnce(null);
       document.head.appendChild(s);
+      window.setTimeout(() => resolveOnce((window as any).google?.maps ? (window as any).google : null), 12000);
     });
   })();
   return _sdkPromise;

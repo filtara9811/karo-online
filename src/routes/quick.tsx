@@ -431,8 +431,7 @@ function QuickPage() {
 
   return (
     <div
-      className="relative min-h-dvh bg-white flex flex-col overflow-hidden isolate"
-      style={{ paddingBottom: "calc(150px + env(safe-area-inset-bottom))" }}
+      className="relative h-dvh bg-white flex flex-col overflow-hidden isolate overscroll-none"
     >
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
@@ -481,7 +480,7 @@ function QuickPage() {
       {/* SCROLLABLE — only the service cards scroll */}
       <section
         ref={contentRef}
-        className="relative min-h-0 bg-white z-20 flex-1 overflow-y-auto px-4"
+        className="relative min-h-0 bg-white z-20 flex-1 overflow-y-auto overscroll-contain px-4"
         onTouchStart={(e) => {
           (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
           (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
@@ -499,7 +498,7 @@ function QuickPage() {
       >
 
         {/* Service cards = sub-categories of the selected root */}
-        <div className="space-y-2.5 pb-4">
+        <div className="space-y-2.5 pb-[190px]">
           {loading && subCategories.length === 0 && (
             <div className="text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
               Opening services…

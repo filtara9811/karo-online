@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { loadMapsSdk } from "@/lib/google-maps";
+import { GOOGLE_MAPS_AUTH_FAILURE_EVENT, loadMapsSdk } from "@/lib/google-maps";
 import { Layers, Share2, Loader2, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 
 const MAP_TYPES = ["roadmap", "satellite", "hybrid", "terrain"] as const;
 type MapType = (typeof MAP_TYPES)[number];
+const isPreviewBlockedMapsHost = () =>
+  typeof window !== "undefined" && window.location.hostname.endsWith(".lovableproject.com");
 
 export type QuickMapVendor = {
   id: string;
@@ -34,14 +36,30 @@ export function QuickServiceMap({
   const userMarkerRef = useRef<any>(null);
   const userAccuracyRef = useRef<any>(null);
   const vendorMarkersRef = useRef<any[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(() => isPreviewBlockedMapsHost() ? "error" : "loading");
   const [mapType, setMapType] = useState<MapType>("roadmap");
   const [mapTypeOpen, setMapTypeOpen] = useState(false);
+
+  useEffect(() => {
+    const onAuthFailure = () => setStatus("error");
+    window.addEventListener(GOOGLE_MAPS_AUTH_FAILURE_EVENT, onAuthFailure);
+    return () => window.removeEventListener(GOOGLE_MAPS_AUTH_FAILURE_EVENT, onAuthFailure);
+  }, []);
+
+  useEffect(() => {
+    if (status !== "loading") return;
+    const id = window.setTimeout(() => setStatus((current) => current === "loading" ? "error" : current), 3500);
+    return () => window.clearTimeout(id);
+  }, [status]);
 
   // init map
   useEffect(() => {
     let cancel = false;
     (async () => {
+      if (isPreviewBlockedMapsHost()) {
+        setStatus("error");
+        return;
+      }
       const g = await loadMapsSdk();
       if (cancel) return;
       if (!g || !ref.current) {
@@ -60,6 +78,13 @@ export function QuickServiceMap({
         clickableIcons: false,
       });
       setStatus("ready");
+      window.setTimeout(() => {
+        if (cancel || !ref.current) return;
+        const hasTiles = !!ref.current.querySelector('img[src*="google"], img[src*="ggpht"], canvas');
+        const hasGoogleError = !!ref.current.querySelector(".gm-err-container, .gm-err-message") ||
+          ref.current.textContent?.includes("didn't load Google Maps correctly");
+        if (hasGoogleError || !hasTiles) setStatus("error");
+      }, 4200);
     })();
     return () => {
       cancel = true;
@@ -138,6 +163,7 @@ export function QuickServiceMap({
   }, [vendors, status, center?.lat, center?.lng]);
 
   const recenter = () => {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
     if (!mapRef.current) return;
     const pos = center ?? DEFAULT_CENTER;
     mapRef.current.panTo(pos);
@@ -169,14 +195,10 @@ export function QuickServiceMap({
   return (
     <div className="absolute inset-0">
       <div ref={ref} className="absolute inset-0" />
+      {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} />}
       {status === "loading" && (
         <div className="absolute inset-0 grid place-items-center bg-slate-100">
           <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
-        </div>
-      )}
-      {status === "error" && (
-        <div className="absolute inset-0 grid place-items-center bg-slate-100 text-xs text-slate-500 px-4 text-center">
-          Map unavailable. Add a Google Maps API key in Admin → Maps.
         </div>
       )}
 
@@ -240,6 +262,43 @@ export function QuickServiceMap({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MapFallback({
+  vendors,
+  userAvatar,
+  userLabel,
+}: {
+  center: { lat: number; lng: number };
+  vendors: QuickMapVendor[];
+  userAvatar: string;
+  userLabel?: string;
+}) {
+  return (
+    <div className="absolute inset-0 z-20 overflow-hidden bg-[linear-gradient(135deg,#eef3f8_0%,#dfe7ef_45%,#edf2f7_100%)]">
+      <div className="absolute inset-0 opacity-70" style={{ backgroundImage: "linear-gradient(90deg, rgba(148,163,184,.28) 1px, transparent 1px), linear-gradient(0deg, rgba(148,163,184,.28) 1px, transparent 1px)", backgroundSize: "46px 46px" }} />
+      <div className="absolute left-[-12%] top-[46%] h-10 w-[130%] -rotate-[16deg] rounded-full bg-white/80 shadow-inner" />
+      <div className="absolute left-[18%] top-[-12%] h-[120%] w-12 rotate-[28deg] rounded-full bg-white/75 shadow-inner" />
+      <div className="absolute left-[-10%] top-[22%] h-8 w-[60%] rotate-[8deg] rounded-full bg-amber-100/80" />
+      {vendors.map((v) => (
+        <div key={v.id} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: `${v.x}%`, top: `${v.y}%` }} title={v.name}>
+          <div className="h-9 w-9 rounded-full border-2 border-white bg-white shadow-lg overflow-hidden">
+            <img src={v.avatar} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div className="mx-auto h-2 w-2 rotate-45 bg-white shadow" />
+        </div>
+      ))}
+      <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-full">
+        <div className="h-12 w-12 rounded-full border-[3px] border-white bg-white shadow-xl overflow-hidden ring-2 ring-blue-500">
+          <img src={userAvatar} alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="mx-auto h-3 w-3 rotate-45 bg-blue-500 shadow" />
+      </div>
+      <div className="absolute left-3 bottom-3 right-16 z-30 px-2.5 py-1.5 rounded-lg bg-white/95 border border-slate-200 shadow text-[11px] font-semibold text-slate-800 truncate">
+        📍 {userLabel || "Detecting your location…"}
+      </div>
     </div>
   );
 }
