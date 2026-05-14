@@ -35,6 +35,34 @@ type CustomerDraft = {
 
 const normalizeStep = (value: unknown): Step => (value === 1 || value === 2 || value === 3 ? value : 1);
 
+// ── Hindi voice prompts ───────────────────────────────────────────────
+let __voicesPrimed = false;
+const primeVoices = () => {
+  if (__voicesPrimed || typeof window === "undefined" || !window.speechSynthesis) return;
+  __voicesPrimed = true;
+  try { window.speechSynthesis.getVoices(); } catch { /* */ }
+};
+const speakHi = (text: string) => {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    primeVoices();
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "hi-IN";
+    u.rate = 0.95;
+    u.pitch = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const hi = voices.find((v) => v.lang?.toLowerCase().startsWith("hi"));
+    if (hi) u.voice = hi;
+    window.speechSynthesis.speak(u);
+  } catch { /* ignore */ }
+};
+const STEP_VOICE: Record<Step, string> = {
+  1: "मोबाइल नंबर दर्ज करें",
+  2: "ओ टी पी दर्ज करें",
+  3: "अपना नाम और जेंडर चुनें",
+};
+
 const clearStaleCustomerDrafts = () => {
   if (typeof window === "undefined") return;
   try {
@@ -134,6 +162,26 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
     const t = setTimeout(() => setOtpSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [step, otpSeconds]);
+
+  // Hindi voice prompt per step (gated until first user gesture)
+  const spokenSteps = useRef<Set<Step>>(new Set());
+  useEffect(() => {
+    const fire = () => {
+      if (spokenSteps.current.has(step)) return;
+      spokenSteps.current.add(step);
+      speakHi(STEP_VOICE[step]);
+    };
+    // try immediately; if blocked (no gesture yet), fire on first interaction
+    const t = setTimeout(fire, 250);
+    const onGesture = () => { fire(); cleanup(); };
+    const cleanup = () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
+    return () => { clearTimeout(t); cleanup(); };
+  }, [step]);
 
   const goNext = (target: Step) => setStep(target);
 
