@@ -19,13 +19,9 @@ export function getGoogleMapsKey(): Promise<string | null> {
   if (_keyPromise) return _keyPromise;
   _keyPromise = (async () => {
     try {
-      const { data } = await (supabase as any)
-        .from("maps_services")
-        .select("api_key, map_sdk_key, is_active")
-        .eq("provider", "google_maps")
-        .eq("is_active", true)
-        .maybeSingle();
-      const k = (data?.map_sdk_key as string | undefined) || (data?.api_key as string | undefined);
+      const { data } = await (supabase as any).rpc("get_active_maps_key");
+      const row = data as { api_key?: string; map_sdk_key?: string } | null;
+      const k = row?.map_sdk_key || row?.api_key;
       return k && k.length > 10 ? k : null;
     } catch {
       return null;
