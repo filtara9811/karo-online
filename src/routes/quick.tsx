@@ -398,6 +398,7 @@ function QuickPage() {
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
   const handleRootTap = (id: string) => {
