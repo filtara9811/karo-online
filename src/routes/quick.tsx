@@ -11,7 +11,8 @@ import { VariationSheet, type VariationItem } from "@/components/VariationSheet"
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { useGeolocation, type GeoState } from "@/hooks/use-geolocation";
+import { useGeolocation } from "@/hooks/use-geolocation";
+import { QuickServiceMap } from "@/components/QuickServiceMap";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
