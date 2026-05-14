@@ -461,7 +461,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
                 {t(r.labelKey)} <span className="text-amber-600">|</span> {t(r.subKey)}
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 text-amber-400" />
+            {r.id === "profile" ? (
+              <ProgressRing pct={profilePct} />
+            ) : r.id === "kyc" ? (
+              <ProgressRing pct={kycPct} />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-amber-400" />
+            )}
           </motion.button>
         ))}
       </section>
