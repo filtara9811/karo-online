@@ -44,6 +44,12 @@ export function QuickServiceMap({
     return () => window.removeEventListener(GOOGLE_MAPS_AUTH_FAILURE_EVENT, onAuthFailure);
   }, []);
 
+  useEffect(() => {
+    if (status !== "loading") return;
+    const id = window.setTimeout(() => setStatus((current) => current === "loading" ? "error" : current), 3500);
+    return () => window.clearTimeout(id);
+  }, [status]);
+
   // init map
   useEffect(() => {
     let cancel = false;
