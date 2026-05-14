@@ -124,6 +124,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const [panelPicker, setPanelPicker] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [quickSheet, setQuickSheet] = useState<null | "orders" | "referral" | "leads" | "support">(null);
+  const [kycPct, setKycPct] = useState<number>(0);
   const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
