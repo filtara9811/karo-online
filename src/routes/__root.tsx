@@ -41,6 +41,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Karo Online" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "application-name", content: "Karo Online" },
+      { name: "google-site-verification", content: "hniAuF5wdWybu0IilGD4x3UcgNcaNCeXHtIJTkBt0gU" },
       { title: "KaroOnline.In" },
       { name: "description", content: "Join Karo Online — premium wine & gold registration experience." },
       { name: "author", content: "Karo Online" },
