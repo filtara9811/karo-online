@@ -466,7 +466,7 @@ function QuickPage() {
             <Mic className="h-4 w-4 text-[#9ca3af]" />
           </button>
           <button
-            onClick={() => navigate({ to: "/profile" })}
+            onClick={() => setProfileSheetOpen(true)}
             className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
             aria-label="Profile"
           >
