@@ -639,6 +639,30 @@ const PANEL_OPTIONS: ActionOption[] = [
   { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
 ];
 
+function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = (Math.max(0, Math.min(100, pct)) / 100) * c;
+  const color = pct >= 80 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="#fef3c7" strokeWidth={stroke} fill="none" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round"
+          strokeDasharray={`${dash} ${c}`}
+          style={{ transition: "stroke-dasharray 0.6s ease" }}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center text-[10px] font-bold" style={{ color }}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 function TopIconButton({
   children, onClick, ...rest
 }: { children: React.ReactNode; onClick?: () => void; "aria-label"?: string }) {
