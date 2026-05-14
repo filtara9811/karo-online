@@ -29,6 +29,7 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
 import { supabase } from "@/integrations/supabase/client";
+import { ReferralPage } from "@/routes/referral";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
