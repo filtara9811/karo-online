@@ -16,6 +16,7 @@ import { useActiveTypeId } from "@/hooks/use-active-type";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { ProfileSheet } from "@/components/ProfileSheet";
 import { useAuthGate } from "@/components/AuthGate";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
@@ -398,6 +399,7 @@ function QuickPage() {
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   // Tap a root category circle → switch the service-card list
   const handleRootTap = (id: string) => {
@@ -465,7 +467,7 @@ function QuickPage() {
             <Mic className="h-4 w-4 text-[#9ca3af]" />
           </button>
           <button
-            onClick={() => navigate({ to: "/profile" })}
+            onClick={() => setProfileSheetOpen(true)}
             className="h-11 w-11 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm flex-shrink-0"
             aria-label="Profile"
           >
@@ -751,6 +753,8 @@ function QuickPage() {
           console.log("Search:", q);
         }}
       />
+
+      <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import {
   Store, LogOut, ShieldCheck, FileText, Headphones, Upload,
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
-  Download, Share2, Camera,
+  Download, Share2, Camera, PackageOpen, Gift, Bell, Headset,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
 import { useOrdersStore } from "@/lib/orders-store";
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/profile")({
       { name: "description", content: "Manage your business cards, KYC, bank & order details." },
     ],
   }),
-  component: ProfilePage,
+  component: () => <ProfilePage />,
 });
 
 type CardType = "personal" | "wallet" | "reselling" | "orders";
@@ -109,7 +109,7 @@ const SOCIAL_META: Array<{ key: "facebook" | "instagram" | "twitter" | "telegram
   { key: "linkedin", Icon: Linkedin, color: "#0A66C2" },
 ];
 
-function ProfilePage() {
+export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const router = useRouter();
   const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
@@ -124,6 +124,8 @@ function ProfilePage() {
   const [panelPicker, setPanelPicker] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [quickSheet, setQuickSheet] = useState<null | "orders" | "referral" | "leads" | "support">(null);
+  const [kycPct, setKycPct] = useState<number>(0);
   const { links: socialLinks } = useSocialLinks();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -148,6 +150,38 @@ function ProfilePage() {
 
   const activeCard = CARDS[activeIdx] ?? CARDS[0];
   const isDark = theme === "dark";
+
+  // ---- Profile completion % (live) ----
+  const profilePct = useMemo(() => {
+    const fields = [
+      profile?.name, profile?.phone, profile?.email,
+      profile?.address, profile?.avatar_url, profile?.gender,
+    ];
+    const filled = fields.filter((v) => v && String(v).trim().length > 0).length;
+    return Math.round((filled / fields.length) * 100);
+  }, [profile]);
+
+  // ---- KYC completion % from kyc_verifications (aadhaar/pan/gst) ----
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) { setKycPct(0); return; }
+      const { data } = await supabase
+        .from("kyc_verifications")
+        .select("check_type, status")
+        .eq("subject_user_id", user.id);
+      if (cancelled) return;
+      const types = ["aadhaar", "pan", "gst"];
+      const verifiedTypes = new Set(
+        ((data ?? []) as Array<{ check_type: string; status: string }>)
+          .filter((r) => ["verified", "approved", "passed"].includes((r.status ?? "").toLowerCase()))
+          .map((r) => r.check_type),
+      );
+      const filled = types.filter((t) => verifiedTypes.has(t)).length;
+      setKycPct(Math.round((filled / types.length) * 100));
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, activeRow]);
 
   // ---- Real order stats from shared store ----
   const vendors = useOrdersStore();
@@ -321,15 +355,41 @@ function ProfilePage() {
         </div>
       </section>
 
+      {/* Quick action tiles — sit between card and rows */}
+      <section className="px-4 mt-4">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" as const },
+            { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" as const },
+            { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" as const },
+            { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" as const },
+          ].map((t2) => (
+            <motion.button
+              key={t2.id}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setQuickSheet(t2.sheet)}
+              className="rounded-2xl bg-white border border-amber-200 py-3 px-1.5 flex flex-col items-center gap-1 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)] active:shadow-sm"
+            >
+              <div className="h-8 w-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+                <t2.Icon className="h-5 w-5 text-amber-800" strokeWidth={2} />
+              </div>
+              <span className="text-[9px] font-semibold text-slate-700 leading-tight text-center truncate max-w-full">
+                {t2.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </section>
+
       {/* My Account sub-bar (back + title + theme/lang/support) */}
       <section className="px-4 mt-4">
         <div className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border ${isDark ? "bg-[oklch(0.20_0.03_85)] border-amber-200/20" : "bg-white border-[color:oklch(0.78_0.14_82/0.35)] shadow-[0_4px_14px_-8px_rgba(212,175,55,0.45)]"}`}>
           <button
-            onClick={() => router.history.back()}
+            onClick={() => (onClose ? onClose() : router.history.back())}
             className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0"
-            aria-label="Back"
+            aria-label={onClose ? "Close" : "Back"}
           >
-            <ArrowLeft className="h-4 w-4 text-[#b45309]" />
+            {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
           </button>
           <h1 className="flex-1 text-center font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
             {t("my_account")}
@@ -401,7 +461,13 @@ function ProfilePage() {
                 {t(r.labelKey)} <span className="text-amber-600">|</span> {t(r.subKey)}
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 text-amber-400" />
+            {r.id === "profile" ? (
+              <ProgressRing pct={profilePct} />
+            ) : r.id === "kyc" ? (
+              <ProgressRing pct={kycPct} />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-amber-400" />
+            )}
           </motion.button>
         ))}
       </section>
@@ -498,6 +564,52 @@ function ProfilePage() {
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
 
+      {/* Quick action sheets (tiles below the card) */}
+      <AnimatePresence>
+        {quickSheet === "orders" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-4">
+              <PackageOpen className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">My | Order</h3>
+            </div>
+            <MyOrdersList />
+          </SheetWrap>
+        )}
+        {quickSheet === "referral" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-3">
+              <Gift className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">Refferal | Ernig</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">Invite friends and earn ₹200 in your wallet on every successful referral.</p>
+            <button
+              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/referral" }), 200); }}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
+            >
+              Open Referral Program
+            </button>
+          </SheetWrap>
+        )}
+        {quickSheet === "leads" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-3">
+              <Bell className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">My | Neds</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">Track all the service requests you've placed and their status.</p>
+            <button
+              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/orders" }), 200); }}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
+            >
+              View My Requests
+            </button>
+          </SheetWrap>
+        )}
+        {quickSheet === "support" && (
+          <SupportSheet onClose={() => setQuickSheet(null)} />
+        )}
+      </AnimatePresence>
+
       {/* Card share sheet (WhatsApp / copy / download) */}
       <AnimatePresence>
         {shareOpen && (() => {
@@ -572,6 +684,30 @@ const PANEL_OPTIONS: ActionOption[] = [
   { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO", shareTo: "/admin" },
   { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
 ];
+
+function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = (Math.max(0, Math.min(100, pct)) / 100) * c;
+  const color = pct >= 80 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="#fef3c7" strokeWidth={stroke} fill="none" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round"
+          strokeDasharray={`${dash} ${c}`}
+          style={{ transition: "stroke-dasharray 0.6s ease" }}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center text-[10px] font-bold" style={{ color }}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
 
 function TopIconButton({
   children, onClick, ...rest
