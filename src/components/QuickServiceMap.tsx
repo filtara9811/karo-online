@@ -66,6 +66,12 @@ export function QuickServiceMap({
         clickableIcons: false,
       });
       setStatus("ready");
+      window.setTimeout(() => {
+        if (cancel || !ref.current) return;
+        const hasGoogleError = !!ref.current.querySelector(".gm-err-container, .gm-err-message") ||
+          ref.current.textContent?.includes("didn't load Google Maps correctly");
+        if (hasGoogleError) setStatus("error");
+      }, 1800);
     })();
     return () => {
       cancel = true;
