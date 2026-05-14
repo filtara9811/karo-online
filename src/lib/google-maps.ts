@@ -404,6 +404,7 @@ export async function staticMapUrl(opts: {
 let _sdkPromise: Promise<any> | null = null;
 export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   if (typeof window === "undefined") return Promise.resolve(null);
+  if (window.location.hostname.endsWith(".lovableproject.com")) return Promise.resolve(null);
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (_sdkPromise) return _sdkPromise;
   _sdkPromise = (async () => {
