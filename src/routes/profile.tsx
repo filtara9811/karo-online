@@ -37,7 +37,7 @@ export const Route = createFileRoute("/profile")({
       { name: "description", content: "Manage your business cards, KYC, bank & order details." },
     ],
   }),
-  component: ProfilePage,
+  component: () => <ProfilePage />,
 });
 
 type CardType = "personal" | "wallet" | "reselling" | "orders";
