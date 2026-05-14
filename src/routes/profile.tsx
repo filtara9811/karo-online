@@ -564,6 +564,52 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         {topSheet === "language" && <LanguageSheet onClose={() => setTopSheet(null)} />}
       </AnimatePresence>
 
+      {/* Quick action sheets (tiles below the card) */}
+      <AnimatePresence>
+        {quickSheet === "orders" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-4">
+              <PackageOpen className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">My | Order</h3>
+            </div>
+            <MyOrdersList />
+          </SheetWrap>
+        )}
+        {quickSheet === "referral" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-3">
+              <Gift className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">Refferal | Ernig</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">Invite friends and earn ₹200 in your wallet on every successful referral.</p>
+            <button
+              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/referral" }), 200); }}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
+            >
+              Open Referral Program
+            </button>
+          </SheetWrap>
+        )}
+        {quickSheet === "leads" && (
+          <SheetWrap onClose={() => setQuickSheet(null)}>
+            <div className="flex items-center gap-3 mb-3">
+              <Bell className="h-7 w-7 text-amber-700" />
+              <h3 className="font-display text-xl text-amber-700 font-bold">My | Neds</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">Track all the service requests you've placed and their status.</p>
+            <button
+              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/orders" }), 200); }}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
+            >
+              View My Requests
+            </button>
+          </SheetWrap>
+        )}
+        {quickSheet === "support" && (
+          <SupportSheet onClose={() => setQuickSheet(null)} />
+        )}
+      </AnimatePresence>
+
       {/* Card share sheet (WhatsApp / copy / download) */}
       <AnimatePresence>
         {shareOpen && (() => {
