@@ -163,6 +163,26 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
     return () => clearTimeout(t);
   }, [step, otpSeconds]);
 
+  // Hindi voice prompt per step (gated until first user gesture)
+  const spokenSteps = useRef<Set<Step>>(new Set());
+  useEffect(() => {
+    const fire = () => {
+      if (spokenSteps.current.has(step)) return;
+      spokenSteps.current.add(step);
+      speakHi(STEP_VOICE[step]);
+    };
+    // try immediately; if blocked (no gesture yet), fire on first interaction
+    const t = setTimeout(fire, 250);
+    const onGesture = () => { fire(); cleanup(); };
+    const cleanup = () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
+    return () => { clearTimeout(t); cleanup(); };
+  }, [step]);
+
   const goNext = (target: Step) => setStep(target);
 
   // Auto-verify OTP at 4 digits
