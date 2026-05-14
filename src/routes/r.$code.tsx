@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
 import { Sparkles, Gift, Wallet, Users, ShieldCheck, Download } from "lucide-react";
@@ -31,7 +31,6 @@ export const Route = createFileRoute("/r/$code")({
 
 function RefAttribution() {
   const { code } = Route.useParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     try {
@@ -39,8 +38,6 @@ function RefAttribution() {
       document.cookie = `ko_ref=${encodeURIComponent(code)}; path=/; max-age=${60 * 60 * 24 * 30}`;
     } catch { /* ignore */ }
   }, [code]);
-
-  const handleJoin = () => navigate({ to: "/register", search: { ref: code } as never });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 px-4 pb-10">
@@ -70,12 +67,13 @@ function RefAttribution() {
             <Perk icon={Users} label="Refer & earn more" />
           </div>
 
-          <button
-            onClick={handleJoin}
+          <Link
+            to="/register"
+            search={{ ref: code } as never}
             className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#b45309] via-[#d4af37] to-[#f59e0b] text-white font-bold py-3.5 shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2"
           >
             <Download className="h-5 w-5" /> Join Karo Online
-          </button>
+          </Link>
           <p className="mt-2 text-center text-[11px] text-slate-400">Referral code will be applied automatically.</p>
         </div>
 
