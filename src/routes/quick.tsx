@@ -438,25 +438,8 @@ function QuickPage() {
         <FakeMap vendors={filteredVendors} pulseKey={pulseKey} geo={geo} userAvatar={profile?.avatar_url || avatarUser} />
       </section>
 
-      {/* MIDDLE — search + service cards */}
-      <section
-        ref={contentRef}
-        className="relative min-h-0 bg-white rounded-t-3xl -mt-6 z-20 flex-1 overflow-y-auto pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)]"
-        onTouchStart={(e) => {
-          (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
-          (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
-        }}
-        onTouchEnd={(e) => {
-          const el = e.currentTarget as HTMLElement;
-          const sx = Number(el.dataset.sx ?? 0);
-          const sy = Number(el.dataset.sy ?? 0);
-          const dx = e.changedTouches[0].clientX - sx;
-          const dy = e.changedTouches[0].clientY - sy;
-          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4 && dx > 0) {
-            navigate({ to: "/vendors" });
-          }
-        }}
-      >
+      {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
+      <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
             onClick={() => requireAuth(() => setSearchOpen(true))}
@@ -479,7 +462,7 @@ function QuickPage() {
             />
           </button>
         </div>
-        <div className="flex items-center justify-between px-2 mb-3">
+        <div className="flex items-center justify-between px-2 mb-2">
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[color:oklch(0.45_0.08_85)]">
             {activeType?.name ?? "Service"} {selectedRoot ? `· ${selectedRoot.name}` : ""}
           </span>
@@ -487,6 +470,27 @@ function QuickPage() {
             Quick | sarvic
           </span>
         </div>
+      </section>
+
+      {/* SCROLLABLE — only the service cards scroll */}
+      <section
+        ref={contentRef}
+        className="relative min-h-0 bg-white z-20 flex-1 overflow-y-auto px-4"
+        onTouchStart={(e) => {
+          (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
+          (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
+        }}
+        onTouchEnd={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          const sx = Number(el.dataset.sx ?? 0);
+          const sy = Number(el.dataset.sy ?? 0);
+          const dx = e.changedTouches[0].clientX - sx;
+          const dy = e.changedTouches[0].clientY - sy;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4 && dx > 0) {
+            navigate({ to: "/vendors" });
+          }
+        }}
+      >
 
         {/* Service cards = sub-categories of the selected root */}
         <div className="space-y-2.5 pb-4">

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/referral")({
   component: ReferralPage,
 });
 
-function ReferralPage() {
+export function ReferralPage() {
   const router = useRouter();
   const { data, loading, refresh } = useReferralOverview();
   const [copied, setCopied] = useState(false);

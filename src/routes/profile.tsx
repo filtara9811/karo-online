@@ -29,6 +29,7 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
 import { supabase } from "@/integrations/supabase/client";
+import { ReferralPage } from "@/routes/referral";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -219,75 +220,6 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-300 ${isDark ? "bg-[oklch(0.16_0.02_85)] text-white" : "bg-gradient-to-b from-[oklch(0.99_0.01_85)] via-white to-[oklch(0.97_0.02_85)]"}`}>
-      {/* Premium Top bar — glass switcher, icon-only with active label */}
-      <header
-        className={`sticky top-0 z-30 px-3 pt-3 pb-2 backdrop-blur-2xl border-b transition-colors duration-300 ${
-          isDark
-            ? "bg-[oklch(0.22_0.01_85/0.55)] border-white/10"
-            : "bg-[oklch(0.94_0.005_85/0.55)] border-[color:oklch(0.78_0.14_82/0.18)]"
-        }`}
-        style={{ WebkitBackdropFilter: "blur(20px) saturate(160%)" }}
-      >
-        <div className="relative flex items-center justify-around gap-1">
-          {TAB_META.map((tab) => {
-            const cardIdx = CARDS.findIndex((c) => c.type === tab.type);
-            const active = activeIdx === cardIdx;
-            const isProfile = tab.type === "personal";
-            return (
-              <motion.button
-                key={tab.type}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  if (tab.type === "reselling") { router.navigate({ to: "/referral" }); return; }
-                  goToCard(cardIdx);
-                }}
-                className="relative flex flex-col items-center gap-0.5 py-1 px-1 flex-1 min-w-0"
-                aria-label={tab.label}
-              >
-                <motion.span
-                  animate={{ scale: active ? 1.08 : 1 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`relative h-9 w-9 rounded-full grid place-items-center overflow-hidden transition-colors ${
-                    active
-                      ? "bg-gradient-to-br from-[#fff3c4] to-[#f5d76e] shadow-[0_4px_12px_-4px_rgba(212,175,55,0.6)]"
-                      : isDark
-                        ? "bg-white/10"
-                        : "bg-white/55"
-                  }`}
-                >
-                  {isProfile ? (
-                    <img
-                      src={profile?.avatar_url || avatarUser}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <tab.Icon
-                      className={`h-[16px] w-[16px] ${active ? "text-[#92400e]" : isDark ? "text-amber-200/80" : "text-[#b45309]/75"}`}
-                      strokeWidth={2.2}
-                    />
-                  )}
-                </motion.span>
-                <AnimatePresence initial={false}>
-                  {active && (
-                    <motion.span
-                      key="lbl"
-                      initial={{ opacity: 0, y: -2, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -2, height: 0 }}
-                      transition={{ duration: 0.18 }}
-                      className="text-[9px] font-semibold tracking-tight text-[#b45309] leading-none whitespace-nowrap"
-                    >
-                      {tab.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </div>
-      </header>
-
       {/* Dashboard card — slides up from bottom on tab switch */}
       <section className="pt-4 px-4 overflow-hidden">
         <div className="relative w-full max-w-[400px] mx-auto" style={{ aspectRatio: "1.7 / 1" }}>
@@ -355,31 +287,9 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         </div>
       </section>
 
-      {/* Quick action tiles — sit between card and rows */}
-      <section className="px-4 mt-4">
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" as const },
-            { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" as const },
-            { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" as const },
-            { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" as const },
-          ].map((t2) => (
-            <motion.button
-              key={t2.id}
-              whileTap={{ scale: 0.94 }}
-              onClick={() => setQuickSheet(t2.sheet)}
-              className="rounded-2xl bg-white border border-amber-200 py-3 px-1.5 flex flex-col items-center gap-1 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)] active:shadow-sm"
-            >
-              <div className="h-8 w-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
-                <t2.Icon className="h-5 w-5 text-amber-800" strokeWidth={2} />
-              </div>
-              <span className="text-[9px] font-semibold text-slate-700 leading-tight text-center truncate max-w-full">
-                {t2.label}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-      </section>
+      {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
+      <QuickTiles onPick={(s) => setQuickSheet(s)} />
+
 
       {/* My Account sub-bar (back + title + theme/lang/support) */}
       <section className="px-4 mt-4">
@@ -576,19 +486,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           </SheetWrap>
         )}
         {quickSheet === "referral" && (
-          <SheetWrap onClose={() => setQuickSheet(null)}>
-            <div className="flex items-center gap-3 mb-3">
-              <Gift className="h-7 w-7 text-amber-700" />
-              <h3 className="font-display text-xl text-amber-700 font-bold">Refferal | Ernig</h3>
-            </div>
-            <p className="text-xs text-slate-500 mb-3">Invite friends and earn ₹200 in your wallet on every successful referral.</p>
-            <button
-              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/referral" }), 200); }}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
-            >
-              Open Referral Program
-            </button>
-          </SheetWrap>
+          <ReferralSheetWrap onClose={() => setQuickSheet(null)} />
         )}
         {quickSheet === "leads" && (
           <SheetWrap onClose={() => setQuickSheet(null)}>
@@ -1412,6 +1310,98 @@ function SheetWrap({ onClose, children }: { onClose: () => void; children: React
           </button>
         </div>
         {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+type QuickSheetKey = "orders" | "referral" | "leads" | "support";
+
+function QuickTiles({ onPick }: { onPick: (s: QuickSheetKey) => void }) {
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey }> = [
+    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" },
+    { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" },
+    { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" },
+    { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" },
+  ];
+  return (
+    <section className="px-4 mt-4">
+      <div className="grid grid-cols-4 gap-2">
+        {TILES.map((t2) => {
+          const active = revealed === t2.id;
+          return (
+            <motion.button
+              key={t2.id}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                setRevealed(t2.id);
+                window.setTimeout(() => onPick(t2.sheet), 260);
+                window.setTimeout(() => setRevealed(null), 900);
+              }}
+              className={`rounded-2xl border py-3 px-1.5 flex flex-col items-center gap-1 transition-colors ${
+                active
+                  ? "bg-gradient-to-br from-amber-100 to-amber-200 border-amber-500 shadow-md"
+                  : "bg-white border-amber-200 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)]"
+              }`}
+            >
+              <div className={`h-8 w-8 grid place-items-center rounded-xl border transition-colors ${
+                active
+                  ? "bg-gradient-to-br from-amber-400 to-amber-600 border-amber-700"
+                  : "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200"
+              }`}>
+                <t2.Icon className={`h-5 w-5 ${active ? "text-white" : "text-amber-800"}`} strokeWidth={2} />
+              </div>
+              <AnimatePresence initial={false}>
+                {active && (
+                  <motion.span
+                    initial={{ opacity: 0, y: -2, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -2, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="text-[9px] font-bold leading-tight text-center truncate max-w-full text-amber-900"
+                  >
+                    {t2.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ReferralSheetWrap({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 30, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden"
+        style={{ height: "95vh" }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-50 h-10 w-10 grid place-items-center rounded-full bg-white border border-amber-300 shadow-lg active:scale-90 transition"
+          aria-label="Close referral"
+        >
+          <X className="h-5 w-5 text-[#b45309]" strokeWidth={2.4} />
+        </button>
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-amber-200 z-50" />
+        <div className="h-full overflow-y-auto pt-4">
+          <ReferralPage />
+        </div>
       </motion.div>
     </motion.div>
   );
