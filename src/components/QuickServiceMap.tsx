@@ -74,10 +74,11 @@ export function QuickServiceMap({
       setStatus("ready");
       window.setTimeout(() => {
         if (cancel || !ref.current) return;
+        const hasTiles = !!ref.current.querySelector('img[src*="google"], img[src*="ggpht"], canvas');
         const hasGoogleError = !!ref.current.querySelector(".gm-err-container, .gm-err-message") ||
           ref.current.textContent?.includes("didn't load Google Maps correctly");
-        if (hasGoogleError) setStatus("error");
-      }, 1800);
+        if (hasGoogleError || !hasTiles) setStatus("error");
+      }, 4200);
     })();
     return () => {
       cancel = true;
