@@ -355,15 +355,41 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         </div>
       </section>
 
+      {/* Quick action tiles — sit between card and rows */}
+      <section className="px-4 mt-4">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" as const },
+            { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" as const },
+            { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" as const },
+            { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" as const },
+          ].map((t2) => (
+            <motion.button
+              key={t2.id}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setQuickSheet(t2.sheet)}
+              className="rounded-2xl bg-white border border-amber-200 py-3 px-1.5 flex flex-col items-center gap-1 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)] active:shadow-sm"
+            >
+              <div className="h-8 w-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+                <t2.Icon className="h-5 w-5 text-amber-800" strokeWidth={2} />
+              </div>
+              <span className="text-[9px] font-semibold text-slate-700 leading-tight text-center truncate max-w-full">
+                {t2.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </section>
+
       {/* My Account sub-bar (back + title + theme/lang/support) */}
       <section className="px-4 mt-4">
         <div className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border ${isDark ? "bg-[oklch(0.20_0.03_85)] border-amber-200/20" : "bg-white border-[color:oklch(0.78_0.14_82/0.35)] shadow-[0_4px_14px_-8px_rgba(212,175,55,0.45)]"}`}>
           <button
-            onClick={() => router.history.back()}
+            onClick={() => (onClose ? onClose() : router.history.back())}
             className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0"
-            aria-label="Back"
+            aria-label={onClose ? "Close" : "Back"}
           >
-            <ArrowLeft className="h-4 w-4 text-[#b45309]" />
+            {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
           </button>
           <h1 className="flex-1 text-center font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
             {t("my_account")}
