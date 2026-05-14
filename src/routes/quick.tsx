@@ -753,6 +753,8 @@ function QuickPage() {
           console.log("Search:", q);
         }}
       />
+
+      <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
     </div>
   );
 }
