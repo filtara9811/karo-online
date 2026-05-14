@@ -5,6 +5,8 @@ import { toast } from "sonner";
 
 const MAP_TYPES = ["roadmap", "satellite", "hybrid", "terrain"] as const;
 type MapType = (typeof MAP_TYPES)[number];
+const isPreviewBlockedMapsHost = () =>
+  typeof window !== "undefined" && window.location.hostname.endsWith(".lovableproject.com");
 
 export type QuickMapVendor = {
   id: string;
@@ -34,7 +36,7 @@ export function QuickServiceMap({
   const userMarkerRef = useRef<any>(null);
   const userAccuracyRef = useRef<any>(null);
   const vendorMarkersRef = useRef<any[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(() => isPreviewBlockedMapsHost() ? "error" : "loading");
   const [mapType, setMapType] = useState<MapType>("roadmap");
   const [mapTypeOpen, setMapTypeOpen] = useState(false);
 
@@ -54,6 +56,10 @@ export function QuickServiceMap({
   useEffect(() => {
     let cancel = false;
     (async () => {
+      if (isPreviewBlockedMapsHost()) {
+        setStatus("error");
+        return;
+      }
       const g = await loadMapsSdk();
       if (cancel) return;
       if (!g || !ref.current) {
