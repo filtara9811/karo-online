@@ -30,7 +30,8 @@ const FinalizeCustomerSchema = z.object({
     .max(20)
     .transform((s) => s.replace(/\D/g, "").slice(-10)),
   email: z.string().max(160).optional().default(""),
-  address: z.string().min(3).max(500),
+  address: z.string().max(500).optional().default(""),
+  referral: z.string().max(40).optional().default(""),
 });
 
 function hash(code: string, phone: string) {
