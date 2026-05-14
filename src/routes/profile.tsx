@@ -286,31 +286,9 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         </div>
       </section>
 
-      {/* Quick action tiles — sit between card and rows */}
-      <section className="px-4 mt-4">
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" as const },
-            { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" as const },
-            { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" as const },
-            { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" as const },
-          ].map((t2) => (
-            <motion.button
-              key={t2.id}
-              whileTap={{ scale: 0.94 }}
-              onClick={() => setQuickSheet(t2.sheet)}
-              className="rounded-2xl bg-white border border-amber-200 py-3 px-1.5 flex flex-col items-center gap-1 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)] active:shadow-sm"
-            >
-              <div className="h-8 w-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
-                <t2.Icon className="h-5 w-5 text-amber-800" strokeWidth={2} />
-              </div>
-              <span className="text-[9px] font-semibold text-slate-700 leading-tight text-center truncate max-w-full">
-                {t2.label}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-      </section>
+      {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
+      <QuickTiles onPick={(s) => setQuickSheet(s)} />
+
 
       {/* My Account sub-bar (back + title + theme/lang/support) */}
       <section className="px-4 mt-4">
