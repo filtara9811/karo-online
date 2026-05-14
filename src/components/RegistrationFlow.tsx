@@ -16,7 +16,14 @@ import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.func
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
-const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v4";
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v5";
+const STALE_CUSTOMER_DRAFT_KEYS = [
+  "ko-customer-registration-draft",
+  "ko-customer-registration-draft-v1",
+  "ko-customer-registration-draft-v2",
+  "ko-customer-registration-draft-v3",
+  "ko-customer-registration-draft-v4",
+];
 
 type CustomerDraft = {
   step?: Step;
@@ -26,9 +33,22 @@ type CustomerDraft = {
   referral?: string;
 };
 
+const normalizeStep = (value: unknown): Step => (value === 1 || value === 2 || value === 3 ? value : 1);
+
+const clearStaleCustomerDrafts = () => {
+  if (typeof window === "undefined") return;
+  try {
+    STALE_CUSTOMER_DRAFT_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  } catch { /* ignore */ }
+};
+
 const readDraft = (): CustomerDraft => {
   if (typeof window === "undefined") return {};
-  try { return JSON.parse(window.localStorage.getItem(CUSTOMER_DRAFT_KEY) || "{}"); } catch { return {}; }
+  clearStaleCustomerDrafts();
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(CUSTOMER_DRAFT_KEY) || "{}") as CustomerDraft;
+    return { ...raw, step: normalizeStep(raw.step) };
+  } catch { return {}; }
 };
 
 const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
@@ -70,13 +90,13 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
 
   const initialRef = useMemo(readReferralFromContext, []);
 
-  const [step, setStep] = useState<Step>(draft.step ?? 1);
+  const [step, setStep] = useState<Step>(normalizeStep(draft.step));
 
   const [phone, setPhone] = useState(draft.phone ?? "");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
   const [name, setName] = useState(draft.name ?? "");
-  const [referral, setReferral] = useState<string>(draft.referral || initialRef.code);
+  const [referral, setReferral] = useState<string>(initialRef.code || draft.referral || "");
   const referralLocked = initialRef.locked && !!initialRef.code;
 
   const [otp, setOtp] = useState("");
