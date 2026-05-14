@@ -31,6 +31,9 @@ type GatewayHealth = {
 type Health = {
   sms: GatewayHealth[];
   payment: GatewayHealth[];
+  maps: GatewayHealth[];
+  firebase: GatewayHealth[];
+  logistics: GatewayHealth[];
   recent_errors: { id: string; kind: string; provider: string | null; message: string; meta?: Record<string, unknown> | null; created_at: string }[];
 };
 
@@ -96,6 +99,9 @@ function SystemStatusPage() {
         <div className="space-y-6">
           <Section title="SMS Gateways" rows={data?.sms ?? []} />
           <Section title="Payment Gateways" rows={data?.payment ?? []} />
+          <Section title="Maps Services" rows={data?.maps ?? []} />
+          <Section title="Firebase Services" rows={data?.firebase ?? []} />
+          <Section title="Logistics Gateways" rows={data?.logistics ?? []} />
 
           <GoldCard className="p-5">
             <h3 className="text-sm uppercase tracking-widest text-[#d4af37] font-bold mb-3 flex items-center gap-2">
