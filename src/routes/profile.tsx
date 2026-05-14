@@ -1406,6 +1406,8 @@ function ReferralSheetWrap({ onClose }: { onClose: () => void }) {
     </motion.div>
   );
 }
+
+function FormField({
   Icon, placeholder, defaultValue,
 }: { Icon: typeof User; placeholder: string; defaultValue?: string }) {
   return (
