@@ -109,7 +109,7 @@ const SOCIAL_META: Array<{ key: "facebook" | "instagram" | "twitter" | "telegram
   { key: "linkedin", Icon: Linkedin, color: "#0A66C2" },
 ];
 
-function ProfilePage() {
+export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const router = useRouter();
   const navigate = useNavigate();
   const { t, theme, toggleTheme } = useAppPrefs();
