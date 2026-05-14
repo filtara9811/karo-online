@@ -161,21 +161,24 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
     return Math.round((filled / fields.length) * 100);
   }, [profile]);
 
-  // ---- KYC completion % from kyc_verifications ----
+  // ---- KYC completion % from kyc_verifications (aadhaar/pan/gst) ----
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!user?.id) { setKycPct(0); return; }
       const { data } = await supabase
         .from("kyc_verifications")
-        .select("aadhaar, pan, gst")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .select("check_type, status")
+        .eq("subject_user_id", user.id);
       if (cancelled) return;
-      const r = (data ?? {}) as { aadhaar?: string | null; pan?: string | null; gst?: string | null };
-      const fields = [r.aadhaar, r.pan, r.gst];
-      const filled = fields.filter((v) => v && String(v).trim().length > 0).length;
-      setKycPct(Math.round((filled / fields.length) * 100));
+      const types = ["aadhaar", "pan", "gst"];
+      const verifiedTypes = new Set(
+        ((data ?? []) as Array<{ check_type: string; status: string }>)
+          .filter((r) => ["verified", "approved", "passed"].includes((r.status ?? "").toLowerCase()))
+          .map((r) => r.check_type),
+      );
+      const filled = types.filter((t) => verifiedTypes.has(t)).length;
+      setKycPct(Math.round((filled / types.length) * 100));
     })();
     return () => { cancelled = true; };
   }, [user?.id, activeRow]);
