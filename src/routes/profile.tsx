@@ -486,19 +486,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           </SheetWrap>
         )}
         {quickSheet === "referral" && (
-          <SheetWrap onClose={() => setQuickSheet(null)}>
-            <div className="flex items-center gap-3 mb-3">
-              <Gift className="h-7 w-7 text-amber-700" />
-              <h3 className="font-display text-xl text-amber-700 font-bold">Refferal | Ernig</h3>
-            </div>
-            <p className="text-xs text-slate-500 mb-3">Invite friends and earn ₹200 in your wallet on every successful referral.</p>
-            <button
-              onClick={() => { setQuickSheet(null); setTimeout(() => router.navigate({ to: "/referral" }), 200); }}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white font-semibold shadow active:scale-95 transition"
-            >
-              Open Referral Program
-            </button>
-          </SheetWrap>
+          <ReferralSheetWrap onClose={() => setQuickSheet(null)} />
         )}
         {quickSheet === "leads" && (
           <SheetWrap onClose={() => setQuickSheet(null)}>
