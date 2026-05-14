@@ -60,9 +60,9 @@ export function AuthGate({ children }: { children?: ReactNode }) {
       window.removeEventListener("ko-customer-onboarded", sync);
       window.removeEventListener("storage", sync);
     };
-  }, [location.pathname, isAuthenticated, profile?.name, profile?.address]);
+  }, [location.pathname, isAuthenticated, profile?.name]);
 
-  const profileComplete = locallyOnboarded || (isAuthenticated && !!(profile?.name && profile?.address));
+  const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
 
   const isReady = !skip ? profileComplete : true;
 
