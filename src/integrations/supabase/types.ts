@@ -2519,6 +2519,7 @@ export type Database = {
         }
       }
       generate_referral_code: { Args: { _prefix?: string }; Returns: string }
+      get_active_maps_key: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_card_link: { Args: { _code: string }; Returns: string }
       get_gateway_health: { Args: never; Returns: Json }
