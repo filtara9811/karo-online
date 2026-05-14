@@ -31,6 +31,9 @@ type GatewayHealth = {
 type Health = {
   sms: GatewayHealth[];
   payment: GatewayHealth[];
+  maps: GatewayHealth[];
+  firebase: GatewayHealth[];
+  logistics: GatewayHealth[];
   recent_errors: { id: string; kind: string; provider: string | null; message: string; meta?: Record<string, unknown> | null; created_at: string }[];
 };
 
