@@ -40,7 +40,7 @@ function RefAttribution() {
     } catch { /* ignore */ }
   }, [code]);
 
-  const handleJoin = () => navigate({ to: "/register" });
+  const handleJoin = () => navigate({ to: "/register", search: { ref: code } as never });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 px-4 pb-10">
@@ -59,7 +59,7 @@ function RefAttribution() {
           <h1 className="mt-2 font-display text-2xl font-bold text-slate-900 leading-tight">
             Join Karo Online & unlock rewards
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600">
             Your friend invited you with code{" "}
             <span className="font-mono font-bold text-amber-700">{code}</span>. Sign up now and both of you earn rewards in your wallet.
           </p>
@@ -76,16 +76,15 @@ function RefAttribution() {
           >
             <Download className="h-5 w-5" /> Join Karo Online
           </button>
-          <p className="mt-2 text-center text-[11px] text-slate-400">By joining you agree to our terms & privacy.</p>
+          <p className="mt-2 text-center text-[11px] text-slate-400">Referral code will be applied automatically.</p>
         </div>
 
         <div className="mt-4 rounded-2xl bg-amber-50 border border-amber-200 p-4">
           <p className="font-display text-base font-bold text-slate-800 flex items-center gap-2"><Gift className="h-4 w-4 text-amber-700" /> How it works</p>
           <ol className="mt-2 text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
-            <li>Sign up with mobile + OTP.</li>
-            <li>Complete your profile / KYC.</li>
-            <li>Place your first order or become a seller.</li>
-            <li>You and your inviter both get rewarded.</li>
+            <li>Enter mobile number and verify OTP.</li>
+            <li>Add name, gender and the locked referral code.</li>
+            <li>Tap Sign Up to open Karo Online.</li>
           </ol>
         </div>
       </div>
