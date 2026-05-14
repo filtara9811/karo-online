@@ -20,6 +20,28 @@ export type QuickMapVendor = {
 
 const DEFAULT_CENTER = { lat: 28.6562, lng: 77.241 }; // Delhi Sadar Bazar fallback
 
+// Clean, Uber/Ola-like light map style with subtle brand-gold roads
+const KARO_MAP_STYLE: any[] = [
+  { elementType: "geometry", stylers: [{ color: "#f5f1e8" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#6b6256" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#fdfaf2" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#d9d0bd" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#dfead0" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#7c8b5e" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e9e0c8" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#fff5d6" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e6c97a" }] },
+  { featureType: "road.local", elementType: "labels.text.fill", stylers: [{ color: "#9a8f78" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#bcdce6" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#5a8794" }] },
+];
+
 export function QuickServiceMap({
   center,
   vendors,
@@ -33,9 +55,9 @@ export function QuickServiceMap({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const userMarkerRef = useRef<any>(null);
-  const userAccuracyRef = useRef<any>(null);
+  const userOverlayRef = useRef<any>(null);
   const vendorMarkersRef = useRef<any[]>([]);
+  const didInitialCenterRef = useRef(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(() => isPreviewBlockedMapsHost() ? "error" : "loading");
   const [mapType, setMapType] = useState<MapType>("roadmap");
   const [mapTypeOpen, setMapTypeOpen] = useState(false);
@@ -48,7 +70,7 @@ export function QuickServiceMap({
 
   useEffect(() => {
     if (status !== "loading") return;
-    const id = window.setTimeout(() => setStatus((current) => current === "loading" ? "error" : current), 3500);
+    const id = window.setTimeout(() => setStatus((current) => current === "loading" ? "error" : current), 5000);
     return () => window.clearTimeout(id);
   }, [status]);
 
@@ -60,7 +82,7 @@ export function QuickServiceMap({
         setStatus("error");
         return;
       }
-      const g = await loadMapsSdk();
+      const g = await loadMapsSdk(["places"]);
       if (cancel) return;
       if (!g || !ref.current) {
         setStatus("error");
@@ -69,13 +91,15 @@ export function QuickServiceMap({
       const c = center ?? DEFAULT_CENTER;
       mapRef.current = new g.maps.Map(ref.current, {
         center: c,
-        zoom: 15,
+        zoom: 16,
         mapTypeId: mapType,
         disableDefaultUI: true,
         gestureHandling: "greedy",
         zoomControl: true,
         zoomControlOptions: { position: g.maps.ControlPosition.RIGHT_BOTTOM },
         clickableIcons: false,
+        styles: KARO_MAP_STYLE,
+        backgroundColor: "#f5f1e8",
       });
       setStatus("ready");
       window.setTimeout(() => {
@@ -84,7 +108,7 @@ export function QuickServiceMap({
         const hasGoogleError = !!ref.current.querySelector(".gm-err-container, .gm-err-message") ||
           ref.current.textContent?.includes("didn't load Google Maps correctly");
         if (hasGoogleError || !hasTiles) setStatus("error");
-      }, 4200);
+      }, 4500);
     })();
     return () => {
       cancel = true;
@@ -92,49 +116,93 @@ export function QuickServiceMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // recenter when geo updates
+  // recenter when geo updates — auto-center the first time we get a fix
   useEffect(() => {
     if (!mapRef.current || !center) return;
-    mapRef.current.panTo(center);
+    if (!didInitialCenterRef.current) {
+      mapRef.current.setCenter(center);
+      mapRef.current.setZoom(16);
+      didInitialCenterRef.current = true;
+    } else {
+      mapRef.current.panTo(center);
+    }
   }, [center?.lat, center?.lng]);
 
-  // map-type change
+  // map-type change — keep custom styles only on roadmap
   useEffect(() => {
-    if (mapRef.current) mapRef.current.setMapTypeId(mapType);
+    if (!mapRef.current) return;
+    mapRef.current.setMapTypeId(mapType);
+    mapRef.current.setOptions({ styles: mapType === "roadmap" ? KARO_MAP_STYLE : [] });
   }, [mapType]);
 
-  // user marker (avatar pin at center)
+  // user overlay (custom HTML pin with avatar + ripple)
   useEffect(() => {
     if (status !== "ready" || !mapRef.current) return;
     const g = (window as any).google;
     const pos = center ?? DEFAULT_CENTER;
-    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
-    if (userAccuracyRef.current) userAccuracyRef.current.setMap(null);
 
-    userAccuracyRef.current = new g.maps.Circle({
-      map: mapRef.current,
-      center: pos,
-      radius: 80,
-      fillColor: "#2563eb",
-      fillOpacity: 0.12,
-      strokeColor: "#2563eb",
-      strokeOpacity: 0.4,
-      strokeWeight: 1,
-      clickable: false,
-    });
+    if (userOverlayRef.current) {
+      userOverlayRef.current.setMap(null);
+      userOverlayRef.current = null;
+    }
 
-    userMarkerRef.current = new g.maps.Marker({
-      map: mapRef.current,
-      position: pos,
-      icon: {
-        url: userAvatar,
-        scaledSize: new g.maps.Size(46, 46),
-        anchor: new g.maps.Point(23, 46),
-      },
-      zIndex: 999,
-      title: userLabel || "You",
-    });
-  }, [status, center?.lat, center?.lng, userAvatar, userLabel]);
+    class AvatarPinOverlay extends g.maps.OverlayView {
+      position: any;
+      div: HTMLDivElement | null = null;
+      constructor(position: any) {
+        super();
+        this.position = position;
+      }
+      onAdd() {
+        const div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.transform = "translate(-50%, -50%)";
+        div.style.pointerEvents = "none";
+        div.innerHTML = `
+          <div class="ko-userpin">
+            <span class="ko-ripple ko-ripple-1"></span>
+            <span class="ko-ripple ko-ripple-2"></span>
+            <span class="ko-ripple ko-ripple-3"></span>
+            <span class="ko-userpin-ring">
+              <img src="${userAvatar.replace(/"/g, "&quot;")}" alt="" />
+            </span>
+          </div>`;
+        this.div = div;
+        const panes = this.getPanes();
+        panes?.overlayMouseTarget.appendChild(div);
+      }
+      draw() {
+        if (!this.div) return;
+        const projection = this.getProjection();
+        if (!projection) return;
+        const point = projection.fromLatLngToDivPixel(
+          new g.maps.LatLng(this.position.lat, this.position.lng),
+        );
+        if (point) {
+          this.div.style.left = `${point.x}px`;
+          this.div.style.top = `${point.y}px`;
+        }
+      }
+      onRemove() {
+        if (this.div?.parentNode) this.div.parentNode.removeChild(this.div);
+        this.div = null;
+      }
+      updatePosition(p: { lat: number; lng: number }) {
+        this.position = p;
+        this.draw();
+      }
+    }
+
+    const overlay = new AvatarPinOverlay(pos);
+    overlay.setMap(mapRef.current);
+    userOverlayRef.current = overlay;
+  }, [status, userAvatar]);
+
+  // move overlay when center changes (avoid re-creating)
+  useEffect(() => {
+    if (!userOverlayRef.current || !center) return;
+    userOverlayRef.current.updatePosition(center);
+  }, [center?.lat, center?.lng]);
 
   // vendor markers around user
   useEffect(() => {
@@ -144,7 +212,6 @@ export function QuickServiceMap({
     vendorMarkersRef.current.forEach((m) => m.setMap(null));
     vendorMarkersRef.current = [];
     vendors.forEach((v) => {
-      // ±~0.8km spread around user
       const dLat = ((50 - v.y) / 50) * 0.008;
       const dLng = ((v.x - 50) / 50) * 0.008;
       const m = new g.maps.Marker({
@@ -194,11 +261,42 @@ export function QuickServiceMap({
 
   return (
     <div className="absolute inset-0">
+      <style>{`
+        .ko-userpin { position: relative; width: 56px; height: 56px; display: grid; place-items: center; }
+        .ko-userpin-ring {
+          position: relative; z-index: 2;
+          width: 46px; height: 46px; border-radius: 9999px;
+          background: linear-gradient(135deg, #f7d488, #d4a72c);
+          padding: 3px; display: block;
+          box-shadow: 0 6px 18px rgba(0,0,0,.28), 0 0 0 3px rgba(255,255,255,.95) inset;
+        }
+        .ko-userpin-ring img {
+          width: 100%; height: 100%; border-radius: 9999px; object-fit: cover; display: block;
+          background: #fff;
+        }
+        .ko-ripple {
+          position: absolute; left: 50%; top: 50%;
+          width: 46px; height: 46px; margin: -23px 0 0 -23px;
+          border-radius: 9999px;
+          background: rgba(37, 99, 235, 0.32);
+          box-shadow: 0 0 0 2px rgba(37,99,235,.45);
+          transform: scale(0.6); opacity: 0.9;
+          animation: ko-ripple 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+          z-index: 1;
+        }
+        .ko-ripple-2 { animation-delay: .8s; }
+        .ko-ripple-3 { animation-delay: 1.6s; }
+        @keyframes ko-ripple {
+          0%   { transform: scale(0.55); opacity: 0.8; }
+          70%  { opacity: 0.15; }
+          100% { transform: scale(2.6); opacity: 0; }
+        }
+      `}</style>
       <div ref={ref} className="absolute inset-0" />
       {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} />}
       {status === "loading" && (
-        <div className="absolute inset-0 grid place-items-center bg-slate-100">
-          <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+        <div className="absolute inset-0 grid place-items-center bg-[#f5f1e8]">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-700" />
         </div>
       )}
 
@@ -277,10 +375,10 @@ function MapFallback({
   userLabel?: string;
 }) {
   return (
-    <div className="absolute inset-0 z-20 overflow-hidden bg-[linear-gradient(135deg,#eef3f8_0%,#dfe7ef_45%,#edf2f7_100%)]">
-      <div className="absolute inset-0 opacity-70" style={{ backgroundImage: "linear-gradient(90deg, rgba(148,163,184,.28) 1px, transparent 1px), linear-gradient(0deg, rgba(148,163,184,.28) 1px, transparent 1px)", backgroundSize: "46px 46px" }} />
-      <div className="absolute left-[-12%] top-[46%] h-10 w-[130%] -rotate-[16deg] rounded-full bg-white/80 shadow-inner" />
-      <div className="absolute left-[18%] top-[-12%] h-[120%] w-12 rotate-[28deg] rounded-full bg-white/75 shadow-inner" />
+    <div className="absolute inset-0 z-20 overflow-hidden bg-[linear-gradient(135deg,#faf5e8_0%,#efe6d2_45%,#f5efdc_100%)]">
+      <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "linear-gradient(90deg, rgba(180,160,110,.28) 1px, transparent 1px), linear-gradient(0deg, rgba(180,160,110,.28) 1px, transparent 1px)", backgroundSize: "46px 46px" }} />
+      <div className="absolute left-[-12%] top-[46%] h-10 w-[130%] -rotate-[16deg] rounded-full bg-white/85 shadow-inner" />
+      <div className="absolute left-[18%] top-[-12%] h-[120%] w-12 rotate-[28deg] rounded-full bg-white/80 shadow-inner" />
       <div className="absolute left-[-10%] top-[22%] h-8 w-[60%] rotate-[8deg] rounded-full bg-amber-100/80" />
       {vendors.map((v) => (
         <div key={v.id} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: `${v.x}%`, top: `${v.y}%` }} title={v.name}>
@@ -290,11 +388,15 @@ function MapFallback({
           <div className="mx-auto h-2 w-2 rotate-45 bg-white shadow" />
         </div>
       ))}
-      <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-full">
-        <div className="h-12 w-12 rounded-full border-[3px] border-white bg-white shadow-xl overflow-hidden ring-2 ring-blue-500">
-          <img src={userAvatar} alt="" className="h-full w-full object-cover" />
+      <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
+        <div className="ko-userpin">
+          <span className="ko-ripple ko-ripple-1" />
+          <span className="ko-ripple ko-ripple-2" />
+          <span className="ko-ripple ko-ripple-3" />
+          <span className="ko-userpin-ring">
+            <img src={userAvatar} alt="" />
+          </span>
         </div>
-        <div className="mx-auto h-3 w-3 rotate-45 bg-blue-500 shadow" />
       </div>
       <div className="absolute left-3 bottom-3 right-16 z-30 px-2.5 py-1.5 rounded-lg bg-white/95 border border-slate-200 shadow text-[11px] font-semibold text-slate-800 truncate">
         📍 {userLabel || "Detecting your location…"}
