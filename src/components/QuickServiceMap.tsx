@@ -410,6 +410,15 @@ export function QuickServiceMap({
           background: linear-gradient(135deg, #b46a2a 0%, #7c4516 100%);
           padding: 4px;
           display: grid; place-items: center;
+          animation: ko-heartbeat 1.6s ease-in-out infinite;
+          transform-origin: 50% 100%;
+        }
+        @keyframes ko-heartbeat {
+          0%, 100% { transform: translateX(-50%) scale(1); }
+          15%      { transform: translateX(-50%) scale(1.08); }
+          30%      { transform: translateX(-50%) scale(0.97); }
+          45%      { transform: translateX(-50%) scale(1.05); }
+          60%      { transform: translateX(-50%) scale(1); }
         }
         .ko-teardrop-head img {
           width: 100%; height: 100%; border-radius: 9999px; object-fit: cover;
