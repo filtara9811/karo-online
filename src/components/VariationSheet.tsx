@@ -61,6 +61,14 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   // by default ALL vendor types are selected → request goes to everyone
   const [vendorTypes, setVendorTypes] = useState<VendorTypeKey[]>(["wholesaler", "retailer", "manufacturer"]);
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  const isService = useMemo(() => isServiceCategory(category), [category]);
+  const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
+  const activeFilterCount =
+    Object.values(filters).reduce((n, arr) => n + arr.length, 0) +
+    (vendorTypes.length < 3 ? 1 : 0);
 
   useEffect(() => {
     if (!open) return;
