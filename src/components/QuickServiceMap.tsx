@@ -338,7 +338,36 @@ export function QuickServiceMap({
   };
 
   const requestLocation = () => {
-    if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+    if (typeof window === "undefined") return;
+    if (!("geolocation" in navigator)) {
+      toast.error("Location not supported on this device");
+      return;
+    }
+    toast.loading("Detecting your precise location…", { id: "ko-geo" });
+    // Trigger fresh, high-accuracy fix → this also re-prompts the OS/browser
+    // permission sheet if it was previously dismissed.
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        toast.success("Location enabled", { id: "ko-geo" });
+        // notify the geolocation hook to seed + start watching
+        window.dispatchEvent(new Event("ko-geo-refresh"));
+        if (mapRef.current) {
+          mapRef.current.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          mapRef.current.setZoom(17);
+        }
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error(
+            "Location is blocked. Open browser settings → Site permissions → Location → Allow, then reload.",
+            { id: "ko-geo", duration: 6000 },
+          );
+        } else {
+          toast.error("Couldn't get GPS fix. Move to an open area and try again.", { id: "ko-geo" });
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
   };
 
   const handleShare = async () => {
