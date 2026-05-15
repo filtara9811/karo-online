@@ -282,6 +282,8 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
             </button>
           </div>
         </div>
+      </div>
+
       {/* Filter bottom sheet — multi-select, product vs service aware */}
       {filterSheetOpen && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center">
