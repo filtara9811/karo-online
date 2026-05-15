@@ -68,24 +68,32 @@ function cacheSet<T>(key: string, v: T) {
 }
 const round = (n: number, d = 4) => Number(n.toFixed(d));
 
-// ─── REST wrappers ────────────────────────────────────────────────────────
+// ─── REST wrappers (server-fn proxied) ───────────────────────────────────
+// All Google Web Service REST endpoints (geocode/distance matrix/places/
+// directions) are proxied through server fns. Google's REST APIs do NOT
+// honor HTTP-referer key restrictions, so calling them from the browser
+// with the referer-locked map key returns REQUEST_DENIED. Server fns use
+// a separate `GOOGLE_MAPS_SERVER_KEY` (no referer restriction).
+import {
+  reverseGeocodeFn,
+  geocodeFn,
+  distanceMatrixFn,
+  placesAutocompleteFn,
+  placeDetailsFn,
+  directionsFn,
+} from "@/lib/maps.functions";
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   const k = `rev:${round(lat, 4)},${round(lng, 4)}`;
   const cached = cacheGet<string>(k, TTL.reverse);
   if (cached) return cached;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return null;
   try {
-    const r = await fetch(`${BASE}/geocode/json?latlng=${lat},${lng}&language=en&key=${key}`);
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] reverseGeocode REQUEST_DENIED:", j.error_message);
+    const j = await reverseGeocodeFn({ data: { lat, lng } });
+    if (!j.ok) {
+      console.warn("[gmaps] reverseGeocode failed:", j.status, j.error);
       return null;
     }
-    if (j.status !== "OK" || !j.results?.length) return null;
-    // Prefer the most specific result (street_address > premise > sublocality_level_3/2/1 > route)
+    if (!j.results?.length) return null;
     const priority = [
       "street_address", "premise", "subpremise",
       "sublocality_level_3", "sublocality_level_2", "sublocality_level_1",
@@ -107,7 +115,6 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
       pick("sublocality") ||
       pick("neighborhood");
     const locality = pick("locality") || pick("administrative_area_level_2");
-    // Pincode: try the chosen result first, then fall back to ANY result that has one
     let pincode = pick("postal_code");
     if (!pincode) {
       for (const r of j.results as any[]) {
@@ -120,7 +127,8 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
     const out = parts.length ? parts.join(", ") : (best.formatted_address ?? null);
     if (out) cacheSet(k, out);
     return out;
-  } catch {
+  } catch (e) {
+    console.warn("[gmaps] reverseGeocode error:", e);
     return null;
   }
 }
@@ -129,27 +137,13 @@ export async function geocode(address: string): Promise<LatLng | null> {
   const k = `geo:${address.trim().toLowerCase()}`;
   const cached = cacheGet<LatLng>(k, TTL.geocode);
   if (cached) return cached;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return null;
   try {
-    const r = await fetch(
-      `${BASE}/geocode/json?address=${encodeURIComponent(address)}&region=in&key=${key}`,
-    );
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] geocode REQUEST_DENIED:", j.error_message);
-      return null;
-    }
-    if (j.status !== "OK") return null;
-    const loc = j.results[0]?.geometry?.location;
-    if (!loc) return null;
-    const out = { lat: loc.lat, lng: loc.lng };
+    const j = await geocodeFn({ data: { address } });
+    if (!j.ok) return null;
+    const out = { lat: j.lat, lng: j.lng };
     cacheSet(k, out);
     return out;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export type PlacePrediction = {
@@ -168,34 +162,14 @@ export async function placesAutocomplete(
   const k = `ac:${trimmed.toLowerCase()}|${opts.bias ? round(opts.bias.lat, 2) + "," + round(opts.bias.lng, 2) : ""}`;
   const cached = cacheGet<PlacePrediction[]>(k, TTL.autocomplete);
   if (cached) return cached;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return [];
   try {
-    const params = new URLSearchParams({ input: trimmed, components: "country:in", key });
-    if (opts.sessionToken) params.set("sessiontoken", opts.sessionToken);
-    if (opts.bias) {
-      params.set("location", `${opts.bias.lat},${opts.bias.lng}`);
-      params.set("radius", "50000");
-    }
-    const r = await fetch(`${BASE}/place/autocomplete/json?${params}`);
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] autocomplete REQUEST_DENIED:", j.error_message);
-      return [];
-    }
-    if (j.status !== "OK" && j.status !== "ZERO_RESULTS") return [];
-    const out = (j.predictions ?? []).map((p: any) => ({
-      place_id: p.place_id,
-      description: p.description,
-      main_text: p.structured_formatting?.main_text ?? p.description,
-      secondary_text: p.structured_formatting?.secondary_text ?? "",
-    }));
-    cacheSet(k, out);
-    return out;
-  } catch {
-    return [];
-  }
+    const j = await placesAutocompleteFn({
+      data: { input: trimmed, sessionToken: opts.sessionToken, bias: opts.bias ?? null },
+    });
+    if (!j.ok) return [];
+    cacheSet(k, j.predictions);
+    return j.predictions;
+  } catch { return []; }
 }
 
 export async function placeDetails(
@@ -205,34 +179,13 @@ export async function placeDetails(
   const k = `pd:${placeId}`;
   const cached = cacheGet<{ address: string; lat: number; lng: number }>(k, TTL.geocode);
   if (cached) return cached;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return null;
   try {
-    const params = new URLSearchParams({
-      place_id: placeId,
-      fields: "formatted_address,geometry",
-      key,
-    });
-    if (sessionToken) params.set("sessiontoken", sessionToken);
-    const r = await fetch(`${BASE}/place/details/json?${params}`);
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] placeDetails REQUEST_DENIED:", j.error_message);
-      return null;
-    }
-    const res = j.result;
-    if (!res?.geometry?.location) return null;
-    const out = {
-      address: res.formatted_address ?? "",
-      lat: res.geometry.location.lat,
-      lng: res.geometry.location.lng,
-    };
+    const j = await placeDetailsFn({ data: { placeId, sessionToken } });
+    if (!j.ok) return null;
+    const out = { address: j.address, lat: j.lat, lng: j.lng };
     cacheSet(k, out);
     return out;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export type DistanceResult = {
@@ -247,7 +200,6 @@ export async function distanceMatrix(
   destinations: LatLng[],
 ): Promise<(DistanceResult | null)[]> {
   if (destinations.length === 0) return [];
-  // Per-destination cache
   const out: (DistanceResult | null)[] = new Array(destinations.length).fill(null);
   const missing: number[] = [];
   destinations.forEach((d, i) => {
@@ -257,37 +209,23 @@ export async function distanceMatrix(
     else missing.push(i);
   });
   if (missing.length === 0) return out;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return out;
   try {
-    const dest = missing.map((i) => `${destinations[i].lat},${destinations[i].lng}`).join("|");
-    const r = await fetch(
-      `${BASE}/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${encodeURIComponent(dest)}&mode=driving&key=${key}`,
-    );
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] distanceMatrix REQUEST_DENIED:", j.error_message);
+    const j = await distanceMatrixFn({
+      data: { origin, destinations: missing.map((i) => destinations[i]) },
+    });
+    if (!j.ok) {
+      console.warn("[gmaps] distanceMatrix failed:", j.status, j.error);
       return out;
     }
-    const row = j.rows?.[0]?.elements ?? [];
     missing.forEach((destIdx, rowIdx) => {
-      const e = row[rowIdx];
-      if (!e || e.status !== "OK") return;
-      const result: DistanceResult = {
-        distanceMeters: e.distance.value,
-        distanceText: e.distance.text,
-        durationSeconds: e.duration.value,
-        durationText: e.duration.text,
-      };
-      out[destIdx] = result;
+      const r = j.elements[rowIdx];
+      if (!r) return;
+      out[destIdx] = r;
       const k = `dm:${round(origin.lat)},${round(origin.lng)}|${round(destinations[destIdx].lat)},${round(destinations[destIdx].lng)}`;
-      cacheSet(k, result);
+      cacheSet(k, r);
     });
     return out;
-  } catch {
-    return out;
-  }
+  } catch { return out; }
 }
 
 export type DirectionsResult = {
@@ -304,37 +242,20 @@ export async function directions(
   const k = `dir:${round(origin.lat)},${round(origin.lng)}|${round(destination.lat)},${round(destination.lng)}`;
   const cached = cacheGet<DirectionsResult>(k, TTL.directions);
   if (cached) return cached;
-
-  const key = await getGoogleMapsKey();
-  if (!key) return null;
   try {
-    const r = await fetch(
-      `${BASE}/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=driving&key=${key}`,
-    );
-    const j = await r.json();
-    if (j.status === "REQUEST_DENIED") {
-      console.warn("[gmaps] directions REQUEST_DENIED:", j.error_message);
-      return null;
-    }
-    const route = j.routes?.[0];
-    const leg = route?.legs?.[0];
-    if (!route || !leg) return null;
+    const j = await directionsFn({ data: { origin, destination } });
+    if (!j.ok) return null;
     const out: DirectionsResult = {
-      polyline: route.overview_polyline?.points ?? "",
-      distanceText: leg.distance?.text ?? "",
-      durationText: leg.duration?.text ?? "",
-      steps: (leg.steps ?? []).map((s: any) => ({
-        html: s.html_instructions ?? "",
-        distance: s.distance?.text ?? "",
-        duration: s.duration?.text ?? "",
-      })),
+      polyline: j.polyline,
+      distanceText: j.distanceText,
+      durationText: j.durationText,
+      steps: j.steps,
     };
     cacheSet(k, out);
     return out;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
+
 
 export async function nearbySearch(
   location: LatLng,
