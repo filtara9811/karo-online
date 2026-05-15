@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "@tanstack/react-router";
-import { X, Star, Phone, MessageCircle, ShieldCheck, Loader2, ThumbsUp, ThumbsDown, MapPin } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { VendorChatSheet } from "@/components/VendorChatSheet";
+import type { LeadChatPeer } from "@/components/LeadChatThread";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -15,10 +17,8 @@ type AcceptedVendor = {
   rating: number | null;
   total_reviews: number | null;
   distance_km: number | null;
-  cover_url?: string | null;
-  kyc_status?: string | null;
-  happy_count?: number | null;
-  bad_count?: number | null;
+  vendor_note?: string | null;
+  quoted_price?: number | null;
 };
 
 type Props = {
@@ -36,13 +36,13 @@ const COVER =
   "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
 
 export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
-  const navigate = useNavigate();
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeContact, setActiveContact] = useState<AcceptedVendor | null>(null);
+  const [approvedId, setApprovedId] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
+  const [chatPeer, setChatPeer] = useState<LeadChatPeer | null>(null);
 
-  // Lock scroll
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
@@ -56,7 +56,11 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
     };
   }, [open, onClose]);
 
-  // Load + realtime poll on lead acceptance
+  // Reset approved when sheet reopens with a different lead
+  useEffect(() => {
+    if (open) setApprovedId(null);
+  }, [open, leadId]);
+
   useEffect(() => {
     if (!open || !leadId) return;
     let alive = true;
@@ -66,10 +70,18 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
       setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
       setVendors((data ?? []) as AcceptedVendor[]);
       setLoading(false);
+      // Sync already-approved state
+      const { data: leadRow } = await supabase
+        .from("leads")
+        .select("customer_approved_vendor_id")
+        .eq("id", leadId)
+        .maybeSingle();
+      if (alive && (leadRow as any)?.customer_approved_vendor_id) {
+        setApprovedId((leadRow as any).customer_approved_vendor_id);
+      }
     };
     setLoading(true);
     load();
-    // Subscribe to lead row updates so list grows as vendors accept
     const ch = supabase
       .channel(`lead-accepted-${leadId}`)
       .on(
@@ -83,17 +95,36 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
         (payload) => { if ((payload.new as any)?.status === "accepted") load(); },
       )
       .subscribe();
-    // Safety: poll every 4s while open in case realtime is delayed
     const poll = setInterval(load, 4000);
     return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [open, leadId]);
 
   if (!open) return null;
 
-  const goToChat = (v: AcceptedVendor) => {
-    if (!leadId) return;
-    onClose();
-    navigate({ to: "/chat", search: { leadId, vendorId: v.vendor_id } as any });
+  const openChat = (v: AcceptedVendor) => {
+    setChatPeer({
+      id: v.vendor_id,
+      name: v.business_name || v.owner_name || "Vendor",
+      avatar_url: v.avatar_url,
+      phone: v.phone || v.whatsapp,
+      subtitle: v.owner_name && v.business_name ? v.owner_name : "Verified vendor",
+    });
+  };
+
+  const approveVendor = async (v: AcceptedVendor) => {
+    if (!leadId || approvedId) return;
+    setApproving(v.vendor_id);
+    const { data, error } = await supabase.rpc("customer_approve_vendor", {
+      _lead_id: leadId,
+      _vendor_id: v.vendor_id,
+    });
+    setApproving(null);
+    if (error || !(data as any)?.ok) {
+      toast.error("Approve fail hua, dobara try karein");
+      return;
+    }
+    setApprovedId(v.vendor_id);
+    toast.success(`${v.business_name || v.owner_name || "Vendor"} approved! Order moved to My Orders.`);
   };
 
   return (
@@ -107,7 +138,7 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
         role="dialog"
         aria-modal="true"
         className="relative w-full max-w-md bg-gradient-to-b from-white to-[#f5f6f8] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
-        style={{ animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
+        style={{ animation: "sheet-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent opacity-80" />
@@ -122,7 +153,11 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
               {category ?? "Service"}
             </h3>
             <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] mt-0.5">
-              {loading ? "Searching…" : `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready to help`}
+              {loading
+                ? "Searching…"
+                : approvedId
+                  ? "Approved — order moved to My Orders"
+                  : `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready to help`}
             </p>
           </div>
           <button
@@ -138,7 +173,7 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
           {loading ? (
             <div className="grid place-items-center py-16 text-center">
               <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
-              <p className="mt-3 text-xs font-semibold text-slate-500">Accepted vendors check ho rahe hain…</p>
+              <p className="mt-3 text-xs font-semibold text-slate-500">Vendors check ho rahe hain…</p>
             </div>
           ) : vendors.length === 0 ? (
             <div className="text-center py-12 px-3">
@@ -151,11 +186,6 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
               </motion.div>
               <p className="mt-4 text-sm font-semibold text-slate-600">
                 {loadError ?? (expectedVendors > 0 ? "Abhi kisi vendor ne accept nahi kiya." : "Yahan vendor available nahi hai.")}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                {expectedVendors > 0
-                  ? "Jaise hi vendor accept karega, uski profile yahin aa jayegi."
-                  : "Dobara try karein ya cancel karke home screen par wapas ja sakte hain."}
               </p>
               <div className="mt-5 flex gap-2 justify-center">
                 {onTryAgain && (
@@ -176,35 +206,38 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
             </div>
           ) : (
             vendors.map((v, i) => {
-              const happy = v.happy_count ?? Math.max(0, Math.round(((v.rating ?? 4.6) - 3) * 40));
-              const bad = v.bad_count ?? Math.max(0, Math.round((5 - (v.rating ?? 4.6)) * 6));
-              const kycOk = (v.kyc_status ?? "approved").toLowerCase() === "approved";
-              const cover = v.cover_url || COVER;
+              const isApproved = approvedId === v.vendor_id;
+              const isDimmed = !!approvedId && !isApproved;
+              const cover = COVER;
               return (
-                <motion.button
-                  type="button"
+                <motion.div
                   key={v.vendor_id}
                   initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  onClick={() => goToChat(v)}
-                  className="w-full text-left rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-[0_4px_18px_-8px_rgba(15,23,42,0.18)] active:scale-[0.99] transition"
+                  animate={{ opacity: isDimmed ? 0.4 : 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`rounded-2xl bg-white border overflow-hidden shadow-[0_4px_18px_-8px_rgba(15,23,42,0.18)] transition ${
+                    isApproved
+                      ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_8px_28px_-6px_rgba(16,185,129,0.45)]"
+                      : "border-[color:oklch(0.72_0.01_260/0.4)]"
+                  } ${isDimmed ? "pointer-events-none" : ""}`}
                 >
-                  {/* Premium cover banner */}
+                  {/* Cover banner */}
                   <div className="relative h-20 w-full">
                     <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
-                    {/* product chip top-left = the inquiry context */}
                     <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300/60 text-[10px] font-display font-bold text-amber-900 shadow">
                       ✦ {category ?? "Service"}
                     </div>
-                    {/* distance top-right */}
                     {v.distance_km != null && (
                       <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-600/95 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
                         <MapPin className="h-3 w-3" /> {v.distance_km} km
                       </div>
                     )}
-                    {/* name overlay */}
+                    {isApproved && (
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
+                        <CheckCircle2 className="h-3 w-3" /> APPROVED
+                      </div>
+                    )}
                     <div className="absolute bottom-1.5 left-3 right-3 text-white">
                       <p className="font-display text-sm font-bold leading-tight truncate drop-shadow">
                         {v.business_name || v.owner_name || "Vendor"}
@@ -212,7 +245,7 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
                     </div>
                   </div>
 
-                  {/* Body row: avatar + rating + KYC */}
+                  {/* Body: avatar + rating */}
                   <div className="px-3 pt-3 pb-2 flex items-center gap-3 -mt-7 relative">
                     <img
                       src={v.avatar_url || FALLBACK_AVATAR}
@@ -227,26 +260,56 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
                           {(v.rating ?? 4.8).toFixed(1)}
                           <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
                         </span>
-                        <span className={`inline-flex items-center gap-0.5 font-semibold text-[10px] px-1.5 py-0.5 rounded-full ${kycOk ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                          <ShieldCheck className="h-3 w-3" /> {kycOk ? "KYC Approved" : "KYC Pending"}
-                        </span>
+                        <span className="text-[10px] text-slate-500">Delivery rating</span>
                       </div>
                     </div>
+                    {v.quoted_price != null && (
+                      <div className="text-right pt-6">
+                        <span className="inline-flex items-center font-display font-bold text-emerald-700 text-base leading-none">
+                          <IndianRupee className="h-3.5 w-3.5" />
+                          {Number(v.quoted_price).toLocaleString("en-IN")}
+                        </span>
+                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Quote</p>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Stats strip */}
-                  <div className="mx-3 mb-3 grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden text-[10px]">
-                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-emerald-700 font-bold border-r border-slate-200">
-                      <ThumbsUp className="h-3 w-3" /> {happy} Happy
+                  {/* Vendor note */}
+                  {v.vendor_note && (
+                    <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-snug">
+                      "{v.vendor_note}"
                     </div>
-                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-rose-600 font-bold border-r border-slate-200">
-                      <ThumbsDown className="h-3 w-3" /> {bad} Bad
-                    </div>
-                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-sky-700 font-bold">
-                      <MessageCircle className="h-3 w-3" /> Tap to chat
-                    </div>
+                  )}
+
+                  {/* Action row: Approve + Chat */}
+                  <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => approveVendor(v)}
+                      disabled={!!approvedId || approving === v.vendor_id}
+                      className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                        isApproved
+                          ? "bg-emerald-500 text-white"
+                          : approvedId
+                            ? "bg-slate-100 text-slate-400"
+                            : "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow"
+                      }`}
+                    >
+                      {approving === v.vendor_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : isApproved ? (
+                        <><CheckCircle2 className="h-4 w-4" /> Approved</>
+                      ) : (
+                        <>Approve</>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => openChat(v)}
+                      className="h-10 rounded-xl bg-white border-2 border-sky-500 text-sky-700 font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 active:scale-95"
+                    >
+                      <MessageCircle className="h-4 w-4" /> Chat
+                    </button>
                   </div>
-                </motion.button>
+                </motion.div>
               );
             })
           )}
@@ -254,83 +317,15 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
       </div>
 
       <AnimatePresence>
-        {activeContact && (
-          <ContactPopup
-            vendor={activeContact}
-            onClose={() => setActiveContact(null)}
-            onChat={() => { const v = activeContact; setActiveContact(null); goToChat(v); }}
+        {chatPeer && (
+          <VendorChatSheet
+            open={!!chatPeer}
+            leadId={leadId}
+            peer={chatPeer}
+            onClose={() => setChatPeer(null)}
           />
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function ContactPopup({
-  vendor, onClose, onChat,
-}: { vendor: AcceptedVendor; onClose: () => void; onChat: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
-      <motion.button
-        aria-label="Close"
-        onClick={onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.65)] backdrop-blur-md"
-      />
-      <motion.div
-        initial={{ scale: 0.85, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.85, opacity: 0, y: 20 }}
-        transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        className="relative w-full max-w-sm rounded-3xl bg-white border-2 border-slate-200 shadow-2xl overflow-hidden"
-      >
-        <div className="relative h-28">
-          <img src={COVER} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent" />
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white shadow active:scale-90"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="absolute -bottom-8 left-4 h-16 w-16 rounded-2xl overflow-hidden border-4 border-white shadow-lg">
-            <img src={vendor.avatar_url || FALLBACK_AVATAR} alt="" className="h-full w-full object-cover" />
-          </div>
-        </div>
-        <div className="px-4 pt-10 pb-3">
-          <h3 className="font-display text-lg font-bold">
-            {vendor.business_name || vendor.owner_name || "Vendor"}
-          </h3>
-          <p className="text-xs text-slate-500">{vendor.owner_name ?? "Verified vendor"}</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />)}
-            <span className="text-xs font-bold text-slate-700">4.8</span>
-          </div>
-        </div>
-        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-          {vendor.phone || vendor.whatsapp ? (
-            <a
-              href={`tel:${vendor.phone || vendor.whatsapp}`}
-              className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white active:scale-95"
-            >
-              <Phone className="h-5 w-5" />
-              <span className="text-[11px] font-display font-bold">Call</span>
-            </a>
-          ) : (
-            <div className="py-3 text-center text-[11px] text-slate-400 rounded-2xl bg-slate-100">No phone</div>
-          )}
-          <button
-            onClick={onChat}
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-gradient-to-b from-sky-500 to-sky-600 text-white active:scale-95"
-          >
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-[11px] font-display font-bold">Chat</span>
-          </button>
-        </div>
-      </motion.div>
     </div>
   );
 }
