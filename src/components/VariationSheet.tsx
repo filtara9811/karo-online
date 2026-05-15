@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { X, Mic, Camera, ShoppingCart, Check, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Mic, ShoppingCart, Check, Star, Truck, Store, Factory, Users } from "lucide-react";
 import { QuickNotesPopup } from "./QuickNotesPopup";
 
 export type VariationItem = {
@@ -11,33 +11,31 @@ export type VariationItem = {
   tone?: "gold" | "green";
 };
 
+export type VendorTypeKey = "wholesaler" | "retailer" | "manufacturer";
+
 type Props = {
   open: boolean;
   category: string | null;
   vendorLabel?: string;
   items: VariationItem[];
+  selectedVendors?: { id: string; name: string; avatar?: string | null }[];
   onClose: () => void;
-  onSubmit: (payload: { cart: string[]; note: string; images: string[] }) => void;
+  onSubmit: (payload: { cart: string[]; note: string; images: string[]; vendorTypes: VendorTypeKey[] }) => void;
 };
 
-const FILTER_TABS = ["Filter | wholesaler", "Filter | selver", "Filter | other"];
-const VENDOR_TABS = [
-  "Vander | wholesaler",
-  "Vender | Retail",
-  "Vender | Trader",
-  "Vender | Trader",
-  "Vender | Resalig",
-  "Vender | Resaler",
-  "Vender | manufacture",
+const VENDOR_TYPES: { key: VendorTypeKey; label: string; Icon: typeof Truck }[] = [
+  { key: "wholesaler", label: "Wholesaler", Icon: Truck },
+  { key: "retailer", label: "Retailer", Icon: Store },
+  { key: "manufacturer", label: "Manufacturer", Icon: Factory },
 ];
 
-export function VariationSheet({ open, category, vendorLabel, items, onClose, onSubmit }: Props) {
+export function VariationSheet({ open, category, vendorLabel, items, selectedVendors = [], onClose, onSubmit }: Props) {
   const [cart, setCart] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [recording, setRecording] = useState(false);
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // by default ALL vendor types are selected → request goes to everyone
+  const [vendorTypes, setVendorTypes] = useState<VendorTypeKey[]>(["wholesaler", "retailer", "manufacturer"]);
 
   useEffect(() => {
     if (!open) return;
@@ -57,21 +55,19 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
       setCart([items[0]?.id].filter(Boolean) as string[]);
       setNote("");
       setImages([]);
-      setRecording(false);
+      setVendorTypes(["wholesaler", "retailer", "manufacturer"]);
     }
   }, [open, items]);
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    Array.from(files).slice(0, 3).forEach((f) => {
-      const reader = new FileReader();
-      reader.onload = () => setImages((prev) => [...prev, reader.result as string].slice(0, 3));
-      reader.readAsDataURL(f);
-    });
-  };
-
   const toggleCart = (id: string) =>
     setCart((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const toggleType = (key: VendorTypeKey) =>
+    setVendorTypes((p) => {
+      // never let the user end up with zero — keep at least one selected
+      if (p.includes(key)) return p.length === 1 ? p : p.filter((x) => x !== key);
+      return [...p, key];
+    });
 
   if (!open) return null;
 
@@ -90,12 +86,10 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
         className="relative w-full max-w-md bg-white rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[88vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
         style={{ animation: "sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
-        {/* Drag handle */}
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
         </div>
 
-        {/* Header */}
         <div className="px-5 pt-1 pb-3 flex items-center justify-between border-b border-[color:oklch(0.78_0.14_82/0.25)] flex-shrink-0">
           <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)] underline underline-offset-4">
             Choice variations
@@ -110,54 +104,55 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Hero card */}
-          <div className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-4 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-[color:oklch(0.55_0.10_82)] font-display italic">{vendorLabel ?? "Filter | wholesaler"}</p>
-              <h4 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] mt-1">
-                {category ?? "Service"} | <span className="font-semibold">Vander</span>
-              </h4>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />
-                ))}
+          {/* Hero card — selected vendors top-left */}
+          <div className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  {selectedVendors.length > 0 ? (
+                    <>
+                      <div className="flex -space-x-2">
+                        {selectedVendors.slice(0, 4).map((v) => (
+                          <div
+                            key={v.id}
+                            className="h-7 w-7 rounded-full border-2 border-white bg-gradient-to-br from-[#fbbf24] to-[#d97706] grid place-items-center text-[10px] font-bold text-white overflow-hidden"
+                            title={v.name}
+                          >
+                            {v.avatar ? (
+                              <img src={v.avatar} alt={v.name} className="h-full w-full object-cover" />
+                            ) : (
+                              v.name.slice(0, 1).toUpperCase()
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-[11px] font-display font-semibold text-[color:oklch(0.35_0.08_85)]">
+                        {selectedVendors.length} vendor{selectedVendors.length > 1 ? "s" : ""} selected
+                      </span>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-display italic text-[color:oklch(0.45_0.08_85)]">
+                      <Users className="h-3.5 w-3.5" />
+                      Nearby vendors will be matched
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[color:oklch(0.55_0.10_82)] font-display italic">
+                  {vendorLabel ?? "Choose your variations"}
+                </p>
+                <h4 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] mt-0.5">
+                  {category ?? "Service"} | <span className="font-semibold">Vendor</span>
+                </h4>
               </div>
-              <span className="text-[10px] font-bold text-[color:oklch(0.30_0.05_85)]">⭐ Top rated</span>
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className="h-3 w-3 text-amber-500" fill="currentColor" />
+                  ))}
+                </div>
+                <span className="text-[10px] font-bold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap">⭐ Top rated</span>
+              </div>
             </div>
-          </div>
-
-          {/* Filter tabs row 1 */}
-          <div className="px-4 mt-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            {FILTER_TABS.map((t, i) => (
-              <button
-                key={t}
-                className={`flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-display font-semibold whitespace-nowrap transition-all ${
-                  i === 0
-                    ? "bg-gradient-to-b from-[#f5b342] to-[#d97706] text-white shadow-[0_3px_8px_-2px_rgba(217,119,6,0.5)]"
-                    : "bg-white border border-[color:oklch(0.78_0.14_82/0.4)] text-[color:oklch(0.45_0.08_85)]"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Filter tabs row 2 — vendor types */}
-          <div className="px-4 mt-2 flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {VENDOR_TABS.map((t, i) => (
-              <button
-                key={`${t}-${i}`}
-                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-semibold whitespace-nowrap ${
-                  i === 0
-                    ? "bg-gradient-to-b from-[#f5b342] to-[#d97706] text-white"
-                    : "bg-[#fef3c7]/60 text-[color:oklch(0.50_0.08_85/0.7)]"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
           </div>
 
           {/* Items */}
@@ -201,58 +196,60 @@ export function VariationSheet({ open, category, vendorLabel, items, onClose, on
           </div>
         </div>
 
-        {/* Quick notes footer — orange band */}
+        {/* Footer — vendor type filter chips + notes line + send */}
         <div
           className="flex-shrink-0 mx-3 mb-3 rounded-2xl bg-gradient-to-b from-[#f59e0b] to-[#d97706] p-3 shadow-[0_-4px_18px_-4px_rgba(217,119,6,0.6)]"
           style={{ animation: "fade-up 0.4s ease-out 0.2s both" }}
         >
+          {/* Vendor-type filter chips with icons (multi-select, default all on) */}
+          <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+            {VENDOR_TYPES.map(({ key, label, Icon }) => {
+              const active = vendorTypes.includes(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleType(key)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-display font-bold whitespace-nowrap border-2 transition-all active:scale-95 ${
+                    active
+                      ? "bg-white text-[color:oklch(0.55_0.18_60)] border-white shadow-[0_2px_6px_-1px_rgba(0,0,0,0.25)]"
+                      : "bg-white/15 text-white/80 border-white/40"
+                  }`}
+                  aria-pressed={active}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.4} />
+                  {label}
+                  {active && <Check className="h-3 w-3" strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Notes line — tap text OR mic to open the notes popup */}
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={() => setNotesPopupOpen(true)}
-              className="flex-1 text-left bg-transparent border-b-2 border-white/50 text-white text-sm py-1 outline-none font-display italic active:opacity-80"
+              className="flex-1 text-left bg-transparent border-b-2 border-white/50 text-white text-sm py-1 outline-none font-display italic active:opacity-80 truncate"
             >
-              {note ? <span className="text-white">{note}</span> : <span className="text-white/70">Quick nots......</span>}
+              {note ? <span className="text-white">{note}</span> : <span className="text-white/70">Quick notes…</span>}
             </button>
             <button
-              onClick={() => setRecording((r) => !r)}
-              aria-label="Record"
-              className={`h-9 w-9 rounded-full grid place-items-center transition-all ${
-                recording
-                  ? "bg-red-500 text-white animate-pulse"
-                  : "bg-white/20 text-white"
-              }`}
+              onClick={() => setNotesPopupOpen(true)}
+              aria-label="Voice notes"
+              className="h-9 w-9 rounded-full grid place-items-center bg-white/20 text-white active:scale-90"
             >
               <Mic className="h-4 w-4" strokeWidth={2.4} />
             </button>
           </div>
 
+          {/* Attached count + Send */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="relative h-12 w-16 rounded-xl overflow-hidden border-2 border-white/70 bg-gradient-to-b from-sky-300 to-emerald-300 grid place-items-center active:scale-95"
-              aria-label="Add image"
-            >
-              {images[0] ? (
-                <img src={images[0]} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <Camera className="h-5 w-5 text-white drop-shadow" strokeWidth={2.4} />
-              )}
-            </button>
-            <span className="text-white text-xs font-display italic">
-              {images.length} item{images.length !== 1 ? "'s" : ""}
+            <span className="text-white/90 text-[11px] font-display italic">
+              {images.length > 0
+                ? `${images.length} photo${images.length > 1 ? "s" : ""} attached`
+                : "No photos"}
             </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              capture="environment"
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-
             <button
-              onClick={() => onSubmit({ cart, note, images })}
+              onClick={() => onSubmit({ cart, note, images, vendorTypes })}
               disabled={cart.length === 0}
               className="btn-3d ml-auto px-5 py-2.5 rounded-2xl bg-white text-[color:oklch(0.55_0.18_60)] font-display font-bold text-sm shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2)] active:scale-95 disabled:opacity-50 underline underline-offset-2"
             >
