@@ -89,6 +89,8 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
       setNote("");
       setImages([]);
       setVendorTypes(["wholesaler", "retailer", "manufacturer"]);
+      setFilters({});
+      setFilterSheetOpen(false);
     }
   }, [open, items]);
 
