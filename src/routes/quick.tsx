@@ -677,6 +677,13 @@ function QuickPage() {
             const cartIds = payload.cart;
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
+            const vendorTypes = payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"];
+            const noteWithFilter = [
+              payload.note?.trim() || "",
+              `Vendor types: ${vendorTypes.join(", ")}`,
+            ]
+              .filter(Boolean)
+              .join(" • ");
             const [{ data: profile }, { data: subCat }, { data: defaults }] = await Promise.all([
               supabase.from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle(),
               supabase.from("categories").select("lead_price_inr, max_vendors_per_lead").eq("id", selectedSub.id).maybeSingle(),
@@ -697,15 +704,14 @@ function QuickPage() {
                 sub_category_name: selectedSub.name,
                 item_ids: cartIds,
                 item_names: itemNames,
-                note: payload.note || null,
+                note: noteWithFilter || null,
                 images: payload.images ?? [],
                 address: (profile as any)?.address ?? geo.label ?? null,
                 lat: geo.lat,
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
-                vendor_types: payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"],
-              } as any)
+              })
               .select("id")
               .single();
             if (leadErr || !lead) {
