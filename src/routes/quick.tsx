@@ -678,9 +678,13 @@ function QuickPage() {
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
             const vendorTypes = payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"];
+            const filterParts = Object.entries(payload.filters ?? {})
+              .filter(([, v]) => Array.isArray(v) && v.length > 0)
+              .map(([k, v]) => `${k}: ${(v as string[]).join("/")}`);
             const noteWithFilter = [
               payload.note?.trim() || "",
               `Vendor types: ${vendorTypes.join(", ")}`,
+              ...filterParts,
             ]
               .filter(Boolean)
               .join(" • ");
