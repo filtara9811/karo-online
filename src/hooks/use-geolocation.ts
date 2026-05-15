@@ -9,7 +9,7 @@ export type GeoState = {
   accuracyKm: number | null;
 };
 
-const STORAGE_KEY = "ko-geo-cache";
+const STORAGE_KEY = "ko-geo-cache-v2";
 
 type Cache = { lat: number; lng: number; label: string; accuracy: number; ts: number };
 
@@ -37,9 +37,10 @@ function writeCache(c: Cache) {
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  let googleLabel: string | null = null;
   try {
     const g = await googleReverseGeocode(lat, lng);
-    if (g) return g;
+    if (g) googleLabel = g;
   } catch {
     /* fall through to OSM */
   }
@@ -49,18 +50,32 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
     if (!res.ok) throw new Error("reverse geocode failed");
     const data = await res.json();
     const a = data?.address ?? {};
-    const locality =
-      a.suburb || a.neighbourhood || a.village || a.town || a.city_district || a.city || a.county;
-    const region = a.state_district || a.state;
-    if (locality && region) return `${locality}, ${region}`;
-    if (locality) return locality;
+    const neighbourhood = a.neighbourhood || a.quarter || a.hamlet;
+    const suburb = a.suburb || a.city_district || a.village || a.town;
+    const city = a.city || a.county || a.state_district || a.state;
+    const parts = [neighbourhood, suburb, city]
+      .filter(Boolean)
+      .filter((part, index, arr) => arr.indexOf(part) === index)
+      .slice(0, 2);
+    if (parts.length) return parts.join(", ");
     if (data?.display_name) {
       return String(data.display_name).split(",").slice(0, 2).join(",").trim();
     }
   } catch {
     /* noop */
   }
+  if (googleLabel) return googleLabel;
   return "My current location";
+}
+
+function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (n: number) => (n * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 export function useGeolocation(): GeoState {
@@ -74,6 +89,7 @@ export function useGeolocation(): GeoState {
   const bestAccuracyRef = useRef<number>(Infinity);
   const lastGeocodeAtRef = useRef<number>(0);
   const lastGeocodedKeyRef = useRef<string>("");
+  const geocodeSeqRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
