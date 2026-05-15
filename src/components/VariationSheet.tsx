@@ -398,8 +398,6 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
           </div>
         </div>
       )}
-      </div>
-
       <QuickNotesPopup
         open={notesPopupOpen}
         initialNote={note}
