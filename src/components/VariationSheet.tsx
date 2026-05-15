@@ -20,8 +20,33 @@ type Props = {
   items: VariationItem[];
   selectedVendors?: { id: string; name: string; avatar?: string | null }[];
   onClose: () => void;
-  onSubmit: (payload: { cart: string[]; note: string; images: string[]; vendorTypes: VendorTypeKey[] }) => void;
+  onSubmit: (payload: {
+    cart: string[];
+    note: string;
+    images: string[];
+    vendorTypes: VendorTypeKey[];
+    filters: Record<string, string[]>;
+  }) => void;
 };
+
+type FilterGroup = { key: string; label: string; options: string[] };
+
+const SERVICE_FILTERS: FilterGroup[] = [
+  { key: "urgency", label: "Urgency", options: ["Today", "Tomorrow", "This week", "Anytime"] },
+  { key: "timeSlot", label: "Time slot", options: ["Morning", "Afternoon", "Evening"] },
+  { key: "budget", label: "Budget", options: ["Under ₹500", "₹500–₹2000", "₹2000+"] },
+];
+
+const PRODUCT_FILTERS: FilterGroup[] = [
+  { key: "color", label: "Color", options: ["White", "Black", "Brown", "Grey", "Gold", "Other"] },
+  { key: "design", label: "Design", options: ["Modern", "Classic", "Minimal", "Premium"] },
+  { key: "budget", label: "Budget", options: ["Under ₹500", "₹500–₹2000", "₹2000+"] },
+];
+
+function isServiceCategory(c?: string | null) {
+  if (!c) return false;
+  return /service|repair|install|clean|fix|paint|plumb|electric|carpenter|salon|laundry/i.test(c);
+}
 
 const VENDOR_TYPES: { key: VendorTypeKey; label: string; Icon: typeof Truck }[] = [
   { key: "wholesaler", label: "Wholesaler", Icon: Truck },
