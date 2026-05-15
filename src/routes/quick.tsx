@@ -733,6 +733,7 @@ function QuickPage() {
       <FindingVendorOverlay
         open={findingOpen}
         category={selectedSub?.name ?? "Service"}
+        categoryImage={selectedSub?.image_url || (selectedSub ? SLUG_IMAGE[selectedSub.slug] : null) || svcAc}
         onClose={() => setFindingOpen(false)}
         onComplete={() => {
           setFindingOpen(false);
