@@ -97,17 +97,24 @@ export function useGeolocation(): GeoState {
     let watchId: number | null = null;
     let oneShotTimer: number | null = null;
 
-    const maybeReverseGeocode = async (lat: number, lng: number) => {
+    const maybeReverseGeocode = async (lat: number, lng: number, accuracy: number) => {
+      // Do not print a confident mohalla name from a rough GPS/IP fix.
+      if (accuracy > 180) {
+        setState((s) => ({ ...s, label: "Improving GPS accuracy…" }));
+        return;
+      }
       // throttle: at most once per 8s, and only if moved ≥ 30m (~0.0003°)
       const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
       const now = Date.now();
       if (key === lastGeocodedKeyRef.current && now - lastGeocodeAtRef.current < 8000) return;
       lastGeocodedKeyRef.current = key;
       lastGeocodeAtRef.current = now;
+      const seq = ++geocodeSeqRef.current;
       const label = await reverseGeocode(lat, lng);
-      if (cancelled) return;
+      if (cancelled || seq !== geocodeSeqRef.current) return;
       setState((s) => {
         if (s.lat == null || s.lng == null) return s;
+        if (distanceMeters({ lat, lng }, { lat: s.lat, lng: s.lng }) > 80) return s;
         writeCache({ lat: s.lat, lng: s.lng, label, accuracy: (s.accuracyKm ?? 0) * 1000, ts: Date.now() });
         return { ...s, label };
       });
@@ -131,7 +138,7 @@ export function useGeolocation(): GeoState {
           : s.label,
         accuracyKm: accuracy / 1000,
       }));
-      void maybeReverseGeocode(lat, lng);
+      void maybeReverseGeocode(lat, lng, accuracy);
     };
 
     const onError = (err: GeolocationPositionError) => {
