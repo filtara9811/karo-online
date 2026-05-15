@@ -920,28 +920,34 @@ export type Database = {
           created_at: string
           id: string
           lead_id: string
+          quoted_price: number | null
           responded_at: string | null
           status: string
           sub_category_name: string
           vendor_id: string
+          vendor_note: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           lead_id: string
+          quoted_price?: number | null
           responded_at?: string | null
           status?: string
           sub_category_name: string
           vendor_id: string
+          vendor_note?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           lead_id?: string
+          quoted_price?: number | null
           responded_at?: string | null
           status?: string
           sub_category_name?: string
           vendor_id?: string
+          vendor_note?: string | null
         }
         Relationships: [
           {
@@ -994,6 +1000,7 @@ export type Database = {
           accepted_vendor_ids: string[]
           address: string | null
           created_at: string
+          customer_approved_vendor_id: string | null
           customer_id: string
           customer_name: string | null
           customer_phone: string | null
@@ -1023,6 +1030,7 @@ export type Database = {
           accepted_vendor_ids?: string[]
           address?: string | null
           created_at?: string
+          customer_approved_vendor_id?: string | null
           customer_id: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -1052,6 +1060,7 @@ export type Database = {
           accepted_vendor_ids?: string[]
           address?: string | null
           created_at?: string
+          customer_approved_vendor_id?: string | null
           customer_id?: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -2502,6 +2511,10 @@ export type Database = {
       }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
+      customer_approve_vendor: {
+        Args: { _lead_id: string; _vendor_id: string }
+        Returns: Json
+      }
       ensure_my_referral_code: {
         Args: { _kind?: string }
         Returns: {
@@ -2532,9 +2545,11 @@ export type Database = {
           email: string
           owner_name: string
           phone: string
+          quoted_price: number
           rating: number
           total_reviews: number
           vendor_id: string
+          vendor_note: string
           whatsapp: string
         }[]
       }
