@@ -372,23 +372,30 @@ export function QuickServiceMap({
 
   const handleShare = async () => {
     const pos = center ?? DEFAULT_CENTER;
-    const url = `https://www.google.com/maps/search/?api=1&query=${pos.lat},${pos.lng}`;
-    const shareData = {
-      title: "My location",
-      text: userLabel ? `📍 ${userLabel}` : "📍 My current location",
-      url,
-    };
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${pos.lat},${pos.lng}`;
+    const text = `📍 ${userLabel ? userLabel + "\n" : "My current location\n"}${mapUrl}`;
+    // 1) Always try WhatsApp first (mobile + desktop)
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    try {
+      const win = window.open(waUrl, "_blank", "noopener");
+      if (win) {
+        toast.success("Opening WhatsApp…");
+        return;
+      }
+    } catch { /* fallthrough */ }
+    // 2) Native share sheet
     try {
       if (typeof navigator !== "undefined" && (navigator as any).share) {
-        await (navigator as any).share(shareData);
-      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-        toast.success("Location link copied");
-      } else {
-        window.open(url, "_blank");
+        await (navigator as any).share({ title: "My location", text, url: mapUrl });
+        return;
       }
+    } catch { /* user cancel */ }
+    // 3) Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Location copied — paste in WhatsApp");
     } catch {
-      /* user cancel */
+      window.open(mapUrl, "_blank");
     }
   };
 
