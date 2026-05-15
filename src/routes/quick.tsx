@@ -741,7 +741,7 @@ function QuickPage() {
             console.error("lead create failed", e);
             toast.error("Request send fail hui — login/profile check karein");
           }
-          setTimeout(() => setFindingOpen(true), 200);
+          setFindingOpen(true);
         }}
       />
 
@@ -749,6 +749,7 @@ function QuickPage() {
         open={findingOpen}
         category={selectedSub?.name ?? "Service"}
         categoryImage={selectedSub?.image_url || (selectedSub ? SLUG_IMAGE[selectedSub.slug] : null) || svcAc}
+        leadId={activeLeadId}
         onClose={() => setFindingOpen(false)}
         onComplete={() => {
           setFindingOpen(false);
