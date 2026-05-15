@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { reverseGeocode as googleReverseGeocode } from "@/lib/google-maps";
 
 export type GeoState = {
@@ -11,7 +11,7 @@ export type GeoState = {
 
 const STORAGE_KEY = "ko-geo-cache";
 
-type Cache = { lat: number; lng: number; label: string; ts: number };
+type Cache = { lat: number; lng: number; label: string; accuracy: number; ts: number };
 
 function readCache(): Cache | null {
   if (typeof window === "undefined") return null;
@@ -19,8 +19,9 @@ function readCache(): Cache | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Cache;
-    // 2 min cache (location can change quickly when user moves)
-    if (Date.now() - parsed.ts > 2 * 60 * 1000) return null;
+    // Only use very fresh + reasonably accurate cache (60s, ≤100m)
+    if (Date.now() - parsed.ts > 60 * 1000) return null;
+    if ((parsed.accuracy ?? 9999) > 100) return null;
     return parsed;
   } catch {
     return null;
@@ -36,7 +37,6 @@ function writeCache(c: Cache) {
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  // 1) Try Google (faster, more accurate, India-friendly)
   try {
     const g = await googleReverseGeocode(lat, lng);
     if (g) return g;
@@ -44,31 +44,21 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
     /* fall through to OSM */
   }
   try {
-    // 2) Fallback: OpenStreetMap Nominatim — no API key required.
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
-    });
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("reverse geocode failed");
     const data = await res.json();
     const a = data?.address ?? {};
     const locality =
-      a.suburb ||
-      a.neighbourhood ||
-      a.village ||
-      a.town ||
-      a.city_district ||
-      a.city ||
-      a.county;
+      a.suburb || a.neighbourhood || a.village || a.town || a.city_district || a.city || a.county;
     const region = a.state_district || a.state;
     if (locality && region) return `${locality}, ${region}`;
     if (locality) return locality;
     if (data?.display_name) {
-      // First two comma-separated parts
       return String(data.display_name).split(",").slice(0, 2).join(",").trim();
     }
   } catch {
-    /* fall through */
+    /* noop */
   }
   return "My current location";
 }
@@ -81,13 +71,72 @@ export function useGeolocation(): GeoState {
     label: "Detecting your location…",
     accuracyKm: null,
   });
+  const bestAccuracyRef = useRef<number>(Infinity);
+  const lastGeocodeAtRef = useRef<number>(0);
+  const lastGeocodedKeyRef = useRef<string>("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
     let watchId: number | null = null;
+    let oneShotTimer: number | null = null;
+
+    const maybeReverseGeocode = async (lat: number, lng: number) => {
+      // throttle: at most once per 8s, and only if moved ≥ 30m (~0.0003°)
+      const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      const now = Date.now();
+      if (key === lastGeocodedKeyRef.current && now - lastGeocodeAtRef.current < 8000) return;
+      lastGeocodedKeyRef.current = key;
+      lastGeocodeAtRef.current = now;
+      const label = await reverseGeocode(lat, lng);
+      if (cancelled) return;
+      setState((s) => {
+        if (s.lat == null || s.lng == null) return s;
+        writeCache({ lat: s.lat, lng: s.lng, label, accuracy: (s.accuracyKm ?? 0) * 1000, ts: Date.now() });
+        return { ...s, label };
+      });
+    };
+
+    const onSuccess = (pos: GeolocationPosition) => {
+      if (cancelled) return;
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+
+      // Always show first fix even if rough, but prefer better fixes after.
+      // Reject only if a *much worse* fix arrives after a good one.
+      if (accuracy > bestAccuracyRef.current * 2 && bestAccuracyRef.current < 50) return;
+      if (accuracy < bestAccuracyRef.current) bestAccuracyRef.current = accuracy;
+
+      setState((s) => ({
+        status: "ready",
+        lat,
+        lng,
+        label: s.label === "Detecting your location…" || s.label === "Enable location to detect address"
+          ? "Locating address…"
+          : s.label,
+        accuracyKm: accuracy / 1000,
+      }));
+      void maybeReverseGeocode(lat, lng);
+    };
+
+    const onError = (err: GeolocationPositionError) => {
+      if (cancelled) return;
+      setState((s) => ({
+        ...s,
+        status: err.code === err.PERMISSION_DENIED ? "denied" : "error",
+        label:
+          err.code === err.PERMISSION_DENIED
+            ? "Enable location to detect address"
+            : "Location unavailable",
+      }));
+    };
 
     const start = (forceFresh = false) => {
+      if (!("geolocation" in navigator)) {
+        setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
+        return;
+      }
+
+      // Show cached position instantly while we await a fresh GPS fix.
       if (!forceFresh) {
         const cached = readCache();
         if (cached) {
@@ -96,59 +145,31 @@ export function useGeolocation(): GeoState {
             lat: cached.lat,
             lng: cached.lng,
             label: cached.label,
-            accuracyKm: null,
+            accuracyKm: cached.accuracy / 1000,
           });
-          return;
+          bestAccuracyRef.current = cached.accuracy;
+        } else {
+          setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
         }
+      } else {
+        bestAccuracyRef.current = Infinity;
+        setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
       }
-      if (!("geolocation" in navigator)) {
-        setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
-        return;
-      }
 
-      setState((s) => (s.status === "ready" && !forceFresh ? s : { ...s, status: "loading", label: "Detecting your location…" }));
+      // Kick a one-shot high-accuracy request to get a first fix fast.
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      });
 
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          if (cancelled) return;
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const accuracyKm = pos.coords.accuracy / 1000;
-          setState({ status: "ready", lat, lng, label: "Locating address…", accuracyKm });
-          const label = await reverseGeocode(lat, lng);
-          if (cancelled) return;
-          writeCache({ lat, lng, label, ts: Date.now() });
-          setState({ status: "ready", lat, lng, label, accuracyKm });
-        },
-        (err) => {
-          if (cancelled) return;
-          setState((s) => ({
-            ...s,
-            status: err.code === err.PERMISSION_DENIED ? "denied" : "error",
-            label: err.code === err.PERMISSION_DENIED
-              ? "Enable location to detect address"
-              : "Location unavailable",
-          }));
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-      );
-
+      // Continuously watch — this is what auto-refreshes the pin as the user moves.
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
-      watchId = navigator.geolocation.watchPosition(
-        async (pos) => {
-          if (cancelled) return;
-          if (pos.coords.accuracy > 100) return;
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setState((s) => ({ ...s, lat, lng, accuracyKm: pos.coords.accuracy / 1000 }));
-          const label = await reverseGeocode(lat, lng);
-          if (cancelled) return;
-          writeCache({ lat, lng, label, ts: Date.now() });
-          setState({ status: "ready", lat, lng, label, accuracyKm: pos.coords.accuracy / 1000 });
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-      );
+      watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 0,
+      });
     };
 
     start();
@@ -156,10 +177,24 @@ export function useGeolocation(): GeoState {
     const onRefresh = () => start(true);
     window.addEventListener("ko-geo-refresh", onRefresh);
 
+    // When the tab/app regains focus, request a fresh fix (user may have moved).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        navigator.geolocation.getCurrentPosition(onSuccess, () => {}, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      if (oneShotTimer != null) window.clearTimeout(oneShotTimer);
       window.removeEventListener("ko-geo-refresh", onRefresh);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
