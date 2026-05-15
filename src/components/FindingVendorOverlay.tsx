@@ -1,26 +1,26 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Star, BadgeCheck, Sparkles, Search, X, Radar } from "lucide-react";
+import { Sparkles, X, Radar } from "lucide-react";
 
 type Step = {
   key: string;
   label: string;
-  km: string;
-  tone: "gold" | "silver" | "basic" | "vendor";
 };
 
 const STEPS: Step[] = [
-  { key: "near", label: "0–1 km", km: "10 sec", tone: "gold" },
-  { key: "three", label: "3 km", km: "10 sec", tone: "silver" },
-  { key: "five", label: "5 km", km: "10 sec", tone: "basic" },
-  { key: "ten", label: "10 km", km: "10 sec", tone: "vendor" },
+  { key: "near", label: "0–1 km" },
+  { key: "three", label: "3 km" },
+  { key: "five", label: "5 km" },
+  { key: "ten", label: "10 km" },
 ];
 
-const STEP_MS = 10_000;
+// Total ~15 sec across 4 steps
+const STEP_MS = 3_750;
 
 type Props = {
   open: boolean;
   category: string | null;
+  categoryImage?: string | null;
   onComplete: () => void;
   onClose: () => void;
 };
