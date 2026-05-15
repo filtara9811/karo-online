@@ -58,7 +58,11 @@ export function QuickServiceMap({
   const userOverlayRef = useRef<any>(null);
   const vendorMarkersRef = useRef<any[]>([]);
   const didInitialCenterRef = useRef(false);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(() => isPreviewBlockedMapsHost() ? "error" : "loading");
+  // Always start in "loading" for SSR-safe hydration; switch to "error" in effect when running on a preview host.
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  useEffect(() => {
+    if (isPreviewBlockedMapsHost()) setStatus("error");
+  }, []);
   const [mapType, setMapType] = useState<MapType>("roadmap");
   const [mapTypeOpen, setMapTypeOpen] = useState(false);
 
