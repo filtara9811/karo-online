@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { X, Mic, ShoppingCart, Check, Star, Truck, Store, Factory, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { X, Mic, ShoppingCart, Check, Star, Truck, Store, Factory, Users, SlidersHorizontal } from "lucide-react";
 import { QuickNotesPopup } from "./QuickNotesPopup";
 
 export type VariationItem = {
