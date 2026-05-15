@@ -1,87 +1,70 @@
-# 3 Naye Admin Modules + Play Store Launch Guide
+# Pre-Launch Blocker Fix Plan
 
-## 1️⃣ Form Builder (Admin → Forms)
+## Diagnosis (from live logs)
 
-Naya page `/admin/forms` jahan aap **3 forms** ko apni marzi se customize karenge:
-
-- **Customer Registration Form**
-- **Vendor Registration Form**
-- **Staff Registration Form** (future use ke liye ready)
-
-### Har form me ye control milega:
-- Field add/remove (Name, Phone, Email, DOB, Gender, Address, City, Pincode, Aadhaar, PAN, GST, Shop Name, Category, Photo, Documents, etc.)
-- Field type chunna: Text / Number / Email / Phone / Date / Dropdown / Checkbox / File Upload / Image
-- Field ko **Required / Optional / Hidden** mark karna
-- Field ka order drag se badalna
-- Custom label & placeholder Hindi/English me
-- Validation rules (min, max, regex)
-- **Step grouping** — multi-step form banana (Step 1: Basic, Step 2: KYC, etc.)
-- **Payment gateway trigger point** — kis step ke baad Cashfree pe redirect ho (e.g. Vendor registration ke baad ₹99 fees)
-
-### Database:
-- `form_schemas` table (form_type, version, schema jsonb, is_active)
-- `form_field_definitions` (master list of available fields)
-- Customer/Vendor/Staff registration pages **dynamically render** karenge active schema se
+1. **Maps**: Google REST APIs (Geocoding/Distance Matrix/Places/Directions) reject every request with `REQUEST_DENIED: API keys with referer restrictions cannot be used with this API`. Referrer restrictions only work for the JS SDK, not the REST endpoints. **This is why locations are imprecise and KM is wrong on cards** — we're falling back to haversine for everything.
+2. **FCM**: 8 active device tokens exist in DB. Background SW (`firebase-messaging-sw.js`) is already shipped. Need to verify token registration on both vendor + customer, confirm `sendTestPush` actually reaches devices, and add a custom looped sound for vendor leads in the SW (currently only the in-app `lead-sound.ts` plays — silent if app is closed).
+3. **Lead flow**: Customer creates lead → fan-out to vendors → vendor accepts → chat. Need a single instrumented trace.
+4. **Perf**: `Catalog request timed out` warning on every Quick load → 3s timeout on the catalog query, then app waits before painting. Plus image-heavy catalog and a deprecated `google.maps.Marker`.
 
 ---
 
-## 2️⃣ Branding & Theme Studio (Admin → Branding)
+## What I will fix
 
-Naya page `/admin/branding` — pure app ka look apne haath me:
+### 1. Maps & Distance (server-side proxy)
 
-### Sections:
-- **Colors** — Primary, Secondary, Accent, Background, Text, Gold, Wine, Success, Danger (color picker se OKLCH/Hex)
-- **Typography** — Display font + Body font dropdown (Cormorant, Inter, Playfair, Poppins, Noto Sans Devanagari, etc.) + size scale
-- **Icons Pack** — Lucide / Heroicons / Phosphor switch
-- **Brand Assets** — Logo (light/dark), Favicon, Splash image, App name, Tagline upload
-- **Per-Surface Theme** — Customer / Vendor / Admin teeno ke liye alag color theme save kar sakte hain
-- **Light/Dark mode** defaults
-- **Border radius, Shadow intensity, Animation speed** sliders
-- **Live Preview** panel right side me — changes turant dikhe
-- **Presets** — Royal Gold / Sapphire Silver / Midnight / Custom save karke switch
+- Add **`GOOGLE_MAPS_SERVER_KEY`** secret (a separate key with **No restrictions** or **IP restrictions only** — not HTTP referrer). I'll request this via `add_secret`.
+- Create `src/lib/maps.functions.ts` with 4 server functions:
+  - `reverseGeocodeFn({ lat, lng })`
+  - `distanceMatrixFn({ origin, destinations[] })`
+  - `placesAutocompleteFn`, `placeDetailsFn`
+- Rewrite `src/lib/google-maps.ts` REST wrappers to call these server fns instead of `maps.googleapis.com` directly. Keep JS SDK loader (`loadMapsSdk`) on the client — that one *does* honour referrer restrictions and is correct as-is.
+- Bump geolocation accuracy: drop `maximumAge: 0` two-shot pattern, request high-accuracy fix with watchPosition until `accuracy < 25m` before locking the camera.
+- Replace deprecated `google.maps.Marker` warning by switching vendor pins to `AdvancedMarkerElement` where supported (already done for the user pin).
 
-### Database:
-- `theme_settings` (scope: customer|vendor|admin, tokens jsonb, fonts jsonb, assets jsonb, is_active)
-- Frontend boot pe active theme load karega aur CSS variables inject karega `src/styles.css` ke tokens ko override karke
+### 2. FCM Notifications (background + custom sound)
 
----
+- **Background sound**: edit `public/firebase-messaging-sw.js` to:
+  - Play a custom MP3 (`/sounds/lead-alert.mp3`) on incoming `lead` data messages by routing through a focused client when one is open, and using `vibrate: [400,150,400,150,800]` + a high-priority Android channel on the notification payload.
+  - Add `requireInteraction: true` and `silent: false` so Android shows it persistently.
+- Add `/sounds/lead-alert.mp3` (loud chime asset; embed as base64-decoded blob or ship a small file).
+- **Token verification**: add a server fn `verifyMyDeviceToken` that the Quick screen calls after login — it confirms the latest FCM token matches what's in `device_tokens`, re-registers if drifted. Also surface token status in `/admin/system-status`.
+- **Vendor leads**: server-side, when a new lead is fanned out, send FCM with `data: { type: "lead", sound: "lead_alert", channel_id: "ko_leads" }` so the SW can pick it up while the app is killed.
+- Verify `sendTestPush` end-to-end: I'll invoke it against a real vendor and tail logs.
 
-## 3️⃣ Play Store Launch — Step-by-Step Guide
+### 3. End-to-end flow trace
 
-### Aapko kya chahiye (one-time):
-1. **Google Play Console account** — $25 (~₹2,100) one-time fee, signup [play.google.com/console](https://play.google.com/console)
-2. **Developer details** — PAN, address, phone (D-U-N-S number agar Organization account)
-3. **App assets**:
-   - App icon 512×512 PNG
-   - Feature graphic 1024×500
-   - Screenshots (min 2, phone)
-   - Short description (80 char) + Full description (4000 char)
-   - Privacy Policy URL (already karoonline.in pe daal sakte hain)
+- Add structured `console.info("[lead-flow] ...")` checkpoints at:
+  customer create → DB insert → fan-out fn → vendor token lookup → FCM send result → vendor accept → chat row insert → realtime delivery to customer.
+- Run one synthetic round-trip from a test customer to a test vendor and report exactly where it breaks (likely the FCM send step until #2 lands).
 
-### Technical path — TWA (Trusted Web Activity):
-Aapki app PWA hai (manifest.json + service worker ready). Hum isko **TWA** me wrap karke Play Store pe daal sakte hain — ek native wrapper jo aapki website ko native app jaisa chalata hai.
+### 4. Performance (Login → Quick)
 
-**Steps jo MAIN karunga aapke liye:**
-1. **PWA polish** — manifest.json, icons (192/512/maskable), splash, service worker pakka karunga
-2. **`assetlinks.json`** — already `/public/.well-known/` me hai, sirf SHA256 fingerprint paste karna hoga (Play Console se milega)
-3. **Bubblewrap config** generate karunga (`twa-manifest.json`) — package name `app.karoonline.twa`, host `karoonline.in`
-4. **Build instructions** dunga — aap apne laptop pe ek command chalayenge: `bubblewrap build` → `.aab` file banegi
-5. **Play Console upload guide** — screen-by-screen
-
-**Steps jo AAPKO karne padenge (main nahi kar sakta):**
-- Play Console pe ₹2,100 pay karke account banana
-- App ka Bubblewrap build apne computer pe chalana (Java + Android SDK install — main guide karunga)
-- `.aab` file upload karna
-- Store listing fill karna (text/screenshots main ready karke dunga)
-- Review submit (~3-7 din me approve)
-
-**Kya MAIN khud Play Store pe daal sakta hun?** ❌ Nahi — Google Play Console ko ek real human owner chahiye, payment + identity verification ke liye. Lekin 90% kaam (build files, assets, descriptions, listing copy) main ready karke dunga, sirf upload aapko karna hoga.
+- Catalog timeout: bump query budget but **render the screen optimistically** with the static fallback so map paints in <300ms; hydrate categories when query lands. (Currently we wait, then warn, then paint.)
+- Defer `loadMapsSdk()` until after first paint (already async, but currently blocks first vendor-list render).
+- Convert hero/category JPEGs in `src/assets` to WebP via `?format=webp` (`vite-imagetools` is already supported by Vite).
+- Preload only the LCP map skeleton; lazy-load `VendorListSheet`, `ChatSheets`, `FindingVendorOverlay` with `React.lazy` so they're not in the initial Quick bundle.
+- Move `useFcmToken` registration behind `requestIdleCallback` — it currently runs synchronously after auth.
 
 ---
 
-## Execution Order
-1. Form Builder (DB + admin UI + dynamic renderer for register pages)
-2. Branding Studio (DB + admin UI + theme injector)
-3. Play Store kit (PWA polish + Bubblewrap config + step-by-step PDF guide in `/mnt/documents/`)
+## What I need from you (one action)
 
-Kya ye 3-step plan theek hai? Approve karne ke baad main ek-ek karke implement karunga (forms pehle, fir branding, fir Play Store kit).
+Create a **second Google Maps API key** in Google Cloud Console with these settings:
+- **Application restrictions**: None *(or IP addresses only, leaving blank is fine for now)*
+- **API restrictions**: Geocoding API, Distance Matrix API, Places API, Directions API
+
+Paste it when I prompt for the `GOOGLE_MAPS_SERVER_KEY` secret. The existing referrer-restricted key stays as-is for the JS map tiles — don't change it.
+
+---
+
+## Order of execution
+
+1. Request `GOOGLE_MAPS_SERVER_KEY` → wait for paste.
+2. Land server-side maps proxy (#1) — unblocks correct address + KM immediately.
+3. FCM SW + custom sound + token verifier (#2).
+4. Lead-flow instrumentation + live trace (#3).
+5. Perf pass (#4).
+6. Hand back: ready for SHA-256 fingerprint + Play Store wrap.
+
+Total touch: ~8 files edited, 2 new files, 1 new secret, 0 schema changes.
