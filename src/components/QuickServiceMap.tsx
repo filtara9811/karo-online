@@ -164,13 +164,22 @@ export function QuickServiceMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // recenter when geo updates — auto-center the first time we get a fix
+  // recenter when geo updates — animated zoom-in on first fix (Uber/Ola feel)
   useEffect(() => {
     if (!mapRef.current || !center) return;
     if (!didInitialCenterRef.current) {
-      mapRef.current.setCenter(center);
-      mapRef.current.setZoom(16);
       didInitialCenterRef.current = true;
+      mapRef.current.setCenter(center);
+      mapRef.current.setZoom(13); // start wide
+      // smooth zoom-in steps for cinematic effect
+      const steps = [14, 15, 16, 17];
+      steps.forEach((z, i) => {
+        window.setTimeout(() => {
+          if (!mapRef.current) return;
+          mapRef.current.panTo(center);
+          mapRef.current.setZoom(z);
+        }, 250 + i * 220);
+      });
     } else {
       mapRef.current.panTo(center);
     }
