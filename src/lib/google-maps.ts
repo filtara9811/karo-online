@@ -7,9 +7,9 @@
  * directions and autocomplete responses so repeat lookups stay fast and
  * survive PWA / Android WebView offline transitions.
  *
- * NOTE: API key has HTTP referrer restrictions, so all calls run from the
- * browser (Referer header is set automatically). Do NOT call these from
- * server functions.
+ * NOTE: The browser uses a referer-restricted key for the JS SDK only.
+ * REST endpoints (geocode/distance matrix/places/directions) are proxied
+ * through server fns that use a separate `GOOGLE_MAPS_SERVER_KEY`.
  */
 import { supabase } from "@/integrations/supabase/client";
 
