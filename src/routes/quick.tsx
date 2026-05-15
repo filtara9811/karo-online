@@ -704,7 +704,8 @@ function QuickPage() {
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
-              })
+                vendor_types: payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"],
+              } as any)
               .select("id")
               .single();
             if (leadErr || !lead) {
