@@ -1,31 +1,31 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Star, BadgeCheck, Sparkles, Search, X, Radar } from "lucide-react";
+import { Sparkles, X, Radar } from "lucide-react";
 
 type Step = {
   key: string;
   label: string;
-  km: string;
-  tone: "gold" | "silver" | "basic" | "vendor";
 };
 
 const STEPS: Step[] = [
-  { key: "near", label: "0–1 km", km: "10 sec", tone: "gold" },
-  { key: "three", label: "3 km", km: "10 sec", tone: "silver" },
-  { key: "five", label: "5 km", km: "10 sec", tone: "basic" },
-  { key: "ten", label: "10 km", km: "10 sec", tone: "vendor" },
+  { key: "near", label: "0–1 km" },
+  { key: "three", label: "3 km" },
+  { key: "five", label: "5 km" },
+  { key: "ten", label: "10 km" },
 ];
 
-const STEP_MS = 10_000;
+// Total ~15 sec across 4 steps
+const STEP_MS = 3_750;
 
 type Props = {
   open: boolean;
   category: string | null;
+  categoryImage?: string | null;
   onComplete: () => void;
   onClose: () => void;
 };
 
-export function FindingVendorOverlay({ open, category, onComplete, onClose }: Props) {
+export function FindingVendorOverlay({ open, category, categoryImage, onComplete, onClose }: Props) {
   const [activeStep, setActiveStep] = useState(0);
 
   // Hide the global BottomActionBar while finder is on screen
@@ -101,8 +101,14 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
 
         {/* Title strip */}
         <div className="mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2.5 flex items-center gap-2.5 shadow-gold-glow flex-shrink-0">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] grid place-items-center border border-[color:oklch(0.78_0.14_82/0.4)]">
-            <Search className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.4} />
+          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+            {categoryImage ? (
+              <img src={categoryImage} alt={category ?? "service"} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full grid place-items-center">
+                <Sparkles className="h-5 w-5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.4} />
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
@@ -218,69 +224,8 @@ export function FindingVendorOverlay({ open, category, onComplete, onClose }: Pr
           </div>
         </div>
 
-        {/* Progress steps — slim, centered, smooth */}
-        <div className="flex-shrink-0 px-5 pb-6 pt-2">
-          <div className="relative flex items-start justify-between">
-            {/* Hairline track — centered behind the 28px circles (top: 14px - half of h-0.5 = 13px) */}
-            <div
-              className="absolute left-0 right-0 h-[2px] bg-[color:oklch(0.78_0.14_82/0.22)] rounded-full overflow-hidden"
-              style={{ top: "13px" }}
-            >
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-[#d4af37] to-emerald-600"
-                initial={{ width: "0%" }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-
-            {STEPS.map((s, i) => {
-              const done = i < activeStep;
-              const current = i === activeStep;
-              return (
-                <div key={s.key} className="relative z-10 flex flex-col items-center gap-1.5 w-1/4">
-                  <motion.div
-                    initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: current ? 1.08 : 1, opacity: 1 }}
-                    transition={{ delay: i * 0.08, type: "spring", stiffness: 240, damping: 20 }}
-                    className={`relative h-7 w-7 rounded-full grid place-items-center border-2 shadow-sm ${
-                      done
-                        ? "bg-emerald-500 border-emerald-600 text-white"
-                        : current
-                        ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] border-[#d97706] text-white"
-                        : "bg-white border-[color:oklch(0.78_0.14_82/0.45)] text-[color:oklch(0.50_0.08_85)]"
-                    }`}
-                  >
-                    {current && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-full border-2 border-[#d4af37]"
-                        style={{ animation: "ping-slow 1.6s ease-out infinite" }}
-                      />
-                    )}
-                    {done ? (
-                      <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                    ) : s.tone === "vendor" ? (
-                      <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
-                    ) : s.tone === "gold" ? (
-                      <Star className="h-3.5 w-3.5" fill="currentColor" />
-                    ) : s.tone === "silver" ? (
-                      <Star className="h-3.5 w-3.5" />
-                    ) : (
-                      <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
-                    )}
-                  </motion.div>
-                  <span className="text-[10px] font-display font-bold text-[color:oklch(0.30_0.05_85)] text-center leading-tight">
-                    {s.label}
-                  </span>
-                  {s.km && (
-                    <span className="text-[9px] text-[color:oklch(0.50_0.08_85)] -mt-1">{s.km}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Bottom progress strip removed per request — kept compact spacer for safe area */}
+        <div className="flex-shrink-0 h-3" />
       </motion.div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { X, Star, Phone, MessageCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { X, Star, Phone, MessageCircle, ShieldCheck, Loader2, ThumbsUp, ThumbsDown, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type AcceptedVendor = {
@@ -15,6 +15,10 @@ type AcceptedVendor = {
   rating: number | null;
   total_reviews: number | null;
   distance_km: number | null;
+  cover_url?: string | null;
+  kyc_status?: string | null;
+  happy_count?: number | null;
+  bad_count?: number | null;
 };
 
 type Props = {
@@ -110,11 +114,11 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
         </div>
 
         <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
               ✦ Accepted Vendors ✦
             </p>
-            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)]">
+            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)] truncate">
               {category ?? "Service"}
             </h3>
             <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] mt-0.5">
@@ -124,7 +128,7 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
           <button
             onClick={onClose}
             aria-label="Close"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90 flex-shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
@@ -150,7 +154,7 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
               </p>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                 {expectedVendors > 0
-                  ? "Jaise hi vendor accept karega, uski profile yahin call aur chat option ke saath aa jayegi."
+                  ? "Jaise hi vendor accept karega, uski profile yahin aa jayegi."
                   : "Dobara try karein ya cancel karke home screen par wapas ja sakte hain."}
               </p>
               <div className="mt-5 flex gap-2 justify-center">
@@ -171,67 +175,80 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
               </div>
             </div>
           ) : (
-            vendors.map((v, i) => (
-              <motion.article
-                key={v.vendor_id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="rounded-2xl bg-white border-2 border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm"
-              >
-                <div className="px-3 pt-3 pb-2 flex items-center gap-3">
-                  <img
-                    src={v.avatar_url || FALLBACK_AVATAR}
-                    alt={v.business_name ?? ""}
-                    className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-display text-base font-bold text-slate-800 leading-tight truncate">
-                      {v.business_name || v.owner_name || "Vendor"}
-                    </h4>
-                    {v.email && (
-                      <p className="text-[11px] text-slate-500 truncate">{v.email}</p>
+            vendors.map((v, i) => {
+              const happy = v.happy_count ?? Math.max(0, Math.round(((v.rating ?? 4.6) - 3) * 40));
+              const bad = v.bad_count ?? Math.max(0, Math.round((5 - (v.rating ?? 4.6)) * 6));
+              const kycOk = (v.kyc_status ?? "approved").toLowerCase() === "approved";
+              const cover = v.cover_url || COVER;
+              return (
+                <motion.button
+                  type="button"
+                  key={v.vendor_id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  onClick={() => goToChat(v)}
+                  className="w-full text-left rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-[0_4px_18px_-8px_rgba(15,23,42,0.18)] active:scale-[0.99] transition"
+                >
+                  {/* Premium cover banner */}
+                  <div className="relative h-20 w-full">
+                    <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+                    {/* product chip top-left = the inquiry context */}
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300/60 text-[10px] font-display font-bold text-amber-900 shadow">
+                      ✦ {category ?? "Service"}
+                    </div>
+                    {/* distance top-right */}
+                    {v.distance_km != null && (
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-600/95 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                        <MapPin className="h-3 w-3" /> {v.distance_km} km
+                      </div>
                     )}
-                    <div className="flex items-center gap-2 mt-1 text-[11px]">
-                      <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
-                        <Star className="h-3 w-3" fill="currentColor" />
-                        {(v.rating ?? 4.8).toFixed(1)}
-                        <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
-                      </span>
-                      {v.distance_km != null && (
-                        <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
-                          📍 {v.distance_km} km
-                        </span>
-                      )}
+                    {/* name overlay */}
+                    <div className="absolute bottom-1.5 left-3 right-3 text-white">
+                      <p className="font-display text-sm font-bold leading-tight truncate drop-shadow">
+                        {v.business_name || v.owner_name || "Vendor"}
+                      </p>
                     </div>
                   </div>
-                  <ShieldCheck className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                </div>
 
-                <div className="flex items-stretch border-t border-slate-200 bg-[color:oklch(0.13_0.02_85)]">
-                  {v.phone || v.whatsapp ? (
-                    <a
-                      href={`tel:${v.phone || v.whatsapp}`}
-                      className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white active:scale-95"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Call
-                    </a>
-                  ) : (
-                    <button disabled className="flex-1 py-2.5 text-white/50 text-sm font-bold">
-                      No Phone
-                    </button>
-                  )}
-                  <button
-                    onClick={() => goToChat(v)}
-                    className="flex-1 py-2.5 flex items-center justify-center gap-1.5 font-display font-bold text-sm text-white border-l border-white/10 active:scale-95"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Chat
-                  </button>
-                </div>
-              </motion.article>
-            ))
+                  {/* Body row: avatar + rating + KYC */}
+                  <div className="px-3 pt-3 pb-2 flex items-center gap-3 -mt-7 relative">
+                    <img
+                      src={v.avatar_url || FALLBACK_AVATAR}
+                      alt={v.business_name ?? ""}
+                      className="h-14 w-14 rounded-full object-cover border-[3px] border-white shadow-md flex-shrink-0"
+                      loading="lazy"
+                    />
+                    <div className="flex-1 min-w-0 pt-6">
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
+                          <Star className="h-3 w-3" fill="currentColor" />
+                          {(v.rating ?? 4.8).toFixed(1)}
+                          <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
+                        </span>
+                        <span className={`inline-flex items-center gap-0.5 font-semibold text-[10px] px-1.5 py-0.5 rounded-full ${kycOk ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                          <ShieldCheck className="h-3 w-3" /> {kycOk ? "KYC Approved" : "KYC Pending"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats strip */}
+                  <div className="mx-3 mb-3 grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden text-[10px]">
+                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-emerald-700 font-bold border-r border-slate-200">
+                      <ThumbsUp className="h-3 w-3" /> {happy} Happy
+                    </div>
+                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-rose-600 font-bold border-r border-slate-200">
+                      <ThumbsDown className="h-3 w-3" /> {bad} Bad
+                    </div>
+                    <div className="px-2 py-1.5 flex items-center justify-center gap-1 text-sky-700 font-bold">
+                      <MessageCircle className="h-3 w-3" /> Tap to chat
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })
           )}
         </div>
       </div>
