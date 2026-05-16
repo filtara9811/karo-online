@@ -36,7 +36,7 @@ messaging.onBackgroundMessage((payload) => {
   const isLead = data.kind === "lead_alert";
   const options = {
     body: n.body || data.body || "",
-    icon: n.icon || "/icon-192.png",
+    icon: data.icon || n.icon || "/icon-192.png",
     image: n.image || data.image || undefined,
     badge: "/icon-192.png",
     data: { url: data.action_url || data.url || "/", ...data },
@@ -47,8 +47,8 @@ messaging.onBackgroundMessage((payload) => {
     vibrate: isLead ? [400, 150, 400, 150, 800, 200, 400, 150, 800] : [200, 100, 200],
     actions: isLead
       ? [
-          { action: "accept", title: "Accept" },
-          { action: "reject", title: "Reject" },
+          { action: "accept", title: "✅ Accept" },
+          { action: "reject", title: "✖ Reject" },
         ]
       : undefined,
   };

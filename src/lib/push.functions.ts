@@ -46,6 +46,7 @@ async function sendOne(opts: {
   title: string;
   body: string;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   actionUrl?: string | null;
   highPriority?: boolean;
   extraData?: Record<string, string>;
@@ -53,7 +54,11 @@ async function sendOne(opts: {
   const isHigh = !!opts.highPriority;
   const message: any = {
     token: opts.token,
-    notification: { title: opts.title, body: opts.body },
+    notification: {
+      title: opts.title,
+      body: opts.body,
+      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+    },
     android: {
       priority: isHigh ? "HIGH" : "NORMAL",
       notification: {
@@ -72,9 +77,12 @@ async function sendOne(opts: {
         aps: {
           sound: isHigh ? "lead_ring.caf" : "default",
           "interruption-level": isHigh ? "time-sensitive" : "active",
+          "mutable-content": 1,
           "content-available": 1,
         },
+        ...(opts.imageUrl ? { "image-url": opts.imageUrl } : {}),
       },
+      ...(opts.imageUrl ? { fcm_options: { image: opts.imageUrl } } : {}),
     },
     webpush: {
       headers: { Urgency: isHigh ? "high" : "normal", TTL: isHigh ? "60" : "3600" },
@@ -84,12 +92,14 @@ async function sendOne(opts: {
         renotify: true,
         silent: false,
         vibrate: isHigh ? [400, 150, 400, 150, 800] : [200, 100, 200],
+        ...(opts.iconUrl ? { icon: opts.iconUrl } : {}),
         ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
       },
     },
     data: {
       ...(opts.actionUrl ? { action_url: opts.actionUrl } : {}),
       ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+      ...(opts.iconUrl ? { icon: opts.iconUrl } : {}),
       ...(opts.extraData ?? {}),
     },
   };
@@ -193,6 +203,7 @@ async function pushToUser(opts: {
   title: string;
   body: string;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   actionUrl?: string | null;
   highPriority?: boolean;
   extraData?: Record<string, string>;
@@ -223,6 +234,7 @@ async function pushToUser(opts: {
       title: opts.title,
       body: opts.body,
       imageUrl: opts.imageUrl,
+      iconUrl: opts.iconUrl,
       actionUrl: opts.actionUrl,
       highPriority: opts.highPriority,
       extraData: opts.extraData,
@@ -242,10 +254,27 @@ export const sendLeadPushToVendor = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("id, sub_category_name, customer_name, customer_phone, address, lat, lng")
+      .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, address, images, lat, lng")
       .eq("id", data.lead_id)
       .maybeSingle();
     if (!lead) return { ok: false, reason: "lead_not_found" as const };
+
+    // Fetch customer avatar (icon) + sub-category image (large image)
+    const [{ data: cust }, { data: cat }] = await Promise.all([
+      (lead as any).customer_id
+        ? supabaseAdmin.from("customers").select("avatar_url").eq("user_id", (lead as any).customer_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+      (lead as any).sub_category_id
+        ? supabaseAdmin.from("categories").select("image_url, icon").eq("id", (lead as any).sub_category_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+    ]);
+    const customerAvatar = (cust as any)?.avatar_url ?? null;
+    const subCatImage = (cat as any)?.image_url ?? (cat as any)?.icon ?? null;
+    const firstLeadImage = (((lead as any).images ?? []) as string[])[0] ?? null;
+    // Big image: prefer customer's actual lead photo, else sub-category image
+    const heroImage = firstLeadImage || subCatImage || null;
+    // Icon: customer avatar; fallback to sub-cat icon then default
+    const iconUrl = customerAvatar || subCatImage || null;
 
     const last4 = (lead as any).customer_phone ? String((lead as any).customer_phone).replace(/\D/g, "").slice(-4) : "";
     const body = `${(lead as any).customer_name ?? "Customer"} • ${(lead as any).sub_category_name}${last4 ? ` • •••• ${last4}` : ""}`;
@@ -253,9 +282,16 @@ export const sendLeadPushToVendor = createServerFn({ method: "POST" })
       userId: data.vendor_id,
       title: "🔔 New Lead — 15s to respond",
       body,
+      imageUrl: heroImage,
+      iconUrl,
       actionUrl: `/vendor/dashboard?leadId=${lead.id}`,
       highPriority: true,
-      extraData: { kind: "lead_alert", lead_id: lead.id as string },
+      extraData: {
+        kind: "lead_alert",
+        lead_id: lead.id as string,
+        ...(iconUrl ? { icon: iconUrl } : {}),
+        ...(heroImage ? { image: heroImage } : {}),
+      },
     });
   });
 
