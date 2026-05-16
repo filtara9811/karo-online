@@ -100,10 +100,12 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
       });
     }
 
-    // Group by vendor (accepted_vendor_id); leads with no accepted vendor → pending bucket
+    // Group by accepted vendor; if multiple vendors accepted, show the first accepted vendor.
+    // Leads with no accepted vendor stay in the pending bucket.
     const grouped = new Map<string, VendorGroup>();
     for (const l of leads) {
-      const vid = (l.accepted_vendor_id as string | null) ?? PENDING_VENDOR_ID;
+      const acceptedIds = ((l.accepted_vendor_ids ?? []) as string[]).filter(Boolean);
+      const vid = ((l.accepted_vendor_id as string | null) ?? acceptedIds[0]) ?? PENDING_VENDOR_ID;
       const v = vendorMap.get(vid);
       if (!grouped.has(vid)) {
         grouped.set(vid, {
@@ -116,7 +118,7 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
       }
       const lm = lastMsgByLead.get(l.id as string);
       const order: OrderItem = {
-        id: (l.id as string).slice(0, 8).toUpperCase(),
+        id: l.id as string,
         vendorId: vid,
         service: (l.sub_category_name as string) || "Service",
         source: mapSource(l.source as string),
