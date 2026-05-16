@@ -85,7 +85,7 @@ function VendorDashboard() {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
-  }, [user]);
+  }, [user, vendor?.lat, vendor?.lng]);
 
   // Load REAL leads for this vendor: notified or already accepted by them
   useEffect(() => {
@@ -486,6 +486,8 @@ const STATUS_META: Record<LeadStatus, { label: string; icon: React.ReactNode; ti
 function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   const src = SOURCE_META[lead.source];
   const st = STATUS_META[lead.status];
+  const avatar = lead.avatarUrl;
+  const initial = lead.name.charAt(0).toUpperCase();
   return (
     <article className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm">
       {lead.status === "new" ? (
@@ -495,18 +497,15 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
           className="block p-3 cursor-not-allowed select-none"
         >
         <div className="flex items-start gap-3">
-          <span
-            className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3)" }}
-          >
-            {lead.name.charAt(0)}
+          <span className="h-12 w-12 rounded-xl overflow-hidden grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3]">
+            {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
               <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
             </div>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone}</p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone || "No phone"}{lead.distanceKm != null ? ` · ${lead.distanceKm} km` : ""}</p>
             {/* Source badge */}
             <span
               className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
@@ -540,18 +539,15 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
           className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
         >
           <div className="flex items-start gap-3">
-            <span
-              className="h-12 w-12 rounded-xl grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #f5f6f8, #d8dde3)" }}
-            >
-              {lead.name.charAt(0)}
+            <span className="h-12 w-12 rounded-xl overflow-hidden grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3]">
+              {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
                 <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
               </div>
-              <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone}</p>
+              <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone || "No phone"}{lead.distanceKm != null ? ` · ${lead.distanceKm} km` : ""}</p>
               <span
                 className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
                 style={{ background: SOURCE_META[lead.source].bg, color: SOURCE_META[lead.source].text }}
@@ -604,15 +600,14 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
         >
           <Phone className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
         </a>
-        <a
-          href={`https://wa.me/${lead.phone}`}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="WhatsApp"
+        <Link
+          to="/vendor/chat"
+          search={{ leadId: lead.id } as never}
+          aria-label="Open chat"
           className="px-4 grid place-items-center border-l border-[color:oklch(0.72_0.01_260/0.3)] active:scale-95"
         >
           <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
-        </a>
+        </Link>
       </div>
     </article>
   );
