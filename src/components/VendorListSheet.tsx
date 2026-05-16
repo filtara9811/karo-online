@@ -32,8 +32,6 @@ type Props = {
 
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
-const COVER =
-  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
 
 export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
