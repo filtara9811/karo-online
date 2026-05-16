@@ -191,9 +191,13 @@ function LeadAlertSheet({
               {a.subCategoryName}
             </h4>
             {a.customerName && (
-              <p className="text-xs text-amber-900 mt-0.5 line-clamp-1">
+              <p className="text-xs text-amber-900 mt-0.5 line-clamp-1 font-semibold">
                 {a.customerName}
+                {a.distanceKm != null && <span className="ml-1 font-normal">· 📍 {a.distanceKm} km</span>}
               </p>
+            )}
+            {a.customerPhoneMasked && (
+              <p className="text-[11px] text-amber-900/80 mt-0.5">📞 {a.customerPhoneMasked}</p>
             )}
             {a.address && (
               <p className="text-[11px] text-amber-900/80 mt-0.5 truncate flex items-center gap-1">
