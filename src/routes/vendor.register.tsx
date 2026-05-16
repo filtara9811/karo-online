@@ -610,7 +610,14 @@ function VendorRegister() {
                 </div>
               </>
             ) : (
-              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={saving || paying} />
+              <PlanStep
+                onChoose={(id) => handleJoinPlan(id)}
+                onChooseCustom={(coins, priceInr) =>
+                  handleJoinPlan("custom", { coins, priceInr })
+                }
+                chosen={planChosen}
+                busy={saving || paying}
+              />
             )}
           </div>
         </div>
