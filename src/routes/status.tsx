@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { useOrdersStore } from "@/lib/orders-store";
+import { useMyOrders } from "@/hooks/use-my-orders";
 import { VerticalOrderTimeline } from "@/components/VerticalOrderTimeline";
 
 const searchSchema = z.object({
@@ -23,11 +23,15 @@ export const Route = createFileRoute("/status")({
 function StatusPage() {
   const { vendorId, orderId } = Route.useSearch();
   const navigate = useNavigate();
-  const vendors = useOrdersStore();
+  const { groups: vendors, loading } = useMyOrders();
 
-  const vendor = vendors.find((v) => v.vendorId === vendorId) ?? vendors[0];
+  const vendor = vendors.find((v) => v.vendorId === vendorId) ?? vendors.find((v) => v.orders.some((o) => o.id === orderId)) ?? vendors[0];
   const order =
     vendor?.orders.find((o) => o.id === orderId) ?? vendor?.orders[0];
+
+  if (loading) {
+    return <div className="fixed inset-0 grid place-items-center bg-white text-sm text-slate-500">Loading order…</div>;
+  }
 
   if (!vendor || !order) {
     return (
