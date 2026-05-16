@@ -103,6 +103,7 @@ function TopHeader() {
   const [notifOpen, setNotifOpen] = useState(false);
   const unread = counts.total;
   return (
+    <>
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
         {/* Sign-up / Login icon (top-left) */}
@@ -189,6 +190,8 @@ function TopHeader() {
         </div>
       </div>
     </header>
+    <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
+    </>
   );
 }
 
