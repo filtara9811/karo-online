@@ -1,0 +1,148 @@
+// Real customer orders, grouped by vendor, in VendorGroup shape.
+// Replaces the seed/mock data in orders-store for the My Orders list.
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  VendorGroup, OrderItem, OrderSource, OrderStatus,
+} from "@/lib/orders-store";
+
+function mapLeadStatus(s: string): OrderStatus {
+  switch (s) {
+    case "new":
+    case "searching_complete":
+    case "no_vendor_available":
+      return "placed";
+    case "accepted":
+    case "fulfilled":
+      return "accepted";
+    case "processing": return "processing";
+    case "packed":     return "packed";
+    case "shipped":    return "shipped";
+    case "delivered":  return "delivered";
+    case "cancelled":  return "cancelled";
+    default:           return "placed";
+  }
+}
+
+function mapSource(src: string): OrderSource {
+  if (src === "service" || src === "shop" || src === "lead" || src === "quick") return src;
+  return "lead";
+}
+
+function fmtAt(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60_000) return "Just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h`;
+  return d.toLocaleDateString([], { day: "2-digit", month: "short" });
+}
+
+const PENDING_VENDOR_ID = "__pending__";
+
+export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refresh: () => void } {
+  const [groups, setGroups] = useState<VendorGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) { setGroups([]); setLoading(false); return; }
+
+    const { data: leads, error } = await supabase
+      .from("leads")
+      .select("id, sub_category_name, status, source, accepted_vendor_id, accepted_vendor_ids, created_at, updated_at, accepted_at, note")
+      .eq("customer_id", uid)
+      .order("updated_at", { ascending: false })
+      .limit(200);
+
+    if (error || !leads) { setGroups([]); setLoading(false); return; }
+
+    const vendorIds = Array.from(new Set(
+      leads.flatMap((l) => [l.accepted_vendor_id, ...(l.accepted_vendor_ids ?? [])]).filter(Boolean) as string[]
+    ));
+
+    const vendorMap = new Map<string, { name: string; avatar: string }>();
+    if (vendorIds.length) {
+      const { data: vs } = await supabase
+        .from("vendors")
+        .select("user_id, business_name, owner_name, avatar_url")
+        .in("user_id", vendorIds);
+      vs?.forEach((v) => {
+        vendorMap.set(v.user_id as string, {
+          name: (v.business_name || v.owner_name || "Vendor") as string,
+          avatar: (v.avatar_url || "") as string,
+        });
+      });
+    }
+
+    // last message + unread per lead
+    const leadIds = leads.map((l) => l.id);
+    const lastMsgByLead = new Map<string, { body: string; at: string }>();
+    const unreadByLead = new Map<string, number>();
+    if (leadIds.length) {
+      const { data: msgs } = await supabase
+        .from("lead_messages")
+        .select("lead_id, body, image_url, created_at, recipient_id, read_at, sender_id")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      msgs?.forEach((m) => {
+        if (!lastMsgByLead.has(m.lead_id as string)) {
+          lastMsgByLead.set(m.lead_id as string, {
+            body: (m.body || (m.image_url ? "📷 Image" : "")) as string,
+            at: m.created_at as string,
+          });
+        }
+        if (m.recipient_id === uid && !m.read_at) {
+          unreadByLead.set(m.lead_id as string, (unreadByLead.get(m.lead_id as string) ?? 0) + 1);
+        }
+      });
+    }
+
+    // Group by vendor (accepted_vendor_id); leads with no accepted vendor → pending bucket
+    const grouped = new Map<string, VendorGroup>();
+    for (const l of leads) {
+      const vid = (l.accepted_vendor_id as string | null) ?? PENDING_VENDOR_ID;
+      const v = vendorMap.get(vid);
+      if (!grouped.has(vid)) {
+        grouped.set(vid, {
+          vendorId: vid,
+          vendorName: vid === PENDING_VENDOR_ID ? "Vendor dhoondh rahe hain…" : (v?.name ?? "Vendor"),
+          avatar: v?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(v?.name ?? "V")}`,
+          presence: "Offline",
+          orders: [],
+        });
+      }
+      const lm = lastMsgByLead.get(l.id as string);
+      const order: OrderItem = {
+        id: (l.id as string).slice(0, 8).toUpperCase(),
+        vendorId: vid,
+        service: (l.sub_category_name as string) || "Service",
+        source: mapSource(l.source as string),
+        status: mapLeadStatus(l.status as string),
+        history: [{ status: "placed", at: fmtAt(l.created_at as string) }],
+        lastMsg: lm?.body || (l.note as string) || "Tap to chat",
+        lastAt: fmtAt((lm?.at as string) || (l.updated_at as string)),
+        unread: unreadByLead.get(l.id as string) ?? 0,
+      };
+      grouped.get(vid)!.orders.push(order);
+    }
+
+    setGroups(Array.from(grouped.values()));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    let alive = true;
+    const ch = supabase
+      .channel(`my-orders-${Math.random()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => { if (alive) load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_messages" }, () => { if (alive) load(); })
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [load]);
+
+  return { groups, loading, refresh: load };
+}
