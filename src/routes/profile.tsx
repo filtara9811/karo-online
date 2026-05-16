@@ -290,7 +290,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       </section>
 
       {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
-      <QuickTiles onPick={(s) => setQuickSheet(s)} />
+      <QuickTiles onPick={(s) => setQuickSheet(s)} onOpenNotifications={() => setNotifOpen(true)} />
+      <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
 
 
       {/* My Account sub-bar (back + title + theme/lang/support) */}
