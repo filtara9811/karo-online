@@ -209,6 +209,14 @@ async function withTimeout<T>(promise: Promise<T>, ms = 1200): Promise<T> {
   ]);
 }
 
+function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)) * 10) / 10;
+}
+
 function QuickPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -361,12 +369,16 @@ function QuickPage() {
       }
       const { data: vs } = await supabase
         .from("vendors")
-        .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked")
+        .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, lat, lng")
         .in("user_id", vendorIds)
         .eq("is_blocked", false);
       if (cancelled) return;
-      // Scatter real vendors deterministically across the map
-      const mapped: Vendor[] = (vs ?? []).slice(0, 8).map((v: any, i: number) => {
+      const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+      const realRows = (vs ?? [])
+        .filter((v: any) => v.lat != null && v.lng != null)
+        .map((v: any) => ({ ...v, kmReal: origin ? kmBetween(origin, { lat: v.lat, lng: v.lng }) : null }))
+        .sort((a: any, b: any) => (a.kmReal ?? 9999) - (b.kmReal ?? 9999));
+      const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
         const positions = [
           [28, 28], [72, 30], [22, 60], [70, 65], [50, 78],
           [40, 22], [80, 48], [18, 42],
@@ -375,19 +387,19 @@ function QuickPage() {
         return {
           id: v.id,
           name: v.business_name || v.owner_name || "Vendor",
-          area: "Nearby",
-          km: 1 + Math.round(((i * 13) % 50) / 10),
-          status: i % 2 === 0 ? "Office" : "Online",
+          area: v.kmReal != null ? `${v.kmReal} km away` : "Nearby",
+          km: v.kmReal ?? 0,
+          status: v.status === "active" || v.status === "approved" ? "Online" : "Office",
           avatar: v.avatar_url || avatarUser,
           x, y,
-          cat: SLUG_TO_VENDOR_KEY[selectedSub.slug] ?? "ac",
+          cat: selectedSub.slug,
         };
       });
       setRealVendors(mapped);
       setRealVendorsLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [selectedSub, items]);
+  }, [selectedSub, items, geo.lat, geo.lng]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
