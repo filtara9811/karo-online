@@ -1127,6 +1127,66 @@ function PlanStep({
         })}
       </div>
 
+      {/* Custom coin top-up — manual amount */}
+      <div
+        className="mt-4 rounded-2xl p-4 border-2"
+        style={{
+          background:
+            "linear-gradient(180deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)",
+          borderColor: "rgba(212,175,55,0.55)",
+          boxShadow: "0 8px 24px -8px rgba(212,175,55,0.45)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#8b6508] font-bold">
+              ✦ Custom Top-up ✦
+            </p>
+            <p className="font-display text-lg font-bold text-[#3f2a05] leading-tight">
+              Apni marzi se LeadX khareeden
+            </p>
+          </div>
+          <Coins className="h-7 w-7 text-[#8b6508]" />
+        </div>
+        <p className="text-[11px] italic text-[#5c4308] mb-2">
+          Min 50 coins · ₹{COIN_PRICE_INR}/coin · instant credit after payment
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={customCoins}
+              onChange={(e) => setCustomCoins(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="e.g. 250"
+              className="w-full rounded-xl bg-white border-2 border-[#d4af37]/40 px-3 py-2.5 text-[15px] font-bold text-[#3f2a05] placeholder:text-[#8b6508]/50 outline-none focus:border-[#d4af37]"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-[#8b6508]/70 font-bold">
+              coins
+            </span>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[9px] uppercase tracking-wider text-[#8b6508]/80">Total</p>
+            <p className="font-display text-lg font-bold text-[#3f2a05]">
+              ₹{customPrice.toLocaleString("en-IN")}
+            </p>
+          </div>
+        </div>
+        <button
+          disabled={busy || !customValid}
+          onClick={() => onChooseCustom(coinsN, customPrice)}
+          className="mt-3 w-full rounded-xl py-2.5 font-display font-bold text-sm uppercase tracking-wider text-[#1a1208] disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
+            boxShadow: customValid
+              ? "0 6px 18px -4px rgba(212,175,55,0.6), inset 0 1px 0 rgba(255,255,255,0.5)"
+              : undefined,
+          }}
+        >
+          {busy ? "Opening Cashfree…" : `Buy ${coinsN || 0} coins`}
+        </button>
+      </div>
+
       <p className="text-center text-[10px] text-[color:oklch(0.50_0.08_85)] italic mt-4">
         Cashfree ready hone par yahi plan direct payment gateway open karega.
       </p>
