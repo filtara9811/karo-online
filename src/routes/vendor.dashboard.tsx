@@ -41,6 +41,13 @@ export const Route = createFileRoute("/vendor/dashboard")({
 
 type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
 
+type CustomerLookup = {
+  name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  address: string | null;
+};
+
 function timeAgo(iso: string): string {
   const d = Date.now() - new Date(iso).getTime();
   const m = Math.floor(d / 60000);
@@ -52,6 +59,15 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
+function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?: { lat?: number | null; lng?: number | null } | null) {
+  if (a?.lat == null || a?.lng == null || b?.lat == null || b?.lng == null) return null;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)) * 10) / 10;
+}
+
 function VendorDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -59,13 +75,13 @@ function VendorDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
@@ -86,11 +102,21 @@ function VendorDashboard() {
       if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
       const { data: rows } = await supabase
         .from("leads")
-        .select("id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at")
+        .select("id, customer_id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng")
         .in("id", ids);
       if (cancelled) return;
+      const customerIds = Array.from(new Set((rows ?? []).map((r: any) => r.customer_id).filter(Boolean)));
+      const customerMap = new Map<string, CustomerLookup>();
+      if (customerIds.length) {
+        const { data: customers } = await supabase
+          .from("customers")
+          .select("user_id, name, phone, avatar_url, address")
+          .in("user_id", customerIds);
+        (customers ?? []).forEach((c: any) => customerMap.set(c.user_id, c));
+      }
       const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
       const mapped: Lead[] = (rows ?? []).map((r: any) => {
+        const customer = customerMap.get(r.customer_id);
         const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
         const nstatus = notifStatusMap.get(r.id);
         let st: LeadStatus = "new";
@@ -101,9 +127,11 @@ function VendorDashboard() {
         const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
         return {
           id: r.id,
-          name: r.customer_name ?? "Customer",
-          phone: r.customer_phone ?? "",
-          address: r.address ?? undefined,
+          name: customer?.name || r.customer_name || "Customer",
+          phone: customer?.phone || r.customer_phone || "",
+          avatarUrl: customer?.avatar_url ?? null,
+          distanceKm: distanceKm(vendor, { lat: r.lat, lng: r.lng }),
+          address: r.address || customer?.address || undefined,
           service: r.sub_category_name ?? "Service",
           amount: Number(r.lead_price_inr ?? 0),
           source: src,
