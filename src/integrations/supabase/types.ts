@@ -917,6 +917,7 @@ export type Database = {
       }
       lead_notifications: {
         Row: {
+          auto_accept_at: string
           created_at: string
           id: string
           lead_id: string
@@ -928,6 +929,7 @@ export type Database = {
           vendor_note: string | null
         }
         Insert: {
+          auto_accept_at?: string
           created_at?: string
           id?: string
           lead_id: string
@@ -939,6 +941,7 @@ export type Database = {
           vendor_note?: string | null
         }
         Update: {
+          auto_accept_at?: string
           created_at?: string
           id?: string
           lead_id?: string
@@ -2060,6 +2063,41 @@ export type Database = {
           },
         ]
       }
+      vendor_status_updates: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          message: string | null
+          status_key: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          message?: string | null
+          status_key: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          message?: string | null
+          status_key?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_status_updates_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_variation_mappings: {
         Row: {
           created_at: string
@@ -2510,6 +2548,7 @@ export type Database = {
         Returns: Json
       }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
+      auto_accept_expired_lead_notifications: { Args: never; Returns: Json }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
       customer_approve_vendor: {
         Args: { _lead_id: string; _vendor_id: string }
@@ -2583,6 +2622,7 @@ export type Database = {
         Args: { _checkpoint: string; _referred_user_id: string }
         Returns: Json
       }
+      mask_phone: { Args: { _phone: string }; Returns: string }
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       normalize_email: { Args: { _email: string }; Returns: string }
       normalize_phone10: { Args: { _phone: string }; Returns: string }
