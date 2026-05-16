@@ -33,7 +33,9 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/referral", "/r/"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
-const HIDE_BOTTOM_BAR_ON = ["/home", "/cart"];
+// Bottom service/product picker bar ONLY shows on these routes (home, quick, vendors).
+// Everywhere else it's hidden to reduce clutter.
+const SHOW_BOTTOM_BAR_ON = ["/", "/quick", "/vendors", "/home"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
@@ -47,7 +49,8 @@ export function AppShell() {
   useFcmToken();
   const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
   const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
-  const hideBottomBar = HIDE_BOTTOM_BAR_ON.some((p) => location.pathname.startsWith(p));
+  const showBottomBar = SHOW_BOTTOM_BAR_ON.includes(location.pathname);
+  const hideBottomBar = !showBottomBar;
   const isQuickRoute = location.pathname.startsWith("/quick");
 
   const [fadeKey, setFadeKey] = useState(location.pathname);

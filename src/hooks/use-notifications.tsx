@@ -139,17 +139,24 @@ export function useNotifications() {
     firstLoadDone.current = true;
   }, [user]);
 
+  // Keep a stable ref to refresh so the channel effect only re-runs on user change.
+  const refreshRef = useRef(refresh);
+  useEffect(() => { refreshRef.current = refresh; }, [refresh]);
+
   useEffect(() => {
     refresh();
     if (!user) return;
-    const ch = supabase
-      .channel(`notif-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "lead_messages", filter: `recipient_id=eq.${user.id}` }, () => refresh())
-      .on("postgres_changes", { event: "*", schema: "public", table: "admin_notifications", filter: `user_id=eq.${user.id}` }, () => refresh())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "vendor_status_updates" }, () => refresh())
-      .subscribe();
+    // Unique channel name per mount to avoid "cannot add postgres_changes after subscribe()"
+    // when the same channel name is reused across StrictMode double-mounts.
+    const channelName = `notif-${user.id}-${Math.random().toString(36).slice(2, 8)}`;
+    const ch = supabase.channel(channelName);
+    ch.on("postgres_changes", { event: "*", schema: "public", table: "lead_messages", filter: `recipient_id=eq.${user.id}` }, () => refreshRef.current());
+    ch.on("postgres_changes", { event: "*", schema: "public", table: "admin_notifications", filter: `user_id=eq.${user.id}` }, () => refreshRef.current());
+    ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "vendor_status_updates" }, () => refreshRef.current());
+    ch.subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const markAllRead = useCallback(async () => {
     if (!user) return;
