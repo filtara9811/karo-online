@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { playPing } from "@/lib/lead-sound";
@@ -127,12 +128,18 @@ export function useNotifications() {
     setCounts(c);
     setLoading(false);
 
-    // Play ping for genuinely new unread arrivals after first load
+    // Play ping + Paytm/PhonePe-style toast for genuinely new unread arrivals
     if (firstLoadDone.current) {
       const fresh = all.filter((it) => !it.read && !seenIds.current.has(it.id));
       if (fresh.length) {
         const first = fresh[0];
         playPing(first.bucket === "messages" ? "message" : first.bucket === "orders" ? "order" : "default");
+        const emoji = first.bucket === "messages" ? "💬" : first.bucket === "orders" ? "📦" : first.bucket === "referral" ? "🎁" : "🔔";
+        toast(`${emoji} ${first.title}`, {
+          description: first.body,
+          duration: 5000,
+          position: "top-center",
+        });
       }
     }
     all.forEach((it) => seenIds.current.add(it.id));

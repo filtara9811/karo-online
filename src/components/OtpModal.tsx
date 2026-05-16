@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import goldOtp from "@/assets/gold-otp.png";
+import { playPing } from "@/lib/lead-sound";
 
 type Props = {
   open: boolean;
@@ -22,6 +23,7 @@ export function OtpModal({ open, phone, onClose }: Props) {
     setSeconds(45);
     setVerifying(false);
     setVerified(false);
+    try { playPing("default"); } catch { /* */ }
     setTimeout(() => inputs.current[0]?.focus(), 250);
   }, [open]);
 
