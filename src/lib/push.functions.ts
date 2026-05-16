@@ -46,6 +46,7 @@ async function sendOne(opts: {
   title: string;
   body: string;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   actionUrl?: string | null;
   highPriority?: boolean;
   extraData?: Record<string, string>;
@@ -53,7 +54,11 @@ async function sendOne(opts: {
   const isHigh = !!opts.highPriority;
   const message: any = {
     token: opts.token,
-    notification: { title: opts.title, body: opts.body },
+    notification: {
+      title: opts.title,
+      body: opts.body,
+      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+    },
     android: {
       priority: isHigh ? "HIGH" : "NORMAL",
       notification: {
@@ -72,9 +77,12 @@ async function sendOne(opts: {
         aps: {
           sound: isHigh ? "lead_ring.caf" : "default",
           "interruption-level": isHigh ? "time-sensitive" : "active",
+          "mutable-content": 1,
           "content-available": 1,
         },
+        ...(opts.imageUrl ? { "image-url": opts.imageUrl } : {}),
       },
+      ...(opts.imageUrl ? { fcm_options: { image: opts.imageUrl } } : {}),
     },
     webpush: {
       headers: { Urgency: isHigh ? "high" : "normal", TTL: isHigh ? "60" : "3600" },
@@ -84,12 +92,14 @@ async function sendOne(opts: {
         renotify: true,
         silent: false,
         vibrate: isHigh ? [400, 150, 400, 150, 800] : [200, 100, 200],
+        ...(opts.iconUrl ? { icon: opts.iconUrl } : {}),
         ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
       },
     },
     data: {
       ...(opts.actionUrl ? { action_url: opts.actionUrl } : {}),
       ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+      ...(opts.iconUrl ? { icon: opts.iconUrl } : {}),
       ...(opts.extraData ?? {}),
     },
   };
