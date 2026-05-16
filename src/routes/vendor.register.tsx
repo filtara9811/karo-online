@@ -385,7 +385,7 @@ function VendorRegister() {
     }
   };
 
-  const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
+  const stepLabels = ["Business | Details"];
 
   // Show OTP/Google sign-in gate first if user not authenticated
   if (ready && !isAuthenticated) {
