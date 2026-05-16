@@ -85,7 +85,7 @@ function VendorDashboard() {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
-  }, [user, vendor?.lat, vendor?.lng]);
+  }, [user]);
 
   // Load REAL leads for this vendor: notified or already accepted by them
   useEffect(() => {
