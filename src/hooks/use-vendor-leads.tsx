@@ -110,6 +110,7 @@ export function useVendorLeadAlerts(): State {
       showBrowserNotification(
         `🔔 New ${incoming.subCategoryName} lead!`,
         incoming.customerName ? `${incoming.customerName} needs ${incoming.subCategoryName}` : `Tap to view & accept`,
+        { icon: avatarUrl ?? subImage ?? undefined, image: subImage ?? undefined },
       );
     };
 
