@@ -729,11 +729,19 @@ function QuickPage() {
               _lead_id: lead.id,
             });
             const notified = Number((matchRes as any)?.notified ?? 0);
+            const vendorIds: string[] = ((matchRes as any)?.vendor_ids ?? []) as string[];
             setMatchInfo({ notified, requestedAt: Date.now() });
             if (matchErr) {
               toast.error(matchErr.message || "Vendor matching fail");
             } else if (notified > 0) {
               toast.success(`Aapke nearest ${notified} vendor ko request bhej di gayi`);
+              // Fire high-priority FCM pushes in parallel (best-effort, non-blocking)
+              const { sendLeadPushToVendor } = await import("@/lib/push.functions");
+              const leadIdLocal = lead.id;
+              vendorIds.forEach((vid) => {
+                sendLeadPushToVendor({ data: { vendor_id: vid, lead_id: leadIdLocal } })
+                  .catch((e) => console.warn("lead push failed", vid, e));
+              });
             } else {
               toast.info("Aapke area me abhi vendor available nahi hain.");
             }
