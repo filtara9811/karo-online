@@ -47,6 +47,11 @@ export function PermissionsGate() {
   const [loc, setLoc] = useState<PermStatus>("idle");
   const [notif, setNotif] = useState<PermStatus>("idle");
 
+  // Play a soft attention ping every time the gate opens
+  useEffect(() => {
+    if (open) { try { playPing("default"); } catch { /* */ } }
+  }, [open]);
+
   useEffect(() => {
     if (!ready || !isAuthenticated) return;
     if (typeof window === "undefined") return;
