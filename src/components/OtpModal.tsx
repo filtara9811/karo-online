@@ -23,6 +23,7 @@ export function OtpModal({ open, phone, onClose }: Props) {
     setSeconds(45);
     setVerifying(false);
     setVerified(false);
+    try { playPing("default"); } catch { /* */ }
     setTimeout(() => inputs.current[0]?.focus(), 250);
   }, [open]);
 
