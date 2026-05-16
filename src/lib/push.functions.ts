@@ -47,19 +47,50 @@ async function sendOne(opts: {
   body: string;
   imageUrl?: string | null;
   actionUrl?: string | null;
+  highPriority?: boolean;
+  extraData?: Record<string, string>;
 }): Promise<{ ok: boolean; status: number; error?: string }> {
+  const isHigh = !!opts.highPriority;
   const message: any = {
     token: opts.token,
     notification: { title: opts.title, body: opts.body },
+    android: {
+      priority: isHigh ? "HIGH" : "NORMAL",
+      notification: {
+        channel_id: isHigh ? "lead_alerts_v2" : "default",
+        sound: isHigh ? "lead_ring" : "default",
+        notification_priority: isHigh ? "PRIORITY_MAX" : "PRIORITY_DEFAULT",
+        default_vibrate_timings: true,
+        default_light_settings: true,
+        visibility: "PUBLIC",
+        ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+      },
+    },
+    apns: {
+      headers: { "apns-priority": isHigh ? "10" : "5" },
+      payload: {
+        aps: {
+          sound: isHigh ? "lead_ring.caf" : "default",
+          "interruption-level": isHigh ? "time-sensitive" : "active",
+          "content-available": 1,
+        },
+      },
+    },
     webpush: {
+      headers: { Urgency: isHigh ? "high" : "normal", TTL: isHigh ? "60" : "3600" },
       fcm_options: { link: opts.actionUrl || "/" },
       notification: {
+        requireInteraction: isHigh,
+        renotify: true,
+        silent: false,
+        vibrate: isHigh ? [400, 150, 400, 150, 800] : [200, 100, 200],
         ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
       },
     },
     data: {
       ...(opts.actionUrl ? { action_url: opts.actionUrl } : {}),
       ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+      ...(opts.extraData ?? {}),
     },
   };
   const r = await fetch(
