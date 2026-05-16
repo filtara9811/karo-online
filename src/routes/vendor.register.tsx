@@ -1031,15 +1031,23 @@ const PLANS = [
   },
 ];
 
+const COIN_PRICE_INR = 5; // ₹5 per coin for custom top-ups (matches Starter rate)
+
 function PlanStep({
   onChoose,
+  onChooseCustom,
   chosen,
   busy,
 }: {
   onChoose: (id: string) => void;
+  onChooseCustom: (coins: number, priceInr: number) => void;
   chosen: string | null;
   busy?: boolean;
 }) {
+  const [customCoins, setCustomCoins] = useState<string>("");
+  const coinsN = Math.max(0, Math.min(100000, parseInt(customCoins || "0", 10) || 0));
+  const customPrice = coinsN * COIN_PRICE_INR;
+  const customValid = coinsN >= 50;
   return (
     <div className="mt-2">
       <div className="text-center mb-4">
