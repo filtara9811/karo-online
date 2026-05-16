@@ -283,19 +283,26 @@ function VendorRegister() {
     return null;
   }, [picker]);
 
-  const handleJoinPlan = async (planId: string) => {
+  const handleJoinPlan = async (planId: string, custom?: { coins: number; priceInr: number }) => {
     if (saving || paying) return;
     if (!user) {
       toast.error("Pehle sign in karein");
       return;
     }
-    const plan = PLANS.find((p) => p.id === planId);
-    if (!plan) {
-      toast.error("Invalid plan");
-      return;
+    let priceInr = 0;
+    let totalCoins = 0;
+    if (custom) {
+      priceInr = custom.priceInr;
+      totalCoins = custom.coins;
+    } else {
+      const plan = PLANS.find((p) => p.id === planId);
+      if (!plan) {
+        toast.error("Invalid plan");
+        return;
+      }
+      priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
+      totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
     }
-    const priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
-    const totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
 
     setPlanChosen(planId);
     setSaving(true);
