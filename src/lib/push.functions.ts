@@ -242,10 +242,27 @@ export const sendLeadPushToVendor = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("id, sub_category_name, customer_name, customer_phone, address, lat, lng")
+      .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, address, images, lat, lng")
       .eq("id", data.lead_id)
       .maybeSingle();
     if (!lead) return { ok: false, reason: "lead_not_found" as const };
+
+    // Fetch customer avatar (icon) + sub-category image (large image)
+    const [{ data: cust }, { data: cat }] = await Promise.all([
+      (lead as any).customer_id
+        ? supabaseAdmin.from("customers").select("avatar_url").eq("user_id", (lead as any).customer_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+      (lead as any).sub_category_id
+        ? supabaseAdmin.from("categories").select("image_url, icon").eq("id", (lead as any).sub_category_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+    ]);
+    const customerAvatar = (cust as any)?.avatar_url ?? null;
+    const subCatImage = (cat as any)?.image_url ?? (cat as any)?.icon ?? null;
+    const firstLeadImage = (((lead as any).images ?? []) as string[])[0] ?? null;
+    // Big image: prefer customer's actual lead photo, else sub-category image
+    const heroImage = firstLeadImage || subCatImage || null;
+    // Icon: customer avatar; fallback to sub-cat icon then default
+    const iconUrl = customerAvatar || subCatImage || null;
 
     const last4 = (lead as any).customer_phone ? String((lead as any).customer_phone).replace(/\D/g, "").slice(-4) : "";
     const body = `${(lead as any).customer_name ?? "Customer"} • ${(lead as any).sub_category_name}${last4 ? ` • •••• ${last4}` : ""}`;
@@ -253,9 +270,16 @@ export const sendLeadPushToVendor = createServerFn({ method: "POST" })
       userId: data.vendor_id,
       title: "🔔 New Lead — 15s to respond",
       body,
+      imageUrl: heroImage,
+      iconUrl,
       actionUrl: `/vendor/dashboard?leadId=${lead.id}`,
       highPriority: true,
-      extraData: { kind: "lead_alert", lead_id: lead.id as string },
+      extraData: {
+        kind: "lead_alert",
+        lead_id: lead.id as string,
+        ...(iconUrl ? { icon: iconUrl } : {}),
+        ...(heroImage ? { image: heroImage } : {}),
+      },
     });
   });
 
