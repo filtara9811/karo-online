@@ -137,6 +137,46 @@ function VendorRegister() {
       setManagerEmail(profile?.email || user?.email || "");
   }, [managerEmail, profile?.email, profile?.phone, user?.email, whatsapp]);
 
+  // Auto-skip if vendor already onboarded (unless ?edit=1 from menu)
+  useEffect(() => {
+    if (!user || profileLoaded) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendors")
+        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        // prefill all fields so user can edit
+        setRole((data as any).role ?? null);
+        setOwnerName((data as any).owner_name ?? "");
+        setEntity((data as any).entity ?? null);
+        setTrade((data as any).trade ?? null);
+        setDealsIn((data as any).deals_in ?? null);
+        setBusinessName((data as any).business_name ?? "");
+        setWhatsapp((data as any).whatsapp ?? "");
+        setManagerEmail((data as any).manager_email ?? (data as any).email ?? "");
+        setReferral((data as any).referral ?? "");
+        setInsta((data as any).instagram ?? "");
+        setFb((data as any).facebook ?? "");
+        setWebsite((data as any).website ?? "");
+        setGmbPlaceId((data as any).google_place_id ?? "");
+        setAadhaar((data as any).aadhaar ?? "");
+        setPan((data as any).pan ?? "");
+        setGst((data as any).gst ?? "");
+        // If business already saved and we're NOT in edit mode → straight to dashboard.
+        if (!editMode && ((data as any).business_name || "").trim().length > 1) {
+          navigate({ to: "/vendor/dashboard" });
+          return;
+        }
+      }
+      setProfileLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, profileLoaded, editMode, navigate]);
+
   // Sheet drag
   const [vh, setVh] = useState(800);
   const SNAP_FULL = vh * 0.06;
