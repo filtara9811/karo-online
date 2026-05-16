@@ -3,10 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Clock, CheckCircle2, Tag, MessageCircle, ChevronDown, Plus } from "lucide-react";
 import {
-  useOrdersStore, clearUnread,
+  clearUnread,
   SOURCE_BADGE, STATUS_BADGE,
   type OrderSource, type OrderStatus,
 } from "@/lib/orders-store";
+import { useMyOrders } from "@/hooks/use-my-orders";
 
 export type { OrderSource } from "@/lib/orders-store";
 export type OrderStatusKind = "pending" | "active" | "completed";
@@ -38,7 +39,7 @@ export function MyOrdersList({
   onItemClick?: () => void;
   basePath?: "/status" | "/vendor/status" | "/chat" | "/vendor/chat";
 }) {
-  const vendors = useOrdersStore();
+  const { groups: vendors, loading } = useMyOrders();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | OrderStatusKind>("all");
   const [query, setQuery] = useState("");
@@ -224,7 +225,9 @@ export function MyOrdersList({
         {filteredVendors.length === 0 && (
           <div className="text-center py-10 bg-white rounded-2xl border border-amber-200/50">
             <CheckCircle2 className="h-10 w-10 mx-auto text-amber-300" />
-            <p className="text-sm text-slate-500 mt-2">No orders match this filter</p>
+            <p className="text-sm text-slate-500 mt-2">
+              {loading ? "Loading orders…" : vendors.length === 0 ? "Abhi koi order nahi hai. Quick service ya dukan se shuru karein." : "No orders match this filter"}
+            </p>
           </div>
         )}
       </div>
