@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapPin, Bell, Check, X, Loader2, ShieldCheck, Settings, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { playPing } from "@/lib/lead-sound";
 
 function detectBrowser(): "chrome" | "firefox" | "safari" | "edge" | "samsung" | "other" {
   if (typeof navigator === "undefined") return "other";
