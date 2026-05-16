@@ -542,63 +542,43 @@ function VendorRegister() {
                   details complete karein.
                 </p>
               </div>
-            ) : step < 3 ? (
+            ) : step < 1 ? (
               <>
-                {/* Stepper */}
+                {/* Stepper (single step — Social & KYC moved to menu) */}
                 <Stepper current={step} labels={stepLabels} />
 
                 {/* Step content */}
                 <div className="mt-5">
-                  {step === 0 && (
-                    <Step1Business
-                      role={role}
-                      ownerName={ownerName}
-                      entity={entity}
-                      trade={trade}
-                      dealsIn={dealsIn}
-                      businessName={businessName}
-                      whatsapp={whatsapp}
-                      managerEmail={managerEmail}
-                      referral={referral}
-                      onPickRole={() => setPicker("role")}
-                      onPickEntity={() => setPicker("entity")}
-                      onPickTrade={() => setPicker("trade")}
-                      onPickDealsIn={() => setPicker("dealsIn")}
-                      setOwnerName={setOwnerName}
-                      setBusinessName={setBusinessName}
-                      setWhatsapp={setWhatsapp}
-                      setManagerEmail={setManagerEmail}
-                      setReferral={setReferral}
-                      ownerRef={ownerInputRef}
-                      businessRef={businessInputRef}
-                    />
-                  )}
-                  {step === 1 && (
-                    <Step2Social
-                      insta={insta}
-                      fb={fb}
-                      website={website}
-                      gmbPlaceId={gmbPlaceId}
-                      setInsta={setInsta}
-                      setFb={setFb}
-                      setWebsite={setWebsite}
-                      setGmbPlaceId={setGmbPlaceId}
-                    />
-                  )}
-                  {step === 2 && (
-                    <Step3Kyc
-                      aadhaar={aadhaar}
-                      pan={pan}
-                      gst={gst}
-                      setAadhaar={setAadhaar}
-                      setPan={setPan}
-                      setGst={setGst}
-                    />
-                  )}
+                  <Step1Business
+                    role={role}
+                    ownerName={ownerName}
+                    entity={entity}
+                    trade={trade}
+                    dealsIn={dealsIn}
+                    businessName={businessName}
+                    whatsapp={whatsapp}
+                    managerEmail={managerEmail}
+                    referral={referral}
+                    onPickRole={() => setPicker("role")}
+                    onPickEntity={() => setPicker("entity")}
+                    onPickTrade={() => setPicker("trade")}
+                    onPickDealsIn={() => setPicker("dealsIn")}
+                    setOwnerName={setOwnerName}
+                    setBusinessName={setBusinessName}
+                    setWhatsapp={setWhatsapp}
+                    setManagerEmail={setManagerEmail}
+                    setReferral={setReferral}
+                    ownerRef={ownerInputRef}
+                    businessRef={businessInputRef}
+                  />
                 </div>
 
+                <p className="text-center text-[10px] italic text-[color:oklch(0.45_0.01_260)] mt-4">
+                  Social pages & KYC ko menu se kabhi bhi update kar sakte hain.
+                </p>
+
                 {/* Nav buttons */}
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-3">
                   <button
                     onClick={goBack}
                     className="rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.30_0.06_82)] border border-[color:oklch(0.72_0.01_260/0.5)] bg-white/70"
@@ -617,7 +597,7 @@ function VendorRegister() {
                         : undefined,
                     }}
                   >
-                    {step === 2 ? "Choose Plan" : "Next"}
+                    Choose Plan
                     <span>›</span>
                   </button>
                 </div>
