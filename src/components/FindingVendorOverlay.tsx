@@ -263,41 +263,44 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </AnimatePresence>
           </div>
 
-          {/* Faded vendor cards rising from bottom */}
-          <div className="absolute left-0 right-0 bottom-0 px-4 pb-3 space-y-2 pointer-events-none">
+          {/* Live vendor cards rising from bottom (visible, not clickable) */}
+          <div className="absolute left-0 right-0 bottom-0 px-3 pb-2 space-y-1.5 pointer-events-none">
+            {vendors.length > 0 && !done && (
+              <p className="text-center text-[10px] font-display font-bold text-[color:oklch(0.42_0.10_82)] mb-1">
+                ✦ {vendors.length} vendor{vendors.length === 1 ? "" : "s"} ne abhi accept kiya · aur aa rahe hain…
+              </p>
+            )}
             <AnimatePresence initial={false}>
               {vendors.slice(0, TARGET_VENDORS).map((v, i) => (
                 <motion.div
                   key={v.vendor_id}
-                  initial={{ opacity: 0, y: 60, filter: "blur(8px)" }}
+                  initial={{ opacity: 0, y: 50, scale: 0.9 }}
                   animate={{
-                    opacity: done ? 1 : 0.45,
+                    opacity: done ? 1 : 0.92,
                     y: 0,
-                    filter: done ? "blur(0px)" : "blur(2.5px)",
+                    scale: 1,
                   }}
                   exit={{ opacity: 0, y: 30 }}
                   transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.05 }}
-                  className="rounded-2xl bg-white/95 border border-[color:oklch(0.78_0.14_82/0.45)] shadow px-3 py-2 flex items-center gap-2.5"
+                  className="rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.35)] px-2.5 py-1.5 flex items-center gap-2"
                 >
                   <img
                     src={v.avatar_url || FALLBACK_AVATAR}
                     alt=""
-                    className="h-9 w-9 rounded-full object-cover border-2 border-white shadow flex-shrink-0"
+                    className="h-8 w-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0"
                     loading="lazy"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-display text-[13px] font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
+                    <p className="font-display text-[12px] font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
                       {v.business_name || v.owner_name || "Vendor"}
                     </p>
-                    <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] truncate">
-                      {done ? "Ready to connect" : "Joining…"}
+                    <p className="text-[9px] text-emerald-700 font-semibold truncate">
+                      ✓ {done ? "Ready to connect" : "Just accepted"}
                     </p>
                   </div>
-                  {done && (
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                      ✓
-                    </span>
-                  )}
+                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold flex-shrink-0">
+                    ✓
+                  </span>
                 </motion.div>
               ))}
             </AnimatePresence>
