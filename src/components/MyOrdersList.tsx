@@ -3,10 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Clock, CheckCircle2, Tag, MessageCircle, ChevronDown, Plus } from "lucide-react";
 import {
-  useOrdersStore, clearUnread,
+  clearUnread,
   SOURCE_BADGE, STATUS_BADGE,
   type OrderSource, type OrderStatus,
 } from "@/lib/orders-store";
+import { useMyOrders } from "@/hooks/use-my-orders";
 
 export type { OrderSource } from "@/lib/orders-store";
 export type OrderStatusKind = "pending" | "active" | "completed";
