@@ -49,9 +49,9 @@ export function unlockLeadAlertAudio() {
   try {
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (AC && !synthCtx) {
-      synthCtx = new AC();
-      if (synthCtx.state === "suspended") synthCtx.resume().catch(() => {});
+      synthCtx = new AC() as AudioContext;
     }
+    if (synthCtx && synthCtx.state === "suspended") synthCtx.resume().catch(() => {});
   } catch {}
 }
 
@@ -59,9 +59,10 @@ function playSynthBell() {
   try {
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AC) return;
-    if (!synthCtx) synthCtx = new AC();
-    if (synthCtx.state === "suspended") synthCtx.resume().catch(() => {});
+    if (!synthCtx) synthCtx = new AC() as AudioContext;
     const ctx = synthCtx;
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     const ring = () => {
       const now = ctx.currentTime;
       [880, 1175, 1480].forEach((freq, i) => {
