@@ -225,7 +225,9 @@ export function MyOrdersList({
         {filteredVendors.length === 0 && (
           <div className="text-center py-10 bg-white rounded-2xl border border-amber-200/50">
             <CheckCircle2 className="h-10 w-10 mx-auto text-amber-300" />
-            <p className="text-sm text-slate-500 mt-2">No orders match this filter</p>
+            <p className="text-sm text-slate-500 mt-2">
+              {loading ? "Loading orders…" : vendors.length === 0 ? "Abhi koi order nahi hai. Quick service ya dukan se shuru karein." : "No orders match this filter"}
+            </p>
           </div>
         )}
       </div>
