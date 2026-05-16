@@ -170,7 +170,7 @@ export function VendorSideMenu({
                   </div>
                 );
                 return r.to ? (
-                  <Link key={r.id} to={r.to} onClick={onClose}>{content}</Link>
+                  <Link key={r.id} to={r.to} search={r.search as any} onClick={onClose}>{content}</Link>
                 ) : (
                   <button key={r.id} className="w-full" onClick={onClose}>{content}</button>
                 );
