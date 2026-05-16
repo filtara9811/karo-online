@@ -15,6 +15,8 @@ import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { PermissionsGate } from "@/components/PermissionsGate";
 import { useAuth } from "@/hooks/use-auth";
 import { useFcmToken } from "@/hooks/use-fcm-token";
+import { useNotifications } from "@/hooks/use-notifications";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
@@ -97,6 +99,9 @@ export function AppShell() {
 
 function TopHeader() {
   const { profile } = useAuth();
+  const { counts } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const unread = counts.total;
   return (
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
@@ -162,9 +167,11 @@ function TopHeader() {
             className="flex-1 bg-transparent outline-none text-sm placeholder:text-[color:oklch(0.55_0.05_85/0.7)] placeholder:italic min-w-0"
           />
         </label>
-        <ChipIcon label="Notifications" badge="2">
-          <Bell className="h-5 w-5" strokeWidth={2.2} />
-        </ChipIcon>
+        <button onClick={() => setNotifOpen(true)} aria-label="Notifications" className="contents">
+          <ChipIcon label="Notifications" badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}>
+            <Bell className="h-5 w-5" strokeWidth={2.2} />
+          </ChipIcon>
+        </button>
         <Link to="/cart" aria-label="Cart">
           <ChipIcon label="Cart" badge="3">
             <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
