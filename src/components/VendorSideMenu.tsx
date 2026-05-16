@@ -24,12 +24,14 @@ const KYC_FIELDS = [
   "deals_in", "email", "whatsapp", "gst", "pan", "aadhaar",
 ] as const;
 
-const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string }> = [
+const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string; search?: Record<string, unknown> }> = [
   { id: "dashboard", label: "Dashboard", sub: "Leads · stats", Icon: LayoutGrid, to: "/vendor/dashboard" },
   { id: "services", label: "My Services", sub: "Categories", Icon: Briefcase, to: "/vendor/services" },
   { id: "wallet", label: "Wallet", sub: "Coins · recharge", Icon: Wallet, to: "/vendor/wallet" },
   { id: "shop", label: "Digital Shop", sub: "Products · variations", Icon: Store, to: "/vendor/shop" },
-  { id: "business", label: "Business Details · KYC", sub: "Complete your profile", Icon: User, to: "/vendor/register" },
+  { id: "business", label: "Business Details", sub: "Edit your profile", Icon: User, to: "/vendor/register", search: { edit: "1" } },
+  { id: "social", label: "Social | Pages", sub: "Instagram · FB · website", Icon: Instagram, to: "/vendor/social" },
+  { id: "kyc", label: "KYC | Details", sub: "Aadhaar · PAN · GST", Icon: ShieldCheck, to: "/vendor/kyc" },
   { id: "notifications", label: "Notifications", sub: "Alerts", Icon: Bell },
   { id: "promotions", label: "Promotions", sub: "Offers · banners", Icon: Megaphone },
   { id: "referral", label: "Refer & Earn", sub: "Invite vendors", Icon: Gift },
