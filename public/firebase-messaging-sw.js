@@ -57,7 +57,14 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const data = event.notification.data || {};
+  const baseUrl = data.url || "/";
+  let url = baseUrl;
+  if (event.action === "accept" && data.lead_id) {
+    url = `/vendor/dashboard?leadId=${data.lead_id}&action=accept`;
+  } else if (event.action === "reject" && data.lead_id) {
+    url = `/vendor/dashboard?leadId=${data.lead_id}&action=reject`;
+  }
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       for (const w of wins) {
