@@ -83,10 +83,13 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 
 function VendorRegister() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/vendor/register" });
+  const editMode = search.edit === 1;
   const { user, isAuthenticated, ready, profile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
   const [saving, setSaving] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
