@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   X, User, Wallet, Store, Bell, LifeBuoy, FileText,
   LogOut, Gift, Megaphone, Settings as SettingsIcon, ChevronRight,
-  LayoutGrid, Briefcase, ShieldCheck,
+  LayoutGrid, Briefcase, ShieldCheck, Instagram,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,12 +24,14 @@ const KYC_FIELDS = [
   "deals_in", "email", "whatsapp", "gst", "pan", "aadhaar",
 ] as const;
 
-const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string }> = [
+const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string; search?: Record<string, unknown> }> = [
   { id: "dashboard", label: "Dashboard", sub: "Leads · stats", Icon: LayoutGrid, to: "/vendor/dashboard" },
   { id: "services", label: "My Services", sub: "Categories", Icon: Briefcase, to: "/vendor/services" },
   { id: "wallet", label: "Wallet", sub: "Coins · recharge", Icon: Wallet, to: "/vendor/wallet" },
   { id: "shop", label: "Digital Shop", sub: "Products · variations", Icon: Store, to: "/vendor/shop" },
-  { id: "business", label: "Business Details · KYC", sub: "Complete your profile", Icon: User, to: "/vendor/register" },
+  { id: "business", label: "Business Details", sub: "Edit your profile", Icon: User, to: "/vendor/register", search: { edit: "1" } },
+  { id: "social", label: "Social | Pages", sub: "Instagram · FB · website", Icon: Instagram, to: "/vendor/social" },
+  { id: "kyc", label: "KYC | Details", sub: "Aadhaar · PAN · GST", Icon: ShieldCheck, to: "/vendor/kyc" },
   { id: "notifications", label: "Notifications", sub: "Alerts", Icon: Bell },
   { id: "promotions", label: "Promotions", sub: "Offers · banners", Icon: Megaphone },
   { id: "referral", label: "Refer & Earn", sub: "Invite vendors", Icon: Gift },
@@ -127,7 +129,7 @@ export function VendorSideMenu({
 
               {/* KYC progress */}
               <Link
-                to="/vendor/register"
+                to="/vendor/kyc"
                 onClick={onClose}
                 className="block mt-3 rounded-xl border border-[#d4af37]/30 bg-black/40 px-3 py-2.5"
               >
@@ -168,7 +170,7 @@ export function VendorSideMenu({
                   </div>
                 );
                 return r.to ? (
-                  <Link key={r.id} to={r.to} onClick={onClose}>{content}</Link>
+                  <Link key={r.id} to={r.to} search={r.search as any} onClick={onClose}>{content}</Link>
                 ) : (
                   <button key={r.id} className="w-full" onClick={onClose}>{content}</button>
                 );

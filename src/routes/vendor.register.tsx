@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Languages,
@@ -38,6 +38,7 @@ import goldHome from "@/assets/gold-home.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 
 export const Route = createFileRoute("/vendor/register")({
+  validateSearch: (s: Record<string, unknown>) => ({ edit: s.edit === "1" || s.edit === 1 ? 1 : undefined }),
   head: () => ({
     meta: [
       { title: "Vendor Registration — Karo Online" },
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/vendor/register")({
   component: VendorRegister,
 });
 
-type StepIdx = 0 | 1 | 2 | 3; // 3 = plan
+type StepIdx = 0 | 1; // 0 = business details, 1 = plan
 type AuthMode = "register" | "login";
 
 const ROLE_OPTIONS: PickerOption[] = [
@@ -82,10 +83,13 @@ type Picker = null | "role" | "entity" | "trade" | "dealsIn";
 
 function VendorRegister() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/vendor/register" });
+  const editMode = search.edit === 1;
   const { user, isAuthenticated, ready, profile } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [step, setStep] = useState<StepIdx>(0);
   const [saving, setSaving] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Step 1 — Business
   const [role, setRole] = useState<string | null>(null);
@@ -132,6 +136,46 @@ function VendorRegister() {
     if ((profile?.email || user?.email) && !managerEmail)
       setManagerEmail(profile?.email || user?.email || "");
   }, [managerEmail, profile?.email, profile?.phone, user?.email, whatsapp]);
+
+  // Auto-skip if vendor already onboarded (unless ?edit=1 from menu)
+  useEffect(() => {
+    if (!user || profileLoaded) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendors")
+        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        // prefill all fields so user can edit
+        setRole((data as any).role ?? null);
+        setOwnerName((data as any).owner_name ?? "");
+        setEntity((data as any).entity ?? null);
+        setTrade((data as any).trade ?? null);
+        setDealsIn((data as any).deals_in ?? null);
+        setBusinessName((data as any).business_name ?? "");
+        setWhatsapp((data as any).whatsapp ?? "");
+        setManagerEmail((data as any).manager_email ?? (data as any).email ?? "");
+        setReferral((data as any).referral ?? "");
+        setInsta((data as any).instagram ?? "");
+        setFb((data as any).facebook ?? "");
+        setWebsite((data as any).website ?? "");
+        setGmbPlaceId((data as any).google_place_id ?? "");
+        setAadhaar((data as any).aadhaar ?? "");
+        setPan((data as any).pan ?? "");
+        setGst((data as any).gst ?? "");
+        // If business already saved and we're NOT in edit mode → straight to dashboard.
+        if (!editMode && ((data as any).business_name || "").trim().length > 1) {
+          navigate({ to: "/vendor/dashboard" });
+          return;
+        }
+      }
+      setProfileLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, profileLoaded, editMode, navigate]);
 
   // Sheet drag
   const [vh, setVh] = useState(800);
@@ -185,15 +229,10 @@ function VendorRegister() {
     whatsapp.replace(/\D/g, "").length >= 10 &&
     managerEmail.includes("@");
 
-  const step2Valid = insta.trim().length > 0 || fb.trim().length > 0 || website.trim().length > 0;
-  const step3Valid = aadhaar.replace(/\D/g, "").length === 12 && pan.trim().length === 10;
-
-  const canNext =
-    step === 0 ? step1Valid : step === 1 ? step2Valid : step === 2 ? step3Valid : false;
+  const canNext = step === 0 ? step1Valid : false;
 
   const goNext = () => {
-    if (step < 2) setStep((step + 1) as StepIdx);
-    else if (step === 2 && step3Valid) setStep(3);
+    if (step === 0 && step1Valid) setStep(1);
   };
 
   const goBack = () => {
@@ -244,19 +283,26 @@ function VendorRegister() {
     return null;
   }, [picker]);
 
-  const handleJoinPlan = async (planId: string) => {
+  const handleJoinPlan = async (planId: string, custom?: { coins: number; priceInr: number }) => {
     if (saving || paying) return;
     if (!user) {
       toast.error("Pehle sign in karein");
       return;
     }
-    const plan = PLANS.find((p) => p.id === planId);
-    if (!plan) {
-      toast.error("Invalid plan");
-      return;
+    let priceInr = 0;
+    let totalCoins = 0;
+    if (custom) {
+      priceInr = custom.priceInr;
+      totalCoins = custom.coins;
+    } else {
+      const plan = PLANS.find((p) => p.id === planId);
+      if (!plan) {
+        toast.error("Invalid plan");
+        return;
+      }
+      priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
+      totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
     }
-    const priceInr = Number(plan.price.replace(/[^\d]/g, "")) || 0;
-    const totalCoins = (plan.coins ?? 0) + (plan.bonus ?? 0);
 
     setPlanChosen(planId);
     setSaving(true);
@@ -346,7 +392,7 @@ function VendorRegister() {
     }
   };
 
-  const stepLabels = ["Business | Details", "Social | Pages", "KYC | Details"];
+  const stepLabels = ["Business | Details"];
 
   // Show OTP/Google sign-in gate first if user not authenticated
   if (ready && !isAuthenticated) {
@@ -503,63 +549,43 @@ function VendorRegister() {
                   details complete karein.
                 </p>
               </div>
-            ) : step < 3 ? (
+            ) : step < 1 ? (
               <>
-                {/* Stepper */}
+                {/* Stepper (single step — Social & KYC moved to menu) */}
                 <Stepper current={step} labels={stepLabels} />
 
                 {/* Step content */}
                 <div className="mt-5">
-                  {step === 0 && (
-                    <Step1Business
-                      role={role}
-                      ownerName={ownerName}
-                      entity={entity}
-                      trade={trade}
-                      dealsIn={dealsIn}
-                      businessName={businessName}
-                      whatsapp={whatsapp}
-                      managerEmail={managerEmail}
-                      referral={referral}
-                      onPickRole={() => setPicker("role")}
-                      onPickEntity={() => setPicker("entity")}
-                      onPickTrade={() => setPicker("trade")}
-                      onPickDealsIn={() => setPicker("dealsIn")}
-                      setOwnerName={setOwnerName}
-                      setBusinessName={setBusinessName}
-                      setWhatsapp={setWhatsapp}
-                      setManagerEmail={setManagerEmail}
-                      setReferral={setReferral}
-                      ownerRef={ownerInputRef}
-                      businessRef={businessInputRef}
-                    />
-                  )}
-                  {step === 1 && (
-                    <Step2Social
-                      insta={insta}
-                      fb={fb}
-                      website={website}
-                      gmbPlaceId={gmbPlaceId}
-                      setInsta={setInsta}
-                      setFb={setFb}
-                      setWebsite={setWebsite}
-                      setGmbPlaceId={setGmbPlaceId}
-                    />
-                  )}
-                  {step === 2 && (
-                    <Step3Kyc
-                      aadhaar={aadhaar}
-                      pan={pan}
-                      gst={gst}
-                      setAadhaar={setAadhaar}
-                      setPan={setPan}
-                      setGst={setGst}
-                    />
-                  )}
+                  <Step1Business
+                    role={role}
+                    ownerName={ownerName}
+                    entity={entity}
+                    trade={trade}
+                    dealsIn={dealsIn}
+                    businessName={businessName}
+                    whatsapp={whatsapp}
+                    managerEmail={managerEmail}
+                    referral={referral}
+                    onPickRole={() => setPicker("role")}
+                    onPickEntity={() => setPicker("entity")}
+                    onPickTrade={() => setPicker("trade")}
+                    onPickDealsIn={() => setPicker("dealsIn")}
+                    setOwnerName={setOwnerName}
+                    setBusinessName={setBusinessName}
+                    setWhatsapp={setWhatsapp}
+                    setManagerEmail={setManagerEmail}
+                    setReferral={setReferral}
+                    ownerRef={ownerInputRef}
+                    businessRef={businessInputRef}
+                  />
                 </div>
 
+                <p className="text-center text-[10px] italic text-[color:oklch(0.45_0.01_260)] mt-4">
+                  Social pages & KYC ko menu se kabhi bhi update kar sakte hain.
+                </p>
+
                 {/* Nav buttons */}
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-3">
                   <button
                     onClick={goBack}
                     className="rounded-2xl py-3 font-display font-bold text-sm uppercase tracking-wider text-[color:oklch(0.30_0.06_82)] border border-[color:oklch(0.72_0.01_260/0.5)] bg-white/70"
@@ -578,13 +604,20 @@ function VendorRegister() {
                         : undefined,
                     }}
                   >
-                    {step === 2 ? "Choose Plan" : "Next"}
+                    Choose Plan
                     <span>›</span>
                   </button>
                 </div>
               </>
             ) : (
-              <PlanStep onChoose={handleJoinPlan} chosen={planChosen} busy={saving || paying} />
+              <PlanStep
+                onChoose={(id) => handleJoinPlan(id)}
+                onChooseCustom={(coins, priceInr) =>
+                  handleJoinPlan("custom", { coins, priceInr })
+                }
+                chosen={planChosen}
+                busy={saving || paying}
+              />
             )}
           </div>
         </div>
@@ -998,15 +1031,23 @@ const PLANS = [
   },
 ];
 
+const COIN_PRICE_INR = 5; // ₹5 per coin for custom top-ups (matches Starter rate)
+
 function PlanStep({
   onChoose,
+  onChooseCustom,
   chosen,
   busy,
 }: {
   onChoose: (id: string) => void;
+  onChooseCustom: (coins: number, priceInr: number) => void;
   chosen: string | null;
   busy?: boolean;
 }) {
+  const [customCoins, setCustomCoins] = useState<string>("");
+  const coinsN = Math.max(0, Math.min(100000, parseInt(customCoins || "0", 10) || 0));
+  const customPrice = coinsN * COIN_PRICE_INR;
+  const customValid = coinsN >= 50;
   return (
     <div className="mt-2">
       <div className="text-center mb-4">
@@ -1084,6 +1125,66 @@ function PlanStep({
             </button>
           );
         })}
+      </div>
+
+      {/* Custom coin top-up — manual amount */}
+      <div
+        className="mt-4 rounded-2xl p-4 border-2"
+        style={{
+          background:
+            "linear-gradient(180deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)",
+          borderColor: "rgba(212,175,55,0.55)",
+          boxShadow: "0 8px 24px -8px rgba(212,175,55,0.45)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#8b6508] font-bold">
+              ✦ Custom Top-up ✦
+            </p>
+            <p className="font-display text-lg font-bold text-[#3f2a05] leading-tight">
+              Apni marzi se LeadX khareeden
+            </p>
+          </div>
+          <Coins className="h-7 w-7 text-[#8b6508]" />
+        </div>
+        <p className="text-[11px] italic text-[#5c4308] mb-2">
+          Min 50 coins · ₹{COIN_PRICE_INR}/coin · instant credit after payment
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={customCoins}
+              onChange={(e) => setCustomCoins(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="e.g. 250"
+              className="w-full rounded-xl bg-white border-2 border-[#d4af37]/40 px-3 py-2.5 text-[15px] font-bold text-[#3f2a05] placeholder:text-[#8b6508]/50 outline-none focus:border-[#d4af37]"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-[#8b6508]/70 font-bold">
+              coins
+            </span>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[9px] uppercase tracking-wider text-[#8b6508]/80">Total</p>
+            <p className="font-display text-lg font-bold text-[#3f2a05]">
+              ₹{customPrice.toLocaleString("en-IN")}
+            </p>
+          </div>
+        </div>
+        <button
+          disabled={busy || !customValid}
+          onClick={() => onChooseCustom(coinsN, customPrice)}
+          className="mt-3 w-full rounded-xl py-2.5 font-display font-bold text-sm uppercase tracking-wider text-[#1a1208] disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)",
+            boxShadow: customValid
+              ? "0 6px 18px -4px rgba(212,175,55,0.6), inset 0 1px 0 rgba(255,255,255,0.5)"
+              : undefined,
+          }}
+        >
+          {busy ? "Opening Cashfree…" : `Buy ${coinsN || 0} coins`}
+        </button>
       </div>
 
       <p className="text-center text-[10px] text-[color:oklch(0.50_0.08_85)] italic mt-4">
