@@ -33,13 +33,24 @@ messaging.onBackgroundMessage((payload) => {
   const n = payload.notification || {};
   const data = payload.data || {};
   const title = n.title || data.title || "Karoonline";
+  const isLead = data.kind === "lead_alert";
   const options = {
     body: n.body || data.body || "",
     icon: n.icon || "/icon-192.png",
     image: n.image || data.image || undefined,
     badge: "/icon-192.png",
     data: { url: data.action_url || data.url || "/", ...data },
-    tag: data.tag || "ko-msg",
+    tag: data.tag || (isLead ? `lead-${data.lead_id || "x"}` : "ko-msg"),
+    renotify: true,
+    requireInteraction: isLead,
+    silent: false,
+    vibrate: isLead ? [400, 150, 400, 150, 800, 200, 400, 150, 800] : [200, 100, 200],
+    actions: isLead
+      ? [
+          { action: "accept", title: "Accept" },
+          { action: "reject", title: "Reject" },
+        ]
+      : undefined,
   };
   self.registration.showNotification(title, options);
 });
