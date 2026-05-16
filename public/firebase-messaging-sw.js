@@ -33,20 +33,38 @@ messaging.onBackgroundMessage((payload) => {
   const n = payload.notification || {};
   const data = payload.data || {};
   const title = n.title || data.title || "Karoonline";
+  const isLead = data.kind === "lead_alert";
   const options = {
     body: n.body || data.body || "",
     icon: n.icon || "/icon-192.png",
     image: n.image || data.image || undefined,
     badge: "/icon-192.png",
     data: { url: data.action_url || data.url || "/", ...data },
-    tag: data.tag || "ko-msg",
+    tag: data.tag || (isLead ? `lead-${data.lead_id || "x"}` : "ko-msg"),
+    renotify: true,
+    requireInteraction: isLead,
+    silent: false,
+    vibrate: isLead ? [400, 150, 400, 150, 800, 200, 400, 150, 800] : [200, 100, 200],
+    actions: isLead
+      ? [
+          { action: "accept", title: "Accept" },
+          { action: "reject", title: "Reject" },
+        ]
+      : undefined,
   };
   self.registration.showNotification(title, options);
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const data = event.notification.data || {};
+  const baseUrl = data.url || "/";
+  let url = baseUrl;
+  if (event.action === "accept" && data.lead_id) {
+    url = `/vendor/dashboard?leadId=${data.lead_id}&action=accept`;
+  } else if (event.action === "reject" && data.lead_id) {
+    url = `/vendor/dashboard?leadId=${data.lead_id}&action=reject`;
+  }
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       for (const w of wins) {
