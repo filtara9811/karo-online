@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   X, User, Wallet, Store, Bell, LifeBuoy, FileText,
   LogOut, Gift, Megaphone, Settings as SettingsIcon, ChevronRight,
-  LayoutGrid, Briefcase, ShieldCheck,
+  LayoutGrid, Briefcase, ShieldCheck, Instagram,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
