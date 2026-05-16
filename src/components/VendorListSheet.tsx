@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
