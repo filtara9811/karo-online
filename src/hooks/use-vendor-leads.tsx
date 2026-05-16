@@ -52,7 +52,7 @@ export function useVendorLeadAlerts(): State {
         itemNames: [],
         images: [],
         createdAt: fallbackCreatedAt,
-        expiresAt: new Date(Date.now() + 90_000).toISOString(),
+        expiresAt: new Date(Date.now() + 15_000).toISOString(),
       };
       setAlerts((p) => [fallbackIncoming, ...p].slice(0, 8));
       playLeadAlert();
