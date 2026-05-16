@@ -11,6 +11,8 @@ export type Lead = {
   id: string;
   name: string;
   phone: string;
+  avatarUrl?: string | null;
+  distanceKm?: number | null;
   email?: string;
   address?: string;
   service: string;
