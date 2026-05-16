@@ -203,6 +203,7 @@ async function pushToUser(opts: {
   title: string;
   body: string;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   actionUrl?: string | null;
   highPriority?: boolean;
   extraData?: Record<string, string>;
@@ -233,6 +234,7 @@ async function pushToUser(opts: {
       title: opts.title,
       body: opts.body,
       imageUrl: opts.imageUrl,
+      iconUrl: opts.iconUrl,
       actionUrl: opts.actionUrl,
       highPriority: opts.highPriority,
       extraData: opts.extraData,
