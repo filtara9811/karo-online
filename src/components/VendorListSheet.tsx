@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
@@ -32,8 +32,6 @@ type Props = {
 
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
-const COVER =
-  "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&q=70";
 
 export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
@@ -208,68 +206,74 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
             vendors.map((v, i) => {
               const isApproved = approvedId === v.vendor_id;
               const isDimmed = !!approvedId && !isApproved;
-              const cover = COVER;
+              const displayName = v.business_name || v.owner_name || "Vendor";
+              const sub = v.business_name && v.owner_name ? v.owner_name : "Verified vendor";
               return (
                 <motion.div
                   key={v.vendor_id}
                   initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: isDimmed ? 0.4 : 1, y: 0 }}
+                  animate={{ opacity: isDimmed ? 0.45 : 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`rounded-2xl bg-white border overflow-hidden shadow-[0_4px_18px_-8px_rgba(15,23,42,0.18)] transition ${
+                  className={`relative rounded-2xl bg-white border overflow-hidden shadow-[0_6px_22px_-10px_rgba(15,23,42,0.25)] transition ${
                     isApproved
-                      ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_8px_28px_-6px_rgba(16,185,129,0.45)]"
-                      : "border-[color:oklch(0.72_0.01_260/0.4)]"
+                      ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.5)]"
+                      : "border-[color:oklch(0.78_0.14_82/0.35)]"
                   } ${isDimmed ? "pointer-events-none" : ""}`}
                 >
-                  {/* Cover banner */}
-                  <div className="relative h-20 w-full">
-                    <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300/60 text-[10px] font-display font-bold text-amber-900 shadow">
+                  {/* Gold gradient header strip */}
+                  <div className="relative h-14 bg-gradient-to-br from-[#fff8dc] via-[#fde68a] to-[#fbbf24]">
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
+                    <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
                       ✦ {category ?? "Service"}
                     </div>
                     {v.distance_km != null && (
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-600/95 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                      <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
                         <MapPin className="h-3 w-3" /> {v.distance_km} km
                       </div>
                     )}
                     {isApproved && (
-                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
+                      <div className="absolute bottom-1.5 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
                         <CheckCircle2 className="h-3 w-3" /> APPROVED
                       </div>
                     )}
-                    <div className="absolute bottom-1.5 left-3 right-3 text-white">
-                      <p className="font-display text-sm font-bold leading-tight truncate drop-shadow">
-                        {v.business_name || v.owner_name || "Vendor"}
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Body: avatar + rating */}
-                  <div className="px-3 pt-3 pb-2 flex items-center gap-3 -mt-7 relative">
-                    <img
-                      src={v.avatar_url || FALLBACK_AVATAR}
-                      alt={v.business_name ?? ""}
-                      className="h-14 w-14 rounded-full object-cover border-[3px] border-white shadow-md flex-shrink-0"
-                      loading="lazy"
-                    />
-                    <div className="flex-1 min-w-0 pt-6">
-                      <div className="flex items-center gap-2 text-[11px]">
+                  {/* Identity row: avatar + name + rating */}
+                  <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-8 relative">
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={v.avatar_url || FALLBACK_AVATAR}
+                        alt={displayName}
+                        className="h-16 w-16 rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
+                        loading="lazy"
+                      />
+                      <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                        <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-9">
+                      <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
+                        {displayName}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 truncate">{sub}</p>
+                      <div className="mt-1 flex items-center gap-2 text-[11px] flex-wrap">
                         <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
                           <Star className="h-3 w-3" fill="currentColor" />
                           {(v.rating ?? 4.8).toFixed(1)}
                           <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
                         </span>
-                        <span className="text-[10px] text-slate-500">Delivery rating</span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[9px] font-bold text-amber-800 uppercase tracking-wide">
+                          {category ?? "Service"}
+                        </span>
                       </div>
                     </div>
                     {v.quoted_price != null && (
-                      <div className="text-right pt-6">
-                        <span className="inline-flex items-center font-display font-bold text-emerald-700 text-base leading-none">
-                          <IndianRupee className="h-3.5 w-3.5" />
+                      <div className="text-right pt-9 flex-shrink-0">
+                        <span className="inline-flex items-center font-display font-bold text-emerald-700 text-lg leading-none">
+                          <IndianRupee className="h-4 w-4" />
                           {Number(v.quoted_price).toLocaleString("en-IN")}
                         </span>
-                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Quote</p>
+                        <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-0.5">Quote</p>
                       </div>
                     )}
                   </div>
@@ -281,8 +285,8 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
                     </div>
                   )}
 
-                  {/* Action row: Approve + Chat */}
-                  <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                  {/* Action row: Approve + Chat + Call */}
+                  <div className="px-3 pb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
                     <button
                       onClick={() => approveVendor(v)}
                       disabled={!!approvedId || approving === v.vendor_id}
@@ -308,6 +312,15 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
                     >
                       <MessageCircle className="h-4 w-4" /> Chat
                     </button>
+                    {(v.phone || v.whatsapp) && (
+                      <a
+                        href={`tel:${v.phone || v.whatsapp}`}
+                        className="h-10 w-10 rounded-xl bg-white border-2 border-emerald-500 text-emerald-700 inline-flex items-center justify-center active:scale-95"
+                        aria-label="Call"
+                      >
+                        <Phone className="h-4 w-4" />
+                      </a>
+                    )}
                   </div>
                 </motion.div>
               );
