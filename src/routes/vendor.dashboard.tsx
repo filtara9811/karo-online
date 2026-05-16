@@ -27,6 +27,7 @@ import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
+import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -239,6 +240,9 @@ function VendorDashboard() {
             <WalletIcon className="h-4 w-4 text-[#1a1208]" />
           </Link>
         </section>
+
+        {/* Live lead pricing & wallet balance — surfaced on home */}
+        <LeadPricingStrip />
 
         {/* Auto / Manual accept toggle */}
         <button

@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Bell, Clock } from "lucide-react";
+import { X, Check, Bell, Clock, MapPin } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { IncomingLead } from "@/hooks/use-vendor-leads";
+import { stopLeadAlert } from "@/lib/lead-sound";
 
 type Props = {
   alerts: IncomingLead[];
@@ -26,16 +27,27 @@ function useCountdown(expiresAt: string) {
   return remaining;
 }
 
+/**
+ * Bottom-sheet style lead alert. Only the most recent alert is shown as a
+ * full sheet; older pending ones queue as small chips above it. The sheet
+ * rings + vibrates until the vendor accepts / skips / dismisses.
+ */
 export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Stop ringtone whenever every alert is cleared
+  useEffect(() => {
+    if (alerts.length === 0) stopLeadAlert();
+  }, [alerts.length]);
 
   const handleAccept = async (leadId: string) => {
     setBusy(leadId);
     setError(null);
     const res = await onAccept(leadId);
     setBusy(null);
+    stopLeadAlert();
     if (!res.ok) {
       const map: Record<string, string> = {
         already_taken: "Sorry — slots already filled.",
@@ -52,31 +64,60 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
     }
   };
 
+  const handleSkip = async (leadId: string) => {
+    stopLeadAlert();
+    await onReject(leadId).catch(() => {});
+  };
+
+  const handleDismiss = (notifId: string) => {
+    stopLeadAlert();
+    onDismiss(notifId);
+  };
+
+  if (alerts.length === 0) return null;
+  const [current, ...queued] = alerts;
+
   return (
-    <div className="fixed inset-x-0 top-0 z-[100] pointer-events-none flex flex-col items-center gap-2 pt-[env(safe-area-inset-top)] px-3">
+    <div className="fixed inset-0 z-[100] pointer-events-none">
+      {/* Soft backdrop only behind the active sheet */}
+      <AnimatePresence>
+        <motion.div
+          key="bd"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto"
+          onClick={() => handleDismiss(current.notificationId)}
+        />
+      </AnimatePresence>
+
+      {/* Queue chips (older pending) above the sheet */}
+      {queued.length > 0 && (
+        <div className="absolute left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)+260px)] flex justify-center pointer-events-none">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 shadow-lg border border-amber-300">
+            <Bell className="h-3.5 w-3.5 text-amber-700" />
+            <span className="text-[11px] font-bold text-amber-900">+{queued.length} more lead{queued.length > 1 ? "s" : ""} waiting</span>
+          </div>
+        </div>
+      )}
+
       <AnimatePresence initial={false}>
-        {alerts.map((a, idx) => (
-          <LeadAlertCard
-            key={a.notificationId}
-            alert={a}
-            idx={idx}
-            busy={busy === a.leadId}
-            error={busy === null ? error : null}
-            onAccept={() => handleAccept(a.leadId)}
-            onSkip={() => onReject(a.leadId).catch(() => {})}
-            onDismiss={() => onDismiss(a.notificationId)}
-          />
-        ))}
+        <LeadAlertSheet
+          key={current.notificationId}
+          alert={current}
+          busy={busy === current.leadId}
+          error={busy === null ? error : null}
+          onAccept={() => handleAccept(current.leadId)}
+          onSkip={() => handleSkip(current.leadId)}
+          onDismiss={() => handleDismiss(current.notificationId)}
+        />
       </AnimatePresence>
     </div>
   );
 }
 
-function LeadAlertCard({
-  alert: a, idx, busy, error, onAccept, onSkip, onDismiss,
+function LeadAlertSheet({
+  alert: a, busy, error, onAccept, onSkip, onDismiss,
 }: {
   alert: IncomingLead;
-  idx: number;
   busy: boolean;
   error: string | null;
   onAccept: () => void;
@@ -87,7 +128,6 @@ function LeadAlertCard({
   const seconds = Math.ceil(remaining / 1000);
   const pct = Math.max(0, Math.min(1, remaining / ALERT_WINDOW_MS));
 
-  // Auto-dismiss when timer ends
   useEffect(() => {
     if (remaining <= 0) onDismiss();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,21 +135,26 @@ function LeadAlertCard({
 
   return (
     <motion.div
-      layout
-      initial={{ y: -120, opacity: 0, scale: 0.9 }}
-      animate={{ y: 0, opacity: 1, scale: 1 - idx * 0.02 }}
-      exit={{ y: -120, opacity: 0, scale: 0.85, transition: { duration: 0.18 } }}
-      transition={{ type: "spring", stiffness: 360, damping: 26 }}
-      className="pointer-events-auto w-full max-w-md mt-2"
-      style={{ zIndex: 100 - idx }}
+      key={a.notificationId}
+      initial={{ y: "110%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "110%", transition: { duration: 0.22 } }}
+      transition={{ type: "spring", stiffness: 340, damping: 30 }}
+      className="absolute inset-x-0 bottom-0 pointer-events-auto px-3 pb-[env(safe-area-inset-bottom)]"
     >
       <div
-        className="relative overflow-hidden rounded-2xl border-2 border-amber-300 shadow-[0_18px_48px_-12px_rgba(217,119,6,0.55)]"
+        className="relative mx-auto w-full max-w-md overflow-hidden rounded-t-3xl border-2 border-amber-300 shadow-[0_-20px_60px_-8px_rgba(217,119,6,0.55)]"
         style={{
-          background: "linear-gradient(135deg, #fff8dc 0%, #fde68a 50%, #fbbf24 100%)",
+          background:
+            "linear-gradient(180deg, #fffbeb 0%, #fde68a 60%, #fbbf24 100%)",
         }}
       >
-        {/* Timer progress bar at top */}
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2 pb-1">
+          <span className="h-1.5 w-12 rounded-full bg-amber-700/40" />
+        </div>
+
+        {/* Timer progress */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-amber-200/60">
           <motion.div
             className="h-full bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500"
@@ -119,36 +164,40 @@ function LeadAlertCard({
           />
         </div>
 
-        <div className="relative p-3 flex items-start gap-3 pt-4">
-          {/* Service image (sub-category) instead of plain bell */}
+        <div className="relative px-4 pt-2 pb-3 flex items-start gap-3">
           <motion.div
-            initial={{ scale: 0.6 }}
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 1.4, repeat: Infinity }}
-            className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-white grid place-items-center"
+            initial={{ scale: 0.7 }}
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+            className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-white grid place-items-center"
           >
             {a.subCategoryImage ? (
               <img src={a.subCategoryImage} alt="" className="h-full w-full object-cover" />
             ) : (
-              <Bell className="h-6 w-6 text-amber-700" strokeWidth={2.4} />
+              <Bell className="h-7 w-7 text-amber-700" strokeWidth={2.4} />
             )}
           </motion.div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-900/80">
-                🔥 New Lead
+              <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-amber-900/80">
+                🔥 Naya Lead Aaya
               </p>
-              <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/85 text-[10px] font-bold text-amber-900 border border-amber-300">
+              <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/90 text-[10px] font-bold text-amber-900 border border-amber-300">
                 <Clock className="h-2.5 w-2.5" /> {seconds}s
               </span>
             </div>
-            <h4 className="font-display text-base font-bold text-amber-950 leading-tight truncate">
-              {a.subCategoryName} required
+            <h4 className="font-display text-lg font-bold text-amber-950 leading-tight truncate">
+              {a.subCategoryName}
             </h4>
             {a.customerName && (
               <p className="text-xs text-amber-900 mt-0.5 line-clamp-1">
-                {a.customerName}{a.address ? ` · ${a.address}` : ""}
+                {a.customerName}
+              </p>
+            )}
+            {a.address && (
+              <p className="text-[11px] text-amber-900/80 mt-0.5 truncate flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> {a.address}
               </p>
             )}
             {a.itemNames.length > 0 && (
@@ -161,30 +210,36 @@ function LeadAlertCard({
           <button
             onClick={onDismiss}
             aria-label="Dismiss"
-            className="h-7 w-7 grid place-items-center rounded-full bg-white/70 hover:bg-white text-amber-900 active:scale-90 flex-shrink-0"
+            className="h-7 w-7 grid place-items-center rounded-full bg-white/80 hover:bg-white text-amber-900 active:scale-90 flex-shrink-0"
           >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <div className="relative px-3 pb-3 flex items-center gap-2">
+        {a.note && (
+          <p className="px-4 -mt-1 pb-2 text-[11px] italic text-amber-900/90 line-clamp-2">
+            “{a.note}”
+          </p>
+        )}
+
+        <div className="relative px-4 pb-4 flex items-center gap-2">
           <button
             onClick={onSkip}
-            className="flex-1 px-3 py-2.5 rounded-xl bg-white/80 border border-amber-300 font-display font-bold text-sm text-amber-900 active:scale-[0.97]"
+            className="flex-1 px-3 py-3 rounded-2xl bg-white/85 border border-amber-300 font-display font-bold text-sm text-amber-900 active:scale-[0.97]"
           >
             Skip
           </button>
           <button
             disabled={busy}
             onClick={onAccept}
-            className="flex-[1.6] px-3 py-2.5 rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-display font-bold text-sm shadow-[0_4px_14px_-2px_rgba(5,150,105,0.55)] active:scale-[0.97] flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="flex-[1.8] px-3 py-3 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-display font-bold text-sm shadow-[0_6px_18px_-2px_rgba(5,150,105,0.6)] active:scale-[0.97] flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             <Check className="h-4 w-4" strokeWidth={3} />
             {busy ? "Accepting…" : "Accept Lead"}
           </button>
         </div>
         {error && (
-          <p className="relative px-3 pb-2 text-[11px] text-rose-700 font-semibold">{error}</p>
+          <p className="relative px-4 pb-3 text-[11px] text-rose-700 font-semibold">{error}</p>
         )}
       </div>
     </motion.div>
