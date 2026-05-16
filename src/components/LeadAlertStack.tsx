@@ -12,7 +12,7 @@ type Props = {
   onDismiss: (notificationId: string) => void;
 };
 
-const ALERT_WINDOW_MS = 90_000;
+const ALERT_WINDOW_MS = 15_000;
 
 function useCountdown(expiresAt: string) {
   const [remaining, setRemaining] = useState(() =>
