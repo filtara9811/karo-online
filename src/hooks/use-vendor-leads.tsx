@@ -10,12 +10,15 @@ export type IncomingLead = {
   subCategoryImage?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  customerPhoneMasked?: string | null;
+  customerAvatarUrl?: string | null;
+  distanceKm?: number | null;
   itemNames: string[];
   note?: string | null;
   images: string[];
   address?: string | null;
   createdAt: string;
-  /** ISO timestamp; alert auto-expires 90 s after this. */
+  /** ISO timestamp; alert auto-expires 15 s after this. */
   expiresAt: string;
 };
 
