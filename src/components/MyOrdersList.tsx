@@ -39,7 +39,7 @@ export function MyOrdersList({
   onItemClick?: () => void;
   basePath?: "/status" | "/vendor/status" | "/chat" | "/vendor/chat";
 }) {
-  const vendors = useOrdersStore();
+  const { groups: vendors, loading } = useMyOrders();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | OrderStatusKind>("all");
   const [query, setQuery] = useState("");
