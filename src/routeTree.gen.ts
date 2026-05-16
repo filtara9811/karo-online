@@ -26,9 +26,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
 import { Route as VendorStatusRouteImport } from './routes/vendor.status'
+import { Route as VendorSocialRouteImport } from './routes/vendor.social'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
+import { Route as VendorKycRouteImport } from './routes/vendor.kyc'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as RCodeRouteImport } from './routes/r.$code'
@@ -144,6 +146,11 @@ const VendorStatusRoute = VendorStatusRouteImport.update({
   path: '/vendor/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorSocialRoute = VendorSocialRouteImport.update({
+  id: '/vendor/social',
+  path: '/vendor/social',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorShopRoute = VendorShopRouteImport.update({
   id: '/vendor/shop',
   path: '/vendor/shop',
@@ -157,6 +164,11 @@ const VendorServicesRoute = VendorServicesRouteImport.update({
 const VendorRegisterRoute = VendorRegisterRouteImport.update({
   id: '/vendor/register',
   path: '/vendor/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorKycRoute = VendorKycRouteImport.update({
+  id: '/vendor/kyc',
+  path: '/vendor/kyc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorDashboardRoute = VendorDashboardRouteImport.update({
@@ -348,9 +360,11 @@ export interface FileRoutesByFullPath {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
@@ -398,9 +412,11 @@ export interface FileRoutesByTo {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
@@ -450,9 +466,11 @@ export interface FileRoutesById {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
+  '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
@@ -503,9 +521,11 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/social'
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
@@ -553,9 +573,11 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/social'
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin'
@@ -604,9 +626,11 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
+    | '/vendor/social'
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
@@ -633,9 +657,11 @@ export interface RootRouteChildren {
   RCodeRoute: typeof RCodeRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
+  VendorKycRoute: typeof VendorKycRoute
   VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
+  VendorSocialRoute: typeof VendorSocialRoute
   VendorStatusRoute: typeof VendorStatusRoute
   VendorWalletRoute: typeof VendorWalletRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
@@ -762,6 +788,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/social': {
+      id: '/vendor/social'
+      path: '/vendor/social'
+      fullPath: '/vendor/social'
+      preLoaderRoute: typeof VendorSocialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/shop': {
       id: '/vendor/shop'
       path: '/vendor/shop'
@@ -781,6 +814,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/register'
       fullPath: '/vendor/register'
       preLoaderRoute: typeof VendorRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/kyc': {
+      id: '/vendor/kyc'
+      path: '/vendor/kyc'
+      fullPath: '/vendor/kyc'
+      preLoaderRoute: typeof VendorKycRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/dashboard': {
@@ -1065,9 +1105,11 @@ const rootRouteChildren: RootRouteChildren = {
   RCodeRoute: RCodeRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
+  VendorKycRoute: VendorKycRoute,
   VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,
+  VendorSocialRoute: VendorSocialRoute,
   VendorStatusRoute: VendorStatusRoute,
   VendorWalletRoute: VendorWalletRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
@@ -1075,3 +1117,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
