@@ -38,6 +38,7 @@ import goldHome from "@/assets/gold-home.png";
 import goldWhatsapp from "@/assets/gold-whatsapp.png";
 
 export const Route = createFileRoute("/vendor/register")({
+  validateSearch: (s: Record<string, unknown>) => ({ edit: s.edit === "1" || s.edit === 1 ? 1 : undefined }),
   head: () => ({
     meta: [
       { title: "Vendor Registration — Karo Online" },
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/vendor/register")({
   component: VendorRegister,
 });
 
-type StepIdx = 0 | 1 | 2 | 3; // 3 = plan
+type StepIdx = 0 | 1; // 0 = business details, 1 = plan
 type AuthMode = "register" | "login";
 
 const ROLE_OPTIONS: PickerOption[] = [
