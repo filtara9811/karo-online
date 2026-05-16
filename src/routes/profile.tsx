@@ -11,7 +11,7 @@ import {
   Download, Share2, Camera, PackageOpen, Gift, Bell, Headset,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
-import { useOrdersStore } from "@/lib/orders-store";
+import { useMyOrders } from "@/hooks/use-my-orders";
 import { Star } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { ShareCardSheet } from "@/components/ShareCardSheet";
@@ -189,7 +189,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   }, [user?.id, activeRow]);
 
   // ---- Real order stats from shared store ----
-  const vendors = useOrdersStore();
+  const { groups: vendors } = useMyOrders();
   const orderStats = useMemo(() => {
     const all = vendors.flatMap((v) => v.orders);
     const total = all.length;
