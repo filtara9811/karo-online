@@ -30,6 +30,8 @@ import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
 import { supabase } from "@/integrations/supabase/client";
 import { ReferralPage } from "@/routes/referral";
+import { NotificationCenter, NotificationBell } from "@/components/NotificationCenter";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -128,6 +130,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const [quickSheet, setQuickSheet] = useState<null | "orders" | "referral" | "leads" | "support">(null);
   const [kycPct, setKycPct] = useState<number>(0);
   const { links: socialLinks } = useSocialLinks();
+  const { counts: notifCounts } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -288,7 +292,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       </section>
 
       {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
-      <QuickTiles onPick={(s) => setQuickSheet(s)} />
+      <QuickTiles onPick={(s) => setQuickSheet(s)} onOpenNotifications={() => setNotifOpen(true)} />
+      <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
 
 
       {/* My Account sub-bar (back + title + theme/lang/support) */}
@@ -1317,16 +1322,29 @@ function SheetWrap({ onClose, children }: { onClose: () => void; children: React
 
 type QuickSheetKey = "orders" | "referral" | "leads" | "support";
 
-function QuickTiles({ onPick }: { onPick: (s: QuickSheetKey) => void }) {
+function QuickTiles({ onPick, onOpenNotifications }: { onPick: (s: QuickSheetKey) => void; onOpenNotifications?: () => void }) {
   const [revealed, setRevealed] = useState<string | null>(null);
-  const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey }> = [
-    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders" },
-    { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral" },
-    { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads" },
-    { id: "support", label: "Manager | support", Icon: Headset, sheet: "support" },
+  const { counts } = useNotifications();
+  const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey; badge: number }> = [
+    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders", badge: counts.orders },
+    { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral", badge: counts.referral },
+    { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads", badge: counts.messages },
+    { id: "support", label: "Manager | support", Icon: Headset, sheet: "support", badge: counts.support },
   ];
   return (
     <section className="px-4 mt-4">
+      {onOpenNotifications && counts.total > 0 && (
+        <button
+          onClick={onOpenNotifications}
+          className="mb-2 w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-100 to-amber-50 border border-amber-300 active:scale-[0.98] transition"
+        >
+          <span className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-amber-700 animate-pulse" />
+            <span className="text-[12px] font-bold text-amber-900">{counts.total} new notifications</span>
+          </span>
+          <span className="text-[11px] text-amber-700 font-bold">View all →</span>
+        </button>
+      )}
       <div className="grid grid-cols-4 gap-2">
         {TILES.map((t2) => {
           const active = revealed === t2.id;
@@ -1339,12 +1357,17 @@ function QuickTiles({ onPick }: { onPick: (s: QuickSheetKey) => void }) {
                 window.setTimeout(() => onPick(t2.sheet), 260);
                 window.setTimeout(() => setRevealed(null), 900);
               }}
-              className={`rounded-2xl border py-3 px-1.5 flex flex-col items-center gap-1 transition-colors ${
+              className={`relative rounded-2xl border py-3 px-1.5 flex flex-col items-center gap-1 transition-colors ${
                 active
                   ? "bg-gradient-to-br from-amber-100 to-amber-200 border-amber-500 shadow-md"
                   : "bg-white border-amber-200 shadow-[0_4px_12px_-6px_rgba(212,175,55,0.4)]"
               }`}
             >
+              {t2.badge > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold border-2 border-white shadow animate-pulse z-10">
+                  {t2.badge > 99 ? "99+" : t2.badge}
+                </span>
+              )}
               <div className={`h-8 w-8 grid place-items-center rounded-xl border transition-colors ${
                 active
                   ? "bg-gradient-to-br from-amber-400 to-amber-600 border-amber-700"

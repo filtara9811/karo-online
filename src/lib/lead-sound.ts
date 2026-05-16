@@ -1,56 +1,60 @@
-// Loud, attention-grabbing lead alert. Loops a real audio file up to 30 s,
-// vibrates in parallel, and falls back to a Web Audio bell synth if the mp3
-// is blocked / not loaded yet.
+// Loud, attention-grabbing lead alert. Loops a source-specific audio file up
+// to 30 s, vibrates in parallel, and falls back to a Web Audio bell synth if
+// the mp3 is blocked / not loaded yet.
 
-const SOUND_URL = "/sounds/lead-ring.mp3";
+export type AlertSource = "quick" | "whatsapp" | "call" | "digital" | "message" | "order" | "default";
+
+const SOUND_URLS: Record<AlertSource, string> = {
+  quick: "/sounds/quick_service.mp3",
+  whatsapp: "/sounds/whatsapp.mp3",
+  call: "/sounds/call_ring.mp3",
+  digital: "/sounds/digital_shop.mp3",
+  message: "/sounds/new_message.mp3",
+  order: "/sounds/order_received.mp3",
+  default: "/sounds/lead-ring.mp3",
+};
+
 const MAX_DURATION_MS = 30_000;
 
-let audioEl: HTMLAudioElement | null = null;
-let audioReady = false;
+const audioCache: Partial<Record<AlertSource, HTMLAudioElement>> = {};
+let currentAudio: HTMLAudioElement | null = null;
 let stopTimer: ReturnType<typeof setTimeout> | null = null;
 let vibrateTimer: ReturnType<typeof setInterval> | null = null;
 let unlocked = false;
 let synthCtx: AudioContext | null = null;
 let synthTimer: ReturnType<typeof setInterval> | null = null;
 
-function getAudio(): HTMLAudioElement | null {
+function getAudio(source: AlertSource): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
-  if (!audioEl) {
-    audioEl = new Audio(SOUND_URL);
-    audioEl.loop = true;
-    audioEl.preload = "auto";
-    audioEl.volume = 1.0;
-    audioEl.crossOrigin = "anonymous";
-    audioEl.addEventListener("canplaythrough", () => { audioReady = true; }, { once: true });
-    audioEl.addEventListener("error", () => { audioReady = false; });
-    // Force load
-    try { audioEl.load(); } catch {}
+  if (!audioCache[source]) {
+    const a = new Audio(SOUND_URLS[source]);
+    a.loop = true;
+    a.preload = "auto";
+    a.volume = 1.0;
+    try { a.load(); } catch {}
+    audioCache[source] = a;
   }
-  return audioEl;
+  return audioCache[source] ?? null;
 }
 
 /** Call on first user gesture (mobile browsers require user activation). */
 export function unlockLeadAlertAudio() {
   if (unlocked) return;
-  const a = getAudio();
-  if (!a) return;
-  a.muted = true;
-  const p = a.play();
-  if (p && typeof p.then === "function") {
-    p.then(() => {
-      try { a.pause(); a.currentTime = 0; } catch {}
-      a.muted = false;
-      unlocked = true;
-    }).catch(() => {
-      a.muted = false;
-    });
-  }
-  // Also unlock Web Audio fallback
+  // Unlock every variant in one shot
+  (Object.keys(SOUND_URLS) as AlertSource[]).forEach((key) => {
+    const a = getAudio(key);
+    if (!a) return;
+    a.muted = true;
+    const p = a.play();
+    if (p && typeof p.then === "function") {
+      p.then(() => { try { a.pause(); a.currentTime = 0; } catch {}; a.muted = false; })
+       .catch(() => { a.muted = false; });
+    }
+  });
+  unlocked = true;
   try {
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (AC && !synthCtx) {
-      synthCtx = new AC() as AudioContext;
-    }
+    if (AC && !synthCtx) synthCtx = new AC() as AudioContext;
     if (synthCtx && synthCtx.state === "suspended") synthCtx.resume().catch(() => {});
   } catch {}
 }
@@ -85,71 +89,71 @@ function playSynthBell() {
 }
 
 /** Start the alert: looped sound up to 30 s + repeating vibration. */
-export function playLeadAlert() {
+export function playLeadAlert(source: AlertSource = "default", opts?: { loop?: boolean; durationMs?: number }) {
   if (typeof window === "undefined") return;
+  const loop = opts?.loop !== false;
+  const dur = opts?.durationMs ?? MAX_DURATION_MS;
 
-  // Vibration loop
+  stopLeadAlert();
+
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
     try { navigator.vibrate?.([400, 150, 400, 150, 800, 200, 400]); } catch {}
   }
-  if (vibrateTimer) clearInterval(vibrateTimer);
-  let vc = 0;
-  vibrateTimer = setInterval(() => {
-    vc += 1;
-    if (vc > 14) { if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; } return; }
-    try { navigator.vibrate?.([300, 120, 300, 120, 500]); } catch {}
-  }, 2000);
+  if (loop) {
+    let vc = 0;
+    vibrateTimer = setInterval(() => {
+      vc += 1;
+      if (vc > 14) { if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; } return; }
+      try { navigator.vibrate?.([300, 120, 300, 120, 500]); } catch {}
+    }, 2000);
+  }
 
-  // Try mp3
-  const a = getAudio();
+  const a = getAudio(source);
   let mp3Started = false;
   if (a) {
     try {
       a.muted = false;
       a.volume = 1.0;
       a.currentTime = 0;
-      a.loop = true;
+      a.loop = loop;
+      currentAudio = a;
       const p = a.play();
       if (p && typeof p.then === "function") {
-        p.then(() => { mp3Started = true; })
-          .catch(() => {
-            // Autoplay blocked or load failed — fall back to synth bell
-            playSynthBell();
-          });
+        p.then(() => { mp3Started = true; }).catch(() => playSynthBell());
       } else {
         mp3Started = true;
       }
-    } catch {
-      playSynthBell();
-    }
+    } catch { playSynthBell(); }
   } else {
     playSynthBell();
   }
 
-  // Safety: if 600 ms later the mp3 hasn't started, run synth in parallel
   setTimeout(() => {
-    if (!mp3Started && (audioEl?.paused ?? true)) playSynthBell();
+    if (!mp3Started && (currentAudio?.paused ?? true)) playSynthBell();
   }, 600);
 
   if (stopTimer) clearTimeout(stopTimer);
-  stopTimer = setTimeout(() => stopLeadAlert(), MAX_DURATION_MS);
+  stopTimer = setTimeout(() => stopLeadAlert(), dur);
 }
 
-/** Stop the looping sound + vibration (call on accept / reject / dismiss). */
+/** Play a quick non-looping ping for new chat messages / small events. */
+export function playPing(source: AlertSource = "message") {
+  playLeadAlert(source, { loop: false, durationMs: 1500 });
+}
+
+/** Stop the looping sound + vibration. */
 export function stopLeadAlert() {
   if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
   if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; }
   if (synthTimer) { clearInterval(synthTimer); synthTimer = null; }
   try { navigator.vibrate?.(0); } catch {}
-  if (audioEl) {
-    try {
-      audioEl.pause();
-      audioEl.currentTime = 0;
-    } catch {}
+  if (currentAudio) {
+    try { currentAudio.pause(); currentAudio.currentTime = 0; } catch {}
+    currentAudio = null;
   }
 }
 
-export async function showBrowserNotification(title: string, body: string, opts?: { icon?: string; image?: string }) {
+export async function showBrowserNotification(title: string, body: string, opts?: { icon?: string; image?: string; tag?: string }) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   try {
     if (Notification.permission === "default") {
@@ -160,7 +164,7 @@ export async function showBrowserNotification(title: string, body: string, opts?
         body,
         icon: opts?.icon || "/icon-192.png",
         badge: "/icon-192.png",
-        tag: "lead-alert",
+        tag: opts?.tag || "ko-alert",
         renotify: true,
         requireInteraction: true,
         ...(opts?.image ? ({ image: opts.image } as any) : {}),
