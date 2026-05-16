@@ -129,7 +129,7 @@ export function VendorSideMenu({
 
               {/* KYC progress */}
               <Link
-                to="/vendor/register"
+                to="/vendor/kyc"
                 onClick={onClose}
                 className="block mt-3 rounded-xl border border-[#d4af37]/30 bg-black/40 px-3 py-2.5"
               >
