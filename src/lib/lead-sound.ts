@@ -1,101 +1,87 @@
-// Loud, attention-grabbing chime via Web Audio + repeating vibration loop.
-let ctx: AudioContext | null = null;
-let audioUnlocked = false;
+// Loud, attention-grabbing lead alert. Uses a real audio file looped for up
+// to 30 seconds + a parallel vibration loop. Falls back to Web Audio synth
+// if the audio file fails to load (e.g. offline).
+
+const SOUND_URL = "/sounds/lead-ring.mp3";
+const MAX_DURATION_MS = 30_000;
+
+let audioEl: HTMLAudioElement | null = null;
+let stopTimer: ReturnType<typeof setTimeout> | null = null;
 let vibrateTimer: ReturnType<typeof setInterval> | null = null;
-let ringInterval: ReturnType<typeof setInterval> | null = null;
+let unlocked = false;
 
-function getCtx() {
+function getAudio(): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
-  if (!ctx) {
-    const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
-    if (!AC) return null;
-    ctx = new AC();
+  if (!audioEl) {
+    audioEl = new Audio(SOUND_URL);
+    audioEl.loop = true;
+    audioEl.preload = "auto";
+    audioEl.volume = 1.0;
   }
-  if (ctx.state === "suspended") ctx.resume().catch(() => {});
-  return ctx;
+  return audioEl;
 }
 
+/** Call on first user gesture (mobile browsers require user activation). */
 export function unlockLeadAlertAudio() {
-  const ac = getCtx();
-  if (!ac || audioUnlocked) return;
-  try {
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    g.gain.value = 0.0001;
-    o.frequency.value = 1;
-    o.connect(g).connect(ac.destination);
-    o.start();
-    o.stop(ac.currentTime + 0.03);
-    audioUnlocked = true;
-  } catch {}
+  if (unlocked) return;
+  const a = getAudio();
+  if (!a) return;
+  // Play + immediately pause to satisfy autoplay gesture requirement
+  a.muted = true;
+  a.play()
+    .then(() => {
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      unlocked = true;
+    })
+    .catch(() => {
+      // Will retry on actual playLeadAlert
+    });
 }
 
-/** One ring cycle — distinct ascending arpeggio chime (~1.6s). */
-function playOneRing() {
-  const ac = getCtx();
-  if (!ac || ac.state === "suspended") return;
-  const now = ac.currentTime;
-  const master = ac.createGain();
-  master.gain.value = 0.0001;
-  master.connect(ac.destination);
-  master.gain.exponentialRampToValueAtTime(0.95, now + 0.02);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
-
-  // Distinct "lead-incoming" motif: low ding → bright bell trill
-  const notes: Array<[number, number, OscillatorType]> = [
-    [523, 0.0, "triangle"],   // C5
-    [784, 0.14, "triangle"],  // G5
-    [1047, 0.28, "sine"],     // C6
-    [1319, 0.42, "sine"],     // E6
-    [1047, 0.62, "triangle"], // C6
-    [1568, 0.78, "sine"],     // G6
-    [1319, 0.98, "triangle"], // E6
-  ];
-  notes.forEach(([freq, t, type]) => {
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    g.gain.value = 0;
-    const t0 = now + t;
-    g.gain.linearRampToValueAtTime(0.55, t0 + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
-    o.connect(g).connect(master);
-    o.start(t0);
-    o.stop(t0 + 0.36);
-  });
-}
-
-/** Play the chime once + start a vibrate+ring loop until stopLeadAlert() is called. */
+/** Start the alert: looped sound up to 30s + repeating vibration. */
 export function playLeadAlert() {
-  playOneRing();
+  // Vibration
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    try { navigator.vibrate?.([260, 90, 260, 90, 540, 120, 260]); } catch {}
+    try { navigator.vibrate?.([400, 150, 400, 150, 800, 200, 400]); } catch {}
   }
-
-  // Repeat ring every 2.2s for up to ~30s (covers the bottom-sheet window)
-  if (ringInterval) clearInterval(ringInterval);
-  let count = 0;
-  ringInterval = setInterval(() => {
-    count += 1;
-    if (count > 12) { if (ringInterval) clearInterval(ringInterval); return; }
-    playOneRing();
-  }, 2200);
-
   if (vibrateTimer) clearInterval(vibrateTimer);
   let vc = 0;
   vibrateTimer = setInterval(() => {
     vc += 1;
     if (vc > 14) { if (vibrateTimer) clearInterval(vibrateTimer); return; }
-    try { navigator.vibrate?.([220, 80, 220, 80, 420]); } catch {}
+    try { navigator.vibrate?.([300, 120, 300, 120, 500]); } catch {}
   }, 2000);
+
+  // Audio
+  const a = getAudio();
+  if (a) {
+    try {
+      a.currentTime = 0;
+      a.loop = true;
+      a.volume = 1.0;
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {}
+  }
+
+  // Hard stop after MAX_DURATION_MS
+  if (stopTimer) clearTimeout(stopTimer);
+  stopTimer = setTimeout(() => stopLeadAlert(), MAX_DURATION_MS);
 }
 
-/** Stop the looping ring + vibration (call on accept / skip / dismiss). */
+/** Stop the looping sound + vibration (call on accept / reject / dismiss). */
 export function stopLeadAlert() {
-  if (ringInterval) { clearInterval(ringInterval); ringInterval = null; }
+  if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
   if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; }
   try { navigator.vibrate?.(0); } catch {}
+  if (audioEl) {
+    try {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    } catch {}
+  }
 }
 
 export async function showBrowserNotification(title: string, body: string) {
@@ -105,7 +91,14 @@ export async function showBrowserNotification(title: string, body: string) {
       await Notification.requestPermission();
     }
     if (Notification.permission === "granted") {
-      new Notification(title, { body, icon: "/icon-192.png", badge: "/icon-192.png", tag: "lead-alert", renotify: true } as any);
+      new Notification(title, {
+        body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        tag: "lead-alert",
+        renotify: true,
+        requireInteraction: true,
+      } as NotificationOptions);
     }
   } catch {}
 }
