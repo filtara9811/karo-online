@@ -229,15 +229,10 @@ function VendorRegister() {
     whatsapp.replace(/\D/g, "").length >= 10 &&
     managerEmail.includes("@");
 
-  const step2Valid = insta.trim().length > 0 || fb.trim().length > 0 || website.trim().length > 0;
-  const step3Valid = aadhaar.replace(/\D/g, "").length === 12 && pan.trim().length === 10;
-
-  const canNext =
-    step === 0 ? step1Valid : step === 1 ? step2Valid : step === 2 ? step3Valid : false;
+  const canNext = step === 0 ? step1Valid : false;
 
   const goNext = () => {
-    if (step < 2) setStep((step + 1) as StepIdx);
-    else if (step === 2 && step3Valid) setStep(3);
+    if (step === 0 && step1Valid) setStep(1);
   };
 
   const goBack = () => {
