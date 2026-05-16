@@ -186,3 +186,125 @@ export const sendTestPush = createServerFn({ method: "POST" })
     const okCount = results.filter((r) => r.ok).length;
     return { ok: okCount > 0, sent: okCount, failed: results.length - okCount, results };
   });
+
+/** Fan-out a single push to all active device tokens of a user. */
+async function pushToUser(opts: {
+  userId: string;
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  actionUrl?: string | null;
+  highPriority?: boolean;
+  extraData?: Record<string, string>;
+}) {
+  const [{ data: fcm }, { data: tokens }] = await Promise.all([
+    supabaseAdmin.from("firebase_services").select("project_id, service_account_json").eq("service_key", "fcm").maybeSingle(),
+    supabaseAdmin.from("device_tokens").select("token").eq("user_id", opts.userId).eq("is_active", true),
+  ]);
+  if (!fcm?.project_id || !fcm?.service_account_json) return { ok: false, reason: "fcm_not_configured" as const };
+  const list = (tokens ?? []).map((t: any) => t.token).filter(Boolean);
+  if (list.length === 0) return { ok: false, reason: "no_device_tokens" as const };
+
+  let sa: ServiceAccount;
+  try {
+    sa = typeof fcm.service_account_json === "string" ? JSON.parse(fcm.service_account_json) : (fcm.service_account_json as any);
+  } catch { return { ok: false, reason: "service_account_invalid" as const }; }
+
+  let accessToken: string;
+  try { accessToken = await getAccessToken(sa); }
+  catch (e: any) { return { ok: false, reason: "oauth_failed" as const, error: String(e?.message ?? e) }; }
+
+  let okCount = 0;
+  for (const tk of list) {
+    const r = await sendOne({
+      projectId: fcm.project_id,
+      accessToken,
+      token: tk,
+      title: opts.title,
+      body: opts.body,
+      imageUrl: opts.imageUrl,
+      actionUrl: opts.actionUrl,
+      highPriority: opts.highPriority,
+      extraData: opts.extraData,
+    });
+    if (r.ok) okCount += 1;
+    if (!r.ok && (r.status === 404 || r.status === 400)) {
+      await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk);
+    }
+  }
+  return { ok: okCount > 0, sent: okCount, total: list.length };
+}
+
+/** High-priority push to a vendor when a new lead is targeted at them. */
+export const sendLeadPushToVendor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ vendor_id: z.string().uuid(), lead_id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const { data: lead } = await supabaseAdmin
+      .from("leads")
+      .select("id, sub_category_name, customer_name, customer_phone, address, lat, lng")
+      .eq("id", data.lead_id)
+      .maybeSingle();
+    if (!lead) return { ok: false, reason: "lead_not_found" as const };
+
+    const last4 = (lead as any).customer_phone ? String((lead as any).customer_phone).replace(/\D/g, "").slice(-4) : "";
+    const body = `${(lead as any).customer_name ?? "Customer"} • ${(lead as any).sub_category_name}${last4 ? ` • •••• ${last4}` : ""}`;
+    return await pushToUser({
+      userId: data.vendor_id,
+      title: "🔔 New Lead — 15s to respond",
+      body,
+      actionUrl: `/vendor/dashboard?leadId=${lead.id}`,
+      highPriority: true,
+      extraData: { kind: "lead_alert", lead_id: lead.id as string },
+    });
+  });
+
+/** Notify the customer with a vendor status update ("On the way", "Arrived", etc.). */
+export const sendStatusPushToCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({
+    lead_id: z.string().uuid(),
+    status_key: z.string().min(1).max(64),
+    message: z.string().max(280).optional(),
+  }))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: lead } = await supabaseAdmin
+      .from("leads")
+      .select("id, customer_id, sub_category_name, accepted_vendor_ids")
+      .eq("id", data.lead_id)
+      .maybeSingle();
+    if (!lead) return { ok: false, reason: "lead_not_found" as const };
+    if (!((lead as any).accepted_vendor_ids ?? []).includes(userId)) {
+      return { ok: false, reason: "not_accepted_vendor" as const };
+    }
+
+    const { data: vendor } = await supabaseAdmin
+      .from("vendors").select("business_name, owner_name").eq("user_id", userId).maybeSingle();
+    const vendorName = (vendor as any)?.business_name || (vendor as any)?.owner_name || "Your vendor";
+
+    // Persist the update (idempotent on RLS — already inserted by client; this is a fallback)
+    await supabaseAdmin.from("vendor_status_updates").insert({
+      lead_id: data.lead_id,
+      vendor_id: userId,
+      status_key: data.status_key,
+      message: data.message ?? null,
+    }).then(() => null, () => null);
+
+    const labels: Record<string, string> = {
+      on_the_way: "🚗 Vendor is on the way",
+      arrived: "📍 Vendor has arrived",
+      working: "🛠️ Vendor started the work",
+      completed: "✅ Vendor marked job complete",
+    };
+    const title = labels[data.status_key] ?? "Vendor update";
+    const body = data.message || `${vendorName} • ${(lead as any).sub_category_name}`;
+    return await pushToUser({
+      userId: (lead as any).customer_id,
+      title,
+      body,
+      actionUrl: `/status?leadId=${lead.id}`,
+      highPriority: true,
+      extraData: { kind: "vendor_status", lead_id: lead.id as string, status_key: data.status_key },
+    });
+  });
