@@ -130,6 +130,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const [quickSheet, setQuickSheet] = useState<null | "orders" | "referral" | "leads" | "support">(null);
   const [kycPct, setKycPct] = useState<number>(0);
   const { links: socialLinks } = useSocialLinks();
+  const { counts: notifCounts } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
