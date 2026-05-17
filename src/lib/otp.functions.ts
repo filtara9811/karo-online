@@ -295,24 +295,6 @@ export const sendOtp = createServerFn({ method: "POST" })
       };
     }
 
-    // Per-phone hourly cap: reject if 5+ OTPs were sent in the last hour.
-    const oneHourAgo = new Date(Date.now() - 60 * 60_000).toISOString();
-    const { count: hourCount } = await supabaseAdmin
-      .from("otp_codes")
-      .select("id", { count: "exact", head: true })
-      .eq("phone", phone)
-      .gte("created_at", oneHourAgo);
-    if ((hourCount ?? 0) >= 5) {
-      await logSystem("otp", gateway.provider, "error", "OTP hourly cap hit", {
-        phone_last4: phone.slice(-4),
-        attempts: hourCount,
-      });
-      return {
-        ok: false,
-        error: "Is mobile par bahut OTP requests aaye hain — 1 ghante baad try karein.",
-      };
-    }
-
     const code = String(randomInt(1000, 10000));
     const codeHash = hash(code, phone);
 
