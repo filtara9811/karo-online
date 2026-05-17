@@ -1341,11 +1341,11 @@ function SheetWrap({ onClose, children }: { onClose: () => void; children: React
 
 type QuickSheetKey = "orders" | "referral" | "leads" | "support";
 
-function QuickTiles({ onPick, onOpenNotifications }: { onPick: (s: QuickSheetKey) => void; onOpenNotifications?: () => void }) {
+function QuickTiles({ onPick, onOpenNotifications, orderBadge = 0 }: { onPick: (s: QuickSheetKey) => void; onOpenNotifications?: () => void; orderBadge?: number }) {
   const [revealed, setRevealed] = useState<string | null>(null);
   const { counts } = useNotifications();
   const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey; badge: number }> = [
-    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders", badge: counts.orders },
+    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders", badge: orderBadge },
     { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral", badge: counts.referral },
     { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads", badge: counts.messages },
     { id: "support", label: "Manager | support", Icon: Headset, sheet: "support", badge: counts.support },
