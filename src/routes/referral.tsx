@@ -9,6 +9,7 @@ import { useReferralOverview, type ReferralRow } from "@/hooks/use-referral";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { playCoinDrop } from "@/lib/coin-sound";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
@@ -23,8 +24,10 @@ export const Route = createFileRoute("/referral")({
 export function ReferralPage() {
   const router = useRouter();
   const { data, loading, refresh } = useReferralOverview();
+  const { counts, items } = useNotifications();
   const [copied, setCopied] = useState(false);
   const [activeRow, setActiveRow] = useState<ReferralRow | null>(null);
+  const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
 
   const shareUrl = useMemo(() => {
     if (!data?.code) return "";
@@ -61,11 +64,28 @@ export function ReferralPage() {
           <h1 className="font-display text-xl font-bold bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent">
             Refer &amp; Earn
           </h1>
+          {counts.referral > 0 && (
+            <span className="min-w-[22px] h-6 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold border-2 border-white shadow">
+              {counts.referral > 99 ? "99+" : counts.referral}
+            </span>
+          )}
           <button onClick={refresh} className="ml-auto text-xs text-amber-700 font-semibold">Refresh</button>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-5 space-y-5">
+        {counts.referral > 0 && (
+          <section className="rounded-2xl bg-rose-50 border border-rose-200 px-3 py-2.5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-bold text-rose-700">{counts.referral} unread referral update{counts.referral > 1 ? "s" : ""}</p>
+              <Gift className="h-4 w-4 text-rose-500 flex-shrink-0" />
+            </div>
+            {referralUnreadItems[0] && (
+              <p className="text-[11px] text-rose-600 truncate mt-1">{referralUnreadItems[0].title} — {referralUnreadItems[0].body}</p>
+            )}
+          </section>
+        )}
+
         {/* Hero share card */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -123,7 +143,14 @@ export function ReferralPage() {
         {/* Referral list */}
         <section>
           <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="font-display text-lg font-bold text-slate-800">Your referrals</h3>
+            <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
+              Your referrals
+              {counts.referral > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                  {counts.referral > 99 ? "99+" : counts.referral}
+                </span>
+              )}
+            </h3>
             <span className="text-[11px] text-slate-500">{data?.referrals.length ?? 0} total</span>
           </div>
 
