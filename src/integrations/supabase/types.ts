@@ -2066,6 +2066,7 @@ export type Database = {
       vendor_status_updates: {
         Row: {
           created_at: string
+          customer_read_at: string | null
           id: string
           lead_id: string
           message: string | null
@@ -2074,6 +2075,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_read_at?: string | null
           id?: string
           lead_id: string
           message?: string | null
@@ -2082,6 +2084,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_read_at?: string | null
           id?: string
           lead_id?: string
           message?: string | null

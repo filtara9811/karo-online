@@ -35,11 +35,13 @@ function statusBucket(s: OrderStatus): OrderStatusKind {
 export function MyOrdersList({
   onItemClick,
   basePath = "/status",
+  totalUnreadOverride,
 }: {
   onItemClick?: () => void;
   basePath?: "/status" | "/vendor/status" | "/chat" | "/vendor/chat";
+  totalUnreadOverride?: number;
 }) {
-  const { groups: vendors, loading } = useMyOrders();
+  const { groups: vendors, loading, markOrderRead } = useMyOrders();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | OrderStatusKind>("all");
   const [query, setQuery] = useState("");
@@ -58,11 +60,25 @@ export function MyOrdersList({
       .filter((v) => v.orders.length > 0);
   }, [vendors, filter, query]);
 
-  const totalUnread = vendors.reduce((s, v) => s + v.orders.reduce((a, o) => a + o.unread, 0), 0);
+  const unreadByFilter = useMemo(() => {
+    const totals: Record<"all" | OrderStatusKind, number> = { all: 0, pending: 0, active: 0, completed: 0 };
+    vendors.forEach((v) => {
+      v.orders.forEach((o) => {
+        const unread = o.unread ?? 0;
+        const bucket = statusBucket(o.status);
+        totals.all += unread;
+        totals[bucket] += unread;
+      });
+    });
+    return totals;
+  }, [vendors]);
+
+  const totalUnread = totalUnreadOverride ?? vendors.reduce((s, v) => s + v.orders.reduce((a, o) => a + o.unread, 0), 0);
   const totalOrders = vendors.reduce((s, v) => s + v.orders.length, 0);
 
-  const openOrder = (vendorId: string, orderId: string) => {
+  const openOrder = async (vendorId: string, orderId: string) => {
     clearUnread(orderId);
+    await markOrderRead(orderId);
     onItemClick?.();
     navigate({ to: basePath, search: { vendorId, orderId } as never });
   };
@@ -97,6 +113,7 @@ export function MyOrdersList({
       <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
         {FILTERS.map((f) => {
           const active = filter === f.key;
+          const unread = f.key === "all" ? totalUnread : unreadByFilter[f.key];
           return (
             <button
               key={f.key}
@@ -108,6 +125,13 @@ export function MyOrdersList({
               }`}
             >
               {f.label}
+              {unread > 0 && (
+                <span className={`ml-1.5 inline-grid min-w-[18px] h-[18px] place-items-center rounded-full px-1 text-[9px] font-bold ${
+                  active ? "bg-white text-rose-600" : "bg-rose-500 text-white"
+                }`}>
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
             </button>
           );
         })}

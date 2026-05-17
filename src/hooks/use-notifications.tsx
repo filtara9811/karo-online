@@ -8,7 +8,7 @@ import { playPing } from "@/lib/lead-sound";
  * Unified unread counters across the app for the signed-in user.
  * Buckets:
  *   - messages: unread lead_messages where I'm recipient
- *   - orders:   leads where I'm the customer AND vendor sent status update in last 24h
+ *   - orders:   unread vendor_status_updates for leads where I'm the customer
  *   - support:  unread admin_notifications for me
  *   - referral: admin_notifications for me whose title/body mentions "referral"
  */
@@ -42,33 +42,29 @@ export function useNotifications() {
       setItems([]); setCounts({ messages: 0, orders: 0, referral: 0, support: 0, total: 0 });
       setLoading(false); return;
     }
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const [msgsRes, adminRes, statusRes] = await Promise.all([
       supabase
         .from("lead_messages")
         .select("id, lead_id, sender_id, sender_role, body, image_url, read_at, created_at")
         .eq("recipient_id", user.id)
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
       supabase
         .from("admin_notifications")
         .select("id, title, message, is_read, created_at")
         .eq("user_id", user.id)
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
       supabase
         .from("vendor_status_updates")
-        .select("id, lead_id, status_key, message, vendor_id, created_at")
-        .gte("created_at", since)
+        .select("id, lead_id, status_key, message, vendor_id, created_at, customer_read_at")
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
     ]);
 
     const msgs = (msgsRes.data ?? []) as Array<{ id: string; lead_id: string; sender_role: string; body: string | null; image_url: string | null; read_at: string | null; created_at: string }>;
     const admin = (adminRes.data ?? []) as Array<{ id: string; title: string; message: string; is_read: boolean; created_at: string }>;
-    const statuses = (statusRes.data ?? []) as Array<{ id: string; lead_id: string; status_key: string; message: string | null; vendor_id: string; created_at: string }>;
+    const statuses = (statusRes.data ?? []) as Array<{ id: string; lead_id: string; status_key: string; message: string | null; vendor_id: string; created_at: string; customer_read_at: string | null }>;
 
     // Filter status updates: only ones for leads where I am the customer
     let myLeadIds: string[] = [];
@@ -113,8 +109,7 @@ export function useNotifications() {
       title: labels[s.status_key] ?? "Vendor update",
       body: s.message || "Tap to view order details",
       createdAt: s.created_at,
-      // Status updates have no "read" column — consider read after 1 hour
-      read: Date.now() - new Date(s.created_at).getTime() > 60 * 60 * 1000,
+      read: !!s.customer_read_at,
       href: `/status?leadId=${s.lead_id}`,
     }));
 
@@ -167,12 +162,18 @@ export function useNotifications() {
 
   const markAllRead = useCallback(async () => {
     if (!user) return;
+    const statusIds = items
+      .filter((it) => it.id.startsWith("sts:") && !it.read)
+      .map((it) => it.id.slice(4));
     await Promise.all([
       supabase.from("lead_messages").update({ read_at: new Date().toISOString() }).eq("recipient_id", user.id).is("read_at", null),
       supabase.from("admin_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("user_id", user.id).eq("is_read", false),
+      statusIds.length
+        ? supabase.from("vendor_status_updates").update({ customer_read_at: new Date().toISOString() }).in("id", statusIds)
+        : Promise.resolve(),
     ]);
     refresh();
-  }, [user, refresh]);
+  }, [user, items, refresh]);
 
   const markRead = useCallback(async (item: NotifItem) => {
     if (!user) return;
@@ -180,6 +181,8 @@ export function useNotifications() {
       await supabase.from("lead_messages").update({ read_at: new Date().toISOString() }).eq("id", item.id.slice(4));
     } else if (item.id.startsWith("adm:")) {
       await supabase.from("admin_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", item.id.slice(4));
+    } else if (item.id.startsWith("sts:")) {
+      await supabase.from("vendor_status_updates").update({ customer_read_at: new Date().toISOString() }).eq("id", item.id.slice(4));
     }
     refresh();
   }, [user, refresh]);
