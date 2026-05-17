@@ -40,7 +40,7 @@ function fmtAt(iso: string): string {
 
 const PENDING_VENDOR_ID = "__pending__";
 
-export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refresh: () => void } {
+export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refresh: () => void; markOrderRead: (leadId: string) => Promise<void> } {
   const [groups, setGroups] = useState<VendorGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,17 +76,25 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
       });
     }
 
-    // last message + unread per lead
+    // last message/status + unread per lead
     const leadIds = leads.map((l) => l.id);
     const lastMsgByLead = new Map<string, { body: string; at: string }>();
     const unreadByLead = new Map<string, number>();
     if (leadIds.length) {
-      const { data: msgs } = await supabase
-        .from("lead_messages")
-        .select("lead_id, body, image_url, created_at, recipient_id, read_at, sender_id")
-        .in("lead_id", leadIds)
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      const [{ data: msgs }, { data: statuses }] = await Promise.all([
+        supabase
+          .from("lead_messages")
+          .select("lead_id, body, image_url, created_at, recipient_id, read_at, sender_id")
+          .in("lead_id", leadIds)
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        supabase
+          .from("vendor_status_updates")
+          .select("lead_id, status_key, message, created_at, customer_read_at")
+          .in("lead_id", leadIds)
+          .order("created_at", { ascending: false })
+          .limit(1000),
+      ]);
       msgs?.forEach((m) => {
         if (!lastMsgByLead.has(m.lead_id as string)) {
           lastMsgByLead.set(m.lead_id as string, {
@@ -96,6 +104,23 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
         }
         if (m.recipient_id === uid && !m.read_at) {
           unreadByLead.set(m.lead_id as string, (unreadByLead.get(m.lead_id as string) ?? 0) + 1);
+        }
+      });
+      const statusLabel: Record<string, string> = {
+        on_the_way: "🚗 Vendor is on the way",
+        arrived: "📍 Vendor has arrived",
+        working: "🛠️ Vendor started the work",
+        completed: "✅ Order completed",
+      };
+      statuses?.forEach((s) => {
+        const leadId = s.lead_id as string;
+        const text = (s.message as string | null) || statusLabel[s.status_key as string] || "Vendor update";
+        const prev = lastMsgByLead.get(leadId);
+        if (!prev || new Date(s.created_at as string).getTime() > new Date(prev.at).getTime()) {
+          lastMsgByLead.set(leadId, { body: text, at: s.created_at as string });
+        }
+        if (!s.customer_read_at) {
+          unreadByLead.set(leadId, (unreadByLead.get(leadId) ?? 0) + 1);
         }
       });
     }
@@ -135,6 +160,18 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
     setLoading(false);
   }, []);
 
+  const markOrderRead = useCallback(async (leadId: string) => {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return;
+    const now = new Date().toISOString();
+    await Promise.all([
+      supabase.from("lead_messages").update({ read_at: now }).eq("lead_id", leadId).eq("recipient_id", uid).is("read_at", null),
+      supabase.from("vendor_status_updates").update({ customer_read_at: now }).eq("lead_id", leadId).is("customer_read_at", null),
+    ]);
+    await load();
+  }, [load]);
+
   useEffect(() => {
     load();
     let alive = true;
@@ -142,9 +179,10 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
       .channel(`my-orders-${Math.random()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => { if (alive) load(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "lead_messages" }, () => { if (alive) load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendor_status_updates" }, () => { if (alive) load(); })
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [load]);
 
-  return { groups, loading, refresh: load };
+  return { groups, loading, refresh: load, markOrderRead };
 }
