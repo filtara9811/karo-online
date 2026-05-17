@@ -208,10 +208,18 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const liveCards: DashCard[] = useMemo(() => {
     return CARDS.map((c) =>
       c.type === "orders"
-        ? { ...c, code: `${orderStats.active} Active`, badge: String(orderStats.total) }
+        ? { ...c, code: `${orderStats.active} Active`, badge: String(notifCounts.orders || orderStats.total) }
+        : c.type === "reselling"
+          ? { ...c, badge: String(notifCounts.referral) }
         : c
     );
-  }, [orderStats]);
+  }, [orderStats, notifCounts.orders, notifCounts.referral]);
+
+  const rowUnreadBadge = (rowId: string) => {
+    if (rowId === "referral") return notifCounts.referral;
+    if (rowId === "profile") return notifCounts.total;
+    return 0;
+  };
 
   const TAB_META: Array<{ type: CardType; label: string; Icon: typeof User }> = [
     { type: "personal", label: "Profile", Icon: User },
@@ -339,7 +347,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <MyOrdersList />
+            <MyOrdersList totalUnreadOverride={notifCounts.orders} />
           </motion.section>
         )}
       </AnimatePresence>
@@ -347,7 +355,9 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       {/* List rows — hidden when Orders card is active */}
       {activeCard.type !== "orders" && (
       <section className="px-4 mt-5 space-y-3">
-        {ROWS.map((r, i) => (
+        {ROWS.map((r, i) => {
+          const rowBadge = rowUnreadBadge(r.id);
+          return (
           <motion.button
             key={r.id}
             initial={{ opacity: 0, y: 10 }}
@@ -370,6 +380,11 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           >
             <div className="h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
               <r.Icon className="h-6 w-6 text-amber-700" strokeWidth={1.8} />
+              {rowBadge > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold border-2 border-white shadow">
+                  {rowBadge > 99 ? "99+" : rowBadge}
+                </span>
+              )}
             </div>
             <div className="flex-1 text-left">
               <p className="font-display text-lg text-slate-500 font-light">
@@ -384,7 +399,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
               <ChevronRight className="h-5 w-5 text-amber-400" />
             )}
           </motion.button>
-        ))}
+        );})}
       </section>
       )}
 
