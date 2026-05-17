@@ -378,7 +378,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             }}
             className="w-full rounded-2xl bg-white border border-amber-200/70 px-4 py-4 flex items-center gap-4 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.35)] active:shadow-md"
           >
-            <div className="h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+            <div className="relative h-12 w-12 rounded-xl grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
               <r.Icon className="h-6 w-6 text-amber-700" strokeWidth={1.8} />
               {rowBadge > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold border-2 border-white shadow">
@@ -502,7 +502,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
               <PackageOpen className="h-7 w-7 text-amber-700" />
               <h3 className="font-display text-xl text-amber-700 font-bold">My | Order</h3>
             </div>
-            <MyOrdersList />
+            <MyOrdersList totalUnreadOverride={notifCounts.orders} />
           </SheetWrap>
         )}
         {quickSheet === "referral" && (
