@@ -4,6 +4,7 @@ import { Plus, Trash2, Save, Loader2, Eye, EyeOff, FileText, Image as ImageIcon,
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminLayout, PageHeader, GoldButton, GoldCard } from "@/components/admin/AdminLayout";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 type Page = {
   id: string;
@@ -193,16 +194,17 @@ function LegalAdminPage() {
 
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-[#d4af37]/70 font-bold">
-                  Body (HTML — supports h2, p, ul, strong, a)
+                  Body (Rich Text Editor)
                 </label>
-                <textarea
-                  value={active.body}
-                  onChange={(e) => update({ body: e.target.value })}
-                  rows={14}
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] outline-none focus:border-[#d4af37] text-xs font-mono resize-y"
-                />
+                <div className="mt-1">
+                  <RichTextEditor
+                    value={active.body}
+                    onChange={(html) => update({ body: html })}
+                    placeholder="Page content yahan likhein..."
+                  />
+                </div>
                 <p className="text-[10px] text-[#f5d97a]/50 mt-1">
-                  Tip: &lt;h2&gt;Heading&lt;/h2&gt; &lt;p&gt;Para&lt;/p&gt; &lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt; &lt;strong&gt;Bold&lt;/strong&gt; &lt;a href="..."&gt;Link&lt;/a&gt;
+                  Tip: Headings, lists, bold, italic, links — toolbar se use karein. Save button dabaakar publish karein.
                 </p>
               </div>
 
