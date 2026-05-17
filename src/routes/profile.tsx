@@ -203,17 +203,21 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
     const reviewCount = done; // 1 review per completed order placeholder
     return { total, pending, active, done, cancelled, ratingAvg, reviewCount };
   }, [vendors]);
+  const orderUnread = useMemo(
+    () => vendors.reduce((sum, v) => sum + v.orders.reduce((inner, o) => inner + (o.unread ?? 0), 0), 0),
+    [vendors],
+  );
 
   // Inject live values into the visible cards
   const liveCards: DashCard[] = useMemo(() => {
     return CARDS.map((c) =>
       c.type === "orders"
-        ? { ...c, code: `${orderStats.active} Active`, badge: String(notifCounts.orders || orderStats.total) }
+        ? { ...c, code: `${orderStats.active} Active`, badge: String(orderUnread || orderStats.total) }
         : c.type === "reselling"
           ? { ...c, badge: String(notifCounts.referral) }
         : c
     );
-  }, [orderStats, notifCounts.orders, notifCounts.referral]);
+  }, [orderStats, orderUnread, notifCounts.referral]);
 
   const rowUnreadBadge = (rowId: string) => {
     if (rowId === "referral") return notifCounts.referral;
@@ -300,7 +304,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       </section>
 
       {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
-      <QuickTiles onPick={(s) => setQuickSheet(s)} onOpenNotifications={() => setNotifOpen(true)} />
+      <QuickTiles onPick={(s) => setQuickSheet(s)} onOpenNotifications={() => setNotifOpen(true)} orderBadge={orderUnread} />
       <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
 
 
@@ -347,7 +351,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             transition={{ duration: 0.25 }}
             className="px-4 mt-5"
           >
-            <MyOrdersList totalUnreadOverride={notifCounts.orders} />
+            <MyOrdersList />
           </motion.section>
         )}
       </AnimatePresence>
@@ -502,7 +506,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
               <PackageOpen className="h-7 w-7 text-amber-700" />
               <h3 className="font-display text-xl text-amber-700 font-bold">My | Order</h3>
             </div>
-            <MyOrdersList totalUnreadOverride={notifCounts.orders} />
+            <MyOrdersList />
           </SheetWrap>
         )}
         {quickSheet === "referral" && (
