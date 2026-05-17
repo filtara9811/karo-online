@@ -35,11 +35,13 @@ function statusBucket(s: OrderStatus): OrderStatusKind {
 export function MyOrdersList({
   onItemClick,
   basePath = "/status",
+  totalUnreadOverride,
 }: {
   onItemClick?: () => void;
   basePath?: "/status" | "/vendor/status" | "/chat" | "/vendor/chat";
+  totalUnreadOverride?: number;
 }) {
-  const { groups: vendors, loading } = useMyOrders();
+  const { groups: vendors, loading, markOrderRead } = useMyOrders();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | OrderStatusKind>("all");
   const [query, setQuery] = useState("");
@@ -58,11 +60,12 @@ export function MyOrdersList({
       .filter((v) => v.orders.length > 0);
   }, [vendors, filter, query]);
 
-  const totalUnread = vendors.reduce((s, v) => s + v.orders.reduce((a, o) => a + o.unread, 0), 0);
+  const totalUnread = totalUnreadOverride ?? vendors.reduce((s, v) => s + v.orders.reduce((a, o) => a + o.unread, 0), 0);
   const totalOrders = vendors.reduce((s, v) => s + v.orders.length, 0);
 
-  const openOrder = (vendorId: string, orderId: string) => {
+  const openOrder = async (vendorId: string, orderId: string) => {
     clearUnread(orderId);
+    await markOrderRead(orderId);
     onItemClick?.();
     navigate({ to: basePath, search: { vendorId, orderId } as never });
   };
