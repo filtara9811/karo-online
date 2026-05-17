@@ -42,28 +42,24 @@ export function useNotifications() {
       setItems([]); setCounts({ messages: 0, orders: 0, referral: 0, support: 0, total: 0 });
       setLoading(false); return;
     }
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const [msgsRes, adminRes, statusRes] = await Promise.all([
       supabase
         .from("lead_messages")
         .select("id, lead_id, sender_id, sender_role, body, image_url, read_at, created_at")
         .eq("recipient_id", user.id)
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
       supabase
         .from("admin_notifications")
         .select("id, title, message, is_read, created_at")
         .eq("user_id", user.id)
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
       supabase
         .from("vendor_status_updates")
         .select("id, lead_id, status_key, message, vendor_id, created_at, customer_read_at")
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(200),
     ]);
 
     const msgs = (msgsRes.data ?? []) as Array<{ id: string; lead_id: string; sender_role: string; body: string | null; image_url: string | null; read_at: string | null; created_at: string }>;
