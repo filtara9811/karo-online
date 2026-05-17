@@ -9,9 +9,13 @@
  *
  * Keep this file thin — server fn declarations only — so the splitter can
  * stub it out of client bundles cleanly.
+ *
+ * SECURITY: All fns require an authenticated Supabase session so that
+ * anonymous bots cannot drain the server-side Maps API quota.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BASE = "https://maps.googleapis.com/maps/api";
 
@@ -25,6 +29,7 @@ const LatLng = z.object({ lat: z.number(), lng: z.number() });
 
 // ─── Reverse geocode ────────────────────────────────────────────────────
 export const reverseGeocodeFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { lat: number; lng: number }) =>
     LatLng.parse(d),
   )
@@ -40,6 +45,7 @@ export const reverseGeocodeFn = createServerFn({ method: "POST" })
 
 // ─── Geocode (address → latlng) ─────────────────────────────────────────
 export const geocodeFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { address: string }) =>
     z.object({ address: z.string().min(1).max(500) }).parse(d),
   )
@@ -56,6 +62,7 @@ export const geocodeFn = createServerFn({ method: "POST" })
 
 // ─── Distance matrix ────────────────────────────────────────────────────
 export const distanceMatrixFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { origin: { lat: number; lng: number }; destinations: { lat: number; lng: number }[] }) =>
     z.object({
       origin: LatLng,
@@ -86,6 +93,7 @@ export const distanceMatrixFn = createServerFn({ method: "POST" })
 
 // ─── Places autocomplete ────────────────────────────────────────────────
 export const placesAutocompleteFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { input: string; sessionToken?: string; bias?: { lat: number; lng: number } | null }) =>
     z.object({
       input: z.string().min(1).max(200),
@@ -116,6 +124,7 @@ export const placesAutocompleteFn = createServerFn({ method: "POST" })
 
 // ─── Place details ──────────────────────────────────────────────────────
 export const placeDetailsFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { placeId: string; sessionToken?: string }) =>
     z.object({
       placeId: z.string().min(1).max(255),
@@ -145,6 +154,7 @@ export const placeDetailsFn = createServerFn({ method: "POST" })
 
 // ─── Directions ─────────────────────────────────────────────────────────
 export const directionsFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { origin: { lat: number; lng: number }; destination: { lat: number; lng: number } }) =>
     z.object({ origin: LatLng, destination: LatLng }).parse(d),
   )

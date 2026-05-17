@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, Play, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import DOMPurify from "isomorphic-dompurify";
 
 type Page = {
   id: string;
@@ -165,7 +166,7 @@ export function LegalSheet({ open, initialSlug, onClose }: Props) {
           ) : active ? (
             <div
               className="prose prose-sm max-w-none prose-headings:text-amber-900 prose-a:text-amber-700 prose-strong:text-amber-900"
-              dangerouslySetInnerHTML={{ __html: active.body }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(active.body) }}
             />
           ) : (
             <p className="text-sm text-slate-500 text-center mt-10">No pages available</p>

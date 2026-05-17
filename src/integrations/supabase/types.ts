@@ -1682,6 +1682,13 @@ export type Database = {
             referencedRelation: "referrals"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "referral_progress_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: true
+            referencedRelation: "referrals_for_referrer"
+            referencedColumns: ["id"]
+          },
         ]
       }
       referral_rewards: {
@@ -1730,6 +1737,13 @@ export type Database = {
             columns: ["referral_id"]
             isOneToOne: false
             referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals_for_referrer"
             referencedColumns: ["id"]
           },
         ]
@@ -2456,7 +2470,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referrals_for_referrer: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          kind: string | null
+          referred_user_id: string | null
+          referrer_user_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          kind?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          kind?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }

@@ -251,13 +251,35 @@ async function pushToUser(opts: {
 export const sendLeadPushToVendor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ vendor_id: z.string().uuid(), lead_id: z.string().uuid() }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { userId, supabase: userSb } = context;
+
     const { data: lead } = await supabaseAdmin
       .from("leads")
       .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, address, images, lat, lng")
       .eq("id", data.lead_id)
       .maybeSingle();
     if (!lead) return { ok: false, reason: "lead_not_found" as const };
+
+    // Authorization: caller must be the lead's customer or an admin.
+    const isCustomer = (lead as any).customer_id === userId;
+    let isAdmin = false;
+    if (!isCustomer) {
+      const { data: adminFlag } = await userSb.rpc("is_admin_user", { _user_id: userId } as any);
+      isAdmin = !!adminFlag;
+    }
+    if (!isCustomer && !isAdmin) {
+      return { ok: false, reason: "not_authorized" as const };
+    }
+
+    // The target vendor must actually be notified for this lead (prevents spam to arbitrary vendors).
+    const { data: notif } = await supabaseAdmin
+      .from("lead_notifications")
+      .select("id")
+      .eq("lead_id", data.lead_id)
+      .eq("vendor_id", data.vendor_id)
+      .maybeSingle();
+    if (!notif) return { ok: false, reason: "vendor_not_targeted" as const };
 
     // Fetch customer avatar (icon) + sub-category image (large image)
     const [{ data: cust }, { data: cat }] = await Promise.all([

@@ -276,6 +276,25 @@ export const sendOtp = createServerFn({ method: "POST" })
       };
     }
 
+    // Per-phone rate limit: reject if an OTP was issued in the last 60s.
+    const sixtySecondsAgo = new Date(Date.now() - 60_000).toISOString();
+    const { data: recent } = await supabaseAdmin
+      .from("otp_codes")
+      .select("created_at")
+      .eq("phone", phone)
+      .gte("created_at", sixtySecondsAgo)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (recent && recent.length > 0) {
+      await logSystem("otp", gateway.provider, "error", "OTP cooldown active", {
+        phone_last4: phone.slice(-4),
+      });
+      return {
+        ok: false,
+        error: "Bahut jaldi-jaldi OTP request kar rahe ho — 60 second ruk kar try karein.",
+      };
+    }
+
     const code = String(randomInt(1000, 10000));
     const codeHash = hash(code, phone);
 
