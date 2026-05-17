@@ -4,6 +4,7 @@ import { Plus, Trash2, Save, Loader2, Eye, EyeOff, FileText, Image as ImageIcon,
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminLayout, PageHeader, GoldButton, GoldCard } from "@/components/admin/AdminLayout";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 type Page = {
   id: string;
