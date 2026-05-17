@@ -30,7 +30,7 @@ import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
 import { supabase } from "@/integrations/supabase/client";
 import { ReferralPage } from "@/routes/referral";
-import { NotificationCenter, NotificationBell } from "@/components/NotificationCenter";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { useNotifications } from "@/hooks/use-notifications";
 
 export const Route = createFileRoute("/profile")({
