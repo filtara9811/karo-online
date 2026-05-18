@@ -1,4 +1,5 @@
-import { Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Link, createRootRoute, HeadContent, Scripts, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
@@ -8,6 +9,26 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname === "/index") {
+      navigate({ to: "/", replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  if (location.pathname === "/index") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center px-6">
+          <h1 className="font-display text-4xl text-gold-gradient mb-3">Karo Online</h1>
+          <p className="text-sm text-muted-foreground">Loading your experience…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="max-w-md text-center glass-wine rounded-2xl p-10">
