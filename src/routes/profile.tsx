@@ -459,6 +459,9 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           <span>·</span>
           <button onClick={() => setLegalSlug("refund")} className="hover:text-amber-700">{t("refund")}</button>
         </div>
+        <p className="text-center mt-2 text-[10px] font-display tracking-wider text-amber-700/80">
+          Powered by <span className="font-semibold">Filipra Private Limited</span>
+        </p>
       </section>
 
       <LegalSheet
