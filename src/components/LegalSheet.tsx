@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, Play, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import DOMPurify from "isomorphic-dompurify";
 
 type Page = {
   id: string;
@@ -23,6 +22,20 @@ interface Props {
 function youtubeEmbed(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+}
+
+function sanitizeLegalHtml(html: string): string {
+  if (typeof window === "undefined") return "";
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("script, iframe, object, embed, link, meta, style").forEach((node) => node.remove());
+  doc.body.querySelectorAll("*").forEach((node) => {
+    Array.from(node.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith("on") || value.startsWith("javascript:")) node.removeAttribute(attr.name);
+    });
+  });
+  return doc.body.innerHTML;
 }
 
 export function LegalSheet({ open, initialSlug, onClose }: Props) {
@@ -166,7 +179,7 @@ export function LegalSheet({ open, initialSlug, onClose }: Props) {
           ) : active ? (
             <div
               className="prose prose-sm max-w-none prose-headings:text-amber-900 prose-a:text-amber-700 prose-strong:text-amber-900"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(active.body) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeLegalHtml(active.body) }}
             />
           ) : (
             <p className="text-sm text-slate-500 text-center mt-10">No pages available</p>
