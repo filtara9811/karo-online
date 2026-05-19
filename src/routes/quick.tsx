@@ -226,6 +226,17 @@ function QuickPage() {
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
 
+  // Onboarding carousel — first-visit only
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && !localStorage.getItem("ko-onboarding-seen-v1")) {
+        setShowOnboarding(true);
+      }
+    } catch {}
+  }, []);
+
+
   // ---- DB-loaded catalog ----
   const initialCatalog = useMemo<CatalogData>(() => fallbackCatalog(), []);
   const [types, setTypes] = useState<DBType[]>(initialCatalog.types);
