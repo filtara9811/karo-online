@@ -457,6 +457,7 @@ function QuickPage() {
     <div
       className="relative h-dvh bg-white flex flex-col overflow-hidden isolate overscroll-none"
     >
+      {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
         <QuickServiceMap
