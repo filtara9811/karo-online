@@ -134,7 +134,7 @@ export function useNotifications() {
           description: first.body,
           duration: 9000,
           position: "top-center",
-          important: true,
+          dismissible: true,
           action: first.href ? { label: "Open", onClick: () => { window.location.href = first.href!; } } : undefined,
         });
       }
