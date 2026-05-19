@@ -15,6 +15,7 @@ import {
   adjustWallet, setUserBlock, setVendorApproval, setKycStatus,
   toggleVendorItem, deleteVendorItem,
 } from "@/lib/admin-lookup.functions";
+import { fetchProfileHistory, type ProfileAuditRow } from "@/lib/profile-audit";
 
 export const Route = createFileRoute("/admin/view/$userId")({
   head: () => ({
