@@ -28,6 +28,7 @@ type Customer = AdminRecord & {
   gender: string | null;
   address: string | null;
   signup_method: string | null;
+  support_code: string | null;
 };
 
 function CustomersPage() {
