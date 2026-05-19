@@ -37,6 +37,8 @@ function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ListFilters>(emptyFilters);
   const [active, setActive] = useState<Customer | null>(null);
+  const navigate = useNavigate();
+
 
   const load = async () => {
     setLoading(true);
