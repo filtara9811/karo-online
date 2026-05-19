@@ -14,7 +14,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 let _keyPromise: Promise<string | null> | null = null;
-let _sessionCheckPromise: Promise<boolean> | null = null;
 
 export function getGoogleMapsKey(): Promise<string | null> {
   if (_keyPromise) return _keyPromise;
@@ -33,11 +32,9 @@ export function getGoogleMapsKey(): Promise<string | null> {
 
 async function hasAuthenticatedSession(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  if (_sessionCheckPromise) return _sessionCheckPromise;
-  _sessionCheckPromise = supabase.auth.getSession()
+  return supabase.auth.getSession()
     .then(({ data }) => Boolean(data.session?.access_token))
     .catch(() => false);
-  return _sessionCheckPromise;
 }
 
 const BASE = "https://maps.googleapis.com/maps/api";
