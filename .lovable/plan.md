@@ -1,81 +1,66 @@
-# Implementation Plan
+# Vendor Mapping UI + Notification Fixes
 
-Bahut saare points hain — main inhe 4 groups me todunga aur ek-ek karke implement karunga. Aap approve karenge to main start karunga.
+Aapki screenshot aur description ke hisaab se yeh chaar groups mein kaam karunga.
 
----
+## Group 1 — Vendor Services UI redesign (`vendor.services.tsx`)
 
-## Group 1 — Customer Login Flow Fixes (`RegistrationFlow.tsx`, `OtpModal.tsx`)
+Naya layout exactly screenshot jaisa:
 
-1. **Splash screen pehle, login baad me**
-   - Aaj: OTP/mobile screen pehle aata hai, splash baad me dikhta hai.
-   - Fix: `RegistrationFlow` ke andar order badlenge → `OnboardingCarousel` (admin se aaye slides) → Mobile number → OTP → Basic details → Home.
-   - Pehli baar install pe hi carousel chalega; baad me skip.
+```text
+┌─────────────────────────────┐
+│  AC                       × │   ← items sheet (currently selected category)
+│  ON karein wo services...   │
+│                             │
+│  [img] AC Service   [○──]   │
+│  [img] AC Repair    [○──]   │
+│  [img] AC Install   [──●]   │
+│  ...                        │
+├─────────────────────────────┤
+│ 🤝 Basic sarvic  │ 🖼 Ac vand│  ← row 2: category (L) | sub-cat (R)
+├─────────────────────────────┤
+│ ⚙ Sarvic  📦 Products  Other│  ← row 1 (bottom): type tabs
+└─────────────────────────────┘
+```
 
-2. **Mobile input box se fake number hatao**
-   - Input ka `defaultValue`/`value` empty rakhenge; sirf hindi/english placeholder "Mobile number" halka gray me.
-   - Country code (+91) prefix label ke roop me alag rahega, value me nahi.
+- Bottom-most bar: 3 type pills (Service / Products / Other), active pill = bronze fill.
+- Middle bar: left = current category picker, right = current sub-category picker. Tap left → category bottom sheet slides up; tap right → sub-category sheet.
+- Top sheet (largest): items of the selected sub-category, each with ON/OFF toggle (current style, green when on).
+- Single screen — no stacked modals. Selections drive what the top list shows.
 
-3. **OTP ke neeche "Verify" button**
-   - Abhi auto-verify ho jaata hai 6 digit pe. User chahta hai explicit "Verify" CTA bhi ho.
-   - Auto-verify hata kar — neeche gold "Verify OTP" button add karunga (disabled jab tak 6 digit na ho).
+## Group 2 — Pricing & Variation popup before turning ON
 
-4. **Sounds**
-   - Mobile number screen open hote hi ek soft ping ("mobile number darj karein" cue).
-   - OTP screen open hote hi dusra ping.
-   - `lead-sound.ts` me already `playPing` exist karta hai — wahi reuse karunga.
+Jab vendor kisi item ka toggle OFF→ON karta hai, pehle ek `ItemPricingSheet` khulta hai:
 
----
+- Inputs: `price_min`, `price_max` (₹), short `notes` (textarea).
+- Variation chips (multi-select checkboxes): **Wholesale**, **Retail**, **Manufacture** (+ "Add custom" chip).
+- Buttons: **Cancel** (toggle stays OFF) / **Enable** (saves and turns ON).
+- On save → insert into `vendor_item_mappings` with `{ price_min, price_max, notes, variations: string[] }`.
 
-## Group 2 — Vendor "Form Bar-Bar" Bug
+Migration: add `price_min numeric`, `price_max numeric`, `notes text`, `variations text[]` columns to `vendor_item_mappings` (nullable, defaults). RLS unchanged.
 
-Symptom: Vendor pe jaate hi har baar registration/onboarding form khulta hai, even after vendor registered ho chuka hai.
+Customer lead card already shows vendor list — uss list me ab `price_min–price_max` aur variations chips dikhayenge (read from mapping). Edit allowed: "Edit" pencil on each ON row reopens the same sheet.
 
-Plan:
-- `VendorAuthGate` / `vendor.register.tsx` me check karunga — kya wo `vendors` table me row check kar raha hai ya sirf local state pe depend kar raha hai.
-- Agar `vendors` table me `user_id` ka entry hai → seedha `vendor.dashboard` pe redirect, form skip.
-- Customer↔Vendor switch karne pe localStorage flag clear nahi karenge.
+## Group 3 — Vendor form re-show + per-card unread count
 
----
+- `vendor.register.tsx`: gate is already present but laggy — add a `sessionStorage` cache (`vendor:registered:<uid>=1`) set on first successful check so subsequent opens skip the network roundtrip and render dashboard instantly.
+- `VendorLeadInbox` / lead cards: add unread message badge per lead. Query `lead_messages` (or existing chat table) `WHERE lead_id IN (...) AND read_by_vendor = false GROUP BY lead_id`. Show small red pill with count on the card, same pattern as customer "My Orders".
+- Mark-read on lead open.
 
-## Group 3 — Vendor Services / Categories Screen Redesign
+## Group 4 — Background push + new tone
 
-Aapne screenshot bheja hai (`/vendor/services`) jisme Service / Product / Other tiles hain.
+- Replace current alert sound file with a softer two-tone chime (`/public/sounds/lead-alert-v2.mp3` — short, pleasant). Update `src/lib/lead-sound.ts` to point at it.
+- Ensure FCM `firebase-messaging-sw.js` shows a system notification with `requireInteraction: true`, vibration pattern, and an "Accept" / "View" action — so vendor gets it even when app/screen is closed. Wire `notificationclick` to open `/vendor/lead/<id>`.
+- Server side: when a lead is created and a matching vendor exists, the existing push function should fire with `data: { leadId, type: 'new_lead' }` + a high-priority `notification` payload (already wired — verify and fix if missing).
 
-1. **Stacked bottom sheets**:
-   - Step 1: Type select (Service / Product / Other) → bottom sheet slide-up with categories.
-   - Step 2: Category select → uske upar dusri bottom sheet slide-up with sub-categories.
-   - Har sheet ke top-right corner pe X button to close just that sheet.
-2. **On/Off toggle per sub-category**:
-   - Auto-accept-leads jaisa pill toggle (green = ON/linked, gray = OFF).
-   - ON karte hi vendor us category ke leads receive karega; OFF karte hi link hat jaayega.
-3. **Visual polish**: gold-accent dividers, better spacing, glass sheet treatment.
+## Files touched
 
----
+- `src/routes/vendor.services.tsx` — full redesign (single screen, 3 bars)
+- `src/components/ItemPricingSheet.tsx` (new)
+- `supabase/migrations/<ts>_vendor_mapping_pricing.sql`
+- `src/routes/vendor.register.tsx` — sessionStorage fast-path
+- `src/components/VendorLeadInbox.tsx` (+ card component) — unread count badge
+- `src/lib/lead-sound.ts` + new `public/sounds/lead-alert-v2.mp3`
+- `public/firebase-messaging-sw.js` — action buttons + vibration
+- `src/lib/push.functions.ts` — verify high-priority payload
 
-## Group 4 — End-to-End Flow Audit + Profile Notification Counts
-
-Main browser me khol kar test karunga:
-1. Customer flow: splash → OTP → register → home → place lead.
-2. Vendor flow: lead popup, bell sound, accept/reject, chat.
-3. Notification counts:
-   - Customer home pe profile avatar pe unread count badge.
-   - Vendor home pe profile avatar pe unread count badge.
-   - Admin → vendor → customer notification trips all visible with count.
-
-End me main aapko bataunga:
-- ✅ Kya kaam kar raha hai
-- ⚠️ Kya pending hai launch ke liye
-- 🚀 Kya hum launch kar sakte hain ya nahi
-
----
-
-## Files I'll touch
-- `src/components/RegistrationFlow.tsx` — splash-first ordering, empty mobile field
-- `src/components/OtpModal.tsx` — explicit Verify button, ping sounds
-- `src/components/VendorAuthGate.tsx` + `src/routes/vendor.register.tsx` — registration persistence check
-- `src/routes/vendor.services.tsx` + new `CategoryStackSheet.tsx` — stacked bottom sheets + toggle
-- Audit only (no edits unless bug found): `src/hooks/use-vendor-leads.tsx`, `src/components/LeadAlertStack.tsx`, `src/routes/profile.tsx`, `src/routes/vendor.dashboard.tsx`
-
----
-
-**Confirm karein** "haan, start karo" — main turant Group 1 se shuru karunga. Agar kisi group ko skip ya reorder karna hai to bata dijiye.
+Execution order: Group 1 → Group 2 (DB + sheet) → Group 3 → Group 4. Confirm karein "haan start karo" toh main shuru karta hun, ya kisi group ko pehle/skip karna ho toh bataiye.
