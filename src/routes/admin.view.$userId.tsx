@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin/view/$userId")({
   component: ViewPage,
 });
 
-type Tab = "overview" | "profile" | "vendor" | "products" | "kyc" | "wallet" | "leads" | "notifications";
+type Tab = "overview" | "profile" | "vendor" | "products" | "card" | "kyc" | "wallet" | "orders" | "inbox" | "leads" | "notifications";
 
 function ViewPage() {
   const { userId } = Route.useParams();
