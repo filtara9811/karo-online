@@ -87,11 +87,14 @@ function ViewPage() {
   const tabs: { k: Tab; l: string; I: any; show?: boolean }[] = ([
     { k: "overview" as Tab, l: "Overview", I: Activity },
     { k: "profile" as Tab, l: "Profile", I: UserIcon },
+    { k: "card" as Tab, l: "Card", I: CreditCard },
     { k: "vendor" as Tab, l: "Vendor", I: Store, show: !!v },
     { k: "products" as Tab, l: "Products", I: Package, show: !!v },
+    { k: "inbox" as Tab, l: "Lead Inbox", I: Inbox, show: !!v },
+    { k: "orders" as Tab, l: "Orders Raised", I: FileText },
     { k: "kyc" as Tab, l: "KYC", I: ShieldCheck },
     { k: "wallet" as Tab, l: "Wallet", I: WalletIcon },
-    { k: "leads" as Tab, l: "Leads", I: FileText },
+    { k: "leads" as Tab, l: "All Leads", I: FileText },
     { k: "notifications" as Tab, l: "Notify", I: Bell },
   ] as { k: Tab; l: string; I: any; show?: boolean }[]).filter((t) => t.show !== false);
 
