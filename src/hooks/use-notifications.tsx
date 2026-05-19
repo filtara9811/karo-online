@@ -132,8 +132,10 @@ export function useNotifications() {
         const emoji = first.bucket === "messages" ? "💬" : first.bucket === "orders" ? "📦" : first.bucket === "referral" ? "🎁" : "🔔";
         toast(`${emoji} ${first.title}`, {
           description: first.body,
-          duration: 5000,
+          duration: 9000,
           position: "top-center",
+          important: true,
+          action: first.href ? { label: "Open", onClick: () => { window.location.href = first.href!; } } : undefined,
         });
       }
     }
