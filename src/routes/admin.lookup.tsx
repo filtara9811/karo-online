@@ -127,24 +127,20 @@ function UserDrawer({ userId, onClose }: { userId: string; onClose: () => void }
   const [tab, setTab] = useState<"profile" | "vendor" | "wallet" | "activity">("profile");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchFull = useServerFn(getUserFull);
 
-  useState(() => {
-    // intentional one-shot via key
-  });
-
-  // Load
-  if (!data && loading) {
+  useEffect(() => {
+    let cancel = false;
+    setLoading(true);
     fetchFull({ data: { userId } })
-      .then((r) => setData(r))
+      .then((r) => { if (!cancel) setData(r); })
       .catch((e) => toast.error(e?.message || "Load failed"))
-      .finally(() => setLoading(false));
-  }
+      .finally(() => { if (!cancel) setLoading(false); });
+    return () => { cancel = true; };
+  }, [userId]);
 
   const refresh = async () => {
-    setRefreshKey((k) => k + 1);
     try {
       const r = await fetchFull({ data: { userId } });
       setData(r);
