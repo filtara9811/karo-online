@@ -2144,7 +2144,11 @@ export type Database = {
           id: string
           is_active: boolean
           item_id: string
+          notes: string | null
+          price_max: number | null
+          price_min: number | null
           updated_at: string
+          variations: string[]
           vendor_id: string
         }
         Insert: {
@@ -2152,7 +2156,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           item_id: string
+          notes?: string | null
+          price_max?: number | null
+          price_min?: number | null
           updated_at?: string
+          variations?: string[]
           vendor_id: string
         }
         Update: {
@@ -2160,7 +2168,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           item_id?: string
+          notes?: string | null
+          price_max?: number | null
+          price_min?: number | null
           updated_at?: string
+          variations?: string[]
           vendor_id?: string
         }
         Relationships: [

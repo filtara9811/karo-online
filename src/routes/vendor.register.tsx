@@ -140,6 +140,15 @@ function VendorRegister() {
   // Auto-skip if vendor already onboarded (unless ?edit=1 from menu)
   useEffect(() => {
     if (!user || profileLoaded) return;
+    // Fast-path: sessionStorage cache → instant redirect, no flash
+    if (!editMode && typeof window !== "undefined") {
+      try {
+        if (sessionStorage.getItem(`vendor:registered:${user.id}`) === "1") {
+          navigate({ to: "/vendor/dashboard" });
+          return;
+        }
+      } catch {}
+    }
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -166,8 +175,8 @@ function VendorRegister() {
         setAadhaar((data as any).aadhaar ?? "");
         setPan((data as any).pan ?? "");
         setGst((data as any).gst ?? "");
-        // If vendor row exists at all and we're NOT in edit mode → straight to dashboard.
-        // (Previously checked business_name; user reported form re-appearing — relax check.)
+        // Cache for next opens
+        try { sessionStorage.setItem(`vendor:registered:${user.id}`, "1"); } catch {}
         if (!editMode) {
           navigate({ to: "/vendor/dashboard" });
           return;
