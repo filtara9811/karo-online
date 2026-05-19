@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, Loader2, User as UserIcon, Store, Wallet as WalletIcon,
-  ShieldCheck, Package, FileText, Bell, Activity, Hash,
+  ShieldCheck, Package, FileText, Bell, Activity, Hash, CreditCard, Inbox,
   Check, X as XIcon, Ban, Save, Plus, Minus, Trash2, Eye, EyeOff,
   Phone, Mail, MapPin, Tag, Calendar, ExternalLink,
 } from "lucide-react";
