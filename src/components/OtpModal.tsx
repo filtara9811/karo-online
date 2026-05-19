@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+
 import goldOtp from "@/assets/gold-otp.png";
 import { playPing } from "@/lib/lead-sound";
 
@@ -9,7 +10,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function OtpModal({ open, phone, onClose }: Props) {
+export function OtpModal({ open, phone, onVerified, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [seconds, setSeconds] = useState(45);
   const [verifying, setVerifying] = useState(false);
@@ -35,7 +36,24 @@ export function OtpModal({ open, phone, onClose }: Props) {
     return () => clearTimeout(t);
   }, [open, seconds, verified]);
 
+  // Auto-verify when all 6 digits entered (demo mode; replace with real verify when SMS provider is wired)
+  useEffect(() => {
+    if (!open || verified || verifying) return;
+    const code = digits.join("");
+    if (code.length === 6) {
+      setVerifying(true);
+      const t = setTimeout(() => {
+        setVerifying(false);
+        setVerified(true);
+        try { playPing("default"); } catch { /* */ }
+        setTimeout(() => onVerified(code), 600);
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [digits, open, verified, verifying, onVerified]);
+
   if (!open) return null;
+
 
   const handleChange = (i: number, val: string) => {
     const v = val.replace(/\D/g, "").slice(-1);

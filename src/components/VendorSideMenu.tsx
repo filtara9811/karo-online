@@ -188,6 +188,8 @@ export function VendorSideMenu({
               </Link>
               <button
                 onClick={async () => {
+                  const ok = window.confirm("Kya aap sach me logout karna chahte hain?");
+                  if (!ok) return;
                   try {
                     await signOut();
                     toast.success("Logged out");

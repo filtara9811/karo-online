@@ -32,6 +32,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ReferralPage } from "@/routes/referral";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { useNotifications } from "@/hooks/use-notifications";
+import { OtpModal } from "@/components/OtpModal";
+import { Lock } from "lucide-react";
+
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -370,6 +373,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             whileTap={{ scale: 0.98 }}
             onClick={async () => {
               if (r.id === "logout") {
+                const ok = window.confirm("Kya aap sach me logout karna chahte hain?");
+                if (!ok) return;
                 await signOut();
                 router.navigate({ to: "/" });
                 return;
@@ -964,9 +969,15 @@ function ProfileDetailsSheet({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [subSheet, setSubSheet] = useState<null | "kyc" | "bank">(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [otpOpen, setOtpOpen] = useState(false);
 
   const save = async () => {
     if (!userId) return;
+    if (!unlocked) {
+      setOtpOpen(true);
+      return;
+    }
     setSaving(true);
     const before = {
       name: profile?.name ?? "",
@@ -1000,12 +1011,14 @@ function ProfileDetailsSheet({
     }
     try {
       const { logProfileChanges } = await import("@/lib/profile-audit");
-      await logProfileChanges(userId, before, after, { verifiedViaOtp: false });
+      await logProfileChanges(userId, before, after, { verifiedViaOtp: true });
     } catch {}
     await refreshProfile();
     setSaving(false);
+    setUnlocked(false);
     onClose();
   };
+
 
   const uploadCroppedAvatar = async (file: File) => {
     if (!userId) return;
@@ -1026,10 +1039,29 @@ function ProfileDetailsSheet({
 
   return (
     <SheetWrap onClose={onClose}>
-      <div className="flex items-center gap-3 mb-4">
-        <User className="h-7 w-7 text-amber-700" />
-        <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <User className="h-7 w-7 text-amber-700" />
+          <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
+        </div>
+        <button
+          onClick={() => (unlocked ? setUnlocked(false) : setOtpOpen(true))}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border transition active:scale-95 ${
+            unlocked
+              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+              : "bg-white border-amber-300 text-amber-700"
+          }`}
+        >
+          <Lock className="h-3.5 w-3.5" />
+          {unlocked ? "Editing" : "Edit"}
+        </button>
       </div>
+      {!unlocked && (
+        <p className="text-[11px] text-slate-500 mb-3 px-1">
+          Details locked. Edit ke liye OTP verify karein.
+        </p>
+      )}
+
 
       {/* Avatar uploader with crop */}
       <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3 mb-4">
@@ -1054,11 +1086,12 @@ function ProfileDetailsSheet({
       </div>
 
       <div className="space-y-3">
-        <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
-        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
-        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
-        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
+        <EditableField Icon={User} label="Full name" value={name} onChange={setName} locked={!unlocked} />
+        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" locked={!unlocked} />
+        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" locked={!unlocked} />
+        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} locked={!unlocked} />
       </div>
+
 
       {/* KYC + Bank quick links */}
       <div className="grid grid-cols-2 gap-2 mt-4">
@@ -1088,7 +1121,22 @@ function ProfileDetailsSheet({
         </button>
       </div>
 
-      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+      <SheetActions
+        onClose={onClose}
+        onSave={save}
+        saveLabel={saving ? "Saving…" : unlocked ? "Update" : "Unlock to Edit"}
+      />
+
+      <OtpModal
+        open={otpOpen}
+        phone={profile?.phone ?? ""}
+        onClose={() => setOtpOpen(false)}
+        onVerified={() => {
+          setOtpOpen(false);
+          setUnlocked(true);
+        }}
+      />
+
 
       <AnimatePresence>
         {pendingFile && (
@@ -1113,8 +1161,8 @@ function ProfileDetailsSheet({
 }
 
 function EditableField({
-  Icon, label, value, onChange, inputMode,
-}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none" }) {
+  Icon, label, value, onChange, inputMode, locked,
+}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none"; locked?: boolean }) {
   return (
     <label className="block">
       <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
@@ -1124,12 +1172,18 @@ function EditableField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           inputMode={inputMode}
-          className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
+          readOnly={locked}
+          className={`w-full pl-11 pr-4 py-3 rounded-2xl border outline-none transition ${
+            locked
+              ? "bg-slate-50 border-slate-200 text-slate-600 cursor-not-allowed"
+              : "bg-amber-50 border-amber-200 focus:border-amber-500 focus:bg-white"
+          }`}
         />
       </div>
     </label>
   );
 }
+
 
 /* -------------------- Support Sheet -------------------- */
 function SupportSheet({ onClose }: { onClose: () => void }) {

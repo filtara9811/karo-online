@@ -85,6 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setUser(null);
     setProfile(null);
+    try {
+      window.localStorage.removeItem("ko-customer-onboarded");
+      window.dispatchEvent(new Event("ko-customer-onboarded"));
+    } catch {}
   };
 
   const refreshProfile = async () => {
