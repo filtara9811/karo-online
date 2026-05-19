@@ -370,6 +370,8 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             whileTap={{ scale: 0.98 }}
             onClick={async () => {
               if (r.id === "logout") {
+                const ok = window.confirm("Kya aap sach me logout karna chahte hain?");
+                if (!ok) return;
                 await signOut();
                 router.navigate({ to: "/" });
                 return;
