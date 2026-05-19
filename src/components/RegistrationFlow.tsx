@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { playPing } from "@/lib/lead-sound";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
@@ -185,12 +186,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
 
   const goNext = (target: Step) => setStep(target);
 
-  // Auto-verify OTP at 4 digits
-  useEffect(() => {
-    if (step !== 2 || otp.length !== 4 || otpVerifying) return;
-    handleOtpVerify(otp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp, step]);
+  // NOTE: auto-verify removed — user must explicitly tap "Verify OTP" button.
+
+
 
   const handleSendOtp = async (digits: string) => {
     if (digits.length !== 10) {
