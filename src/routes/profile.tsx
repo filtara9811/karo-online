@@ -1115,8 +1115,8 @@ function ProfileDetailsSheet({
 }
 
 function EditableField({
-  Icon, label, value, onChange, inputMode,
-}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none" }) {
+  Icon, label, value, onChange, inputMode, locked,
+}: { Icon: typeof User; label: string; value: string; onChange: (v: string) => void; inputMode?: "text" | "email" | "tel" | "numeric" | "decimal" | "search" | "url" | "none"; locked?: boolean }) {
   return (
     <label className="block">
       <span className="text-[10px] uppercase tracking-wider text-slate-500 ml-1">{label}</span>
@@ -1126,12 +1126,18 @@ function EditableField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           inputMode={inputMode}
-          className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 focus:border-amber-500 focus:bg-white outline-none transition"
+          readOnly={locked}
+          className={`w-full pl-11 pr-4 py-3 rounded-2xl border outline-none transition ${
+            locked
+              ? "bg-slate-50 border-slate-200 text-slate-600 cursor-not-allowed"
+              : "bg-amber-50 border-amber-200 focus:border-amber-500 focus:bg-white"
+          }`}
         />
       </div>
     </label>
   );
 }
+
 
 /* -------------------- Support Sheet -------------------- */
 function SupportSheet({ onClose }: { onClose: () => void }) {
