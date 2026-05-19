@@ -1121,7 +1121,22 @@ function ProfileDetailsSheet({
         </button>
       </div>
 
-      <SheetActions onClose={onClose} onSave={save} saveLabel={saving ? "Saving…" : "Save"} />
+      <SheetActions
+        onClose={onClose}
+        onSave={save}
+        saveLabel={saving ? "Saving…" : unlocked ? "Update" : "Unlock to Edit"}
+      />
+
+      <OtpModal
+        open={otpOpen}
+        phone={profile?.phone ?? user_phone_fallback(profile)}
+        onClose={() => setOtpOpen(false)}
+        onVerified={() => {
+          setOtpOpen(false);
+          setUnlocked(true);
+        }}
+      />
+
 
       <AnimatePresence>
         {pendingFile && (
