@@ -122,7 +122,7 @@ function CustomersPage() {
             <button
               key={c.id}
               type="button"
-              onClick={() => setActive(c)}
+              onClick={() => navigate({ to: "/admin/view/$userId", params: { userId: c.user_id } })}
               className="block w-full text-left"
             >
               <GoldCard className="p-4">
