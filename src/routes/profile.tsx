@@ -968,12 +968,40 @@ function ProfileDetailsSheet({
   const save = async () => {
     if (!userId) return;
     setSaving(true);
-    const payload = { name: name.trim() || null, email: email.trim() || null, phone: phone.trim() || null, address: address.trim() || null };
+    const before = {
+      name: profile?.name ?? "",
+      email: profile?.email ?? "",
+      phone: profile?.phone ?? "",
+      address: profile?.address ?? "",
+    };
+    const after = {
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+    };
+    const phoneChanged = before.phone.replace(/\D/g, "").slice(-10) !== after.phone.replace(/\D/g, "").slice(-10);
+    if (phoneChanged && before.phone) {
+      const ok = confirm(
+        `Aap apna mobile number "${before.phone}" se "${after.phone}" me badal rahe hain. Confirm karein?`,
+      );
+      if (!ok) { setSaving(false); return; }
+    }
+    const payload = {
+      name: after.name || null,
+      email: after.email || null,
+      phone: after.phone || null,
+      address: after.address || null,
+    };
     if (profile?.id) {
       await supabase.from("customers").update(payload).eq("user_id", userId);
     } else {
       await supabase.from("customers").insert({ ...payload, user_id: userId });
     }
+    try {
+      const { logProfileChanges } = await import("@/lib/profile-audit");
+      await logProfileChanges(userId, before, after, { verifiedViaOtp: false });
+    } catch {}
     await refreshProfile();
     setSaving(false);
     onClose();
