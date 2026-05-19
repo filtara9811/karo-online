@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { playPing } from "@/lib/lead-sound";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
@@ -185,12 +186,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
 
   const goNext = (target: Step) => setStep(target);
 
-  // Auto-verify OTP at 4 digits
-  useEffect(() => {
-    if (step !== 2 || otp.length !== 4 || otpVerifying) return;
-    handleOtpVerify(otp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp, step]);
+  // NOTE: auto-verify removed — user must explicitly tap "Verify OTP" button.
+
+
 
   const handleSendOtp = async (digits: string) => {
     if (digits.length !== 10) {
@@ -412,6 +410,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
                     onResend={handleResendOtp}
                     onPaste={pasteOtp}
                     verifying={otpVerifying}
+                    onVerify={() => handleOtpVerify(otp)}
                   />
                 )}
                 {step === 3 && (
@@ -517,7 +516,10 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 }) {
   const [d, setD] = useState(initialDigits);
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  useEffect(() => {
+    setTimeout(() => ref.current?.focus(), 320);
+    try { playPing("default"); } catch { /* */ }
+  }, []);
   const change = (v: string) => {
     const clean = v.replace(/\D/g, "").slice(0, 10);
     setD(clean);
@@ -537,8 +539,8 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
           autoComplete="tel-national"
           pattern="[0-9]*"
           maxLength={10}
-          placeholder="98765 43210"
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)]"
+          placeholder="Mobile number"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.45)] placeholder:font-normal placeholder:text-base"
         />
       </FieldShell>
       {error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
@@ -550,7 +552,7 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 // ============================================================
 // Step 2: OTP
 // ============================================================
-function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
+function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onVerify }: {
   phone: string;
   otp: string;
   onOtp: (v: string) => void;
@@ -558,12 +560,17 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
   onResend: () => void;
   onPaste: () => void;
   verifying: boolean;
+  onVerify: () => void;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  useEffect(() => {
+    setTimeout(() => ref.current?.focus(), 320);
+    try { playPing("default"); } catch { /* */ }
+  }, []);
+  const ready = otp.length === 4 && !verifying;
   return (
     <div>
-      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Auto-detect or paste from SMS" />
+      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Paste from SMS, then tap Verify" />
       <div className="mb-4 flex items-center justify-center gap-2 text-sm">
         <span className="font-display font-semibold text-[color:oklch(0.32_0.06_85)]">{phone}</span>
       </div>
@@ -573,6 +580,7 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
           ref={ref}
           value={otp}
           onChange={(e) => onOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          onKeyDown={(e) => { if (e.key === "Enter" && ready) onVerify(); }}
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="[0-9]*"
@@ -618,6 +626,13 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
           {verifying ? "Verifying…" : `00:${String(seconds).padStart(2, "0")}`}
         </span>
       </div>
+
+      <NextButton
+        disabled={!ready}
+        label={verifying ? "Verifying…" : "Verify OTP"}
+        icon={false}
+        onClick={onVerify}
+      />
     </div>
   );
 }

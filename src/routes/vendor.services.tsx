@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Check, ChevronRight, Sparkles, Package, ArrowLeft } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, ChevronRight, Sparkles, Package, ArrowLeft, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
 import { toast } from "sonner";
@@ -18,7 +19,6 @@ export const Route = createFileRoute("/vendor/services")({
 
 type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean };
 type Item = { id: string; category_id: string; name: string; image_url: string | null; icon: string | null; price_min: number | null; price_max: number | null; is_active: boolean };
-type Variation = { id: string; item_id: string; name: string; price_min: number | null; price_max: number | null; is_active: boolean };
 type Type = { id: string; name: string; icon: string | null; is_active: boolean };
 
 const GOLD_BG = "radial-gradient(circle at 20% 0%, oklch(0.22 0.04 80) 0%, oklch(0.10 0.02 80) 70%)";
@@ -31,13 +31,13 @@ function VendorServicesPage() {
   const [types, setTypes] = useState<Type[]>([]);
   const [cats, setCats] = useState<Cat[]>([]);
   const [items, setItems] = useState<Item[]>([]);
-  const [vars, setVars] = useState<Variation[]>([]);
   const [mappedItems, setMappedItems] = useState<Set<string>>(new Set());
-  const [mappedVars, setMappedVars] = useState<Set<string>>(new Set());
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [savedKey, setSavedKey] = useState<string | null>(null);
 
-  const [path, setPath] = useState<{ type?: Type; cat?: Cat; sub?: Cat; item?: Item }>({});
+  // Stack of selected nodes — each entry opens its own bottom sheet
+  const [typeSel, setTypeSel] = useState<Type | null>(null);
+  const [catSel, setCatSel] = useState<Cat | null>(null);
+  const [subSel, setSubSel] = useState<Cat | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -46,30 +46,20 @@ function VendorServicesPage() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
 
-    const [t, c, i, v, mi, mv] = await Promise.all([
+    const [t, c, i, mi] = await Promise.all([
       supabase.from("catalog_types").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("catalog_items").select("*").eq("is_active", true).order("sort_order").order("name"),
-      supabase.from("item_variations").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("vendor_item_mappings").select("item_id").eq("vendor_id", uid),
-      supabase.from("vendor_variation_mappings").select("variation_id").eq("vendor_id", uid),
     ]);
     setTypes((t.data ?? []) as Type[]);
     setCats((c.data ?? []) as Cat[]);
     setItems((i.data ?? []) as Item[]);
-    setVars((v.data ?? []) as Variation[]);
-    setMappedItems(new Set((mi.data ?? []).map((x: any) => x.item_id)));
-    setMappedVars(new Set((mv.data ?? []).map((x: any) => x.variation_id)));
+    setMappedItems(new Set((mi.data ?? []).map((x: { item_id: string }) => x.item_id)));
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
-
-  const flashSaved = (key: string, msg: string) => {
-    setSavedKey(key);
-    toast.success(msg);
-    window.setTimeout(() => setSavedKey((current) => (current === key ? null : current)), 1300);
-  };
 
   const toggleItem = async (itemId: string) => {
     if (!userId) return;
@@ -80,41 +70,35 @@ function VendorServicesPage() {
       setSavingKey(null);
       if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.delete(itemId); setMappedItems(n);
-      flashSaved(key, "Service removed");
+      toast.success("Service removed");
     } else {
       const { error } = await supabase.from("vendor_item_mappings").insert({ vendor_id: userId, item_id: itemId, is_active: true });
       setSavingKey(null);
       if (error) return toast.error(error.message);
       const n = new Set(mappedItems); n.add(itemId); setMappedItems(n);
-      flashSaved(key, "Service mapped successfully");
+      toast.success("Linked — leads start aane lagenge");
     }
   };
 
-  const toggleVar = async (vId: string) => {
-    if (!userId) return;
-    const key = `var:${vId}`;
-    setSavingKey(key);
-    if (mappedVars.has(vId)) {
-      const { error } = await supabase.from("vendor_variation_mappings").delete().eq("vendor_id", userId).eq("variation_id", vId);
-      setSavingKey(null);
-      if (error) return toast.error(error.message);
-      const n = new Set(mappedVars); n.delete(vId); setMappedVars(n);
-      flashSaved(key, "Variation removed");
-    } else {
-      const { error } = await supabase.from("vendor_variation_mappings").insert({ vendor_id: userId, variation_id: vId, is_active: true });
-      setSavingKey(null);
-      if (error) return toast.error(error.message);
-      const n = new Set(mappedVars); n.add(vId); setMappedVars(n);
-      flashSaved(key, "Variation saved successfully");
-    }
-  };
+  const rootCatsForType = useMemo(
+    () => (typeSel ? cats.filter((c) => c.type_id === typeSel.id && !c.parent_id) : []),
+    [cats, typeSel],
+  );
+  const subCatsForCat = useMemo(
+    () => (catSel ? cats.filter((c) => c.parent_id === catSel.id) : []),
+    [cats, catSel],
+  );
+  const itemsForSub = useMemo(
+    () => (subSel ? items.filter((it) => it.category_id === subSel.id) : []),
+    [items, subSel],
+  );
 
-  const goBack = () => {
-    if (path.item) return setPath(({ type, cat, sub }) => ({ type, cat, sub }));
-    if (path.sub) return setPath(({ type, cat }) => ({ type, cat }));
-    if (path.cat) return setPath(({ type }) => ({ type }));
-    if (path.type) return setPath({});
-    navigate({ to: "/vendor/dashboard" });
+  // Mapped-count helpers for badge previews on each tile
+  const mappedCountForType = (t: Type) => {
+    const rootIds = cats.filter((c) => c.type_id === t.id && !c.parent_id).map((c) => c.id);
+    const subIds = cats.filter((c) => c.parent_id && rootIds.includes(c.parent_id!)).map((c) => c.id);
+    const allCatIds = new Set([...rootIds, ...subIds]);
+    return items.filter((it) => allCatIds.has(it.category_id) && mappedItems.has(it.id)).length;
   };
 
   if (loading) {
@@ -136,149 +120,12 @@ function VendorServicesPage() {
     );
   }
 
-  // Breadcrumb
-  const Crumb = (
-    <div className="flex items-center gap-2 flex-wrap mb-4 text-xs">
-      <button onClick={() => setPath({})} className="text-[#d8dde3]/60 hover:text-[#f5f6f8] uppercase tracking-widest font-bold">
-        All
-      </button>
-      {(["type","cat","sub","item"] as const).map((k, i) => {
-        const node = (path as any)[k];
-        if (!node) return null;
-        return (
-          <span key={k} className="flex items-center gap-2">
-            <ChevronRight className="h-3 w-3 text-[#a8acb3]/50" />
-            <button
-              onClick={() => {
-                const next: any = {};
-                (["type","cat","sub","item"] as const).slice(0, i + 1).forEach((kk) => (next[kk] = (path as any)[kk]));
-                setPath(next);
-              }}
-              className="text-[#d8dde3]/80 hover:text-[#f5f6f8] truncate max-w-[140px]"
-            >
-              {node.name}
-            </button>
-          </span>
-        );
-      })}
-    </div>
-  );
-
-  // Render levels
-  let body: React.ReactNode = null;
-  if (!path.type) {
-    body = (
-      <div className="grid sm:grid-cols-2 gap-2.5">
-        {types.map((t) => (
-          <Tile key={t.id} title={t.name} icon={t.icon} onClick={() => setPath({ type: t })} />
-        ))}
-      </div>
-    );
-  } else if (!path.cat) {
-    const list = cats.filter((c) => c.type_id === path.type!.id && !c.parent_id);
-    body = list.length === 0 ? <Empty msg="No categories" /> : (
-      <div className="grid sm:grid-cols-2 gap-2.5">
-        {list.map((c) => <Tile key={c.id} title={c.name} onClick={() => setPath({ ...path, cat: c })} />)}
-      </div>
-    );
-  } else if (!path.sub) {
-    const list = cats.filter((c) => c.parent_id === path.cat!.id);
-    body = list.length === 0 ? <Empty msg="No sub-categories" /> : (
-      <div className="grid sm:grid-cols-2 gap-2.5">
-        {list.map((c) => <Tile key={c.id} title={c.name} onClick={() => setPath({ ...path, sub: c })} />)}
-      </div>
-    );
-  } else if (!path.item) {
-    const list = items.filter((it) => it.category_id === path.sub!.id);
-    body = list.length === 0 ? <Empty msg="No items" /> : (
-      <div className="space-y-2.5">
-        {list.map((it) => {
-          const mapped = mappedItems.has(it.id);
-          return (
-            <div
-              key={it.id}
-              className="rounded-2xl border p-3 sm:p-4 flex items-center gap-3"
-              style={{
-                background: mapped
-                  ? "linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.06))"
-                  : "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
-                borderColor: mapped ? "rgba(212,175,55,0.7)" : "rgba(212,175,55,0.25)",
-              }}
-            >
-              <IconImage url={it.image_url} icon={it.icon} size={48} />
-              <div className="flex-1 min-w-0" onClick={() => setPath({ ...path, item: it })}>
-                <p className="text-sm font-semibold text-[#f5f6f8] truncate">{it.name}</p>
-                <p className="text-[11px] text-[#d8dde3]/55 truncate">
-                  {it.price_min || it.price_max ? `₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}` : "Tap for variations"}
-                </p>
-              </div>
-              <button
-                onClick={() => toggleItem(it.id)}
-                disabled={savingKey === `item:${it.id}`}
-                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
-                  mapped || savedKey === `item:${it.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
-                }`}
-                style={mapped || savedKey === `item:${it.id}` ? { background: GOLD_GRAD } : undefined}
-              >
-                {savingKey === `item:${it.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `item:${it.id}` ? "" : "hidden"}`} />}
-                {savingKey === `item:${it.id}` ? "Saving" : savedKey === `item:${it.id}` ? "Saved" : mapped ? "Mapped" : "Map"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    );
-  } else {
-    const list = vars.filter((v) => v.item_id === path.item!.id);
-    body = (
-      <div className="space-y-2.5">
-        <div className="text-[11px] text-[#a8acb3]/70 mb-2">
-          Optionally select specific variations you offer (skip if you do all).
-        </div>
-        {list.length === 0 ? <Empty msg="No variations" /> : list.map((v) => {
-          const mapped = mappedVars.has(v.id);
-          return (
-            <div
-              key={v.id}
-              className="rounded-2xl border p-3 sm:p-4 flex items-center gap-3"
-              style={{
-                background: mapped
-                  ? "linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.06))"
-                  : "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
-                borderColor: mapped ? "rgba(212,175,55,0.7)" : "rgba(212,175,55,0.25)",
-              }}
-            >
-              <Sparkles className="h-5 w-5 text-[#a8acb3]" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#f5f6f8] truncate">{v.name}</p>
-                <p className="text-[11px] text-[#d8dde3]/55">
-                  {v.price_min || v.price_max ? `₹${v.price_min ?? "?"} – ${v.price_max ?? "?"}` : ""}
-                </p>
-              </div>
-              <button
-                onClick={() => toggleVar(v.id)}
-                disabled={savingKey === `var:${v.id}`}
-                className={`click-feedback min-w-[86px] px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition disabled:opacity-70 ${
-                  mapped || savedKey === `var:${v.id}` ? "text-[#3f4750]" : "text-[#d8dde3] border border-[#a8acb3]/40"
-                }`}
-                style={mapped || savedKey === `var:${v.id}` ? { background: GOLD_GRAD } : undefined}
-              >
-                {savingKey === `var:${v.id}` ? <Loader2 className="h-3 w-3 inline mr-1 animate-spin" /> : <Check className={`h-3 w-3 inline mr-1 ${mapped || savedKey === `var:${v.id}` ? "" : "hidden"}`} />}
-                {savingKey === `var:${v.id}` ? "Saving" : savedKey === `var:${v.id}` ? "Saved" : mapped ? "On" : "Select"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen" style={{ background: GOLD_BG }}>
       <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 border-b border-[#a8acb3]/20 backdrop-blur-xl bg-black/20">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button
-            onClick={goBack}
+            onClick={() => navigate({ to: "/vendor/dashboard" })}
             aria-label="Back"
             className="click-feedback h-10 w-10 grid place-items-center rounded-full border border-[#a8acb3]/30 text-[#f5f6f8] bg-white/5"
           >
@@ -289,39 +136,250 @@ function VendorServicesPage() {
               My Services
             </h1>
             <p className="text-xs text-[#d8dde3]/60 mt-1 truncate">
-              Apne services map kariye — customers aapko in services par dhoondhenge.
+              Type chunein → category → sub-category → toggle ON karke leads paaiye.
             </p>
           </div>
         </div>
       </header>
+
       <main className="px-4 sm:px-6 py-6 max-w-3xl mx-auto">
-        {Crumb}
-        {body}
+        <div className="text-[10px] text-[#d8dde3]/55 uppercase tracking-[0.3em] font-bold mb-3">All</div>
+        <div className="space-y-3">
+          {types.map((t) => (
+            <TypeTile
+              key={t.id}
+              title={t.name}
+              icon={t.icon}
+              count={mappedCountForType(t)}
+              onClick={() => setTypeSel(t)}
+            />
+          ))}
+        </div>
       </main>
+
+      {/* ─── SHEET 1: Categories under type ─── */}
+      <BottomSheet
+        open={!!typeSel}
+        title={typeSel?.name ?? ""}
+        subtitle="Category chunein"
+        z={50}
+        onClose={() => { setTypeSel(null); setCatSel(null); setSubSel(null); }}
+      >
+        {rootCatsForType.length === 0 ? (
+          <Empty msg="Koi category nahi mili" />
+        ) : (
+          <div className="space-y-2.5">
+            {rootCatsForType.map((c) => (
+              <RowTile key={c.id} title={c.name} onClick={() => setCatSel(c)} />
+            ))}
+          </div>
+        )}
+      </BottomSheet>
+
+      {/* ─── SHEET 2: Sub-categories under category ─── */}
+      <BottomSheet
+        open={!!catSel}
+        title={catSel?.name ?? ""}
+        subtitle="Sub-category chunein"
+        z={60}
+        onClose={() => { setCatSel(null); setSubSel(null); }}
+      >
+        {subCatsForCat.length === 0 ? (
+          <Empty msg="Koi sub-category nahi" />
+        ) : (
+          <div className="space-y-2.5">
+            {subCatsForCat.map((c) => (
+              <RowTile key={c.id} title={c.name} onClick={() => setSubSel(c)} />
+            ))}
+          </div>
+        )}
+      </BottomSheet>
+
+      {/* ─── SHEET 3: Items with ON/OFF toggle ─── */}
+      <BottomSheet
+        open={!!subSel}
+        title={subSel?.name ?? ""}
+        subtitle="ON karein wo services jo aap dete hain"
+        z={70}
+        onClose={() => setSubSel(null)}
+      >
+        {itemsForSub.length === 0 ? (
+          <Empty msg="Koi item nahi" />
+        ) : (
+          <div className="space-y-2.5">
+            {itemsForSub.map((it) => {
+              const on = mappedItems.has(it.id);
+              const saving = savingKey === `item:${it.id}`;
+              return (
+                <div
+                  key={it.id}
+                  className="rounded-2xl border p-3 flex items-center gap-3"
+                  style={{
+                    background: on
+                      ? "linear-gradient(180deg, rgba(34,197,94,0.16), rgba(34,197,94,0.05))"
+                      : "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
+                    borderColor: on ? "rgba(34,197,94,0.6)" : "rgba(212,175,55,0.25)",
+                  }}
+                >
+                  <IconImage url={it.image_url} icon={it.icon} size={44} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#f5f6f8] truncate">{it.name}</p>
+                    <p className="text-[11px] text-[#d8dde3]/55 truncate">
+                      {it.price_min || it.price_max ? `₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}` : (on ? "Linked — leads ON" : "Tap toggle to link")}
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    on={on}
+                    busy={saving}
+                    onChange={() => toggleItem(it.id)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }
 
-function Tile({ title, icon, onClick }: { title: string; icon?: string | null; onClick: () => void }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// UI bits
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TypeTile({ title, icon, count, onClick }: { title: string; icon?: string | null; count: number; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="click-feedback rounded-2xl border p-3 sm:p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
+      className="click-feedback w-full rounded-2xl border p-4 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
       style={{
         background: "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
         borderColor: "rgba(212,175,55,0.25)",
       }}
     >
-      <IconImage icon={icon} size={40} />
+      <IconImage icon={icon} size={44} />
+      <div className="flex-1 min-w-0">
+        <p className="text-base font-semibold text-[#f5f6f8] truncate">{title}</p>
+        {count > 0 && (
+          <p className="text-[11px] text-emerald-400/90 font-bold">{count} linked</p>
+        )}
+      </div>
+      <ChevronRight className="h-5 w-5 text-[#a8acb3]/60" />
+    </button>
+  );
+}
+
+function RowTile({ title, onClick }: { title: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="click-feedback w-full rounded-2xl border p-3.5 flex items-center gap-3 hover:border-[#a8acb3]/60 transition text-left"
+      style={{
+        background: "linear-gradient(180deg, rgba(255,253,245,0.05), rgba(255,253,245,0.02))",
+        borderColor: "rgba(212,175,55,0.25)",
+      }}
+    >
+      <Sparkles className="h-4 w-4 text-[#d4af37]/80" />
       <p className="flex-1 text-sm font-semibold text-[#f5f6f8] truncate">{title}</p>
       <ChevronRight className="h-4 w-4 text-[#a8acb3]/60" />
     </button>
   );
 }
 
+function ToggleSwitch({ on, busy, onChange }: { on: boolean; busy: boolean; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      disabled={busy}
+      aria-pressed={on}
+      className={`relative h-7 w-12 rounded-full transition-colors disabled:opacity-60 ${
+        on ? "bg-emerald-500" : "bg-gray-500/50"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${
+          on ? "translate-x-5" : "translate-x-0.5"
+        } grid place-items-center`}
+      >
+        {busy && <Loader2 className="h-3 w-3 animate-spin text-gray-500" />}
+      </span>
+    </button>
+  );
+}
+
+function BottomSheet({
+  open,
+  title,
+  subtitle,
+  z,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  z: number;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            style={{ zIndex: z }}
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 280, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 max-h-[80vh] rounded-t-[28px] overflow-hidden flex flex-col"
+            style={{
+              zIndex: z + 1,
+              background: "linear-gradient(180deg, #1a1208 0%, #0f0a04 100%)",
+              borderTop: "1px solid rgba(212,175,55,0.3)",
+              boxShadow: "0 -24px 60px -10px rgba(0,0,0,0.7)",
+            }}
+          >
+            {/* Drag handle */}
+            <div className="pt-2.5 pb-1 grid place-items-center">
+              <span className="block h-1.5 w-12 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-70" />
+            </div>
+
+            {/* Header */}
+            <div className="px-5 pb-3 pt-2 flex items-start gap-3 border-b border-[#d4af37]/15">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg font-bold text-[#f5f6f8] truncate">{title}</h3>
+                {subtitle && <p className="text-[11px] text-[#d8dde3]/60 mt-0.5">{subtitle}</p>}
+              </div>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="click-feedback h-8 w-8 rounded-full grid place-items-center border border-[#a8acb3]/30 text-[#f5f6f8] bg-white/5 hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function Empty({ msg }: { msg: string }) {
   return (
-    <div className="text-center py-16">
+    <div className="text-center py-12">
       <Package className="h-10 w-10 text-[#a8acb3]/40 mx-auto mb-3" />
       <p className="text-sm text-[#d8dde3]/60">{msg}</p>
     </div>
