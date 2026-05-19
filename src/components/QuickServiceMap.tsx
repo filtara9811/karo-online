@@ -137,6 +137,7 @@ export function QuickServiceMap({
         return;
       }
       const c = center ?? DEFAULT_CENTER;
+      const controlPosition = g.maps.ControlPosition?.RIGHT_BOTTOM ?? 12;
       mapRef.current = new g.maps.Map(ref.current, {
         center: c,
         zoom: 16,
@@ -144,7 +145,7 @@ export function QuickServiceMap({
         disableDefaultUI: true,
         gestureHandling: "greedy",
         zoomControl: true,
-        zoomControlOptions: { position: g.maps.ControlPosition.RIGHT_BOTTOM },
+        zoomControlOptions: { position: controlPosition },
         clickableIcons: false,
         styles: KARO_MAP_STYLE,
         backgroundColor: "#f5f1e8",
