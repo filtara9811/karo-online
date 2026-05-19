@@ -201,3 +201,127 @@ export const setUserBlock = createServerFn({ method: "POST" })
     await supabase.from("vendors").update({ is_blocked: data.blocked, updated_at: new Date().toISOString() }).eq("user_id", data.userId);
     return { ok: true };
   });
+
+// === Extra dashboard data ===
+export const getUserDashboard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await ensureAdmin(supabase, userId);
+    const uid = data.userId;
+    const [mappings, kycRecs, statusUpdates, deviceTokens, notifs] = await Promise.all([
+      supabase
+        .from("vendor_item_mappings")
+        .select("id, item_id, is_active, created_at, catalog_items(id, name, slug, image_url, price_min, price_max, category_id)")
+        .eq("vendor_id", uid)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("kyc_verifications")
+        .select("*")
+        .eq("subject_user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("vendor_status_updates")
+        .select("*")
+        .eq("vendor_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("device_tokens")
+        .select("id, platform, last_seen_at, is_active")
+        .eq("user_id", uid)
+        .order("last_seen_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("admin_notifications")
+        .select("*")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    return {
+      items: mappings.data ?? [],
+      kyc_records: kycRecs.data ?? [],
+      status_updates: statusUpdates.data ?? [],
+      device_tokens: deviceTokens.data ?? [],
+      notifications: notifs.data ?? [],
+    };
+  });
+
+export const toggleVendorItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { mappingId: string; isActive: boolean }) =>
+    z.object({ mappingId: z.string().uuid(), isActive: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("vendor_item_mappings")
+      .update({ is_active: data.isActive, updated_at: new Date().toISOString() })
+      .eq("id", data.mappingId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteVendorItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { mappingId: string }) => z.object({ mappingId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase.from("vendor_item_mappings").delete().eq("id", data.mappingId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const setVendorApproval = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; approved: boolean }) =>
+    z.object({ userId: z.string().uuid(), approved: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("vendors")
+      .update({
+        status: data.approved ? "active" : "pending",
+        verified: data.approved,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const setKycStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { kycId: string; status: "approved" | "rejected" | "pending"; notes?: string }) =>
+    z
+      .object({
+        kycId: z.string().uuid(),
+        status: z.enum(["approved", "rejected", "pending"]),
+        notes: z.string().max(500).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("kyc_verifications")
+      .update({
+        status: data.status,
+        reviewer_notes: data.notes,
+        reviewer_id: userId,
+        verified_at: data.status === "approved" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.kycId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+

@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+
 import { Users, Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,8 @@ function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ListFilters>(emptyFilters);
   const [active, setActive] = useState<Customer | null>(null);
+  const navigate = useNavigate();
+
 
   const load = async () => {
     setLoading(true);
@@ -119,7 +122,7 @@ function CustomersPage() {
             <button
               key={c.id}
               type="button"
-              onClick={() => setActive(c)}
+              onClick={() => navigate({ to: "/admin/view/$userId", params: { userId: c.user_id } })}
               className="block w-full text-left"
             >
               <GoldCard className="p-4">

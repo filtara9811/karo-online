@@ -61,6 +61,7 @@ import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
+import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
 
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
@@ -322,6 +323,11 @@ const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   path: '/vendor/lead/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminViewUserIdRoute = AdminViewUserIdRouteImport.update({
+  id: '/view/$userId',
+  path: '/view/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
 export interface FileRoutesByTo {
@@ -428,6 +435,7 @@ export interface FileRoutesByTo {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
 export interface FileRoutesById {
@@ -483,6 +491,7 @@ export interface FileRoutesById {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
 }
 export interface FileRouteTypes {
@@ -539,6 +548,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
+    | '/admin/view/$userId'
     | '/vendor/lead/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -592,6 +602,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin'
+    | '/admin/view/$userId'
     | '/vendor/lead/$id'
   id:
     | '__root__'
@@ -646,6 +657,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
+    | '/admin/view/$userId'
     | '/vendor/lead/$id'
   fileRoutesById: FileRoutesById
 }
@@ -1045,6 +1057,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorLeadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/view/$userId': {
+      id: '/admin/view/$userId'
+      path: '/view/$userId'
+      fullPath: '/admin/view/$userId'
+      preLoaderRoute: typeof AdminViewUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -1074,6 +1093,7 @@ interface AdminRouteChildren {
   AdminVendorsRoute: typeof AdminVendorsRoute
   AdminWhatsappRoute: typeof AdminWhatsappRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminViewUserIdRoute: typeof AdminViewUserIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1102,6 +1122,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminVendorsRoute: AdminVendorsRoute,
   AdminWhatsappRoute: AdminWhatsappRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminViewUserIdRoute: AdminViewUserIdRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1138,13 +1159,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
