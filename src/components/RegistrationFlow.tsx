@@ -515,7 +515,10 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 }) {
   const [d, setD] = useState(initialDigits);
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  useEffect(() => {
+    setTimeout(() => ref.current?.focus(), 320);
+    try { playPing("default"); } catch { /* */ }
+  }, []);
   const change = (v: string) => {
     const clean = v.replace(/\D/g, "").slice(0, 10);
     setD(clean);
@@ -535,8 +538,8 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
           autoComplete="tel-national"
           pattern="[0-9]*"
           maxLength={10}
-          placeholder="98765 43210"
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)]"
+          placeholder="Mobile number"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.45)] placeholder:font-normal placeholder:text-base"
         />
       </FieldShell>
       {error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
