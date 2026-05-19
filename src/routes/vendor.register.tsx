@@ -166,8 +166,9 @@ function VendorRegister() {
         setAadhaar((data as any).aadhaar ?? "");
         setPan((data as any).pan ?? "");
         setGst((data as any).gst ?? "");
-        // If business already saved and we're NOT in edit mode → straight to dashboard.
-        if (!editMode && ((data as any).business_name || "").trim().length > 1) {
+        // If vendor row exists at all and we're NOT in edit mode → straight to dashboard.
+        // (Previously checked business_name; user reported form re-appearing — relax check.)
+        if (!editMode) {
           navigate({ to: "/vendor/dashboard" });
           return;
         }
