@@ -30,6 +30,13 @@ export function getGoogleMapsKey(): Promise<string | null> {
   return _keyPromise;
 }
 
+async function hasAuthenticatedSession(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  return supabase.auth.getSession()
+    .then(({ data }) => Boolean(data.session?.access_token))
+    .catch(() => false);
+}
+
 const BASE = "https://maps.googleapis.com/maps/api";
 export const GOOGLE_MAPS_AUTH_FAILURE_EVENT = "ko-google-maps-auth-failure";
 
@@ -88,6 +95,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
   const cached = cacheGet<string>(k, TTL.reverse);
   if (cached) return cached;
   try {
+    if (!(await hasAuthenticatedSession())) return null;
     const j = await reverseGeocodeFn({ data: { lat, lng } });
     if (!j.ok) {
       console.warn("[gmaps] reverseGeocode failed:", j.status, j.error);
@@ -138,6 +146,7 @@ export async function geocode(address: string): Promise<LatLng | null> {
   const cached = cacheGet<LatLng>(k, TTL.geocode);
   if (cached) return cached;
   try {
+    if (!(await hasAuthenticatedSession())) return null;
     const j = await geocodeFn({ data: { address } });
     if (!j.ok) return null;
     const out = { lat: j.lat, lng: j.lng };
@@ -163,6 +172,7 @@ export async function placesAutocomplete(
   const cached = cacheGet<PlacePrediction[]>(k, TTL.autocomplete);
   if (cached) return cached;
   try {
+    if (!(await hasAuthenticatedSession())) return [];
     const j = await placesAutocompleteFn({
       data: { input: trimmed, sessionToken: opts.sessionToken, bias: opts.bias ?? null },
     });
@@ -180,6 +190,7 @@ export async function placeDetails(
   const cached = cacheGet<{ address: string; lat: number; lng: number }>(k, TTL.geocode);
   if (cached) return cached;
   try {
+    if (!(await hasAuthenticatedSession())) return null;
     const j = await placeDetailsFn({ data: { placeId, sessionToken } });
     if (!j.ok) return null;
     const out = { address: j.address, lat: j.lat, lng: j.lng };
@@ -210,6 +221,7 @@ export async function distanceMatrix(
   });
   if (missing.length === 0) return out;
   try {
+    if (!(await hasAuthenticatedSession())) return out;
     const j = await distanceMatrixFn({
       data: { origin, destinations: missing.map((i) => destinations[i]) },
     });
@@ -243,6 +255,7 @@ export async function directions(
   const cached = cacheGet<DirectionsResult>(k, TTL.directions);
   if (cached) return cached;
   try {
+    if (!(await hasAuthenticatedSession())) return null;
     const j = await directionsFn({ data: { origin, destination } });
     if (!j.ok) return null;
     const out: DirectionsResult = {

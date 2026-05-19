@@ -15,6 +15,7 @@ import {
   adjustWallet, setUserBlock, setVendorApproval, setKycStatus,
   toggleVendorItem, deleteVendorItem,
 } from "@/lib/admin-lookup.functions";
+import { fetchProfileHistory, type ProfileAuditRow } from "@/lib/profile-audit";
 
 export const Route = createFileRoute("/admin/view/$userId")({
   head: () => ({
@@ -712,6 +713,49 @@ function NotificationsTab({ items }: { items: any[] }) {
           <p className="text-sm font-semibold text-[#f5d97a]">{n.title}</p>
           <p className="text-xs text-[#f5d97a]/70 mt-0.5">{n.message}</p>
           <p className="text-[10px] text-[#f5d97a]/40 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+        </GoldCard>
+      ))}
+    </div>
+  );
+}
+
+function HistoryTab({ userId }: { userId: string }) {
+  const [rows, setRows] = useState<ProfileAuditRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchProfileHistory(userId)
+      .then((data) => { if (!cancelled) setRows(data); })
+      .catch(() => { if (!cancelled) setRows([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  if (loading) {
+    return <GoldCard className="p-6 text-center text-xs text-[#f5d97a]/60">Loading change history…</GoldCard>;
+  }
+  if (rows.length === 0) {
+    return <GoldCard className="p-6 text-center text-xs text-[#f5d97a]/60">No profile changes recorded yet.</GoldCard>;
+  }
+  return (
+    <div className="space-y-2">
+      {rows.map((r) => (
+        <GoldCard key={r.id} className="p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#f5d97a] capitalize">{r.field_name.replace(/_/g, " ")}</p>
+              <p className="text-[11px] text-[#f5d97a]/50">{new Date(r.created_at).toLocaleString()}</p>
+              <div className="mt-2 grid gap-1 text-xs">
+                <p className="text-red-300/80 line-through break-words">Old: {r.old_value || "—"}</p>
+                <p className="text-emerald-300 font-semibold break-words">New: {r.new_value || "—"}</p>
+              </div>
+            </div>
+            {r.verified_via_otp && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">OTP</span>
+            )}
+          </div>
         </GoldCard>
       ))}
     </div>
