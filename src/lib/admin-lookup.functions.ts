@@ -210,7 +210,7 @@ export const getUserDashboard = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     await ensureAdmin(supabase, userId);
     const uid = data.userId;
-    const [mappings, kycRecs, statusUpdates, deviceTokens, notifs] = await Promise.all([
+    const [mappings, kycRecs, statusUpdates, deviceTokens, notifs, raised, received] = await Promise.all([
       supabase
         .from("vendor_item_mappings")
         .select("id, item_id, is_active, created_at, catalog_items(id, name, slug, image_url, price_min, price_max, category_id)")
@@ -240,6 +240,20 @@ export const getUserDashboard = createServerFn({ method: "POST" })
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(20),
+      // Orders/leads raised by this user as a customer
+      supabase
+        .from("leads")
+        .select("id, sub_category_name, status, created_at, lead_price_inr, address, accepted_count, max_slots, accepted_vendor_ids, accepted_vendor_id, customer_approved_vendor_id, note, images, item_names")
+        .eq("customer_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      // Lead notifications received by this user as a vendor (with sender info)
+      supabase
+        .from("lead_notifications")
+        .select("id, lead_id, status, vendor_note, quoted_price, responded_at, created_at, leads(id, sub_category_name, status, customer_id, customer_name, customer_phone, address, lead_price_inr, created_at, note)")
+        .eq("vendor_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
     return {
       items: mappings.data ?? [],
@@ -247,6 +261,8 @@ export const getUserDashboard = createServerFn({ method: "POST" })
       status_updates: statusUpdates.data ?? [],
       device_tokens: deviceTokens.data ?? [],
       notifications: notifs.data ?? [],
+      customer_leads_raised: raised.data ?? [],
+      vendor_lead_notifications: received.data ?? [],
     };
   });
 
