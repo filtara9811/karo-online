@@ -59,6 +59,7 @@ function CustomersPage() {
         c.email ?? "",
         c.phone ?? "",
         c.address ?? "",
+        c.support_code ?? "",
         ...(c.tags ?? []),
       ]),
     [customers, filters],
