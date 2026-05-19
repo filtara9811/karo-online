@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Loader2, User as UserIcon, Store, Wallet as WalletIcon, ShieldCheck, Ban, Save, X, Plus, Minus, Hash } from "lucide-react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { toast } from "sonner";
