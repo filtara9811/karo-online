@@ -220,7 +220,7 @@ function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 
 function QuickPage() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, isAuthenticated, ready } = useAuth();
   const { requireAuth } = useAuthGate();
   const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
@@ -236,6 +236,17 @@ function QuickPage() {
       }
     } catch {}
   }, []);
+
+  // MANDATORY registration gate — after onboarding, force OTP + profile
+  // before customer can access home. Vendor/admin routes have their own gates.
+  const locallyOnboarded =
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("ko-customer-onboarded") === "true";
+  const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
+  useEffect(() => {
+    if (!ready || showOnboarding || profileComplete) return;
+    navigate({ to: "/register", replace: true });
+  }, [ready, showOnboarding, profileComplete, navigate]);
 
 
   // ---- DB-loaded catalog ----
