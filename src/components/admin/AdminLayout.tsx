@@ -34,6 +34,7 @@ type NavItem = { to: string; label: string; icon: typeof Crown };
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/lookup", label: "🔍 User Lookup (360)", icon: Users },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/vendors", label: "Vendors", icon: Store },
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
