@@ -173,7 +173,7 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm prose-invert max-w-none min-h-[320px] px-4 py-3 focus:outline-none prose-headings:text-[#fff8dc] prose-strong:text-[#fff8dc] prose-a:text-[#d4af37] prose-li:text-[#f5d97a] prose-p:text-[#f5d97a]/90",
+          "ko-rte prose prose-sm max-w-none min-h-[320px] px-4 py-3 focus:outline-none",
       },
     },
   });
@@ -189,13 +189,31 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
 
   if (!editor) {
     return (
-      <div className="min-h-[360px] rounded-lg bg-black/40 border border-[#d4af37]/30" />
+      <div className="min-h-[360px] rounded-lg bg-[#fffdf5] border border-[#d4af37]/40" />
     );
   }
 
   return (
-    <div className="rounded-lg bg-black/40 border border-[#d4af37]/30 overflow-hidden">
+    <div className="rounded-lg bg-[#fffdf5] border border-[#d4af37]/40 overflow-hidden shadow-inner">
       <Toolbar editor={editor} />
+      <style>{`
+        .ko-rte, .ko-rte * { color: #1a1208 !important; }
+        .ko-rte h1, .ko-rte h2, .ko-rte h3, .ko-rte h4 { color: #6b3a00 !important; font-weight: 700; }
+        .ko-rte strong { color: #6b3a00 !important; font-weight: 700; }
+        .ko-rte em { color: #2d1f0a !important; }
+        .ko-rte a { color: #b45309 !important; text-decoration: underline; }
+        .ko-rte blockquote { border-left: 3px solid #d4af37; color: #4b3a1a !important; background: #fff8e1; padding: 6px 12px; }
+        .ko-rte code { background: #fff3c4; color: #6b3a00 !important; padding: 1px 6px; border-radius: 4px; }
+        .ko-rte ul, .ko-rte ol { padding-left: 1.4em; }
+        .ko-rte li { color: #1a1208 !important; }
+        .ko-rte p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          color: #9a7b3a;
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
       <EditorContent editor={editor} />
     </div>
   );

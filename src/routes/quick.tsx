@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { useAuthGate } from "@/components/AuthGate";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
@@ -225,6 +226,17 @@ function QuickPage() {
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
+
+  // Onboarding carousel — first-visit only
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && !localStorage.getItem("ko-onboarding-seen-v1")) {
+        setShowOnboarding(true);
+      }
+    } catch {}
+  }, []);
+
 
   // ---- DB-loaded catalog ----
   const initialCatalog = useMemo<CatalogData>(() => fallbackCatalog(), []);
@@ -445,6 +457,7 @@ function QuickPage() {
     <div
       className="relative h-dvh bg-white flex flex-col overflow-hidden isolate overscroll-none"
     >
+      {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
         <QuickServiceMap

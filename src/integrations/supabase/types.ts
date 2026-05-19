@@ -400,6 +400,45 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_profile_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          customer_user_id: string
+          field_name: string
+          id: string
+          ip_address: string | null
+          new_value: string | null
+          old_value: string | null
+          user_agent: string | null
+          verified_via_otp: boolean
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          customer_user_id: string
+          field_name: string
+          id?: string
+          ip_address?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+          verified_via_otp?: boolean
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          customer_user_id?: string
+          field_name?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+          verified_via_otp?: boolean
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -1425,6 +1464,60 @@ export type Database = {
           last_fired_at?: string | null
           notification_type?: string
           schedule_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_slides: {
+        Row: {
+          audience: string
+          bg_color: string | null
+          created_at: string
+          cta_label: string
+          id: string
+          is_active: boolean
+          media_type: string
+          media_url: string
+          position: number
+          poster_url: string | null
+          skip_allowed: boolean
+          subtitle: string
+          text_color: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          bg_color?: string | null
+          created_at?: string
+          cta_label?: string
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url?: string
+          position?: number
+          poster_url?: string | null
+          skip_allowed?: boolean
+          subtitle?: string
+          text_color?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          bg_color?: string | null
+          created_at?: string
+          cta_label?: string
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url?: string
+          position?: number
+          poster_url?: string | null
+          skip_allowed?: boolean
+          subtitle?: string
+          text_color?: string | null
           title?: string
           updated_at?: string
         }

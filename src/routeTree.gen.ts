@@ -46,6 +46,7 @@ import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-pas
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminOnboardingRouteImport } from './routes/admin.onboarding'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminLookupRouteImport } from './routes/admin.lookup'
@@ -248,6 +249,11 @@ const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOnboardingRoute = AdminOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/admin/lookup': typeof AdminLookupRoute
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/admin/lookup': typeof AdminLookupRoute
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -468,6 +476,7 @@ export interface FileRoutesById {
   '/admin/lookup': typeof AdminLookupRoute
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -525,6 +534,7 @@ export interface FileRouteTypes {
     | '/admin/lookup'
     | '/admin/maps'
     | '/admin/notifications'
+    | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -579,6 +589,7 @@ export interface FileRouteTypes {
     | '/admin/lookup'
     | '/admin/maps'
     | '/admin/notifications'
+    | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -634,6 +645,7 @@ export interface FileRouteTypes {
     | '/admin/lookup'
     | '/admin/maps'
     | '/admin/notifications'
+    | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/referrals'
@@ -952,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/onboarding': {
+      id: '/admin/onboarding'
+      path: '/onboarding'
+      fullPath: '/admin/onboarding'
+      preLoaderRoute: typeof AdminOnboardingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/notifications': {
       id: '/admin/notifications'
       path: '/notifications'
@@ -1082,6 +1101,7 @@ interface AdminRouteChildren {
   AdminLookupRoute: typeof AdminLookupRoute
   AdminMapsRoute: typeof AdminMapsRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminOnboardingRoute: typeof AdminOnboardingRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -1111,6 +1131,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLookupRoute: AdminLookupRoute,
   AdminMapsRoute: AdminMapsRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminOnboardingRoute: AdminOnboardingRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReferralsRoute: AdminReferralsRoute,
@@ -1159,13 +1180,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
