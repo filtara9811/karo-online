@@ -715,3 +715,103 @@ function NotificationsTab({ items }: { items: any[] }) {
     </div>
   );
 }
+
+function CardTab({ customer }: { customer: any }) {
+  const code = customer.support_code || customer.referral_code;
+  if (!code) {
+    return <GoldCard className="p-6 text-center text-xs text-[#f5d97a]/60">No public card code yet.</GoldCard>;
+  }
+  const url = `/c/${code}`;
+  return (
+    <div className="space-y-2">
+      <GoldCard className="p-3 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-[#f5d97a]/60">Public visiting card</p>
+          <p className="text-sm font-semibold text-[#f5d97a]">/c/{code}</p>
+        </div>
+        <a href={url} target="_blank" rel="noreferrer"
+          className="px-3 py-1.5 rounded-lg bg-[#d4af37] text-[#1a1a1a] text-xs font-bold flex items-center gap-1">
+          <ExternalLink className="h-3.5 w-3.5" /> Open
+        </a>
+      </GoldCard>
+      <div className="rounded-xl overflow-hidden border border-[#d4af37]/30 bg-black/40" style={{ height: "70vh" }}>
+        <iframe src={url} title="Visiting card" className="w-full h-full" />
+      </div>
+    </div>
+  );
+}
+
+function OrdersRaisedTab({ leads }: { leads: any[] }) {
+  if (leads.length === 0) return <GoldCard className="p-6 text-center text-xs text-[#f5d97a]/60">This user hasn't raised any orders/leads yet.</GoldCard>;
+  return (
+    <div className="space-y-2">
+      {leads.map((l) => (
+        <GoldCard key={l.id} className="p-3 space-y-1">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#f5d97a] truncate">{l.sub_category_name}</p>
+              <p className="text-[11px] text-[#f5d97a]/60">{new Date(l.created_at).toLocaleString()}</p>
+              {l.address && <p className="text-[11px] text-[#f5d97a]/60 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.address}</p>}
+              {Array.isArray(l.item_names) && l.item_names.length > 0 && (
+                <p className="text-[11px] text-[#f5d97a]/70 mt-0.5">Items: {l.item_names.join(", ")}</p>
+              )}
+              {l.note && <p className="text-[11px] text-[#f5d97a]/70 italic mt-0.5">"{l.note}"</p>}
+            </div>
+            <div className="text-right">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                l.status === "fulfilled" || l.status === "accepted" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
+                "bg-amber-500/15 text-amber-300 border-amber-500/30"
+              }`}>{l.status}</span>
+              <p className="text-[10px] text-[#f5d97a]/60 mt-1">{l.accepted_count}/{l.max_slots} vendors</p>
+              {l.lead_price_inr > 0 && <p className="text-xs text-[#f5d97a] mt-0.5">₹{l.lead_price_inr}</p>}
+            </div>
+          </div>
+          {Array.isArray(l.images) && l.images.length > 0 && (
+            <div className="flex gap-1 flex-wrap pt-1">
+              {l.images.slice(0, 4).map((u: string, i: number) => (
+                <img key={i} src={u} alt="" className="h-12 w-12 rounded object-cover border border-[#d4af37]/20" />
+              ))}
+            </div>
+          )}
+        </GoldCard>
+      ))}
+    </div>
+  );
+}
+
+function VendorInboxTab({ items }: { items: any[] }) {
+  if (items.length === 0) return <GoldCard className="p-6 text-center text-xs text-[#f5d97a]/60">No leads received by this vendor yet.</GoldCard>;
+  const statusColor = (s: string) =>
+    s === "accepted" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+    : s === "rejected" || s === "expired" || s === "sold_out" ? "bg-red-500/15 text-red-300 border-red-500/30"
+    : "bg-amber-500/15 text-amber-300 border-amber-500/30";
+  return (
+    <div className="space-y-2">
+      {items.map((n) => {
+        const lead = n.leads || {};
+        return (
+          <GoldCard key={n.id} className="p-3 space-y-1">
+            <div className="flex justify-between items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#f5d97a] truncate">{lead.sub_category_name || n.sub_category_name || "Lead"}</p>
+                <p className="text-[11px] text-[#f5d97a]/70">
+                  From: <span className="text-[#f5d97a]">{lead.customer_name || "—"}</span>
+                  {lead.customer_phone && <span className="text-[#f5d97a]/60"> · {lead.customer_phone}</span>}
+                </p>
+                <p className="text-[11px] text-[#f5d97a]/60">{new Date(n.created_at).toLocaleString()}</p>
+                {lead.address && <p className="text-[11px] text-[#f5d97a]/60 flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.address}</p>}
+                {lead.note && <p className="text-[11px] text-[#f5d97a]/70 italic mt-0.5">"{lead.note}"</p>}
+                {n.vendor_note && <p className="text-[11px] text-emerald-300/80 mt-0.5">Vendor note: {n.vendor_note}</p>}
+                {n.quoted_price && <p className="text-[11px] text-[#f5d97a]">Quote: ₹{n.quoted_price}</p>}
+              </div>
+              <div className="text-right">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusColor(n.status)}`}>{n.status}</span>
+                {lead.lead_price_inr > 0 && <p className="text-xs text-[#f5d97a] mt-1">₹{lead.lead_price_inr}</p>}
+              </div>
+            </div>
+          </GoldCard>
+        );
+      })}
+    </div>
+  );
+}
