@@ -1,47 +1,89 @@
-## Notification & UX Polish — Customer side
+# Super Admin Control + Play Store Deploy
 
-### 1. Notification badges on the 4 profile tiles
-- Currently bell shows in a separate top header. Remove that placement.
-- Show unread count badges **only on the 4 quick-tile buttons** in the profile menu (Orders 📦, Referral 🎁, Bell 🔔, Support 🎧).
-- Each badge = bucket count from `useNotifications()`:
-  - Orders tile → `counts.orders`
-  - Referral tile → `counts.referral`
-  - Bell tile → `counts.total` (opens NotificationCenter sheet)
-  - Support tile → `counts.support`
-- Tapping a tile (other than bell) navigates to that page AND marks that bucket read.
+## Part 1 — 4-digit Support Code (Customer = Vendor = same user)
 
-### 2. Home screen — bell badge next to Quick chip
-- On `/home`, next to the avatar/search-bar Quick chip, show small notification count (red pill, `counts.total`).
-- Tapping it opens the same NotificationCenter sheet.
+Har user ke liye ek unique **4-digit Support Code** (e.g. `4821`) auto-generate hoga — referral code ki tarah, but sirf 4 digits, sirf admin-search ke liye.
 
-### 3. My Orders — two sections
-Inside `/orders` (and the My Orders sheet), just below the search bar add segmented tabs:
-- **Accepted** (default) — leads where vendor accepted (current behavior).
-- **Pending / Not accepted** — leads the customer sent but vendor hasn't accepted (still showing other vendors who were shown but didn't respond).
-Switch list source based on tab. Use real data from `leads` table filtered by `status`.
+- Naya column `support_code` `customers` table mein (UNIQUE, 4 digits, 1000–9999 range).
+- Auto-generate trigger: jab bhi naya customer row bane, ek unused 4-digit code assign ho jaye.
+- Backfill: sabhi existing customers ko ek code mil jaye.
+- Vendor same user hota hai (`vendors.user_id = customers.user_id`), to vendor ke liye alag code nahi — same support code dono jagah dikhega.
+- 4 digits = max 9000 unique codes. Agar future mein zyada users hue to humein 5 digits pe shift karna padega — abhi ke liye theek hai.
 
-### 4. Chat + Stepper screens — 70% sheet with X close
-- Chat screen and live status/stepper screen should open as a **bottom sheet covering ~70% of screen** (not fullscreen).
-- Top-right corner: small **X button** to close → returns to previous screen (screen-on-screen feel).
-- Replace fullscreen route mount with sheet wrapper where these are launched from My Orders / notifications.
+## Part 2 — Super Admin "Customer 360" Page
 
-### 5. Real data wiring
-- Remove any mock/fake entries from My Orders, chat list, and status timeline. Pull from `leads`, `lead_messages`, `vendor_status_updates` tables for the signed-in customer.
+Naya page: **`/admin/lookup`** (sidebar mein "🔍 User Lookup" naam se).
 
-### 6. Paytm/PhonePe-style toast notifications
-- When a new lead/message/status update arrives (realtime), show a **top-center toast** like "🔔 आपको नई lead मिली — Aryan Bansal से" with sound.
-- Implement via sonner `toast()` triggered from `use-notifications` realtime handler.
-- Format: `"{Customer name} ne aapko {service} ke liye lead bheji"` for vendor; `"{Vendor name} ne aapka order accept kiya"` for customer; amounts/orders styled bold.
+Ek single search bar — yeh sab accept karega:
+- 4-digit support code (`4821`)
+- Phone number (any format)
+- Email
+- Naam
+- User ID (UUID)
 
-### 7. Sound everywhere an action prompt appears
-Wire `playPing()` to these moments:
-- Map permission popup shown
-- "Allow location" / "Enable notifications" / "Upload KYC" / OTP modal open
-- Accept / Reject buttons appearing on vendor side
-- Any toast (sonner) fires a short ping
-- Hook into `OtpModal`, `PermissionsGate`, `ActionAlertBanner`, `ApprovalCard`, `FindingVendorOverlay` mount effects.
+Result ek **unified profile drawer** kholega jisme ek hi user ke saare faces:
 
-### Technical notes
-- Files to edit: `src/routes/profile.tsx` (remove header bell, wire tile badges + onClick mark-read), `src/routes/home.tsx` (add bell-count next to Quick chip), `src/components/MyOrdersList.tsx` (add Accepted/Pending tabs), `src/components/LeadChatThread.tsx` + `src/components/VerticalOrderTimeline.tsx` wrappers (70% sheet + X), `src/hooks/use-notifications.tsx` (emit sonner toast on fresh items), and small `useEffect(() => playPing(), [])` additions in the listed modal/banner components.
-- No DB migration required — uses existing tables.
-- `NotificationCenter` sheet stays as is (opened from bell tile only).
+**Tabs:**
+1. **Profile** — naam, phone, email, address, avatar, gender — sab inline editable. Save = direct DB update via admin server fn.
+2. **Vendor** (agar registered hai) — business name, trade, KYC status, GST/PAN/Aadhaar, manager email — sab editable. Vendor register nahi hai to "Promote to Vendor" button.
+3. **KYC** — documents preview, Approve / Reject / Re-request buttons, manual override fields.
+4. **Wallet** — LeadX coins balance, service wallet (₹), lifetime stats, recent transactions. Admin actions: **Credit coins / Debit coins / Credit ₹ / Debit ₹** (sab audit log mein jayega).
+5. **Activity** — recent leads, orders, referrals (read-only timeline).
+6. **Danger zone** — Block/Unblock, Verify/Unverify, Force logout, Reset password link send, Delete account.
+
+Saari actions super-admin role-check ke peeche (already existing `is_admin_user` + `super_admin` role).
+
+## Part 3 — Existing pages enhancement
+
+- `admin.customers.tsx` aur `admin.vendors.tsx` ke list cards par **support code badge** dikhega (e.g. `#4821`).
+- Existing filter bar mein support-code se direct search.
+- Existing `AdminRecordDrawer` ke "Edit" mode mein sab fields editable (abhi limited hai) + KYC tab + wallet tab inline.
+
+## Part 4 — Server functions (secure)
+
+Naye server fns `src/lib/admin-lookup.functions.ts`:
+- `lookupUser(query)` — fuzzy search, returns unified profile
+- `updateUserProfile(userId, patch)` — admin override on `customers`
+- `updateVendorProfile(userId, patch)` — admin override on `vendors`
+- `setKycStatus(userId, status, note)` — KYC approve/reject
+- `adjustWallet(userId, kind, direction, amount, reason)` — wallet credit/debit + transaction log
+- `setBlockStatus(userId, blocked)` — block toggle on both customers + vendors
+
+Sab `requireSupabaseAuth` + super-admin role check ke saath.
+
+## Part 5 — Play Store Deployment — Step-by-Step
+
+Code ready hai (PWA + Capacitor wrapper banana padega). Yeh main aapko ek detailed **`PLAYSTORE_DEPLOY.md`** file project root mein bana ke doonga, jisme ye sab hoga:
+
+1. **Capacitor setup** — `bun add @capacitor/core @capacitor/android @capacitor/cli` + `npx cap init`
+2. **Android project generate** — `npx cap add android`
+3. **Build web** — `bun run build` + `npx cap sync android`
+4. **Android Studio mein kholna** — `npx cap open android`
+5. **Icons & splash** — `public/icon-512.png` use karna, splash configure karna
+6. **AndroidManifest** — permissions (location, notifications, camera), deep links
+7. **Signing key generate** — `keytool` command, keystore safe rakhna
+8. **`build.gradle`** — version code, version name, applicationId (`in.karoonline.app`)
+9. **AAB build** — `./gradlew bundleRelease`
+10. **Play Console** — naya app, content rating, data safety form, screenshots upload, listing (short + long description — already humne discuss kiye hain), AAB upload, internal testing → production
+11. **Privacy policy URL** — `https://karoonline.in/privacy` (already live hai)
+12. **Asset Links** — `public/.well-known/assetlinks.json` (already hai) Play Console signing SHA-256 ke saath update karna
+
+Yeh poori guide markdown file mein milegi — copy-paste karke chala sakte ho.
+
+## Files to be created/edited
+
+**New:**
+- `src/routes/admin.lookup.tsx` — Customer 360 page
+- `src/components/admin/UserLookup360.tsx` — drawer component
+- `src/lib/admin-lookup.functions.ts` — server functions
+- `PLAYSTORE_DEPLOY.md` — deploy guide
+- Migration: add `support_code` column + trigger + backfill
+
+**Edited:**
+- `src/routes/admin.index.tsx` — add "User Lookup" tile
+- `src/components/admin/AdminLayout.tsx` — sidebar link
+- `src/routes/admin.customers.tsx` + `admin.vendors.tsx` — show support code badge + search
+
+## Confirmation needed
+
+Kya main yeh poora scope start kar doon? Logo aapne already de diya hai, woh use ho raha hai — naya nahi chahiye. Bas **"haan"** bolo to migration + saari files ek saath bana doonga.
