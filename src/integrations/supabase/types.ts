@@ -424,6 +424,7 @@ export type Database = {
           shop_url: string | null
           signup_method: string | null
           status: string
+          support_code: string | null
           tags: string[] | null
           updated_at: string
           upi_id: string | null
@@ -453,6 +454,7 @@ export type Database = {
           shop_url?: string | null
           signup_method?: string | null
           status?: string
+          support_code?: string | null
           tags?: string[] | null
           updated_at?: string
           upi_id?: string | null
@@ -482,6 +484,7 @@ export type Database = {
           shop_url?: string | null
           signup_method?: string | null
           status?: string
+          support_code?: string | null
           tags?: string[] | null
           updated_at?: string
           upi_id?: string | null
@@ -2503,6 +2506,16 @@ export type Database = {
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      admin_adjust_wallet: {
+        Args: {
+          _amount: number
+          _direction: string
+          _kind: string
+          _reason: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       admin_approve_referral_reward: {
         Args: { _reward_id: string }
         Returns: Json
@@ -2617,6 +2630,7 @@ export type Database = {
         }
       }
       generate_referral_code: { Args: { _prefix?: string }; Returns: string }
+      generate_support_code: { Args: never; Returns: string }
       get_active_maps_key: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_card_link: { Args: { _code: string }; Returns: string }
@@ -2708,6 +2722,7 @@ export type Database = {
           shop_url: string | null
           signup_method: string | null
           status: string
+          support_code: string | null
           tags: string[] | null
           updated_at: string
           upi_id: string | null
@@ -2753,6 +2768,7 @@ export type Database = {
           shop_url: string | null
           signup_method: string | null
           status: string
+          support_code: string | null
           tags: string[] | null
           updated_at: string
           upi_id: string | null
