@@ -32,6 +32,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ReferralPage } from "@/routes/referral";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { useNotifications } from "@/hooks/use-notifications";
+import { OtpModal } from "@/components/OtpModal";
+import { Lock } from "lucide-react";
+
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
