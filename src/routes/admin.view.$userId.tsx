@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin/view/$userId")({
   component: ViewPage,
 });
 
-type Tab = "overview" | "profile" | "vendor" | "products" | "card" | "kyc" | "wallet" | "orders" | "inbox" | "leads" | "notifications";
+type Tab = "overview" | "profile" | "vendor" | "products" | "card" | "kyc" | "wallet" | "orders" | "inbox" | "leads" | "notifications" | "history";
 
 function ViewPage() {
   const { userId } = Route.useParams();
@@ -96,6 +96,7 @@ function ViewPage() {
     { k: "wallet" as Tab, l: "Wallet", I: WalletIcon },
     { k: "leads" as Tab, l: "All Leads", I: FileText },
     { k: "notifications" as Tab, l: "Notify", I: Bell },
+    { k: "history" as Tab, l: "Change History", I: Activity },
   ] as { k: Tab; l: string; I: any; show?: boolean }[]).filter((t) => t.show !== false);
 
 
@@ -178,6 +179,7 @@ function ViewPage() {
       {tab === "wallet" && <WalletTab userId={userId} wallet={w} txns={full.transactions || []} onChanged={refresh} />}
       {tab === "leads" && <LeadsTab leads={full.leads || []} />}
       {tab === "notifications" && <NotificationsTab items={extra?.notifications || []} />}
+      {tab === "history" && <HistoryTab userId={userId} />}
     </AdminLayout>
   );
 }
