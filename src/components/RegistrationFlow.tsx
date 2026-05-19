@@ -410,6 +410,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
                     onResend={handleResendOtp}
                     onPaste={pasteOtp}
                     verifying={otpVerifying}
+                    onVerify={() => handleOtpVerify(otp)}
                   />
                 )}
                 {step === 3 && (
@@ -551,7 +552,7 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 // ============================================================
 // Step 2: OTP
 // ============================================================
-function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
+function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onVerify }: {
   phone: string;
   otp: string;
   onOtp: (v: string) => void;
@@ -559,12 +560,17 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
   onResend: () => void;
   onPaste: () => void;
   verifying: boolean;
+  onVerify: () => void;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  useEffect(() => {
+    setTimeout(() => ref.current?.focus(), 320);
+    try { playPing("default"); } catch { /* */ }
+  }, []);
+  const ready = otp.length === 4 && !verifying;
   return (
     <div>
-      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Auto-detect or paste from SMS" />
+      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Paste from SMS, then tap Verify" />
       <div className="mb-4 flex items-center justify-center gap-2 text-sm">
         <span className="font-display font-semibold text-[color:oklch(0.32_0.06_85)]">{phone}</span>
       </div>
@@ -574,6 +580,7 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
           ref={ref}
           value={otp}
           onChange={(e) => onOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          onKeyDown={(e) => { if (e.key === "Enter" && ready) onVerify(); }}
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="[0-9]*"
@@ -619,6 +626,13 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying }: {
           {verifying ? "Verifying…" : `00:${String(seconds).padStart(2, "0")}`}
         </span>
       </div>
+
+      <NextButton
+        disabled={!ready}
+        label={verifying ? "Verifying…" : "Verify OTP"}
+        icon={false}
+        onClick={onVerify}
+      />
     </div>
   );
 }
