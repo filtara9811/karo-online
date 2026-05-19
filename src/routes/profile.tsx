@@ -1086,11 +1086,12 @@ function ProfileDetailsSheet({
       </div>
 
       <div className="space-y-3">
-        <EditableField Icon={User} label="Full name" value={name} onChange={setName} />
-        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" />
-        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" />
-        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} />
+        <EditableField Icon={User} label="Full name" value={name} onChange={setName} locked={!unlocked} />
+        <EditableField Icon={Mail} label="Email" value={email} onChange={setEmail} inputMode="email" locked={!unlocked} />
+        <EditableField Icon={Phone} label="Contact" value={phone} onChange={setPhone} inputMode="tel" locked={!unlocked} />
+        <EditableField Icon={MapPin} label="Address" value={address} onChange={setAddress} locked={!unlocked} />
       </div>
+
 
       {/* KYC + Bank quick links */}
       <div className="grid grid-cols-2 gap-2 mt-4">
