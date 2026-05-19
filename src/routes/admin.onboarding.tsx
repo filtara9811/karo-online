@@ -103,7 +103,7 @@ function OnboardingAdmin() {
       <PageHeader
         title="Customer Onboarding Screens"
         subtitle="Splash / intro slides shown before the customer logs in. Drag-style ordering, image / video / Lottie animation supported."
-        actions={
+        action={
           <GoldButton onClick={add}>
             <Plus className="h-4 w-4" /> Add Slide
           </GoldButton>
