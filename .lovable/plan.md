@@ -1,89 +1,116 @@
-# Super Admin Control + Play Store Deploy
 
-## Part 1 — 4-digit Support Code (Customer = Vendor = same user)
+## Goal
 
-Har user ke liye ek unique **4-digit Support Code** (e.g. `4821`) auto-generate hoga — referral code ki tarah, but sirf 4 digits, sirf admin-search ke liye.
+जब admin panel में किसी customer या vendor पर click करें, तो उसका **पूरा वही dashboard** खुले जो उसे अपने phone पर दिखता है (Vendor Dashboard / Customer Home + Profile + Orders + Shop + KYC + Wallet + Products), और साथ में admin के पास **A-to-Z controls** हों — approve / disapprove, enable / disable, edit, delete, KYC update, coin add/deduct, products edit, restrictions।
 
-- Naya column `support_code` `customers` table mein (UNIQUE, 4 digits, 1000–9999 range).
-- Auto-generate trigger: jab bhi naya customer row bane, ek unused 4-digit code assign ho jaye.
-- Backfill: sabhi existing customers ko ek code mil jaye.
-- Vendor same user hota hai (`vendors.user_id = customers.user_id`), to vendor ke liye alag code nahi — same support code dono jagah dikhega.
-- 4 digits = max 9000 unique codes. Agar future mein zyada users hue to humein 5 digits pe shift karna padega — abhi ke liye theek hai.
+---
 
-## Part 2 — Super Admin "Customer 360" Page
+## Approach: "Admin View-As" mode
 
-Naya page: **`/admin/lookup`** (sidebar mein "🔍 User Lookup" naam se).
+एक नया route `/admin/view/$userId` बनेगा जो एक special "Admin Impersonation Shell" है। ये actual vendor/customer screens को re-use करेगा (कोई duplicate UI नहीं) — एक global `useViewAsUser()` context से ये screens पता करेंगे कि किस user का data दिखाना है।
 
-Ek single search bar — yeh sab accept karega:
-- 4-digit support code (`4821`)
-- Phone number (any format)
-- Email
-- Naam
-- User ID (UUID)
+### Architecture
 
-Result ek **unified profile drawer** kholega jisme ek hi user ke saare faces:
+```text
+/admin/view/$userId
+ ├── Top bar: Admin Controls (sticky, gold theme)
+ │     • Approve/Disapprove • Block/Unblock • KYC ✓/✗
+ │     • Coins +/- • Service Balance +/- • Delete user
+ │     • Edit Profile • Edit Vendor • Notes
+ ├── Tabs: [Customer View] [Vendor View] [KYC] [Wallet] [Products] [Orders] [Shop]
+ └── Body: renders the REAL component used by that user
+       (VendorDashboard, VendorShop, ProfileSheet, MyOrdersList, etc.)
+       wrapped in <ViewAsProvider userId={...}>
+```
 
-**Tabs:**
-1. **Profile** — naam, phone, email, address, avatar, gender — sab inline editable. Save = direct DB update via admin server fn.
-2. **Vendor** (agar registered hai) — business name, trade, KYC status, GST/PAN/Aadhaar, manager email — sab editable. Vendor register nahi hai to "Promote to Vendor" button.
-3. **KYC** — documents preview, Approve / Reject / Re-request buttons, manual override fields.
-4. **Wallet** — LeadX coins balance, service wallet (₹), lifetime stats, recent transactions. Admin actions: **Credit coins / Debit coins / Credit ₹ / Debit ₹** (sab audit log mein jayega).
-5. **Activity** — recent leads, orders, referrals (read-only timeline).
-6. **Danger zone** — Block/Unblock, Verify/Unverify, Force logout, Reset password link send, Delete account.
+### Why re-use real screens
+- Admin देखता है **exact same UI** जो user को दिखती है — no drift
+- नया code minimal — सिर्फ data-source override layer
 
-Saari actions super-admin role-check ke peeche (already existing `is_admin_user` + `super_admin` role).
+---
 
-## Part 3 — Existing pages enhancement
+## Technical Implementation
 
-- `admin.customers.tsx` aur `admin.vendors.tsx` ke list cards par **support code badge** dikhega (e.g. `#4821`).
-- Existing filter bar mein support-code se direct search.
-- Existing `AdminRecordDrawer` ke "Edit" mode mein sab fields editable (abhi limited hai) + KYC tab + wallet tab inline.
+### 1. `ViewAsContext`  (`src/hooks/use-view-as.tsx`)
+```ts
+// Provides: { viewAsUserId, isAdminViewing, adminUserId }
+// useEffectiveUserId() → returns viewAsUserId ?? auth.user.id
+```
 
-## Part 4 — Server functions (secure)
+### 2. Refactor data hooks to use effective user id
+Touch these existing hooks to read `useEffectiveUserId()` instead of `auth.user.id`:
+- `use-auth.tsx` → add `effectiveProfile` (loads `customers` row for effective uid)
+- `use-vendor-leads.tsx`, `use-my-orders.tsx`, `use-cart.tsx`, `use-notifications.tsx`
+- `use-fcm-token` skipped (admin shouldn't register tokens)
 
-Naye server fns `src/lib/admin-lookup.functions.ts`:
-- `lookupUser(query)` — fuzzy search, returns unified profile
-- `updateUserProfile(userId, patch)` — admin override on `customers`
-- `updateVendorProfile(userId, patch)` — admin override on `vendors`
-- `setKycStatus(userId, status, note)` — KYC approve/reject
-- `adjustWallet(userId, kind, direction, amount, reason)` — wallet credit/debit + transaction log
-- `setBlockStatus(userId, blocked)` — block toggle on both customers + vendors
+Pattern: small change, ~3-line edit per hook.
 
-Sab `requireSupabaseAuth` + super-admin role check ke saath.
+### 3. New admin server functions (`src/lib/admin-impersonate.functions.ts`)
+- `getUserFullSnapshot(userId)` → customer + vendor + wallet + kyc + products + recent orders
+- `adminEditProduct(productId, patch)`
+- `adminDeleteProduct(productId)`
+- `adminSetKyc(userId, { gst, pan, aadhaar, verified })`
+- `adminApproveVendor(userId)` / `adminDisapproveVendor(userId)`
+- (re-use existing `adjustWallet`, `setUserBlock`, `updateCustomerProfile`, `updateVendorProfile`)
 
-## Part 5 — Play Store Deployment — Step-by-Step
+All gated by `is_admin_user(auth.uid())`.
 
-Code ready hai (PWA + Capacitor wrapper banana padega). Yeh main aapko ek detailed **`PLAYSTORE_DEPLOY.md`** file project root mein bana ke doonga, jisme ye sab hoga:
+### 4. New route `/admin/view/$userId.tsx`
+- Sticky **AdminActionBar** (top) with all controls
+- Tabs:
+  1. **Customer** → renders `<Home>` / `<Profile>` / `<MyOrdersList>` snapshot
+  2. **Vendor Dashboard** → renders `<VendorDashboard>` (read-only flag)
+  3. **Shop** → `<VendorShop>` view  
+  4. **Products** → list with inline edit/delete
+  5. **KYC** → editable form (GST/PAN/Aadhaar/Aadhar images, approve/reject)
+  6. **Wallet** → balance + transactions + Add/Deduct LeadX coins / service ₹
+  7. **Orders / Leads** → list view
+- All wrapped in `<ViewAsProvider userId={...}>`
 
-1. **Capacitor setup** — `bun add @capacitor/core @capacitor/android @capacitor/cli` + `npx cap init`
-2. **Android project generate** — `npx cap add android`
-3. **Build web** — `bun run build` + `npx cap sync android`
-4. **Android Studio mein kholna** — `npx cap open android`
-5. **Icons & splash** — `public/icon-512.png` use karna, splash configure karna
-6. **AndroidManifest** — permissions (location, notifications, camera), deep links
-7. **Signing key generate** — `keytool` command, keystore safe rakhna
-8. **`build.gradle`** — version code, version name, applicationId (`in.karoonline.app`)
-9. **AAB build** — `./gradlew bundleRelease`
-10. **Play Console** — naya app, content rating, data safety form, screenshots upload, listing (short + long description — already humne discuss kiye hain), AAB upload, internal testing → production
-11. **Privacy policy URL** — `https://karoonline.in/privacy` (already live hai)
-12. **Asset Links** — `public/.well-known/assetlinks.json` (already hai) Play Console signing SHA-256 ke saath update karna
+### 5. Wire click-through on admin lists
+- `admin.customers.tsx` → click row → `navigate({ to: '/admin/view/$userId', params: { userId: c.user_id } })`
+- `admin.vendors.tsx` → same
+- `admin.lookup.tsx` → "Open Full Dashboard" button on each result
 
-Yeh poori guide markdown file mein milegi — copy-paste karke chala sakte ho.
+### 6. Read-only safety
+- Vendor screens में check: if `isAdminViewing` → disable lead accept/reject buttons (would mess vendor's real state); show "Admin view-only" badge
+- Profile edits / KYC / wallet → go through admin server functions (audit logged)
 
-## Files to be created/edited
+---
 
-**New:**
-- `src/routes/admin.lookup.tsx` — Customer 360 page
-- `src/components/admin/UserLookup360.tsx` — drawer component
-- `src/lib/admin-lookup.functions.ts` — server functions
-- `PLAYSTORE_DEPLOY.md` — deploy guide
-- Migration: add `support_code` column + trigger + backfill
+## Files to create
+- `src/hooks/use-view-as.tsx`
+- `src/lib/admin-impersonate.functions.ts`
+- `src/routes/admin.view.$userId.tsx`
+- `src/components/admin/AdminActionBar.tsx`
+- `src/components/admin/AdminKycEditor.tsx`
+- `src/components/admin/AdminProductManager.tsx`
 
-**Edited:**
-- `src/routes/admin.index.tsx` — add "User Lookup" tile
-- `src/components/admin/AdminLayout.tsx` — sidebar link
-- `src/routes/admin.customers.tsx` + `admin.vendors.tsx` — show support code badge + search
+## Files to edit (small surgical edits)
+- `src/hooks/use-auth.tsx` — add `effectiveUserId` getter
+- `src/hooks/use-vendor-leads.tsx` — use effective uid
+- `src/hooks/use-my-orders.tsx` — use effective uid
+- `src/routes/admin.customers.tsx` — row click → view route
+- `src/routes/admin.vendors.tsx` — row click → view route
+- `src/routes/admin.lookup.tsx` — add "Open Dashboard" CTA
+- `src/components/VendorDashboard*.tsx` — read-only banner when viewing as admin
+- `src/routeTree.gen.ts` — register new route
 
-## Confirmation needed
+## Database
+No schema changes needed — only new server functions using existing tables.
+(Optional: add `admin_audit_log` table later. Skipped for v1 to ship fast.)
 
-Kya main yeh poora scope start kar doon? Logo aapne already de diya hai, woh use ho raha hai — naya nahi chahiye. Bas **"haan"** bolo to migration + saari files ek saath bana doonga.
+---
+
+## Out of scope (ask separately if needed)
+- Real Capacitor-style impersonation (logging in as the user) — not safe
+- Live admin chat-as-user
+- Editing other users' chats / lead conversations
+
+---
+
+## Estimated changes
+- 6 new files, 8 edits, no migrations
+- Existing screens stay untouched in behavior for normal users — only consume `useEffectiveUserId()` which defaults to auth user
+
+Confirm with **"हाँ, करो"** to proceed.
