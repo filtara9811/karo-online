@@ -138,6 +138,11 @@ function CustomersPage() {
                     <h3 className="font-display text-base font-bold text-[#f5d97a] truncate">
                       {c.name || "Unnamed customer"}
                     </h3>
+                    {c.support_code && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/40 font-mono">
+                        #{c.support_code}
+                      </span>
+                    )}
                     {c.verified && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
                         <ShieldCheck className="h-2.5 w-2.5" /> VERIFIED
