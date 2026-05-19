@@ -969,9 +969,15 @@ function ProfileDetailsSheet({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [subSheet, setSubSheet] = useState<null | "kyc" | "bank">(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [otpOpen, setOtpOpen] = useState(false);
 
   const save = async () => {
     if (!userId) return;
+    if (!unlocked) {
+      setOtpOpen(true);
+      return;
+    }
     setSaving(true);
     const before = {
       name: profile?.name ?? "",
@@ -1005,12 +1011,14 @@ function ProfileDetailsSheet({
     }
     try {
       const { logProfileChanges } = await import("@/lib/profile-audit");
-      await logProfileChanges(userId, before, after, { verifiedViaOtp: false });
+      await logProfileChanges(userId, before, after, { verifiedViaOtp: true });
     } catch {}
     await refreshProfile();
     setSaving(false);
+    setUnlocked(false);
     onClose();
   };
+
 
   const uploadCroppedAvatar = async (file: File) => {
     if (!userId) return;
