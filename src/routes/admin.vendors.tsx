@@ -161,7 +161,7 @@ function VendorsPage() {
             <button
               key={v.id}
               type="button"
-              onClick={() => setActive(v)}
+              onClick={() => navigate({ to: "/admin/view/$userId", params: { userId: v.user_id } })}
               className="block w-full text-left"
             >
               <GoldCard className="p-4">
