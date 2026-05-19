@@ -169,8 +169,11 @@ function ViewPage() {
       {/* Body */}
       {tab === "overview" && <OverviewTab full={full} extra={extra} w={w} />}
       {tab === "profile" && <ProfileEdit userId={userId} customer={c} onSaved={refresh} />}
+      {tab === "card" && <CardTab customer={c} />}
       {tab === "vendor" && v && <VendorEdit userId={userId} vendor={v} onSaved={refresh} />}
       {tab === "products" && v && <ProductsTab items={extra?.items || []} onChanged={refresh} />}
+      {tab === "inbox" && v && <VendorInboxTab items={extra?.vendor_lead_notifications || []} />}
+      {tab === "orders" && <OrdersRaisedTab leads={extra?.customer_leads_raised || []} />}
       {tab === "kyc" && <KycTab vendor={v} customer={c} records={extra?.kyc_records || []} onChanged={refresh} />}
       {tab === "wallet" && <WalletTab userId={userId} wallet={w} txns={full.transactions || []} onChanged={refresh} />}
       {tab === "leads" && <LeadsTab leads={full.leads || []} />}
