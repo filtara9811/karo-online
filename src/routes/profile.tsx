@@ -1129,7 +1129,7 @@ function ProfileDetailsSheet({
 
       <OtpModal
         open={otpOpen}
-        phone={profile?.phone ?? user_phone_fallback(profile)}
+        phone={profile?.phone ?? ""}
         onClose={() => setOtpOpen(false)}
         onVerified={() => {
           setOtpOpen(false);
