@@ -25,10 +25,9 @@ jobs:
 
       - name: Build AAB
         run: |
-          # मशीन को पहले से ही 'Yes' बोलने के लिए यह जरूरी है
-          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json
+          # यहाँ हमने नाम और शॉर्ट नेम फिक्स कर दिया है
+          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF"
           yes | bubblewrap build
-        # ऊपर वाली लाइन में 'yes |' जोड़ा गया है ताकि मशीन अटके नहीं
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
