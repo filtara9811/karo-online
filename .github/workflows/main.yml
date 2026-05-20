@@ -35,7 +35,7 @@ jobs:
           bubblewrap build --yes
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: karoonline-aab
           path: |
