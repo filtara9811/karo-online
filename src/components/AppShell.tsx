@@ -65,7 +65,12 @@ export function AppShell() {
   if (hideShell) {
     return (
       <AuthGate>
-        <Outlet />
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            <Outlet />
+          </div>
+          <SiteFooter />
+        </div>
         <VendorLeadAlerts />
         <PermissionsGate />
       </AuthGate>
