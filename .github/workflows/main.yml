@@ -50,7 +50,7 @@ jobs:
         run: |
           # हम यहाँ मशीन को सारी जानकारी हाथ से दे रहे हैं ताकि cache/old manifest पर निर्भर न रहे
           export BUBBLEWRAP_SKIP_JDK_INSTALL=true
-          yes n | bubblewrap init --manifest=./twa-manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig --yes
+          yes n | bubblewrap init --manifest=./twa-manifest.json --packageId="app.karoonline.twa" --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig --yes
           
           # यहाँ हम उसे 'हाँ' बोलने के लिए मजबूर कर रहे हैं
           yes | bubblewrap build
