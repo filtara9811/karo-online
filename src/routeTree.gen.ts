@@ -10,12 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendorsRouteImport } from './routes/vendors'
+import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ReferralRouteImport } from './routes/referral'
 import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -69,9 +73,19 @@ const VendorsRoute = VendorsRouteImport.update({
   path: '/vendors',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
+  id: '/terms-and-conditions',
+  path: '/terms-and-conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShippingPolicyRoute = ShippingPolicyRouteImport.update({
+  id: '/shipping-policy',
+  path: '/shipping-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesRoute = ServicesRouteImport.update({
@@ -82,6 +96,11 @@ const ServicesRoute = ServicesRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundPolicyRoute = RefundPolicyRouteImport.update({
+  id: '/refund-policy',
+  path: '/refund-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReferralRoute = ReferralRouteImport.update({
@@ -97,6 +116,11 @@ const QuickRoute = QuickRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -343,12 +367,16 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
+  '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
+  '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -398,12 +426,16 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
+  '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
+  '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -455,12 +487,16 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
+  '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
+  '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -513,12 +549,16 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/home'
     | '/orders'
+    | '/privacy-policy'
     | '/profile'
     | '/quick'
     | '/referral'
+    | '/refund-policy'
     | '/register'
     | '/services'
+    | '/shipping-policy'
     | '/status'
+    | '/terms-and-conditions'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -568,12 +608,16 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/home'
     | '/orders'
+    | '/privacy-policy'
     | '/profile'
     | '/quick'
     | '/referral'
+    | '/refund-policy'
     | '/register'
     | '/services'
+    | '/shipping-policy'
     | '/status'
+    | '/terms-and-conditions'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -624,12 +668,16 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/home'
     | '/orders'
+    | '/privacy-policy'
     | '/profile'
     | '/quick'
     | '/referral'
+    | '/refund-policy'
     | '/register'
     | '/services'
+    | '/shipping-policy'
     | '/status'
+    | '/terms-and-conditions'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -681,12 +729,16 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   HomeRoute: typeof HomeRoute
   OrdersRoute: typeof OrdersRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   QuickRoute: typeof QuickRoute
   ReferralRoute: typeof ReferralRoute
+  RefundPolicyRoute: typeof RefundPolicyRoute
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
+  ShippingPolicyRoute: typeof ShippingPolicyRoute
   StatusRoute: typeof StatusRoute
+  TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   VendorsRoute: typeof VendorsRoute
   CCodeRoute: typeof CCodeRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -712,11 +764,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms-and-conditions': {
+      id: '/terms-and-conditions'
+      path: '/terms-and-conditions'
+      fullPath: '/terms-and-conditions'
+      preLoaderRoute: typeof TermsAndConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/status': {
       id: '/status'
       path: '/status'
       fullPath: '/status'
       preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipping-policy': {
+      id: '/shipping-policy'
+      path: '/shipping-policy'
+      fullPath: '/shipping-policy'
+      preLoaderRoute: typeof ShippingPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services': {
@@ -731,6 +797,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund-policy': {
+      id: '/refund-policy'
+      path: '/refund-policy'
+      fullPath: '/refund-policy'
+      preLoaderRoute: typeof RefundPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/referral': {
@@ -752,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -1156,12 +1236,16 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   HomeRoute: HomeRoute,
   OrdersRoute: OrdersRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   QuickRoute: QuickRoute,
   ReferralRoute: ReferralRoute,
+  RefundPolicyRoute: RefundPolicyRoute,
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
+  ShippingPolicyRoute: ShippingPolicyRoute,
   StatusRoute: StatusRoute,
+  TermsAndConditionsRoute: TermsAndConditionsRoute,
   VendorsRoute: VendorsRoute,
   CCodeRoute: CCodeRoute,
   ProductIdRoute: ProductIdRoute,
@@ -1180,13 +1264,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFcmToken } from "@/hooks/use-fcm-token";
 import { useNotifications } from "@/hooks/use-notifications";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
 type StaticType = { id: string; code: "product" | "service" | "other"; name: string; Icon: LucideIcon; iconImg: string; sub: string };
@@ -33,7 +34,7 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
   icon: t.iconImg,
 }));
 
-const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/referral", "/r/"];
+const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/referral", "/r/", "/privacy-policy", "/terms-and-conditions", "/refund-policy", "/shipping-policy"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
 // Bottom service/product picker bar ONLY shows on these routes (home, quick, vendors).
 // Everywhere else it's hidden to reduce clutter.
@@ -87,6 +88,8 @@ export function AppShell() {
         >
           <Outlet />
         </main>
+
+        <SiteFooter />
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
