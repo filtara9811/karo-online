@@ -23,10 +23,34 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
+      - name: Prepare TWA Manifest
+        run: |
+          cat > twa-manifest.json <<'EOF'
+          {
+            "name": "Karo Online",
+            "short_name": "Karo",
+            "start_url": "/",
+            "scope": "/",
+            "display": "standalone",
+            "theme_color": "#000080",
+            "background_color": "#FFFFFF",
+            "icons": [
+              {
+                "src": "https://karoonline.in/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+              }
+            ]
+          }
+          EOF
+          cat twa-manifest.json
+
       - name: Build AAB
         run: |
-          # हम यहाँ मशीन को सारी जानकारी हाथ से दे रहे हैं ताकि वह वेबसाइट पर निर्भर न रहे
-          bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig --yes
+          # हम यहाँ मशीन को सारी जानकारी हाथ से दे रहे हैं ताकि cache/old manifest पर निर्भर न रहे
+          export BUBBLEWRAP_SKIP_JDK_INSTALL=true
+          yes n | bubblewrap init --manifest=./twa-manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig --yes
           
           # यहाँ हम उसे 'हाँ' बोलने के लिए मजबूर कर रहे हैं
           yes | bubblewrap build
