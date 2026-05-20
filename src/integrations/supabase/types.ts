@@ -2791,6 +2791,7 @@ export type Database = {
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       normalize_email: { Args: { _email: string }; Returns: string }
       normalize_phone10: { Args: { _phone: string }; Returns: string }
+      realtime_topic_authorized: { Args: { _topic: string }; Returns: boolean }
       register_device_token: {
         Args: { _platform?: string; _token: string; _topics?: string[] }
         Returns: Json
