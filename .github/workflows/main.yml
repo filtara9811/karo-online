@@ -9,38 +9,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Initialise TWA project
-        run: |
-          mkdir -p twa && cd twa
-          bubblewrap init \
-            --manifest=https://karoonline.in/manifest.json \
-            --packageId=app.karoonline.twa \
-            --skipPwaValidation \
-            --directory=. || true
-
       - name: Build AAB
-        working-directory: twa
-        run: bubblewrap build --skipPwaValidation
+        run: |
+          bubblewrap init --manifest=https://karoonline.in/manifest.json --yes
+          bubblewrap build --yes
 
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
         with:
           name: karoonline-aab
           path: |
-            twa/app-release-bundle.aab
-            twa/app-release-signed.apk
-            twa/android.keystore
+            *.aab
+            *.keystore
