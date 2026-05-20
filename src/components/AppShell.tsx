@@ -89,7 +89,9 @@ export function AppShell() {
           <Outlet />
         </main>
 
-        <SiteFooter />
+        <div className={hideBottomBar ? "" : "pb-24"}>
+          <SiteFooter />
+        </div>
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
