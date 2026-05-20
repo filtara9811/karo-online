@@ -18,21 +18,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
       - name: Build AAB
         run: |
-          # पुरानी टूटी-फूटी सेटिंग्स को साफ करना
-          rm -rf twa-manifest.json
-          
-          # फ्रेश तरीके से ऐप की जानकारी भरना
-          bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --yes
-          
-          # ऐप फाइल बनाना
-          bubblewrap build --yes
+          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json
+          yes | bubblewrap build
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
