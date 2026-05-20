@@ -25,9 +25,12 @@ jobs:
 
       - name: Build AAB
         run: |
-          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json
-          yes | bubblewrap build
-
+          # यह कमांड बिना पूछे सब कुछ सेट कर देगी
+          bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig
+          
+          # यहाँ हम मशीन को खुद अपनी 'चाबी' (Key) बनाने को कह रहे हैं
+          yes "" | bubblewrap build --skipConfig
+          
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
