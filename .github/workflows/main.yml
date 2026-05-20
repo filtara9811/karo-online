@@ -25,13 +25,10 @@ jobs:
 
       - name: Build AAB
         run: |
-          # पुरानी फाइलों को साफ करना
-          rm -rf twa-manifest.json
+          # हम यहाँ मशीन को सारी जानकारी हाथ से दे रहे हैं ताकि वह वेबसाइट पर निर्भर न रहे
+          bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --skipConfig --yes
           
-          # ऑटोमैटिक तरीके से बिना किसी सवाल के बिल्ड करना
-          bubblewrap init --manifest=https://karoonline.in/manifest.json --targetDirectory="./"
-          
-          # 'yes' कमांड मशीन को हर सवाल का 'हाँ' जवाब खुद ही दे देगी
+          # यहाँ हम उसे 'हाँ' बोलने के लिए मजबूर कर रहे हैं
           yes | bubblewrap build
 
       - name: Upload Artifacts
