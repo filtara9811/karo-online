@@ -1,6 +1,7 @@
 {
   "name": "Karo Online",
   "short_name": "Karo",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,6 +12,12 @@
   "dir": "ltr",
   "gcm_sender_id": "103953800507",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
