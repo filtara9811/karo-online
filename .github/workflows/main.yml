@@ -23,20 +23,36 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
+      - name: Verify public manifest and icons
+        run: |
+          curl --fail --location --show-error --silent --head https://karoonline.in/manifest.json
+          curl --fail --location --show-error --silent --output /tmp/manifest.json https://karoonline.in/manifest.json
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('/tmp/manifest.json','utf8')); if(!m.icons?.length) throw new Error('manifest icons missing'); if(m.name!=='Karo Online') throw new Error('wrong manifest loaded'); console.log('Manifest OK:', m.name, m.short_name);"
+          curl --fail --location --show-error --silent --head https://karoonline.in/icon-192.png
+          curl --fail --location --show-error --silent --head https://karoonline.in/icon-512.png
+
       - name: Build AAB
         run: |
           yes | bubblewrap doctor
-          # --yes कमांड के साथ इनिशियलाइज़ करना
           yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --packageId="app.karoonline.twa" --yes
           
-          # यहाँ हम पक्का कर रहे हैं कि बिल्ड पूरा हो
-          yes | bubblewrap build
+          bubblewrap build
+
+      - name: Collect build outputs
+        run: |
+          mkdir -p artifacts
+          echo "AAB files found:"
+          find . -path './node_modules' -prune -o -type f -name '*.aab' -print
+          echo "Keystore files found:"
+          find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -print
+          find . -path './node_modules' -prune -o -type f -name '*.aab' -exec cp -v {} artifacts/ \;
+          find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -exec cp -v {} artifacts/ \;
+          test -n "$(ls -A artifacts/*.aab 2>/dev/null)" || (echo "No .aab file was generated" && exit 1)
+          test -n "$(ls -A artifacts/*.keystore artifacts/*.jks 2>/dev/null)" || (echo "No keystore file was generated" && exit 1)
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: karoonline-app-files
-          path: |
-            ./*.aab
-            ./*.keystore
+          path: artifacts/
           if-no-files-found: error
