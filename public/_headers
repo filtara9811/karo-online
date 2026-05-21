@@ -1,0 +1,21 @@
+/manifest.json
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Accept, Origin, User-Agent
+  Cache-Control: public, max-age=300, must-revalidate
+
+/icon-192.png
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Cache-Control: public, max-age=86400
+
+/icon-512.png
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Cache-Control: public, max-age=86400
+
+/.well-known/assetlinks.json
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Accept, Origin, User-Agent
+  Cache-Control: public, max-age=300, must-revalidate
