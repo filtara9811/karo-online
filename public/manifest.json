@@ -5,6 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "scope_extensions": [{ "origin": "https://www.karoonline.in" }],
   "theme_color": "#000080",
   "background_color": "#FFFFFF",
   "orientation": "portrait",
