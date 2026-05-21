@@ -20,13 +20,21 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
       - name: Build AAB
         run: |
-          # यह कमांड मशीन के हर सवाल का जवाब 'Yes' दे देगी (JDK और बाकी सब के लिए)
-          echo "y" | bubblewrap doctor
+          # CI में Bubblewrap के JDK/Android SDK prompts अपने-आप accept होंगे
+          yes | bubblewrap doctor
           
           # यहाँ हम 'yes' कमांड का इस्तेमाल कर रहे हैं जो लगातार 'y' भेजती रहेगी
           yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --yes
