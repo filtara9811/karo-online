@@ -10,6 +10,9 @@
   "orientation": "portrait",
   "lang": "en",
   "dir": "ltr",
+  "description": "Karo Online — local vendors se quick service, quotes aur orders. Leads, payments aur chat sab ek hi app mein.",
+  "categories": ["business", "shopping", "productivity", "lifestyle"],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "gcm_sender_id": "103953800507",
   "icons": [
     {
@@ -23,6 +26,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Karo Online home"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Karo Online dashboard"
     }
   ],
   "related_applications": [
