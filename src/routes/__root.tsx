@@ -5,6 +5,7 @@ import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { registerPwaServiceWorker } from "@/lib/register-sw";
 
 import appCss from "../styles.css?url";
 
