@@ -35,12 +35,43 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+function withPublicManifestCors(request: Request, response: Response): Response {
+  const { pathname } = new URL(request.url);
+  const publicAndroidAssetPaths = new Set([
+    "/manifest.json",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/.well-known/assetlinks.json",
+  ]);
+
+  if (!publicAndroidAssetPaths.has(pathname)) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("access-control-allow-origin", "*");
+  headers.set("access-control-allow-methods", "GET, HEAD, OPTIONS");
+  headers.set("access-control-allow-headers", "Content-Type, Accept, Origin, User-Agent");
+  headers.set("cache-control", "public, max-age=300, must-revalidate");
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (request.method === "OPTIONS") {
+        const { pathname } = new URL(request.url);
+        if (["/manifest.json", "/icon-192.png", "/icon-512.png", "/.well-known/assetlinks.json"].includes(pathname)) {
+          return withPublicManifestCors(request, new Response(null, { status: 204 }));
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withPublicManifestCors(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
