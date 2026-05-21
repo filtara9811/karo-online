@@ -25,13 +25,12 @@ jobs:
 
       - name: Build AAB
         run: |
-          # पुरानी फाइलों को हटाकर फ्रेश शुरुआत
-          rm -rf twa-manifest.json
+          # यह कमांड मशीन के हर सवाल का जवाब 'Yes' दे देगी (JDK और बाकी सब के लिए)
+          echo "y" | bubblewrap doctor
           
-          # लवेबल के नए फिक्स के साथ इनिशियलाइज़ करना
-          bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --yes
+          # यहाँ हम 'yes' कमांड का इस्तेमाल कर रहे हैं जो लगातार 'y' भेजती रहेगी
+          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --yes
           
-          # ऐप की फाइनल फाइल बनाना
           yes | bubblewrap build
 
       - name: Upload Artifacts
