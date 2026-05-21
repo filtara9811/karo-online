@@ -55,8 +55,8 @@ jobs:
           find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -print
           find . -path './node_modules' -prune -o -type f -name '*.aab' -exec cp -v {} artifacts/ \;
           find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -exec cp -v {} artifacts/ \;
-          test -n "$(ls -A artifacts/*.aab 2>/dev/null)" || (echo "No .aab file was generated" && exit 1)
-          test -n "$(ls -A artifacts/*.keystore artifacts/*.jks 2>/dev/null)" || (echo "No keystore file was generated" && exit 1)
+          compgen -G "artifacts/*.aab" >/dev/null || (echo "No .aab file was generated" && exit 1)
+          (compgen -G "artifacts/*.keystore" >/dev/null || compgen -G "artifacts/*.jks" >/dev/null) || (echo "No keystore file was generated" && exit 1)
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
