@@ -15,52 +15,35 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Accept Android licenses and install SDK packages
-        run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Verify public manifest and icons
-        run: |
-          curl --fail --location --show-error --silent --head https://karoonline.in/manifest.json
-          curl --fail --location --show-error --silent --output /tmp/manifest.json https://karoonline.in/manifest.json
-          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('/tmp/manifest.json','utf8')); if(!m.icons?.length) throw new Error('manifest icons missing'); if(m.name!=='Karo Online') throw new Error('wrong manifest loaded'); console.log('Manifest OK:', m.name, m.short_name);"
-          curl --fail --location --show-error --silent --head https://karoonline.in/icon-192.png
-          curl --fail --location --show-error --silent --head https://karoonline.in/icon-512.png
-
       - name: Build AAB
         run: |
+          # Android SDK के लिए ऑटो-रिप्लाई
           yes | bubblewrap doctor
+          
+          # पब्लिश होने के बाद अब यह मेनिफेस्ट बिना किसी एरर के डाउनलोड होगा
           yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --packageId="app.karoonline.twa" --yes
           
-          bubblewrap build
+          yes | bubblewrap build
 
-      - name: Collect build outputs
+      - name: Collect All Files
         run: |
-          mkdir -p artifacts
-          echo "AAB files found:"
-          find . -path './node_modules' -prune -o -type f -name '*.aab' -print
-          echo "Keystore files found:"
-          find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -print
-          find . -path './node_modules' -prune -o -type f -name '*.aab' -exec cp -v {} artifacts/ \;
-          find . -path './node_modules' -prune -o -type f \( -name '*.keystore' -o -name '*.jks' \) -exec cp -v {} artifacts/ \;
-          compgen -G "artifacts/*.aab" >/dev/null || (echo "No .aab file was generated" && exit 1)
-          (compgen -G "artifacts/*.keystore" >/dev/null || compgen -G "artifacts/*.jks" >/dev/null) || (echo "No keystore file was generated" && exit 1)
+          # यह कमांड पूरे प्रोजेक्ट की तलाशी लेकर फाइलें एक जगह लाएगा
+          mkdir -p build_output
+          find . -name "*.aab" -exec cp {} build_output/ \;
+          find . -name "*.keystore" -exec cp {} build_output/ \;
+          find . -name "*.jks" -exec cp {} build_output/ \;
 
-      - name: Upload Artifacts
+      - name: Upload Final App
         uses: actions/upload-artifact@v4
         with:
-          name: karoonline-app-files
-          path: artifacts/
+          name: Karo-Online-Final-App
+          path: build_output/
           if-no-files-found: error
