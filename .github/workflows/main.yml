@@ -25,19 +25,23 @@ jobs:
 
       - name: Build AAB
         run: |
-          # लाइसेंस ऑटो-एक्सेप्ट करना
           yes | bubblewrap doctor
           
-          # लवेबल के बताए अनुसार Package ID के साथ सेटअप
           yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --packageId="app.karoonline.twa" --yes
           
-          # फाइनल ऐप बिल्ड
           yes | bubblewrap build
+
+      - name: Collect build outputs
+        run: |
+          mkdir -p artifacts
+          find . -type f \( -name "*.aab" -o -name "*.keystore" \) -not -path "./node_modules/*" -print
+          find . -type f -name "*.aab" -not -path "./node_modules/*" -exec cp {} artifacts/ \;
+          find . -type f -name "*.keystore" -not -path "./node_modules/*" -exec cp {} artifacts/ \;
+          test -n "$(ls -A artifacts/*.aab 2>/dev/null)"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: karoonline-aab
-          path: |
-            *.aab
-            *.keystore
+          path: artifacts/
+          if-no-files-found: error
