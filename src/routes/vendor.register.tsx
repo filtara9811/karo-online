@@ -867,6 +867,28 @@ function Step1Business(p: Step1Props) {
         />
       )}
 
+      {showEmail && (
+        <CounterField
+          Icon={User}
+          label="Current team"
+          hint="Work team members"
+          value={p.teamCount}
+          min={1}
+          onChange={p.setTeamCount}
+        />
+      )}
+
+      {showEmail && (
+        <CounterField
+          Icon={Building2}
+          label="Van / vehicle"
+          hint="Multiple vans add kar sakte hain"
+          value={p.vanCount}
+          min={0}
+          onChange={p.setVanCount}
+        />
+      )}
+
       {showReferral && (
         <Field
           Icon={Ticket}
