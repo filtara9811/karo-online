@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Clock, MapPin, Phone, Inbox } from "lucide-react";
+import { X, Check, Clock, MapPin, Phone, Inbox, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+type ReadyRow = {
+  leadId: string;
+  customerName: string | null;
+  subCategoryName: string;
+  address: string | null;
+  note: string | null;
+  acceptedAt: string;
+};
+
 
 type PendingRow = {
   notificationId: string;
