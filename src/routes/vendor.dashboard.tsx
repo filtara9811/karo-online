@@ -30,6 +30,8 @@ import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
+import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
+
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
