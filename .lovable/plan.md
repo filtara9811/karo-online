@@ -1,66 +1,132 @@
-# Vendor Mapping UI + Notification Fixes
 
-Aapki screenshot aur description ke hisaab se yeh chaar groups mein kaam karunga.
+# Admin CMS for Marketing Website ("Special Web")
 
-## Group 1 — Vendor Services UI redesign (`vendor.services.tsx`)
+Goal: हर marketing page (`/`, `/about`, `/features`, `/pricing`, `/for-vendors`, `/for-customers`, `/download`, `/contact` + new `/blog`) का A-to-Z control admin panel से। Save = instant live. SEO-friendly हर जगह।
 
-Naya layout exactly screenshot jaisa:
+## 1. New Admin Section: "Special Web"
 
-```text
-┌─────────────────────────────┐
-│  AC                       × │   ← items sheet (currently selected category)
-│  ON karein wo services...   │
-│                             │
-│  [img] AC Service   [○──]   │
-│  [img] AC Repair    [○──]   │
-│  [img] AC Install   [──●]   │
-│  ...                        │
-├─────────────────────────────┤
-│ 🤝 Basic sarvic  │ 🖼 Ac vand│  ← row 2: category (L) | sub-cat (R)
-├─────────────────────────────┤
-│ ⚙ Sarvic  📦 Products  Other│  ← row 1 (bottom): type tabs
-└─────────────────────────────┘
+`src/routes/admin.tsx` sidebar में नया group **"Special Web (Marketing Site)"** जिसके अंदर:
+
+```
+/admin/web                  → Dashboard (quick stats + last edits)
+/admin/web/seo              → Per-page SEO (title, meta, keywords, og:image)
+/admin/web/hero             → Hero banners (per page)
+/admin/web/sections         → Reusable content blocks (text + image)
+/admin/web/pricing          → Pricing plans manager
+/admin/web/apk              → APK / Download manager (Vendor + Customer)
+/admin/web/offers           → Top announcement bar
+/admin/web/testimonials     → Reviews + brand logos
+/admin/web/faqs             → FAQs (per page)
+/admin/web/forms            → Custom form builder
+/admin/web/forms/$id/submissions  → Submissions viewer + CSV export
+/admin/web/blog             → Blog posts list
+/admin/web/blog/$id         → Blog post editor (rich text)
+/admin/web/media            → Image library (browse/upload/delete)
 ```
 
-- Bottom-most bar: 3 type pills (Service / Products / Other), active pill = bronze fill.
-- Middle bar: left = current category picker, right = current sub-category picker. Tap left → category bottom sheet slides up; tap right → sub-category sheet.
-- Top sheet (largest): items of the selected sub-category, each with ON/OFF toggle (current style, green when on).
-- Single screen — no stacked modals. Selections drive what the top list shows.
+Sidebar में "Special Web" gold accent से highlight (premium feel)।
 
-## Group 2 — Pricing & Variation popup before turning ON
+## 2. Database (Lovable Cloud)
 
-Jab vendor kisi item ka toggle OFF→ON karta hai, pehle ek `ItemPricingSheet` khulta hai:
+Naya schema — सभी tables `is_active`, `sort_order`, `updated_at`, `updated_by`:
 
-- Inputs: `price_min`, `price_max` (₹), short `notes` (textarea).
-- Variation chips (multi-select checkboxes): **Wholesale**, **Retail**, **Manufacture** (+ "Add custom" chip).
-- Buttons: **Cancel** (toggle stays OFF) / **Enable** (saves and turns ON).
-- On save → insert into `vendor_item_mappings` with `{ price_min, price_max, notes, variations: string[] }`.
+- **web_pages** — slug (`home`/`about`/...), seo_title, seo_description, seo_keywords (text[]), og_image_url, canonical_path, schema_json (JSON-LD)
+- **web_hero_sections** — page_slug, eyebrow, title, subtitle, image_url, cta_label, cta_url, secondary_cta_label, secondary_cta_url, alignment
+- **web_content_blocks** — page_slug, block_type (feature/text/image/cards/cta/stats), heading, body (markdown), image_url, items (jsonb array), sort_order
+- **web_pricing_plans** — name, price, period, currency, description, features (text[]), cta_label, cta_url, is_featured, badge_label
+- **web_apk_releases** — audience (`customer`/`vendor`), version, build_number, file_url (storage) **OR** external_url (Play Store/Drive), changelog, size_mb, released_at, is_current
+- **web_offers** — title, body, cta_label, cta_url, bg_color, text_color, starts_at, ends_at, is_active (एक time पर सिर्फ active वाला top bar पर दिखे)
+- **web_testimonials** — author_name, role/company, avatar_url, rating (1-5), quote, sort_order
+- **web_brand_logos** — name, logo_url, link_url, sort_order
+- **web_faqs** — page_slug, question, answer, sort_order
+- **web_forms** — name, slug (e.g. `bulk-enquiry`), description, success_message, redirect_url, notify_emails (text[]), fields (jsonb: `[{key,label,type,required,options,placeholder,validation}]`)
+- **web_form_submissions** — form_id, data (jsonb), source_page, ip_hash, user_agent (admin-only column), created_at
+- **web_blog_posts** — slug, title, excerpt, cover_image_url, body_md, author_name, author_avatar, tags (text[]), seo_title, seo_description, og_image_url, published_at, reading_minutes, is_published
+- **web_media_assets** — bucket_path, public_url, alt, tags (text[]), uploaded_by, file_size, mime
 
-Migration: add `price_min numeric`, `price_max numeric`, `notes text`, `variations text[]` columns to `vendor_item_mappings` (nullable, defaults). RLS unchanged.
+RLS:
+- **Public SELECT** on all `web_*` rows where `is_active` / `is_published = true` (so marketing site = anon-friendly, no auth required).
+- **Admin all** (insert/update/delete) via `is_admin_user(auth.uid())`.
+- **web_form_submissions**: public INSERT (anyone can submit), admin SELECT/DELETE only.
 
-Customer lead card already shows vendor list — uss list me ab `price_min–price_max` aur variations chips dikhayenge (read from mapping). Edit allowed: "Edit" pencil on each ON row reopens the same sheet.
+Storage bucket: `marketing-media` (public, 20 MB image limit) + `marketing-apk` (public, 200 MB APK limit, admins-only write).
 
-## Group 3 — Vendor form re-show + per-card unread count
+## 3. APK Manager (dual mode)
 
-- `vendor.register.tsx`: gate is already present but laggy — add a `sessionStorage` cache (`vendor:registered:<uid>=1`) set on first successful check so subsequent opens skip the network roundtrip and render dashboard instantly.
-- `VendorLeadInbox` / lead cards: add unread message badge per lead. Query `lead_messages` (or existing chat table) `WHERE lead_id IN (...) AND read_by_vendor = false GROUP BY lead_id`. Show small red pill with count on the card, same pattern as customer "My Orders".
-- Mark-read on lead open.
+Each release row supports both:
+- **Upload mode** → admin direct APK upload to `marketing-apk` bucket → auto-public URL
+- **Link mode** → Play Store / Drive URL paste
 
-## Group 4 — Background push + new tone
+`/download` page shows latest `is_current=true` row per audience (Customer + Vendor), with version, size, changelog, और दोनो primary buttons (Direct APK / Play Store) जो भी filled हो। Old versions archive में।
 
-- Replace current alert sound file with a softer two-tone chime (`/public/sounds/lead-alert-v2.mp3` — short, pleasant). Update `src/lib/lead-sound.ts` to point at it.
-- Ensure FCM `firebase-messaging-sw.js` shows a system notification with `requireInteraction: true`, vibration pattern, and an "Accept" / "View" action — so vendor gets it even when app/screen is closed. Wire `notificationclick` to open `/vendor/lead/<id>`.
-- Server side: when a lead is created and a matching vendor exists, the existing push function should fire with `data: { leadId, type: 'new_lead' }` + a high-priority `notification` payload (already wired — verify and fix if missing).
+## 4. Custom Form Builder
 
-## Files touched
+Admin UI में drag-style field list with:
+- Field types: text, email, phone, number, textarea, select, checkbox, radio, file, date
+- Per field: required toggle, placeholder, options, regex validation, min/max length
 
-- `src/routes/vendor.services.tsx` — full redesign (single screen, 3 bars)
-- `src/components/ItemPricingSheet.tsx` (new)
-- `supabase/migrations/<ts>_vendor_mapping_pricing.sql`
-- `src/routes/vendor.register.tsx` — sessionStorage fast-path
-- `src/components/VendorLeadInbox.tsx` (+ card component) — unread count badge
-- `src/lib/lead-sound.ts` + new `public/sounds/lead-alert-v2.mp3`
-- `public/firebase-messaging-sw.js` — action buttons + vibration
-- `src/lib/push.functions.ts` — verify high-priority payload
+Form embeds:
+- Static slot on Contact page (default form)
+- Shortcode `{{form:slug}}` in any content block → renders form inline
+- Standalone route `/f/$slug` (shareable lead-gen link, SEO meta from form description)
 
-Execution order: Group 1 → Group 2 (DB + sheet) → Group 3 → Group 4. Confirm karein "haan start karo" toh main shuru karta hun, ya kisi group ko pehle/skip karna ho toh bataiye.
+Submissions screen: filterable table, CSV export, single-click view, optional email notification to `notify_emails` via existing notification triggers.
+
+## 5. Offers Bar
+
+Active offer row dिखेगा हर marketing page के top पर (sticky strip with close button, dismiss state in localStorage)। Schedule by `starts_at`/`ends_at` — backend filter, no cron needed (computed in server fn)।
+
+## 6. Blog (SEO-strong)
+
+- `/blog` — list page with cards (cover, title, excerpt, tags, date)
+- `/blog/$slug` — article with cover image, markdown render (react-markdown + GFM), reading time, JSON-LD `BlogPosting` schema, og tags from post
+- Tag filter `/blog?tag=...`
+- Sitemap.xml auto-updates (server route reads `web_blog_posts` + static routes)
+
+## 7. SEO Per Page
+
+Admin SEO screen edits `web_pages` row per slug। हर marketing route का `head()` अब server fn से dynamic meta लोड करे (title, description, keywords, og:image, canonical, JSON-LD)। Default fallback meta बना रहे ताकि empty rows पर भी पेज valid रहे।
+
+Keywords field admin को tag-pill UI में मिलेगा (suggested chips: "lead generation India", "vendor leads", "karoonline", etc.)।
+
+## 8. Marketing Site Rewrite
+
+Existing `src/routes/index.tsx`, `about.tsx`, `features.tsx`, `pricing.tsx`, `for-vendors.tsx`, `for-customers.tsx`, `download.tsx`, `contact.tsx` को refactor — sab कुछ DB से load. Static defaults तब use जब DB row खाली हो (first-run safety)।
+
+- New shared component `<MarketingPage slug="..." />` जो: offers bar → hero → content blocks (ordered) → testimonials/logos (if any) → FAQs → CTA → footer
+- Server fn `getMarketingPage(slug)` एक call में सब data return करे (page seo + hero + blocks + faqs)
+
+## 9. Media Library
+
+Reusable `<MediaPicker />` component हर image field पर — upload new या browse existing (`web_media_assets`)। हर upload पर alt text mandatory (SEO + a11y)।
+
+## 10. Seed Data
+
+Migration के साथ default rows insert — current website content को DB rows के रूप में डालेंगे ताकि पहले deploy पर भी सब कुछ वैसा ही दिखे जैसा अभी है, और admin बस edit करे।
+
+---
+
+## Technical Section (engineer-facing)
+
+- **Routing**: TanStack file routes under `src/routes/admin.web.*.tsx` + child editors via `$id`. Public routes use new `<MarketingPage>` wrapper. `/blog`, `/blog.$slug`, `/f.$slug` new routes.
+- **Data layer**: `src/lib/web-cms.functions.ts` exports `getMarketingPage`, `listBlogPosts`, `getBlogPost`, `getActiveOffer`, `getApkReleases`, `submitForm`, `getFormBySlug`. All `createServerFn`; reads use `supabaseAdmin` for anon-friendly SELECTs on `is_active=true` rows. Admin writes use `requireSupabaseAuth` + admin check middleware.
+- **Loaders**: per-route loader → `queryClient.ensureQueryData` → `useSuspenseQuery` (TanStack Query default). `head()` reads seo row from loader-fetched data.
+- **Storage**: two buckets via migration; signed URLs not needed (public read).
+- **Markdown render**: install `react-markdown` + `remark-gfm` for blog + content blocks. Sanitize via default config (no raw HTML).
+- **Form rendering**: dynamic field renderer keyed by `field.type`, validation via zod schema built from `fields` array at submit time. Honeypot field + simple per-IP rate limit (3 / minute) inside `submitForm`.
+- **Sitemap**: server route at `src/routes/api/public/sitemap[.]xml.ts` listing static marketing routes + published blog slugs. `robots.txt` references it.
+- **SEO defaults**: `__root.tsx` keeps sitewide title template (`%s — KaroOnline`); per-page `head()` returns only what's set (no og:image at root).
+- **AppShell**: `MARKETING_EXACT` set widens to include `/blog`, `/blog/*`, `/f/*` so app chrome stays hidden.
+- **Admin UI components**: reuse existing shadcn primitives. New shared admin components: `<MediaPicker>`, `<FormFieldsBuilder>`, `<MarkdownEditor>` (textarea + live preview), `<SeoFieldset>`.
+- **Permissions**: existing `is_admin_user` is enough; no new role needed.
+- **Migration order**: tables → RLS → triggers (updated_at) → buckets → seed.
+
+## Out of scope (can add later)
+
+- Multi-language
+- Versioning / rollback (Instant live चुना)
+- A/B testing
+- Comments on blog
+- Webhooks on form submit (notify_emails field already covers email)
+
+After approval मैं sab कुछ migration + code एक shot में लागू कर दूंगा, current pages का look-and-feel exactly वैसा ही रखूंगा (sirf source DB से आएगा)।
