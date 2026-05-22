@@ -34,6 +34,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
 import { Route as VendorStatusRouteImport } from './routes/vendor.status'
@@ -47,7 +48,9 @@ import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as CCodeRouteImport } from './routes/c.$code'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminWhatsappRouteImport } from './routes/admin.whatsapp'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
@@ -213,6 +216,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -278,9 +286,19 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CCodeRoute = CCodeRouteImport.update({
   id: '/c/$code',
   path: '/c/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminWhatsappRoute = AdminWhatsappRouteImport.update({
@@ -530,7 +548,9 @@ export interface FileRoutesByFullPath {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
+  '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -544,6 +564,7 @@ export interface FileRoutesByFullPath {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -609,7 +630,9 @@ export interface FileRoutesByTo {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
+  '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -623,6 +646,7 @@ export interface FileRoutesByTo {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -690,7 +714,9 @@ export interface FileRoutesById {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
+  '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -704,6 +730,7 @@ export interface FileRoutesById {
   '/vendor/status': typeof VendorStatusRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -772,7 +799,9 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/vendors'
     | '/admin/whatsapp'
+    | '/blog/$slug'
     | '/c/$code'
+    | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
     | '/vendor/chat'
@@ -786,6 +815,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
+    | '/blog/'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -851,7 +881,9 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/vendors'
     | '/admin/whatsapp'
+    | '/blog/$slug'
     | '/c/$code'
+    | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
     | '/vendor/chat'
@@ -865,6 +897,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin'
+    | '/blog'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -931,7 +964,9 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/vendors'
     | '/admin/whatsapp'
+    | '/blog/$slug'
     | '/c/$code'
+    | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
     | '/vendor/chat'
@@ -945,6 +980,7 @@ export interface FileRouteTypes {
     | '/vendor/status'
     | '/vendor/wallet'
     | '/admin/'
+    | '/blog/'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -987,7 +1023,9 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   VendorsRoute: typeof VendorsRoute
+  BlogSlugRoute: typeof BlogSlugRoute
   CCodeRoute: typeof CCodeRoute
+  FSlugRoute: typeof FSlugRoute
   ProductIdRoute: typeof ProductIdRoute
   RCodeRoute: typeof RCodeRoute
   VendorChatRoute: typeof VendorChatRoute
@@ -1000,6 +1038,7 @@ export interface RootRouteChildren {
   VendorSocialRoute: typeof VendorSocialRoute
   VendorStatusRoute: typeof VendorStatusRoute
   VendorWalletRoute: typeof VendorWalletRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
 }
 
@@ -1180,6 +1219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -1271,11 +1317,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/c/$code': {
       id: '/c/$code'
       path: '/c/$code'
       fullPath: '/c/$code'
       preLoaderRoute: typeof CCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/whatsapp': {
@@ -1666,7 +1726,9 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   VendorsRoute: VendorsRoute,
+  BlogSlugRoute: BlogSlugRoute,
   CCodeRoute: CCodeRoute,
+  FSlugRoute: FSlugRoute,
   ProductIdRoute: ProductIdRoute,
   RCodeRoute: RCodeRoute,
   VendorChatRoute: VendorChatRoute,
@@ -1679,6 +1741,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorSocialRoute: VendorSocialRoute,
   VendorStatusRoute: VendorStatusRoute,
   VendorWalletRoute: VendorWalletRoute,
+  BlogIndexRoute: BlogIndexRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
 }
 export const routeTree = rootRouteImport

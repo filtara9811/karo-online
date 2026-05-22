@@ -93,7 +93,7 @@ export const Route = createFileRoute("/blog/$slug")({
 });
 
 function BlogPost() {
-  const p = Route.useLoaderData();
+  const p = Route.useLoaderData() as Post;
   return (
     <MarketingLayout>
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 md:py-20">

@@ -73,7 +73,7 @@ export const Route = createFileRoute("/f/$slug")({
 });
 
 function PublicFormPage() {
-  const f = Route.useLoaderData();
+  const f = Route.useLoaderData() as FormDef;
   const submit = useServerFn(submitWebForm);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [honeypot, setHoneypot] = useState("");
