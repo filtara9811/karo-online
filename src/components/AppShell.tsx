@@ -51,9 +51,10 @@ export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   useFcmToken();
-  const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
-  const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
-  const showBottomBar = SHOW_BOTTOM_BAR_ON.includes(location.pathname);
+  const isMarketing = MARKETING_EXACT.has(location.pathname);
+  const hideShell = isMarketing || HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
+  const hideTopHeader = isMarketing || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
+  const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
   const isQuickRoute = location.pathname.startsWith("/quick");
 
