@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import {
   X,
   Phone,
   MapPin,
   Receipt,
   Clock,
-  ChevronRight,
-  MessageCircle,
   Loader2,
   Truck,
   Wrench,
@@ -16,7 +14,9 @@ import {
   Menu as MenuIcon,
   ShoppingBag,
   Plus,
-  ArrowLeft,
+  Link as LinkIcon,
+  Send,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
