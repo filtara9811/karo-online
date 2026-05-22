@@ -92,16 +92,18 @@ function VendorDashboard() {
       .then(({ data }) => setVendor(data as any));
   }, [user]);
 
-  // Load REAL leads for this vendor: notified or already accepted by them
+  // Load REAL leads for this vendor: only the ones the vendor has STARTED WORK on.
+  // (Auto-accept sets vendor_started_at = now() in accept_lead; manual must press "Start Work")
   useEffect(() => {
     if (!user) { setLoadingLeads(false); return; }
     let cancelled = false;
     const load = async () => {
       const { data: notifs } = await supabase
         .from("lead_notifications")
-        .select("lead_id, status, created_at")
+        .select("lead_id, status, created_at, vendor_started_at")
         .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false })
+        .not("vendor_started_at", "is", null)
+        .order("vendor_started_at", { ascending: false })
         .limit(50);
       const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
       if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
@@ -133,12 +135,10 @@ function VendorDashboard() {
         const customer = customerMap.get(r.customer_id);
         const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
         const nstatus = notifStatusMap.get(r.id);
-        let st: LeadStatus = "new";
-        let pct = 10;
-        if (r.status === "completed" && accepted) { st = "success"; pct = 100; }
-        else if (accepted) { st = "process"; pct = 55; }
-        else if (nstatus === "rejected") { st = "rejected"; pct = 0; }
-        else { st = "new"; pct = 25; }
+        let st: LeadStatus = "process";
+        if (r.status === "completed" && accepted) st = "success";
+        else if (accepted) st = "process";
+        else if (nstatus === "rejected") st = "rejected";
         const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
         return {
           id: r.id,
@@ -156,11 +156,11 @@ function VendorDashboard() {
           status: st,
           time: timeAgo(r.created_at),
           createdAtIso: r.created_at,
-          progressPct: pct,
+          progressPct: st === "success" ? 100 : 55,
           note: r.note ?? "",
           timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
         };
-      }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
+      });
 
       setLeads(mapped);
       setLoadingLeads(false);
@@ -172,7 +172,8 @@ function VendorDashboard() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, vendor]);
+
 
   const toggleAutoAccept = async () => {
     if (!user || savingAuto) return;
