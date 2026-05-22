@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   X, User, Wallet, Store, Bell, LifeBuoy, FileText,
   LogOut, Gift, Megaphone, Settings as SettingsIcon, ChevronRight,
-  LayoutGrid, Briefcase, ShieldCheck, Instagram,
+  LayoutGrid, Briefcase, ShieldCheck, Instagram, Download,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +26,7 @@ const KYC_FIELDS = [
 
 const ROWS: Array<{ id: string; label: string; sub: string; Icon: typeof User; to?: string; search?: Record<string, unknown> }> = [
   { id: "dashboard", label: "Dashboard", sub: "Leads · stats", Icon: LayoutGrid, to: "/vendor/dashboard" },
+  { id: "install", label: "Install Vendor App", sub: "Alag icon · home screen", Icon: Download, to: "/vendor/install" },
   { id: "services", label: "My Services", sub: "Categories", Icon: Briefcase, to: "/vendor/services" },
   { id: "wallet", label: "Wallet", sub: "Coins · recharge", Icon: Wallet, to: "/vendor/wallet" },
   { id: "shop", label: "Digital Shop", sub: "Products · variations", Icon: Store, to: "/vendor/shop" },
