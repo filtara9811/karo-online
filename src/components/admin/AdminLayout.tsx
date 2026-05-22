@@ -13,6 +13,7 @@ import {
   Truck,
   Coins,
   FileText,
+  Globe,
   Gift,
   Zap,
   Flame,
@@ -54,6 +55,7 @@ const NAV: NavItem[] = [
   { to: "/admin/forms", label: "Form Builder", icon: ClipboardList },
   { to: "/admin/branding", label: "Branding Studio", icon: Palette },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
+  { to: "/admin/web", label: "✨ Special Web (CMS)", icon: Globe },
   { to: "/admin/onboarding", label: "Onboarding Screens", icon: LayoutDashboard },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
 ];
