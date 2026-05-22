@@ -100,6 +100,8 @@ function VendorRegister() {
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
+  const [teamCount, setTeamCount] = useState(1);
+  const [vanCount, setVanCount] = useState(0);
   const [referral, setReferral] = useState("");
 
   // Step 2 — Social
@@ -153,7 +155,7 @@ function VendorRegister() {
     (async () => {
       const { data } = await supabase
         .from("vendors")
-        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -167,6 +169,8 @@ function VendorRegister() {
         setBusinessName((data as any).business_name ?? "");
         setWhatsapp((data as any).whatsapp ?? "");
         setManagerEmail((data as any).manager_email ?? (data as any).email ?? "");
+        setTeamCount(Math.max(1, Number((data as any).current_team_count ?? 1)));
+        setVanCount(Math.max(0, Number((data as any).van_count ?? 0)));
         setReferral((data as any).referral ?? "");
         setInsta((data as any).instagram ?? "");
         setFb((data as any).facebook ?? "");
@@ -575,6 +579,8 @@ function VendorRegister() {
                     businessName={businessName}
                     whatsapp={whatsapp}
                     managerEmail={managerEmail}
+                    teamCount={teamCount}
+                    vanCount={vanCount}
                     referral={referral}
                     onPickRole={() => setPicker("role")}
                     onPickEntity={() => setPicker("entity")}
@@ -584,6 +590,8 @@ function VendorRegister() {
                     setBusinessName={setBusinessName}
                     setWhatsapp={setWhatsapp}
                     setManagerEmail={setManagerEmail}
+                    setTeamCount={setTeamCount}
+                    setVanCount={setVanCount}
                     setReferral={setReferral}
                     ownerRef={ownerInputRef}
                     businessRef={businessInputRef}
