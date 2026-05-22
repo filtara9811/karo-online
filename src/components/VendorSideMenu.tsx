@@ -191,14 +191,23 @@ export function VendorSideMenu({
                 onClick={async () => {
                   const ok = window.confirm("Kya aap sach me logout karna chahte hain?");
                   if (!ok) return;
+                  onClose();
                   try {
                     await signOut();
+                    // Clear cached vendor flags so register page shows OTP screen fresh
+                    if (typeof window !== "undefined") {
+                      try {
+                        Object.keys(sessionStorage).forEach((k) => {
+                          if (k.startsWith("vendor:registered:")) sessionStorage.removeItem(k);
+                        });
+                      } catch {}
+                    }
                     toast.success("Logged out");
                   } catch (e: any) {
                     toast.error(e?.message ?? "Logout failed");
                   } finally {
-                    onClose();
-                    navigate({ to: "/" });
+                    // Vendor logout → vendor OTP login screen (not customer home)
+                    navigate({ to: "/vendor/register" });
                   }
                 }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[#1a1208] text-[11px] font-bold uppercase tracking-widest"
