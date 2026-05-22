@@ -969,6 +969,7 @@ export type Database = {
           sub_category_name: string
           vendor_id: string
           vendor_note: string | null
+          vendor_started_at: string | null
         }
         Insert: {
           auto_accept_at?: string
@@ -981,6 +982,7 @@ export type Database = {
           sub_category_name: string
           vendor_id: string
           vendor_note?: string | null
+          vendor_started_at?: string | null
         }
         Update: {
           auto_accept_at?: string
@@ -993,6 +995,7 @@ export type Database = {
           sub_category_name?: string
           vendor_id?: string
           vendor_note?: string | null
+          vendor_started_at?: string | null
         }
         Relationships: [
           {
@@ -3361,6 +3364,13 @@ export type Database = {
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       auto_accept_expired_lead_notifications: { Args: never; Returns: Json }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
+      count_unread_lead_messages: {
+        Args: { _lead_ids: string[] }
+        Returns: {
+          lead_id: string
+          unread_count: number
+        }[]
+      }
       customer_approve_vendor: {
         Args: { _lead_id: string; _vendor_id: string }
         Returns: Json
@@ -3700,6 +3710,7 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      start_lead_work: { Args: { _lead_id: string }; Returns: Json }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
         Returns: Json
