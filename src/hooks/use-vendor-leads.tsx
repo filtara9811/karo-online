@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { playLeadAlert, requestNotificationPermission, showBrowserNotification } from "@/lib/lead-sound";
+import { requestNotificationPermission, showBrowserNotification } from "@/lib/lead-sound";
 
 export type IncomingLead = {
   notificationId: string;
@@ -55,7 +55,6 @@ export function useVendorLeadAlerts(): State {
         expiresAt: new Date(Date.now() + 15_000).toISOString(),
       };
       setAlerts((p) => [fallbackIncoming, ...p].slice(0, 8));
-      playLeadAlert();
       const { data: lead } = await supabase
         .from("leads")
         .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, item_names, note, images, address, lat, lng, created_at, status")
