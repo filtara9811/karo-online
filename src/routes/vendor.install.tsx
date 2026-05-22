@@ -28,6 +28,7 @@ function VendorInstallPage() {
   const [installed, setInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [showManualHelp, setShowManualHelp] = useState(false);
 
   useEffect(() => {
     const ua = navigator.userAgent || "";
@@ -37,6 +38,14 @@ function VendorInstallPage() {
         // @ts-ignore
         window.navigator.standalone === true,
     );
+
+    const manifestLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="manifest"]'));
+    const previousManifests = manifestLinks.map((link) => link.href);
+    const primaryManifest = manifestLinks[0] ?? document.createElement("link");
+    primaryManifest.rel = "manifest";
+    primaryManifest.href = "/manifest-vendor.json";
+    if (!manifestLinks[0]) document.head.appendChild(primaryManifest);
+    manifestLinks.slice(1).forEach((link) => link.remove());
 
     const onBIP = (e: Event) => {
       e.preventDefault();
@@ -48,11 +57,16 @@ function VendorInstallPage() {
     return () => {
       window.removeEventListener("beforeinstallprompt", onBIP);
       window.removeEventListener("appinstalled", onInstalled);
+      const current = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+      if (current && previousManifests[0]) current.href = previousManifests[0];
     };
   }, []);
 
   const install = async () => {
-    if (!deferred) return;
+    if (!deferred) {
+      setShowManualHelp(true);
+      return;
+    }
     await deferred.prompt();
     const choice = await deferred.userChoice;
     if (choice.outcome === "accepted") setInstalled(true);
@@ -61,7 +75,7 @@ function VendorInstallPage() {
 
   return (
     <main
-      className="min-h-dvh px-5 py-6"
+      className="min-h-dvh px-5 pt-6 pb-44"
       style={{
         background:
           "radial-gradient(120% 80% at 50% 0%, #38BDF8 0%, #0EA5E9 45%, #0369A1 100%)",
@@ -157,10 +171,39 @@ function VendorInstallPage() {
           </div>
         )}
 
+        {showManualHelp && !deferred && !isIOS && !installed && !isStandalone && (
+          <div className="mt-3 rounded-2xl bg-white/20 border border-white/35 p-4 text-sm">
+            <p className="font-bold mb-2">Chrome menu se install karein:</p>
+            <ol className="list-decimal list-inside space-y-1 text-white/90">
+              <li>Top-right <b>⋮</b> menu dabayein</li>
+              <li><b>Install app</b> ya <b>Add to Home screen</b> choose karein</li>
+              <li>Name “Vendor” rehne dein aur <b>Add</b> dabayein</li>
+            </ol>
+          </div>
+        )}
+
         <p className="text-center text-[11px] text-white/70 mt-6">
           Customer app alag rahega — wapas jaane ke liye bookmark use karein.
         </p>
       </div>
+
+      {!installed && !isStandalone && (
+        <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3 bg-gradient-to-t from-[#035f91] via-[#057ab5]/95 to-transparent">
+          <div className="mx-auto max-w-md rounded-t-3xl rounded-b-2xl border border-white/30 bg-white/18 backdrop-blur-xl p-3 shadow-[0_-18px_50px_-16px_rgba(0,0,0,0.65)]">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/45" />
+            <button
+              onClick={install}
+              className="w-full py-4 rounded-2xl font-extrabold text-base text-[#0c2a3a] flex items-center justify-center gap-2 shadow-xl active:scale-95 transition"
+              style={{ background: "linear-gradient(180deg,#FFE066 0%,#FFD400 50%,#F59E0B 100%)" }}
+            >
+              <Download className="h-5 w-5" /> {deferred ? "Install Vendor App" : "Install / Add to Home Screen"}
+            </button>
+            <p className="mt-2 text-center text-[11px] font-semibold text-white/85">
+              Button na chale to Chrome ke top-right ⋮ menu se Install app dabayein.
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

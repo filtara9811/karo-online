@@ -2318,6 +2318,7 @@ export type Database = {
           avatar_url: string | null
           business_name: string | null
           created_at: string
+          current_team_count: number
           deals_in: string | null
           email: string | null
           entity: string | null
@@ -2341,6 +2342,7 @@ export type Database = {
           trade: string | null
           updated_at: string
           user_id: string
+          van_count: number
           verified: boolean
           website: string | null
           whatsapp: string | null
@@ -2353,6 +2355,7 @@ export type Database = {
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
+          current_team_count?: number
           deals_in?: string | null
           email?: string | null
           entity?: string | null
@@ -2376,6 +2379,7 @@ export type Database = {
           trade?: string | null
           updated_at?: string
           user_id: string
+          van_count?: number
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
@@ -2388,6 +2392,7 @@ export type Database = {
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
+          current_team_count?: number
           deals_in?: string | null
           email?: string | null
           entity?: string | null
@@ -2411,6 +2416,7 @@ export type Database = {
           trade?: string | null
           updated_at?: string
           user_id?: string
+          van_count?: number
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
@@ -2888,68 +2894,137 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      save_vendor_profile: {
-        Args: {
-          _aadhaar: string
-          _business_name: string
-          _deals_in: string
-          _entity: string
-          _facebook: string
-          _google_place_id: string
-          _gst: string
-          _instagram: string
-          _manager_email: string
-          _owner_name: string
-          _pan: string
-          _plan: string
-          _referral: string
-          _role: string
-          _trade: string
-          _website: string
-          _whatsapp: string
-        }
-        Returns: {
-          aadhaar: string | null
-          admin_notes: string | null
-          assigned_to: string | null
-          auto_accept_leads: boolean
-          avatar_url: string | null
-          business_name: string | null
-          created_at: string
-          deals_in: string | null
-          email: string | null
-          entity: string | null
-          facebook: string | null
-          google_place_id: string | null
-          gst: string | null
-          id: string
-          instagram: string | null
-          is_blocked: boolean
-          lat: number | null
-          lng: number | null
-          manager_email: string | null
-          owner_name: string | null
-          pan: string | null
-          plan: string | null
-          referral: string | null
-          role: string | null
-          service_radius_km: number
-          status: string
-          tags: string[] | null
-          trade: string | null
-          updated_at: string
-          user_id: string
-          verified: boolean
-          website: string | null
-          whatsapp: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "vendors"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      save_vendor_profile:
+        | {
+            Args: {
+              _aadhaar: string
+              _business_name: string
+              _deals_in: string
+              _entity: string
+              _facebook: string
+              _google_place_id: string
+              _gst: string
+              _instagram: string
+              _manager_email: string
+              _owner_name: string
+              _pan: string
+              _plan: string
+              _referral: string
+              _role: string
+              _trade: string
+              _website: string
+              _whatsapp: string
+            }
+            Returns: {
+              aadhaar: string | null
+              admin_notes: string | null
+              assigned_to: string | null
+              auto_accept_leads: boolean
+              avatar_url: string | null
+              business_name: string | null
+              created_at: string
+              current_team_count: number
+              deals_in: string | null
+              email: string | null
+              entity: string | null
+              facebook: string | null
+              google_place_id: string | null
+              gst: string | null
+              id: string
+              instagram: string | null
+              is_blocked: boolean
+              lat: number | null
+              lng: number | null
+              manager_email: string | null
+              owner_name: string | null
+              pan: string | null
+              plan: string | null
+              referral: string | null
+              role: string | null
+              service_radius_km: number
+              status: string
+              tags: string[] | null
+              trade: string | null
+              updated_at: string
+              user_id: string
+              van_count: number
+              verified: boolean
+              website: string | null
+              whatsapp: string | null
+            }
+            SetofOptions: {
+              from: "*"
+              to: "vendors"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _aadhaar: string
+              _business_name: string
+              _current_team_count?: number
+              _deals_in: string
+              _entity: string
+              _facebook: string
+              _google_place_id: string
+              _gst: string
+              _instagram: string
+              _manager_email: string
+              _owner_name: string
+              _pan: string
+              _plan: string
+              _referral: string
+              _role: string
+              _trade: string
+              _van_count?: number
+              _website: string
+              _whatsapp: string
+            }
+            Returns: {
+              aadhaar: string | null
+              admin_notes: string | null
+              assigned_to: string | null
+              auto_accept_leads: boolean
+              avatar_url: string | null
+              business_name: string | null
+              created_at: string
+              current_team_count: number
+              deals_in: string | null
+              email: string | null
+              entity: string | null
+              facebook: string | null
+              google_place_id: string | null
+              gst: string | null
+              id: string
+              instagram: string | null
+              is_blocked: boolean
+              lat: number | null
+              lng: number | null
+              manager_email: string | null
+              owner_name: string | null
+              pan: string | null
+              plan: string | null
+              referral: string | null
+              role: string | null
+              service_radius_km: number
+              status: string
+              tags: string[] | null
+              trade: string | null
+              updated_at: string
+              user_id: string
+              van_count: number
+              verified: boolean
+              website: string | null
+              whatsapp: string | null
+            }
+            SetofOptions: {
+              from: "*"
+              to: "vendors"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
         Returns: Json

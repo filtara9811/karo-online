@@ -100,6 +100,8 @@ function VendorRegister() {
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
+  const [teamCount, setTeamCount] = useState(1);
+  const [vanCount, setVanCount] = useState(0);
   const [referral, setReferral] = useState("");
 
   // Step 2 — Social
@@ -153,7 +155,7 @@ function VendorRegister() {
     (async () => {
       const { data } = await supabase
         .from("vendors")
-        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -167,6 +169,8 @@ function VendorRegister() {
         setBusinessName((data as any).business_name ?? "");
         setWhatsapp((data as any).whatsapp ?? "");
         setManagerEmail((data as any).manager_email ?? (data as any).email ?? "");
+        setTeamCount(Math.max(1, Number((data as any).current_team_count ?? 1)));
+        setVanCount(Math.max(0, Number((data as any).van_count ?? 0)));
         setReferral((data as any).referral ?? "");
         setInsta((data as any).instagram ?? "");
         setFb((data as any).facebook ?? "");
@@ -344,7 +348,9 @@ function VendorRegister() {
         _pan: pan.trim(),
         _gst: gst.trim(),
         _plan: planId,
-      });
+        _current_team_count: teamCount,
+        _van_count: vanCount,
+      } as any);
       setSaving(false);
       if (error) {
         const msg = error.message || "";
@@ -575,6 +581,8 @@ function VendorRegister() {
                     businessName={businessName}
                     whatsapp={whatsapp}
                     managerEmail={managerEmail}
+                    teamCount={teamCount}
+                    vanCount={vanCount}
                     referral={referral}
                     onPickRole={() => setPicker("role")}
                     onPickEntity={() => setPicker("entity")}
@@ -584,6 +592,8 @@ function VendorRegister() {
                     setBusinessName={setBusinessName}
                     setWhatsapp={setWhatsapp}
                     setManagerEmail={setManagerEmail}
+                    setTeamCount={setTeamCount}
+                    setVanCount={setVanCount}
                     setReferral={setReferral}
                     ownerRef={ownerInputRef}
                     businessRef={businessInputRef}
@@ -736,6 +746,8 @@ type Step1Props = {
   businessName: string;
   whatsapp: string;
   managerEmail: string;
+  teamCount: number;
+  vanCount: number;
   referral: string;
   onPickRole: () => void;
   onPickEntity: () => void;
@@ -745,6 +757,8 @@ type Step1Props = {
   setBusinessName: (v: string) => void;
   setWhatsapp: (v: string) => void;
   setManagerEmail: (v: string) => void;
+  setTeamCount: (v: number) => void;
+  setVanCount: (v: number) => void;
   setReferral: (v: string) => void;
   ownerRef: React.RefObject<HTMLInputElement | null>;
   businessRef: React.RefObject<HTMLInputElement | null>;
@@ -850,6 +864,28 @@ function Step1Business(p: Step1Props) {
           onChange={p.setManagerEmail}
           showInput
           placeholder="manager@company.com"
+        />
+      )}
+
+      {showEmail && (
+        <CounterField
+          Icon={User}
+          label="Current team"
+          hint="Work team members"
+          value={p.teamCount}
+          min={1}
+          onChange={p.setTeamCount}
+        />
+      )}
+
+      {showEmail && (
+        <CounterField
+          Icon={Building2}
+          label="Van / vehicle"
+          hint="Multiple vans add kar sakte hain"
+          value={p.vanCount}
+          min={0}
+          onChange={p.setVanCount}
         />
       )}
 
@@ -1262,6 +1298,43 @@ function VendorAppDownloadCard() {
             ⬇ APK
           </a>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CounterField({
+  Icon, label, hint, value, min, onChange,
+}: {
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  onChange: (v: number) => void;
+}) {
+  const dec = () => onChange(Math.max(min, value - 1));
+  const inc = () => onChange(Math.min(99, value + 1));
+  return (
+    <div className="relative flex items-start gap-3" style={{ animation: "step-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+      <div className="relative flex flex-col items-center pt-3.5">
+        <div className="h-9 w-9 rounded-full grid place-items-center border-2 border-white bg-gradient-to-br from-[#d8dde3] via-[#a8acb3] to-[#3f4750] shadow-md">
+          <Icon className="h-4 w-4 text-white" strokeWidth={2.4} />
+        </div>
+        <div className="w-0.5 h-10 bg-gradient-to-b from-[#a8acb3] to-[#d8dde3]" />
+      </div>
+      <div className="flex-1 py-2.5">
+        <label className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)] font-bold">{label}</label>
+        <div className="mt-1 rounded-2xl bg-white/80 border border-[color:oklch(0.72_0.01_260/0.5)] px-3 py-2 shadow-sm flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-display font-bold text-[15px] text-[color:oklch(0.24_0.02_260)]">{value}</p>
+            <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] truncate">{hint}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button type="button" onClick={dec} className="h-8 w-8 rounded-full bg-[#eef0f3] border border-[#a8acb3] font-bold text-[#3f4750] active:scale-90">−</button>
+            <button type="button" onClick={inc} className="h-8 w-8 rounded-full bg-[#FFD400] border border-[#f59e0b] font-bold text-[#1a1208] active:scale-90">+</button>
+          </div>
+        </div>
       </div>
     </div>
   );
