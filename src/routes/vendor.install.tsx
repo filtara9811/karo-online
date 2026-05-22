@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Download, CheckCircle2, Smartphone, ArrowLeft, Share2 } from "lucide-react";
 
 export const Route = createFileRoute("/vendor/install")({
@@ -8,12 +9,11 @@ export const Route = createFileRoute("/vendor/install")({
       { title: "Install Vendor App — Karo Online" },
       { name: "description", content: "Install the Karo Vendor app on your phone — separate icon, dedicated vendor dashboard." },
       { name: "theme-color", content: "#0EA5E9" },
+      { name: "apple-mobile-web-app-title", content: "Vendor" },
+      { name: "application-name", content: "Karo Vendor" },
     ],
-    links: [
-      // IMPORTANT: this page advertises the VENDOR manifest so the browser
-      // installs a separate app (different icon + start_url=/vendor/dashboard).
-      { rel: "manifest", href: "/manifest-vendor.json" },
-    ],
+    // Manifest link is swapped in via useEffect (root manifest is removed)
+    // so Chrome sees only the Vendor manifest while on this page.
   }),
   component: VendorInstallPage,
 });
