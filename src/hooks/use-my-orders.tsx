@@ -64,33 +64,15 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
 
     const vendorMap = new Map<string, { name: string; avatar: string }>();
     if (vendorIds.length) {
-      const [{ data: vs }, { data: profs }] = await Promise.all([
-        supabase
-          .from("vendors")
-          .select("user_id, business_name, owner_name, avatar_url")
-          .in("user_id", vendorIds),
-        supabase
-          .from("profiles")
-          .select("user_id, avatar_url, full_name")
-          .in("user_id", vendorIds),
-      ]);
-      const profMap = new Map<string, { avatar: string | null; name: string | null }>();
-      profs?.forEach((p: any) => { profMap.set(p.user_id as string, { avatar: (p.avatar_url ?? null) as string | null, name: (p.full_name ?? null) as string | null }); });
+      const { data: vs } = await supabase
+        .from("vendors")
+        .select("user_id, business_name, owner_name, avatar_url")
+        .in("user_id", vendorIds);
       vs?.forEach((v) => {
-        const pr = profMap.get(v.user_id as string);
         vendorMap.set(v.user_id as string, {
-          name: (v.business_name || v.owner_name || pr?.name || "Vendor") as string,
-          avatar: ((v.avatar_url || pr?.avatar) ?? "") as string,
+          name: (v.business_name || v.owner_name || "Vendor") as string,
+          avatar: (v.avatar_url || "") as string,
         });
-      });
-      // Vendors that only exist in profiles (no vendors row yet)
-      profs?.forEach((p: any) => {
-        if (!vendorMap.has(p.user_id as string)) {
-          vendorMap.set(p.user_id as string, {
-            name: (p.full_name || "Vendor") as string,
-            avatar: (p.avatar_url || "") as string,
-          });
-        }
       });
     }
 
