@@ -71,10 +71,10 @@ export function AppShell() {
           <div className="flex-1">
             <Outlet />
           </div>
-          <SiteFooter />
+          {!isMarketing && <SiteFooter />}
         </div>
-        <VendorLeadAlerts />
-        <PermissionsGate />
+        {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && <PermissionsGate />}
       </AuthGate>
     );
   }
