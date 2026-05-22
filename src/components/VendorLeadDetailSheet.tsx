@@ -91,6 +91,8 @@ function ProgressRing({ pct }: { pct: number }) {
   );
 }
 
+type CustomStep = { key: string; label: string };
+
 export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, onSwitchLead }: Props) {
   const { user } = useAuth();
   const [tab, setTab] = useState<"progress" | "chat">("progress");
@@ -98,9 +100,30 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
   const [real, setReal] = useState<RealLead | null>(null);
   const [events, setEvents] = useState<StatusEvent[]>([]);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [customSteps, setCustomSteps] = useState<CustomStep[]>([]);
+  const [composeFor, setComposeFor] = useState<{ key: string; label: string } | null>(null);
+  const [composeText, setComposeText] = useState("");
+  const [composeLink, setComposeLink] = useState("");
 
   useEffect(() => {
     if (open) {
+      setTab("progress");
+      setShowContact(false);
+    }
+  }, [open, lead?.id]);
+
+  // Load custom steps per-lead from localStorage
+  useEffect(() => {
+    if (!lead?.id) return;
+    try {
+      const raw = localStorage.getItem(`vendor:custom-steps:${lead.id}`);
+      setCustomSteps(raw ? JSON.parse(raw) : []);
+    } catch { setCustomSteps([]); }
+  }, [lead?.id]);
+  const persistSteps = (next: CustomStep[]) => {
+    setCustomSteps(next);
+    if (lead?.id) localStorage.setItem(`vendor:custom-steps:${lead.id}`, JSON.stringify(next));
+  };
       setTab("progress");
       setShowContact(false);
     }
