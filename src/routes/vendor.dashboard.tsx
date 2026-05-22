@@ -514,128 +514,143 @@ const STATUS_META: Record<LeadStatus, { label: string; icon: React.ReactNode; ti
   rejected: { label: "Rejected",        icon: <XCircle className="h-3 w-3" />,     tint: "bg-[#fef2f2] text-[#b91c1c]" },
 };
 
+function formatLiveDate(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const mon = d.toLocaleString("en-IN", { month: "short" }).toLowerCase();
+  const day = d.getDate();
+  const yr = d.getFullYear();
+  let h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, "0");
+  const ap = h >= 12 ? "pm" : "am";
+  h = h % 12 || 12;
+  return `${day} ${mon} ${yr}  ${h}:${m} ${ap}`;
+}
+
+function ProgressRing({ pct, status }: { pct: number; status: LeadStatus }) {
+  const r = 16, c = 2 * Math.PI * r;
+  const off = c - (Math.max(0, Math.min(100, pct)) / 100) * c;
+  const color =
+    status === "success" ? "#15803d" :
+    status === "rejected" ? "#b91c1c" :
+    status === "process" ? "#15803d" : "#d4af37";
+  return (
+    <div className="relative h-10 w-10 flex-shrink-0">
+      <svg viewBox="0 0 40 40" className="h-10 w-10 -rotate-90">
+        <circle cx="20" cy="20" r={r} stroke="#e5e7eb" strokeWidth="3" fill="none" />
+        <circle cx="20" cy="20" r={r} stroke={color} strokeWidth="3" fill="none"
+          strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center text-[8px] font-bold text-slate-700">{pct}%</span>
+    </div>
+  );
+}
+
 function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
-  const src = SOURCE_META[lead.source];
   const st = STATUS_META[lead.status];
   const avatar = lead.avatarUrl;
   const initial = lead.name.charAt(0).toUpperCase();
+  const isLocked = lead.status === "new";
+  const pct = lead.progressPct ?? 25;
+
+  const statusPillCls =
+    lead.status === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+    lead.status === "process" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+    lead.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-300" :
+    "bg-amber-50 text-amber-800 border-amber-300";
+
+  const Wrapper: any = isLocked ? "div" : Link;
+  const wrapperProps: any = isLocked
+    ? { "aria-disabled": true, title: "Accept this lead to view full details", className: "block cursor-not-allowed select-none" }
+    : { to: "/vendor/lead/$id", params: { id: lead.id }, className: "block active:scale-[0.99] transition" };
+
   return (
-    <article className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] overflow-hidden shadow-sm">
-      {lead.status === "new" ? (
-        <div
-          aria-disabled
-          title="Accept this lead to view full details"
-          className="block p-3 cursor-not-allowed select-none"
-        >
-        <div className="flex items-start gap-3">
-          <span className="h-12 w-12 rounded-xl overflow-hidden grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3]">
+    <article
+      className="rounded-3xl bg-white overflow-hidden shadow-[0_6px_18px_-8px_rgba(15,23,42,0.18)]"
+      style={{ border: "1px solid rgba(212,175,55,0.35)" }}
+    >
+      <Wrapper {...wrapperProps}>
+        {/* ===== HEAD ROW: customer + lead id + status pill ===== */}
+        <div className="px-3.5 pt-3 pb-2 flex items-start gap-2.5">
+          <span className="h-11 w-11 rounded-full overflow-hidden grid place-items-center font-display text-sm font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3] border border-white shadow-sm">
             {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
           </span>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
-              <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
-            </div>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone || "No phone"}{lead.distanceKm != null ? ` · ${lead.distanceKm} km` : ""}</p>
-            {/* Source badge */}
-            <span
-              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
-              style={{ background: src.bg, color: src.text }}
-            >
-              {src.icon}
-              via {src.label}
-            </span>
+            <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">{lead.name}</p>
+            <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] underline underline-offset-2">Customer | details</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{formatLiveDate(lead.createdAtIso) || lead.time}</p>
           </div>
-          <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0 mt-1" />
-        </div>
-
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${st.tint}`}>
-            {st.icon}
-            {st.label}
-          </span>
-          <span className="font-display text-sm font-bold text-silver-gradient">
-            ₹{lead.amount.toLocaleString()}
-          </span>
-        </div>
-
-        <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.01_260)] truncate">
-          “{lead.note}”
-        </p>
-        </div>
-      ) : (
-        <Link
-          to="/vendor/lead/$id"
-          params={{ id: lead.id }}
-          className="block p-3 active:bg-[color:oklch(0.97_0.04_85)] transition-colors"
-        >
-          <div className="flex items-start gap-3">
-            <span className="h-12 w-12 rounded-xl overflow-hidden grid place-items-center font-display text-base font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3]">
-              {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-display text-sm font-bold text-[color:oklch(0.25_0.01_260)] truncate">{lead.name}</p>
-                <span className="text-[9px] text-[color:oklch(0.55_0.10_82)] flex-shrink-0">{lead.time}</span>
-              </div>
-              <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">{lead.service} · {lead.phone || "No phone"}{lead.distanceKm != null ? ` · ${lead.distanceKm} km` : ""}</p>
-              <span
-                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border border-[color:oklch(0.72_0.01_260/0.4)]"
-                style={{ background: SOURCE_META[lead.source].bg, color: SOURCE_META[lead.source].text }}
-              >
-                {SOURCE_META[lead.source].icon}
-                via {SOURCE_META[lead.source].label}
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <span className="text-[9px] text-slate-500">Lead id - <span className="font-mono font-semibold text-slate-700">{lead.leadCode}</span></span>
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold ${statusPillCls}`}>
+              <span className="relative h-2 w-2">
+                <span className="absolute inset-0 rounded-full bg-current opacity-30 animate-ping" />
+                <span className="absolute inset-0 rounded-full bg-current" />
               </span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0 mt-1" />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${STATUS_META[lead.status].tint}`}>
-              {STATUS_META[lead.status].icon}
-              {STATUS_META[lead.status].label}
-            </span>
-            <span className="font-display text-sm font-bold text-silver-gradient">
-              ₹{lead.amount.toLocaleString()}
+              <span className="flex flex-col leading-tight">
+                <span>{st.label}</span>
+                <span className="text-[8px] font-medium opacity-80 underline underline-offset-2">Live status update</span>
+              </span>
             </span>
           </div>
-          <p className="mt-1 text-[11px] italic text-[color:oklch(0.45_0.01_260)] truncate">
-            “{lead.note}”
-          </p>
-        </Link>
-      )}
+        </div>
 
-      {/* Action bar */}
-      <div className="flex items-stretch border-t border-[color:oklch(0.72_0.01_260/0.3)]">
-        {lead.status === "new" ? (
+        {/* ===== PRODUCT CARD (inner) ===== */}
+        <div className="mx-3 mb-2 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 flex items-center gap-3 relative">
+          <div className="flex-1 min-w-0">
+            <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">
+              {lead.service}
+            </p>
+            <p className="text-[10px] text-slate-500 italic mt-0.5 truncate">
+              {lead.note ? lead.note : "Good and best service"}
+            </p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-[10px] font-bold text-amber-800">
+                ★ {lead.rating ?? 4.9}
+              </span>
+              {lead.amount > 0 && (
+                <span className="font-display text-sm font-bold text-slate-800">
+                  ₹ {lead.amount.toLocaleString()}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-[#eef0f3] grid place-items-center">
+            {lead.productImage ? (
+              <img src={lead.productImage} alt={lead.service} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-bold text-slate-400 px-1 text-center leading-tight">{lead.service.split(" ")[0]}</span>
+            )}
+          </div>
+          <div className="absolute -bottom-1 -right-1">
+            <ProgressRing pct={pct} status={lead.status} />
+          </div>
+        </div>
+      </Wrapper>
+
+      {/* ===== Action bar ===== */}
+      <div className="flex items-stretch border-t border-slate-200/70">
+        {isLocked ? (
           <button
             onClick={onAccept}
             className="btn-3d flex-1 py-2.5 grid place-items-center font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)",
-            }}
+            style={{ background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)" }}
           >
             ✓ Accept Lead
           </button>
         ) : (
-          <button
-            disabled
-            className="flex-1 py-2.5 text-sm font-display font-bold text-[color:oklch(0.55_0.10_82)] bg-[color:oklch(0.97_0.02_85)]"
-          >
+          <button disabled className="flex-1 py-2.5 text-sm font-display font-bold text-[color:oklch(0.55_0.10_82)] bg-[color:oklch(0.97_0.02_85)]">
             {st.label}
           </button>
         )}
-        <a
-          href={`tel:${lead.phone}`}
-          aria-label="Call"
-          className="px-4 grid place-items-center border-l border-[color:oklch(0.72_0.01_260/0.3)] active:scale-95"
-        >
+        <a href={`tel:${lead.phone}`} aria-label="Call" className="px-4 grid place-items-center border-l border-slate-200/70 active:scale-95">
           <Phone className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
         </a>
         <Link
           to="/vendor/chat"
           search={{ leadId: lead.id } as never}
           aria-label="Open chat"
-          className="px-4 grid place-items-center border-l border-[color:oklch(0.72_0.01_260/0.3)] active:scale-95"
+          className="px-4 grid place-items-center border-l border-slate-200/70 active:scale-95"
         >
           <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
         </Link>
@@ -643,6 +658,7 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
     </article>
   );
 }
+
 
 function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
   return (
