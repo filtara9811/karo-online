@@ -688,7 +688,7 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
   );
 }
 
-}
+
 
 
 function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
