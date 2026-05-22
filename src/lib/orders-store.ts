@@ -56,6 +56,10 @@ export type OrderItem = {
   pinned?: boolean;
   approvals?: Approval[];
   rated?: { stars: number; mood: "angry" | "neutral" | "happy" | "love"; at: string } | null;
+  /** Real product/service image (catalog_items.image_url) when available. */
+  productImage?: string | null;
+  /** Short, human-friendly order code (last 6 chars of UUID). */
+  shortCode?: string;
 };
 
 export type VendorGroup = {
