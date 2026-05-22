@@ -243,8 +243,12 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                           className="rounded-2xl bg-white border border-emerald-200/70 shadow-sm overflow-hidden"
                         >
                           <div className="p-3.5 flex items-start gap-3">
-                            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-emerald-200 to-emerald-500 grid place-items-center text-white font-bold flex-shrink-0 shadow">
-                              {(r.customerName || "C").charAt(0).toUpperCase()}
+                            <div className="h-11 w-11 rounded-full overflow-hidden bg-gradient-to-br from-emerald-200 to-emerald-500 grid place-items-center text-white font-bold flex-shrink-0 shadow border-2 border-white">
+                              {r.customerAvatar ? (
+                                <img src={r.customerAvatar} alt={r.customerName || ""} className="h-full w-full object-cover" />
+                              ) : (
+                                (r.customerName || "C").charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-display font-bold text-[15px] text-slate-800 truncate">
@@ -261,6 +265,26 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                               )}
                             </div>
                           </div>
+                          {/* Product thumbnails */}
+                          {r.items.length > 0 && (
+                            <div className="px-3.5 pb-2 flex gap-1.5 flex-wrap">
+                              {r.items.slice(0, 4).map((it, i) => (
+                                <div key={i} className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
+                                  <div className="h-7 w-7 rounded-md overflow-hidden bg-white border border-emerald-100 flex-shrink-0 grid place-items-center">
+                                    {it.image ? (
+                                      <img src={it.image} alt={it.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <span className="text-[8px] font-bold text-slate-400">{it.name.charAt(0)}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-900 truncate max-w-[90px]">{it.name}</span>
+                                </div>
+                              ))}
+                              {r.items.length > 4 && (
+                                <span className="text-[10px] font-bold text-emerald-700 self-center">+{r.items.length - 4}</span>
+                              )}
+                            </div>
+                          )}
                           <button
                             disabled={busy === r.leadId}
                             onClick={() => startWork(r.leadId)}
