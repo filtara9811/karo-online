@@ -622,11 +622,16 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   );
 }
 
-function DockItem({ label, icon, active }: { label: string; icon: React.ReactNode; active?: boolean }) {
+function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
   return (
-    <button className="flex flex-col items-center gap-0.5 px-3 py-1">
-      <span className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+    <button onClick={onClick} className="relative flex flex-col items-center gap-0.5 px-3 py-1 active:scale-95 transition">
+      <span className={`relative h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {icon}
+        {badge && badge > 0 ? (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
       </span>
       <span className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {label}
