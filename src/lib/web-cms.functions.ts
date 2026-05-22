@@ -135,11 +135,11 @@ export const submitWebForm = createServerFn({ method: "POST" })
       else cleaned[k] = v;
     }
 
-    const { error } = await supabaseAdmin.from("web_form_submissions").insert({
+    const { error } = await supabaseAdmin.from("web_form_submissions").insert([{
       form_id: form.id,
-      data: cleaned,
+      data: cleaned as never,
       source_page: data.source_page ?? null,
-    });
+    }]);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
