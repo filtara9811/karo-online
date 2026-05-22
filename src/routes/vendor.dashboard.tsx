@@ -640,7 +640,7 @@ function LeadCard({ lead, onAccept, onOpen }: { lead: Lead; onAccept: () => void
             <ProgressRing pct={pct} status={lead.status} />
           </div>
         </div>
-      </Wrapper>
+      </button>
 
       {/* ===== Action bar ===== */}
       <div className="flex items-stretch border-t border-slate-200/70">
