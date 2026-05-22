@@ -179,7 +179,9 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
               <div>
                 <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700">✦ Incoming ✦</p>
                 <h2 className="font-display text-xl text-gold-gradient leading-tight">Pending Leads</h2>
-                <p className="text-[11px] text-amber-900/60 mt-0.5">{rows.length} requests waiting</p>
+                <p className="text-[11px] text-amber-900/60 mt-0.5">
+                  {rows.length} pending · {ready.length} ready to start
+                </p>
               </div>
               <button
                 onClick={onClose}
@@ -193,7 +195,50 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
               {loading ? (
                 <div className="grid place-items-center py-16 text-sm text-amber-900/60">Loading…</div>
-              ) : rows.length === 0 ? (
+              ) : (
+                <>
+                  {ready.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="px-1 text-[10px] uppercase tracking-[0.22em] font-bold text-emerald-700">
+                        ✓ Accepted — press Start Work
+                      </p>
+                      {ready.map((r) => (
+                        <article
+                          key={`ready-${r.leadId}`}
+                          className="rounded-2xl bg-white border border-emerald-200/70 shadow-sm overflow-hidden"
+                        >
+                          <div className="p-3.5 flex items-start gap-3">
+                            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-emerald-200 to-emerald-500 grid place-items-center text-white font-bold flex-shrink-0 shadow">
+                              {(r.customerName || "C").charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-display font-bold text-[15px] text-slate-800 truncate">
+                                {r.customerName || "Customer"}
+                              </p>
+                              <p className="text-xs font-semibold text-emerald-800 mt-0.5">{r.subCategoryName}</p>
+                              {r.address && (
+                                <p className="text-[10px] text-slate-500 mt-1 flex items-start gap-1 line-clamp-2">
+                                  <MapPin className="h-2.5 w-2.5 mt-0.5 flex-shrink-0" /> {r.address}
+                                </p>
+                              )}
+                              {r.note && (
+                                <p className="mt-1.5 text-[11px] italic text-slate-600 line-clamp-2">"{r.note}"</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            disabled={busy === r.leadId}
+                            onClick={() => startWork(r.leadId)}
+                            className="w-full py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 active:from-emerald-600 active:to-emerald-700 disabled:opacity-50 flex items-center justify-center gap-1.5 border-t border-emerald-100"
+                          >
+                            <Check className="h-3.5 w-3.5" /> Start Work — move to dashboard
+                          </button>
+                        </article>
+                      ))}
+                      <div className="h-px bg-amber-200/60 my-2" />
+                    </div>
+                  )}
+                  {rows.length === 0 && ready.length === 0 ? (
                 <div className="grid place-items-center py-16 text-center">
                   <Inbox className="h-12 w-12 text-amber-400/60 mb-3" />
                   <p className="font-display font-bold text-base text-amber-900">No pending leads</p>
@@ -267,6 +312,8 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                     </div>
                   </article>
                 ))
+              )}
+                </>
               )}
             </div>
           </motion.div>
