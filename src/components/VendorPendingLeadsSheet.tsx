@@ -91,7 +91,7 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
         supabase.rpc("get_my_pending_lead_briefs"),
         supabase
           .from("lead_notifications")
-          .select("lead_id, responded_at, leads!inner(id, sub_category_name, customer_name, address, note)")
+          .select("lead_id, responded_at, leads!inner(id, customer_id, sub_category_name, customer_name, address, note, item_ids, item_names, images)")
           .eq("vendor_id", user.id)
           .eq("status", "accepted")
           .is("vendor_started_at", null)
@@ -111,14 +111,47 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
           note: b.note ?? null,
           createdAt: b.created_at,
         }));
-      const readyMapped: ReadyRow[] = (acc ?? []).map((r: any) => ({
-        leadId: r.lead_id,
-        customerName: r.leads?.customer_name ?? "Customer",
-        subCategoryName: r.leads?.sub_category_name ?? "Service",
-        address: r.leads?.address ?? null,
-        note: r.leads?.note ?? null,
-        acceptedAt: r.responded_at,
-      }));
+
+      // Fetch customer avatars + catalog item images for ready rows
+      const accRows = (acc ?? []) as any[];
+      const customerIds = Array.from(new Set(accRows.map((r) => r.leads?.customer_id).filter(Boolean))) as string[];
+      const itemIds = Array.from(new Set(accRows.flatMap((r) => (r.leads?.item_ids ?? []) as string[])));
+      const [{ data: customersData }, { data: itemsData }] = await Promise.all([
+        customerIds.length
+          ? supabase.from("customers").select("user_id, avatar_url, name").in("user_id", customerIds)
+          : Promise.resolve({ data: [] as any[] }),
+        itemIds.length
+          ? supabase.from("catalog_items").select("id, name, image_url").in("id", itemIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const custMap = new Map<string, { avatar_url: string | null; name: string | null }>();
+      (customersData ?? []).forEach((c: any) => custMap.set(c.user_id, { avatar_url: c.avatar_url, name: c.name }));
+      const itemMap = new Map<string, { name: string; image: string | null }>();
+      (itemsData ?? []).forEach((it: any) => itemMap.set(it.id, { name: it.name, image: it.image_url ?? null }));
+
+      const readyMapped: ReadyRow[] = accRows.map((r: any) => {
+        const cust = custMap.get(r.leads?.customer_id);
+        const ids: string[] = r.leads?.item_ids ?? [];
+        const names: string[] = r.leads?.item_names ?? [];
+        const imgs: string[] = r.leads?.images ?? [];
+        const items =
+          ids.length > 0
+            ? ids.map((id, idx) => {
+                const info = itemMap.get(id);
+                return { name: info?.name || names[idx] || "Item", image: info?.image ?? imgs[idx] ?? null };
+              })
+            : [{ name: r.leads?.sub_category_name ?? "Service", image: imgs[0] ?? null }];
+        return {
+          leadId: r.lead_id,
+          customerName: cust?.name ?? r.leads?.customer_name ?? "Customer",
+          customerAvatar: cust?.avatar_url ?? null,
+          subCategoryName: r.leads?.sub_category_name ?? "Service",
+          address: r.leads?.address ?? null,
+          note: r.leads?.note ?? null,
+          acceptedAt: r.responded_at,
+          items,
+        };
+      });
       if (alive) { setRows(mapped); setReady(readyMapped); setLoading(false); }
     };
     load();
