@@ -73,7 +73,19 @@ import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
+import { Route as AdminWebIndexRouteImport } from './routes/admin.web.index'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
+import { Route as AdminWebTestimonialsRouteImport } from './routes/admin.web.testimonials'
+import { Route as AdminWebSeoRouteImport } from './routes/admin.web.seo'
+import { Route as AdminWebSectionsRouteImport } from './routes/admin.web.sections'
+import { Route as AdminWebPricingRouteImport } from './routes/admin.web.pricing'
+import { Route as AdminWebOffersRouteImport } from './routes/admin.web.offers'
+import { Route as AdminWebMediaRouteImport } from './routes/admin.web.media'
+import { Route as AdminWebHeroRouteImport } from './routes/admin.web.hero'
+import { Route as AdminWebFormsRouteImport } from './routes/admin.web.forms'
+import { Route as AdminWebFaqsRouteImport } from './routes/admin.web.faqs'
+import { Route as AdminWebBlogRouteImport } from './routes/admin.web.blog'
+import { Route as AdminWebApkRouteImport } from './routes/admin.web.apk'
 import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -396,10 +408,70 @@ const AdminBrandingRoute = AdminBrandingRouteImport.update({
   path: '/branding',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminWebIndexRoute = AdminWebIndexRouteImport.update({
+  id: '/web/',
+  path: '/web/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   id: '/vendor/lead/$id',
   path: '/vendor/lead/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminWebTestimonialsRoute = AdminWebTestimonialsRouteImport.update({
+  id: '/web/testimonials',
+  path: '/web/testimonials',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebSeoRoute = AdminWebSeoRouteImport.update({
+  id: '/web/seo',
+  path: '/web/seo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebSectionsRoute = AdminWebSectionsRouteImport.update({
+  id: '/web/sections',
+  path: '/web/sections',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebPricingRoute = AdminWebPricingRouteImport.update({
+  id: '/web/pricing',
+  path: '/web/pricing',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebOffersRoute = AdminWebOffersRouteImport.update({
+  id: '/web/offers',
+  path: '/web/offers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebMediaRoute = AdminWebMediaRouteImport.update({
+  id: '/web/media',
+  path: '/web/media',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebHeroRoute = AdminWebHeroRouteImport.update({
+  id: '/web/hero',
+  path: '/web/hero',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebFormsRoute = AdminWebFormsRouteImport.update({
+  id: '/web/forms',
+  path: '/web/forms',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebFaqsRoute = AdminWebFaqsRouteImport.update({
+  id: '/web/faqs',
+  path: '/web/faqs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebBlogRoute = AdminWebBlogRouteImport.update({
+  id: '/web/blog',
+  path: '/web/blog',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWebApkRoute = AdminWebApkRouteImport.update({
+  id: '/web/apk',
+  path: '/web/apk',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminViewUserIdRoute = AdminViewUserIdRouteImport.update({
   id: '/view/$userId',
@@ -473,7 +545,19 @@ export interface FileRoutesByFullPath {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
+  '/admin/web/apk': typeof AdminWebApkRoute
+  '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/faqs': typeof AdminWebFaqsRoute
+  '/admin/web/forms': typeof AdminWebFormsRoute
+  '/admin/web/hero': typeof AdminWebHeroRoute
+  '/admin/web/media': typeof AdminWebMediaRoute
+  '/admin/web/offers': typeof AdminWebOffersRoute
+  '/admin/web/pricing': typeof AdminWebPricingRoute
+  '/admin/web/sections': typeof AdminWebSectionsRoute
+  '/admin/web/seo': typeof AdminWebSeoRoute
+  '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
+  '/admin/web/': typeof AdminWebIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -540,7 +624,19 @@ export interface FileRoutesByTo {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
+  '/admin/web/apk': typeof AdminWebApkRoute
+  '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/faqs': typeof AdminWebFaqsRoute
+  '/admin/web/forms': typeof AdminWebFormsRoute
+  '/admin/web/hero': typeof AdminWebHeroRoute
+  '/admin/web/media': typeof AdminWebMediaRoute
+  '/admin/web/offers': typeof AdminWebOffersRoute
+  '/admin/web/pricing': typeof AdminWebPricingRoute
+  '/admin/web/sections': typeof AdminWebSectionsRoute
+  '/admin/web/seo': typeof AdminWebSeoRoute
+  '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
+  '/admin/web': typeof AdminWebIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -609,7 +705,19 @@ export interface FileRoutesById {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
+  '/admin/web/apk': typeof AdminWebApkRoute
+  '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/faqs': typeof AdminWebFaqsRoute
+  '/admin/web/forms': typeof AdminWebFormsRoute
+  '/admin/web/hero': typeof AdminWebHeroRoute
+  '/admin/web/media': typeof AdminWebMediaRoute
+  '/admin/web/offers': typeof AdminWebOffersRoute
+  '/admin/web/pricing': typeof AdminWebPricingRoute
+  '/admin/web/sections': typeof AdminWebSectionsRoute
+  '/admin/web/seo': typeof AdminWebSeoRoute
+  '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
+  '/admin/web/': typeof AdminWebIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -679,7 +787,19 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin/'
     | '/admin/view/$userId'
+    | '/admin/web/apk'
+    | '/admin/web/blog'
+    | '/admin/web/faqs'
+    | '/admin/web/forms'
+    | '/admin/web/hero'
+    | '/admin/web/media'
+    | '/admin/web/offers'
+    | '/admin/web/pricing'
+    | '/admin/web/sections'
+    | '/admin/web/seo'
+    | '/admin/web/testimonials'
     | '/vendor/lead/$id'
+    | '/admin/web/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -746,7 +866,19 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin'
     | '/admin/view/$userId'
+    | '/admin/web/apk'
+    | '/admin/web/blog'
+    | '/admin/web/faqs'
+    | '/admin/web/forms'
+    | '/admin/web/hero'
+    | '/admin/web/media'
+    | '/admin/web/offers'
+    | '/admin/web/pricing'
+    | '/admin/web/sections'
+    | '/admin/web/seo'
+    | '/admin/web/testimonials'
     | '/vendor/lead/$id'
+    | '/admin/web'
   id:
     | '__root__'
     | '/'
@@ -814,7 +946,19 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin/'
     | '/admin/view/$userId'
+    | '/admin/web/apk'
+    | '/admin/web/blog'
+    | '/admin/web/faqs'
+    | '/admin/web/forms'
+    | '/admin/web/hero'
+    | '/admin/web/media'
+    | '/admin/web/offers'
+    | '/admin/web/pricing'
+    | '/admin/web/sections'
+    | '/admin/web/seo'
+    | '/admin/web/testimonials'
     | '/vendor/lead/$id'
+    | '/admin/web/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1309,12 +1453,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBrandingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/web/': {
+      id: '/admin/web/'
+      path: '/web'
+      fullPath: '/admin/web/'
+      preLoaderRoute: typeof AdminWebIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/vendor/lead/$id': {
       id: '/vendor/lead/$id'
       path: '/vendor/lead/$id'
       fullPath: '/vendor/lead/$id'
       preLoaderRoute: typeof VendorLeadIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/web/testimonials': {
+      id: '/admin/web/testimonials'
+      path: '/web/testimonials'
+      fullPath: '/admin/web/testimonials'
+      preLoaderRoute: typeof AdminWebTestimonialsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/seo': {
+      id: '/admin/web/seo'
+      path: '/web/seo'
+      fullPath: '/admin/web/seo'
+      preLoaderRoute: typeof AdminWebSeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/sections': {
+      id: '/admin/web/sections'
+      path: '/web/sections'
+      fullPath: '/admin/web/sections'
+      preLoaderRoute: typeof AdminWebSectionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/pricing': {
+      id: '/admin/web/pricing'
+      path: '/web/pricing'
+      fullPath: '/admin/web/pricing'
+      preLoaderRoute: typeof AdminWebPricingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/offers': {
+      id: '/admin/web/offers'
+      path: '/web/offers'
+      fullPath: '/admin/web/offers'
+      preLoaderRoute: typeof AdminWebOffersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/media': {
+      id: '/admin/web/media'
+      path: '/web/media'
+      fullPath: '/admin/web/media'
+      preLoaderRoute: typeof AdminWebMediaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/hero': {
+      id: '/admin/web/hero'
+      path: '/web/hero'
+      fullPath: '/admin/web/hero'
+      preLoaderRoute: typeof AdminWebHeroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/forms': {
+      id: '/admin/web/forms'
+      path: '/web/forms'
+      fullPath: '/admin/web/forms'
+      preLoaderRoute: typeof AdminWebFormsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/faqs': {
+      id: '/admin/web/faqs'
+      path: '/web/faqs'
+      fullPath: '/admin/web/faqs'
+      preLoaderRoute: typeof AdminWebFaqsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/blog': {
+      id: '/admin/web/blog'
+      path: '/web/blog'
+      fullPath: '/admin/web/blog'
+      preLoaderRoute: typeof AdminWebBlogRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/web/apk': {
+      id: '/admin/web/apk'
+      path: '/web/apk'
+      fullPath: '/admin/web/apk'
+      preLoaderRoute: typeof AdminWebApkRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/view/$userId': {
       id: '/admin/view/$userId'
@@ -1354,6 +1582,18 @@ interface AdminRouteChildren {
   AdminWhatsappRoute: typeof AdminWhatsappRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminViewUserIdRoute: typeof AdminViewUserIdRoute
+  AdminWebApkRoute: typeof AdminWebApkRoute
+  AdminWebBlogRoute: typeof AdminWebBlogRoute
+  AdminWebFaqsRoute: typeof AdminWebFaqsRoute
+  AdminWebFormsRoute: typeof AdminWebFormsRoute
+  AdminWebHeroRoute: typeof AdminWebHeroRoute
+  AdminWebMediaRoute: typeof AdminWebMediaRoute
+  AdminWebOffersRoute: typeof AdminWebOffersRoute
+  AdminWebPricingRoute: typeof AdminWebPricingRoute
+  AdminWebSectionsRoute: typeof AdminWebSectionsRoute
+  AdminWebSeoRoute: typeof AdminWebSeoRoute
+  AdminWebTestimonialsRoute: typeof AdminWebTestimonialsRoute
+  AdminWebIndexRoute: typeof AdminWebIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1384,6 +1624,18 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminWhatsappRoute: AdminWhatsappRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminViewUserIdRoute: AdminViewUserIdRoute,
+  AdminWebApkRoute: AdminWebApkRoute,
+  AdminWebBlogRoute: AdminWebBlogRoute,
+  AdminWebFaqsRoute: AdminWebFaqsRoute,
+  AdminWebFormsRoute: AdminWebFormsRoute,
+  AdminWebHeroRoute: AdminWebHeroRoute,
+  AdminWebMediaRoute: AdminWebMediaRoute,
+  AdminWebOffersRoute: AdminWebOffersRoute,
+  AdminWebPricingRoute: AdminWebPricingRoute,
+  AdminWebSectionsRoute: AdminWebSectionsRoute,
+  AdminWebSeoRoute: AdminWebSeoRoute,
+  AdminWebTestimonialsRoute: AdminWebTestimonialsRoute,
+  AdminWebIndexRoute: AdminWebIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
