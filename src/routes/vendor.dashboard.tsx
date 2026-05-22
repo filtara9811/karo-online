@@ -28,6 +28,7 @@ import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
+import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -75,6 +76,8 @@ function VendorDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
 
@@ -425,7 +428,13 @@ function VendorDashboard() {
           <div
             className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2"
           >
-            <DockItem label="Leads" icon={<TrendingUp className="h-4 w-4" />} active />
+            <DockItem
+              label="Leads"
+              icon={<TrendingUp className="h-4 w-4" />}
+              active
+              badge={pendingCount}
+              onClick={() => setLeadsSheetOpen(true)}
+            />
             <Link
               to="/vendor/shop"
               className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
@@ -453,6 +462,7 @@ function VendorDashboard() {
         </div>
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
+      <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
     </div>
   );
 }
@@ -613,11 +623,16 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
   );
 }
 
-function DockItem({ label, icon, active }: { label: string; icon: React.ReactNode; active?: boolean }) {
+function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
   return (
-    <button className="flex flex-col items-center gap-0.5 px-3 py-1">
-      <span className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+    <button onClick={onClick} className="relative flex flex-col items-center gap-0.5 px-3 py-1 active:scale-95 transition">
+      <span className={`relative h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {icon}
+        {badge && badge > 0 ? (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
       </span>
       <span className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
         {label}
