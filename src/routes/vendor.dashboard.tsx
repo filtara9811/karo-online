@@ -30,6 +30,8 @@ import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
+import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
+
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -92,16 +94,18 @@ function VendorDashboard() {
       .then(({ data }) => setVendor(data as any));
   }, [user]);
 
-  // Load REAL leads for this vendor: notified or already accepted by them
+  // Load REAL leads for this vendor: only the ones the vendor has STARTED WORK on.
+  // (Auto-accept sets vendor_started_at = now() in accept_lead; manual must press "Start Work")
   useEffect(() => {
     if (!user) { setLoadingLeads(false); return; }
     let cancelled = false;
     const load = async () => {
       const { data: notifs } = await supabase
         .from("lead_notifications")
-        .select("lead_id, status, created_at")
+        .select("lead_id, status, created_at, vendor_started_at")
         .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false })
+        .not("vendor_started_at", "is", null)
+        .order("vendor_started_at", { ascending: false })
         .limit(50);
       const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
       if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
@@ -133,12 +137,10 @@ function VendorDashboard() {
         const customer = customerMap.get(r.customer_id);
         const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
         const nstatus = notifStatusMap.get(r.id);
-        let st: LeadStatus = "new";
-        let pct = 10;
-        if (r.status === "completed" && accepted) { st = "success"; pct = 100; }
-        else if (accepted) { st = "process"; pct = 55; }
-        else if (nstatus === "rejected") { st = "rejected"; pct = 0; }
-        else { st = "new"; pct = 25; }
+        let st: LeadStatus = "process";
+        if (r.status === "completed" && accepted) st = "success";
+        else if (accepted) st = "process";
+        else if (nstatus === "rejected") st = "rejected";
         const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
         return {
           id: r.id,
@@ -156,11 +158,11 @@ function VendorDashboard() {
           status: st,
           time: timeAgo(r.created_at),
           createdAtIso: r.created_at,
-          progressPct: pct,
+          progressPct: st === "success" ? 100 : 55,
           note: r.note ?? "",
           timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
         };
-      }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
+      });
 
       setLeads(mapped);
       setLoadingLeads(false);
@@ -172,7 +174,8 @@ function VendorDashboard() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, vendor]);
+
 
   const toggleAutoAccept = async () => {
     if (!user || savingAuto) return;
@@ -200,6 +203,9 @@ function VendorDashboard() {
     const action = leads.filter((l) => l.status === "new").length;
     return { total, success, process, rejected, action };
   }, [leads]);
+
+  const unreadByLead = useLeadUnreadCounts(leads.map((l) => l.id));
+
 
   const acceptLead = async (id: string) => {
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
@@ -421,13 +427,14 @@ function VendorDashboard() {
                 <LeadCard
                   key={lead.id}
                   lead={lead}
-                  onAccept={() => acceptLead(lead.id)}
+                  unread={unreadByLead[lead.id] ?? 0}
                   onOpen={() => setDetailLeadId(lead.id)}
                 />
               ))}
             </div>
           </>
         ) : (
+
           <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
             <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
             <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
@@ -541,31 +548,31 @@ function formatLiveDate(iso?: string): string {
   return `${day} ${mon} ${yr}  ${h}:${m} ${ap}`;
 }
 
-function ProgressRing({ pct, status }: { pct: number; status: LeadStatus }) {
-  const r = 16, c = 2 * Math.PI * r;
-  const off = c - (Math.max(0, Math.min(100, pct)) / 100) * c;
-  const color =
-    status === "success" ? "#15803d" :
-    status === "rejected" ? "#b91c1c" :
-    status === "process" ? "#15803d" : "#d4af37";
-  return (
-    <div className="relative h-10 w-10 flex-shrink-0">
-      <svg viewBox="0 0 40 40" className="h-10 w-10 -rotate-90">
-        <circle cx="20" cy="20" r={r} stroke="#e5e7eb" strokeWidth="3" fill="none" />
-        <circle cx="20" cy="20" r={r} stroke={color} strokeWidth="3" fill="none"
-          strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" />
-      </svg>
-      <span className="absolute inset-0 grid place-items-center text-[8px] font-bold text-slate-700">{pct}%</span>
-    </div>
-  );
+// Live timer "Xm Ys ago" that updates every second
+function useLiveAgo(iso?: string): string {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!iso) return "";
+  const diff = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
+  if (diff < 60) return `${diff}s ago`;
+  const m = Math.floor(diff / 60);
+  const s = diff % 60;
+  if (m < 60) return `${m}m ${s.toString().padStart(2, "0")}s ago`;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  if (h < 24) return `${h}h ${mm}m ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h ago`;
 }
 
-function LeadCard({ lead, onAccept, onOpen }: { lead: Lead; onAccept: () => void; onOpen: () => void }) {
+function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen: () => void }) {
   const st = STATUS_META[lead.status];
   const avatar = lead.avatarUrl;
   const initial = lead.name.charAt(0).toUpperCase();
-  const isLocked = lead.status === "new";
-  const pct = lead.progressPct ?? 25;
+  const live = useLiveAgo(lead.createdAtIso);
 
   const statusPillCls =
     lead.status === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
@@ -573,51 +580,74 @@ function LeadCard({ lead, onAccept, onOpen }: { lead: Lead; onAccept: () => void
     lead.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-300" :
     "bg-amber-50 text-amber-800 border-amber-300";
 
+  const area =
+    lead.address ||
+    (lead.distanceKm != null ? `${lead.distanceKm} km away` : "Location pending");
+
   return (
     <article
       className="rounded-3xl bg-white overflow-hidden shadow-[0_6px_18px_-8px_rgba(15,23,42,0.18)]"
       style={{ border: "1px solid rgba(212,175,55,0.35)" }}
     >
+      {/* ===== Centered Lead ID ribbon ===== */}
+      <div className="flex items-center justify-center pt-2.5 pb-1">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[color:oklch(0.97_0.05_85)] border border-[color:oklch(0.78_0.14_82/0.45)] text-[10px] font-bold text-[color:oklch(0.30_0.05_85)] tracking-wider">
+          LEAD&nbsp;ID
+          <span className="font-mono text-[color:oklch(0.20_0.01_260)]">{lead.leadCode}</span>
+        </span>
+      </div>
+
       <button
         type="button"
-        onClick={() => { if (!isLocked) onOpen(); }}
-        aria-disabled={isLocked}
-        className={`block w-full text-left ${isLocked ? "cursor-not-allowed select-none" : "active:scale-[0.99] transition"}`}
+        onClick={onOpen}
+        className="block w-full text-left active:scale-[0.99] transition"
       >
-        {/* ===== HEAD ROW: customer + lead id + status pill ===== */}
-        <div className="px-3.5 pt-3 pb-2 flex items-start gap-2.5">
-          <span className="h-11 w-11 rounded-full overflow-hidden grid place-items-center font-display text-sm font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3] border border-white shadow-sm">
+        {/* ===== HEAD ROW: avatar + name + area + live timer + status pill ===== */}
+        <div className="px-3.5 pt-1 pb-2 flex items-start gap-2.5">
+          <span className="h-12 w-12 rounded-full overflow-hidden grid place-items-center font-display text-base font-bold text-white flex-shrink-0 shadow-sm border-2 border-white"
+            style={{ background: "linear-gradient(135deg, #d4af37 0%, #b8860b 100%)" }}>
             {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
           </span>
           <div className="flex-1 min-w-0">
             <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">{lead.name}</p>
-            <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] underline underline-offset-2">Customer | details</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">{formatLiveDate(lead.createdAtIso) || lead.time}</p>
+            <p className="text-[11px] text-slate-600 mt-0.5 truncate flex items-center gap-1">
+              <span className="text-[10px]">📍</span>
+              <span className="truncate">{area}</span>
+            </p>
+            <p className="text-[10px] text-amber-700 font-bold mt-0.5 tabular-nums">⏱ {live}</p>
           </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <span className="text-[9px] text-slate-500">Lead id - <span className="font-mono font-semibold text-slate-700">{lead.leadCode}</span></span>
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold ${statusPillCls}`}>
-              <span className="relative h-2 w-2">
-                <span className="absolute inset-0 rounded-full bg-current opacity-30 animate-ping" />
-                <span className="absolute inset-0 rounded-full bg-current" />
-              </span>
-              <span className="flex flex-col leading-tight">
-                <span>{st.label}</span>
-                <span className="text-[8px] font-medium opacity-80 underline underline-offset-2">Live status update</span>
-              </span>
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold flex-shrink-0 ${statusPillCls}`}>
+            <span className="relative h-2 w-2">
+              <span className="absolute inset-0 rounded-full bg-current opacity-30 animate-ping" />
+              <span className="absolute inset-0 rounded-full bg-current" />
             </span>
-          </div>
+            <span className="flex flex-col leading-tight">
+              <span>{st.label}</span>
+              <span className="text-[8px] font-medium opacity-80 underline underline-offset-2">Live</span>
+            </span>
+          </span>
         </div>
 
-        {/* ===== PRODUCT CARD (inner) ===== */}
+        {/* ===== PRODUCT CARD (inner) — image + name + note ===== */}
         <div className="mx-3 mb-2 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 flex items-center gap-3 relative">
+          <div className="relative h-16 w-16 rounded-xl overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-[#eef0f3] grid place-items-center">
+            {lead.productImage ? (
+              <img src={lead.productImage} alt={lead.service} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-bold text-slate-400 px-1 text-center leading-tight">{lead.service.split(" ")[0]}</span>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">
               {lead.service}
             </p>
-            <p className="text-[10px] text-slate-500 italic mt-0.5 truncate">
-              {lead.note ? lead.note : "Good and best service"}
-            </p>
+            {lead.note ? (
+              <p className="text-[11px] text-slate-600 italic mt-1 line-clamp-2 leading-snug">
+                “{lead.note}”
+              </p>
+            ) : (
+              <p className="text-[10px] text-slate-400 italic mt-1">No customer note</p>
+            )}
             <div className="mt-1.5 flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-[10px] font-bold text-amber-800">
                 ★ {lead.rating ?? 4.9}
@@ -629,49 +659,36 @@ function LeadCard({ lead, onAccept, onOpen }: { lead: Lead; onAccept: () => void
               )}
             </div>
           </div>
-          <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-[#eef0f3] grid place-items-center">
-            {lead.productImage ? (
-              <img src={lead.productImage} alt={lead.service} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-[10px] font-bold text-slate-400 px-1 text-center leading-tight">{lead.service.split(" ")[0]}</span>
-            )}
-          </div>
-          <div className="absolute -bottom-1 -right-1">
-            <ProgressRing pct={pct} status={lead.status} />
-          </div>
         </div>
       </button>
 
-      {/* ===== Action bar ===== */}
+      {/* ===== Action bar — Call + Chat (with unread badge) ===== */}
       <div className="flex items-stretch border-t border-slate-200/70">
-        {isLocked ? (
-          <button
-            onClick={onAccept}
-            className="btn-3d flex-1 py-2.5 grid place-items-center font-display font-bold text-sm text-[color:oklch(0.20_0.01_260)] active:scale-[0.97]"
-            style={{ background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 50%, #a8acb3 100%)" }}
-          >
-            ✓ Accept Lead
-          </button>
-        ) : (
-          <button disabled className="flex-1 py-2.5 text-sm font-display font-bold text-[color:oklch(0.55_0.10_82)] bg-[color:oklch(0.97_0.02_85)]">
-            {st.label}
-          </button>
-        )}
-        <a href={`tel:${lead.phone}`} aria-label="Call" className="px-4 grid place-items-center border-l border-slate-200/70 active:scale-95">
+        <div className="flex-1 py-2.5 grid place-items-center text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] tracking-wider uppercase">
+          {st.label}
+        </div>
+        <a href={`tel:${lead.phone}`} aria-label="Call" className="px-5 grid place-items-center border-l border-slate-200/70 active:scale-95">
           <Phone className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
         </a>
         <Link
           to="/vendor/chat"
           search={{ leadId: lead.id } as never}
           aria-label="Open chat"
-          className="px-4 grid place-items-center border-l border-slate-200/70 active:scale-95"
+          className="relative px-5 grid place-items-center border-l border-slate-200/70 active:scale-95"
         >
           <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+          {unread > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
         </Link>
       </div>
     </article>
   );
 }
+
+
 
 
 function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
