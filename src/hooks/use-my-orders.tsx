@@ -157,8 +157,15 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
         });
       }
       const lm = lastMsgByLead.get(l.id as string);
+      const firstItemId = ((l.item_ids ?? []) as string[])[0];
+      const productImage =
+        (firstItemId && itemImageMap.get(firstItemId)) ||
+        (l.sub_category_id && itemImageMap.get(l.sub_category_id as string)) ||
+        ((l.images ?? []) as string[])[0] ||
+        null;
+      const idStr = l.id as string;
       const order: OrderItem = {
-        id: l.id as string,
+        id: idStr,
         vendorId: vid,
         service: (l.sub_category_name as string) || "Service",
         source: mapSource(l.source as string),
@@ -166,7 +173,9 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
         history: [{ status: "placed", at: fmtAt(l.created_at as string) }],
         lastMsg: lm?.body || (l.note as string) || "Tap to chat",
         lastAt: fmtAt((lm?.at as string) || (l.updated_at as string)),
-        unread: unreadByLead.get(l.id as string) ?? 0,
+        unread: unreadByLead.get(idStr) ?? 0,
+        productImage,
+        shortCode: idStr.slice(-6).toUpperCase(),
       };
       grouped.get(vid)!.orders.push(order);
     }
