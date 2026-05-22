@@ -428,7 +428,13 @@ function VendorDashboard() {
           <div
             className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2"
           >
-            <DockItem label="Leads" icon={<TrendingUp className="h-4 w-4" />} active />
+            <DockItem
+              label="Leads"
+              icon={<TrendingUp className="h-4 w-4" />}
+              active
+              badge={pendingCount}
+              onClick={() => setLeadsSheetOpen(true)}
+            />
             <Link
               to="/vendor/shop"
               className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
