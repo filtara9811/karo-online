@@ -132,6 +132,30 @@ function VendorDashboard() {
           .in("id", subIds);
         (cats ?? []).forEach((c: any) => subImageMap.set(c.id, c.image_url ?? null));
       }
+
+      // Fetch catalog items (name, image) for ALL referenced item_ids across leads
+      const allItemIds = Array.from(
+        new Set(
+          (rows ?? []).flatMap((r: any) => (Array.isArray(r.item_ids) ? r.item_ids : [])),
+        ),
+      ) as string[];
+      const itemMap = new Map<string, { name: string; image: string | null }>();
+      const priceMap = new Map<string, { price_min: number | null; price_max: number | null }>();
+      if (allItemIds.length) {
+        const [{ data: items }, { data: mappings }] = await Promise.all([
+          supabase.from("catalog_items").select("id, name, image_url").in("id", allItemIds),
+          supabase
+            .from("vendor_item_mappings")
+            .select("item_id, price_min, price_max")
+            .eq("vendor_id", user.id)
+            .in("item_id", allItemIds),
+        ]);
+        (items ?? []).forEach((it: any) => itemMap.set(it.id, { name: it.name, image: it.image_url ?? null }));
+        (mappings ?? []).forEach((m: any) =>
+          priceMap.set(m.item_id, { price_min: m.price_min, price_max: m.price_max }),
+        );
+      }
+
       const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
       const mapped: Lead[] = (rows ?? []).map((r: any) => {
         const customer = customerMap.get(r.customer_id);
@@ -142,13 +166,42 @@ function VendorDashboard() {
         else if (accepted) st = "process";
         else if (nstatus === "rejected") st = "rejected";
         const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
+
+        const itemIds: string[] = Array.isArray(r.item_ids) ? r.item_ids : [];
+        const itemNames: string[] = Array.isArray(r.item_names) ? r.item_names : [];
+        const leadImages: string[] = Array.isArray(r.images) ? r.images : [];
+        const items = itemIds.map((iid, idx) => {
+          const info = itemMap.get(iid);
+          const pr = priceMap.get(iid);
+          const amt = Number(pr?.price_max ?? pr?.price_min ?? 0);
+          return {
+            id: iid,
+            name: info?.name || itemNames[idx] || r.sub_category_name || "Item",
+            image: info?.image ?? leadImages[idx] ?? subImageMap.get(r.sub_category_id) ?? null,
+            amount: amt,
+            priceMin: pr?.price_min ?? null,
+            priceMax: pr?.price_max ?? null,
+          };
+        });
+        // Fallback: if no item_ids, create one synthetic item from sub_category
+        if (items.length === 0) {
+          items.push({
+            id: r.id,
+            name: r.sub_category_name ?? "Service",
+            image: leadImages[0] ?? subImageMap.get(r.sub_category_id) ?? null,
+            amount: Number(r.lead_price_inr ?? 0),
+            priceMin: null,
+            priceMax: null,
+          });
+        }
+
         return {
           id: r.id,
           leadCode: String(r.id).slice(0, 5).toUpperCase(),
           name: customer?.name || r.customer_name || "Customer",
           phone: customer?.phone || r.customer_phone || "",
           avatarUrl: customer?.avatar_url ?? null,
-          productImage: subImageMap.get(r.sub_category_id) ?? null,
+          productImage: items[0]?.image ?? null,
           distanceKm: distanceKm(vendor, { lat: r.lat, lng: r.lng }),
           address: r.address || customer?.address || undefined,
           service: r.sub_category_name ?? "Service",
@@ -160,9 +213,11 @@ function VendorDashboard() {
           createdAtIso: r.created_at,
           progressPct: st === "success" ? 100 : 55,
           note: r.note ?? "",
+          items,
           timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
         };
       });
+
 
       setLeads(mapped);
       setLoadingLeads(false);
