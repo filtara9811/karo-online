@@ -213,30 +213,46 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 280 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0.08, bottom: 0.35 }}
+            onDragEnd={(_: any, info: PanInfo) => {
+              if (info.offset.y > 140 || info.velocity.y > 800) onClose();
+            }}
             className="fixed left-0 right-0 bottom-0 z-[91] flex flex-col"
-            style={{ height: "82vh" }}
+            style={{ height: "90vh" }}
           >
-            {/* ===== Top: avatar strip on dark band ===== */}
-            <div className="relative bg-[#0a0a0c] pt-3 pb-7 px-4">
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+            {/* Drag handle */}
+            <div className="grid place-items-center pt-2 pb-1 cursor-grab active:cursor-grabbing">
+              <span className="block h-1.5 w-12 rounded-full bg-white/40" />
+            </div>
+
+            {/* ===== Top: avatar strip — transparent so overlay gray shows through ===== */}
+            <div className="relative pt-1 pb-3 px-4">
+              <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide">
                 {avatars.map((l) => {
                   const active = l.id === lead.id;
                   return (
                     <button
                       key={l.id}
                       onClick={() => onSwitchLead?.(l.id)}
-                      className="relative flex-shrink-0 active:scale-90 transition"
+                      className="relative flex-shrink-0 flex flex-col items-center gap-1 active:scale-90 transition"
                       aria-label={l.name}
                     >
-                      <span className={`block h-14 w-14 rounded-full overflow-hidden border-2 ${active ? "border-amber-400 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.65)]" : "border-white/30"}`}>
+                      <span className={`block h-11 w-11 rounded-full overflow-hidden border-2 ${active ? "border-amber-400 shadow-[0_4px_14px_-2px_rgba(217,119,6,0.65)]" : "border-white/30"}`}>
                         {l.avatarUrl ? (
                           <img src={l.avatarUrl} alt="" className="h-full w-full object-cover" />
                         ) : (
-                          <span className="grid place-items-center h-full w-full bg-gradient-to-br from-amber-300 to-amber-500 text-white font-display font-bold">
+                          <span className="grid place-items-center h-full w-full bg-gradient-to-br from-amber-300 to-amber-500 text-white font-display font-bold text-sm">
                             {l.name.charAt(0).toUpperCase()}
                           </span>
                         )}
                       </span>
+                      {active && (
+                        <span className="text-[10px] text-white font-medium max-w-[68px] truncate drop-shadow">
+                          {l.name}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -244,7 +260,7 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
             </div>
 
             {/* ===== Body sheet ===== */}
-            <div className="relative flex-1 -mt-5 rounded-t-3xl bg-[#f7f3ea] overflow-hidden flex flex-col">
+            <div className="relative flex-1 rounded-t-3xl bg-[#f7f3ea] overflow-hidden flex flex-col">
               {/* Close X */}
               <button
                 onClick={onClose}
@@ -287,7 +303,7 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <span className="text-[10px] text-slate-500">
-                        Leds id - <span className="font-mono font-bold text-slate-700">{lead.leadCode}</span>
+                        Lead id - <span className="font-mono font-bold text-slate-700">{lead.leadCode}</span>
                       </span>
                       <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50">
                         <ProgressRing pct={lead.progressPct ?? 25} />
@@ -354,17 +370,17 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
                   </div>
                 </section>
 
-                {/* ===== Tabs: Live progress / Chat ===== */}
-                <div className="mx-3 mt-3 grid grid-cols-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                {/* ===== Tabs: Live progress / Chat (thinner) ===== */}
+                <div className="mx-3 mt-3 grid grid-cols-2 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
                   <button
                     onClick={() => setTab("progress")}
-                    className={`py-2 text-[12px] font-display font-bold ${tab === "progress" ? "bg-[#5c2018] text-white" : "bg-white text-slate-600"}`}
+                    className={`py-1.5 text-[12px] font-display font-bold ${tab === "progress" ? "bg-[#5c2018] text-white" : "bg-white text-slate-600"}`}
                   >
                     Live progress
                   </button>
                   <button
                     onClick={() => setTab("chat")}
-                    className={`py-2 text-[12px] font-display font-bold ${tab === "chat" ? "bg-[#5c2018] text-white" : "bg-white text-slate-600"}`}
+                    className={`py-1.5 text-[12px] font-display font-bold ${tab === "chat" ? "bg-[#5c2018] text-white" : "bg-white text-slate-600"}`}
                   >
                     Chat 💬
                   </button>
@@ -373,11 +389,11 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
                 {/* ===== Live Progress timeline ===== */}
                 {tab === "progress" && (
                   <section className="mx-3 mt-3">
-                    <h3 className="font-display font-bold text-lg text-amber-900 underline underline-offset-4 mb-3 px-1">
+                    <h3 className="font-display font-bold text-base text-amber-900 underline underline-offset-4 mb-2 px-1">
                       Live progress
                     </h3>
-                    <ol className="relative pl-12 space-y-3 before:content-[''] before:absolute before:left-[26px] before:top-3 before:bottom-6 before:border-l-2 before:border-dashed before:border-slate-300">
-                      {STEPS.map((s, idx) => {
+                    <ol className="relative pl-12 space-y-2 before:content-[''] before:absolute before:left-[26px] before:top-3 before:bottom-6 before:border-l-2 before:border-dashed before:border-slate-300">
+                      {[...STEPS, ...customSteps.map((c) => ({ key: c.key, label: c.label, icon: <Pencil className="h-3.5 w-3.5" />, color: "#5c2018" }))].map((s, idx) => {
                         const isReached = reached.has(s.key);
                         const evt = events.find((e) => e.status_key === s.key);
                         const isNext = !isReached && isAccepted &&
@@ -386,81 +402,138 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
                         return (
                           <li key={s.key} className="relative">
                             <span
-                              className={`absolute -left-12 top-1 h-10 w-10 rounded-full grid place-items-center border-2 ${
+                              className={`absolute -left-12 top-1 h-9 w-9 rounded-full grid place-items-center border-2 ${
                                 isReached
                                   ? "bg-emerald-500 border-white text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
                                   : "bg-slate-700 border-white text-white/90"
                               }`}
                             >
-                              {NodeIcon ? <NodeIcon className="h-4 w-4" /> : s.icon}
+                              {NodeIcon ? <NodeIcon className="h-3.5 w-3.5" /> : s.icon}
                             </span>
-                            <div className="flex items-stretch gap-2">
-                              <button
-                                disabled={!isAccepted || isReached || busyKey === s.key}
-                                onClick={() => sendStatus(s.key)}
-                                className="flex-1 flex items-center justify-between gap-2 px-4 py-3 rounded-2xl shadow-md text-left disabled:opacity-60 active:scale-[0.98] transition"
-                                style={{
-                                  background: isReached
-                                    ? "linear-gradient(90deg, #d1fae5, #ffffff)"
-                                    : isNext
-                                      ? "linear-gradient(90deg, #fef3c7, #ffffff)"
-                                      : "linear-gradient(90deg, #f5f5f5, #ffffff)",
-                                  border: "1px solid rgba(0,0,0,0.06)",
-                                }}
-                              >
-                                <span className={`font-display font-bold text-sm underline underline-offset-2 ${isReached ? "text-emerald-800" : "text-slate-800"}`}>
-                                  {busyKey === s.key ? (
-                                    <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Updating…</span>
-                                  ) : (
-                                    `Update ${s.label}`
-                                  )}
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-slate-400" />
-                              </button>
-                              <button
-                                onClick={() => setTab("chat")}
-                                aria-label="Open chat for this step"
-                                className="w-11 grid place-items-center rounded-2xl bg-white border border-slate-200 shadow-sm active:scale-90"
-                              >
-                                <MessageCircle className="h-4 w-4 text-amber-700" />
-                              </button>
-                            </div>
+                            <button
+                              disabled={!isAccepted || isReached || busyKey === s.key}
+                              onClick={() => {
+                                setComposeText("");
+                                setComposeLink("");
+                                setComposeFor({ key: s.key, label: s.label });
+                              }}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl shadow-sm text-left disabled:opacity-60 active:scale-[0.98] transition"
+                              style={{
+                                background: isReached
+                                  ? "linear-gradient(90deg, #d1fae5, #ffffff)"
+                                  : isNext
+                                    ? "linear-gradient(90deg, #fef3c7, #ffffff)"
+                                    : "linear-gradient(90deg, #f5f5f5, #ffffff)",
+                                border: "1px solid rgba(0,0,0,0.06)",
+                              }}
+                            >
+                              <span className={`font-display font-bold text-[13px] ${isReached ? "text-emerald-800" : "text-slate-800"}`}>
+                                {busyKey === s.key ? (
+                                  <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Updating…</span>
+                                ) : (
+                                  `Update ${s.label}`
+                                )}
+                              </span>
+                              <Plus className="h-3.5 w-3.5 text-slate-400" />
+                            </button>
                             {evt && (
-                              <p className="mt-1 ml-1 text-[10px] text-slate-500">{new Date(evt.created_at).toLocaleTimeString()}</p>
+                              <p className="mt-0.5 ml-1 text-[10px] text-slate-500">{new Date(evt.created_at).toLocaleTimeString()}</p>
                             )}
                           </li>
                         );
                       })}
                       <li className="relative">
-                        <span className="absolute -left-12 top-1 h-10 w-10 rounded-full grid place-items-center bg-slate-900 text-white shadow">
+                        <button
+                          onClick={() => {
+                            const label = window.prompt("Naya step ka naam (e.g. Payment requested)");
+                            if (!label?.trim()) return;
+                            const key = `custom_${Date.now()}`;
+                            persistSteps([...customSteps, { key, label: label.trim() }]);
+                          }}
+                          className="absolute -left-12 top-1 h-9 w-9 rounded-full grid place-items-center bg-slate-900 text-white shadow active:scale-90"
+                          aria-label="Add custom step"
+                        >
                           <Plus className="h-4 w-4" />
-                        </span>
-                        <p className="text-[11px] text-slate-500 italic pt-2">Customer ko instant notification jaayegi 🔔</p>
+                        </button>
+                        <p className="text-[11px] text-slate-500 italic pt-2">Apna step add karein — customer ko link/payment bhi bhej sakte ho 🔔</p>
                       </li>
                     </ol>
                   </section>
                 )}
 
-                {/* ===== Chat tab — per-lead/per-product thread ===== */}
+                {/* ===== Chat tab — renders in the same area as progress ===== */}
                 {tab === "chat" && peer && real && (
-                  <div className="mt-3 h-[55vh] relative bg-white border-t border-slate-200">
+                  <section className="mx-3 mt-3 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden" style={{ height: "48vh" }}>
                     <LeadChatThread
                       leadId={real.id}
                       peer={peer}
                       myRole="vendor"
                       onBack={() => setTab("progress")}
                     />
-                    <button
-                      onClick={() => setTab("progress")}
-                      className="absolute top-2 left-2 z-30 h-8 w-8 rounded-full bg-white border border-slate-200 grid place-items-center shadow active:scale-90"
-                      aria-label="Back to progress"
-                    >
-                      <ArrowLeft className="h-4 w-4 text-slate-700" />
-                    </button>
-                  </div>
+                  </section>
                 )}
               </div>
             </div>
+
+            {/* ===== Compose / Asset bottom sheet for a step ===== */}
+            <AnimatePresence>
+              {composeFor && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setComposeFor(null)}
+                    className="absolute inset-0 bg-black/40 z-20"
+                  />
+                  <motion.div
+                    initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 30, stiffness: 280 }}
+                    className="absolute left-0 right-0 bottom-0 z-30 bg-white rounded-t-3xl p-4 shadow-2xl"
+                  >
+                    <div className="grid place-items-center pb-2">
+                      <span className="block h-1.5 w-12 rounded-full bg-slate-300" />
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-display font-bold text-slate-900 text-base">
+                        Update: <span className="text-[#5c2018]">{composeFor.label}</span>
+                      </p>
+                      <button onClick={() => setComposeFor(null)} className="h-7 w-7 rounded-full bg-slate-100 grid place-items-center">
+                        <X className="h-3.5 w-3.5 text-slate-600" />
+                      </button>
+                    </div>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Message (asset)</label>
+                    <textarea
+                      value={composeText}
+                      onChange={(e) => setComposeText(e.target.value)}
+                      placeholder="Example: Aapka payment ka request — link ke through bharein"
+                      rows={3}
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
+                    />
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-3 block">Link (optional)</label>
+                    <div className="mt-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3">
+                      <LinkIcon className="h-4 w-4 text-slate-400" />
+                      <input
+                        value={composeLink}
+                        onChange={(e) => setComposeLink(e.target.value)}
+                        placeholder="https://pay.example/..."
+                        className="flex-1 py-2 text-sm focus:outline-none bg-transparent"
+                      />
+                    </div>
+                    <button
+                      disabled={busyKey === composeFor.key}
+                      onClick={async () => {
+                        const key = composeFor.key;
+                        await sendStatus(key, { message: composeText, link: composeLink });
+                        setComposeFor(null);
+                      }}
+                      className="mt-4 w-full py-3 rounded-xl bg-[#5c2018] text-white font-display font-bold text-sm shadow-lg active:scale-[0.98] disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                    >
+                      {busyKey === composeFor.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Send update to customer
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </motion.div>
         </>
       )}
