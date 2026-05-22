@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Download, CheckCircle2, Smartphone, ArrowLeft, Share2 } from "lucide-react";
 
 export const Route = createFileRoute("/vendor/install")({
@@ -8,12 +9,11 @@ export const Route = createFileRoute("/vendor/install")({
       { title: "Install Vendor App — Karo Online" },
       { name: "description", content: "Install the Karo Vendor app on your phone — separate icon, dedicated vendor dashboard." },
       { name: "theme-color", content: "#0EA5E9" },
+      { name: "apple-mobile-web-app-title", content: "Vendor" },
+      { name: "application-name", content: "Karo Vendor" },
     ],
-    links: [
-      // IMPORTANT: this page advertises the VENDOR manifest so the browser
-      // installs a separate app (different icon + start_url=/vendor/dashboard).
-      { rel: "manifest", href: "/manifest-vendor.json" },
-    ],
+    // Manifest link is swapped in via useEffect (root manifest is removed)
+    // so Chrome sees only the Vendor manifest while on this page.
   }),
   component: VendorInstallPage,
 });
@@ -29,6 +29,9 @@ function VendorInstallPage() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showManualHelp, setShowManualHelp] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const ua = navigator.userAgent || "";
@@ -39,38 +42,81 @@ function VendorInstallPage() {
         window.navigator.standalone === true,
     );
 
-    const manifestLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="manifest"]'));
-    const previousManifests = manifestLinks.map((link) => link.href);
-    const primaryManifest = manifestLinks[0] ?? document.createElement("link");
-    primaryManifest.rel = "manifest";
-    primaryManifest.href = "/manifest-vendor.json";
-    if (!manifestLinks[0]) document.head.appendChild(primaryManifest);
-    manifestLinks.slice(1).forEach((link) => link.remove());
+    // Remove ALL existing manifest links and inject ONLY the vendor manifest,
+    // so Chrome installs a fresh app with vendor icon + start_url.
+    const existing = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="manifest"]'));
+    const previousHref = existing[0]?.href ?? "/manifest.json";
+    existing.forEach((l) => l.remove());
+    const vendorLink = document.createElement("link");
+    vendorLink.rel = "manifest";
+    vendorLink.href = "/manifest-vendor.json";
+    vendorLink.id = "vendor-manifest-link";
+    document.head.appendChild(vendorLink);
 
     const onBIP = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BIPEvent);
     };
-    const onInstalled = () => setInstalled(true);
+    const onInstalled = () => {
+      setInstalled(true);
+      setDownloading(false);
+      setProgress(100);
+    };
     window.addEventListener("beforeinstallprompt", onBIP);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
       window.removeEventListener("beforeinstallprompt", onBIP);
       window.removeEventListener("appinstalled", onInstalled);
-      const current = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-      if (current && previousManifests[0]) current.href = previousManifests[0];
+      // Restore root manifest when leaving the page.
+      document.getElementById("vendor-manifest-link")?.remove();
+      const restore = document.createElement("link");
+      restore.rel = "manifest";
+      restore.href = previousHref;
+      document.head.appendChild(restore);
+      if (progressTimer.current) clearInterval(progressTimer.current);
     };
   }, []);
 
+  const startDownloadAnimation = () => {
+    setDownloading(true);
+    setProgress(0);
+    if (progressTimer.current) clearInterval(progressTimer.current);
+    progressTimer.current = setInterval(() => {
+      setProgress((p) => {
+        const next = p + Math.random() * 12 + 3;
+        if (next >= 95) {
+          if (progressTimer.current) clearInterval(progressTimer.current);
+          return 95;
+        }
+        return next;
+      });
+    }, 180);
+  };
+
   const install = async () => {
+    startDownloadAnimation();
     if (!deferred) {
-      setShowManualHelp(true);
+      // No native prompt → keep animation for a moment then show manual help
+      setTimeout(() => {
+        setDownloading(false);
+        setShowManualHelp(true);
+      }, 1600);
       return;
     }
-    await deferred.prompt();
-    const choice = await deferred.userChoice;
-    if (choice.outcome === "accepted") setInstalled(true);
-    setDeferred(null);
+    try {
+      await deferred.prompt();
+      const choice = await deferred.userChoice;
+      if (choice.outcome === "accepted") {
+        setProgress(100);
+        setInstalled(true);
+      } else {
+        setDownloading(false);
+      }
+    } catch {
+      setDownloading(false);
+    } finally {
+      setDeferred(null);
+    }
   };
 
   return (
@@ -204,6 +250,57 @@ function VendorInstallPage() {
           </div>
         </div>
       )}
+
+      {/* Download animation overlay */}
+      <AnimatePresence>
+        {downloading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] grid place-items-center backdrop-blur-md"
+            style={{ background: "radial-gradient(120% 80% at 50% 0%, rgba(14,165,233,0.92), rgba(3,105,161,0.95))" }}
+          >
+            <div className="w-[82%] max-w-xs text-center text-white">
+              <motion.div
+                initial={{ scale: 0.6, y: -10 }}
+                animate={{ scale: [0.9, 1.05, 0.95, 1], y: [0, -6, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+                className="mx-auto mb-6 h-28 w-28 rounded-3xl bg-white grid place-items-center shadow-2xl"
+                style={{ boxShadow: "0 30px 60px -10px rgba(0,0,0,0.55), 0 0 0 6px rgba(255,212,0,0.45)" }}
+              >
+                <Download className="h-12 w-12 text-[#0EA5E9]" />
+              </motion.div>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-[#FFD400] mb-1">
+                Karo Vendor
+              </p>
+              <h3 className="text-xl font-extrabold mb-4">
+                {progress >= 100 ? "Installed!" : "Installing on home screen…"}
+              </h3>
+              <div className="h-2.5 w-full rounded-full bg-white/25 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg,#FFE066,#FFD400,#F59E0B)" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "easeOut", duration: 0.3 }}
+                />
+              </div>
+              <p className="mt-3 text-xs text-white/85 font-semibold">
+                {Math.min(100, Math.round(progress))}%
+              </p>
+              {progress >= 100 && (
+                <button
+                  onClick={() => setDownloading(false)}
+                  className="mt-5 px-5 py-2.5 rounded-xl text-[#0c2a3a] text-sm font-bold"
+                  style={{ background: "linear-gradient(180deg,#FFE066 0%,#FFD400 50%,#F59E0B 100%)" }}
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
