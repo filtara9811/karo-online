@@ -29,6 +29,7 @@ import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
+import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -77,6 +78,7 @@ function VendorDashboard() {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
@@ -416,7 +418,12 @@ function VendorDashboard() {
                 </div>
               )}
               {leads.map((lead) => (
-                <LeadCard key={lead.id} lead={lead} onAccept={() => acceptLead(lead.id)} />
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  onAccept={() => acceptLead(lead.id)}
+                  onOpen={() => setDetailLeadId(lead.id)}
+                />
               ))}
             </div>
           </>
@@ -484,6 +491,13 @@ function VendorDashboard() {
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorLeadDetailSheet
+        open={!!detailLeadId}
+        lead={leads.find((l) => l.id === detailLeadId) ?? null}
+        otherLeads={leads}
+        onClose={() => setDetailLeadId(null)}
+        onSwitchLead={(id) => setDetailLeadId(id)}
+      />
     </div>
   );
 }
