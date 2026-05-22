@@ -42,38 +42,81 @@ function VendorInstallPage() {
         window.navigator.standalone === true,
     );
 
-    const manifestLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="manifest"]'));
-    const previousManifests = manifestLinks.map((link) => link.href);
-    const primaryManifest = manifestLinks[0] ?? document.createElement("link");
-    primaryManifest.rel = "manifest";
-    primaryManifest.href = "/manifest-vendor.json";
-    if (!manifestLinks[0]) document.head.appendChild(primaryManifest);
-    manifestLinks.slice(1).forEach((link) => link.remove());
+    // Remove ALL existing manifest links and inject ONLY the vendor manifest,
+    // so Chrome installs a fresh app with vendor icon + start_url.
+    const existing = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="manifest"]'));
+    const previousHref = existing[0]?.href ?? "/manifest.json";
+    existing.forEach((l) => l.remove());
+    const vendorLink = document.createElement("link");
+    vendorLink.rel = "manifest";
+    vendorLink.href = "/manifest-vendor.json";
+    vendorLink.id = "vendor-manifest-link";
+    document.head.appendChild(vendorLink);
 
     const onBIP = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BIPEvent);
     };
-    const onInstalled = () => setInstalled(true);
+    const onInstalled = () => {
+      setInstalled(true);
+      setDownloading(false);
+      setProgress(100);
+    };
     window.addEventListener("beforeinstallprompt", onBIP);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
       window.removeEventListener("beforeinstallprompt", onBIP);
       window.removeEventListener("appinstalled", onInstalled);
-      const current = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-      if (current && previousManifests[0]) current.href = previousManifests[0];
+      // Restore root manifest when leaving the page.
+      document.getElementById("vendor-manifest-link")?.remove();
+      const restore = document.createElement("link");
+      restore.rel = "manifest";
+      restore.href = previousHref;
+      document.head.appendChild(restore);
+      if (progressTimer.current) clearInterval(progressTimer.current);
     };
   }, []);
 
+  const startDownloadAnimation = () => {
+    setDownloading(true);
+    setProgress(0);
+    if (progressTimer.current) clearInterval(progressTimer.current);
+    progressTimer.current = setInterval(() => {
+      setProgress((p) => {
+        const next = p + Math.random() * 12 + 3;
+        if (next >= 95) {
+          if (progressTimer.current) clearInterval(progressTimer.current);
+          return 95;
+        }
+        return next;
+      });
+    }, 180);
+  };
+
   const install = async () => {
+    startDownloadAnimation();
     if (!deferred) {
-      setShowManualHelp(true);
+      // No native prompt → keep animation for a moment then show manual help
+      setTimeout(() => {
+        setDownloading(false);
+        setShowManualHelp(true);
+      }, 1600);
       return;
     }
-    await deferred.prompt();
-    const choice = await deferred.userChoice;
-    if (choice.outcome === "accepted") setInstalled(true);
-    setDeferred(null);
+    try {
+      await deferred.prompt();
+      const choice = await deferred.userChoice;
+      if (choice.outcome === "accepted") {
+        setProgress(100);
+        setInstalled(true);
+      } else {
+        setDownloading(false);
+      }
+    } catch {
+      setDownloading(false);
+    } finally {
+      setDeferred(null);
+    }
   };
 
   return (
