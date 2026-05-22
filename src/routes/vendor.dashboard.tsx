@@ -29,6 +29,7 @@ import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
+import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -77,6 +78,7 @@ function VendorDashboard() {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
@@ -416,7 +418,12 @@ function VendorDashboard() {
                 </div>
               )}
               {leads.map((lead) => (
-                <LeadCard key={lead.id} lead={lead} onAccept={() => acceptLead(lead.id)} />
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  onAccept={() => acceptLead(lead.id)}
+                  onOpen={() => setDetailLeadId(lead.id)}
+                />
               ))}
             </div>
           </>
@@ -484,6 +491,13 @@ function VendorDashboard() {
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorLeadDetailSheet
+        open={!!detailLeadId}
+        lead={leads.find((l) => l.id === detailLeadId) ?? null}
+        otherLeads={leads}
+        onClose={() => setDetailLeadId(null)}
+        onSwitchLead={(id) => setDetailLeadId(id)}
+      />
     </div>
   );
 }
@@ -546,7 +560,7 @@ function ProgressRing({ pct, status }: { pct: number; status: LeadStatus }) {
   );
 }
 
-function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
+function LeadCard({ lead, onAccept, onOpen }: { lead: Lead; onAccept: () => void; onOpen: () => void }) {
   const st = STATUS_META[lead.status];
   const avatar = lead.avatarUrl;
   const initial = lead.name.charAt(0).toUpperCase();
@@ -559,17 +573,17 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
     lead.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-300" :
     "bg-amber-50 text-amber-800 border-amber-300";
 
-  const Wrapper: any = isLocked ? "div" : Link;
-  const wrapperProps: any = isLocked
-    ? { "aria-disabled": true, title: "Accept this lead to view full details", className: "block cursor-not-allowed select-none" }
-    : { to: "/vendor/lead/$id", params: { id: lead.id }, className: "block active:scale-[0.99] transition" };
-
   return (
     <article
       className="rounded-3xl bg-white overflow-hidden shadow-[0_6px_18px_-8px_rgba(15,23,42,0.18)]"
       style={{ border: "1px solid rgba(212,175,55,0.35)" }}
     >
-      <Wrapper {...wrapperProps}>
+      <button
+        type="button"
+        onClick={() => { if (!isLocked) onOpen(); }}
+        aria-disabled={isLocked}
+        className={`block w-full text-left ${isLocked ? "cursor-not-allowed select-none" : "active:scale-[0.99] transition"}`}
+      >
         {/* ===== HEAD ROW: customer + lead id + status pill ===== */}
         <div className="px-3.5 pt-3 pb-2 flex items-start gap-2.5">
           <span className="h-11 w-11 rounded-full overflow-hidden grid place-items-center font-display text-sm font-bold text-[color:oklch(0.20_0.01_260)] flex-shrink-0 bg-[#eef0f3] border border-white shadow-sm">
@@ -626,7 +640,7 @@ function LeadCard({ lead, onAccept }: { lead: Lead; onAccept: () => void }) {
             <ProgressRing pct={pct} status={lead.status} />
           </div>
         </div>
-      </Wrapper>
+      </button>
 
       {/* ===== Action bar ===== */}
       <div className="flex items-stretch border-t border-slate-200/70">
