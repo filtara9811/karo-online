@@ -462,6 +462,7 @@ function VendorDashboard() {
         </div>
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
+      <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
     </div>
   );
 }
