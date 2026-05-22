@@ -36,9 +36,10 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/referral", "/r/", "/privacy-policy", "/terms-and-conditions", "/refund-policy", "/shipping-policy"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin"];
-// Bottom service/product picker bar ONLY shows on these routes (home, quick, vendors).
-// Everywhere else it's hidden to reduce clutter.
-const SHOW_BOTTOM_BAR_ON = ["/", "/quick", "/vendors", "/home"];
+// Marketing/public website routes — render their own layout, no app chrome at all.
+const MARKETING_EXACT = new Set(["/", "/about", "/features", "/pricing", "/for-vendors", "/for-customers", "/download", "/contact"]);
+// Bottom service/product picker bar ONLY shows on these routes.
+const SHOW_BOTTOM_BAR_ON = ["/quick", "/vendors", "/home"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
@@ -50,9 +51,10 @@ export function AppShell() {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   useFcmToken();
-  const hideShell = HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
-  const hideTopHeader = HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
-  const showBottomBar = SHOW_BOTTOM_BAR_ON.includes(location.pathname);
+  const isMarketing = MARKETING_EXACT.has(location.pathname);
+  const hideShell = isMarketing || HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
+  const hideTopHeader = isMarketing || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
+  const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
   const isQuickRoute = location.pathname.startsWith("/quick");
 
@@ -69,10 +71,10 @@ export function AppShell() {
           <div className="flex-1">
             <Outlet />
           </div>
-          <SiteFooter />
+          {!isMarketing && <SiteFooter />}
         </div>
-        <VendorLeadAlerts />
-        <PermissionsGate />
+        {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && <PermissionsGate />}
       </AuthGate>
     );
   }
