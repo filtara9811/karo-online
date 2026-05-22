@@ -9,20 +9,26 @@ export type LeadEvent = {
 
 export type Lead = {
   id: string;
+  leadCode?: string;
   name: string;
   phone: string;
   avatarUrl?: string | null;
+  productImage?: string | null;
   distanceKm?: number | null;
   email?: string;
   address?: string;
   service: string;
   amount: number;
+  rating?: number;
   source: LeadSource;
   status: LeadStatus;
   time: string;
+  createdAtIso?: string;
+  progressPct?: number;
   note: string;
   timeline: LeadEvent[];
 };
+
 
 export const LEADS: Lead[] = [
   {
