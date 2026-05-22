@@ -111,7 +111,7 @@ function VendorDashboard() {
       if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
       const { data: rows } = await supabase
         .from("leads")
-        .select("id, customer_id, customer_name, customer_phone, sub_category_id, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng")
+        .select("id, customer_id, customer_name, customer_phone, sub_category_id, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng, item_ids, item_names, images")
         .in("id", ids);
       if (cancelled) return;
       const customerIds = Array.from(new Set((rows ?? []).map((r: any) => r.customer_id).filter(Boolean)));
