@@ -204,6 +204,9 @@ function VendorDashboard() {
     return { total, success, process, rejected, action };
   }, [leads]);
 
+  const unreadByLead = useLeadUnreadCounts(leads.map((l) => l.id));
+
+
   const acceptLead = async (id: string) => {
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       const { data, error } = await supabase.rpc("accept_lead", { _lead_id: id });
