@@ -28,6 +28,7 @@ import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
+import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
