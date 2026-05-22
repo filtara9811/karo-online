@@ -124,10 +124,6 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
     setCustomSteps(next);
     if (lead?.id) localStorage.setItem(`vendor:custom-steps:${lead.id}`, JSON.stringify(next));
   };
-      setTab("progress");
-      setShowContact(false);
-    }
-  }, [open, lead?.id]);
 
   useEffect(() => {
     if (!open || !lead) return;
