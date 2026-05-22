@@ -250,6 +250,57 @@ function VendorInstallPage() {
           </div>
         </div>
       )}
+
+      {/* Download animation overlay */}
+      <AnimatePresence>
+        {downloading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] grid place-items-center backdrop-blur-md"
+            style={{ background: "radial-gradient(120% 80% at 50% 0%, rgba(14,165,233,0.92), rgba(3,105,161,0.95))" }}
+          >
+            <div className="w-[82%] max-w-xs text-center text-white">
+              <motion.div
+                initial={{ scale: 0.6, y: -10 }}
+                animate={{ scale: [0.9, 1.05, 0.95, 1], y: [0, -6, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+                className="mx-auto mb-6 h-28 w-28 rounded-3xl bg-white grid place-items-center shadow-2xl"
+                style={{ boxShadow: "0 30px 60px -10px rgba(0,0,0,0.55), 0 0 0 6px rgba(255,212,0,0.45)" }}
+              >
+                <Download className="h-12 w-12 text-[#0EA5E9]" />
+              </motion.div>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-[#FFD400] mb-1">
+                Karo Vendor
+              </p>
+              <h3 className="text-xl font-extrabold mb-4">
+                {progress >= 100 ? "Installed!" : "Installing on home screen…"}
+              </h3>
+              <div className="h-2.5 w-full rounded-full bg-white/25 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg,#FFE066,#FFD400,#F59E0B)" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "easeOut", duration: 0.3 }}
+                />
+              </div>
+              <p className="mt-3 text-xs text-white/85 font-semibold">
+                {Math.min(100, Math.round(progress))}%
+              </p>
+              {progress >= 100 && (
+                <button
+                  onClick={() => setDownloading(false)}
+                  className="mt-5 px-5 py-2.5 rounded-xl text-[#0c2a3a] text-sm font-bold"
+                  style={{ background: "linear-gradient(180deg,#FFE066 0%,#FFD400 50%,#F59E0B 100%)" }}
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
