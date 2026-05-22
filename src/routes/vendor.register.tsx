@@ -240,8 +240,7 @@ function VendorRegister() {
     !!trade &&
     !!dealsIn &&
     businessName.trim().length > 1 &&
-    whatsapp.replace(/\D/g, "").length >= 10 &&
-    managerEmail.includes("@");
+    whatsapp.replace(/\D/g, "").length >= 10;
 
   const canNext = step === 0 ? step1Valid : false;
 
@@ -772,7 +771,7 @@ function Step1Business(p: Step1Props) {
   const showBusinessName = !!p.dealsIn;
   const showWhatsapp = p.businessName.trim().length > 1;
   const showEmail = p.whatsapp.replace(/\D/g, "").length >= 10;
-  const showReferral = p.managerEmail.includes("@");
+  const showReferral = false; // Removed — referral code field hata diya gaya
 
   return (
     <div className="space-y-1">
@@ -854,18 +853,7 @@ function Step1Business(p: Step1Props) {
         />
       )}
 
-      {showEmail && (
-        <Field
-          Icon={Mail}
-          label="Choice manager / email"
-          hint="Where leads & invoices go"
-          value={p.managerEmail}
-          filled={p.managerEmail.includes("@")}
-          onChange={p.setManagerEmail}
-          showInput
-          placeholder="manager@company.com"
-        />
-      )}
+      {/* Email field removed — auto-populated silently in background */}
 
       {showEmail && (
         <CounterField
