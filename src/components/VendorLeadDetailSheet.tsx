@@ -168,19 +168,21 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
     subtitle: real.sub_category_name,
   } : null;
 
-  const sendStatus = async (status_key: string) => {
+  const sendStatus = async (status_key: string, opts?: { message?: string; link?: string }) => {
     if (!real || !user) return;
     setBusyKey(status_key);
     try {
       const { sendStatusPushToCustomer } = await import("@/lib/push.functions");
+      const composedMsg = [opts?.message?.trim(), opts?.link?.trim()].filter(Boolean).join("\n") || null;
       const { error } = await supabase.from("vendor_status_updates").insert({
-        lead_id: real.id, vendor_id: user.id, status_key,
+        lead_id: real.id, vendor_id: user.id, status_key, message: composedMsg,
       } as any);
       if (error) {
         toast.error(error.message);
       } else {
         await sendStatusPushToCustomer({ data: { lead_id: real.id, status_key } }).catch(() => {});
-        toast.success(`✓ Customer notified: ${STEPS.find((s) => s.key === status_key)?.label}`);
+        const label = STEPS.find((s) => s.key === status_key)?.label ?? customSteps.find((s) => s.key === status_key)?.label ?? status_key;
+        toast.success(`✓ Customer notified: ${label}`);
       }
     } finally {
       setBusyKey(null);
