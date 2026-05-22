@@ -35,6 +35,7 @@ import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
 import { Route as VendorKycRouteImport } from './routes/vendor.kyc'
+import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as RCodeRouteImport } from './routes/r.$code'
@@ -196,6 +197,11 @@ const VendorRegisterRoute = VendorRegisterRouteImport.update({
 const VendorKycRoute = VendorKycRouteImport.update({
   id: '/vendor/kyc',
   path: '/vendor/kyc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorInstallRoute = VendorInstallRouteImport.update({
+  id: '/vendor/install',
+  path: '/vendor/install',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorDashboardRoute = VendorDashboardRouteImport.update({
@@ -408,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
@@ -467,6 +474,7 @@ export interface FileRoutesByTo {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
@@ -528,6 +536,7 @@ export interface FileRoutesById {
   '/r/$code': typeof RCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
@@ -590,6 +599,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/install'
     | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
@@ -649,6 +659,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/install'
     | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
+    | '/vendor/install'
     | '/vendor/kyc'
     | '/vendor/register'
     | '/vendor/services'
@@ -745,6 +757,7 @@ export interface RootRouteChildren {
   RCodeRoute: typeof RCodeRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
+  VendorInstallRoute: typeof VendorInstallRoute
   VendorKycRoute: typeof VendorKycRoute
   VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
@@ -937,6 +950,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/kyc'
       fullPath: '/vendor/kyc'
       preLoaderRoute: typeof VendorKycRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/install': {
+      id: '/vendor/install'
+      path: '/vendor/install'
+      fullPath: '/vendor/install'
+      preLoaderRoute: typeof VendorInstallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/dashboard': {
@@ -1252,6 +1272,7 @@ const rootRouteChildren: RootRouteChildren = {
   RCodeRoute: RCodeRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
+  VendorInstallRoute: VendorInstallRoute,
   VendorKycRoute: VendorKycRoute,
   VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
@@ -1264,13 +1285,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
