@@ -51,7 +51,7 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
 
     const { data: leads, error } = await supabase
       .from("leads")
-      .select("id, sub_category_name, status, source, accepted_vendor_id, accepted_vendor_ids, created_at, updated_at, accepted_at, note")
+      .select("id, sub_category_name, sub_category_id, item_ids, images, status, source, accepted_vendor_id, accepted_vendor_ids, created_at, updated_at, accepted_at, note")
       .eq("customer_id", uid)
       .order("updated_at", { ascending: false })
       .limit(200);
@@ -64,17 +64,50 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
 
     const vendorMap = new Map<string, { name: string; avatar: string }>();
     if (vendorIds.length) {
-      const { data: vs } = await supabase
-        .from("vendors")
-        .select("user_id, business_name, owner_name, avatar_url")
-        .in("user_id", vendorIds);
+      const [{ data: vs }, { data: profs }] = await Promise.all([
+        supabase
+          .from("vendors")
+          .select("user_id, business_name, owner_name, avatar_url")
+          .in("user_id", vendorIds),
+        supabase
+          .from("profiles")
+          .select("user_id, avatar_url, full_name")
+          .in("user_id", vendorIds),
+      ]);
+      const profMap = new Map<string, { avatar: string | null; name: string | null }>();
+      profs?.forEach((p: any) => { profMap.set(p.user_id as string, { avatar: (p.avatar_url ?? null) as string | null, name: (p.full_name ?? null) as string | null }); });
       vs?.forEach((v) => {
+        const pr = profMap.get(v.user_id as string);
         vendorMap.set(v.user_id as string, {
-          name: (v.business_name || v.owner_name || "Vendor") as string,
-          avatar: (v.avatar_url || "") as string,
+          name: (v.business_name || v.owner_name || pr?.name || "Vendor") as string,
+          avatar: ((v.avatar_url || pr?.avatar) ?? "") as string,
         });
       });
+      // Vendors that only exist in profiles (no vendors row yet)
+      profs?.forEach((p: any) => {
+        if (!vendorMap.has(p.user_id as string)) {
+          vendorMap.set(p.user_id as string, {
+            name: (p.full_name || "Vendor") as string,
+            avatar: (p.avatar_url || "") as string,
+          });
+        }
+      });
     }
+
+    // Resolve catalog image per lead (first lead.item_ids -> catalog_items.image_url,
+    // fallback to sub_category_id, fallback to lead.images[0]).
+    const allItemIds = Array.from(new Set(leads.flatMap((l) => (l.item_ids ?? []) as string[]).concat(
+      leads.map((l) => l.sub_category_id as string).filter(Boolean) as string[],
+    )));
+    const itemImageMap = new Map<string, string>();
+    if (allItemIds.length) {
+      const { data: items } = await supabase
+        .from("catalog_items")
+        .select("id, image_url")
+        .in("id", allItemIds);
+      items?.forEach((it: any) => { if (it.image_url) itemImageMap.set(it.id as string, it.image_url as string); });
+    }
+
 
     // last message/status + unread per lead
     const leadIds = leads.map((l) => l.id);
