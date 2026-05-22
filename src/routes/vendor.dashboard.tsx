@@ -31,6 +31,7 @@ import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
+import { useLeadSteps } from "@/hooks/use-lead-steps";
 
 
 export const Route = createFileRoute("/vendor/dashboard")({
