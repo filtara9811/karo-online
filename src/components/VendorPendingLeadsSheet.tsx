@@ -313,6 +313,8 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                   </article>
                 ))
               )}
+                </>
+              )}
             </div>
           </motion.div>
         </>
