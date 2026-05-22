@@ -179,7 +179,9 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
               <div>
                 <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700">✦ Incoming ✦</p>
                 <h2 className="font-display text-xl text-gold-gradient leading-tight">Pending Leads</h2>
-                <p className="text-[11px] text-amber-900/60 mt-0.5">{rows.length} requests waiting</p>
+                <p className="text-[11px] text-amber-900/60 mt-0.5">
+                  {rows.length} pending · {ready.length} ready to start
+                </p>
               </div>
               <button
                 onClick={onClose}
