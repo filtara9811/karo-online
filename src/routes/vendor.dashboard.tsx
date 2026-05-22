@@ -105,7 +105,7 @@ function VendorDashboard() {
       if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
       const { data: rows } = await supabase
         .from("leads")
-        .select("id, customer_id, customer_name, customer_phone, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng")
+        .select("id, customer_id, customer_name, customer_phone, sub_category_id, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng")
         .in("id", ids);
       if (cancelled) return;
       const customerIds = Array.from(new Set((rows ?? []).map((r: any) => r.customer_id).filter(Boolean)));
@@ -117,33 +117,49 @@ function VendorDashboard() {
           .in("user_id", customerIds);
         (customers ?? []).forEach((c: any) => customerMap.set(c.user_id, c));
       }
+      const subIds = Array.from(new Set((rows ?? []).map((r: any) => r.sub_category_id).filter(Boolean)));
+      const subImageMap = new Map<string, string | null>();
+      if (subIds.length) {
+        const { data: cats } = await supabase
+          .from("categories")
+          .select("id, image_url")
+          .in("id", subIds);
+        (cats ?? []).forEach((c: any) => subImageMap.set(c.id, c.image_url ?? null));
+      }
       const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
       const mapped: Lead[] = (rows ?? []).map((r: any) => {
         const customer = customerMap.get(r.customer_id);
         const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
         const nstatus = notifStatusMap.get(r.id);
         let st: LeadStatus = "new";
-        if (r.status === "completed" && accepted) st = "success";
-        else if (accepted) st = "process";
-        else if (nstatus === "rejected") st = "rejected";
-        else st = "new";
+        let pct = 10;
+        if (r.status === "completed" && accepted) { st = "success"; pct = 100; }
+        else if (accepted) { st = "process"; pct = 55; }
+        else if (nstatus === "rejected") { st = "rejected"; pct = 0; }
+        else { st = "new"; pct = 25; }
         const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
         return {
           id: r.id,
+          leadCode: String(r.id).slice(0, 5).toUpperCase(),
           name: customer?.name || r.customer_name || "Customer",
           phone: customer?.phone || r.customer_phone || "",
           avatarUrl: customer?.avatar_url ?? null,
+          productImage: subImageMap.get(r.sub_category_id) ?? null,
           distanceKm: distanceKm(vendor, { lat: r.lat, lng: r.lng }),
           address: r.address || customer?.address || undefined,
           service: r.sub_category_name ?? "Service",
           amount: Number(r.lead_price_inr ?? 0),
+          rating: 4.9,
           source: src,
           status: st,
           time: timeAgo(r.created_at),
+          createdAtIso: r.created_at,
+          progressPct: pct,
           note: r.note ?? "",
           timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
         };
       }).sort((a, b) => (a.status === "new" ? -1 : 1) - (b.status === "new" ? -1 : 1));
+
       setLeads(mapped);
       setLoadingLeads(false);
     };
