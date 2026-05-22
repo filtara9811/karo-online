@@ -246,10 +246,24 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     setDefaultHome(localStorage.getItem("ko-default-home"));
   }, [picker]);
 
-  const handleResellingSelect = (value: string) => {
+  const handleResellingSelect = async (value: string) => {
     setPicker(null);
     if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
-    else if (value === "vendor") setTimeout(() => navigate({ to: "/vendor/register" }), 250);
+    else if (value === "vendor") {
+      // Check if vendor row already exists → skip form, go straight to dashboard
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from("vendors").select("user_id").eq("user_id", user.id).maybeSingle();
+          if (data) {
+            setTimeout(() => navigate({ to: "/vendor/dashboard" }), 250);
+            return;
+          }
+        }
+      } catch {}
+      setTimeout(() => navigate({ to: "/vendor/register" }), 250);
+    }
     else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
   };
