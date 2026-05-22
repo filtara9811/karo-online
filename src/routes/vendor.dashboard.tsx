@@ -422,13 +422,14 @@ function VendorDashboard() {
                 <LeadCard
                   key={lead.id}
                   lead={lead}
-                  onAccept={() => acceptLead(lead.id)}
+                  unread={unreadByLead[lead.id] ?? 0}
                   onOpen={() => setDetailLeadId(lead.id)}
                 />
               ))}
             </div>
           </>
         ) : (
+
           <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
             <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
             <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
