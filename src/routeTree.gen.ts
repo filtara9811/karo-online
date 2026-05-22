@@ -20,12 +20,19 @@ import { Route as ReferralRouteImport } from './routes/referral'
 import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as ForVendorsRouteImport } from './routes/for-vendors'
+import { Route as ForCustomersRouteImport } from './routes/for-customers'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as DownloadRouteImport } from './routes/download'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
@@ -124,6 +131,11 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -132,6 +144,31 @@ const OrdersRoute = OrdersRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForVendorsRoute = ForVendorsRouteImport.update({
+  id: '/for-vendors',
+  path: '/for-vendors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForCustomersRoute = ForCustomersRouteImport.update({
+  id: '/for-customers',
+  path: '/for-customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -152,6 +189,11 @@ const CartRoute = CartRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -367,12 +409,19 @@ const AdminViewUserIdRoute = AdminViewUserIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/for-customers': typeof ForCustomersRoute
+  '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
@@ -428,11 +477,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/for-customers': typeof ForCustomersRoute
+  '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
@@ -489,12 +545,19 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/for-customers': typeof ForCustomersRoute
+  '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
   '/orders': typeof OrdersRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
@@ -552,12 +615,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/admin'
     | '/cart'
     | '/chat'
     | '/checkout'
+    | '/contact'
+    | '/download'
+    | '/features'
+    | '/for-customers'
+    | '/for-vendors'
     | '/home'
     | '/orders'
+    | '/pricing'
     | '/privacy-policy'
     | '/profile'
     | '/quick'
@@ -613,11 +683,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/cart'
     | '/chat'
     | '/checkout'
+    | '/contact'
+    | '/download'
+    | '/features'
+    | '/for-customers'
+    | '/for-vendors'
     | '/home'
     | '/orders'
+    | '/pricing'
     | '/privacy-policy'
     | '/profile'
     | '/quick'
@@ -673,12 +750,19 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/admin'
     | '/cart'
     | '/chat'
     | '/checkout'
+    | '/contact'
+    | '/download'
+    | '/features'
+    | '/for-customers'
+    | '/for-vendors'
     | '/home'
     | '/orders'
+    | '/pricing'
     | '/privacy-policy'
     | '/profile'
     | '/quick'
@@ -735,12 +819,19 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   CartRoute: typeof CartRoute
   ChatRoute: typeof ChatRoute
   CheckoutRoute: typeof CheckoutRoute
+  ContactRoute: typeof ContactRoute
+  DownloadRoute: typeof DownloadRoute
+  FeaturesRoute: typeof FeaturesRoute
+  ForCustomersRoute: typeof ForCustomersRoute
+  ForVendorsRoute: typeof ForVendorsRoute
   HomeRoute: typeof HomeRoute
   OrdersRoute: typeof OrdersRoute
+  PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   QuickRoute: typeof QuickRoute
@@ -847,6 +938,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders': {
       id: '/orders'
       path: '/orders'
@@ -859,6 +957,41 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/for-vendors': {
+      id: '/for-vendors'
+      path: '/for-vendors'
+      fullPath: '/for-vendors'
+      preLoaderRoute: typeof ForVendorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/for-customers': {
+      id: '/for-customers'
+      path: '/for-customers'
+      fullPath: '/for-customers'
+      preLoaderRoute: typeof ForCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -887,6 +1020,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -1250,12 +1390,19 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   CartRoute: CartRoute,
   ChatRoute: ChatRoute,
   CheckoutRoute: CheckoutRoute,
+  ContactRoute: ContactRoute,
+  DownloadRoute: DownloadRoute,
+  FeaturesRoute: FeaturesRoute,
+  ForCustomersRoute: ForCustomersRoute,
+  ForVendorsRoute: ForVendorsRoute,
   HomeRoute: HomeRoute,
   OrdersRoute: OrdersRoute,
+  PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   QuickRoute: QuickRoute,
