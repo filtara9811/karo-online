@@ -55,7 +55,7 @@ export type ProfileAuditRow = {
 export async function fetchProfileHistory(userId: string): Promise<ProfileAuditRow[]> {
   const { data } = await supabase
     .from("customer_profile_audit" as never)
-    .select("*")
+    .select("id, customer_user_id, field_name, old_value, new_value, verified_via_otp, created_at")
     .eq("customer_user_id", userId)
     .order("created_at", { ascending: false })
     .limit(200);

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ADMIN_ROLES = new Set(["super_admin", "admin", "moderator", "support"]);
 
@@ -220,7 +221,7 @@ export const getUserDashboard = createServerFn({ method: "POST" })
         .select("id, item_id, is_active, created_at, catalog_items(id, name, slug, image_url, price_min, price_max, category_id)")
         .eq("vendor_id", uid)
         .order("created_at", { ascending: false }),
-      supabase
+      supabaseAdmin
         .from("kyc_verifications")
         .select("*")
         .eq("subject_user_id", uid)
