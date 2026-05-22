@@ -73,41 +73,23 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
     let alive = true;
     const load = async () => {
       setLoading(true);
-      const { data: notifs } = await supabase
-        .from("lead_notifications")
-        .select("id, lead_id, created_at")
-        .eq("vendor_id", user.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      const ids = (notifs ?? []).map((n: any) => n.lead_id);
-      if (ids.length === 0) {
-        if (alive) { setRows([]); setLoading(false); }
-        return;
-      }
-      const { data: leads } = await supabase
-        .from("leads")
-        .select("id, customer_name, customer_phone, sub_category_name, item_names, address, note, status")
-        .in("id", ids);
-      const byId: Record<string, any> = {};
-      (leads ?? []).forEach((l: any) => { byId[l.id] = l; });
-      const mapped: PendingRow[] = (notifs ?? [])
-        .map((n: any) => {
-          const l = byId[n.lead_id];
-          if (!l || (l.status && l.status !== "pending" && l.status !== "open")) return null;
-          return {
-            notificationId: n.id,
-            leadId: n.lead_id,
-            customerName: l.customer_name,
-            customerPhone: l.customer_phone,
-            subCategoryName: l.sub_category_name ?? "Service",
-            itemNames: (l.item_names ?? []) as string[],
-            address: l.address,
-            note: l.note,
-            createdAt: n.created_at,
-          } as PendingRow;
-        })
-        .filter(Boolean) as PendingRow[];
+      // Sanitized RPC: returns safe summary (no customer phone/full address)
+      // for every pending lead the vendor was notified about.
+      const { data: briefs } = await supabase.rpc("get_my_pending_lead_briefs");
+      const list = (briefs ?? []) as any[];
+      const mapped: PendingRow[] = list
+        .filter((b) => b.notification_status === "pending" && (!b.status || b.status === "pending" || b.status === "open" || b.status === "new"))
+        .map((b) => ({
+          notificationId: b.id, // RPC returns lead id; we use it as a stable key
+          leadId: b.id,
+          customerName: b.customer_name_initial ?? "Customer",
+          customerPhone: null, // hidden until accepted
+          subCategoryName: b.sub_category_name ?? "Service",
+          itemNames: (b.item_names ?? []) as string[],
+          address: b.area_hint ?? null,
+          note: b.note ?? null,
+          createdAt: b.created_at,
+        }));
       if (alive) { setRows(mapped); setLoading(false); }
     };
     load();

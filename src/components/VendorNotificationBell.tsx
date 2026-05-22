@@ -61,12 +61,16 @@ export function VendorNotificationBell() {
       if (!alive) return;
       const list = (data ?? []) as NotifRow[];
       setNotifs(list);
-      const ids = Array.from(new Set(list.map((n) => n.lead_id)));
-      if (ids.length > 0) {
+
+      // For accepted/in-progress leads the vendor can still read the row.
+      // For pending leads, RLS blocks PII — we just show the sub_category_name
+      // from the notification itself and skip address/customer name lookups.
+      const acceptedIds = list.filter((n) => n.status === "accepted").map((n) => n.lead_id);
+      if (acceptedIds.length > 0) {
         const { data: lrows } = await supabase
           .from("leads")
           .select("id, customer_name, address, sub_category_id")
-          .in("id", ids);
+          .in("id", acceptedIds);
         if (!alive) return;
         const lmap: Record<string, LeadInfo> = {};
         (lrows ?? []).forEach((r: any) => { lmap[r.id] = r; });
@@ -82,6 +86,9 @@ export function VendorNotificationBell() {
           (cats ?? []).forEach((c: any) => { imap[c.id] = c.image_url ?? null; });
           setImages(imap);
         }
+      } else {
+        setLeads({});
+        setImages({});
       }
     };
     load();

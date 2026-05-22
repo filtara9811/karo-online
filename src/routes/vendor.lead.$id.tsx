@@ -90,17 +90,42 @@ function LeadDetailPage() {
         .eq("id", id)
         .maybeSingle();
       if (cancelled) return;
-      if (error || !data) {
-        setLead(null);
-        setLoading(false);
-        return;
+
+      let leadRow: any = data;
+      // Vendor is not yet accepted → fall back to sanitized RPC (no PII).
+      if (!leadRow || error) {
+        const { data: brief } = await supabase.rpc("get_pending_lead_brief", { p_lead_id: id });
+        const b = Array.isArray(brief) ? brief[0] : brief;
+        if (!b) { setLead(null); setLoading(false); return; }
+        leadRow = {
+          id: b.id,
+          customer_id: null,
+          customer_name: b.customer_name_initial,
+          customer_phone: null,
+          sub_category_name: b.sub_category_name,
+          sub_category_id: b.sub_category_id,
+          item_names: b.item_names ?? [],
+          note: b.note,
+          address: b.area_hint,
+          lat: null, lng: null,
+          status: b.status,
+          accepted_vendor_ids: [],
+          accepted_vendor_id: null,
+          lead_price_inr: b.lead_price_inr,
+          created_at: b.created_at,
+          images: b.images ?? [],
+        };
       }
-      setLead(data as RealLead);
+      setLead(leadRow as RealLead);
       setLoading(false);
 
       const [{ data: cat }, { data: cust }, { data: evs }] = await Promise.all([
-        supabase.from("categories").select("image_url, icon").eq("id", (data as any).sub_category_id).maybeSingle(),
-        supabase.from("customers").select("avatar_url").eq("user_id", (data as any).customer_id).maybeSingle(),
+        leadRow.sub_category_id
+          ? supabase.from("categories").select("image_url, icon").eq("id", leadRow.sub_category_id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
+        leadRow.customer_id
+          ? supabase.from("customers").select("avatar_url").eq("user_id", leadRow.customer_id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
         supabase.from("vendor_status_updates").select("id, status_key, message, created_at").eq("lead_id", id).order("created_at", { ascending: true }),
       ]);
       if (cancelled) return;

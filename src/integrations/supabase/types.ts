@@ -2764,8 +2764,42 @@ export type Database = {
         }[]
       }
       get_leadx_market_stats: { Args: never; Returns: Json }
+      get_my_pending_lead_briefs: {
+        Args: never
+        Returns: {
+          area_hint: string
+          created_at: string
+          customer_name_initial: string
+          id: string
+          images: string[]
+          item_names: string[]
+          lead_price_inr: number
+          note: string
+          notification_status: string
+          quoted_price: number
+          status: string
+          sub_category_id: string
+          sub_category_name: string
+        }[]
+      }
       get_my_referral_overview: { Args: never; Returns: Json }
       get_notification_analytics: { Args: never; Returns: Json }
+      get_pending_lead_brief: {
+        Args: { p_lead_id: string }
+        Returns: {
+          area_hint: string
+          created_at: string
+          customer_name_initial: string
+          id: string
+          images: string[]
+          item_names: string[]
+          lead_price_inr: number
+          note: string
+          status: string
+          sub_category_id: string
+          sub_category_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

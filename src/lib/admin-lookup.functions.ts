@@ -83,13 +83,17 @@ export const getUserFull = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     await ensureAdmin(supabase, userId);
     const uid = data.userId;
+    // Use admin client for the referrals read so we can include the
+    // PII columns (referred_phone, ip_address, device_fingerprint) which
+    // are now revoked from the authenticated role for security.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [c, v, w, tx, leads, refs] = await Promise.all([
       supabase.from("customers").select("*").eq("user_id", uid).maybeSingle(),
       supabase.from("vendors").select("*").eq("user_id", uid).maybeSingle(),
       supabase.from("vendor_wallets").select("*").eq("vendor_id", uid).maybeSingle(),
       supabase.from("wallet_transactions").select("*").eq("vendor_id", uid).order("created_at", { ascending: false }).limit(25),
       supabase.from("leads").select("id,sub_category_name,status,created_at,lead_price_inr").or(`customer_id.eq.${uid},accepted_vendor_id.eq.${uid}`).order("created_at", { ascending: false }).limit(20),
-      supabase.from("referrals").select("*").or(`referrer_user_id.eq.${uid},referred_user_id.eq.${uid}`).limit(20),
+      supabaseAdmin.from("referrals").select("*").or(`referrer_user_id.eq.${uid},referred_user_id.eq.${uid}`).limit(20),
     ]);
     return {
       customer: c.data ?? null,

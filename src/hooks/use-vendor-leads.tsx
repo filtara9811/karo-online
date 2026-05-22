@@ -55,53 +55,83 @@ export function useVendorLeadAlerts(): State {
         expiresAt: new Date(Date.now() + 15_000).toISOString(),
       };
       setAlerts((p) => [fallbackIncoming, ...p].slice(0, 8));
-      const { data: lead } = await supabase
+
+      // Try direct read first (works for admins & accepted vendors).
+      // For pending vendors, RLS now blocks the row — fall back to the
+      // sanitized SECURITY DEFINER RPC which returns a safe summary only.
+      const { data: directLead } = await supabase
         .from("leads")
         .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, item_names, note, images, address, lat, lng, created_at, status")
         .eq("id", leadId)
         .maybeSingle();
-      if (cancelled || !lead) return;
+
+      let leadInfo: any = directLead;
+      let isAccepted = !!directLead;
+      if (!directLead) {
+        const { data: brief } = await supabase.rpc("get_pending_lead_brief", { p_lead_id: leadId });
+        const b = Array.isArray(brief) ? brief[0] : brief;
+        if (!b) return;
+        leadInfo = {
+          id: b.id,
+          sub_category_id: b.sub_category_id,
+          sub_category_name: b.sub_category_name,
+          customer_id: null,
+          customer_name: b.customer_name_initial,
+          customer_phone: null,
+          item_names: b.item_names ?? [],
+          note: b.note,
+          images: b.images ?? [],
+          address: b.area_hint,
+          lat: null,
+          lng: null,
+          created_at: b.created_at,
+          status: b.status,
+        };
+      }
+
+      if (cancelled || !leadInfo) return;
       let subImage: string | null = null;
-      if ((lead as any).sub_category_id) {
+      if (leadInfo.sub_category_id) {
         const { data: cat } = await supabase
-          .from("categories").select("image_url, icon").eq("id", (lead as any).sub_category_id).maybeSingle();
+          .from("categories").select("image_url, icon").eq("id", leadInfo.sub_category_id).maybeSingle();
         subImage = (cat as any)?.image_url ?? null;
       }
       let avatarUrl: string | null = null;
-      if ((lead as any).customer_id) {
+      if (leadInfo.customer_id) {
         const { data: cust } = await supabase
-          .from("customers").select("avatar_url").eq("user_id", (lead as any).customer_id).maybeSingle();
+          .from("customers").select("avatar_url").eq("user_id", leadInfo.customer_id).maybeSingle();
         avatarUrl = (cust as any)?.avatar_url ?? null;
       }
       let distanceKm: number | null = null;
-      const { data: vendorRow } = await supabase
-        .from("vendors").select("lat, lng").eq("user_id", user.id).maybeSingle();
-      const vLat = (vendorRow as any)?.lat, vLng = (vendorRow as any)?.lng;
-      const lLat = (lead as any).lat, lLng = (lead as any).lng;
-      if (vLat != null && vLng != null && lLat != null && lLng != null) {
-        const toRad = (d: number) => (d * Math.PI) / 180;
-        const dLat = toRad(lLat - vLat), dLng = toRad(lLng - vLng);
-        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(vLat))*Math.cos(toRad(lLat))*Math.sin(dLng/2)**2;
-        distanceKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 10) / 10;
+      if (isAccepted && leadInfo.lat != null && leadInfo.lng != null) {
+        const { data: vendorRow } = await supabase
+          .from("vendors").select("lat, lng").eq("user_id", user.id).maybeSingle();
+        const vLat = (vendorRow as any)?.lat, vLng = (vendorRow as any)?.lng;
+        if (vLat != null && vLng != null) {
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const dLat = toRad(leadInfo.lat - vLat), dLng = toRad(leadInfo.lng - vLng);
+          const a = Math.sin(dLat/2)**2 + Math.cos(toRad(vLat))*Math.cos(toRad(leadInfo.lat))*Math.sin(dLng/2)**2;
+          distanceKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 10) / 10;
+        }
       }
-      const phone = (lead as any).customer_phone as string | null;
+      const phone = leadInfo.customer_phone as string | null;
       const phoneDigits = phone ? phone.replace(/\D/g, "") : "";
       const masked = phoneDigits.length >= 4 ? `•••• ${phoneDigits.slice(-4)}` : null;
-      const createdAt = (lead as any).created_at as string;
+      const createdAt = leadInfo.created_at as string;
       const incoming: IncomingLead = {
         notificationId: notifId,
-        leadId: lead.id as string,
-        subCategoryName: lead.sub_category_name as string,
+        leadId: leadInfo.id as string,
+        subCategoryName: leadInfo.sub_category_name as string,
         subCategoryImage: subImage,
-        customerName: (lead as any).customer_name,
+        customerName: leadInfo.customer_name,
         customerPhone: phone,
         customerPhoneMasked: masked,
         customerAvatarUrl: avatarUrl,
         distanceKm,
-        itemNames: ((lead as any).item_names ?? []) as string[],
-        note: (lead as any).note,
-        images: ((lead as any).images ?? []) as string[],
-        address: (lead as any).address,
+        itemNames: (leadInfo.item_names ?? []) as string[],
+        note: leadInfo.note,
+        images: (leadInfo.images ?? []) as string[],
+        address: leadInfo.address,
         createdAt,
         expiresAt: new Date(new Date(createdAt).getTime() + 15_000).toISOString(),
       };
