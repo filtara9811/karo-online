@@ -339,7 +339,11 @@ function VendorDashboard() {
           <>
             {/* Hero stats card — visiting card style */}
             <section
-              className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)]"
+              onClick={() => setLeadsSheetOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true); }}
+              className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] cursor-pointer active:scale-[0.99] transition"
               style={{
                 background:
                   "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
@@ -357,7 +361,7 @@ function VendorDashboard() {
               <div className="relative flex items-start justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">Total Added Leads</p>
-                  <p className="text-xs italic opacity-75">See all leads here</p>
+                  <p className="text-xs italic opacity-75">Tap to view all leads</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.20_0.01_260)] grid place-items-center font-display text-2xl font-bold shadow">
@@ -365,6 +369,7 @@ function VendorDashboard() {
                   </span>
                   <button
                     aria-label="Download"
+                    onClick={(e) => { e.stopPropagation(); /* TODO: CSV export */ }}
                     className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
                   >
                     <Download className="h-5 w-5" />
