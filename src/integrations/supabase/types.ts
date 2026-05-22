@@ -2584,6 +2584,69 @@ export type Database = {
       }
     }
     Views: {
+      customer_profile_audit_safe: {
+        Row: {
+          created_at: string | null
+          customer_user_id: string | null
+          field_name: string | null
+          id: string | null
+          new_value: string | null
+          old_value: string | null
+          verified_via_otp: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_user_id?: string | null
+          field_name?: string | null
+          id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          verified_via_otp?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_user_id?: string | null
+          field_name?: string | null
+          id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          verified_via_otp?: boolean | null
+        }
+        Relationships: []
+      }
+      kyc_verifications_subject_safe: {
+        Row: {
+          check_type: string | null
+          created_at: string | null
+          id: string | null
+          status: string | null
+          subject_type: string | null
+          subject_user_id: string | null
+          updated_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          check_type?: string | null
+          created_at?: string | null
+          id?: string | null
+          status?: string | null
+          subject_type?: string | null
+          subject_user_id?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          check_type?: string | null
+          created_at?: string | null
+          id?: string | null
+          status?: string | null
+          subject_type?: string | null
+          subject_user_id?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       referrals_for_referrer: {
         Row: {
           created_at: string | null
