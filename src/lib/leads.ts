@@ -7,6 +7,15 @@ export type LeadEvent = {
   kind: "created" | "accepted" | "rejected" | "contacted" | "scheduled" | "payment" | "note";
 };
 
+export type LeadItem = {
+  id: string;
+  name: string;
+  image: string | null;
+  amount: number; // vendor's quoted rate (price_max or price_min)
+  priceMin?: number | null;
+  priceMax?: number | null;
+};
+
 export type Lead = {
   id: string;
   leadCode?: string;
@@ -26,6 +35,7 @@ export type Lead = {
   createdAtIso?: string;
   progressPct?: number;
   note: string;
+  items?: LeadItem[];
   timeline: LeadEvent[];
 };
 
