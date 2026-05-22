@@ -78,38 +78,51 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const [ready, setReady] = useState<ReadyRow[]>([]);
+
   useEffect(() => {
     if (!open || !user) return;
     let alive = true;
     const load = async () => {
       setLoading(true);
-      // Sanitized RPC: returns safe summary (no customer phone/full address)
-      // for every pending lead the vendor was notified about.
-      const { data: briefs } = await supabase.rpc("get_my_pending_lead_briefs");
+      const [{ data: briefs }, { data: acc }] = await Promise.all([
+        supabase.rpc("get_my_pending_lead_briefs"),
+        supabase
+          .from("lead_notifications")
+          .select("lead_id, responded_at, leads!inner(id, sub_category_name, customer_name, address, note)")
+          .eq("vendor_id", user.id)
+          .eq("status", "accepted")
+          .is("vendor_started_at", null)
+          .order("responded_at", { ascending: false })
+          .limit(20),
+      ]);
       const list = (briefs ?? []) as any[];
       const mapped: PendingRow[] = list
         .filter((b) => b.notification_status === "pending" && (!b.status || b.status === "pending" || b.status === "open" || b.status === "new"))
         .map((b) => ({
-          notificationId: b.id, // RPC returns lead id; we use it as a stable key
-          leadId: b.id,
+          notificationId: b.id, leadId: b.id,
           customerName: b.customer_name_initial ?? "Customer",
-          customerPhone: null, // hidden until accepted
+          customerPhone: null,
           subCategoryName: b.sub_category_name ?? "Service",
           itemNames: (b.item_names ?? []) as string[],
           address: b.area_hint ?? null,
           note: b.note ?? null,
           createdAt: b.created_at,
         }));
-      if (alive) { setRows(mapped); setLoading(false); }
+      const readyMapped: ReadyRow[] = (acc ?? []).map((r: any) => ({
+        leadId: r.lead_id,
+        customerName: r.leads?.customer_name ?? "Customer",
+        subCategoryName: r.leads?.sub_category_name ?? "Service",
+        address: r.leads?.address ?? null,
+        note: r.leads?.note ?? null,
+        acceptedAt: r.responded_at,
+      }));
+      if (alive) { setRows(mapped); setReady(readyMapped); setLoading(false); }
     };
     load();
     const ch = supabase
       .channel(`pending-leads-sheet-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
-        () => load(),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` }, () => load())
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [open, user]);
@@ -121,11 +134,20 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
     if (error) { toast.error(error.message); return; }
     const res = data as any;
     if (res?.ok) {
-      toast.success("Lead accepted");
+      toast.success(res?.auto_started ? "Lead accepted — moved to dashboard" : "Accepted — press Start Work when ready");
       setRows((p) => p.filter((r) => r.leadId !== leadId));
     } else {
       toast.error(res?.reason || "Could not accept");
     }
+  };
+
+  const startWork = async (leadId: string) => {
+    setBusy(leadId);
+    const { data, error } = await supabase.rpc("start_lead_work", { _lead_id: leadId });
+    setBusy(null);
+    if (error || !(data as any)?.ok) { toast.error("Could not start work"); return; }
+    toast.success("Lead moved to dashboard ✓");
+    setReady((p) => p.filter((r) => r.leadId !== leadId));
   };
 
   const reject = async (leadId: string) => {
@@ -134,6 +156,7 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
     setBusy(null);
     setRows((p) => p.filter((r) => r.leadId !== leadId));
   };
+
 
   return (
     <AnimatePresence>
