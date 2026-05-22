@@ -348,7 +348,9 @@ function VendorRegister() {
         _pan: pan.trim(),
         _gst: gst.trim(),
         _plan: planId,
-      });
+        _current_team_count: teamCount,
+        _van_count: vanCount,
+      } as any);
       setSaving(false);
       if (error) {
         const msg = error.message || "";
@@ -744,6 +746,8 @@ type Step1Props = {
   businessName: string;
   whatsapp: string;
   managerEmail: string;
+  teamCount: number;
+  vanCount: number;
   referral: string;
   onPickRole: () => void;
   onPickEntity: () => void;
@@ -753,6 +757,8 @@ type Step1Props = {
   setBusinessName: (v: string) => void;
   setWhatsapp: (v: string) => void;
   setManagerEmail: (v: string) => void;
+  setTeamCount: (v: number) => void;
+  setVanCount: (v: number) => void;
   setReferral: (v: string) => void;
   ownerRef: React.RefObject<HTMLInputElement | null>;
   businessRef: React.RefObject<HTMLInputElement | null>;
