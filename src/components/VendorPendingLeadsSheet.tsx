@@ -8,10 +8,12 @@ import { toast } from "sonner";
 type ReadyRow = {
   leadId: string;
   customerName: string | null;
+  customerAvatar: string | null;
   subCategoryName: string;
   address: string | null;
   note: string | null;
   acceptedAt: string;
+  items: { name: string; image: string | null }[];
 };
 
 
