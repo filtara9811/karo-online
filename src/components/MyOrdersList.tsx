@@ -197,14 +197,20 @@ export function MyOrdersList({
                     className="overflow-hidden border-t border-amber-100"
                   >
                     <div className="p-2 space-y-1.5 bg-amber-50/30">
-                      {v.orders.map((o, idx) => (
+                      {v.orders.map((o) => (
                         <button
                           key={o.id}
                           onClick={() => openOrder(v.vendorId, o.id)}
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-amber-100 hover:border-amber-300 active:scale-[0.99] transition text-left"
                         >
-                          <span className="h-8 w-8 rounded-lg grid place-items-center bg-gradient-to-br from-amber-100 to-amber-200 text-[10px] font-bold text-amber-800 flex-shrink-0">
-                            #{idx + 1}
+                          <span className="h-12 w-12 rounded-xl overflow-hidden grid place-items-center bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 flex-shrink-0">
+                            {o.productImage ? (
+                              <img src={o.productImage} alt={o.service} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-amber-700">
+                                {o.service.slice(0, 2).toUpperCase()}
+                              </span>
+                            )}
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -215,7 +221,9 @@ export function MyOrdersList({
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${STATUS_BADGE[o.status].cls}`}>
                                 {STATUS_BADGE[o.status].label}
                               </span>
-                              <span className="text-[9px] font-bold text-amber-700">#{o.id}</span>
+                              <span className="text-[9px] font-mono font-bold text-amber-700 tracking-wider">
+                                #{o.shortCode ?? o.id.slice(-6).toUpperCase()}
+                              </span>
                               {o.pinned && <Tag className="h-2.5 w-2.5 text-amber-600" />}
                             </div>
                             <p className="text-[11px] text-slate-500 truncate mt-0.5">{o.lastMsg}</p>
