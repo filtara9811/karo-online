@@ -628,12 +628,12 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
   const avatar = lead.avatarUrl;
   const initial = lead.name.charAt(0).toUpperCase();
   const live = useLiveAgo(lead.createdAtIso);
-
-  const statusPillCls =
-    lead.status === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-    lead.status === "process" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-    lead.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-300" :
-    "bg-amber-50 text-amber-800 border-amber-300";
+  const { steps, markCall, markMsg, completed } = useLeadSteps(lead.id);
+  const items =
+    lead.items && lead.items.length > 0
+      ? lead.items
+      : [{ id: lead.id, name: lead.service, image: lead.productImage ?? null, amount: lead.amount }];
+  const allDone = completed >= 3;
 
   const area =
     lead.address ||
@@ -652,15 +652,13 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
         </span>
       </div>
 
-      <button
-        type="button"
-        onClick={onOpen}
-        className="block w-full text-left active:scale-[0.99] transition"
-      >
-        {/* ===== HEAD ROW: avatar + name + area + live timer + status pill ===== */}
+      <button type="button" onClick={onOpen} className="block w-full text-left active:scale-[0.99] transition">
+        {/* HEAD: avatar + name + area + live timer (right-side status pill removed) */}
         <div className="px-3.5 pt-1 pb-2 flex items-start gap-2.5">
-          <span className="h-12 w-12 rounded-full overflow-hidden grid place-items-center font-display text-base font-bold text-white flex-shrink-0 shadow-sm border-2 border-white"
-            style={{ background: "linear-gradient(135deg, #d4af37 0%, #b8860b 100%)" }}>
+          <span
+            className="h-12 w-12 rounded-full overflow-hidden grid place-items-center font-display text-base font-bold text-white flex-shrink-0 shadow-sm border-2 border-white"
+            style={{ background: "linear-gradient(135deg, #d4af37 0%, #b8860b 100%)" }}
+          >
             {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
           </span>
           <div className="flex-1 min-w-0">
@@ -671,67 +669,92 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
             </p>
             <p className="text-[10px] text-amber-700 font-bold mt-0.5 tabular-nums">⏱ {live}</p>
           </div>
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold flex-shrink-0 ${statusPillCls}`}>
-            <span className="relative h-2 w-2">
-              <span className="absolute inset-0 rounded-full bg-current opacity-30 animate-ping" />
-              <span className="absolute inset-0 rounded-full bg-current" />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span>{st.label}</span>
-              <span className="text-[8px] font-medium opacity-80 underline underline-offset-2">Live</span>
-            </span>
-          </span>
         </div>
 
-        {/* ===== PRODUCT CARD (inner) — image + name + note ===== */}
-        <div className="mx-3 mb-2 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 flex items-center gap-3 relative">
-          <div className="relative h-16 w-16 rounded-xl overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-[#eef0f3] grid place-items-center">
-            {lead.productImage ? (
-              <img src={lead.productImage} alt={lead.service} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-[10px] font-bold text-slate-400 px-1 text-center leading-tight">{lead.service.split(" ")[0]}</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">
-              {lead.service}
-            </p>
-            {lead.note ? (
-              <p className="text-[11px] text-slate-600 italic mt-1 line-clamp-2 leading-snug">
-                “{lead.note}”
-              </p>
-            ) : (
-              <p className="text-[10px] text-slate-400 italic mt-1">No customer note</p>
-            )}
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-[10px] font-bold text-amber-800">
-                ★ {lead.rating ?? 4.9}
-              </span>
-              {lead.amount > 0 && (
-                <span className="font-display text-sm font-bold text-slate-800">
-                  ₹ {lead.amount.toLocaleString()}
-                </span>
-              )}
+        {/* PRODUCT LIST — one row per item (image + name + vendor's ₹ amount) */}
+        <div className="mx-3 mb-2 space-y-1.5">
+          {items.map((it, idx) => (
+            <div
+              key={`${it.id}-${idx}`}
+              className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-2.5 flex items-center gap-3"
+            >
+              <div className="relative h-14 w-14 rounded-xl overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-[#eef0f3] grid place-items-center">
+                {it.image ? (
+                  <img src={it.image} alt={it.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-[10px] font-bold text-slate-400 px-1 text-center leading-tight">
+                    {it.name.split(" ")[0]}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-[14px] font-bold text-slate-900 leading-tight truncate">{it.name}</p>
+                {idx === 0 && lead.note && (
+                  <p className="text-[11px] text-slate-600 italic mt-0.5 line-clamp-2 leading-snug">“{lead.note}”</p>
+                )}
+                <div className="mt-1 flex items-center gap-2">
+                  {it.amount > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800">
+                      ₹ {it.amount.toLocaleString()}
+                      {it.priceMin != null && it.priceMax != null && it.priceMin !== it.priceMax && (
+                        <span className="text-[9px] font-medium text-emerald-700/80">
+                          ({it.priceMin.toLocaleString()}–{it.priceMax.toLocaleString()})
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] italic text-slate-400">Rate not set</span>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </button>
 
-      {/* ===== Action bar — Call + Chat (with unread badge) ===== */}
+      {/* 3-step progress strip: Accept → Call → Message → tap opens status timeline */}
+      <Link
+        to="/vendor/status"
+        search={{ vendorId: "", orderId: lead.id } as never}
+        className="block mx-3 mb-2 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2 active:scale-[0.99]"
+        aria-label="Open status timeline"
+      >
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Workflow · {completed}/3</span>
+          <span className={`text-[10px] font-bold ${allDone ? "text-emerald-700" : "text-amber-700"}`}>
+            {allDone ? "✓ All steps done" : "Tap for status"}
+          </span>
+        </div>
+        <div className="flex items-end gap-1.5">
+          <StepDot done={steps.accept} label="Accept" />
+          <StepBar done={steps.call} />
+          <StepDot done={steps.call} label="Call" />
+          <StepBar done={steps.msg} />
+          <StepDot done={steps.msg} label="Message" />
+        </div>
+      </Link>
+
+      {/* Action bar — status text + Call + Chat (with unread badge) */}
       <div className="flex items-stretch border-t border-slate-200/70">
         <div className="flex-1 py-2.5 grid place-items-center text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] tracking-wider uppercase">
           {st.label}
         </div>
-        <a href={`tel:${lead.phone}`} aria-label="Call" className="px-5 grid place-items-center border-l border-slate-200/70 active:scale-95">
-          <Phone className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+        <a
+          href={`tel:${lead.phone}`}
+          onClick={() => markCall()}
+          aria-label="Call"
+          className="px-5 grid place-items-center border-l border-slate-200/70 active:scale-95"
+        >
+          <Phone className={`h-4 w-4 ${steps.call ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`} />
         </a>
         <Link
           to="/vendor/chat"
           search={{ leadId: lead.id } as never}
+          onClick={() => markMsg()}
           aria-label="Open chat"
           className="relative px-5 grid place-items-center border-l border-slate-200/70 active:scale-95"
         >
-          <MessageCircle className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
+          <MessageCircle className={`h-4 w-4 ${steps.msg ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`} />
           {unread > 0 && (
             <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
               {unread > 99 ? "99+" : unread}
@@ -742,6 +765,28 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
     </article>
   );
 }
+
+function StepDot({ done, label }: { done: boolean; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+      <span
+        className={`h-5 w-5 rounded-full grid place-items-center text-[10px] font-bold border-2 transition ${
+          done ? "bg-emerald-500 text-white border-emerald-600 shadow" : "bg-white text-slate-400 border-slate-300"
+        }`}
+      >
+        {done ? "✓" : ""}
+      </span>
+      <span className={`text-[8px] font-bold uppercase tracking-wider ${done ? "text-emerald-700" : "text-slate-500"}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function StepBar({ done }: { done: boolean }) {
+  return <span className={`flex-1 h-0.5 rounded-full transition mb-2.5 ${done ? "bg-emerald-500" : "bg-slate-300"}`} />;
+}
+
 
 
 
