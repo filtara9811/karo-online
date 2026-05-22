@@ -8,10 +8,12 @@ import { toast } from "sonner";
 type ReadyRow = {
   leadId: string;
   customerName: string | null;
+  customerAvatar: string | null;
   subCategoryName: string;
   address: string | null;
   note: string | null;
   acceptedAt: string;
+  items: { name: string; image: string | null }[];
 };
 
 
@@ -89,7 +91,7 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
         supabase.rpc("get_my_pending_lead_briefs"),
         supabase
           .from("lead_notifications")
-          .select("lead_id, responded_at, leads!inner(id, sub_category_name, customer_name, address, note)")
+          .select("lead_id, responded_at, leads!inner(id, customer_id, sub_category_name, customer_name, address, note, item_ids, item_names, images)")
           .eq("vendor_id", user.id)
           .eq("status", "accepted")
           .is("vendor_started_at", null)
@@ -109,14 +111,47 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
           note: b.note ?? null,
           createdAt: b.created_at,
         }));
-      const readyMapped: ReadyRow[] = (acc ?? []).map((r: any) => ({
-        leadId: r.lead_id,
-        customerName: r.leads?.customer_name ?? "Customer",
-        subCategoryName: r.leads?.sub_category_name ?? "Service",
-        address: r.leads?.address ?? null,
-        note: r.leads?.note ?? null,
-        acceptedAt: r.responded_at,
-      }));
+
+      // Fetch customer avatars + catalog item images for ready rows
+      const accRows = (acc ?? []) as any[];
+      const customerIds = Array.from(new Set(accRows.map((r) => r.leads?.customer_id).filter(Boolean))) as string[];
+      const itemIds = Array.from(new Set(accRows.flatMap((r) => (r.leads?.item_ids ?? []) as string[])));
+      const [{ data: customersData }, { data: itemsData }] = await Promise.all([
+        customerIds.length
+          ? supabase.from("customers").select("user_id, avatar_url, name").in("user_id", customerIds)
+          : Promise.resolve({ data: [] as any[] }),
+        itemIds.length
+          ? supabase.from("catalog_items").select("id, name, image_url").in("id", itemIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const custMap = new Map<string, { avatar_url: string | null; name: string | null }>();
+      (customersData ?? []).forEach((c: any) => custMap.set(c.user_id, { avatar_url: c.avatar_url, name: c.name }));
+      const itemMap = new Map<string, { name: string; image: string | null }>();
+      (itemsData ?? []).forEach((it: any) => itemMap.set(it.id, { name: it.name, image: it.image_url ?? null }));
+
+      const readyMapped: ReadyRow[] = accRows.map((r: any) => {
+        const cust = custMap.get(r.leads?.customer_id);
+        const ids: string[] = r.leads?.item_ids ?? [];
+        const names: string[] = r.leads?.item_names ?? [];
+        const imgs: string[] = r.leads?.images ?? [];
+        const items =
+          ids.length > 0
+            ? ids.map((id, idx) => {
+                const info = itemMap.get(id);
+                return { name: info?.name || names[idx] || "Item", image: info?.image ?? imgs[idx] ?? null };
+              })
+            : [{ name: r.leads?.sub_category_name ?? "Service", image: imgs[0] ?? null }];
+        return {
+          leadId: r.lead_id,
+          customerName: cust?.name ?? r.leads?.customer_name ?? "Customer",
+          customerAvatar: cust?.avatar_url ?? null,
+          subCategoryName: r.leads?.sub_category_name ?? "Service",
+          address: r.leads?.address ?? null,
+          note: r.leads?.note ?? null,
+          acceptedAt: r.responded_at,
+          items,
+        };
+      });
       if (alive) { setRows(mapped); setReady(readyMapped); setLoading(false); }
     };
     load();
@@ -208,8 +243,12 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                           className="rounded-2xl bg-white border border-emerald-200/70 shadow-sm overflow-hidden"
                         >
                           <div className="p-3.5 flex items-start gap-3">
-                            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-emerald-200 to-emerald-500 grid place-items-center text-white font-bold flex-shrink-0 shadow">
-                              {(r.customerName || "C").charAt(0).toUpperCase()}
+                            <div className="h-11 w-11 rounded-full overflow-hidden bg-gradient-to-br from-emerald-200 to-emerald-500 grid place-items-center text-white font-bold flex-shrink-0 shadow border-2 border-white">
+                              {r.customerAvatar ? (
+                                <img src={r.customerAvatar} alt={r.customerName || ""} className="h-full w-full object-cover" />
+                              ) : (
+                                (r.customerName || "C").charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-display font-bold text-[15px] text-slate-800 truncate">
@@ -226,6 +265,26 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                               )}
                             </div>
                           </div>
+                          {/* Product thumbnails */}
+                          {r.items.length > 0 && (
+                            <div className="px-3.5 pb-2 flex gap-1.5 flex-wrap">
+                              {r.items.slice(0, 4).map((it, i) => (
+                                <div key={i} className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
+                                  <div className="h-7 w-7 rounded-md overflow-hidden bg-white border border-emerald-100 flex-shrink-0 grid place-items-center">
+                                    {it.image ? (
+                                      <img src={it.image} alt={it.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <span className="text-[8px] font-bold text-slate-400">{it.name.charAt(0)}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-900 truncate max-w-[90px]">{it.name}</span>
+                                </div>
+                              ))}
+                              {r.items.length > 4 && (
+                                <span className="text-[10px] font-bold text-emerald-700 self-center">+{r.items.length - 4}</span>
+                              )}
+                            </div>
+                          )}
                           <button
                             disabled={busy === r.leadId}
                             onClick={() => startWork(r.leadId)}
