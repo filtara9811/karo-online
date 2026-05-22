@@ -1,0 +1,31 @@
+{
+  "name": "Karo Vendor",
+  "short_name": "Vendor",
+  "id": "/vendor/",
+  "start_url": "/vendor/dashboard",
+  "scope": "/vendor/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "theme_color": "#0EA5E9",
+  "background_color": "#FFD400",
+  "orientation": "portrait",
+  "lang": "en",
+  "dir": "ltr",
+  "description": "Karo Vendor — leads receive karein, quotes bhejein aur orders manage karein. Sirf vendors ke liye.",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
