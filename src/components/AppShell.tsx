@@ -143,6 +143,14 @@ function TopHeader() {
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
               className="h-full w-full object-cover"
             />
+            {unread > 0 && (
+              <span
+                aria-label={`${unread} new notifications`}
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full text-[10px] font-bold text-white bg-emerald-500 border-2 border-white shadow-[0_0_0_1px_rgba(16,185,129,0.4)] animate-pulse"
+              >
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
           </span>
           <span className="flex flex-col leading-tight min-w-0">
             <span className="font-display text-sm text-gold-gradient truncate">{profile?.name || "Welcome"}</span>
