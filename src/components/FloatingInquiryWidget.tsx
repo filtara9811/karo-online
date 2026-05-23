@@ -70,24 +70,30 @@ export function FloatingInquiryWidget() {
     setConfirmCancel(null);
   };
 
-  // On /quick (home), default position is BEHIND the search bar (peeking
-  // out from above the white container). The widget is rendered at a lower
-  // z-index than the white sheet (z-10 vs z-20), so its bottom half is
-  // visually tucked behind the container. User can still drag it anywhere.
+  // On /quick (home) the widget is PINNED to peek out from just behind the
+  // white search-bar container. Sheet top sits at (vh - 34vh + 24)px from
+  // bottom; place widget bottom ~55% of its height below that line so the
+  // lower half tucks behind (z-15 vs sheet z-20) and the upper half pops
+  // out above. Stored drag-offset is ignored on home (always pinned).
   const isHome = location.pathname.startsWith("/quick");
   const widgetH = 56;
-  const defaultBottom = isHome ? Math.max(0, vh - Math.round(vh * 0.34) - 28) : 112;
+  const mapPx = Math.round(vh * 0.34);
+  const sheetTopFromBottom = vh - mapPx + 24;
+  const defaultBottom = isHome
+    ? Math.max(40, sheetTopFromBottom - Math.round(widgetH * 0.55))
+    : 112;
   const widgetW = 260;
+  const animX = isHome ? 0 : pos.x;
+  const animY = isHome ? 0 : pos.y;
 
   return (
     <>
-      {/* Invisible full-viewport constraint container */}
       <div ref={constraintsRef} className="fixed inset-0 z-[9] pointer-events-none" />
 
       <AnimatePresence>
         <motion.div
           key="floating-inquiry"
-          drag
+          drag={!isHome}
           dragControls={dragControls}
           dragListener={false}
           dragMomentum={false}
@@ -98,17 +104,31 @@ export function FloatingInquiryWidget() {
             top: -(vh - widgetH - defaultBottom - 32),
             bottom: defaultBottom - 16,
           }}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1, x: pos.x, y: pos.y }}
+          initial={{ opacity: 0, scale: 0.85, y: 20 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            x: animX,
+            y: isHome ? [animY, animY - 4, animY, animY - 2, animY] : animY,
+            rotate: isHome ? [0, -1.4, 1.4, -0.8, 0.8, 0] : 0,
+          }}
           exit={{ opacity: 0, scale: 0.85 }}
-          transition={{ type: "spring", damping: 24, stiffness: 280 }}
+          transition={isHome
+            ? {
+                type: "spring", damping: 22, stiffness: 260,
+                y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
+                rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
+              }
+            : { type: "spring", damping: 24, stiffness: 280 }
+          }
           onDragEnd={(_, info) => {
+            if (isHome) return;
             const next = { x: pos.x + info.offset.x, y: pos.y + info.offset.y };
             setPos(next);
             savePos(next);
           }}
           className={`fixed ${isHome ? "z-[15]" : "z-[70]"} ${isHome ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
-          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: "none" }}
+          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
         >
           {/* Pulse halo (only on home) */}
           {isHome && (
