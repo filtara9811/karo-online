@@ -65,6 +65,7 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const { inquiry } = useActiveInquiry();
+  const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -91,7 +92,10 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
 
   // Reset approved when sheet reopens with a different lead
   useEffect(() => {
-    if (open) setApprovedId(null);
+    if (open) {
+      setApprovedId(null);
+      seenVendorIdsRef.current = new Set();
+    }
   }, [open, leadId]);
 
   useEffect(() => {
@@ -102,6 +106,11 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
       if (!alive) return;
       setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
       const list = (data ?? []) as AcceptedVendor[];
+      const nextIds = new Set(list.map((v) => v.vendor_id));
+      if (seenVendorIdsRef.current.size > 0 && list.some((v) => !seenVendorIdsRef.current.has(v.vendor_id))) {
+        playPing("message");
+      }
+      seenVendorIdsRef.current = nextIds;
       setVendors(list);
       setLoading(false);
       // keep inquiry vendor count fresh
