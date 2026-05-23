@@ -354,11 +354,11 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
                           <img
                             src={v.avatar_url}
                             alt={displayName}
-                            className="h-17 w-17 rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
+                            className="h-[68px] w-[68px] rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="h-17 w-17 rounded-2xl border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-xl font-bold text-amber-800">
+                          <div className="h-[68px] w-[68px] rounded-2xl border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-xl font-bold text-amber-800">
                             {initials(displayName)}
                           </div>
                         )}
