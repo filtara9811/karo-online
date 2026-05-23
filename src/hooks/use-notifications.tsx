@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { playPing } from "@/lib/lead-sound";
+import { setAppBadge } from "@/lib/tts";
 
 /**
  * Unified unread counters across the app for the signed-in user.
@@ -122,6 +123,9 @@ export function useNotifications() {
     setItems(all);
     setCounts(c);
     setLoading(false);
+    // Keep OS app-icon badge in sync with unread total
+    setAppBadge(c.total);
+    try { localStorage.setItem("ko-badge-count-v1", String(c.total)); } catch { /* */ }
 
     // Play ping + Paytm/PhonePe-style toast for genuinely new unread arrivals
     if (firstLoadDone.current) {
