@@ -360,11 +360,18 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                         <img src={coverImage} alt={category ?? "Service"} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/90" />
-                      <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
-                        ✦ {category ?? "Service"}
+                      <div className="absolute top-2 left-3 flex items-center gap-1.5">
+                        <div className="px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
+                          ✦ {category ?? "Service"}
+                        </div>
+                        {priceRange && (
+                          <div className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                            <IndianRupee className="h-2.5 w-2.5" /> {priceRange.replace(/₹/g, "").trim()}
+                          </div>
+                        )}
                       </div>
                       {v.distance_km != null && (
-                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-sky-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
                           <MapPin className="h-3 w-3" /> {v.distance_km} km
                         </div>
                       )}
