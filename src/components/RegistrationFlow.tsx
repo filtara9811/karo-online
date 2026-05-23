@@ -350,7 +350,10 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    try { navigate({ to: "/quick" }); } catch { /* ignore */ }
+    // Customer flow falls back to /quick; vendor flow's onComplete navigates itself.
+    if (flow !== "vendor") {
+      try { navigate({ to: "/quick" }); } catch { /* ignore */ }
+    }
   };
 
   return (
