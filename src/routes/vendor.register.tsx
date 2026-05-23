@@ -437,6 +437,7 @@ function VendorRegister() {
         </div>
         <RegistrationFlow
           transparent
+          flow="vendor"
           onBack={() => navigate({ to: "/" })}
           onComplete={handleVendorAuthComplete}
         />
