@@ -27,10 +27,42 @@ jobs:
         run: |
           # Android SDK के लिए ऑटो-रिप्लाई
           yes | bubblewrap doctor
-          
-          # पब्लिश होने के बाद अब यह मेनिफेस्ट बिना किसी एरर के डाउनलोड होगा
-          yes | bubblewrap init --manifest=https://karoonline.in/manifest.json --name="Karo Online" --shortName="Karo" --themeColor="#000080" --backgroundColor="#FFFFFF" --host="karoonline.in" --startUrl="/" --packageId="app.karoonline.twa" --yes
-          
+
+          # Play Store app details fixed here — package name वही रहेगा,
+          # लेकिन app name/icon/theme अब package/blue Chrome जैसा नहीं दिखेगा.
+          cat > twa-manifest.json <<'JSON'
+          {
+            "packageId": "app.karoonline.twa",
+            "host": "karoonline.in",
+            "name": "Karo Online",
+            "launcherName": "Karo Online",
+            "display": "standalone",
+            "displayOverride": ["standalone"],
+            "themeColor": "#e8e0d0",
+            "themeColorDark": "#0f0b14",
+            "navigationColor": "#0f0b14",
+            "navigationColorDark": "#0f0b14",
+            "navigationDividerColor": "#0f0b14",
+            "navigationDividerColorDark": "#0f0b14",
+            "backgroundColor": "#FFFFFF",
+            "enableNotifications": false,
+            "startUrl": "/",
+            "iconUrl": "https://karoonline.in/icon-512.png",
+            "maskableIconUrl": "https://karoonline.in/icon-512.png",
+            "splashScreenFadeOutDuration": 300,
+            "signingKey": { "path": "./android.keystore", "alias": "android" },
+            "appVersionCode": 2,
+            "appVersion": "1.0.1",
+            "fallbackType": "customtabs",
+            "features": {},
+            "enableSiteSettingsShortcut": false,
+            "orientation": "portrait",
+            "fingerprints": [],
+            "additionalTrustedOrigins": []
+          }
+          JSON
+
+          yes | bubblewrap update --skipVersionUpgrade
           yes | bubblewrap build
 
       - name: Collect All Files
