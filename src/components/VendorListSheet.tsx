@@ -451,8 +451,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                     {/* Action bar */}
                     <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2">
                       <button
-                        onClick={() => approveVendor(v)}
-                        disabled={!!approvedId || approving === v.vendor_id}
+                        onClick={() => isApproved ? setManageOpen(true) : approveVendor(v)}
+                        disabled={(!!approvedId && !isApproved) || approving === v.vendor_id}
                         className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
                           isApproved
                             ? "bg-emerald-500 text-white"
@@ -464,7 +464,7 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                         {approving === v.vendor_id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : isApproved ? (
-                          <><CheckCircle2 className="h-4 w-4" /> Approved</>
+                          <><CheckCircle2 className="h-4 w-4" /> Approved · Manage</>
                         ) : (
                           <>Approve</>
                         )}
