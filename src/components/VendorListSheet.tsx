@@ -210,7 +210,12 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const openTrackStatus = () => {
     setManageOpen(false);
     onClose();
-    navigate({ to: "/orders" });
+    // Go directly to the vertical stepper for the approved vendor.
+    if (approvedId) {
+      navigate({ to: "/status", search: { vendorId: approvedId, orderId: "" } as never });
+    } else {
+      navigate({ to: "/orders" });
+    }
   };
 
   const handleMinimize = () => {
