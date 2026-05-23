@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
 import type { LeadChatPeer } from "@/components/LeadChatThread";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
+import { playPing } from "@/lib/lead-sound";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -20,6 +21,10 @@ type AcceptedVendor = {
   distance_km: number | null;
   vendor_note?: string | null;
   quoted_price?: number | null;
+  price_min?: number | null;
+  price_max?: number | null;
+  mapping_notes?: string | null;
+  cover_image_url?: string | null;
 };
 
 type Props = {
@@ -34,9 +39,21 @@ type Props = {
   onMinimize?: () => void;
 };
 
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
 const SEARCH_WINDOW_MS = 25_000;
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
+}
+
+function formatMoney(value?: number | null) {
+  if (value == null) return null;
+  return `₹${Number(value).toLocaleString("en-IN")}`;
+}
 
 export function VendorListSheet({ open, category, productImage, leadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
