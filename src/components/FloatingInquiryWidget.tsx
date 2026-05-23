@@ -134,15 +134,17 @@ export function FloatingInquiryWidget() {
               : "bg-gradient-to-br from-[#fff8dc] to-white border-[color:oklch(0.78_0.14_82/0.55)]"
           }`}>
             <div className="flex items-stretch">
-              {/* Drag handle */}
-              <button
-                onPointerDown={(e) => dragControls.start(e)}
-                aria-label="Drag"
-                className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
-                style={{ touchAction: "none" }}
-              >
-                <GripVertical className="h-4 w-4" />
-              </button>
+              {/* Drag handle (hidden when pinned on home) */}
+              {!pinned && (
+                <button
+                  onPointerDown={(e) => dragControls.start(e)}
+                  aria-label="Drag"
+                  className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
+                  style={{ touchAction: "none" }}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </button>
+              )}
 
               {/* Tap target */}
               <button
