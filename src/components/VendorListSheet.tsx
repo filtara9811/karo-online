@@ -545,6 +545,79 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
         )}
       </AnimatePresence>
 
+      {/* Manage approved vendor — bottom sheet with 3 actions */}
+      <AnimatePresence>
+        {manageOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[92] flex items-end justify-center bg-black/45 backdrop-blur-sm"
+            onClick={() => setManageOpen(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl pb-[env(safe-area-inset-bottom)]"
+            >
+              <div className="flex justify-center pt-2 pb-1">
+                <span className="h-1.5 w-14 rounded-full bg-slate-200" />
+              </div>
+              <div className="px-5 pt-2 pb-1 text-center">
+                <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-emerald-700">✓ Approved</p>
+                <h3 className="font-display text-lg font-bold text-slate-800">Manage this inquiry</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Choose what you want to do next</p>
+              </div>
+              <div className="px-4 py-4 space-y-2">
+                <button
+                  onClick={openTrackStatus}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-emerald-500 text-white grid place-items-center shadow">
+                    <ListChecks className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-emerald-800">Track Status</p>
+                    <p className="text-[11px] text-slate-500">Packed · Checked · Live updates from vendor</p>
+                  </div>
+                </button>
+                <button
+                  onClick={unapproveVendor}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-amber-300 bg-amber-50/60 active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-amber-500 text-white grid place-items-center shadow">
+                    <RotateCcw className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-amber-800">Unapprove</p>
+                    <p className="text-[11px] text-slate-500">Bring back the full vendor list to choose again</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setManageOpen(false); setConfirmCancel(true); }}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-red-200 bg-red-50/60 active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-red-500 text-white grid place-items-center shadow">
+                    <Ban className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-red-700">Cancel inquiry</p>
+                    <p className="text-[11px] text-slate-500">End this request — vendor will be notified</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setManageOpen(false)}
+                  className="w-full h-10 mt-1 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm active:scale-95"
+                >
+                  Keep as is
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
+
       <AnimatePresence>
         {chatPeer && (
           <VendorChatSheet
