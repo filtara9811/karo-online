@@ -122,7 +122,7 @@ export function FloatingInquiryWidget() {
             savePos(next);
           }}
           className={`fixed ${isHome ? "z-[15]" : "z-[70]"} ${isHome ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
-          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
+          style={{ bottom: isHome ? `calc(66vh - 4px)` : `calc(112px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
         >
           {/* Pulse halo (only on home) */}
           {isHome && (
