@@ -19,3 +19,9 @@
   Access-Control-Allow-Methods: GET, HEAD, OPTIONS
   Access-Control-Allow-Headers: Content-Type, Accept, Origin, User-Agent
   Cache-Control: public, max-age=300, must-revalidate
+
+/.well-known/web-app-origin-association
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Cache-Control: public, max-age=300, must-revalidate

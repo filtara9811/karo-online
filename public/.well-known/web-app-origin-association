@@ -1,0 +1,16 @@
+{
+  "web_apps": [
+    {
+      "manifest": "https://karoonline.in/manifest.json",
+      "details": {
+        "paths": ["/*"]
+      }
+    },
+    {
+      "manifest": "https://www.karoonline.in/manifest.json",
+      "details": {
+        "paths": ["/*"]
+      }
+    }
+  ]
+}
