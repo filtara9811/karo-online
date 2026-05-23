@@ -93,6 +93,8 @@ export type RegistrationFlowProps = {
   hideBack?: boolean;
   onBack?: () => void;
   onComplete?: () => void;
+  /** "vendor" enables vendor-claim-by-phone fast path + skips /quick navigation. */
+  flow?: "customer" | "vendor";
 };
 
 function readReferralFromContext(): { code: string; locked: boolean } {
@@ -112,7 +114,7 @@ function readReferralFromContext(): { code: string; locked: boolean } {
   return { code: "", locked: false };
 }
 
-export function RegistrationFlow({ transparent, onBack, onComplete }: RegistrationFlowProps) {
+export function RegistrationFlow({ transparent, onBack, onComplete, flow = "customer" }: RegistrationFlowProps) {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const draft = useMemo(readDraft, []);
@@ -228,6 +230,21 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
         setOtp("");
         return;
       }
+      // Vendor flow: relink existing vendor row to current auth user (handles
+      // duplicate-auth-identity case) and skip the customer name/gender step.
+      if (flow === "vendor") {
+        try {
+          const { data: v } = await supabase.rpc("vendor_claim_by_phone", { _phone: phone });
+          const row = Array.isArray(v) ? v[0] : v;
+          if (row?.user_id) {
+            try { window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true"); } catch { /* */ }
+            try { window.localStorage.removeItem(CUSTOMER_DRAFT_KEY); } catch { /* */ }
+            toast.success(`Welcome back, ${row.business_name || "Vendor"}`);
+            onComplete?.();
+            return;
+          }
+        } catch (e) { console.warn("[vendor_claim_by_phone]", e); }
+      }
       // Lookup existing customer by phone
       try {
         const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
@@ -333,7 +350,10 @@ export function RegistrationFlow({ transparent, onBack, onComplete }: Registrati
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    try { navigate({ to: "/quick" }); } catch { /* ignore */ }
+    // Customer flow falls back to /quick; vendor flow's onComplete navigates itself.
+    if (flow !== "vendor") {
+      try { navigate({ to: "/quick" }); } catch { /* ignore */ }
+    }
   };
 
   return (

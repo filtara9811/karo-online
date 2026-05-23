@@ -3724,6 +3724,16 @@ export type Database = {
         Args: { _accuracy?: number; _lat: number; _lng: number }
         Returns: Json
       }
+      vendor_claim_by_phone: {
+        Args: { _phone: string }
+        Returns: {
+          business_name: string
+          relinked: boolean
+          status: string
+          user_id: string
+          whatsapp: string
+        }[]
+      }
       wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {

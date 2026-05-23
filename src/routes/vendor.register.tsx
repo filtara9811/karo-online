@@ -153,6 +153,12 @@ function VendorRegister() {
     }
     let cancelled = false;
     (async () => {
+      // Best-effort: relink an orphaned vendor row (created under a previous
+      // auth identity for the same phone) to this auth user.
+      const phoneDigits = (user.phone || profile?.phone || "").replace(/\D/g, "");
+      if (phoneDigits.length >= 10) {
+        try { await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits }); } catch { /* ignore */ }
+      }
       const { data } = await supabase
         .from("vendors")
         .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
@@ -264,12 +270,20 @@ function VendorRegister() {
   const handleVendorAuthComplete = async () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
+    // Try to relink any pre-existing vendor row (by phone) to this auth user.
+    const phoneDigits = (auth.user.phone || profile?.phone || "").replace(/\D/g, "");
+    if (phoneDigits.length >= 10) {
+      try { await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits }); } catch { /* ignore */ }
+    }
     const { data: existingVendor } = await supabase
       .from("vendors")
       .select("user_id")
       .eq("user_id", auth.user.id)
       .maybeSingle();
-    if (existingVendor) navigate({ to: "/vendor/dashboard" });
+    if (existingVendor) {
+      try { sessionStorage.setItem(`vendor:registered:${auth.user.id}`, "1"); } catch {}
+      navigate({ to: "/vendor/dashboard" });
+    }
   };
 
   const pickerConfig = useMemo(() => {
@@ -429,6 +443,7 @@ function VendorRegister() {
         </div>
         <RegistrationFlow
           transparent
+          flow="vendor"
           onBack={() => navigate({ to: "/" })}
           onComplete={handleVendorAuthComplete}
         />
