@@ -95,8 +95,8 @@ export function FloatingInquiryWidget() {
           dragConstraints={{
             left: -(vw - widgetW - 16),
             right: 0,
-            top: -(vh - widgetH - defaultBottom - 32),
-            bottom: defaultBottom - 16,
+            top: -(vh - widgetH - 112 - 32),
+            bottom: 112 - 16,
           }}
           initial={{ opacity: 0, scale: 0.85, y: 20 }}
           animate={{
