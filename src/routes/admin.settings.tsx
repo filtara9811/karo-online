@@ -111,6 +111,7 @@ function SettingsPage() {
       )}
 
       <div className="mt-6 max-w-2xl"><LeadDefaultsCard /></div>
+      <div className="mt-6 max-w-2xl"><NoVendorStateCard /></div>
       <div className="mt-6 max-w-2xl"><VendorAppCard /></div>
       <div className="mt-6 max-w-2xl"><MediaLibraryCard /></div>
     </div>
