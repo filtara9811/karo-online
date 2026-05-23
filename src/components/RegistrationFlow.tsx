@@ -93,6 +93,8 @@ export type RegistrationFlowProps = {
   hideBack?: boolean;
   onBack?: () => void;
   onComplete?: () => void;
+  /** "vendor" enables vendor-claim-by-phone fast path + skips /quick navigation. */
+  flow?: "customer" | "vendor";
 };
 
 function readReferralFromContext(): { code: string; locked: boolean } {
