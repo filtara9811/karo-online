@@ -112,6 +112,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   useEffect(() => {
+    // Canonical hostname: keep installed PWA on a single origin so Chrome
+    // never shows the "in-app browser" bar when navigating between
+    // www.karoonline.in and karoonline.in.
+    try {
+      const h = window.location.hostname;
+      if (h === "www.karoonline.in") {
+        const url = new URL(window.location.href);
+        url.hostname = "karoonline.in";
+        window.location.replace(url.toString());
+        return;
+      }
+    } catch {
+      /* noop */
+    }
     registerPwaServiceWorker();
   }, []);
   return (
