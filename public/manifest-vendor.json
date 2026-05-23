@@ -6,7 +6,7 @@
   "scope": "/vendor/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "theme_color": "#0EA5E9",
+  "theme_color": "#e8e0d0",
   "background_color": "#0EA5E9",
   "orientation": "portrait",
   "lang": "en",
