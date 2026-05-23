@@ -556,14 +556,14 @@ export function QuickServiceMap({
         {vendors.length} nearby vendors
       </div>
 
-      {/* Tap-to-enable banner when location is denied/unavailable */}
+      {/* Tap-to-enable — tiny corner chip so it doesn't cover the search area */}
       {denied && (
         <button
           onClick={requestLocation}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white shadow-lg border border-amber-300 text-[11px] font-semibold text-amber-900 active:scale-95"
+          aria-label="Enable precise location"
+          className="absolute top-3 right-12 z-30 h-7 w-7 rounded-full bg-white/90 border border-amber-300 shadow grid place-items-center active:scale-95"
         >
           <MapPin className="h-3.5 w-3.5 text-red-500" />
-          Tap to enable precise location
         </button>
       )}
     </div>
