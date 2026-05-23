@@ -70,18 +70,12 @@ export function FloatingInquiryWidget() {
     setConfirmCancel(null);
   };
 
-  // On /quick (home) the widget is PINNED to peek out from just behind the
-  // white search-bar container. Sheet top sits at (vh - 34vh + 24)px from
-  // bottom; place widget bottom ~55% of its height below that line so the
-  // lower half tucks behind (z-15 vs sheet z-20) and the upper half pops
-  // out above. Stored drag-offset is ignored on home (always pinned).
+  // On /quick (home) the widget is PINNED to peek from BEHIND the white
+  // sheet container. The sheet starts at (34vh - 24px) from top (map=34vh
+  // with -mt-6 overlap). We want widget vertical center on that edge so
+  // half tucks behind (z-15 < sheet z-20) and half pokes above.
   const isHome = location.pathname.startsWith("/quick");
   const widgetH = 56;
-  const mapPx = Math.round(vh * 0.34);
-  const sheetTopFromBottom = vh - mapPx + 24;
-  const defaultBottom = isHome
-    ? Math.max(40, sheetTopFromBottom - Math.round(widgetH * 0.55))
-    : 112;
   const widgetW = 260;
   const animX = isHome ? 0 : pos.x;
   const animY = isHome ? 0 : pos.y;
@@ -101,8 +95,8 @@ export function FloatingInquiryWidget() {
           dragConstraints={{
             left: -(vw - widgetW - 16),
             right: 0,
-            top: -(vh - widgetH - defaultBottom - 32),
-            bottom: defaultBottom - 16,
+            top: -(vh - widgetH - 112 - 32),
+            bottom: 112 - 16,
           }}
           initial={{ opacity: 0, scale: 0.85, y: 20 }}
           animate={{
@@ -128,7 +122,7 @@ export function FloatingInquiryWidget() {
             savePos(next);
           }}
           className={`fixed ${isHome ? "z-[15]" : "z-[70]"} ${isHome ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
-          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
+          style={{ bottom: isHome ? `calc(66vh - 4px)` : `calc(112px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
         >
           {/* Pulse halo (only on home) */}
           {isHome && (
