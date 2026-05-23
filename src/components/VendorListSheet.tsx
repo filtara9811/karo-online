@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
 import type { LeadChatPeer } from "@/components/LeadChatThread";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
+import { playPing } from "@/lib/lead-sound";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -20,6 +21,10 @@ type AcceptedVendor = {
   distance_km: number | null;
   vendor_note?: string | null;
   quoted_price?: number | null;
+  price_min?: number | null;
+  price_max?: number | null;
+  mapping_notes?: string | null;
+  cover_image_url?: string | null;
 };
 
 type Props = {
@@ -34,9 +39,21 @@ type Props = {
   onMinimize?: () => void;
 };
 
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
 const SEARCH_WINDOW_MS = 25_000;
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
+}
+
+function formatMoney(value?: number | null) {
+  if (value == null) return null;
+  return `₹${Number(value).toLocaleString("en-IN")}`;
+}
 
 export function VendorListSheet({ open, category, productImage, leadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
@@ -48,6 +65,7 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const { inquiry } = useActiveInquiry();
+  const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -74,7 +92,10 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
 
   // Reset approved when sheet reopens with a different lead
   useEffect(() => {
-    if (open) setApprovedId(null);
+    if (open) {
+      setApprovedId(null);
+      seenVendorIdsRef.current = new Set();
+    }
   }, [open, leadId]);
 
   useEffect(() => {
@@ -85,6 +106,11 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
       if (!alive) return;
       setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
       const list = (data ?? []) as AcceptedVendor[];
+      const nextIds = new Set(list.map((v) => v.vendor_id));
+      if (seenVendorIdsRef.current.size > 0 && list.some((v) => !seenVendorIdsRef.current.has(v.vendor_id))) {
+        playPing("message");
+      }
+      seenVendorIdsRef.current = nextIds;
       setVendors(list);
       setLoading(false);
       // keep inquiry vendor count fresh
@@ -279,6 +305,11 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
                 const rating = Number(v.rating ?? 4.8);
                 const happyPct = Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
                 const badPct = 100 - happyPct;
+                const coverImage = v.cover_image_url || productImage || null;
+                const priceRange = v.price_min != null && v.price_max != null
+                  ? `${formatMoney(v.price_min)} – ${formatMoney(v.price_max)}`
+                  : formatMoney(v.quoted_price);
+                const detailNote = v.mapping_notes || v.vendor_note || null;
                 // No KYC field in RPC yet — show pending pill as default (verified surfaces via BadgeCheck on avatar already).
                 const kycVerified = false;
                 return (
@@ -296,8 +327,11 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
                     }`}
                   >
                     {/* Cover/header strip */}
-                    <div className="relative h-16 bg-gradient-to-br from-[#fff8dc] via-[#fde68a] to-[#fbbf24] overflow-hidden">
-                      <div className="absolute inset-0 opacity-25" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
+                    <div className="relative h-20 bg-[color:oklch(0.86_0.08_86)] overflow-hidden">
+                      {coverImage ? (
+                        <img src={coverImage} alt={category ?? "Service"} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                      ) : null}
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/90" />
                       <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
                         ✦ {category ?? "Service"}
                       </div>
@@ -314,60 +348,66 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
                     </div>
 
                     {/* Identity row */}
-                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-9 relative">
+                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-10 relative">
                       <div className="relative flex-shrink-0">
-                        <img
-                          src={v.avatar_url || FALLBACK_AVATAR}
-                          alt={displayName}
-                          className="h-16 w-16 rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
-                          loading="lazy"
-                        />
+                        {v.avatar_url ? (
+                          <img
+                            src={v.avatar_url}
+                            alt={displayName}
+                            className="h-[68px] w-[68px] rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-[68px] w-[68px] rounded-2xl border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-xl font-bold text-amber-800">
+                            {initials(displayName)}
+                          </div>
+                        )}
                         <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
                           <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0 pt-10">
+                      <div className="flex-1 min-w-0 pt-11">
                         <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
                           {displayName}
                         </h4>
                         <p className="text-[11px] text-slate-500 truncate">{sub}</p>
-                        <div className="mt-1 flex items-center gap-1.5 text-[11px] flex-wrap">
-                          <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
-                            <Star className="h-3 w-3" fill="currentColor" />
-                            {rating.toFixed(1)}
-                          </span>
-                          <span className="text-slate-300">·</span>
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-600">
-                            <ThumbsDown className="h-2.5 w-2.5" /> {badPct}%
-                          </span>
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700">
-                            <ThumbsUp className="h-2.5 w-2.5" /> {happyPct}%
-                          </span>
-                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full text-[9px] font-bold ${
-                            kycVerified
-                              ? "bg-emerald-50 border border-emerald-300 text-emerald-700"
-                              : "bg-amber-50 border border-amber-300 text-amber-700"
-                          }`}>
-                            {kycVerified ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
-                            KYC {kycVerified ? "verified" : "pending"}
-                          </span>
-                        </div>
+                        {priceRange && (
+                          <p className="mt-1 text-[12px] font-bold text-emerald-700 truncate">
+                            {priceRange} <span className="font-semibold text-slate-400">mapped rate</span>
+                          </p>
+                        )}
+                        {detailNote && (
+                          <p className="mt-0.5 text-[11px] text-slate-500 leading-snug line-clamp-1">
+                            {detailNote}
+                          </p>
+                        )}
                       </div>
+                    </div>
+
+                    <div className="mx-3 mb-2 grid grid-cols-4 gap-1.5 rounded-xl bg-slate-50 border border-slate-100 px-2 py-1.5 text-center">
+                      <span className="inline-flex items-center justify-center gap-0.5 font-bold text-amber-700 text-[11px]">
+                        <Star className="h-3 w-3" fill="currentColor" /> {rating.toFixed(1)}
+                      </span>
+                      <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-red-600">
+                        <ThumbsDown className="h-2.5 w-2.5" /> {badPct}%
+                      </span>
+                      <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-emerald-700">
+                        <ThumbsUp className="h-2.5 w-2.5" /> {happyPct}%
+                      </span>
+                      <span className={`inline-flex items-center justify-center gap-0.5 rounded-full text-[9px] font-bold ${kycVerified ? "text-emerald-700" : "text-amber-700"}`}>
+                        {kycVerified ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
+                        KYC
+                      </span>
                     </div>
 
                     {/* Price + note */}
                     <div className="px-3 pb-2">
-                      {v.quoted_price != null && (
+                      {v.quoted_price != null && v.price_min == null && (
                         <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-2xl leading-none">
                           <IndianRupee className="h-5 w-5 self-center" />
                           {Number(v.quoted_price).toLocaleString("en-IN")}
                           <span className="ml-1.5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">vendor quote</span>
                         </div>
-                      )}
-                      {v.vendor_note && (
-                        <p className="mt-1 text-[12px] text-slate-600 leading-snug line-clamp-2">
-                          <span className="font-semibold text-slate-800">Note · </span>{v.vendor_note}
-                        </p>
                       )}
                     </div>
 

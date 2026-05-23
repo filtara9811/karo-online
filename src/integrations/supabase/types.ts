@@ -3402,10 +3402,14 @@ export type Database = {
         Returns: {
           avatar_url: string
           business_name: string
+          cover_image_url: string
           distance_km: number
           email: string
+          mapping_notes: string
           owner_name: string
           phone: string
+          price_max: number
+          price_min: number
           quoted_price: number
           rating: number
           total_reviews: number

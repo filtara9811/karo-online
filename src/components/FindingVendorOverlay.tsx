@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Radar, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { playPing } from "@/lib/lead-sound";
 
 type AcceptedPreview = {
   vendor_id: string;
@@ -28,6 +29,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   const [vendors, setVendors] = useState<AcceptedPreview[]>([]);
   const [done, setDone] = useState(false);
   const completedRef = useRef(false);
+  const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   // Hide global BottomActionBar
   useEffect(() => {
@@ -44,6 +46,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     if (!open || !leadId) return;
     let alive = true;
     completedRef.current = false;
+    seenVendorIdsRef.current = new Set();
     setDone(false);
     setVendors([]);
 
@@ -51,6 +54,11 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
       const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
       if (!alive) return;
       const list = (data ?? []) as AcceptedPreview[];
+      const nextIds = new Set(list.map((v) => v.vendor_id));
+      if (seenVendorIdsRef.current.size > 0 && list.some((v) => !seenVendorIdsRef.current.has(v.vendor_id))) {
+        playPing("message");
+      }
+      seenVendorIdsRef.current = nextIds;
       setVendors(list);
     };
     load();
