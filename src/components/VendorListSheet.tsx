@@ -73,7 +73,20 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
+  const [noVendorState, setNoVendorState] = useState<{ video_url: string; message: string } | null>(null);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
+
+  // Load admin-configured "no vendor available" video + message once.
+  useEffect(() => {
+    supabase.from("app_settings").select("value").eq("key", "no_vendor_state").maybeSingle()
+      .then(({ data }) => {
+        const v = (data?.value ?? {}) as { video_url?: string; message?: string };
+        setNoVendorState({
+          video_url: v.video_url ?? "",
+          message: v.message ?? "Yahan vendor available nahi hai. Thodi der baad try kariye.",
+        });
+      });
+  }, []);
 
   useEffect(() => {
     if (!open) return;
