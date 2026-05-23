@@ -314,29 +314,44 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
               <p className="mt-3 text-xs font-semibold text-slate-500">Vendors check ho rahe hain…</p>
             </div>
           ) : vendors.length === 0 ? (
-            <div className="text-center py-12 px-3">
-              <motion.div
-                className="mx-auto h-14 w-14 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center bg-white shadow-sm"
-                animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
-                transition={{ duration: 1.4, repeat: Infinity }}
-              >
-                <Loader2 className="h-6 w-6 animate-spin text-[color:oklch(0.55_0.10_82)]" />
-              </motion.div>
-              <p className="mt-4 text-sm font-semibold text-slate-600">
-                {loadError ?? (expectedVendors > 0 ? "Abhi kisi vendor ne accept nahi kiya." : "Yahan vendor available nahi hai.")}
+            <div className="text-center py-8 px-3">
+              {noVendorState?.video_url ? (
+                <div className="mx-auto w-full max-w-xs rounded-2xl overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.55)] shadow-lg bg-black aspect-video">
+                  <video
+                    src={noVendorState.video_url}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <motion.div
+                  className="mx-auto h-16 w-16 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center bg-white shadow-sm"
+                  animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                >
+                  <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
+                </motion.div>
+              )}
+              <p className="mt-4 text-sm font-semibold text-slate-700 px-2">
+                {loadError ?? (expectedVendors > 0
+                  ? "Abhi kisi vendor ne accept nahi kiya."
+                  : (noVendorState?.message ?? "Yahan vendor available nahi hai."))}
               </p>
               <div className="mt-5 flex gap-2 justify-center">
                 {onTryAgain && (
                   <button
                     onClick={() => onTryAgain()}
-                    className="px-4 py-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white font-display text-sm font-bold active:scale-95"
+                    className="px-5 py-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white font-display text-sm font-bold active:scale-95 shadow"
                   >
                     Try again
                   </button>
                 )}
                 <button
                   onClick={handleMinimize}
-                  className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
+                  className="px-5 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
                 >
                   Minimize
                 </button>
