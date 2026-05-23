@@ -353,39 +353,39 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                     </div>
 
                     {/* Identity row */}
-                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-10 relative">
+                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-8 relative">
                       <div className="relative flex-shrink-0">
                         {v.avatar_url ? (
                           <img
                             src={v.avatar_url}
                             alt={displayName}
-                            className="h-[68px] w-[68px] rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
+                            className="h-14 w-14 rounded-full object-cover border-[3px] border-white shadow-md bg-white"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="h-[68px] w-[68px] rounded-2xl border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-xl font-bold text-amber-800">
+                          <div className="h-14 w-14 rounded-full border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-base font-bold text-amber-800">
                             {initials(displayName)}
                           </div>
                         )}
-                        <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
-                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                          <BadgeCheck className="h-3 w-3 text-emerald-600" />
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0 pt-11">
+                      <div className="flex-1 min-w-0 pt-9">
                         <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
                           {displayName}
                         </h4>
                         <p className="text-[11px] text-slate-500 truncate">{sub}</p>
-                        {priceRange && (
-                          <p className="mt-1 text-[12px] font-bold text-emerald-700 truncate">
-                            {priceRange} <span className="font-semibold text-slate-400">mapped rate</span>
-                          </p>
-                        )}
-                        {detailNote && (
-                          <p className="mt-0.5 text-[11px] text-slate-500 leading-snug line-clamp-1">
-                            {detailNote}
-                          </p>
-                        )}
+                        {/* Distance + area row */}
+                        <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-600">
+                          <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
+                            <Navigation className="h-3 w-3" />
+                            {v.distance_km != null ? `${v.distance_km} km away` : "Nearby"}
+                          </span>
+                          {detailNote && (
+                            <span className="truncate text-slate-500">· {detailNote}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -405,16 +405,18 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                       </span>
                     </div>
 
-                    {/* Price + note */}
-                    <div className="px-3 pb-2">
-                      {v.quoted_price != null && v.price_min == null && (
-                        <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-2xl leading-none">
-                          <IndianRupee className="h-5 w-5 self-center" />
-                          {Number(v.quoted_price).toLocaleString("en-IN")}
-                          <span className="ml-1.5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">vendor quote</span>
+                    {/* Price — range OR quoted, always shown when available */}
+                    {priceRange && (
+                      <div className="px-3 pb-2 flex items-baseline gap-2">
+                        <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-xl leading-none">
+                          <IndianRupee className="h-4 w-4 self-center" />
+                          <span>{priceRange.replace(/₹/g, "")}</span>
                         </div>
-                      )}
-                    </div>
+                        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                          {v.price_min != null && v.price_max != null ? "mapped range" : "vendor quote"}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Action bar */}
                     <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2">
