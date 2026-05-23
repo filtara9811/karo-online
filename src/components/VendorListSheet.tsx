@@ -55,7 +55,13 @@ function formatMoney(value?: number | null) {
   return `₹${Number(value).toLocaleString("en-IN")}`;
 }
 
-export function VendorListSheet({ open, category, productImage, leadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
+export function VendorListSheet({ open, category: propCategory, productImage: propImage, leadId: propLeadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
+  const { inquiry } = useActiveInquiry();
+  // Prefer the active (open) inquiry's identity so the sheet stays in sync
+  // when restored from the floating widget (multi-inquiry picker).
+  const leadId = inquiry?.leadId ?? propLeadId;
+  const category = inquiry?.category ?? propCategory;
+  const productImage = inquiry?.productImage ?? propImage;
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,7 +70,6 @@ export function VendorListSheet({ open, category, productImage, leadId, expected
   const [chatPeer, setChatPeer] = useState<LeadChatPeer | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
-  const { inquiry } = useActiveInquiry();
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
