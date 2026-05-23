@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2 } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
 import type { LeadChatPeer } from "@/components/LeadChatThread";
-import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
+import { useActiveInquiry, setActiveInquiry, clearActiveInquiry } from "@/hooks/use-active-inquiry";
 import { playPing } from "@/lib/lead-sound";
 
 type AcceptedVendor = {
