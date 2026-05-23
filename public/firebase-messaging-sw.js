@@ -52,11 +52,25 @@ messaging.onBackgroundMessage((payload) => {
         ]
       : undefined,
   };
+  // Bump app-icon badge (Badging API in SW). Best-effort.
+  try {
+    if (self.navigator && typeof self.navigator.setAppBadge === "function") {
+      self.__koBadge = (self.__koBadge || 0) + 1;
+      self.navigator.setAppBadge(self.__koBadge).catch(() => {});
+    }
+  } catch (e) { /* unsupported */ }
   self.registration.showNotification(title, options);
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  // Clear badge on interaction; app will re-sync from unread counts on open.
+  try {
+    if (self.navigator && typeof self.navigator.clearAppBadge === "function") {
+      self.__koBadge = 0;
+      self.navigator.clearAppBadge().catch(() => {});
+    }
+  } catch (e) { /* */ }
   const data = event.notification.data || {};
   const baseUrl = data.url || "/";
   let url = baseUrl;
