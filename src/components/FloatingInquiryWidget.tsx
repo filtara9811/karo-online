@@ -19,9 +19,8 @@ export function FloatingInquiryWidget() {
   const location = useLocation();
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  // Don't render on the route that hosts the full sheet — quick page manages it
+  // Full sheet hides itself when minimized; the widget must remain visible on /quick too.
   if (!inquiry || inquiry.open) return null;
-  if (location.pathname.startsWith("/quick")) return null;
   if (location.pathname.startsWith("/chat") || location.pathname.startsWith("/admin")) return null;
 
   const approved = inquiry.approved;
@@ -51,7 +50,8 @@ export function FloatingInquiryWidget() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.85, y: 20 }}
         transition={{ type: "spring", damping: 22, stiffness: 280 }}
-        className="fixed z-[70] bottom-28 right-3 max-w-[88vw]"
+        className="fixed z-[70] right-3 max-w-[88vw]"
+        style={{ bottom: location.pathname.startsWith("/quick") ? "calc(218px + env(safe-area-inset-bottom))" : "calc(112px + env(safe-area-inset-bottom))" }}
       >
         <div className={`relative rounded-2xl shadow-[0_10px_30px_-8px_rgba(15,23,42,0.4)] border overflow-hidden backdrop-blur ${
           isApproved
