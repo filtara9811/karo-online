@@ -230,6 +230,21 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtp("");
         return;
       }
+      // Vendor flow: relink existing vendor row to current auth user (handles
+      // duplicate-auth-identity case) and skip the customer name/gender step.
+      if (flow === "vendor") {
+        try {
+          const { data: v } = await supabase.rpc("vendor_claim_by_phone", { _phone: phone });
+          const row = Array.isArray(v) ? v[0] : v;
+          if (row?.user_id) {
+            try { window.localStorage.setItem(CUSTOMER_ONBOARDED_KEY, "true"); } catch { /* */ }
+            try { window.localStorage.removeItem(CUSTOMER_DRAFT_KEY); } catch { /* */ }
+            toast.success(`Welcome back, ${row.business_name || "Vendor"}`);
+            onComplete?.();
+            return;
+          }
+        } catch (e) { console.warn("[vendor_claim_by_phone]", e); }
+      }
       // Lookup existing customer by phone
       try {
         const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
