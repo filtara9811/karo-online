@@ -57,6 +57,7 @@ function formatMoney(value?: number | null) {
 }
 
 export function VendorListSheet({ open, category: propCategory, productImage: propImage, leadId: propLeadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
+  const navigate = useNavigate();
   const { inquiry } = useActiveInquiry();
   // Prefer the active (open) inquiry's identity so the sheet stays in sync
   // when restored from the floating widget (multi-inquiry picker).
@@ -70,6 +71,7 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const [approving, setApproving] = useState<string | null>(null);
   const [chatPeer, setChatPeer] = useState<LeadChatPeer | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
