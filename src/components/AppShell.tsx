@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFcmToken } from "@/hooks/use-fcm-token";
 import { useNotifications } from "@/hooks/use-notifications";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { FloatingInquiryWidget } from "@/components/FloatingInquiryWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
@@ -104,6 +105,7 @@ export function AppShell() {
 
         <VendorLeadAlerts />
         <PermissionsGate />
+        <FloatingInquiryWidget />
       </div>
     </AuthGate>
   );

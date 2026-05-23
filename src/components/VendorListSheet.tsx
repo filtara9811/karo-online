@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
 import type { LeadChatPeer } from "@/components/LeadChatThread";
+import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -24,35 +25,52 @@ type AcceptedVendor = {
 type Props = {
   open: boolean;
   category: string | null;
+  productImage?: string | null;
   leadId: string | null;
   expectedVendors?: number;
   onTryAgain?: () => Promise<void> | void;
   onClose: () => void;
+  /** Called when user explicitly minimizes (X / back) without approving. */
+  onMinimize?: () => void;
 };
 
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
+const SEARCH_WINDOW_MS = 25_000;
 
-export function VendorListSheet({ open, category, leadId, expectedVendors = 0, onTryAgain, onClose }: Props) {
+export function VendorListSheet({ open, category, productImage, leadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
   const [vendors, setVendors] = useState<AcceptedVendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [approvedId, setApprovedId] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [chatPeer, setChatPeer] = useState<LeadChatPeer | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [progress, setProgress] = useState(0); // 0..100
+  const { inquiry } = useActiveInquiry();
 
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
     document.body.classList.add("ko-accepted-vendor-open");
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
       document.body.classList.remove("ko-accepted-vendor-open");
-      document.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // Thin progress bar (search window timer)
+  useEffect(() => {
+    if (!open) return;
+    const started = inquiry?.startedAt ?? Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - started;
+      setProgress(Math.min(100, (elapsed / SEARCH_WINDOW_MS) * 100));
+    };
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [open, inquiry?.startedAt]);
 
   // Reset approved when sheet reopens with a different lead
   useEffect(() => {
@@ -66,9 +84,13 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
       const { data, error } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
       if (!alive) return;
       setLoadError(error ? "Vendor list load nahi ho paayi. Dobara try ho raha hai…" : null);
-      setVendors((data ?? []) as AcceptedVendor[]);
+      const list = (data ?? []) as AcceptedVendor[];
+      setVendors(list);
       setLoading(false);
-      // Sync already-approved state
+      // keep inquiry vendor count fresh
+      if (inquiry && inquiry.leadId === leadId && inquiry.vendorCount !== list.length) {
+        setActiveInquiry({ ...inquiry, vendorCount: list.length });
+      }
       const { data: leadRow } = await supabase
         .from("leads")
         .select("customer_approved_vendor_id")
@@ -82,20 +104,15 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
     load();
     const ch = supabase
       .channel(`lead-accepted-${leadId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "lead_notifications", filter: `lead_id=eq.${leadId}` },
-        (payload) => { if ((payload.new as any)?.status === "accepted") load(); },
-      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${leadId}` }, () => load())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lead_notifications", filter: `lead_id=eq.${leadId}` },
+        (payload) => { if ((payload.new as any)?.status === "accepted") load(); })
       .subscribe();
     const poll = setInterval(load, 4000);
     return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [open, leadId]);
+
+  const approvedVendor = useMemo(() => vendors.find((v) => v.vendor_id === approvedId) ?? null, [vendors, approvedId]);
 
   if (!open) return null;
 
@@ -123,53 +140,104 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
     }
     setApprovedId(v.vendor_id);
     toast.success(`${v.business_name || v.owner_name || "Vendor"} approved! Order moved to My Orders.`);
+    // Persist approval to floating widget & minimize sheet after a beat
+    setActiveInquiry({
+      leadId: leadId!,
+      category: category ?? "Service",
+      productImage: productImage ?? null,
+      startedAt: inquiry?.startedAt ?? Date.now(),
+      vendorCount: vendors.length,
+      approved: {
+        vendor_id: v.vendor_id,
+        name: v.business_name || v.owner_name || "Vendor",
+        avatar_url: v.avatar_url,
+        phone: v.phone || v.whatsapp,
+        quoted_price: v.quoted_price ?? null,
+      },
+      open: false,
+    });
+    setTimeout(() => onClose(), 1200);
   };
+
+  const handleMinimize = () => {
+    if (inquiry) setActiveInquiry({ ...inquiry, open: false, vendorCount: vendors.length });
+    onMinimize?.();
+    onClose();
+  };
+
+  const visibleVendors = approvedId ? vendors.filter((v) => v.vendor_id === approvedId) : vendors;
 
   return (
     <div className="fixed inset-0 z-[85] flex items-end justify-center">
       <button
-        aria-label="Close"
-        onClick={onClose}
+        aria-label="Minimize"
+        onClick={handleMinimize}
         className="absolute inset-0 bg-[oklch(0.05_0.02_18/0.55)] backdrop-blur-sm"
       />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#f5f6f8] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
+        className="relative w-full max-w-md bg-gradient-to-b from-white to-[#f5f6f8] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)] max-h-[92vh] flex flex-col pb-[env(safe-area-inset-bottom)]"
         style={{ animation: "sheet-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
-        <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2 pb-1 flex-shrink-0">
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent opacity-80" />
         </div>
 
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">
-              ✦ Accepted Vendors ✦
-            </p>
-            <h3 className="font-display text-lg font-bold text-[color:oklch(0.25_0.01_260)] truncate">
-              {category ?? "Service"}
-            </h3>
-            <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] mt-0.5">
-              {loading
-                ? "Searching…"
-                : approvedId
-                  ? "Approved — order moved to My Orders"
-                  : `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready to help`}
+        {/* Thin progress bar (search window) */}
+        {!approvedId && (
+          <div className="px-5 pt-1 flex-shrink-0">
+            <div className="h-1 rounded-full bg-slate-200/70 overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-500"
+                style={{ width: `${progress}%` }}
+                transition={{ ease: "linear" }}
+              />
+            </div>
+            <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400 text-center">
+              {progress < 100 ? `Searching · ${vendors.length} accepted` : `Window closed · ${vendors.length} vendor${vendors.length === 1 ? "" : "s"}`}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90 flex-shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
+        )}
+
+        {/* Product strip just below progress */}
+        <div className="px-3 pt-2 flex-shrink-0">
+          <div className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#fff8dc]/90 via-white to-[#fff8dc]/60 border border-[color:oklch(0.78_0.14_82/0.4)] px-2.5 py-2 shadow-sm">
+            <div className="h-12 w-12 rounded-xl overflow-hidden bg-white border border-amber-200 flex-shrink-0">
+              {productImage ? (
+                <img src={productImage} alt={category ?? "Product"} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full grid place-items-center text-amber-600 font-bold">{(category ?? "?")[0]}</div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] uppercase tracking-[0.25em] font-bold text-amber-700">✦ Your Request</p>
+              <h3 className="font-display text-[14px] font-bold text-slate-800 truncate leading-tight">
+                {category ?? "Service"} <span className="text-slate-400 font-normal text-[11px]">· nearby vendors</span>
+              </h3>
+            </div>
+            <button
+              onClick={handleMinimize}
+              aria-label="Minimize"
+              className="h-8 w-8 grid place-items-center rounded-full bg-white border border-slate-200 active:scale-90 flex-shrink-0"
+            >
+              <Minimize2 className="h-3.5 w-3.5 text-slate-600" />
+            </button>
+            <button
+              onClick={handleMinimize}
+              aria-label="Close"
+              className="h-8 w-8 grid place-items-center rounded-full bg-white border border-slate-200 active:scale-90 flex-shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
-          {loading ? (
-            <div className="grid place-items-center py-16 text-center">
+        {/* Card list */}
+        <div className="flex-1 overflow-y-auto px-3 pt-3 pb-3 space-y-3">
+          {loading && vendors.length === 0 ? (
+            <div className="grid place-items-center py-12 text-center">
               <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
               <p className="mt-3 text-xs font-semibold text-slate-500">Vendors check ho rahe hain…</p>
             </div>
@@ -195,139 +263,210 @@ export function VendorListSheet({ open, category, leadId, expectedVendors = 0, o
                   </button>
                 )}
                 <button
-                  onClick={onClose}
+                  onClick={handleMinimize}
                   className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
                 >
-                  Cancel
+                  Minimize
                 </button>
               </div>
             </div>
           ) : (
-            vendors.map((v, i) => {
-              const isApproved = approvedId === v.vendor_id;
-              const isDimmed = !!approvedId && !isApproved;
-              const displayName = v.business_name || v.owner_name || "Vendor";
-              const sub = v.business_name && v.owner_name ? v.owner_name : "Verified vendor";
-              return (
-                <motion.div
-                  key={v.vendor_id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: isDimmed ? 0.45 : 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className={`relative rounded-2xl bg-white border overflow-hidden shadow-[0_6px_22px_-10px_rgba(15,23,42,0.25)] transition ${
-                    isApproved
-                      ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.5)]"
-                      : "border-[color:oklch(0.78_0.14_82/0.35)]"
-                  } ${isDimmed ? "pointer-events-none" : ""}`}
-                >
-                  {/* Gold gradient header strip */}
-                  <div className="relative h-14 bg-gradient-to-br from-[#fff8dc] via-[#fde68a] to-[#fbbf24]">
-                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
-                    <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
-                      ✦ {category ?? "Service"}
-                    </div>
-                    {v.distance_km != null && (
-                      <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
-                        <MapPin className="h-3 w-3" /> {v.distance_km} km
+            <AnimatePresence mode="popLayout">
+              {visibleVendors.map((v, i) => {
+                const isApproved = approvedId === v.vendor_id;
+                const displayName = v.business_name || v.owner_name || "Vendor";
+                const sub = v.business_name && v.owner_name ? v.owner_name : "Verified vendor";
+                const rating = Number(v.rating ?? 4.8);
+                const happyPct = Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
+                const badPct = 100 - happyPct;
+                // No KYC field in RPC yet — show pending pill as default (verified surfaces via BadgeCheck on avatar already).
+                const kycVerified = false;
+                return (
+                  <motion.div
+                    key={v.vendor_id}
+                    layout
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: i * 0.04, type: "spring", damping: 22, stiffness: 260 }}
+                    className={`relative rounded-2xl bg-white border overflow-hidden shadow-[0_6px_22px_-10px_rgba(15,23,42,0.25)] ${
+                      isApproved
+                        ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.5)]"
+                        : "border-[color:oklch(0.78_0.14_82/0.35)]"
+                    }`}
+                  >
+                    {/* Cover/header strip */}
+                    <div className="relative h-16 bg-gradient-to-br from-[#fff8dc] via-[#fde68a] to-[#fbbf24] overflow-hidden">
+                      <div className="absolute inset-0 opacity-25" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
+                      <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
+                        ✦ {category ?? "Service"}
                       </div>
-                    )}
-                    {isApproved && (
-                      <div className="absolute bottom-1.5 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
-                        <CheckCircle2 className="h-3 w-3" /> APPROVED
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Identity row: avatar + name + rating */}
-                  <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-8 relative">
-                    <div className="relative flex-shrink-0">
-                      <img
-                        src={v.avatar_url || FALLBACK_AVATAR}
-                        alt={displayName}
-                        className="h-16 w-16 rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
-                        loading="lazy"
-                      />
-                      <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
-                        <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0 pt-9">
-                      <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
-                        {displayName}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 truncate">{sub}</p>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] flex-wrap">
-                        <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
-                          <Star className="h-3 w-3" fill="currentColor" />
-                          {(v.rating ?? 4.8).toFixed(1)}
-                          <span className="text-slate-400 font-normal ml-0.5">({v.total_reviews ?? 0})</span>
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[9px] font-bold text-amber-800 uppercase tracking-wide">
-                          {category ?? "Service"}
-                        </span>
-                      </div>
-                    </div>
-                    {v.quoted_price != null && (
-                      <div className="text-right pt-9 flex-shrink-0">
-                        <span className="inline-flex items-center font-display font-bold text-emerald-700 text-lg leading-none">
-                          <IndianRupee className="h-4 w-4" />
-                          {Number(v.quoted_price).toLocaleString("en-IN")}
-                        </span>
-                        <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-0.5">Quote</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Vendor note */}
-                  {v.vendor_note && (
-                    <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-snug">
-                      "{v.vendor_note}"
-                    </div>
-                  )}
-
-                  {/* Action row: Approve + Chat + Call */}
-                  <div className="px-3 pb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
-                    <button
-                      onClick={() => approveVendor(v)}
-                      disabled={!!approvedId || approving === v.vendor_id}
-                      className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                        isApproved
-                          ? "bg-emerald-500 text-white"
-                          : approvedId
-                            ? "bg-slate-100 text-slate-400"
-                            : "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow"
-                      }`}
-                    >
-                      {approving === v.vendor_id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : isApproved ? (
-                        <><CheckCircle2 className="h-4 w-4" /> Approved</>
-                      ) : (
-                        <>Approve</>
+                      {v.distance_km != null && (
+                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                          <MapPin className="h-3 w-3" /> {v.distance_km} km
+                        </div>
                       )}
-                    </button>
-                    <button
-                      onClick={() => openChat(v)}
-                      className="h-10 rounded-xl bg-white border-2 border-sky-500 text-sky-700 font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 active:scale-95"
-                    >
-                      <MessageCircle className="h-4 w-4" /> Chat
-                    </button>
-                    {(v.phone || v.whatsapp) && (
-                      <a
-                        href={`tel:${v.phone || v.whatsapp}`}
-                        className="h-10 w-10 rounded-xl bg-white border-2 border-emerald-500 text-emerald-700 inline-flex items-center justify-center active:scale-95"
-                        aria-label="Call"
+                      {isApproved && (
+                        <div className="absolute bottom-1.5 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
+                          <CheckCircle2 className="h-3 w-3" /> APPROVED
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Identity row */}
+                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-9 relative">
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={v.avatar_url || FALLBACK_AVATAR}
+                          alt={displayName}
+                          className="h-16 w-16 rounded-2xl object-cover border-[3px] border-white shadow-md bg-white"
+                          loading="lazy"
+                        />
+                        <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0 pt-10">
+                        <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
+                          {displayName}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 truncate">{sub}</p>
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] flex-wrap">
+                          <span className="inline-flex items-center gap-0.5 font-bold text-amber-700">
+                            <Star className="h-3 w-3" fill="currentColor" />
+                            {rating.toFixed(1)}
+                          </span>
+                          <span className="text-slate-300">·</span>
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-600">
+                            <ThumbsDown className="h-2.5 w-2.5" /> {badPct}%
+                          </span>
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700">
+                            <ThumbsUp className="h-2.5 w-2.5" /> {happyPct}%
+                          </span>
+                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full text-[9px] font-bold ${
+                            kycVerified
+                              ? "bg-emerald-50 border border-emerald-300 text-emerald-700"
+                              : "bg-amber-50 border border-amber-300 text-amber-700"
+                          }`}>
+                            {kycVerified ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
+                            KYC {kycVerified ? "verified" : "pending"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price + note */}
+                    <div className="px-3 pb-2">
+                      {v.quoted_price != null && (
+                        <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-2xl leading-none">
+                          <IndianRupee className="h-5 w-5 self-center" />
+                          {Number(v.quoted_price).toLocaleString("en-IN")}
+                          <span className="ml-1.5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">vendor quote</span>
+                        </div>
+                      )}
+                      {v.vendor_note && (
+                        <p className="mt-1 text-[12px] text-slate-600 leading-snug line-clamp-2">
+                          <span className="font-semibold text-slate-800">Note · </span>{v.vendor_note}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action bar */}
+                    <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2">
+                      <button
+                        onClick={() => approveVendor(v)}
+                        disabled={!!approvedId || approving === v.vendor_id}
+                        className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                          isApproved
+                            ? "bg-emerald-500 text-white"
+                            : approvedId
+                              ? "bg-slate-100 text-slate-400"
+                              : "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow"
+                        }`}
                       >
-                        <Phone className="h-4 w-4" />
-                      </a>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })
+                        {approving === v.vendor_id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isApproved ? (
+                          <><CheckCircle2 className="h-4 w-4" /> Approved</>
+                        ) : (
+                          <>Approve</>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => openChat(v)}
+                        className="h-10 w-10 rounded-xl bg-white border-2 border-sky-500 text-sky-700 grid place-items-center active:scale-95"
+                        aria-label="Chat"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </button>
+                      {(v.phone || v.whatsapp) && (
+                        <a
+                          href={`tel:${v.phone || v.whatsapp}`}
+                          className="h-10 w-10 rounded-xl bg-white border-2 border-emerald-500 text-emerald-700 grid place-items-center active:scale-95"
+                          aria-label="Call"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          )}
+
+          {/* Cancel inquiry — at the bottom of the list, slim & long */}
+          {!approvedId && vendors.length > 0 && (
+            <button
+              onClick={() => setConfirmCancel(true)}
+              className="w-full mt-2 h-9 rounded-full bg-white border border-slate-200 text-[12px] font-bold text-slate-500 hover:text-red-600 hover:border-red-200 active:scale-[0.98] transition"
+            >
+              Cancel this inquiry
+            </button>
           )}
         </div>
       </div>
+
+      {/* Cancel confirm modal */}
+      <AnimatePresence>
+        {confirmCancel && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[90] grid place-items-center bg-black/40 backdrop-blur-sm px-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl"
+            >
+              <h4 className="font-display font-bold text-slate-900">Cancel this inquiry?</h4>
+              <p className="mt-1 text-[12px] text-slate-500">
+                Jab tak yeh screen active hai aap dusri request nahi bhej sakte. Cancel karein ya next move (My Orders)?
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setConfirmCancel(false)}
+                  className="h-10 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm active:scale-95"
+                >
+                  Keep open
+                </button>
+                <button
+                  onClick={async () => {
+                    if (leadId) {
+                      try { await supabase.from("leads").update({ status: "cancelled" }).eq("id", leadId); } catch {}
+                    }
+                    setActiveInquiry(null);
+                    setConfirmCancel(false);
+                    onClose();
+                  }}
+                  className="h-10 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95"
+                >
+                  Yes, cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {chatPeer && (

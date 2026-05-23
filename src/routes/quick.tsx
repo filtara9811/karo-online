@@ -10,6 +10,7 @@ import { NeedsSheet } from "@/components/NeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
+import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { QuickServiceMap } from "@/components/QuickServiceMap";
@@ -797,6 +798,18 @@ function QuickPage() {
         onClose={() => setFindingOpen(false)}
         onComplete={() => {
           setFindingOpen(false);
+          const img = selectedSub?.image_url || (selectedSub ? SLUG_IMAGE[selectedSub.slug] : null) || svcAc;
+          if (activeLeadId) {
+            setActiveInquiry({
+              leadId: activeLeadId,
+              category: selectedSub?.name ?? "Service",
+              productImage: img,
+              startedAt: Date.now(),
+              vendorCount: 0,
+              approved: null,
+              open: true,
+            });
+          }
           setVendorListOpen(true);
         }}
       />
@@ -804,6 +817,7 @@ function QuickPage() {
       <VendorListSheet
         open={vendorListOpen}
         category={selectedSub?.name ?? "Service"}
+        productImage={selectedSub?.image_url || (selectedSub ? SLUG_IMAGE[selectedSub.slug] : null) || svcAc}
         leadId={activeLeadId}
         expectedVendors={matchInfo?.notified ?? 0}
         onTryAgain={async () => {
@@ -814,7 +828,13 @@ function QuickPage() {
           setMatchInfo({ notified: Number((data as any)?.notified ?? 0), requestedAt: Date.now() });
         }}
         onClose={() => setVendorListOpen(false)}
+        onMinimize={() => setVendorListOpen(false)}
       />
+
+      <QuickInquiryBridge
+        onRestore={() => setVendorListOpen(true)}
+      />
+
 
       <SearchOverlay
         open={searchOpen}
@@ -828,4 +848,16 @@ function QuickPage() {
     </div>
   );
 }
+
+/** Watches the global active-inquiry store and restores the sheet on /quick
+ *  when the user taps the floating widget elsewhere and lands back here. */
+function QuickInquiryBridge({ onRestore }: { onRestore: () => void }) {
+  const { inquiry } = useActiveInquiry();
+  useEffect(() => {
+    if (inquiry && inquiry.open) onRestore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquiry?.open, inquiry?.leadId]);
+  return null;
+}
+
 
