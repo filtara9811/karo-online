@@ -114,7 +114,7 @@ function readReferralFromContext(): { code: string; locked: boolean } {
   return { code: "", locked: false };
 }
 
-export function RegistrationFlow({ transparent, onBack, onComplete }: RegistrationFlowProps) {
+export function RegistrationFlow({ transparent, onBack, onComplete, flow = "customer" }: RegistrationFlowProps) {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const draft = useMemo(readDraft, []);
