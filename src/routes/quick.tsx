@@ -849,3 +849,15 @@ function QuickPage() {
   );
 }
 
+/** Watches the global active-inquiry store and restores the sheet on /quick
+ *  when the user taps the floating widget elsewhere and lands back here. */
+function QuickInquiryBridge({ onRestore }: { onRestore: () => void }) {
+  const { inquiry } = useActiveInquiry();
+  useEffect(() => {
+    if (inquiry && inquiry.open) onRestore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquiry?.open, inquiry?.leadId]);
+  return null;
+}
+
+
