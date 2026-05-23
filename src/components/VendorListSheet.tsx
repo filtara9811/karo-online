@@ -190,7 +190,27 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
       },
       open: false,
     });
-    setTimeout(() => onClose(), 1200);
+    // Don't auto-minimize anymore — customer wants to manage from here.
+    // setTimeout(() => onClose(), 1200);
+  };
+
+  const unapproveVendor = async () => {
+    if (!leadId) return;
+    try {
+      await supabase.from("leads").update({ customer_approved_vendor_id: null }).eq("id", leadId);
+    } catch {}
+    setApprovedId(null);
+    setManageOpen(false);
+    if (inquiry) {
+      setActiveInquiry({ ...inquiry, approved: null, vendorCount: vendors.length });
+    }
+    toast.success("Vendor unapproved — full list restored");
+  };
+
+  const openTrackStatus = () => {
+    setManageOpen(false);
+    onClose();
+    navigate({ to: "/orders" });
   };
 
   const handleMinimize = () => {
