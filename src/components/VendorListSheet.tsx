@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation, RotateCcw, Ban, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
@@ -56,6 +57,7 @@ function formatMoney(value?: number | null) {
 }
 
 export function VendorListSheet({ open, category: propCategory, productImage: propImage, leadId: propLeadId, expectedVendors = 0, onTryAgain, onClose, onMinimize }: Props) {
+  const navigate = useNavigate();
   const { inquiry } = useActiveInquiry();
   // Prefer the active (open) inquiry's identity so the sheet stays in sync
   // when restored from the floating widget (multi-inquiry picker).
@@ -69,6 +71,7 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const [approving, setApproving] = useState<string | null>(null);
   const [chatPeer, setChatPeer] = useState<LeadChatPeer | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
@@ -187,7 +190,27 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
       },
       open: false,
     });
-    setTimeout(() => onClose(), 1200);
+    // Don't auto-minimize anymore — customer wants to manage from here.
+    // setTimeout(() => onClose(), 1200);
+  };
+
+  const unapproveVendor = async () => {
+    if (!leadId) return;
+    try {
+      await supabase.from("leads").update({ customer_approved_vendor_id: null }).eq("id", leadId);
+    } catch {}
+    setApprovedId(null);
+    setManageOpen(false);
+    if (inquiry) {
+      setActiveInquiry({ ...inquiry, approved: null, vendorCount: vendors.length });
+    }
+    toast.success("Vendor unapproved — full list restored");
+  };
+
+  const openTrackStatus = () => {
+    setManageOpen(false);
+    onClose();
+    navigate({ to: "/orders" });
   };
 
   const handleMinimize = () => {
@@ -337,11 +360,18 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                         <img src={coverImage} alt={category ?? "Service"} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/90" />
-                      <div className="absolute top-2 left-3 px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
-                        ✦ {category ?? "Service"}
+                      <div className="absolute top-2 left-3 flex items-center gap-1.5">
+                        <div className="px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
+                          ✦ {category ?? "Service"}
+                        </div>
+                        {priceRange && (
+                          <div className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                            <IndianRupee className="h-2.5 w-2.5" /> {priceRange.replace(/₹/g, "").trim()}
+                          </div>
+                        )}
                       </div>
                       {v.distance_km != null && (
-                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-sky-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
                           <MapPin className="h-3 w-3" /> {v.distance_km} km
                         </div>
                       )}
@@ -421,8 +451,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                     {/* Action bar */}
                     <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2">
                       <button
-                        onClick={() => approveVendor(v)}
-                        disabled={!!approvedId || approving === v.vendor_id}
+                        onClick={() => isApproved ? setManageOpen(true) : approveVendor(v)}
+                        disabled={(!!approvedId && !isApproved) || approving === v.vendor_id}
                         className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
                           isApproved
                             ? "bg-emerald-500 text-white"
@@ -434,7 +464,7 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                         {approving === v.vendor_id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : isApproved ? (
-                          <><CheckCircle2 className="h-4 w-4" /> Approved</>
+                          <><CheckCircle2 className="h-4 w-4" /> Approved · Manage</>
                         ) : (
                           <>Approve</>
                         )}
@@ -514,6 +544,79 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Manage approved vendor — bottom sheet with 3 actions */}
+      <AnimatePresence>
+        {manageOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[92] flex items-end justify-center bg-black/45 backdrop-blur-sm"
+            onClick={() => setManageOpen(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl pb-[env(safe-area-inset-bottom)]"
+            >
+              <div className="flex justify-center pt-2 pb-1">
+                <span className="h-1.5 w-14 rounded-full bg-slate-200" />
+              </div>
+              <div className="px-5 pt-2 pb-1 text-center">
+                <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-emerald-700">✓ Approved</p>
+                <h3 className="font-display text-lg font-bold text-slate-800">Manage this inquiry</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Choose what you want to do next</p>
+              </div>
+              <div className="px-4 py-4 space-y-2">
+                <button
+                  onClick={openTrackStatus}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-emerald-500 text-white grid place-items-center shadow">
+                    <ListChecks className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-emerald-800">Track Status</p>
+                    <p className="text-[11px] text-slate-500">Packed · Checked · Live updates from vendor</p>
+                  </div>
+                </button>
+                <button
+                  onClick={unapproveVendor}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-amber-300 bg-amber-50/60 active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-amber-500 text-white grid place-items-center shadow">
+                    <RotateCcw className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-amber-800">Unapprove</p>
+                    <p className="text-[11px] text-slate-500">Bring back the full vendor list to choose again</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setManageOpen(false); setConfirmCancel(true); }}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-red-200 bg-red-50/60 active:scale-[0.98] text-left"
+                >
+                  <span className="h-10 w-10 rounded-full bg-red-500 text-white grid place-items-center shadow">
+                    <Ban className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[14px] font-bold text-red-700">Cancel inquiry</p>
+                    <p className="text-[11px] text-slate-500">End this request — vendor will be notified</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setManageOpen(false)}
+                  className="w-full h-10 mt-1 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm active:scale-95"
+                >
+                  Keep as is
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
 
       <AnimatePresence>
         {chatPeer && (

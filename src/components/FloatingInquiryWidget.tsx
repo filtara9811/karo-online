@@ -70,10 +70,14 @@ export function FloatingInquiryWidget() {
     setConfirmCancel(null);
   };
 
-  // Default anchor position (bottom-right above bottom nav)
-  const defaultBottom = location.pathname.startsWith("/quick") ? 218 : 112;
+  // On /quick (home) we PIN the widget so it peeks ~70% from behind the
+  // search bar / category container — no drag, no stored offset. Anywhere
+  // else it stays draggable with its persisted position.
+  const isHome = location.pathname.startsWith("/quick");
+  const defaultBottom = isHome ? 360 : 112; // ~ just under search bar on /quick
   const widgetW = 260;
   const widgetH = 56;
+  const pinned = isHome;
 
   return (
     <>
@@ -83,7 +87,7 @@ export function FloatingInquiryWidget() {
       <AnimatePresence>
         <motion.div
           key="floating-inquiry"
-          drag
+          drag={!pinned}
           dragControls={dragControls}
           dragListener={false}
           dragMomentum={false}
@@ -95,32 +99,52 @@ export function FloatingInquiryWidget() {
             bottom: 60,
           }}
           initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1, x: pos.x, y: pos.y }}
+          animate={{ opacity: 1, scale: 1, x: pinned ? 0 : pos.x, y: pinned ? 0 : pos.y }}
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ type: "spring", damping: 24, stiffness: 280 }}
           onDragEnd={(_, info) => {
+            if (pinned) return;
             const next = { x: pos.x + info.offset.x, y: pos.y + info.offset.y };
             setPos(next);
             savePos(next);
           }}
-          className="fixed z-[70] right-3 max-w-[88vw]"
-          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: "none" }}
+          className={`fixed z-[70] ${pinned ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
+          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: pinned ? "auto" : "none" }}
         >
+          {/* Pulse halo (only on home / pinned) */}
+          {pinned && (
+            <>
+              <motion.span
+                aria-hidden
+                className={`absolute inset-0 rounded-2xl ${isApproved ? "bg-emerald-400/25" : "bg-amber-400/25"}`}
+                animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0, 0.55] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.span
+                aria-hidden
+                className={`absolute -inset-1 rounded-2xl border-2 ${isApproved ? "border-emerald-300" : "border-amber-300"}`}
+                animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.1, 0.6] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </>
+          )}
           <div className={`relative rounded-2xl shadow-[0_10px_30px_-8px_rgba(15,23,42,0.4)] border overflow-hidden backdrop-blur ${
             isApproved
               ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-300"
               : "bg-gradient-to-br from-[#fff8dc] to-white border-[color:oklch(0.78_0.14_82/0.55)]"
           }`}>
             <div className="flex items-stretch">
-              {/* Drag handle */}
-              <button
-                onPointerDown={(e) => dragControls.start(e)}
-                aria-label="Drag"
-                className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
-                style={{ touchAction: "none" }}
-              >
-                <GripVertical className="h-4 w-4" />
-              </button>
+              {/* Drag handle (hidden when pinned on home) */}
+              {!pinned && (
+                <button
+                  onPointerDown={(e) => dragControls.start(e)}
+                  aria-label="Drag"
+                  className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
+                  style={{ touchAction: "none" }}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </button>
+              )}
 
               {/* Tap target */}
               <button
