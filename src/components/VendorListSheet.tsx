@@ -500,8 +500,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                   onClick={async () => {
                     if (leadId) {
                       try { await supabase.from("leads").update({ status: "cancelled" }).eq("id", leadId); } catch {}
+                      clearActiveInquiry(leadId);
                     }
-                    setActiveInquiry(null);
                     setConfirmCancel(false);
                     onClose();
                   }}
