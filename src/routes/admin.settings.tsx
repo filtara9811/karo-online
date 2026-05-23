@@ -111,6 +111,7 @@ function SettingsPage() {
       )}
 
       <div className="mt-6 max-w-2xl"><LeadDefaultsCard /></div>
+      <div className="mt-6 max-w-2xl"><NoVendorStateCard /></div>
       <div className="mt-6 max-w-2xl"><VendorAppCard /></div>
       <div className="mt-6 max-w-2xl"><MediaLibraryCard /></div>
     </div>
@@ -288,6 +289,65 @@ function MediaLibraryCard() {
           ))}
         </div>
       )}
+    </GoldCard>
+  );
+}
+
+function NoVendorStateCard() {
+  const [val, setVal] = useState({ video_url: "", message: "Yahan vendor available nahi hai. Thodi der baad try kariye." });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    supabase.from("app_settings").select("value").eq("key", "no_vendor_state").maybeSingle().then(({ data }) => {
+      if (data?.value) setVal((p) => ({ ...p, ...(data.value as any) }));
+      setLoading(false);
+    });
+  }, []);
+  const save = async () => {
+    setSaving(true);
+    const { data: sess } = await supabase.auth.getUser();
+    const { error } = await supabase.from("app_settings")
+      .upsert({ key: "no_vendor_state", value: val, updated_by: sess.user?.id, updated_at: new Date().toISOString() });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("No-vendor video saved");
+  };
+  if (loading) return null;
+  return (
+    <GoldCard className="p-5 space-y-4">
+      <div>
+        <h3 className="text-sm uppercase tracking-widest text-[#d4af37] font-bold">"No Vendor Available" Screen</h3>
+        <p className="text-[11px] text-[#f5d97a]/60 mt-1">
+          Jab customer ko aas-paas koi vendor nahi milta, yeh video aur message dikhega. MP4 / WebM URL daalein.
+        </p>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-[#d4af37]/70 font-bold">Video URL (MP4 / WebM)</label>
+          <input value={val.video_url}
+            onChange={(e) => setVal({ ...val, video_url: e.target.value })}
+            placeholder="https://...mp4"
+            className="w-full mt-0.5 px-3 py-2 rounded-lg bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] outline-none focus:border-[#d4af37] text-xs" />
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-[#d4af37]/70 font-bold">Customer Message (Hindi/English)</label>
+          <textarea value={val.message}
+            onChange={(e) => setVal({ ...val, message: e.target.value })}
+            rows={2}
+            className="w-full mt-0.5 px-3 py-2 rounded-lg bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] outline-none focus:border-[#d4af37] text-xs" />
+        </div>
+        {val.video_url && (
+          <div className="rounded-lg overflow-hidden border border-[#d4af37]/30 bg-black aspect-video max-w-xs">
+            <video src={val.video_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+          </div>
+        )}
+      </div>
+      <div className="flex justify-end pt-3 border-t border-[#d4af37]/20">
+        <GoldButton onClick={save} disabled={saving}>
+          {saving ? <Loader2 className="h-3 w-3 inline animate-spin mr-1" /> : <Save className="h-3 w-3 inline -mt-0.5 mr-1" />}
+          Save No-Vendor Screen
+        </GoldButton>
+      </div>
     </GoldCard>
   );
 }

@@ -70,24 +70,24 @@ export function FloatingInquiryWidget() {
     setConfirmCancel(null);
   };
 
-  // On /quick (home) we PIN the widget so it peeks ~70% from behind the
-  // search bar / category container — no drag, no stored offset. Anywhere
-  // else it stays draggable with its persisted position.
+  // On /quick (home), default position is BEHIND the search bar (peeking
+  // out from above the white container). The widget is rendered at a lower
+  // z-index than the white sheet (z-10 vs z-20), so its bottom half is
+  // visually tucked behind the container. User can still drag it anywhere.
   const isHome = location.pathname.startsWith("/quick");
-  const defaultBottom = isHome ? 360 : 112; // ~ just under search bar on /quick
-  const widgetW = 260;
   const widgetH = 56;
-  const pinned = isHome;
+  const defaultBottom = isHome ? Math.max(0, vh - Math.round(vh * 0.34) - 28) : 112;
+  const widgetW = 260;
 
   return (
     <>
       {/* Invisible full-viewport constraint container */}
-      <div ref={constraintsRef} className="fixed inset-0 z-[69] pointer-events-none" />
+      <div ref={constraintsRef} className="fixed inset-0 z-[9] pointer-events-none" />
 
       <AnimatePresence>
         <motion.div
           key="floating-inquiry"
-          drag={!pinned}
+          drag
           dragControls={dragControls}
           dragListener={false}
           dragMomentum={false}
@@ -96,23 +96,22 @@ export function FloatingInquiryWidget() {
             left: -(vw - widgetW - 16),
             right: 0,
             top: -(vh - widgetH - defaultBottom - 32),
-            bottom: 60,
+            bottom: defaultBottom - 16,
           }}
           initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1, x: pinned ? 0 : pos.x, y: pinned ? 0 : pos.y }}
+          animate={{ opacity: 1, scale: 1, x: pos.x, y: pos.y }}
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ type: "spring", damping: 24, stiffness: 280 }}
           onDragEnd={(_, info) => {
-            if (pinned) return;
             const next = { x: pos.x + info.offset.x, y: pos.y + info.offset.y };
             setPos(next);
             savePos(next);
           }}
-          className={`fixed z-[70] ${pinned ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
-          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: pinned ? "auto" : "none" }}
+          className={`fixed ${isHome ? "z-[15]" : "z-[70]"} ${isHome ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
+          style={{ bottom: `calc(${defaultBottom}px + env(safe-area-inset-bottom))`, touchAction: "none" }}
         >
-          {/* Pulse halo (only on home / pinned) */}
-          {pinned && (
+          {/* Pulse halo (only on home) */}
+          {isHome && (
             <>
               <motion.span
                 aria-hidden
@@ -134,17 +133,16 @@ export function FloatingInquiryWidget() {
               : "bg-gradient-to-br from-[#fff8dc] to-white border-[color:oklch(0.78_0.14_82/0.55)]"
           }`}>
             <div className="flex items-stretch">
-              {/* Drag handle (hidden when pinned on home) */}
-              {!pinned && (
-                <button
-                  onPointerDown={(e) => dragControls.start(e)}
-                  aria-label="Drag"
-                  className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
-                  style={{ touchAction: "none" }}
-                >
-                  <GripVertical className="h-4 w-4" />
-                </button>
-              )}
+              {/* Drag handle — always available so user can pick widget up */}
+              <button
+                onPointerDown={(e) => dragControls.start(e)}
+                aria-label="Drag"
+                className="px-1 grid place-items-center text-slate-400 active:text-slate-700 cursor-grab active:cursor-grabbing"
+                style={{ touchAction: "none" }}
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+
 
               {/* Tap target */}
               <button
