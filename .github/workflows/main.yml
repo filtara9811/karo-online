@@ -36,23 +36,28 @@ jobs:
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.BUBBLEWRAP_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
 
-          # Bubblewrap को पहले से JDK/Android SDK paths दे रहे हैं, ताकि
-          # GitHub Actions में interactive prompt पर build घंटों तक न अटके.
+          # Keystore file GitHub Secret से decode करते हैं (base64 encoded).
+          # Secret name: ANDROID_KEYSTORE_BASE64
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ ! -f android.keystore ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android.keystore
+            echo "✅ Keystore decoded from secret ($(wc -c < android.keystore) bytes)"
+          fi
+
+          # Bubblewrap को JDK/Android SDK paths दे रहे हैं.
           mkdir -p "$HOME/.bubblewrap"
           cat > "$HOME/.bubblewrap/config.json" <<JSON
           {"jdkPath":"${JAVA_HOME_17_X64}","androidSdkPath":"${ANDROID_HOME}"}
           JSON
 
-          # अगर GitHub Secrets में password नहीं डाला है तो Bubblewrap default
-          # password try करेगा. गलत हुआ तो build तुरंत fail होगा, hang नहीं होगा.
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${BUBBLEWRAP_KEYSTORE_PASSWORD:-android}"
           export BUBBLEWRAP_KEY_PASSWORD="${BUBBLEWRAP_KEY_PASSWORD:-android}"
 
           if [ ! -f android.keystore ]; then
-            echo "::error::android.keystore file missing. Please add your existing upload key file as android.keystore."
+            echo "::error::android.keystore missing. GitHub repo Settings → Secrets → Actions में ANDROID_KEYSTORE_BASE64 add करें (अपनी .keystore/.jks file का base64)."
             exit 1
           fi
 
