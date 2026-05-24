@@ -20,13 +20,41 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;34.0.0"
+          yes | sdkmanager --licenses >/dev/null
+
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
       - name: Build AAB
+        timeout-minutes: 35
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.BUBBLEWRAP_KEY_PASSWORD }}
         run: |
-          # Android SDK के लिए ऑटो-रिप्लाई
-          yes | bubblewrap doctor
+          set -euo pipefail
+
+          # Bubblewrap को पहले से JDK/Android SDK paths दे रहे हैं, ताकि
+          # GitHub Actions में interactive prompt पर build घंटों तक न अटके.
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<JSON
+          {"jdkPath":"${JAVA_HOME_17_X64}","androidSdkPath":"${ANDROID_HOME}"}
+          JSON
+
+          # अगर GitHub Secrets में password नहीं डाला है तो Bubblewrap default
+          # password try करेगा. गलत हुआ तो build तुरंत fail होगा, hang नहीं होगा.
+          export BUBBLEWRAP_KEYSTORE_PASSWORD="${BUBBLEWRAP_KEYSTORE_PASSWORD:-android}"
+          export BUBBLEWRAP_KEY_PASSWORD="${BUBBLEWRAP_KEY_PASSWORD:-android}"
+
+          if [ ! -f android.keystore ]; then
+            echo "::error::android.keystore file missing. Please add your existing upload key file as android.keystore."
+            exit 1
+          fi
 
           # Play Store app details fixed here — package name वही रहेगा,
           # लेकिन app name/icon/theme अब package/blue Chrome जैसा नहीं दिखेगा.
@@ -62,8 +90,8 @@ jobs:
           }
           JSON
 
-          yes | bubblewrap update --skipVersionUpgrade
-          yes | bubblewrap build
+          bubblewrap update --skipVersionUpgrade --manifest=twa-manifest.json
+          timeout 25m bubblewrap build --manifest=twa-manifest.json
 
       - name: Collect All Files
         run: |
