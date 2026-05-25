@@ -115,12 +115,34 @@ jobs:
           bubblewrap update --skipVersionUpgrade --manifest=twa-manifest.json
           timeout 25m bubblewrap build --manifest=twa-manifest.json
 
-      - name: Collect All Files
+      - name: Collect Play Console Upload File
         run: |
-          # केवल final app files collect करें; private signing key artifact में upload नहीं करनी है.
+          set -euo pipefail
+
+          SIGNED_BUNDLE="app-release-bundle.aab"
+          if [ ! -f "$SIGNED_BUNDLE" ]; then
+            echo "::error::Signed Play Store bundle $SIGNED_BUNDLE नहीं मिला. कृपया Bubblewrap build logs देखें."
+            exit 1
+          fi
+
+          jarsigner -verify -strict -verbose "$SIGNED_BUNDLE" >/tmp/aab-signature-check.log 2>&1 || {
+            cat /tmp/aab-signature-check.log
+            echo "::error::$SIGNED_BUNDLE signed नहीं है, इसलिए Play Console इसे reject करेगा."
+            exit 1
+          }
+
           mkdir -p build_output
-          find . -name "*.aab" -exec cp {} build_output/ \;
-          find . -name "*.apk" -exec cp {} build_output/ \;
+          cp "$SIGNED_BUNDLE" "build_output/UPLOAD-THIS-Karo-Online-signed.aab"
+          if [ -f app-release-signed.apk ]; then
+            cp app-release-signed.apk build_output/Karo-Online-test-install-signed.apk
+          fi
+          cat > build_output/README-HINDI.txt <<'EOF'
+          Play Console में सिर्फ यह file upload करें:
+
+          UPLOAD-THIS-Karo-Online-signed.aab
+
+          app-release.aab upload न करें — वह unsigned/intermediate file होती है और Play Console "All uploaded bundles must be signed" error दिखाता है.
+          EOF
 
       - name: Upload Final App
         uses: actions/upload-artifact@v4
