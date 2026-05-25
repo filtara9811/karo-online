@@ -182,14 +182,14 @@ android {
 
 ## Step 7 — Production build (AAB)
 
-```bash
-bun run build
-bunx cap sync android
-cd android
-./gradlew bundleRelease
-```
+GitHub Actions workflow run hone ke baad artifact download karo:
 
-Output: `android/app/build/outputs/bundle/release/app-release.aab` — yehi Play Store par upload karna hai.
+1. GitHub → **Actions** → latest successful run → **Karo-Online-Final-App** download
+2. ZIP extract karo
+3. Play Console mein sirf ye file upload karo:
+   - `UPLOAD-THIS-Karo-Online-signed.aab`
+
+⚠️ `app-release.aab` upload mat karo — Bubblewrap ka correct signed bundle normally `app-release-bundle.aab` hota hai. Isi confusion ki wajah se Play Console **"All uploaded bundles must be signed"** error dikhata hai.
 
 ---
 
@@ -213,9 +213,9 @@ Output: `android/app/build/outputs/bundle/release/app-release.aab` — yehi Play
    - **App icon** (512×512 PNG)
    - **Feature graphic** (1024×500 PNG)
    - **Phone screenshots** (min 2, max 8) — preview se capture karke ya pehle generate kiye screenshots use karo
-4. **Production** → **Create new release**
-   - **App bundle**: `app-release.aab` upload karo
-   - **Release name**: `1.0.0`
+4. **Production / Closed testing** → **Create new release**
+   - **App bundle**: `UPLOAD-THIS-Karo-Online-signed.aab` upload karo
+   - **Release name**: `1.0.1`
    - **Release notes**: First release! Quick local services, vendor leads, secure payments.
    - **Review release** → **Start rollout to Production**
 
