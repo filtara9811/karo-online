@@ -147,6 +147,20 @@ export const verifyPayment = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Signature verification failed" };
     }
 
+    // Idempotency: if this payment id was already processed, return success without re-crediting
+    const { data: existingTxn } = await supabaseAdmin
+      .from("wallet_transactions")
+      .select("id")
+      .eq("reference_id", data.razorpay_payment_id)
+      .eq("status", "success")
+      .limit(1);
+    if (existingTxn && existingTxn.length > 0) {
+      await logSystem("razorpay", "success", `Payment already processed ${data.razorpay_payment_id}`, {
+        purpose: data.purpose,
+      });
+      return { ok: true as const, already: true };
+    }
+
     // Credit wallet (real money flow)
     const amountPaise = data.amount_inr * 100;
     if (data.purpose === "wallet_recharge") {
@@ -169,7 +183,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         })
         .eq("vendor_id", userId);
-      await supabaseAdmin.from("wallet_transactions").insert({
+      const { error: insErr } = await supabaseAdmin.from("wallet_transactions").insert({
         vendor_id: userId,
         wallet_kind: "service",
         txn_type: "recharge",
@@ -180,6 +194,18 @@ export const verifyPayment = createServerFn({ method: "POST" })
         reference_id: data.razorpay_payment_id,
         balance_after_paise: newBal,
       });
+      // If a concurrent request already inserted this reference_id, roll back the balance increment
+      if (insErr && /duplicate key|unique/i.test(insErr.message)) {
+        await supabaseAdmin
+          .from("vendor_wallets")
+          .update({
+            service_balance_paise: wallet?.service_balance_paise ?? 0,
+            lifetime_recharged_paise: wallet?.lifetime_recharged_paise ?? 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("vendor_id", userId);
+        return { ok: true as const, already: true };
+      }
     }
     await logSystem("razorpay", "success", `Payment verified ${data.razorpay_payment_id}`, {
       purpose: data.purpose,
