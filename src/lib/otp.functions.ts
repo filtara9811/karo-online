@@ -406,7 +406,13 @@ export const finalizeCustomerRegistration = createServerFn({ method: "POST" })
       .order("verified_at", { ascending: false })
       .limit(1);
     if (otpErr) return { ok: false, error: "OTP verify check fail hua" };
-    if (!verifiedRows?.[0]) return { ok: false, error: "Pehle mobile OTP verify karein" };
+    const verifiedRow = verifiedRows?.[0];
+    if (!verifiedRow) return { ok: false, error: "Pehle mobile OTP verify karein" };
+    // Time-bounded check: verified OTP must be within last 15 minutes
+    const verifiedAt = verifiedRow.verified_at ? new Date(verifiedRow.verified_at).getTime() : 0;
+    if (!verifiedAt || Date.now() - verifiedAt > 15 * 60 * 1000) {
+      return { ok: false, error: "Session expired — please re-verify your OTP" };
+    }
 
     const payload = {
       name: data.name.trim(),
