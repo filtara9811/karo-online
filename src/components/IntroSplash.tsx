@@ -119,6 +119,28 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
         </motion.div>
       </AnimatePresence>
 
+      {/* CTA on slide 2 — tap to advance to mobile-number step */}
+      <AnimatePresence>
+        {idx === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute bottom-16 left-0 right-0 flex justify-center px-6"
+          >
+            <button
+              onClick={finish}
+              className="group relative h-14 px-10 rounded-full bg-gradient-to-b from-[#f5d97a] via-[#e6b94a] to-[#b8862a] text-[#3a2608] font-bold text-base tracking-wide shadow-[0_10px_28px_-6px_rgba(184,134,42,0.6),0_0_0_1.5px_rgba(255,255,255,0.5)_inset] active:scale-[0.97] transition-transform"
+              aria-label="Karo Online — Continue"
+            >
+              <span className="relative z-10">Karo Online</span>
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-active:opacity-100 transition-opacity" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* progress dots */}
       <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-2">
         {[0, 1].map((i) => (
