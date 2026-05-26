@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X,
+  Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X, Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
-import { playPing } from "@/lib/lead-sound";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
@@ -45,6 +44,8 @@ const primeVoices = () => {
 };
 const speakHi = (text: string) => {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  // Respect global mute toggle set from splash / OTP screen.
+  try { if (localStorage.getItem("ko-tts-muted") === "1") return; } catch { /* */ }
   try {
     primeVoices();
     window.speechSynthesis.cancel();
@@ -59,9 +60,9 @@ const speakHi = (text: string) => {
   } catch { /* ignore */ }
 };
 const STEP_VOICE: Record<Step, string> = {
-  1: "मोबाइल नंबर दर्ज करें",
-  2: "ओ टी पी दर्ज करें",
-  3: "अपना नाम और जेंडर चुनें",
+  1: "अपना मोबाइल नंबर दर्ज करें",
+  2: "अपना ओटीपी दर्ज करें",
+  3: "रजिस्टर पेज, अपनी बेसिक डिटेल्स भरें",
 };
 
 const clearStaleCustomerDrafts = () => {
@@ -431,6 +432,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                     onPaste={pasteOtp}
                     verifying={otpVerifying}
                     onVerify={() => handleOtpVerify(otp)}
+                    onEdit={() => { setOtp(""); setOtpSeconds(45); setOtpError(null); goNext(1); }}
                   />
                 )}
                 {step === 3 && (
@@ -538,7 +540,6 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
-    try { playPing("default"); } catch { /* */ }
   }, []);
   const change = (v: string) => {
     const clean = v.replace(/\D/g, "").slice(0, 10);
@@ -572,7 +573,7 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 // ============================================================
 // Step 2: OTP
 // ============================================================
-function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onVerify }: {
+function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onVerify, onEdit }: {
   phone: string;
   otp: string;
   onOtp: (v: string) => void;
@@ -581,19 +582,28 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
   onPaste: () => void;
   verifying: boolean;
   onVerify: () => void;
+  onEdit: () => void;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
-    try { playPing("default"); } catch { /* */ }
   }, []);
   const ready = otp.length === 4 && !verifying;
   return (
     <div>
-      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Paste from SMS, then tap Verify" />
-      <div className="mb-4 flex items-center justify-center gap-2 text-sm">
-        <span className="font-display font-semibold text-[color:oklch(0.32_0.06_85)]">{phone}</span>
-      </div>
+      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Auto-detect or paste from SMS" />
+      <button
+        onClick={onEdit}
+        disabled={verifying}
+        aria-label="Edit mobile number"
+        className="mb-4 mx-auto flex items-center gap-2 rounded-full border border-[color:oklch(0.78_0.14_82/0.5)] bg-white/80 px-4 py-1.5 shadow-sm active:scale-[0.97] transition disabled:opacity-50"
+      >
+        <span className="text-sm font-semibold tabular-nums tracking-wide text-[color:oklch(0.30_0.05_85)]" style={{ fontFeatureSettings: '"tnum"' }}>
+          {phone}
+        </span>
+        <Pencil className="h-3.5 w-3.5 text-[color:oklch(0.55_0.10_82)]" strokeWidth={2.4} />
+      </button>
+
 
       <div className="relative mx-auto w-fit">
         <input
