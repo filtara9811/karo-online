@@ -44,6 +44,8 @@ const primeVoices = () => {
 };
 const speakHi = (text: string) => {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  // Respect global mute toggle set from splash / OTP screen.
+  try { if (localStorage.getItem("ko-tts-muted") === "1") return; } catch { /* */ }
   try {
     primeVoices();
     window.speechSynthesis.cancel();
