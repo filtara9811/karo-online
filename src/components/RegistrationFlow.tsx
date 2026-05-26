@@ -537,7 +537,6 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
-    try { playPing("default"); } catch { /* */ }
   }, []);
   const change = (v: string) => {
     const clean = v.replace(/\D/g, "").slice(0, 10);
@@ -584,7 +583,6 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
   const ref = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
-    try { playPing("default"); } catch { /* */ }
   }, []);
   const ready = otp.length === 4 && !verifying;
   return (
