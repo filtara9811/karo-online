@@ -54,18 +54,18 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   }, []);
 
   useEffect(() => {
-    // Slide 1 → 2 at 1.6s, then finish at 3.6s
+    // Slide 1 → 2 at 1.6s. Slide 2 waits for the "Karo Online" CTA tap.
     if (idx === 0) {
       const t = setTimeout(() => setIdx(1), 1600);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => {
-      try { sessionStorage.setItem(SPLASH_SESSION_KEY, "1"); } catch { /* */ }
-      try { window.speechSynthesis?.cancel(); } catch { /* */ }
-      onDone();
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [idx, onDone]);
+  }, [idx]);
+
+  const finish = () => {
+    try { sessionStorage.setItem(SPLASH_SESSION_KEY, "1"); } catch { /* */ }
+    try { window.speechSynthesis?.cancel(); } catch { /* */ }
+    onDone();
+  };
 
   const toggleMute = () => {
     setMuted((m) => {
