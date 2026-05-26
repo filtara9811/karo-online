@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X,
+  Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X, Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
-import { playPing } from "@/lib/lead-sound";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
