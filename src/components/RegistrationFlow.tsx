@@ -580,9 +580,10 @@ function FieldShell({ Icon, children }: { Icon: React.ComponentType<{ className?
 // ============================================================
 // Step 1: Phone
 // ============================================================
-function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: {
+function PhoneStep({ initialDigits, onChangeDigits, isTestNumber, sending, error, onSubmit }: {
   initialDigits: string;
   onChangeDigits: (v: string) => void;
+  isTestNumber: boolean;
   sending: boolean;
   error: string | null;
   onSubmit: (digits: string) => void;
@@ -615,6 +616,16 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
           className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.45)] placeholder:font-normal placeholder:text-base"
         />
       </FieldShell>
+      {isTestNumber && (
+        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center shadow-sm">
+          <p className="text-[11px] font-display font-bold uppercase tracking-[0.18em] text-emerald-700">
+            ✓ Test number
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-emerald-800">
+            Test account use this number · OTP automatic verify hoga
+          </p>
+        </div>
+      )}
       {error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
       <NextButton disabled={d.length !== 10 || sending} label={sending ? "Sending OTP…" : "Send OTP"} onClick={() => onSubmit(d)} />
     </div>
