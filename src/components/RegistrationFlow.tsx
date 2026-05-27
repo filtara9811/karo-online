@@ -136,6 +136,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const otpSendInFlightRef = useRef(false);
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
@@ -194,16 +195,17 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
 
   const handleSendOtp = async (digits: string) => {
+    if (otpSendInFlightRef.current) return;
     if (digits.length !== 10) {
       toast.error("10 digit mobile number daaliye");
       return;
     }
+    otpSendInFlightRef.current = true;
     setOtpSending(true);
     setOtpError(null);
     try {
       const res = await sendOtpFn({ data: { phone: digits } });
       if (!res.ok) {
-        toast.error(res.error || "Could not send OTP");
         setOtpError(res.error || "Could not send OTP");
         return;
       }
@@ -212,12 +214,15 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtpError("Live OTP blocked: Admin SMS Test mode OFF karein.");
         return;
       }
+      const reusedOtp = "reused" in res && !!res.reused;
+      const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
       setOtp("");
-      setOtpSeconds(45);
+      setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
-      toast.success("OTP sent to " + formatIndianMobile(digits));
+      toast.success(reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
+      otpSendInFlightRef.current = false;
       setOtpSending(false);
     }
   };
@@ -432,7 +437,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                     onPaste={pasteOtp}
                     verifying={otpVerifying}
                     onVerify={() => handleOtpVerify(otp)}
-                    onEdit={() => { setOtp(""); setOtpSeconds(45); setOtpError(null); goNext(1); }}
+                    onEdit={() => {
+                      const digits = phone.replace(/\D/g, "").slice(-10);
+                      setPhoneDigits(digits);
+                      setOtp("");
+                      setOtpSeconds(0);
+                      setOtpError(null);
+                      goNext(1);
+                    }}
                   />
                 )}
                 {step === 3 && (

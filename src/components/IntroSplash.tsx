@@ -42,13 +42,17 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   };
 
   useEffect(() => {
-    // Try to speak on mount; if blocked (no gesture), fire on first interaction.
-    const t = setTimeout(speak, 350);
+    // Try immediately; if the browser delays voices/audio, retry on first voice load or tap.
+    speak();
+    const t = setTimeout(speak, 50);
     const onGesture = () => speak();
+    const onVoices = () => speak();
+    try { window.speechSynthesis?.addEventListener("voiceschanged", onVoices, { once: true }); } catch { /* */ }
     window.addEventListener("pointerdown", onGesture, { once: true });
     return () => {
       clearTimeout(t);
       window.removeEventListener("pointerdown", onGesture);
+      try { window.speechSynthesis?.removeEventListener("voiceschanged", onVoices); } catch { /* */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -123,20 +127,17 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
       <AnimatePresence>
         {idx === 1 && (
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-16 left-0 right-0 flex justify-center px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ delay: 0.2, duration: 0.25 }}
+            className="absolute bottom-20 left-7 right-7 h-16"
           >
             <button
               onClick={finish}
-              className="group relative h-14 px-10 rounded-full bg-gradient-to-b from-[#f5d97a] via-[#e6b94a] to-[#b8862a] text-[#3a2608] font-bold text-base tracking-wide shadow-[0_10px_28px_-6px_rgba(184,134,42,0.6),0_0_0_1.5px_rgba(255,255,255,0.5)_inset] active:scale-[0.97] transition-transform"
+              className="h-full w-full rounded-full bg-transparent text-transparent outline-none"
               aria-label="Karo Online — Continue"
-            >
-              <span className="relative z-10">Karo Online</span>
-              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-active:opacity-100 transition-opacity" />
-            </button>
+            />
           </motion.div>
         )}
       </AnimatePresence>
