@@ -391,11 +391,10 @@ function QuickPage() {
         setRealVendorsLoading(false);
         return;
       }
-      const { data: vs } = await supabase
-        .from("vendors")
+      const { data: vs } = await (supabase as any)
+        .from("vendors_public")
         .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, lat, lng")
-        .in("user_id", vendorIds)
-        .eq("is_blocked", false);
+        .in("user_id", vendorIds);
       if (cancelled) return;
       const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
       const realRows = (vs ?? [])
