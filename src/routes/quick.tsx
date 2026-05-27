@@ -176,6 +176,7 @@ const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
     price_max: null,
     sort_order: idx + 1,
   }));
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function fallbackCatalog(types: DBType[] = STATIC_TYPES): CatalogData {
   const fallbackType = types.find((t) => t.code === "service") ?? types[0] ?? STATIC_TYPES[0];
@@ -375,7 +376,7 @@ function QuickPage() {
       setRealVendors([]);
       return;
     }
-    const subItemIds = items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id);
+    const subItemIds = items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id).filter((id) => UUID_RE.test(id));
     if (subItemIds.length === 0) {
       setRealVendors([]);
       return;
@@ -383,33 +384,27 @@ function QuickPage() {
     let cancelled = false;
     (async () => {
       setRealVendorsLoading(true);
-      const res = await getQuickMapVendorsFn({
-        data: {
-          itemIds: subItemIds,
-          origin: geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null,
-        },
-      });
-      if (cancelled) return;
-      const realRows = res.ok ? res.vendors : [];
-      const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
-        const positions = [
-          [28, 28], [72, 30], [22, 60], [70, 65], [50, 78],
-          [40, 22], [80, 48], [18, 42],
-        ];
-        const [x, y] = positions[i % positions.length];
-        return {
-          id: v.id,
-          name: v.business_name || v.owner_name || "Vendor",
-          area: v.km != null ? `${v.km} km away` : "Nearby",
-          km: v.km ?? 0,
-          status: v.status === "active" || v.status === "approved" ? "Online" : "Office",
-          avatar: v.avatar_url || avatarUser,
-          x, y,
-          cat: selectedSub.slug,
-        };
-      });
-      setRealVendors(mapped);
-      setRealVendorsLoading(false);
+      try {
+        const res = await getQuickMapVendorsFn({
+          data: {
+            itemIds: subItemIds,
+            origin: geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null,
+          },
+        });
+        if (cancelled) return;
+        const realRows = res.ok ? res.vendors : [];
+        const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
+          const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42]];
+          const [x, y] = positions[i % positions.length];
+          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.status === "active" || v.status === "approved" ? "Online" : "Office", avatar: v.avatar_url || avatarUser, x, y, cat: selectedSub.slug };
+        });
+        setRealVendors(mapped);
+      } catch (e) {
+        console.warn("quick map vendors failed", e);
+        if (!cancelled) setRealVendors([]);
+      } finally {
+        if (!cancelled) setRealVendorsLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [selectedSub, items, geo.lat, geo.lng]);
