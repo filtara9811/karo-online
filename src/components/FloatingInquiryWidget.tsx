@@ -81,6 +81,10 @@ export function FloatingInquiryWidget() {
   const widgetW = 260;
   const animX = 0;
   const animY = 0;
+  // Map ≈ 34vh, white search-sheet starts at ~ (34vh - 24px) due to -mt-6.
+  // Place widget so its BOTTOM tucks ~28px behind the search-sheet top edge,
+  // leaving only a ~20px tab peeking up onto the map (sandwich look).
+  const widgetTop = `calc(34vh + env(safe-area-inset-top) - ${widgetH + 28}px)`;
 
   return (
     <>
