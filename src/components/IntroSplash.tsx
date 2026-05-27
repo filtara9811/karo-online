@@ -83,75 +83,96 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[90] overflow-hidden bg-[#fdf6e0]">
+    <div className="fixed inset-0 z-[90] overflow-hidden bg-[#fdf6e0] flex items-center justify-center">
       <button
         onClick={toggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="absolute top-4 right-4 z-10 h-10 w-10 grid place-items-center rounded-full bg-white/80 border border-[#d4af37]/40 shadow-md backdrop-blur-sm active:scale-90 transition"
+        className="absolute top-4 right-4 z-20 h-10 w-10 grid place-items-center rounded-full bg-white/80 border border-[#d4af37]/40 shadow-md backdrop-blur-sm active:scale-90 transition"
       >
         {muted
           ? <VolumeX className="h-5 w-5 text-[#8b6508]" />
           : <Volume2 className="h-5 w-5 text-[#8b6508]" />}
       </button>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0"
-        >
-          <img
-            src={idx === 0 ? splash1 : splash2}
-            alt="Karo Online"
-            className="w-full h-full object-cover"
-            draggable={false}
-          />
-          {/* subtle floating shimmer on the pin */}
+      {/* Responsive stage: phone-shaped frame on tablet/laptop so the full
+          splash (including the in-image CTA) is visible without scrolling.
+          On mobile it fills the viewport. */}
+      <div
+        className="relative w-full h-full sm:h-[min(100vh,900px)] sm:w-[min(100vw,460px)] sm:rounded-[2rem] sm:shadow-2xl sm:overflow-hidden"
+        style={{ aspectRatio: "auto" }}
+      >
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.6, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 42%, rgba(255,243,200,0.55) 0%, transparent 45%)",
-            }}
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* CTA on slide 2 — tap to advance to mobile-number step */}
-      <AnimatePresence>
-        {idx === 1 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 0.2, duration: 0.25 }}
-            className="absolute bottom-20 left-7 right-7 h-16"
+            key={idx}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
           >
-            <button
-              onClick={finish}
-              className="h-full w-full rounded-full bg-transparent text-transparent outline-none"
-              aria-label="Karo Online — Continue"
+            <img
+              src={idx === 0 ? splash1 : splash2}
+              alt="Karo Online"
+              className="w-full h-full object-cover sm:object-contain"
+              draggable={false}
+            />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.6, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 42%, rgba(255,243,200,0.55) 0%, transparent 45%)",
+              }}
             />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
 
-      {/* progress dots */}
-      <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-2">
-        {[0, 1].map((i) => (
-          <span
-            key={i}
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              i === idx ? "w-8 bg-[#8b6508]" : "w-1.5 bg-[#8b6508]/30"
-            }`}
-          />
-        ))}
+        {/* CTA on slide 2 — invisible overlay on top of the in-image button
+            on mobile (where image is object-cover and CTA sits at bottom-20),
+            PLUS a visible fallback button so it always works on laptop/tablet. */}
+        <AnimatePresence>
+          {idx === 1 && (
+            <>
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.2, duration: 0.25 }}
+                onClick={finish}
+                aria-label="Karo Online — Continue"
+                className="sm:hidden absolute bottom-20 left-7 right-7 h-16 rounded-full bg-transparent text-transparent outline-none"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.25, duration: 0.3 }}
+                className="hidden sm:flex absolute bottom-10 left-0 right-0 justify-center px-6"
+              >
+                <button
+                  onClick={finish}
+                  className="h-14 px-10 rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-white font-bold text-base shadow-xl hover:scale-[1.02] active:scale-95 transition"
+                >
+                  Karo Online — Continue
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* progress dots */}
+        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 z-10">
+          {[0, 1].map((i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                i === idx ? "w-8 bg-[#8b6508]" : "w-1.5 bg-[#8b6508]/30"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
