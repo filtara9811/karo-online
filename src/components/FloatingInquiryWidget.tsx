@@ -71,15 +71,16 @@ export function FloatingInquiryWidget() {
     setConfirmCancel(null);
   };
 
-  // On /quick (home) the widget is PINNED to peek from BEHIND the white
-  // sheet container. The sheet starts at (34vh - 24px) from top (map=34vh
-  // with -mt-6 overlap). We want widget vertical center on that edge so
-  // half tucks behind (z-15 < sheet z-20) and half pokes above.
-  const isHome = location.pathname.startsWith("/quick");
+  // On /quick (home) the widget peeks from BEHIND the white search-bar
+  // sheet container at the TOP. The map takes ~34vh; the white sheet starts
+  // there with a -mt-6 overlap. We pin the widget center to the seam between
+  // map and the search-bar header so the widget tucks behind the header
+  // (z-15 < header sheet z-20) and just a small tab peeks above onto the map.
+  const isHome = true; // narrowed: we already early-returned for non-/quick routes
   const widgetH = 56;
   const widgetW = 260;
-  const animX = isHome ? 0 : pos.x;
-  const animY = isHome ? 0 : pos.y;
+  const animX = 0;
+  const animY = 0;
 
   return (
     <>
@@ -88,7 +89,7 @@ export function FloatingInquiryWidget() {
       <AnimatePresence>
         <motion.div
           key="floating-inquiry"
-          drag={!isHome}
+          drag={false}
           dragControls={dragControls}
           dragListener={false}
           dragMomentum={false}
@@ -104,26 +105,24 @@ export function FloatingInquiryWidget() {
             opacity: 1,
             scale: 1,
             x: animX,
-            y: isHome ? [animY, animY - 4, animY, animY - 2, animY] : animY,
-            rotate: isHome ? [0, -1.4, 1.4, -0.8, 0.8, 0] : 0,
+            y: [animY, animY - 3, animY, animY - 1.5, animY],
+            rotate: [0, -1.2, 1.2, -0.6, 0.6, 0],
           }}
           exit={{ opacity: 0, scale: 0.85 }}
-          transition={isHome
-            ? {
-                type: "spring", damping: 22, stiffness: 260,
-                y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
-                rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
-              }
-            : { type: "spring", damping: 24, stiffness: 280 }
-          }
-          onDragEnd={(_, info) => {
-            if (isHome) return;
-            const next = { x: pos.x + info.offset.x, y: pos.y + info.offset.y };
-            setPos(next);
-            savePos(next);
+          transition={{
+            type: "spring", damping: 22, stiffness: 260,
+            y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
           }}
-          className={`fixed ${isHome ? "z-[15]" : "z-[70]"} ${isHome ? "left-1/2 -translate-x-1/2 w-[88vw] max-w-sm" : "right-3 max-w-[88vw]"}`}
-          style={{ bottom: isHome ? `calc(66vh - 4px)` : `calc(112px + env(safe-area-inset-bottom))`, touchAction: isHome ? "auto" : "none" }}
+          onDragEnd={() => {}}
+          className="fixed z-[15] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
+          style={{
+            // Map height ≈ 34vh + safe-area top. We want widget vertical
+            // center sitting roughly on the bottom edge of the search-bar
+            // header so it peeks from BEHIND the header onto the map.
+            top: `calc(34vh + env(safe-area-inset-top) + 6px)`,
+            touchAction: "auto",
+          }}
         >
           {/* Pulse halo (only on home) */}
           {isHome && (
