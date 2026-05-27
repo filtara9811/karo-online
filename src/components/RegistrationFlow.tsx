@@ -598,7 +598,9 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
   }, []);
-  const ready = otp.length === 4 && !verifying;
+  // Support both 4-digit (standard) and 6-digit (admin-configured test accounts) OTPs.
+  const boxCount = otp.length > 4 ? 6 : 4;
+  const ready = (otp.length === 4 || otp.length === 6) && !verifying;
   return (
     <div>
       <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Auto-detect or paste from SMS" />
@@ -619,18 +621,18 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
         <input
           ref={ref}
           value={otp}
-          onChange={(e) => onOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          onChange={(e) => onOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
           onKeyDown={(e) => { if (e.key === "Enter" && ready) onVerify(); }}
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="[0-9]*"
-          maxLength={4}
+          maxLength={6}
           disabled={verifying}
           aria-label="OTP code"
           className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-text tracking-[1.5em]"
         />
         <div className="flex items-center gap-3 pointer-events-none">
-          {[0, 1, 2, 3].map((i) => (
+          {Array.from({ length: boxCount }).map((_, i) => (
             <div
               key={i}
               className={`h-16 w-14 grid place-items-center text-3xl font-display font-bold rounded-xl border-2 ${
