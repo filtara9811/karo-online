@@ -307,13 +307,14 @@ export const sendOtp = createServerFn({ method: "POST" })
       return { ok: false, error: "Invalid 10-digit mobile number" };
     }
 
-    // ---- Test-account bypass (Play Store / payment gateway reviewers) ----
-    if (isTestPhone(phone)) {
-      // Wipe any prior pending codes, seed the fixed code so verifyOtp matches.
+    // ---- Test-account bypass (admin-managed reviewer accounts) ----
+    const testAccount = await lookupTestAccount(phone);
+    if (testAccount) {
+      // Wipe any prior pending codes, seed the configured code so verifyOtp matches.
       await supabaseAdmin.from("otp_codes").delete().eq("phone", phone).is("verified_at", null);
       const { error: seedErr } = await supabaseAdmin.from("otp_codes").insert({
         phone,
-        code_hash: hash(TEST_OTP_CODE, phone),
+        code_hash: hash(testAccount.otp_code, phone),
         provider: "test_bypass",
       });
       if (seedErr) {
@@ -322,8 +323,9 @@ export const sendOtp = createServerFn({ method: "POST" })
       await logSystem("otp", "test_bypass", "success", `Test account OTP issued for ${phone}`, {
         phone_last4: phone.slice(-4),
         test_account: true,
+        otp_length: testAccount.otp_code.length,
       });
-      return { ok: true, test_mode: true };
+      return { ok: true, test_mode: true, test_account: true };
     }
 
     const gateway = await getActiveSmsGateway();
