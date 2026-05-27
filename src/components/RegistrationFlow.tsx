@@ -214,9 +214,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       }
       setPhone(formatIndianMobile(digits));
       setOtp("");
-      setOtpSeconds(45);
+      setOtpSeconds(res.reused ? Math.max(1, res.cooldown_remaining ?? 45) : 45);
       goNext(2);
-      toast.success("OTP sent to " + formatIndianMobile(digits));
+      toast.success(res.reused ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
       setOtpSending(false);
     }
@@ -432,7 +432,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                     onPaste={pasteOtp}
                     verifying={otpVerifying}
                     onVerify={() => handleOtpVerify(otp)}
-                    onEdit={() => { setOtp(""); setOtpSeconds(45); setOtpError(null); goNext(1); }}
+                    onEdit={() => {
+                      const digits = phone.replace(/\D/g, "").slice(-10);
+                      setPhoneDigits(digits);
+                      setOtp("");
+                      setOtpSeconds(0);
+                      setOtpError(null);
+                      goNext(1);
+                    }}
                   />
                 )}
                 {step === 3 && (
