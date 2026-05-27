@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { checkTestAccountPhone, finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
@@ -137,6 +137,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [testOtpCode, setTestOtpCode] = useState<string | null>(null);
+  const [isTestNumber, setIsTestNumber] = useState(false);
   const autoVerifiedTestOtpRef = useRef<string | null>(null);
   const otpSendInFlightRef = useRef(false);
 
@@ -145,6 +146,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
+  const checkTestAccountPhoneFn = useServerFn(checkTestAccountPhone);
   const finalizeCustomerFn = useServerFn(finalizeCustomerRegistration);
 
   // Prefill name from session
@@ -193,6 +195,26 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const goNext = (target: Step) => setStep(target);
 
   // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
+  useEffect(() => {
+    if (step !== 1) return;
+    if (phoneDigits.length !== 10) {
+      setIsTestNumber(false);
+      return;
+    }
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await checkTestAccountPhoneFn({ data: { phone: phoneDigits } });
+        if (!cancelled) setIsTestNumber(!!res.is_test_account);
+      } catch {
+        if (!cancelled) setIsTestNumber(false);
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [step, phoneDigits, checkTestAccountPhoneFn]);
 
 
 
@@ -212,14 +234,16 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         return;
       }
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
+      const testNumber = "test_account" in res && !!res.test_account;
       const reusedOtp = "reused" in res && !!res.reused;
       const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
+      setIsTestNumber(testNumber);
       setTestOtpCode(testerOtp);
       setOtp(testerOtp ?? "");
       setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
-      toast.success(testerOtp ? "Test account auto verified" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+      toast.success(testNumber ? "Test number detected — auto verifying" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
       otpSendInFlightRef.current = false;
       setOtpSending(false);
@@ -284,6 +308,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     const digits = phone.replace(/\D/g, "").slice(-10);
     setOtp("");
     setTestOtpCode(null);
+      setIsTestNumber(false);
     setOtpSeconds(45);
     handleSendOtp(digits);
   };
@@ -432,6 +457,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                   <PhoneStep
                     initialDigits={phoneDigits}
                     onChangeDigits={(d) => { setPhoneDigits(d); if (otpError) setOtpError(null); }}
+                    isTestNumber={isTestNumber}
                     sending={otpSending}
                     error={otpError}
                     onSubmit={handleSendOtp}
@@ -441,6 +467,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                   <OtpStep
                     phone={phone}
                     otp={otp}
+                    isTestNumber={isTestNumber}
                     onOtp={setOtp}
                     seconds={otpSeconds}
                     onResend={handleResendOtp}
@@ -452,6 +479,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                       setPhoneDigits(digits);
                       setOtp("");
                       setTestOtpCode(null);
+                      setIsTestNumber(false);
                       autoVerifiedTestOtpRef.current = null;
                       setOtpSeconds(0);
                       setOtpError(null);
@@ -553,9 +581,10 @@ function FieldShell({ Icon, children }: { Icon: React.ComponentType<{ className?
 // ============================================================
 // Step 1: Phone
 // ============================================================
-function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: {
+function PhoneStep({ initialDigits, onChangeDigits, isTestNumber, sending, error, onSubmit }: {
   initialDigits: string;
   onChangeDigits: (v: string) => void;
+  isTestNumber: boolean;
   sending: boolean;
   error: string | null;
   onSubmit: (digits: string) => void;
@@ -588,6 +617,16 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
           className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xl font-semibold tracking-wide text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.45)] placeholder:font-normal placeholder:text-base"
         />
       </FieldShell>
+      {isTestNumber && (
+        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center shadow-sm">
+          <p className="text-[11px] font-display font-bold uppercase tracking-[0.18em] text-emerald-700">
+            ✓ Test number
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-emerald-800">
+            Test account use this number · OTP automatic verify hoga
+          </p>
+        </div>
+      )}
       {error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
       <NextButton disabled={d.length !== 10 || sending} label={sending ? "Sending OTP…" : "Send OTP"} onClick={() => onSubmit(d)} />
     </div>
@@ -597,9 +636,10 @@ function PhoneStep({ initialDigits, onChangeDigits, sending, error, onSubmit }: 
 // ============================================================
 // Step 2: OTP
 // ============================================================
-function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onVerify, onEdit }: {
+function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, verifying, onVerify, onEdit }: {
   phone: string;
   otp: string;
+  isTestNumber: boolean;
   onOtp: (v: string) => void;
   seconds: number;
   onResend: () => void;
@@ -617,7 +657,7 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
   const ready = (otp.length === 4 || otp.length === 6) && !verifying;
   return (
     <div>
-      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle="Auto-detect or paste from SMS" />
+      <StepHeader Icon={KeyRound} title="Enter OTP" subtitle={isTestNumber ? "Test number · auto verification" : "Auto-detect or paste from SMS"} />
       <button
         onClick={onEdit}
         disabled={verifying}
@@ -630,6 +670,16 @@ function OtpStep({ phone, otp, onOtp, seconds, onResend, onPaste, verifying, onV
         <Pencil className="h-3.5 w-3.5 text-[color:oklch(0.55_0.10_82)]" strokeWidth={2.4} />
       </button>
 
+      {isTestNumber && (
+        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center shadow-sm">
+          <p className="text-[11px] font-display font-bold uppercase tracking-[0.18em] text-emerald-700">
+            ✓ Test number
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-emerald-800">
+            Test account use this number · OTP auto verified
+          </p>
+        </div>
+      )}
 
       <div className="relative mx-auto w-fit">
         <input
