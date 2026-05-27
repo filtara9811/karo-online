@@ -97,6 +97,7 @@ function SystemStatusPage() {
         </GoldCard>
       ) : (
         <div className="space-y-6">
+          <ReviewerTestAccounts />
           <Section title="SMS Gateways" rows={data?.sms ?? []} />
           <Section title="Payment Gateways" rows={data?.payment ?? []} />
           <Section title="Maps Services" rows={data?.maps ?? []} />
@@ -132,6 +133,48 @@ function SystemStatusPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ReviewerTestAccounts() {
+  const accounts = [
+    { label: "Customer", phone: "9999900000", role: "Customer login + lead create" },
+    { label: "Vendor", phone: "9999900001", role: "Vendor onboarding + dashboard" },
+  ];
+  const copy = (t: string) => {
+    try { navigator.clipboard?.writeText(t); } catch {}
+  };
+  return (
+    <GoldCard className="p-5 border-emerald-500/30">
+      <h3 className="text-sm uppercase tracking-widest text-emerald-300 font-bold mb-1 flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4" />
+        Reviewer Test Accounts
+      </h3>
+      <p className="text-[11px] text-[#f5d97a]/70 mb-3 leading-relaxed">
+        Play Store / Razorpay / Cashfree reviewers ko ye credentials dein. In numbers pe asli SMS nahi jata —
+        fixed OTP <b className="text-emerald-300">123456</b> hamesha kaam karega. Baaki sab real numbers normal SMS se chalte hain.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        {accounts.map((a) => (
+          <div key={a.phone} className="p-3 rounded-lg bg-black/30 border border-emerald-500/20">
+            <div className="text-[10px] uppercase tracking-wider text-emerald-300/80 font-bold">{a.label}</div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="font-mono text-base text-[#fff8dc]">+91 {a.phone}</span>
+              <button onClick={() => copy(a.phone)} className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30">Copy</button>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="font-mono text-sm text-[#fff8dc]">OTP: 123456</span>
+              <button onClick={() => copy("123456")} className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30">Copy</button>
+            </div>
+            <div className="mt-1 text-[10px] text-[#f5d97a]/60">{a.role}</div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-[#f5d97a]/50 mt-3 leading-relaxed">
+        Tip: Reviewer ko email field ke liye <span className="font-mono text-[#fff8dc]">reviewer@karoonline.in</span> jaisa dummy email enter karne ko bolein —
+        signup_method = phone_otp, email verification skip ho jata hai.
+      </p>
+    </GoldCard>
   );
 }
 
