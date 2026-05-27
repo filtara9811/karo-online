@@ -209,11 +209,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtpError(res.error || "Could not send OTP");
         return;
       }
-      if (res.test_mode) {
-        toast.error("Live OTP blocked: Admin SMS Test mode OFF karein.");
-        setOtpError("Live OTP blocked: Admin SMS Test mode OFF karein.");
-        return;
-      }
+      // Note: res.test_mode === true is now a *success* path — it means the
+      // phone matched an admin-managed test account, OTP is pre-seeded and the
+      // user should enter the configured code to verify. Treat it like a normal send.
       const reusedOtp = "reused" in res && !!res.reused;
       const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
