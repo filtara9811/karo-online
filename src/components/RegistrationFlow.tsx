@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
+import { checkTestAccountPhone, finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
 
 type Step = 1 | 2 | 3;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
@@ -146,6 +146,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const sendOtpFn = useServerFn(sendOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
+  const checkTestAccountPhoneFn = useServerFn(checkTestAccountPhone);
   const finalizeCustomerFn = useServerFn(finalizeCustomerRegistration);
 
   // Prefill name from session
@@ -194,6 +195,25 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const goNext = (target: Step) => setStep(target);
 
   // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
+  useEffect(() => {
+    if (step !== 1 || phoneDigits.length !== 10) {
+      setIsTestNumber(false);
+      return;
+    }
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await checkTestAccountPhoneFn({ data: { phone: phoneDigits } });
+        if (!cancelled) setIsTestNumber(!!res.is_test_account);
+      } catch {
+        if (!cancelled) setIsTestNumber(false);
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [step, phoneDigits, checkTestAccountPhoneFn]);
 
 
 
@@ -436,6 +456,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                   <PhoneStep
                     initialDigits={phoneDigits}
                     onChangeDigits={(d) => { setPhoneDigits(d); if (otpError) setOtpError(null); }}
+                    isTestNumber={isTestNumber}
                     sending={otpSending}
                     error={otpError}
                     onSubmit={handleSendOtp}
