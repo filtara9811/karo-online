@@ -131,11 +131,11 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
             transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-20 left-0 right-0 flex justify-center px-6"
+            className="absolute bottom-24 left-0 right-0 flex justify-center px-6"
           >
             <button
               onClick={finish}
-              className="group relative h-12 min-w-[210px] rounded-full border border-[#f7dfa2]/75 bg-[#fff8df]/35 text-[#2f2209] font-bold text-base tracking-wide shadow-[0_10px_26px_-10px_rgba(75,50,8,0.55),0_0_0_1px_rgba(255,255,255,0.45)_inset] backdrop-blur-[2px] active:scale-[0.97] transition-transform"
+              className="group relative h-10 min-w-[176px] rounded-full border border-[#f7dfa2]/65 bg-[#fff8df]/18 text-[#2f2209] font-bold text-sm tracking-wide shadow-[0_8px_20px_-12px_rgba(75,50,8,0.55),0_0_0_1px_rgba(255,255,255,0.4)_inset] backdrop-blur-[1px] active:scale-[0.97] transition-transform"
               aria-label="Karo Online — Continue"
             >
               <span className="relative z-10">Karo Online</span>
