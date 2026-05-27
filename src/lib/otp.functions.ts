@@ -146,13 +146,29 @@ async function logSystem(
 }
 
 async function getActiveSmsGateway() {
+  // Use list (not maybeSingle) so accidental multi-active rows don't error out;
+  // also order by updated_at so the most-recently-activated gateway wins.
   const { data, error } = await supabaseAdmin
     .from("sms_gateways")
-    .select("provider, is_test_mode, config")
+    .select("provider, is_test_mode, config, updated_at")
     .eq("is_active", true)
-    .maybeSingle();
-  if (error) throw new Error(`SMS gateway lookup failed: ${error.message}`);
-  return data;
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    await logSystem("otp", null, "error", `SMS gateway lookup failed: ${error.message}`);
+    throw new Error(`SMS gateway lookup failed: ${error.message}`);
+  }
+  const row = data?.[0] ?? null;
+  if (!row) {
+    // Diagnostic: list all rows so we can see what state the table is in.
+    const { data: all } = await supabaseAdmin
+      .from("sms_gateways")
+      .select("provider, is_active, is_test_mode");
+    await logSystem("otp", null, "error", "getActiveSmsGateway returned null", {
+      table_snapshot: asJson(all),
+    });
+  }
+  return row;
 }
 
 async function sendViaFast2SMS(

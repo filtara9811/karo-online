@@ -416,7 +416,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                 {step === 1 && (
                   <PhoneStep
                     initialDigits={phoneDigits}
-                    onChangeDigits={setPhoneDigits}
+                    onChangeDigits={(d) => { setPhoneDigits(d); if (otpError) setOtpError(null); }}
                     sending={otpSending}
                     error={otpError}
                     onSubmit={handleSendOtp}
