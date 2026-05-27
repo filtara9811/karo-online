@@ -2039,6 +2039,48 @@ export type Database = {
         }
         Relationships: []
       }
+      test_accounts: {
+        Row: {
+          created_at: string
+          email: string | null
+          enabled: boolean
+          id: string
+          label: string
+          name: string | null
+          notes: string | null
+          otp_code: string
+          phone: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          enabled?: boolean
+          id?: string
+          label?: string
+          name?: string | null
+          notes?: string | null
+          otp_code?: string
+          phone: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          enabled?: boolean
+          id?: string
+          label?: string
+          name?: string | null
+          notes?: string | null
+          otp_code?: string
+          phone?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       theme_settings: {
         Row: {
           animation_speed: number
