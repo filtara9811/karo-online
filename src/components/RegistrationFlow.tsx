@@ -212,11 +212,13 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtpError("Live OTP blocked: Admin SMS Test mode OFF karein.");
         return;
       }
+      const reusedOtp = "reused" in res && !!res.reused;
+      const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
       setOtp("");
-      setOtpSeconds(res.reused ? Math.max(1, res.cooldown_remaining ?? 45) : 45);
+      setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
-      toast.success(res.reused ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+      toast.success(reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
       setOtpSending(false);
     }
