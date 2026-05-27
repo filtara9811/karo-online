@@ -53,6 +53,28 @@ async function lookupTestAccount(phone: string) {
   return data as { phone: string; otp_code: string; enabled: boolean };
 }
 
+async function markLatestOtpVerified(phone: string) {
+  const verifiedAt = new Date().toISOString();
+  const { data: rows } = await supabaseAdmin
+    .from("otp_codes")
+    .select("id")
+    .eq("phone", phone)
+    .is("verified_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const latest = rows?.[0];
+  if (latest) {
+    await supabaseAdmin.from("otp_codes").update({ verified_at: verifiedAt }).eq("id", latest.id);
+    return;
+  }
+  await supabaseAdmin.from("otp_codes").insert({
+    phone,
+    code_hash: hash("test-auto-verified", phone),
+    provider: "test_bypass",
+    verified_at: verifiedAt,
+  });
+}
+
 function customerUuidFromPhone(phone: string) {
   const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
@@ -325,7 +347,7 @@ export const sendOtp = createServerFn({ method: "POST" })
         test_account: true,
         otp_length: testAccount.otp_code.length,
       });
-      return { ok: true, test_mode: true, test_account: true };
+      return { ok: true, test_mode: true, test_account: true, otp_code: testAccount.otp_code };
     }
 
     const gateway = await getActiveSmsGateway();
@@ -428,6 +450,19 @@ export const verifyOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const phone = data.phone;
     const code = data.code;
+
+    // Enabled admin-managed test accounts must verify instantly with their
+    // configured OTP, even if a stale/live OTP row exists for the same number.
+    const testAccount = await lookupTestAccount(phone);
+    if (testAccount) {
+      if (code !== testAccount.otp_code) return { ok: false, error: "Wrong OTP" };
+      await markLatestOtpVerified(phone);
+      await logSystem("otp", "test_bypass", "success", `Test account OTP verified for ${phone}`, {
+        phone_last4: phone.slice(-4),
+        test_account: true,
+      });
+      return { ok: true, test_mode: true, test_account: true };
+    }
 
     const { data: rows, error } = await supabaseAdmin
       .from("otp_codes")

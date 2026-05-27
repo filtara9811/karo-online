@@ -136,6 +136,8 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [testOtpCode, setTestOtpCode] = useState<string | null>(null);
+  const autoVerifiedTestOtpRef = useRef<string | null>(null);
   const otpSendInFlightRef = useRef(false);
 
   const [successOpen, setSuccessOpen] = useState(false);
@@ -190,7 +192,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const goNext = (target: Step) => setStep(target);
 
-  // NOTE: auto-verify removed — user must explicitly tap "Verify OTP" button.
+  // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
 
 
 
@@ -209,21 +211,30 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtpError(res.error || "Could not send OTP");
         return;
       }
-      // Note: res.test_mode === true is now a *success* path — it means the
-      // phone matched an admin-managed test account, OTP is pre-seeded and the
-      // user should enter the configured code to verify. Treat it like a normal send.
+      const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
       const reusedOtp = "reused" in res && !!res.reused;
       const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
-      setOtp("");
+      setTestOtpCode(testerOtp);
+      setOtp(testerOtp ?? "");
       setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
-      toast.success(reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+      toast.success(testerOtp ? "Test account auto verified" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
       otpSendInFlightRef.current = false;
       setOtpSending(false);
     }
   };
+
+  useEffect(() => {
+    if (step !== 2 || !testOtpCode || !phone || otpVerifying) return;
+    const key = `${phone}:${testOtpCode}`;
+    if (autoVerifiedTestOtpRef.current === key) return;
+    autoVerifiedTestOtpRef.current = key;
+    setOtp(testOtpCode);
+    const t = window.setTimeout(() => handleOtpVerify(testOtpCode), 180);
+    return () => window.clearTimeout(t);
+  }, [step, testOtpCode, phone, otpVerifying]);
 
   const handleOtpVerify = async (code: string) => {
     setOtpVerifying(true);
@@ -272,6 +283,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const handleResendOtp = () => {
     const digits = phone.replace(/\D/g, "").slice(-10);
     setOtp("");
+    setTestOtpCode(null);
     setOtpSeconds(45);
     handleSendOtp(digits);
   };
@@ -439,6 +451,8 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                       const digits = phone.replace(/\D/g, "").slice(-10);
                       setPhoneDigits(digits);
                       setOtp("");
+                      setTestOtpCode(null);
+                      autoVerifiedTestOtpRef.current = null;
                       setOtpSeconds(0);
                       setOtpError(null);
                       goNext(1);
