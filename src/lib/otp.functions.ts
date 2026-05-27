@@ -53,6 +53,18 @@ async function lookupTestAccount(phone: string) {
   return data as { phone: string; otp_code: string; enabled: boolean };
 }
 
+export const checkTestAccountPhone = createServerFn({ method: "POST" })
+  .inputValidator((d) => PhoneSchema.parse(d))
+  .handler(async ({ data }) => {
+    if (data.phone.length !== 10) return { ok: false as const, is_test_account: false };
+    const testAccount = await lookupTestAccount(data.phone);
+    return {
+      ok: true as const,
+      is_test_account: !!testAccount,
+      otp_length: testAccount?.otp_code.length ?? null,
+    };
+  });
+
 async function markLatestOtpVerified(phone: string) {
   const verifiedAt = new Date().toISOString();
   const { data: rows } = await supabaseAdmin
