@@ -203,7 +203,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     try {
       const res = await sendOtpFn({ data: { phone: digits } });
       if (!res.ok) {
-        toast.error(res.error || "Could not send OTP");
         setOtpError(res.error || "Could not send OTP");
         return;
       }
