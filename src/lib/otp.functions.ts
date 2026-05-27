@@ -146,29 +146,38 @@ async function logSystem(
 }
 
 async function getActiveSmsGateway() {
-  // Use list (not maybeSingle) so accidental multi-active rows don't error out;
-  // also order by updated_at so the most-recently-activated gateway wins.
+  // Read the gateway list and choose in JS so short admin toggles / duplicate rows
+  // cannot intermittently make OTP look unconfigured.
   const { data, error } = await supabaseAdmin
     .from("sms_gateways")
-    .select("provider, is_test_mode, config, updated_at")
-    .eq("is_active", true)
+    .select("provider, is_active, is_test_mode, config, updated_at")
     .order("updated_at", { ascending: false })
-    .limit(1);
+    .limit(20);
   if (error) {
     await logSystem("otp", null, "error", `SMS gateway lookup failed: ${error.message}`);
     throw new Error(`SMS gateway lookup failed: ${error.message}`);
   }
-  const row = data?.[0] ?? null;
-  if (!row) {
-    // Diagnostic: list all rows so we can see what state the table is in.
-    const { data: all } = await supabaseAdmin
-      .from("sms_gateways")
-      .select("provider, is_active, is_test_mode");
+  const rows = data ?? [];
+  const active = rows.find((r) => r.is_active) ?? null;
+  if (active) return active;
+
+  const liveFast2sms = rows.find((r) => {
+    const cfg = asSmsConfig(r.config);
+    return r.provider === "fast2sms" && !r.is_test_mode && !!cfg.api_key?.trim();
+  });
+  if (liveFast2sms) {
+    await logSystem("otp", liveFast2sms.provider, "error", "No active gateway flag found; using Fast2SMS live fallback", {
+      table_snapshot: asJson(rows.map((r) => ({ provider: r.provider, is_active: r.is_active, is_test_mode: r.is_test_mode }))),
+    });
+    return liveFast2sms;
+  }
+
+  if (!active) {
     await logSystem("otp", null, "error", "getActiveSmsGateway returned null", {
-      table_snapshot: asJson(all),
+      table_snapshot: asJson(rows.map((r) => ({ provider: r.provider, is_active: r.is_active, is_test_mode: r.is_test_mode }))),
     });
   }
-  return row;
+  return null;
 }
 
 async function sendViaFast2SMS(
@@ -302,12 +311,19 @@ export const sendOtp = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1);
     if (recent && recent.length > 0) {
+      const lastIssued = new Date(recent[0].created_at).getTime();
+      const cooldownRemaining = Number.isFinite(lastIssued)
+        ? Math.max(1, 60 - Math.floor((Date.now() - lastIssued) / 1000))
+        : 60;
       await logSystem("otp", gateway.provider, "error", "OTP cooldown active", {
         phone_last4: phone.slice(-4),
+        cooldown_remaining: cooldownRemaining,
       });
       return {
-        ok: false,
-        error: "Bahut jaldi-jaldi OTP request kar rahe ho — 60 second ruk kar try karein.",
+        ok: true,
+        test_mode: false,
+        reused: true,
+        cooldown_remaining: cooldownRemaining,
       };
     }
 
