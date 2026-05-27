@@ -42,13 +42,17 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   };
 
   useEffect(() => {
-    // Try to speak on mount; if blocked (no gesture), fire on first interaction.
-    const t = setTimeout(speak, 350);
+    // Try immediately; if the browser delays voices/audio, retry on first voice load or tap.
+    speak();
+    const t = setTimeout(speak, 50);
     const onGesture = () => speak();
+    const onVoices = () => speak();
+    try { window.speechSynthesis?.addEventListener("voiceschanged", onVoices, { once: true }); } catch { /* */ }
     window.addEventListener("pointerdown", onGesture, { once: true });
     return () => {
       clearTimeout(t);
       window.removeEventListener("pointerdown", onGesture);
+      try { window.speechSynthesis?.removeEventListener("voiceschanged", onVoices); } catch { /* */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -127,15 +131,15 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
             transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-16 left-0 right-0 flex justify-center px-6"
+            className="absolute bottom-20 left-0 right-0 flex justify-center px-6"
           >
             <button
               onClick={finish}
-              className="group relative h-14 px-10 rounded-full bg-gradient-to-b from-[#f5d97a] via-[#e6b94a] to-[#b8862a] text-[#3a2608] font-bold text-base tracking-wide shadow-[0_10px_28px_-6px_rgba(184,134,42,0.6),0_0_0_1.5px_rgba(255,255,255,0.5)_inset] active:scale-[0.97] transition-transform"
+              className="group relative h-12 min-w-[210px] rounded-full border border-[#f7dfa2]/75 bg-[#fff8df]/35 text-[#2f2209] font-bold text-base tracking-wide shadow-[0_10px_26px_-10px_rgba(75,50,8,0.55),0_0_0_1px_rgba(255,255,255,0.45)_inset] backdrop-blur-[2px] active:scale-[0.97] transition-transform"
               aria-label="Karo Online — Continue"
             >
               <span className="relative z-10">Karo Online</span>
-              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-active:opacity-100 transition-opacity" />
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/30 via-transparent to-[#b8862a]/15" />
             </button>
           </motion.div>
         )}
