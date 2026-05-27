@@ -38,6 +38,15 @@ function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
 }
 
+// Reviewer / Play Store / Payment gateway tester accounts.
+// These phones bypass the live SMS gateway and always accept the fixed OTP.
+// Keep this list short and document it in admin → System Status.
+const TEST_PHONES = new Set(["9999900000", "9999900001"]);
+const TEST_OTP_CODE = "123456";
+function isTestPhone(phone: string) {
+  return TEST_PHONES.has(phone);
+}
+
 function customerUuidFromPhone(phone: string) {
   const hex = createHash("sha256").update(`ko-customer:${phone}`).digest("hex").slice(0, 32);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
