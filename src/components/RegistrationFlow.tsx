@@ -136,6 +136,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const otpSendInFlightRef = useRef(false);
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
@@ -194,10 +195,12 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
 
   const handleSendOtp = async (digits: string) => {
+    if (otpSendInFlightRef.current) return;
     if (digits.length !== 10) {
       toast.error("10 digit mobile number daaliye");
       return;
     }
+    otpSendInFlightRef.current = true;
     setOtpSending(true);
     setOtpError(null);
     try {
@@ -219,6 +222,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       goNext(2);
       toast.success(reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
+      otpSendInFlightRef.current = false;
       setOtpSending(false);
     }
   };
