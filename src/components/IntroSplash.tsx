@@ -127,20 +127,17 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
       <AnimatePresence>
         {idx === 1 && (
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-24 left-0 right-0 flex justify-center px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ delay: 0.2, duration: 0.25 }}
+            className="absolute bottom-20 left-7 right-7 h-16"
           >
             <button
               onClick={finish}
-              className="group relative h-10 min-w-[176px] rounded-full border border-[#f7dfa2]/65 bg-[#fff8df]/18 text-[#2f2209] font-bold text-sm tracking-wide shadow-[0_8px_20px_-12px_rgba(75,50,8,0.55),0_0_0_1px_rgba(255,255,255,0.4)_inset] backdrop-blur-[1px] active:scale-[0.97] transition-transform"
+              className="h-full w-full rounded-full bg-transparent text-transparent outline-none"
               aria-label="Karo Online — Continue"
-            >
-              <span className="relative z-10">Karo Online</span>
-              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/30 via-transparent to-[#b8862a]/15" />
-            </button>
+            />
           </motion.div>
         )}
       </AnimatePresence>
