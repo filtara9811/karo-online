@@ -21,6 +21,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { useAuthGate } from "@/components/AuthGate";
+import { useServerFn } from "@tanstack/react-start";
+import { getQuickMapVendors } from "@/lib/quick-vendors.functions";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -366,6 +368,7 @@ function QuickPage() {
   // ---- Real vendors mapped to current sub-category ----
   const [realVendors, setRealVendors] = useState<Vendor[]>([]);
   const [realVendorsLoading, setRealVendorsLoading] = useState(false);
+  const getQuickMapVendorsFn = useServerFn(getQuickMapVendors);
 
   useEffect(() => {
     if (!selectedSub) {
@@ -380,27 +383,14 @@ function QuickPage() {
     let cancelled = false;
     (async () => {
       setRealVendorsLoading(true);
-      const { data: mappings } = await supabase
-        .from("vendor_item_mappings")
-        .select("vendor_id")
-        .in("item_id", subItemIds)
-        .eq("is_active", true);
-      const vendorIds = Array.from(new Set((mappings ?? []).map((m: any) => m.vendor_id)));
-      if (vendorIds.length === 0) {
-        if (!cancelled) setRealVendors([]);
-        setRealVendorsLoading(false);
-        return;
-      }
-      const { data: vs } = await (supabase as any)
-        .from("vendors_public")
-        .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, lat, lng")
-        .in("user_id", vendorIds);
+      const res = await getQuickMapVendorsFn({
+        data: {
+          itemIds: subItemIds,
+          origin: geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null,
+        },
+      });
       if (cancelled) return;
-      const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
-      const realRows = (vs ?? [])
-        .filter((v: any) => v.lat != null && v.lng != null)
-        .map((v: any) => ({ ...v, kmReal: origin ? kmBetween(origin, { lat: v.lat, lng: v.lng }) : null }))
-        .sort((a: any, b: any) => (a.kmReal ?? 9999) - (b.kmReal ?? 9999));
+      const realRows = res.ok ? res.vendors : [];
       const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
         const positions = [
           [28, 28], [72, 30], [22, 60], [70, 65], [50, 78],
@@ -410,8 +400,8 @@ function QuickPage() {
         return {
           id: v.id,
           name: v.business_name || v.owner_name || "Vendor",
-          area: v.kmReal != null ? `${v.kmReal} km away` : "Nearby",
-          km: v.kmReal ?? 0,
+          area: v.km != null ? `${v.km} km away` : "Nearby",
+          km: v.km ?? 0,
           status: v.status === "active" || v.status === "approved" ? "Online" : "Office",
           avatar: v.avatar_url || avatarUser,
           x, y,
