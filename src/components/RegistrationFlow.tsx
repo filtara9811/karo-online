@@ -192,7 +192,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const goNext = (target: Step) => setStep(target);
 
-  // NOTE: auto-verify removed — user must explicitly tap "Verify OTP" button.
+  // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
 
 
 
