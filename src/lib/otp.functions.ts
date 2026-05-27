@@ -38,13 +38,19 @@ function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
 }
 
-// Reviewer / Play Store / Payment gateway tester accounts.
-// These phones bypass the live SMS gateway and always accept the fixed OTP.
-// Keep this list short and document it in admin → System Status.
-const TEST_PHONES = new Set(["9999900000", "9999900001"]);
-const TEST_OTP_CODE = "1234";
-function isTestPhone(phone: string) {
-  return TEST_PHONES.has(phone);
+// Reviewer / Play Store / Payment gateway tester accounts are managed
+// entirely from the admin panel via the `test_accounts` table.
+// When a phone matches an *enabled* row, we bypass the live SMS gateway
+// and accept that row's configured otp_code (4–6 digits).
+async function lookupTestAccount(phone: string) {
+  const { data, error } = await supabaseAdmin
+    .from("test_accounts")
+    .select("phone, otp_code, enabled")
+    .eq("phone", phone)
+    .eq("enabled", true)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as { phone: string; otp_code: string; enabled: boolean };
 }
 
 function customerUuidFromPhone(phone: string) {
