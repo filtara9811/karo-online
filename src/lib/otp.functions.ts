@@ -38,13 +38,19 @@ function hash(code: string, phone: string) {
   return createHash("sha256").update(`${phone}:${code}:karoonline`).digest("hex");
 }
 
-// Reviewer / Play Store / Payment gateway tester accounts.
-// These phones bypass the live SMS gateway and always accept the fixed OTP.
-// Keep this list short and document it in admin → System Status.
-const TEST_PHONES = new Set(["9999900000", "9999900001"]);
-const TEST_OTP_CODE = "1234";
-function isTestPhone(phone: string) {
-  return TEST_PHONES.has(phone);
+// Reviewer / Play Store / Payment gateway tester accounts are managed
+// entirely from the admin panel via the `test_accounts` table.
+// When a phone matches an *enabled* row, we bypass the live SMS gateway
+// and accept that row's configured otp_code (4–6 digits).
+async function lookupTestAccount(phone: string) {
+  const { data, error } = await supabaseAdmin
+    .from("test_accounts")
+    .select("phone, otp_code, enabled")
+    .eq("phone", phone)
+    .eq("enabled", true)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as { phone: string; otp_code: string; enabled: boolean };
 }
 
 function customerUuidFromPhone(phone: string) {
@@ -301,13 +307,14 @@ export const sendOtp = createServerFn({ method: "POST" })
       return { ok: false, error: "Invalid 10-digit mobile number" };
     }
 
-    // ---- Test-account bypass (Play Store / payment gateway reviewers) ----
-    if (isTestPhone(phone)) {
-      // Wipe any prior pending codes, seed the fixed code so verifyOtp matches.
+    // ---- Test-account bypass (admin-managed reviewer accounts) ----
+    const testAccount = await lookupTestAccount(phone);
+    if (testAccount) {
+      // Wipe any prior pending codes, seed the configured code so verifyOtp matches.
       await supabaseAdmin.from("otp_codes").delete().eq("phone", phone).is("verified_at", null);
       const { error: seedErr } = await supabaseAdmin.from("otp_codes").insert({
         phone,
-        code_hash: hash(TEST_OTP_CODE, phone),
+        code_hash: hash(testAccount.otp_code, phone),
         provider: "test_bypass",
       });
       if (seedErr) {
@@ -316,8 +323,9 @@ export const sendOtp = createServerFn({ method: "POST" })
       await logSystem("otp", "test_bypass", "success", `Test account OTP issued for ${phone}`, {
         phone_last4: phone.slice(-4),
         test_account: true,
+        otp_length: testAccount.otp_code.length,
       });
-      return { ok: true, test_mode: true };
+      return { ok: true, test_mode: true, test_account: true };
     }
 
     const gateway = await getActiveSmsGateway();

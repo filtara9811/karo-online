@@ -49,6 +49,7 @@ const NAV: NavItem[] = [
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/maps", label: "Maps Providers", icon: MapIcon },
   { to: "/admin/system-status", label: "System Status", icon: Shield },
+  { to: "/admin/test-accounts", label: "🧪 Test Accounts", icon: ShieldCheck },
   { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
   { to: "/admin/coins", label: "LeadX Market", icon: Coins },
   { to: "/admin/referrals", label: "Referral Program", icon: Gift },
