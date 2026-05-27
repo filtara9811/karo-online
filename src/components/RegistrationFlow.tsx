@@ -196,7 +196,8 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
   useEffect(() => {
-    if (step !== 1 || phoneDigits.length !== 10) {
+    if (step !== 1) return;
+    if (phoneDigits.length !== 10) {
       setIsTestNumber(false);
       return;
     }
