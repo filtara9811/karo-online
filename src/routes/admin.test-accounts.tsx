@@ -84,8 +84,8 @@ function TestAccountsPage() {
       notes: draft.notes?.trim() || null,
     };
     const { error } = draft.id
-      ? await supabase.from("test_accounts" as never).update(payload).eq("id", draft.id)
-      : await supabase.from("test_accounts" as never).insert(payload);
+      ? await supabase.from("test_accounts" as never).update(payload as never).eq("id", draft.id)
+      : await supabase.from("test_accounts" as never).insert(payload as never);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(draft.id ? "Test account updated" : "Test account added");
@@ -96,7 +96,7 @@ function TestAccountsPage() {
   const toggleEnabled = async (row: TestAccount) => {
     const { error } = await supabase
       .from("test_accounts" as never)
-      .update({ enabled: !row.enabled })
+      .update({ enabled: !row.enabled } as never)
       .eq("id", row.id);
     if (error) { toast.error(error.message); return; }
     toast.success(`${row.phone} ${row.enabled ? "disabled" : "enabled"}`);

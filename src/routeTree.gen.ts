@@ -53,6 +53,7 @@ import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminWhatsappRouteImport } from './routes/admin.whatsapp'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
+import { Route as AdminTestAccountsRouteImport } from './routes/admin.test-accounts'
 import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
@@ -311,6 +312,11 @@ const AdminVendorsRoute = AdminVendorsRouteImport.update({
   path: '/vendors',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTestAccountsRoute = AdminTestAccountsRouteImport.update({
+  id: '/test-accounts',
+  path: '/test-accounts',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSystemStatusRoute = AdminSystemStatusRouteImport.update({
   id: '/system-status',
   path: '/system-status',
@@ -546,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
+  '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -628,6 +635,7 @@ export interface FileRoutesByTo {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
+  '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -712,6 +720,7 @@ export interface FileRoutesById {
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
+  '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -797,6 +806,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/system-status'
+    | '/admin/test-accounts'
     | '/admin/vendors'
     | '/admin/whatsapp'
     | '/blog/$slug'
@@ -879,6 +889,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/system-status'
+    | '/admin/test-accounts'
     | '/admin/vendors'
     | '/admin/whatsapp'
     | '/blog/$slug'
@@ -962,6 +973,7 @@ export interface FileRouteTypes {
     | '/admin/sms'
     | '/admin/staff'
     | '/admin/system-status'
+    | '/admin/test-accounts'
     | '/admin/vendors'
     | '/admin/whatsapp'
     | '/blog/$slug'
@@ -1352,6 +1364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendorsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/test-accounts': {
+      id: '/admin/test-accounts'
+      path: '/test-accounts'
+      fullPath: '/admin/test-accounts'
+      preLoaderRoute: typeof AdminTestAccountsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/system-status': {
       id: '/admin/system-status'
       path: '/system-status'
@@ -1638,6 +1657,7 @@ interface AdminRouteChildren {
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminSystemStatusRoute: typeof AdminSystemStatusRoute
+  AdminTestAccountsRoute: typeof AdminTestAccountsRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
   AdminWhatsappRoute: typeof AdminWhatsappRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1680,6 +1700,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminSystemStatusRoute: AdminSystemStatusRoute,
+  AdminTestAccountsRoute: AdminTestAccountsRoute,
   AdminVendorsRoute: AdminVendorsRoute,
   AdminWhatsappRoute: AdminWhatsappRoute,
   AdminIndexRoute: AdminIndexRoute,
