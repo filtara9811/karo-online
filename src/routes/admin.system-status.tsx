@@ -152,7 +152,7 @@ function ReviewerTestAccounts() {
       </h3>
       <p className="text-[11px] text-[#f5d97a]/70 mb-3 leading-relaxed">
         Play Store / Razorpay / Cashfree reviewers ko ye credentials dein. In numbers pe asli SMS nahi jata —
-        fixed OTP <b className="text-emerald-300">123456</b> hamesha kaam karega. Baaki sab real numbers normal SMS se chalte hain.
+        fixed OTP <b className="text-emerald-300">1234</b> hamesha kaam karega. Baaki sab real numbers normal SMS se chalte hain.
       </p>
       <div className="grid sm:grid-cols-2 gap-3">
         {accounts.map((a) => (
@@ -163,8 +163,8 @@ function ReviewerTestAccounts() {
               <button onClick={() => copy(a.phone)} className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30">Copy</button>
             </div>
             <div className="mt-1 flex items-center justify-between">
-              <span className="font-mono text-sm text-[#fff8dc]">OTP: 123456</span>
-              <button onClick={() => copy("123456")} className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30">Copy</button>
+              <span className="font-mono text-sm text-[#fff8dc]">OTP: 1234</span>
+              <button onClick={() => copy("1234")} className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30">Copy</button>
             </div>
             <div className="mt-1 text-[10px] text-[#f5d97a]/60">{a.role}</div>
           </div>

@@ -42,7 +42,7 @@ function hash(code: string, phone: string) {
 // These phones bypass the live SMS gateway and always accept the fixed OTP.
 // Keep this list short and document it in admin → System Status.
 const TEST_PHONES = new Set(["9999900000", "9999900001"]);
-const TEST_OTP_CODE = "123456";
+const TEST_OTP_CODE = "1234";
 function isTestPhone(phone: string) {
   return TEST_PHONES.has(phone);
 }

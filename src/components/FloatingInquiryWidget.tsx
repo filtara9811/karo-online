@@ -81,6 +81,10 @@ export function FloatingInquiryWidget() {
   const widgetW = 260;
   const animX = 0;
   const animY = 0;
+  // Map ≈ 34vh, white search-sheet starts at ~ (34vh - 24px) due to -mt-6.
+  // Place widget so its BOTTOM tucks ~28px behind the search-sheet top edge,
+  // leaving only a ~20px tab peeking up onto the map (sandwich look).
+  const widgetTop = `calc(34vh + env(safe-area-inset-top) - ${widgetH + 28}px)`;
 
   return (
     <>
@@ -115,12 +119,11 @@ export function FloatingInquiryWidget() {
             rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
           }}
           onDragEnd={() => {}}
-          className="fixed z-[15] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
+          className="fixed z-[5] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
           style={{
-            // Map height ≈ 34vh + safe-area top. We want widget vertical
-            // center sitting roughly on the bottom edge of the search-bar
-            // header so it peeks from BEHIND the header onto the map.
-            top: `calc(34vh + env(safe-area-inset-top) + 6px)`,
+            // Sandwich layout: widget sits BEHIND the search-bar header
+            // (header has z-20). Only a small tab peeks up onto the map.
+            top: widgetTop,
             touchAction: "auto",
           }}
         >
