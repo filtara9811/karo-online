@@ -3258,6 +3258,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vendors_public: {
+        Row: {
+          avatar_url: string | null
+          business_name: string | null
+          id: string | null
+          is_blocked: boolean | null
+          lat: number | null
+          lng: number | null
+          owner_name: string | null
+          service_radius_km: number | null
+          status: string | null
+          trade: string | null
+          user_id: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          business_name?: string | null
+          id?: string | null
+          is_blocked?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          owner_name?: string | null
+          service_radius_km?: number | null
+          status?: string | null
+          trade?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string | null
+          id?: string | null
+          is_blocked?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          owner_name?: string | null
+          service_radius_km?: number | null
+          status?: string | null
+          trade?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
