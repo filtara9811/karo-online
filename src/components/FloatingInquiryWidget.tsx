@@ -46,7 +46,8 @@ export function FloatingInquiryWidget() {
   }, []);
 
   if (!inquiries.length || open) return null;
-  if (location.pathname.startsWith("/chat") || location.pathname.startsWith("/admin")) return null;
+  // Show ONLY on /quick (home). Hide on every other screen.
+  if (!location.pathname.startsWith("/quick")) return null;
 
   const count = inquiries.length;
   const primary = inquiries[inquiries.length - 1];
