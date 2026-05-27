@@ -137,6 +137,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [testOtpCode, setTestOtpCode] = useState<string | null>(null);
+  const [isTestNumber, setIsTestNumber] = useState(false);
   const autoVerifiedTestOtpRef = useRef<string | null>(null);
   const otpSendInFlightRef = useRef(false);
 
@@ -212,14 +213,16 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         return;
       }
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
+      const testNumber = "test_account" in res && !!res.test_account;
       const reusedOtp = "reused" in res && !!res.reused;
       const cooldownRemaining = "cooldown_remaining" in res && typeof res.cooldown_remaining === "number" ? res.cooldown_remaining : 45;
       setPhone(formatIndianMobile(digits));
+      setIsTestNumber(testNumber);
       setTestOtpCode(testerOtp);
       setOtp(testerOtp ?? "");
       setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
-      toast.success(testerOtp ? "Test account auto verified" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+      toast.success(testNumber ? "Test number detected — auto verifying" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
     } finally {
       otpSendInFlightRef.current = false;
       setOtpSending(false);
@@ -284,6 +287,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     const digits = phone.replace(/\D/g, "").slice(-10);
     setOtp("");
     setTestOtpCode(null);
+      setIsTestNumber(false);
     setOtpSeconds(45);
     handleSendOtp(digits);
   };
@@ -441,6 +445,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                   <OtpStep
                     phone={phone}
                     otp={otp}
+                    isTestNumber={isTestNumber}
                     onOtp={setOtp}
                     seconds={otpSeconds}
                     onResend={handleResendOtp}
@@ -452,6 +457,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                       setPhoneDigits(digits);
                       setOtp("");
                       setTestOtpCode(null);
+                      setIsTestNumber(false);
                       autoVerifiedTestOtpRef.current = null;
                       setOtpSeconds(0);
                       setOtpError(null);
