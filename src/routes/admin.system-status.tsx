@@ -97,6 +97,7 @@ function SystemStatusPage() {
         </GoldCard>
       ) : (
         <div className="space-y-6">
+          <ReviewerTestAccounts />
           <Section title="SMS Gateways" rows={data?.sms ?? []} />
           <Section title="Payment Gateways" rows={data?.payment ?? []} />
           <Section title="Maps Services" rows={data?.maps ?? []} />
