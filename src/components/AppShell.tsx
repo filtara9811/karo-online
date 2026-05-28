@@ -77,6 +77,7 @@ export function AppShell() {
         </div>
         {!isMarketing && <VendorLeadAlerts />}
         {!isMarketing && <PermissionsGate />}
+        {!isMarketing && <FeedbackWidget />}
       </AuthGate>
     );
   }
