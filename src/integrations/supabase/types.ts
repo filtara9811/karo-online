@@ -2375,9 +2375,12 @@ export type Database = {
           is_blocked: boolean
           is_online: boolean
           lat: number | null
+          live_lat: number | null
+          live_lng: number | null
           lng: number | null
           location_updated_at: string | null
           manager_email: string | null
+          operation_mode: string
           owner_name: string | null
           pan: string | null
           plan: string | null
@@ -2414,9 +2417,12 @@ export type Database = {
           is_blocked?: boolean
           is_online?: boolean
           lat?: number | null
+          live_lat?: number | null
+          live_lng?: number | null
           lng?: number | null
           location_updated_at?: string | null
           manager_email?: string | null
+          operation_mode?: string
           owner_name?: string | null
           pan?: string | null
           plan?: string | null
@@ -2453,9 +2459,12 @@ export type Database = {
           is_blocked?: boolean
           is_online?: boolean
           lat?: number | null
+          live_lat?: number | null
+          live_lng?: number | null
           lng?: number | null
           location_updated_at?: string | null
           manager_email?: string | null
+          operation_mode?: string
           owner_name?: string | null
           pan?: string | null
           plan?: string | null
@@ -3721,9 +3730,12 @@ export type Database = {
               is_blocked: boolean
               is_online: boolean
               lat: number | null
+              live_lat: number | null
+              live_lng: number | null
               lng: number | null
               location_updated_at: string | null
               manager_email: string | null
+              operation_mode: string
               owner_name: string | null
               pan: string | null
               plan: string | null
@@ -3789,9 +3801,12 @@ export type Database = {
               is_blocked: boolean
               is_online: boolean
               lat: number | null
+              live_lat: number | null
+              live_lng: number | null
               lng: number | null
               location_updated_at: string | null
               manager_email: string | null
+              operation_mode: string
               owner_name: string | null
               pan: string | null
               plan: string | null

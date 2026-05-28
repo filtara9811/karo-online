@@ -83,13 +83,14 @@ function VendorDashboard() {
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null } | null>(null);
+
   const [savingAuto, setSavingAuto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng, operation_mode")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
@@ -251,6 +252,29 @@ function VendorDashboard() {
     }
   };
 
+  const toggleOperationMode = async () => {
+    if (!user) return;
+    const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
+    const next = current === "dynamic" ? "static" : "dynamic";
+    setVendor((p) => (p ? { ...p, operation_mode: next } : p));
+    const { error } = await supabase
+      .from("vendors")
+      .update({ operation_mode: next } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      setVendor((p) => (p ? { ...p, operation_mode: current } : p));
+      toast.error("Mode save nahi hua");
+    } else {
+      toast.success(
+        next === "dynamic"
+          ? "Live GPS Mode ON — aap jahan honge wahin se leads milengi"
+          : "Shop Mode ON — registered shop address se leads milengi",
+      );
+    }
+  };
+
+
+
   const stats = useMemo(() => {
     const total = leads.length;
     const success = leads.filter((l) => l.status === "success").length;
@@ -380,6 +404,39 @@ function VendorDashboard() {
             <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.auto_accept_leads ? "translate-x-5" : ""}`} />
           </span>
         </button>
+
+        {/* Operation Mode toggle — Static (shop address) vs Dynamic (live GPS) */}
+        {(() => {
+          const isDynamic = vendor?.operation_mode === "dynamic";
+          return (
+            <button
+              onClick={toggleOperationMode}
+              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
+            >
+              <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
+                <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Location Mode</p>
+                <p className="text-sm font-display font-bold text-slate-800 leading-tight">
+                  {isDynamic ? "Live GPS · Dynamic" : "Shop Address · Static"}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate">
+                  {isDynamic ? "Aap jahan honge wahin se leads milengi (multi-city)" : "Registered shop address se hi leads milengi"}
+                </p>
+              </div>
+              <span
+                role="switch"
+                aria-checked={isDynamic}
+                className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${isDynamic ? "bg-sky-500" : "bg-slate-300"}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${isDynamic ? "translate-x-5" : ""}`} />
+              </span>
+            </button>
+          );
+        })()}
+
+
 
         {/* Tabs */}
         <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
