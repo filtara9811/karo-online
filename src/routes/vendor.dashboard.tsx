@@ -83,7 +83,8 @@ function VendorDashboard() {
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null } | null>(null);
+
   const [savingAuto, setSavingAuto] = useState(false);
 
   useEffect(() => {
