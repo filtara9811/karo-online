@@ -453,6 +453,21 @@ function VendorDashboard() {
           );
         })()}
 
+        {/* Service radius slider — vendor side cap */}
+        <div className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 shadow-sm">
+          <RadiusSlider
+            value={vendor?.service_radius_km ?? 10}
+            onChange={updateServiceRadius}
+            label={`Service radius${savingRadius ? " · saving…" : ""}`}
+          />
+          <p className="text-[10px] text-slate-500 mt-2 leading-snug">
+            Aapko sirf iss radius ke andar wale leads milenge. Unlimited (∞) = poora area cover.
+          </p>
+        </div>
+
+
+
+
 
 
         {/* Tabs */}
