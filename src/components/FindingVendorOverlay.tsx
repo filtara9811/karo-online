@@ -397,9 +397,10 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </AnimatePresence>
           </div>
         </div>
+        )}
 
         {/* Proceed-early CTA — unlocks after 30s OR as soon as ≥1 vendor accepts */}
-        {!done && (() => {
+        {!done && !noVendorsFinal && (() => {
           const unlocked = vendors.length >= 1 || elapsedMs >= PROCEED_UNLOCK_MS;
           const remainingSec = Math.max(0, Math.ceil((PROCEED_UNLOCK_MS - elapsedMs) / 1000));
           return (
