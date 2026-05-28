@@ -8,6 +8,7 @@ import { VendorChatSheet } from "@/components/VendorChatSheet";
 import type { LeadChatPeer } from "@/components/LeadChatThread";
 import { useActiveInquiry, setActiveInquiry, clearActiveInquiry } from "@/hooks/use-active-inquiry";
 import { playPing } from "@/lib/lead-sound";
+import { NoVendorsFallback } from "@/components/NoVendorsFallback";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -314,19 +315,14 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
               <p className="mt-3 text-xs font-semibold text-slate-500">Vendors check ho rahe hain…</p>
             </div>
           ) : vendors.length === 0 ? (
-            <div className="text-center py-8 px-3">
-              {noVendorState?.video_url ? (
-                <div className="mx-auto w-full max-w-xs rounded-2xl overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.55)] shadow-lg bg-black aspect-video">
-                  <video
-                    src={noVendorState.video_url}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              ) : (
+            propLeadId ? (
+              <NoVendorsFallback
+                leadId={propLeadId}
+                category={propCategory ?? null}
+                onRetry={() => { onTryAgain?.(); }}
+              />
+            ) : (
+              <div className="text-center py-8 px-3">
                 <motion.div
                   className="mx-auto h-16 w-16 rounded-full border-2 border-[color:oklch(0.78_0.14_82/0.55)] grid place-items-center bg-white shadow-sm"
                   animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
@@ -334,29 +330,17 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                 >
                   <Loader2 className="h-7 w-7 animate-spin text-[color:oklch(0.55_0.10_82)]" />
                 </motion.div>
-              )}
-              <p className="mt-4 text-sm font-semibold text-slate-700 px-2">
-                {loadError ?? (expectedVendors > 0
-                  ? "Abhi kisi vendor ne accept nahi kiya."
-                  : (noVendorState?.message ?? "Yahan vendor available nahi hai."))}
-              </p>
-              <div className="mt-5 flex gap-2 justify-center">
-                {onTryAgain && (
-                  <button
-                    onClick={() => onTryAgain()}
-                    className="px-5 py-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white font-display text-sm font-bold active:scale-95 shadow"
-                  >
-                    Try again
-                  </button>
-                )}
+                <p className="mt-4 text-sm font-semibold text-slate-700 px-2">
+                  {loadError ?? "Yahan vendor available nahi hai."}
+                </p>
                 <button
                   onClick={handleMinimize}
-                  className="px-5 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
+                  className="mt-5 px-5 py-2 rounded-full bg-white border border-slate-200 text-slate-600 font-display text-sm font-bold active:scale-95"
                 >
                   Minimize
                 </button>
               </div>
-            </div>
+            )
           ) : (
             <AnimatePresence mode="popLayout">
               {visibleVendors.map((v, i) => {
