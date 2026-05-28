@@ -705,12 +705,14 @@ function QuickPage() {
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
             const vendorTypes = payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"];
+            const isRemote = Boolean((payload as any).remote);
             const filterParts = Object.entries(payload.filters ?? {})
               .filter(([, v]) => Array.isArray(v) && v.length > 0)
               .map(([k, v]) => `${k}: ${(v as string[]).join("/")}`);
             const noteWithFilter = [
               payload.note?.trim() || "",
               `Vendor types: ${vendorTypes.join(", ")}`,
+              isRemote ? "Mode: Remote/Online" : null,
               ...filterParts,
             ]
               .filter(Boolean)
