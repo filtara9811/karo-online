@@ -257,7 +257,19 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
           </div>
         </div>
 
-        {/* MAIN — radar (animates upward as vendors arrive) + faded vendor stack */}
+        {/* MAIN — fallback OR radar+vendor stack */}
+        {noVendorsFinal && leadId ? (
+          <NoVendorsFallback
+            leadId={leadId}
+            category={category}
+            onRetry={() => {
+              setNoVendorsFinal(false);
+              setCurrentRing(0);
+              // re-run the ring loop
+              ringLoopKey.current++;
+            }}
+          />
+        ) : (
         <div className="flex-1 min-h-0 px-5 pt-3 pb-2 relative overflow-hidden">
           {/* Radar — moves up and shrinks slightly as vendors fill the bottom */}
           <motion.div
