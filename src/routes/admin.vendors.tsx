@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { Store, Mail, Phone, ShieldCheck } from "lucide-react";
+import { Store, Mail, Phone, ShieldCheck, Crown } from "lucide-react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ type Vendor = AdminRecord & {
   pan: string | null;
   gst: string | null;
   plan: string | null;
+  is_premium: boolean | null;
 };
 
 function VendorsPage() {
@@ -196,6 +197,11 @@ function VendorsPage() {
                           {v.plan}
                         </span>
                       )}
+                      {v.is_premium && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                          <Crown className="h-2.5 w-2.5" /> PREMIUM
+                        </span>
+                      )}
                       {(v.tags ?? []).slice(0, 2).map((t) => (
                         <span
                           key={t}
@@ -204,6 +210,34 @@ function VendorsPage() {
                           {t}
                         </span>
                       ))}
+                    </div>
+
+                    {/* Premium quick toggle */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const next = !v.is_premium;
+                        const { error } = await supabase
+                          .from("vendors")
+                          .update({ is_premium: next })
+                          .eq("id", v.id);
+                        if (error) toast.error("Premium toggle fail");
+                        else {
+                          toast.success(next ? "Premium ON" : "Premium OFF");
+                          setRows((rs) => rs.map((r) => (r.id === v.id ? { ...r, is_premium: next } : r)));
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLDivElement).click(); }}
+                      className={`mt-1.5 inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10px] font-bold cursor-pointer transition-colors ${
+                        v.is_premium
+                          ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                          : "bg-transparent border-[#d4af37]/30 text-[#f5d97a]/70 hover:bg-[#d4af37]/10"
+                      }`}
+                    >
+                      <Crown className="h-3 w-3" />
+                      {v.is_premium ? "Premium · ON" : "Make Premium"}
                     </div>
                     <p className="text-xs text-[#f5d97a]/75 mt-0.5">
                       {v.owner_name || "—"} {v.role ? `· ${v.role}` : ""}
