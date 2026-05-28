@@ -2373,8 +2373,10 @@ export type Database = {
           id: string
           instagram: string | null
           is_blocked: boolean
+          is_online: boolean
           lat: number | null
           lng: number | null
+          location_updated_at: string | null
           manager_email: string | null
           owner_name: string | null
           pan: string | null
@@ -2410,8 +2412,10 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_blocked?: boolean
+          is_online?: boolean
           lat?: number | null
           lng?: number | null
+          location_updated_at?: string | null
           manager_email?: string | null
           owner_name?: string | null
           pan?: string | null
@@ -2447,8 +2451,10 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_blocked?: boolean
+          is_online?: boolean
           lat?: number | null
           lng?: number | null
+          location_updated_at?: string | null
           manager_email?: string | null
           owner_name?: string | null
           pan?: string | null
@@ -3450,6 +3456,10 @@ export type Database = {
       }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       auto_accept_expired_lead_notifications: { Args: never; Returns: Json }
+      broadcast_next_lead_batch: {
+        Args: { _batch_size?: number; _lead_id: string }
+        Returns: Json
+      }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
       count_unread_lead_messages: {
         Args: { _lead_ids: string[] }
@@ -3709,8 +3719,10 @@ export type Database = {
               id: string
               instagram: string | null
               is_blocked: boolean
+              is_online: boolean
               lat: number | null
               lng: number | null
+              location_updated_at: string | null
               manager_email: string | null
               owner_name: string | null
               pan: string | null
@@ -3775,8 +3787,10 @@ export type Database = {
               id: string
               instagram: string | null
               is_blocked: boolean
+              is_online: boolean
               lat: number | null
               lng: number | null
+              location_updated_at: string | null
               manager_email: string | null
               owner_name: string | null
               pan: string | null
