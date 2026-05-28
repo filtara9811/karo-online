@@ -55,6 +55,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     seenVendorIdsRef.current = new Set();
     setDone(false);
     setVendors([]);
+    setCurrentRing(0);
+    setNoVendorsFinal(false);
 
     const load = async () => {
       const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
