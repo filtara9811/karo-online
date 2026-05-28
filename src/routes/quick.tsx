@@ -422,16 +422,8 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
-  const [searchRadiusKm, setSearchRadiusKm] = useState<number>(() => {
-    if (typeof window === "undefined") return 10;
-    const v = Number(window.localStorage.getItem("quick_search_radius_km") ?? "10");
-    return Number.isFinite(v) ? v : 10;
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("quick_search_radius_km", String(searchRadiusKm));
-    }
-  }, [searchRadiusKm]);
+  // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
+
 
   // Tap a root category circle → switch the service-card list
   const handleRootTap = (id: string) => {
