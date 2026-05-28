@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { RadiusSlider } from "@/components/RadiusSlider";
 import { VendorSideMenu } from "@/components/VendorSideMenu";
 import {
   Download,
@@ -83,14 +84,15 @@ function VendorDashboard() {
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
 
   const [savingAuto, setSavingAuto] = useState(false);
+  const [savingRadius, setSavingRadius] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng, operation_mode")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng, operation_mode, service_radius_km")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
@@ -273,6 +275,22 @@ function VendorDashboard() {
     }
   };
 
+  const updateServiceRadius = async (km: number) => {
+    if (!user) return;
+    const prev = vendor?.service_radius_km ?? 10;
+    setVendor((p) => (p ? { ...p, service_radius_km: km } : p));
+    setSavingRadius(true);
+    const { error } = await supabase
+      .from("vendors")
+      .update({ service_radius_km: km } as any)
+      .eq("user_id", user.id);
+    setSavingRadius(false);
+    if (error) {
+      setVendor((p) => (p ? { ...p, service_radius_km: prev } : p));
+      toast.error("Radius save nahi hua");
+    }
+  };
+
 
 
   const stats = useMemo(() => {
@@ -435,6 +453,21 @@ function VendorDashboard() {
             </button>
           );
         })()}
+
+        {/* Service radius slider — vendor side cap */}
+        <div className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 shadow-sm">
+          <RadiusSlider
+            value={vendor?.service_radius_km ?? 10}
+            onChange={updateServiceRadius}
+            label={`Service radius${savingRadius ? " · saving…" : ""}`}
+          />
+          <p className="text-[10px] text-slate-500 mt-2 leading-snug">
+            Aapko sirf iss radius ke andar wale leads milenge. Unlimited (∞) = poora area cover.
+          </p>
+        </div>
+
+
+
 
 
 

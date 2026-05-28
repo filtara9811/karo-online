@@ -12,6 +12,7 @@ import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { SearchOverlay } from "@/components/SearchOverlay";
+import { RadiusSlider } from "@/components/RadiusSlider";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { QuickServiceMap } from "@/components/QuickServiceMap";
 import { useActiveTypeId } from "@/hooks/use-active-type";
@@ -421,6 +422,16 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [searchRadiusKm, setSearchRadiusKm] = useState<number>(() => {
+    if (typeof window === "undefined") return 10;
+    const v = Number(window.localStorage.getItem("quick_search_radius_km") ?? "10");
+    return Number.isFinite(v) ? v : 10;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("quick_search_radius_km", String(searchRadiusKm));
+    }
+  }, [searchRadiusKm]);
 
   // Tap a root category circle → switch the service-card list
   const handleRootTap = (id: string) => {
@@ -656,6 +667,18 @@ function QuickPage() {
         </div>
       </section>
 
+      {/* Search radius slider — floats above bottom categories, on the left */}
+      <div
+        className="fixed left-3 z-40 w-[58%] max-w-[230px] rounded-2xl bg-white/95 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.45)] shadow-[0_6px_18px_-6px_rgba(0,0,0,0.25)] px-3 py-2"
+        style={{ bottom: "calc(170px + env(safe-area-inset-bottom))" }}
+      >
+        <RadiusSlider
+          value={searchRadiusKm}
+          onChange={setSearchRadiusKm}
+          label="Search within"
+        />
+      </div>
+
       {/* Floating + button */}
       <button
         onClick={() => requireAuth(() => setNeedsOpen(true))}
@@ -736,6 +759,7 @@ function QuickPage() {
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
+                search_radius_km: searchRadiusKm,
               })
               .select("id")
               .single();
