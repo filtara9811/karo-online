@@ -29,6 +29,7 @@ type Props = {
 export function FindingVendorOverlay({ open, category, categoryImage, leadId, onComplete, onClose }: Props) {
   const [vendors, setVendors] = useState<AcceptedPreview[]>([]);
   const [done, setDone] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const completedRef = useRef(false);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
