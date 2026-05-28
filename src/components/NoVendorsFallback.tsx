@@ -58,15 +58,20 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col px-4 pt-2 pb-3 overflow-y-auto">
-      {/* Promo video */}
-      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-100 via-white to-amber-50 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-gold-glow">
+      {/* Promo video — falls back to branded placeholder if MP4 not deployed yet */}
+      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-100 via-white to-amber-50 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-gold-glow grid place-items-center">
         <video
           src="/promo-vendors.mp4"
           poster="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=900&q=70"
           controls
           playsInline
+          onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = "none"; }}
           className="absolute inset-0 h-full w-full object-cover"
         />
+        <div className="relative text-center px-4 pointer-events-none">
+          <p className="font-display text-sm font-bold text-amber-800">✦ Karo Online ✦</p>
+          <p className="text-[10px] text-amber-700/80 mt-1">Vendors bharosemand · 1,10,000+ leads</p>
+        </div>
         <div className="absolute top-2 right-2 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
           Karo Online
         </div>
@@ -109,7 +114,7 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 z-20"
+              className="fixed inset-0 bg-black/50 z-[120]"
               onClick={() => setSheetOpen(false)}
             />
             <motion.div
@@ -117,7 +122,7 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="absolute inset-x-0 bottom-0 z-30 bg-white rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.3)] p-4 pb-6"
+              className="fixed inset-x-0 bottom-0 z-[130] bg-white rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.3)] p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] max-h-[80vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-display text-base font-bold text-[color:oklch(0.25_0.05_85)]">
