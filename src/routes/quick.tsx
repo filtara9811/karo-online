@@ -659,17 +659,8 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* Search radius slider — floats above bottom categories, on the left */}
-      <div
-        className="fixed left-3 z-40 w-[58%] max-w-[230px] rounded-2xl bg-white/95 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.45)] shadow-[0_6px_18px_-6px_rgba(0,0,0,0.25)] px-3 py-2"
-        style={{ bottom: "calc(170px + env(safe-area-inset-bottom))" }}
-      >
-        <RadiusSlider
-          value={searchRadiusKm}
-          onChange={setSearchRadiusKm}
-          label="Search within"
-        />
-      </div>
+      {/* (Search-radius slider removed — now shown only in the NoVendorsFallback "Try again" sheet) */}
+
 
       {/* Floating + button */}
       <button
