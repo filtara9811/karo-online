@@ -568,6 +568,57 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          message: string
+          page_path: string | null
+          page_title: string | null
+          reporter_role: string
+          resolved_at: string | null
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+          viewport: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          page_path?: string | null
+          page_title?: string | null
+          reporter_role?: string
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          page_path?: string | null
+          page_title?: string | null
+          reporter_role?: string
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       firebase_services: {
         Row: {
           app_id: string | null
@@ -1054,6 +1105,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           images: string[]
+          is_remote: boolean
           item_ids: string[]
           item_names: string[]
           lat: number | null
@@ -1071,6 +1123,7 @@ export type Database = {
           sub_category_name: string
           type_id: string | null
           updated_at: string
+          vendor_types: string[]
         }
         Insert: {
           accepted_at?: string | null
@@ -1085,6 +1138,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           images?: string[]
+          is_remote?: boolean
           item_ids?: string[]
           item_names?: string[]
           lat?: number | null
@@ -1102,6 +1156,7 @@ export type Database = {
           sub_category_name: string
           type_id?: string | null
           updated_at?: string
+          vendor_types?: string[]
         }
         Update: {
           accepted_at?: string | null
@@ -1116,6 +1171,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           images?: string[]
+          is_remote?: boolean
           item_ids?: string[]
           item_names?: string[]
           lat?: number | null
@@ -1133,6 +1189,7 @@ export type Database = {
           sub_category_name?: string
           type_id?: string | null
           updated_at?: string
+          vendor_types?: string[]
         }
         Relationships: []
       }
@@ -2378,6 +2435,7 @@ export type Database = {
           is_blocked: boolean
           is_online: boolean
           is_premium: boolean
+          is_remote_capable: boolean
           lat: number | null
           live_lat: number | null
           live_lng: number | null
@@ -2397,6 +2455,7 @@ export type Database = {
           updated_at: string
           user_id: string
           van_count: number
+          vendor_type: string
           verified: boolean
           website: string | null
           whatsapp: string | null
@@ -2421,6 +2480,7 @@ export type Database = {
           is_blocked?: boolean
           is_online?: boolean
           is_premium?: boolean
+          is_remote_capable?: boolean
           lat?: number | null
           live_lat?: number | null
           live_lng?: number | null
@@ -2440,6 +2500,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           van_count?: number
+          vendor_type?: string
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
@@ -2464,6 +2525,7 @@ export type Database = {
           is_blocked?: boolean
           is_online?: boolean
           is_premium?: boolean
+          is_remote_capable?: boolean
           lat?: number | null
           live_lat?: number | null
           live_lng?: number | null
@@ -2483,6 +2545,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           van_count?: number
+          vendor_type?: string
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
@@ -3742,6 +3805,7 @@ export type Database = {
               is_blocked: boolean
               is_online: boolean
               is_premium: boolean
+              is_remote_capable: boolean
               lat: number | null
               live_lat: number | null
               live_lng: number | null
@@ -3761,6 +3825,7 @@ export type Database = {
               updated_at: string
               user_id: string
               van_count: number
+              vendor_type: string
               verified: boolean
               website: string | null
               whatsapp: string | null
@@ -3814,6 +3879,7 @@ export type Database = {
               is_blocked: boolean
               is_online: boolean
               is_premium: boolean
+              is_remote_capable: boolean
               lat: number | null
               live_lat: number | null
               live_lng: number | null
@@ -3833,6 +3899,7 @@ export type Database = {
               updated_at: string
               user_id: string
               van_count: number
+              vendor_type: string
               verified: boolean
               website: string | null
               whatsapp: string | null
