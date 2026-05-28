@@ -276,7 +276,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
                 : "No photos"}
             </span>
             <button
-              onClick={() => onSubmit({ cart, note, images, vendorTypes, filters })}
+              onClick={() => onSubmit({ cart, note, images, vendorTypes, filters, remote })}
               disabled={cart.length === 0}
               className="btn-3d ml-auto px-5 py-2.5 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-display font-bold text-sm shadow-[0_4px_14px_-2px_rgba(5,150,105,0.55)] active:scale-95 disabled:opacity-50"
             >
