@@ -64,6 +64,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
   const [vendorTypes, setVendorTypes] = useState<VendorTypeKey[]>(["wholesaler", "retailer", "manufacturer"]);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [remote, setRemote] = useState(false);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
