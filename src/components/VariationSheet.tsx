@@ -26,6 +26,7 @@ type Props = {
     images: string[];
     vendorTypes: VendorTypeKey[];
     filters: Record<string, string[]>;
+    remote: boolean;
   }) => void;
 };
 
