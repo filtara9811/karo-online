@@ -745,6 +745,8 @@ function QuickPage() {
                 max_slots: maxSlots,
                 lead_price_inr: price,
                 search_radius_km: 10,
+                vendor_types: vendorTypes,
+                is_remote: isRemote,
               })
               .select("id")
               .single();
