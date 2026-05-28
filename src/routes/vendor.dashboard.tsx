@@ -252,6 +252,26 @@ function VendorDashboard() {
     }
   };
 
+  const toggleOperationMode = async () => {
+    if (!user) return;
+    const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
+    const next = current === "dynamic" ? "static" : "dynamic";
+    setVendor((p) => (p ? { ...p, operation_mode: next } : p));
+    const { error } = await supabase
+      .from("vendors")
+      .update({ operation_mode: next } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      setVendor((p) => (p ? { ...p, operation_mode: current } : p));
+      toast.error("Mode save nahi hua");
+    } else {
+      toast.success(
+        next === "dynamic"
+          ? "Live GPS Mode ON — aap jahan honge wahin se leads milengi"
+          : "Shop Mode ON — registered shop address se leads milengi",
+      );
+    }
+
   const stats = useMemo(() => {
     const total = leads.length;
     const success = leads.filter((l) => l.status === "success").length;
