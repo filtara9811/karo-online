@@ -87,11 +87,14 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     };
   }, [open, leadId]);
 
-  // Completion timer (max window) + early finish on TARGET_VENDORS
+  // Completion timer (max window) + tick elapsed seconds for Proceed unlock
   useEffect(() => {
     if (!open) return;
+    setElapsedMs(0);
+    const startedAt = Date.now();
+    const tick = setInterval(() => setElapsedMs(Date.now() - startedAt), 500);
     const t = setTimeout(() => finish(), TOTAL_MS);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); clearInterval(tick); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
