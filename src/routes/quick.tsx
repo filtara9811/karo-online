@@ -12,7 +12,7 @@ import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { RadiusSlider } from "@/components/RadiusSlider";
+// RadiusSlider removed from home — now lives inside NoVendorsFallback ("Try again" sheet)
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { QuickServiceMap } from "@/components/QuickServiceMap";
 import { useActiveTypeId } from "@/hooks/use-active-type";
@@ -422,16 +422,8 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
-  const [searchRadiusKm, setSearchRadiusKm] = useState<number>(() => {
-    if (typeof window === "undefined") return 10;
-    const v = Number(window.localStorage.getItem("quick_search_radius_km") ?? "10");
-    return Number.isFinite(v) ? v : 10;
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("quick_search_radius_km", String(searchRadiusKm));
-    }
-  }, [searchRadiusKm]);
+  // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
+
 
   // Tap a root category circle → switch the service-card list
   const handleRootTap = (id: string) => {
@@ -667,17 +659,8 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* Search radius slider — floats above bottom categories, on the left */}
-      <div
-        className="fixed left-3 z-40 w-[58%] max-w-[230px] rounded-2xl bg-white/95 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.45)] shadow-[0_6px_18px_-6px_rgba(0,0,0,0.25)] px-3 py-2"
-        style={{ bottom: "calc(170px + env(safe-area-inset-bottom))" }}
-      >
-        <RadiusSlider
-          value={searchRadiusKm}
-          onChange={setSearchRadiusKm}
-          label="Search within"
-        />
-      </div>
+      {/* (Search-radius slider removed — now shown only in the NoVendorsFallback "Try again" sheet) */}
+
 
       {/* Floating + button */}
       <button
@@ -759,7 +742,7 @@ function QuickPage() {
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
-                search_radius_km: searchRadiusKm,
+                search_radius_km: 10,
               })
               .select("id")
               .single();
@@ -774,6 +757,7 @@ function QuickPage() {
             const { data: matchRes, error: matchErr } = await supabase.rpc("broadcast_next_lead_batch", {
               _lead_id: lead.id,
               _batch_size: 3,
+              _ring_index: 0, // Phase 3 — start at innermost ring (0–1 km)
             });
             const notified = Number((matchRes as any)?.notified ?? 0);
             const vendorIds: string[] = ((matchRes as any)?.vendor_ids ?? []) as string[];

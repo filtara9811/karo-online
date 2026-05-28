@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Radar, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
+import { NoVendorsFallback } from "@/components/NoVendorsFallback";
 
 type AcceptedPreview = {
   vendor_id: string;
@@ -30,8 +31,11 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   const [vendors, setVendors] = useState<AcceptedPreview[]>([]);
   const [done, setDone] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [currentRing, setCurrentRing] = useState(0); // 0..3 = standard rings; 4 = expanded
+  const [noVendorsFinal, setNoVendorsFinal] = useState(false);
   const completedRef = useRef(false);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
+  const ringLoopKey = useRef(0); // bumped on retry to cancel old loops
 
   // Hide global BottomActionBar
   useEffect(() => {
@@ -51,6 +55,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     seenVendorIdsRef.current = new Set();
     setDone(false);
     setVendors([]);
+    setCurrentRing(0);
+    setNoVendorsFinal(false);
 
     const load = async () => {
       const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
@@ -87,33 +93,53 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     };
   }, [open, leadId]);
 
-  // Batch-of-3 sequential broadcast: every 30s send the next batch
-  // until the cap is hit or no more candidates exist within 15 km.
+  // Phase 3 — Sequential ring loop: 0→1, 1→2, 2→5, 5→10 km.
+  // quick.tsx already fires ring 0 at lead-create. We continue from ring 1.
+  // If a ring is empty we advance immediately; if it has vendors we wait 10s.
+  // After ring 3 finishes with 0 total vendors → trigger NoVendorsFallback.
   useEffect(() => {
     if (!open || !leadId) return;
-    let alive = true;
-    let exhausted = false;
-    const broadcast = async () => {
-      if (!alive || exhausted || completedRef.current) return;
-      const { data } = await supabase.rpc("broadcast_next_lead_batch", {
-        _lead_id: leadId,
-        _batch_size: 3,
-      });
-      const res = data as any;
-      if (res?.done) exhausted = true;
-      const ids: string[] = res?.vendor_ids ?? [];
-      if (ids.length > 0) {
-        // Fire FCM rings (best-effort, non-blocking)
-        import("@/lib/push.functions").then(({ sendLeadPushToVendor }) => {
-          ids.forEach((vid) =>
-            sendLeadPushToVendor({ data: { vendor_id: vid, lead_id: leadId } }).catch(() => {}),
-          );
+    const myKey = ++ringLoopKey.current;
+    let cancelled = false;
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    (async () => {
+      // Give ring 0 (from quick.tsx) a head-start
+      await sleep(8_000);
+      for (let ring = 1; ring <= 3; ring++) {
+        if (cancelled || completedRef.current || myKey !== ringLoopKey.current) return;
+        setCurrentRing(ring);
+        const { data } = await supabase.rpc("broadcast_next_lead_batch", {
+          _lead_id: leadId,
+          _batch_size: 3,
+          _ring_index: ring,
         });
+        const res = data as { count?: number; ring_empty?: boolean; vendor_ids?: string[] } | null;
+        const ids = res?.vendor_ids ?? [];
+        if (ids.length > 0) {
+          import("@/lib/push.functions").then(({ sendLeadPushToVendor }) => {
+            ids.forEach((vid) =>
+              sendLeadPushToVendor({ data: { vendor_id: vid, lead_id: leadId } }).catch(() => {}),
+            );
+          });
+          await sleep(10_000);
+        } else {
+          // ring empty — short pause then next ring
+          await sleep(1_500);
+        }
       }
-    };
-    // Don't fire immediately — quick.tsx already sent batch #1 on lead create.
-    const iv = setInterval(broadcast, 30_000);
-    return () => { alive = false; clearInterval(iv); };
+      // All standard rings done.
+      if (!cancelled && myKey === ringLoopKey.current && !completedRef.current) {
+        setCurrentRing(4);
+        // Give realtime a beat to deliver any final accepts
+        await sleep(2_500);
+        if (seenVendorIdsRef.current.size === 0) {
+          setNoVendorsFinal(true);
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [open, leadId]);
 
   // Completion timer (max window) + tick elapsed seconds for Proceed unlock
@@ -164,6 +190,16 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         {/* Drag handle */}
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
+        </div>
+
+        {/* Phase 3 — thin ring-progress bar (0→1→2→5→10 km) */}
+        <div className="mx-4 mt-0.5 mb-1 h-1 rounded-full bg-[color:oklch(0.92_0.02_85)] overflow-hidden flex-shrink-0">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-emerald-500"
+            initial={{ width: "5%" }}
+            animate={{ width: done ? "100%" : `${Math.min(100, ((currentRing + 1) / 4) * 100)}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          />
         </div>
 
         {/* Header */}
@@ -221,7 +257,19 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
           </div>
         </div>
 
-        {/* MAIN — radar (animates upward as vendors arrive) + faded vendor stack */}
+        {/* MAIN — fallback OR radar+vendor stack */}
+        {noVendorsFinal && leadId ? (
+          <NoVendorsFallback
+            leadId={leadId}
+            category={category}
+            onRetry={() => {
+              setNoVendorsFinal(false);
+              setCurrentRing(0);
+              // re-run the ring loop
+              ringLoopKey.current++;
+            }}
+          />
+        ) : (
         <div className="flex-1 min-h-0 px-5 pt-3 pb-2 relative overflow-hidden">
           {/* Radar — moves up and shrinks slightly as vendors fill the bottom */}
           <motion.div
@@ -349,9 +397,10 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </AnimatePresence>
           </div>
         </div>
+        )}
 
         {/* Proceed-early CTA — unlocks after 30s OR as soon as ≥1 vendor accepts */}
-        {!done && (() => {
+        {!done && !noVendorsFinal && (() => {
           const unlocked = vendors.length >= 1 || elapsedMs >= PROCEED_UNLOCK_MS;
           const remainingSec = Math.max(0, Math.ceil((PROCEED_UNLOCK_MS - elapsedMs) / 1000));
           return (
