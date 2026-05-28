@@ -742,7 +742,7 @@ function QuickPage() {
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
-                search_radius_km: searchRadiusKm,
+                search_radius_km: 10,
               })
               .select("id")
               .single();
