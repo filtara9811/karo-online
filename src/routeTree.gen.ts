@@ -79,6 +79,7 @@ import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminWebIndexRouteImport } from './routes/admin.web.index'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
+import { Route as ApiPublicVendorLocationRouteImport } from './routes/api.public.vendor-location'
 import { Route as AdminWebTestimonialsRouteImport } from './routes/admin.web.testimonials'
 import { Route as AdminWebSeoRouteImport } from './routes/admin.web.seo'
 import { Route as AdminWebSectionsRouteImport } from './routes/admin.web.sections'
@@ -442,6 +443,11 @@ const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   path: '/vendor/lead/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVendorLocationRoute = ApiPublicVendorLocationRouteImport.update({
+  id: '/api/public/vendor-location',
+  path: '/api/public/vendor-location',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWebTestimonialsRoute = AdminWebTestimonialsRouteImport.update({
   id: '/web/testimonials',
   path: '/web/testimonials',
@@ -584,6 +590,7 @@ export interface FileRoutesByFullPath {
   '/admin/web/sections': typeof AdminWebSectionsRoute
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
+  '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
 }
@@ -667,6 +674,7 @@ export interface FileRoutesByTo {
   '/admin/web/sections': typeof AdminWebSectionsRoute
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
+  '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
 }
@@ -752,6 +760,7 @@ export interface FileRoutesById {
   '/admin/web/sections': typeof AdminWebSectionsRoute
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
+  '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
 }
@@ -838,6 +847,7 @@ export interface FileRouteTypes {
     | '/admin/web/sections'
     | '/admin/web/seo'
     | '/admin/web/testimonials'
+    | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
   fileRoutesByTo: FileRoutesByTo
@@ -921,6 +931,7 @@ export interface FileRouteTypes {
     | '/admin/web/sections'
     | '/admin/web/seo'
     | '/admin/web/testimonials'
+    | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web'
   id:
@@ -1005,6 +1016,7 @@ export interface FileRouteTypes {
     | '/admin/web/sections'
     | '/admin/web/seo'
     | '/admin/web/testimonials'
+    | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
   fileRoutesById: FileRoutesById
@@ -1051,6 +1063,7 @@ export interface RootRouteChildren {
   VendorStatusRoute: typeof VendorStatusRoute
   VendorWalletRoute: typeof VendorWalletRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
 }
 
@@ -1546,6 +1559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorLeadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/vendor-location': {
+      id: '/api/public/vendor-location'
+      path: '/api/public/vendor-location'
+      fullPath: '/api/public/vendor-location'
+      preLoaderRoute: typeof ApiPublicVendorLocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/web/testimonials': {
       id: '/admin/web/testimonials'
       path: '/web/testimonials'
@@ -1763,6 +1783,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorStatusRoute: VendorStatusRoute,
   VendorWalletRoute: VendorWalletRoute,
   BlogIndexRoute: BlogIndexRoute,
+  ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
 }
 export const routeTree = rootRouteImport
