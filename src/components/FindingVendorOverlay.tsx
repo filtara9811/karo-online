@@ -320,6 +320,38 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
           </div>
         </div>
 
+        {/* Proceed-early CTA — unlocks after 30s OR as soon as ≥1 vendor accepts */}
+        {!done && (() => {
+          const unlocked = vendors.length >= 1 || elapsedMs >= PROCEED_UNLOCK_MS;
+          const remainingSec = Math.max(0, Math.ceil((PROCEED_UNLOCK_MS - elapsedMs) / 1000));
+          return (
+            <div className="flex-shrink-0 px-4 pb-3 pt-1">
+              <button
+                onClick={() => { if (unlocked) finish(); }}
+                disabled={!unlocked}
+                className={`w-full h-11 rounded-2xl font-display text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
+                  unlocked
+                    ? "bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] text-white shadow-[0_6px_18px_-6px_rgba(217,119,6,0.6)] active:scale-[0.98]"
+                    : "bg-[color:oklch(0.92_0.02_85)] text-[color:oklch(0.55_0.04_85)] cursor-not-allowed"
+                }`}
+              >
+                {unlocked ? (
+                  <>
+                    Proceed with {vendors.length} vendor{vendors.length === 1 ? "" : "s"}
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+                  </>
+                ) : (
+                  <>Proceed available in {remainingSec}s…</>
+                )}
+              </button>
+              <p className="text-center text-[10px] text-[color:oklch(0.50_0.06_85)] mt-1.5">
+                {unlocked
+                  ? "Aage badhein — baaki vendors background mein search hote rahenge"
+                  : "Best 5 vendors dhoondh rahe hain…"}
+              </p>
+            </div>
+          );
+        })()}
         <div className="flex-shrink-0 h-3" />
       </motion.div>
     </div>
