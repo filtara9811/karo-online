@@ -274,6 +274,22 @@ function VendorDashboard() {
     }
   };
 
+  const updateServiceRadius = async (km: number) => {
+    if (!user) return;
+    const prev = vendor?.service_radius_km ?? 10;
+    setVendor((p) => (p ? { ...p, service_radius_km: km } : p));
+    setSavingRadius(true);
+    const { error } = await supabase
+      .from("vendors")
+      .update({ service_radius_km: km } as any)
+      .eq("user_id", user.id);
+    setSavingRadius(false);
+    if (error) {
+      setVendor((p) => (p ? { ...p, service_radius_km: prev } : p));
+      toast.error("Radius save nahi hua");
+    }
+  };
+
 
 
   const stats = useMemo(() => {
