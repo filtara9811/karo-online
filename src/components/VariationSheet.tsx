@@ -346,6 +346,32 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
                 </div>
               </div>
 
+              {/* Remote / Online services — bypasses proximity radius */}
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:oklch(0.45_0.08_85)] mb-2 font-bold">
+                  Service mode
+                </p>
+                <button
+                  onClick={() => setRemote((r) => !r)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                    remote
+                      ? "bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white border-[#3b82f6]"
+                      : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-display font-bold">
+                    🌐 Remote / Online service
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${remote ? "bg-white/25" : "bg-gray-100"}`}>
+                    {remote ? "ON — global match" : "OFF — nearby only"}
+                  </span>
+                </button>
+                <p className="text-[10px] text-[color:oklch(0.50_0.05_85)] mt-1.5">
+                  Turn ON for services that don't need physical visit. Distance is ignored.
+                </p>
+              </div>
+
+
               {filterGroups.map((g) => {
                 const selected = filters[g.key] ?? [];
                 return (
