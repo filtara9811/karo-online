@@ -50,11 +50,13 @@ export const Route = createFileRoute("/api/public/vendor-location")({
           }
           const { lat, lng, is_online } = parsed.data;
 
-          const { error: upErr } = await supabaseAdmin
+          // Write to LIVE columns only — preserve registered shop lat/lng.
+          // Matching engine picks effective coords based on vendors.operation_mode.
+          const { error: upErr } = await (supabaseAdmin as any)
             .from("vendors")
             .update({
-              lat,
-              lng,
+              live_lat: lat,
+              live_lng: lng,
               location_updated_at: new Date().toISOString(),
               ...(typeof is_online === "boolean" ? { is_online } : {}),
             })
