@@ -745,9 +745,11 @@ function QuickPage() {
               return;
             }
             setActiveLeadId(lead.id);
-            // Sequential radius search: 1km → 3km → 5km → 10km → 20km, stop at 5 nearest vendors
-            const { data: matchRes, error: matchErr } = await supabase.rpc("match_lead_vendors", {
+            // Batch-of-3 sequential broadcast — first batch only here.
+            // FindingVendorOverlay re-broadcasts every 30s until cap/exhausted.
+            const { data: matchRes, error: matchErr } = await supabase.rpc("broadcast_next_lead_batch", {
               _lead_id: lead.id,
+              _batch_size: 3,
             });
             const notified = Number((matchRes as any)?.notified ?? 0);
             const vendorIds: string[] = ((matchRes as any)?.vendor_ids ?? []) as string[];
@@ -755,8 +757,7 @@ function QuickPage() {
             if (matchErr) {
               toast.error(matchErr.message || "Vendor matching fail");
             } else if (notified > 0) {
-              toast.success(`Aapke nearest ${notified} vendor ko request bhej di gayi`);
-              // Fire high-priority FCM pushes in parallel (best-effort, non-blocking)
+              toast.success(`Aapke ${notified} nearest vendor ko request bhej di gayi`);
               const { sendLeadPushToVendor } = await import("@/lib/push.functions");
               const leadIdLocal = lead.id;
               vendorIds.forEach((vid) => {
@@ -764,8 +765,9 @@ function QuickPage() {
                   .catch((e) => console.warn("lead push failed", vid, e));
               });
             } else {
-              toast.info("Aapke area me abhi vendor available nahi hain.");
+              toast.info("Aapke 15 km area me abhi vendor available nahi hain.");
             }
+
           } catch (e) {
             console.error("lead create failed", e);
             toast.error("Request send fail hui — login/profile check karein");
@@ -808,7 +810,7 @@ function QuickPage() {
           if (!activeLeadId) return;
           setVendorListOpen(false);
           setFindingOpen(true);
-          const { data } = await supabase.rpc("match_lead_vendors", { _lead_id: activeLeadId });
+          const { data } = await supabase.rpc("broadcast_next_lead_batch", { _lead_id: activeLeadId, _batch_size: 3 });
           setMatchInfo({ notified: Number((data as any)?.notified ?? 0), requestedAt: Date.now() });
         }}
         onClose={() => setVendorListOpen(false)}

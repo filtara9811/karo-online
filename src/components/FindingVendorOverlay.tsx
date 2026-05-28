@@ -87,6 +87,35 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     };
   }, [open, leadId]);
 
+  // Batch-of-3 sequential broadcast: every 30s send the next batch
+  // until the cap is hit or no more candidates exist within 15 km.
+  useEffect(() => {
+    if (!open || !leadId) return;
+    let alive = true;
+    let exhausted = false;
+    const broadcast = async () => {
+      if (!alive || exhausted || completedRef.current) return;
+      const { data } = await supabase.rpc("broadcast_next_lead_batch", {
+        _lead_id: leadId,
+        _batch_size: 3,
+      });
+      const res = data as any;
+      if (res?.done) exhausted = true;
+      const ids: string[] = res?.vendor_ids ?? [];
+      if (ids.length > 0) {
+        // Fire FCM rings (best-effort, non-blocking)
+        import("@/lib/push.functions").then(({ sendLeadPushToVendor }) => {
+          ids.forEach((vid) =>
+            sendLeadPushToVendor({ data: { vendor_id: vid, lead_id: leadId } }).catch(() => {}),
+          );
+        });
+      }
+    };
+    // Don't fire immediately — quick.tsx already sent batch #1 on lead create.
+    const iv = setInterval(broadcast, 30_000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [open, leadId]);
+
   // Completion timer (max window) + tick elapsed seconds for Proceed unlock
   useEffect(() => {
     if (!open) return;
@@ -97,6 +126,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     return () => { clearTimeout(t); clearInterval(tick); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
 
   useEffect(() => {
     if (open && vendors.length >= TARGET_VENDORS) finish();
