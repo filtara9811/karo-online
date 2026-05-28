@@ -192,6 +192,16 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
           <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
         </div>
 
+        {/* Phase 3 — thin ring-progress bar (0→1→2→5→10 km) */}
+        <div className="mx-4 mt-0.5 mb-1 h-1 rounded-full bg-[color:oklch(0.92_0.02_85)] overflow-hidden flex-shrink-0">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-emerald-500"
+            initial={{ width: "5%" }}
+            animate={{ width: done ? "100%" : `${Math.min(100, ((currentRing + 1) / 4) * 100)}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          />
+        </div>
+
         {/* Header */}
         <div className="px-4 pt-1 pb-2 flex items-center justify-between flex-shrink-0">
           <span className="text-[10px] uppercase tracking-[0.25em] font-display font-bold text-[color:oklch(0.45_0.10_82)]">
