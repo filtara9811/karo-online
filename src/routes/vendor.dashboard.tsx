@@ -271,6 +271,9 @@ function VendorDashboard() {
           : "Shop Mode ON — registered shop address se leads milengi",
       );
     }
+  };
+
+
 
   const stats = useMemo(() => {
     const total = leads.length;
