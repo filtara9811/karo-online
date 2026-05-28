@@ -810,7 +810,7 @@ function QuickPage() {
           if (!activeLeadId) return;
           setVendorListOpen(false);
           setFindingOpen(true);
-          const { data } = await supabase.rpc("match_lead_vendors", { _lead_id: activeLeadId });
+          const { data } = await supabase.rpc("broadcast_next_lead_batch", { _lead_id: activeLeadId, _batch_size: 3 });
           setMatchInfo({ notified: Number((data as any)?.notified ?? 0), requestedAt: Date.now() });
         }}
         onClose={() => setVendorListOpen(false)}
