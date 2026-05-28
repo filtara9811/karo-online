@@ -747,6 +747,7 @@ function QuickPage() {
                 lng: geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
+                search_radius_km: searchRadiusKm,
               })
               .select("id")
               .single();
