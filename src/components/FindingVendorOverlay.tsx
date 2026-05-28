@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Radar, Check } from "lucide-react";
+import { Sparkles, X, Radar, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
 
@@ -11,7 +11,8 @@ type AcceptedPreview = {
   avatar_url: string | null;
 };
 
-const TOTAL_MS = 12_000; // overall radar window
+const TOTAL_MS = 60_000; // overall radar window (60s — blueprint)
+const PROCEED_UNLOCK_MS = 30_000; // "Proceed" button enables after 30s
 const TARGET_VENDORS = 5;
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
