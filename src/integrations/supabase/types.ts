@@ -1064,6 +1064,7 @@ export type Database = {
           max_slots: number
           note: string | null
           root_category_id: string | null
+          search_radius_km: number
           source: string
           status: string
           sub_category_id: string
@@ -1094,6 +1095,7 @@ export type Database = {
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
+          search_radius_km?: number
           source?: string
           status?: string
           sub_category_id: string
@@ -1124,6 +1126,7 @@ export type Database = {
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
+          search_radius_km?: number
           source?: string
           status?: string
           sub_category_id?: string
