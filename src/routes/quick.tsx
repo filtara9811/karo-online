@@ -12,7 +12,7 @@ import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { RadiusSlider } from "@/components/RadiusSlider";
+// RadiusSlider removed from home — now lives inside NoVendorsFallback ("Try again" sheet)
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { QuickServiceMap } from "@/components/QuickServiceMap";
 import { useActiveTypeId } from "@/hooks/use-active-type";
