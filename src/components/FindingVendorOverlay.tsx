@@ -31,8 +31,11 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   const [vendors, setVendors] = useState<AcceptedPreview[]>([]);
   const [done, setDone] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [currentRing, setCurrentRing] = useState(0); // 0..3 = standard rings; 4 = expanded
+  const [noVendorsFinal, setNoVendorsFinal] = useState(false);
   const completedRef = useRef(false);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
+  const ringLoopKey = useRef(0); // bumped on retry to cancel old loops
 
   // Hide global BottomActionBar
   useEffect(() => {
