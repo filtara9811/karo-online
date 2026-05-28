@@ -110,6 +110,7 @@ export function AppShell() {
         <VendorLeadAlerts />
         <PermissionsGate />
         <FloatingInquiryWidget />
+        <FeedbackWidget />
       </div>
     </AuthGate>
   );
