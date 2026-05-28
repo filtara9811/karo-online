@@ -90,7 +90,7 @@ function VendorDashboard() {
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng, operation_mode")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
