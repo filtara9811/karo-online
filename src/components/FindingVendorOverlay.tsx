@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Radar, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
+import { NoVendorsFallback } from "@/components/NoVendorsFallback";
 
 type AcceptedPreview = {
   vendor_id: string;
