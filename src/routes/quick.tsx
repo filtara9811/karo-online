@@ -757,6 +757,7 @@ function QuickPage() {
             const { data: matchRes, error: matchErr } = await supabase.rpc("broadcast_next_lead_batch", {
               _lead_id: lead.id,
               _batch_size: 3,
+              _ring_index: 0, // Phase 3 — start at innermost ring (0–1 km)
             });
             const notified = Number((matchRes as any)?.notified ?? 0);
             const vendorIds: string[] = ((matchRes as any)?.vendor_ids ?? []) as string[];
