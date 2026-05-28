@@ -28,11 +28,10 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
   async function submitExpansion() {
     setSubmitting(true);
     try {
-      const patch: Record<string, unknown> = {};
+      const patch: { search_radius_km?: number; note?: string } = {};
       if (mode === "radius") {
         patch.search_radius_km = radius;
       } else {
-        // City/area expansion = unlimited radius + appended note
         patch.search_radius_km = 0;
         if (cityText.trim()) {
           patch.note = `[Expand:${mode}] ${cityText.trim()}`;
