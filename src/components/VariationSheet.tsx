@@ -26,6 +26,7 @@ type Props = {
     images: string[];
     vendorTypes: VendorTypeKey[];
     filters: Record<string, string[]>;
+    remote: boolean;
   }) => void;
 };
 
@@ -63,6 +64,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
   const [vendorTypes, setVendorTypes] = useState<VendorTypeKey[]>(["wholesaler", "retailer", "manufacturer"]);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [remote, setRemote] = useState(false);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
@@ -91,6 +93,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
       setVendorTypes(["wholesaler", "retailer", "manufacturer"]);
       setFilters({});
       setFilterSheetOpen(false);
+      setRemote(false);
     }
   }, [open, items]);
 
@@ -274,7 +277,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
                 : "No photos"}
             </span>
             <button
-              onClick={() => onSubmit({ cart, note, images, vendorTypes, filters })}
+              onClick={() => onSubmit({ cart, note, images, vendorTypes, filters, remote })}
               disabled={cart.length === 0}
               className="btn-3d ml-auto px-5 py-2.5 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-display font-bold text-sm shadow-[0_4px_14px_-2px_rgba(5,150,105,0.55)] active:scale-95 disabled:opacity-50"
             >
@@ -342,6 +345,32 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
                   })}
                 </div>
               </div>
+
+              {/* Remote / Online services — bypasses proximity radius */}
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:oklch(0.45_0.08_85)] mb-2 font-bold">
+                  Service mode
+                </p>
+                <button
+                  onClick={() => setRemote((r) => !r)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                    remote
+                      ? "bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white border-[#3b82f6]"
+                      : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-display font-bold">
+                    🌐 Remote / Online service
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${remote ? "bg-white/25" : "bg-gray-100"}`}>
+                    {remote ? "ON — global match" : "OFF — nearby only"}
+                  </span>
+                </button>
+                <p className="text-[10px] text-[color:oklch(0.50_0.05_85)] mt-1.5">
+                  Turn ON for services that don't need physical visit. Distance is ignored.
+                </p>
+              </div>
+
 
               {filterGroups.map((g) => {
                 const selected = filters[g.key] ?? [];

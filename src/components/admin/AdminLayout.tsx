@@ -59,6 +59,7 @@ const NAV: NavItem[] = [
   { to: "/admin/web", label: "✨ Special Web (CMS)", icon: Globe },
   { to: "/admin/onboarding", label: "Onboarding Screens", icon: LayoutDashboard },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
+  { to: "/admin/feedback", label: "💬 Feedback / Support", icon: MessageSquare },
 ];
 
 const GOLD_BG =
