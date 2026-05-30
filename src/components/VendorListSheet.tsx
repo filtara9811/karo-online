@@ -695,6 +695,22 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
           />
         )}
       </AnimatePresence>
+
+      <VendorProfileSheet
+        open={!!profileFor}
+        vendor={profileFor as VendorProfileData | null}
+        category={category}
+        isApproved={!!profileFor && approvedId === profileFor.vendor_id}
+        approving={!!profileFor && approving === profileFor.vendor_id}
+        approveDisabled={!!approvedId && !!profileFor && approvedId !== profileFor.vendor_id}
+        onApprove={() => {
+          if (!profileFor) return;
+          if (approvedId === profileFor.vendor_id) { setManageOpen(true); setProfileFor(null); return; }
+          approveVendor(profileFor);
+        }}
+        onChat={() => { if (profileFor) { openChat(profileFor); setProfileFor(null); } }}
+        onClose={() => setProfileFor(null)}
+      />
     </div>
   );
 }
