@@ -451,6 +451,28 @@ function VendorRegister() {
     );
   }
 
+  // Block the form flash: while we check if this vendor is already onboarded
+  // (and silently redirect to /vendor/dashboard), show a spinner instead of
+  // the empty Business Details form. Only shows in non-edit mode.
+  if (isAuthenticated && !editMode && !profileLoaded) {
+    return (
+      <main
+        className="fixed inset-0 grid place-items-center"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, #0a0a0a 0%, transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #04231a 60%, #053024 100%)",
+        }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-full border-2 border-[color:oklch(0.84_0.15_85/0.25)] border-t-[color:oklch(0.84_0.15_85)] animate-spin" />
+          <span className="text-[10px] uppercase tracking-[0.3em] text-[color:oklch(0.84_0.15_85/0.6)]">
+            Loading vendor panel…
+          </span>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main
       className="fixed inset-0 overflow-hidden"
