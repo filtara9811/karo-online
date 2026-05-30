@@ -428,6 +428,33 @@ function VendorDashboard() {
         {/* Live lead pricing & wallet balance — surfaced on home */}
         <LeadPricingStrip />
 
+        {/* Online / Offline toggle — broadcast engine reads this directly */}
+        <button
+          onClick={toggleOnline}
+          disabled={savingOnline}
+          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
+        >
+          <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+            {savingOnline ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Vendor Status</p>
+            <p className="text-sm font-display font-bold text-slate-800 leading-tight">
+              {vendor?.is_online ? "Online · Leads ON" : "Offline · Leads OFF"}
+            </p>
+            <p className="text-[10px] text-slate-500 truncate">
+              {vendor?.is_online ? "Nearby requests aur ring alerts receive honge" : "Broadcast engine aapko skip karega"}
+            </p>
+          </div>
+          <span
+            role="switch"
+            aria-checked={!!vendor?.is_online}
+            className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.is_online ? "bg-emerald-500" : "bg-amber-400"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.is_online ? "translate-x-5" : ""}`} />
+          </span>
+        </button>
+
         {/* Auto / Manual accept toggle */}
         <button
           onClick={toggleAutoAccept}
@@ -460,10 +487,11 @@ function VendorDashboard() {
           return (
             <button
               onClick={toggleOperationMode}
-              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
+              disabled={savingMode}
+              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
             >
               <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
-                <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>
+                {savingMode ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Location Mode</p>
