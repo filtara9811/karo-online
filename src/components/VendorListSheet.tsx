@@ -163,6 +163,22 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
     return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [open, leadId]);
 
+  // Fetch is_premium flag for currently visible vendors
+  useEffect(() => {
+    if (vendors.length === 0) return;
+    const ids = vendors.map((v) => v.vendor_id);
+    const missing = ids.filter((id) => premiumMap[id] === undefined);
+    if (missing.length === 0) return;
+    supabase.from("vendors").select("user_id, is_premium").in("user_id", missing).then(({ data }) => {
+      if (!data) return;
+      setPremiumMap((prev) => {
+        const next = { ...prev };
+        (data as any[]).forEach((r) => { next[r.user_id] = !!r.is_premium; });
+        return next;
+      });
+    });
+  }, [vendors]);
+
   const approvedVendor = useMemo(() => vendors.find((v) => v.vendor_id === approvedId) ?? null, [vendors, approvedId]);
 
   if (!open) return null;
