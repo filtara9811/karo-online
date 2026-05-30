@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation, RotateCcw, Ban, ListChecks } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation, RotateCcw, Ban, ListChecks, Award, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
@@ -9,6 +9,7 @@ import type { LeadChatPeer } from "@/components/LeadChatThread";
 import { useActiveInquiry, setActiveInquiry, clearActiveInquiry } from "@/hooks/use-active-inquiry";
 import { playPing } from "@/lib/lead-sound";
 import { NoVendorsFallback } from "@/components/NoVendorsFallback";
+import { VendorProfileSheet, type VendorProfileData } from "@/components/VendorProfileSheet";
 
 type AcceptedVendor = {
   vendor_id: string;
