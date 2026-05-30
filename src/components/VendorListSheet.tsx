@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation, RotateCcw, Ban, ListChecks } from "lucide-react";
+import { X, Star, MessageCircle, Loader2, MapPin, CheckCircle2, IndianRupee, BadgeCheck, Phone, ThumbsUp, ThumbsDown, ShieldCheck, ShieldAlert, Minimize2, Navigation, RotateCcw, Ban, ListChecks, Award, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorChatSheet } from "@/components/VendorChatSheet";
@@ -9,6 +9,7 @@ import type { LeadChatPeer } from "@/components/LeadChatThread";
 import { useActiveInquiry, setActiveInquiry, clearActiveInquiry } from "@/hooks/use-active-inquiry";
 import { playPing } from "@/lib/lead-sound";
 import { NoVendorsFallback } from "@/components/NoVendorsFallback";
+import { VendorProfileSheet, type VendorProfileData } from "@/components/VendorProfileSheet";
 
 type AcceptedVendor = {
   vendor_id: string;
@@ -75,6 +76,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const [manageOpen, setManageOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const [noVendorState, setNoVendorState] = useState<{ video_url: string; message: string } | null>(null);
+  const [premiumMap, setPremiumMap] = useState<Record<string, boolean>>({});
+  const [profileFor, setProfileFor] = useState<AcceptedVendor | null>(null);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   // Load admin-configured "no vendor available" video + message once.
@@ -160,6 +163,22 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
     return () => { alive = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [open, leadId]);
 
+  // Fetch is_premium flag for currently visible vendors
+  useEffect(() => {
+    if (vendors.length === 0) return;
+    const ids = vendors.map((v) => v.vendor_id);
+    const missing = ids.filter((id) => premiumMap[id] === undefined);
+    if (missing.length === 0) return;
+    supabase.from("vendors").select("user_id, is_premium").in("user_id", missing).then(({ data }) => {
+      if (!data) return;
+      setPremiumMap((prev) => {
+        const next = { ...prev };
+        (data as any[]).forEach((r) => { next[r.user_id] = !!r.is_premium; });
+        return next;
+      });
+    });
+  }, [vendors]);
+
   const approvedVendor = useMemo(() => vendors.find((v) => v.vendor_id === approvedId) ?? null, [vendors, approvedId]);
 
   if (!open) return null;
@@ -239,6 +258,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   };
 
   const visibleVendors = approvedId ? vendors.filter((v) => v.vendor_id === approvedId) : vendors;
+  const premiumList = visibleVendors.filter((v) => premiumMap[v.vendor_id]);
+  const basicList = visibleVendors.filter((v) => !premiumMap[v.vendor_id]);
 
   return (
     <div className="fixed inset-0 z-[85] flex items-end justify-center">
@@ -343,170 +364,199 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
             )
           ) : (
             <AnimatePresence mode="popLayout">
-              {visibleVendors.map((v, i) => {
-                const isApproved = approvedId === v.vendor_id;
-                const displayName = v.business_name || v.owner_name || "Vendor";
-                const sub = v.business_name && v.owner_name ? v.owner_name : "Verified vendor";
-                const rating = Number(v.rating ?? 4.8);
-                const happyPct = Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
-                const badPct = 100 - happyPct;
-                const coverImage = v.cover_image_url || productImage || null;
-                const priceRange = v.price_min != null && v.price_max != null
-                  ? `${formatMoney(v.price_min)} – ${formatMoney(v.price_max)}`
-                  : formatMoney(v.quoted_price);
-                const detailNote = v.mapping_notes || v.vendor_note || null;
-                // No KYC field in RPC yet — show pending pill as default (verified surfaces via BadgeCheck on avatar already).
-                const kycVerified = false;
-                return (
-                  <motion.div
-                    key={v.vendor_id}
-                    layout
-                    initial={{ opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: i * 0.04, type: "spring", damping: 22, stiffness: 260 }}
-                    className={`relative rounded-2xl bg-white border overflow-hidden shadow-[0_6px_22px_-10px_rgba(15,23,42,0.25)] ${
-                      isApproved
-                        ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.5)]"
-                        : "border-[color:oklch(0.78_0.14_82/0.35)]"
-                    }`}
-                  >
-                    {/* Cover/header strip */}
-                    <div className="relative h-20 bg-[color:oklch(0.86_0.08_86)] overflow-hidden">
-                      {coverImage ? (
-                        <img src={coverImage} alt={category ?? "Service"} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-                      ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/90" />
-                      <div className="absolute top-2 left-3 flex items-center gap-1.5">
-                        <div className="px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
-                          ✦ {category ?? "Service"}
-                        </div>
-                        {priceRange && (
-                          <div className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
-                            <IndianRupee className="h-2.5 w-2.5" /> {priceRange.replace(/₹/g, "").trim()}
-                          </div>
-                        )}
-                      </div>
-                      {v.distance_km != null && (
-                        <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-sky-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
-                          <MapPin className="h-3 w-3" /> {v.distance_km} km
+              {(() => {
+                const renderCard = (v: AcceptedVendor, i: number, premium: boolean) => {
+                  const isApproved = approvedId === v.vendor_id;
+                  const displayName = v.business_name || v.owner_name || "Vendor";
+                  const sub = v.business_name && v.owner_name ? v.owner_name : "Verified vendor";
+                  const rating = Number(v.rating ?? 4.8);
+                  const happyPct = Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
+                  const badPct = 100 - happyPct;
+                  const coverImage = v.cover_image_url || productImage || null;
+                  const priceRange = v.price_min != null && v.price_max != null
+                    ? `${formatMoney(v.price_min)} – ${formatMoney(v.price_max)}`
+                    : formatMoney(v.quoted_price);
+                  const detailNote = v.mapping_notes || v.vendor_note || null;
+                  const kycVerified = false;
+                  return (
+                    <motion.div
+                      key={v.vendor_id}
+                      layout
+                      initial={{ opacity: 0, y: 18 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ delay: i * 0.04, type: "spring", damping: 22, stiffness: 260 }}
+                      onClick={() => setProfileFor(v)}
+                      className={`relative rounded-2xl bg-white border overflow-hidden cursor-pointer shadow-[0_6px_22px_-10px_rgba(15,23,42,0.25)] ${
+                        isApproved
+                          ? "border-emerald-400 ring-2 ring-emerald-300 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.5)]"
+                          : premium
+                            ? "border-amber-400 ring-1 ring-amber-200"
+                            : "border-[color:oklch(0.78_0.14_82/0.35)]"
+                      }`}
+                    >
+                      {premium && (
+                        <div className="absolute top-0 right-0 z-10 px-2.5 py-0.5 rounded-bl-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white text-[9px] font-bold tracking-wider inline-flex items-center gap-1 shadow">
+                          <Award className="h-2.5 w-2.5" /> PREMIUM
                         </div>
                       )}
-                      {isApproved && (
-                        <div className="absolute bottom-1.5 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
-                          <CheckCircle2 className="h-3 w-3" /> APPROVED
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Identity row */}
-                    <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-8 relative">
-                      <div className="relative flex-shrink-0">
-                        {v.avatar_url ? (
-                          <img
-                            src={v.avatar_url}
-                            alt={displayName}
-                            className="h-14 w-14 rounded-full object-cover border-[3px] border-white shadow-md bg-white"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="h-14 w-14 rounded-full border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-base font-bold text-amber-800">
-                            {initials(displayName)}
+                      {/* Cover/header strip */}
+                      <div className="relative h-20 bg-[color:oklch(0.86_0.08_86)] overflow-hidden">
+                        {coverImage ? (
+                          <img src={coverImage} alt={category ?? "Service"} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                        ) : null}
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/90" />
+                        <div className="absolute top-2 left-3 flex items-center gap-1.5">
+                          <div className="px-2 py-0.5 rounded-full bg-white/95 border border-amber-300 text-[10px] font-display font-bold text-amber-900 shadow-sm">
+                            ✦ {category ?? "Service"}
                           </div>
-                        )}
-                        <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
-                          <BadgeCheck className="h-3 w-3 text-emerald-600" />
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0 pt-9">
-                        <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
-                          {displayName}
-                        </h4>
-                        <p className="text-[11px] text-slate-500 truncate">{sub}</p>
-                        {/* Distance + area row */}
-                        <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-600">
-                          <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
-                            <Navigation className="h-3 w-3" />
-                            {v.distance_km != null ? `${v.distance_km} km away` : "Nearby"}
-                          </span>
-                          {detailNote && (
-                            <span className="truncate text-slate-500">· {detailNote}</span>
+                          {priceRange && (
+                            <div className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow">
+                              <IndianRupee className="h-2.5 w-2.5" /> {priceRange.replace(/₹/g, "").trim()}
+                            </div>
                           )}
                         </div>
+                        {v.distance_km != null && (
+                          <div className="absolute top-2 right-3 px-2 py-0.5 rounded-full bg-sky-600 text-white text-[10px] font-bold inline-flex items-center gap-0.5 shadow" style={{ marginTop: premium ? 16 : 0 }}>
+                            <MapPin className="h-3 w-3" /> {v.distance_km} km
+                          </div>
+                        )}
+                        {isApproved && (
+                          <div className="absolute bottom-1.5 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow">
+                            <CheckCircle2 className="h-3 w-3" /> APPROVED
+                          </div>
+                        )}
                       </div>
-                    </div>
 
-                    <div className="mx-3 mb-2 grid grid-cols-4 gap-1.5 rounded-xl bg-slate-50 border border-slate-100 px-2 py-1.5 text-center">
-                      <span className="inline-flex items-center justify-center gap-0.5 font-bold text-amber-700 text-[11px]">
-                        <Star className="h-3 w-3" fill="currentColor" /> {rating.toFixed(1)}
-                      </span>
-                      <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-red-600">
-                        <ThumbsDown className="h-2.5 w-2.5" /> {badPct}%
-                      </span>
-                      <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-emerald-700">
-                        <ThumbsUp className="h-2.5 w-2.5" /> {happyPct}%
-                      </span>
-                      <span className={`inline-flex items-center justify-center gap-0.5 rounded-full text-[9px] font-bold ${kycVerified ? "text-emerald-700" : "text-amber-700"}`}>
-                        {kycVerified ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
-                        KYC
-                      </span>
-                    </div>
-
-                    {/* Price — range OR quoted, always shown when available */}
-                    {priceRange && (
-                      <div className="px-3 pb-2 flex items-baseline gap-2">
-                        <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-xl leading-none">
-                          <IndianRupee className="h-4 w-4 self-center" />
-                          <span>{priceRange.replace(/₹/g, "")}</span>
+                      {/* Identity row */}
+                      <div className="px-3 pt-0 pb-2 flex items-start gap-3 -mt-8 relative">
+                        <div className="relative flex-shrink-0">
+                          {v.avatar_url ? (
+                            <img
+                              src={v.avatar_url}
+                              alt={displayName}
+                              className="h-14 w-14 rounded-full object-cover border-[3px] border-white shadow-md bg-white"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-14 w-14 rounded-full border-[3px] border-white shadow-md bg-gradient-to-br from-amber-50 to-emerald-50 grid place-items-center font-display text-base font-bold text-amber-800">
+                              {initials(displayName)}
+                            </div>
+                          )}
+                          <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                            <BadgeCheck className="h-3 w-3 text-emerald-600" />
+                          </span>
                         </div>
-                        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                          {v.price_min != null && v.price_max != null ? "mapped range" : "vendor quote"}
+                        <div className="flex-1 min-w-0 pt-9">
+                          <h4 className="font-display text-[15px] font-bold text-[color:oklch(0.22_0.02_260)] leading-tight truncate">
+                            {displayName}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 truncate">{sub}</p>
+                          <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-600">
+                            <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-700">
+                              <Navigation className="h-3 w-3" />
+                              {v.distance_km != null ? `${v.distance_km} km away` : "Nearby"}
+                            </span>
+                            {detailNote && (
+                              <span className="truncate text-slate-500">· {detailNote}</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-slate-300 mt-9 flex-shrink-0" />
+                      </div>
+
+                      <div className="mx-3 mb-2 grid grid-cols-4 gap-1.5 rounded-xl bg-slate-50 border border-slate-100 px-2 py-1.5 text-center">
+                        <span className="inline-flex items-center justify-center gap-0.5 font-bold text-amber-700 text-[11px]">
+                          <Star className="h-3 w-3" fill="currentColor" /> {rating.toFixed(1)}
+                        </span>
+                        <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-red-600">
+                          <ThumbsDown className="h-2.5 w-2.5" /> {badPct}%
+                        </span>
+                        <span className="inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-emerald-700">
+                          <ThumbsUp className="h-2.5 w-2.5" /> {happyPct}%
+                        </span>
+                        <span className={`inline-flex items-center justify-center gap-0.5 rounded-full text-[9px] font-bold ${kycVerified ? "text-emerald-700" : "text-amber-700"}`}>
+                          {kycVerified ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
+                          KYC
                         </span>
                       </div>
-                    )}
 
-                    {/* Action bar */}
-                    <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2">
-                      <button
-                        onClick={() => isApproved ? setManageOpen(true) : approveVendor(v)}
-                        disabled={(!!approvedId && !isApproved) || approving === v.vendor_id}
-                        className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                          isApproved
-                            ? "bg-emerald-500 text-white"
-                            : approvedId
-                              ? "bg-slate-100 text-slate-400"
-                              : "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow"
-                        }`}
-                      >
-                        {approving === v.vendor_id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isApproved ? (
-                          <><CheckCircle2 className="h-4 w-4" /> Approved · Manage</>
-                        ) : (
-                          <>Approve</>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => openChat(v)}
-                        className="h-10 w-10 rounded-xl bg-white border-2 border-sky-500 text-sky-700 grid place-items-center active:scale-95"
-                        aria-label="Chat"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </button>
-                      {(v.phone || v.whatsapp) && (
-                        <a
-                          href={`tel:${v.phone || v.whatsapp}`}
-                          className="h-10 w-10 rounded-xl bg-white border-2 border-emerald-500 text-emerald-700 grid place-items-center active:scale-95"
-                          aria-label="Call"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
+                      {priceRange && (
+                        <div className="px-3 pb-2 flex items-baseline gap-2">
+                          <div className="inline-flex items-baseline font-display font-bold text-emerald-700 text-xl leading-none">
+                            <IndianRupee className="h-4 w-4 self-center" />
+                            <span>{priceRange.replace(/₹/g, "")}</span>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                            {v.price_min != null && v.price_max != null ? "mapped range" : "vendor quote"}
+                          </span>
+                        </div>
                       )}
-                    </div>
-                  </motion.div>
+
+                      {/* Action bar */}
+                      <div className="px-3 pb-3 grid grid-cols-[1fr_auto_auto] gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => isApproved ? setManageOpen(true) : approveVendor(v)}
+                          disabled={(!!approvedId && !isApproved) || approving === v.vendor_id}
+                          className={`h-10 rounded-xl font-display font-bold text-sm inline-flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                            isApproved
+                              ? "bg-emerald-500 text-white"
+                              : approvedId
+                                ? "bg-slate-100 text-slate-400"
+                                : "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow"
+                          }`}
+                        >
+                          {approving === v.vendor_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isApproved ? (
+                            <><CheckCircle2 className="h-4 w-4" /> Approved · Manage</>
+                          ) : (
+                            <>Approve</>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openChat(v)}
+                          className="h-10 w-10 rounded-xl bg-white border-2 border-sky-500 text-sky-700 grid place-items-center active:scale-95"
+                          aria-label="Chat"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </button>
+                        {(v.phone || v.whatsapp) && (
+                          <a
+                            href={`tel:${v.phone || v.whatsapp}`}
+                            className="h-10 w-10 rounded-xl bg-white border-2 border-emerald-500 text-emerald-700 grid place-items-center active:scale-95"
+                            aria-label="Call"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                };
+                return (
+                  <>
+                    {premiumList.length > 0 && (
+                      <div key="premium-header" className="flex items-center gap-2 px-1 pt-1">
+                        <Award className="h-3.5 w-3.5 text-amber-600" />
+                        <span className="font-display text-[11px] font-bold tracking-wider uppercase text-amber-700">Premium vendor</span>
+                        <span className="flex-1 h-px bg-gradient-to-r from-amber-300/60 to-transparent" />
+                      </div>
+                    )}
+                    {premiumList.map((v, i) => renderCard(v, i, true))}
+                    {basicList.length > 0 && (
+                      <div key="basic-header" className="flex items-center gap-2 px-1 pt-1">
+                        <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="font-display text-[11px] font-bold tracking-wider uppercase text-emerald-700">Verified vendors</span>
+                        <span className="flex-1 h-px bg-gradient-to-r from-emerald-300/60 to-transparent" />
+                      </div>
+                    )}
+                    {basicList.map((v, i) => renderCard(v, i + premiumList.length, false))}
+                  </>
                 );
-              })}
+              })()}
             </AnimatePresence>
+
           )}
 
           {/* Cancel inquiry — at the bottom of the list, slim & long */}
@@ -645,6 +695,22 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
           />
         )}
       </AnimatePresence>
+
+      <VendorProfileSheet
+        open={!!profileFor}
+        vendor={profileFor as VendorProfileData | null}
+        category={category}
+        isApproved={!!profileFor && approvedId === profileFor.vendor_id}
+        approving={!!profileFor && approving === profileFor.vendor_id}
+        approveDisabled={!!approvedId && !!profileFor && approvedId !== profileFor.vendor_id}
+        onApprove={() => {
+          if (!profileFor) return;
+          if (approvedId === profileFor.vendor_id) { setManageOpen(true); setProfileFor(null); return; }
+          approveVendor(profileFor);
+        }}
+        onChat={() => { if (profileFor) { openChat(profileFor); setProfileFor(null); } }}
+        onClose={() => setProfileFor(null)}
+      />
     </div>
   );
 }
