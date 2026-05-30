@@ -258,6 +258,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   };
 
   const visibleVendors = approvedId ? vendors.filter((v) => v.vendor_id === approvedId) : vendors;
+  const premiumList = visibleVendors.filter((v) => premiumMap[v.vendor_id]);
+  const basicList = visibleVendors.filter((v) => !premiumMap[v.vendor_id]);
 
   return (
     <div className="fixed inset-0 z-[85] flex items-end justify-center">
