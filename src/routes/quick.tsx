@@ -53,9 +53,11 @@ type Vendor = {
   name: string;
   area: string;
   km: number;
-  status: "Office" | "Online";
+  status: "Office" | "Online" | "Offline";
   avatar: string;
   x: number; y: number;
+  lat?: number;
+  lng?: number;
   cat: string;
 };
 
@@ -390,6 +392,7 @@ function QuickPage() {
           data: {
             itemIds: subItemIds,
             origin: geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null,
+            radiusKm: 10,
           },
         });
         if (cancelled) return;
@@ -397,7 +400,7 @@ function QuickPage() {
         const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
           const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42]];
           const [x, y] = positions[i % positions.length];
-          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.status === "active" || v.status === "approved" ? "Online" : "Office", avatar: v.avatar_url || avatarUser, x, y, cat: selectedSub.slug };
+          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub.slug };
         });
         setRealVendors(mapped);
       } catch (e) {
@@ -463,7 +466,7 @@ function QuickPage() {
           center={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null}
           vendors={filteredVendors.map((v) => ({
             id: v.id, name: v.name, avatar: v.avatar, x: v.x, y: v.y,
-            area: v.area, km: v.km, status: v.status,
+            area: v.area, km: v.km, status: v.status, lat: v.lat, lng: v.lng,
           }))}
           userAvatar={profile?.avatar_url || avatarUser}
           userLabel={geo.label}
