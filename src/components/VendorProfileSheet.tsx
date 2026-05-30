@@ -261,7 +261,7 @@ export function VendorProfileSheet({
               {/* ====== Badges row ====== */}
               <section className="mt-3 px-4">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                  {badges.map((b, i) => {
+                  {badges.map((b: { icon: any; label: string; sub: string; tone: "ok" | "warn" }, i: number) => {
                     const Icon = b.icon;
                     const isOk = b.tone === "ok";
                     return (
