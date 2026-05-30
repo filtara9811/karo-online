@@ -47,10 +47,12 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
         const dynamic = v.operation_mode === "dynamic";
         const fresh = !!v.location_updated_at && Date.now() - new Date(v.location_updated_at).getTime() <= 10 * 60 * 1000;
         const useLive = dynamic && fresh && v.live_lat != null && v.live_lng != null;
-        const lat = useLive ? Number(v.live_lat) : Number(v.lat);
-        const lng = useLive ? Number(v.live_lng) : Number(v.lng);
+        const rawLat = useLive ? v.live_lat : v.lat;
+        const rawLng = useLive ? v.live_lng : v.lng;
+        const lat = rawLat == null ? null : Number(rawLat);
+        const lng = rawLng == null ? null : Number(rawLng);
         const online = Boolean(v.is_online) && (!dynamic || useLive);
-        const km = Number.isFinite(lat) && Number.isFinite(lng) ? kmBetween(origin, { lat, lng }) : null;
+        const km = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) ? kmBetween(origin, { lat, lng }) : null;
         return {
         id: String(v.id),
         user_id: String(v.user_id),
