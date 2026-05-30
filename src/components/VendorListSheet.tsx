@@ -76,6 +76,8 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
   const [manageOpen, setManageOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0..100
   const [noVendorState, setNoVendorState] = useState<{ video_url: string; message: string } | null>(null);
+  const [premiumMap, setPremiumMap] = useState<Record<string, boolean>>({});
+  const [profileFor, setProfileFor] = useState<AcceptedVendor | null>(null);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
 
   // Load admin-configured "no vendor available" video + message once.
