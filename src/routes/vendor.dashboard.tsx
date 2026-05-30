@@ -22,6 +22,7 @@ import {
   Sparkles,
   ArrowLeft,
   Wallet as WalletIcon,
+  Loader2,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
@@ -84,15 +85,17 @@ function VendorDashboard() {
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
 
   const [savingAuto, setSavingAuto] = useState(false);
+  const [savingOnline, setSavingOnline] = useState(false);
+  const [savingMode, setSavingMode] = useState(false);
   const [savingRadius, setSavingRadius] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, lat, lng, operation_mode, service_radius_km")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, operation_mode, service_radius_km")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
@@ -254,15 +257,43 @@ function VendorDashboard() {
     }
   };
 
+  const haptic = () => { try { navigator.vibrate?.(18); } catch {} };
+
+  const toggleOnline = async () => {
+    if (!user || savingOnline) return;
+    haptic();
+    const prev = !!vendor?.is_online;
+    const next = !prev;
+    setSavingOnline(true);
+    setVendor((p) => (p ? { ...p, is_online: next } : p));
+    const { data, error } = await supabase
+      .from("vendors")
+      .update({ is_online: next, location_updated_at: next ? new Date().toISOString() : null } as any)
+      .eq("user_id", user.id)
+      .select("is_online")
+      .maybeSingle();
+    setSavingOnline(false);
+    if (error) {
+      setVendor((p) => (p ? { ...p, is_online: prev } : p));
+      toast.error("Online status save nahi hua");
+      return;
+    }
+    setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online) } : p));
+    toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+  };
+
   const toggleOperationMode = async () => {
-    if (!user) return;
+    if (!user || savingMode) return;
+    haptic();
     const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
     const next = current === "dynamic" ? "static" : "dynamic";
+    setSavingMode(true);
     setVendor((p) => (p ? { ...p, operation_mode: next } : p));
     const { error } = await supabase
       .from("vendors")
       .update({ operation_mode: next } as any)
       .eq("user_id", user.id);
+    setSavingMode(false);
     if (error) {
       setVendor((p) => (p ? { ...p, operation_mode: current } : p));
       toast.error("Mode save nahi hua");
