@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const QuickVendorsSchema = z.object({
   itemIds: z.array(z.string().uuid()).min(1).max(50),
   origin: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
+  radiusKm: z.number().min(0).max(50).optional(),
 });
 
 function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -31,28 +32,43 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
     if (vendorIds.length === 0) return { ok: true as const, vendors: [] };
 
     const { data: vendors, error: vendorsError } = await (supabaseAdmin as any)
-      .from("vendors_public")
-      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, lat, lng, service_radius_km")
+      .from("vendors")
+      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
       .in("user_id", vendorIds);
 
     if (vendorsError) return { ok: false as const, error: vendorsError.message, vendors: [] };
 
     const origin = data.origin ?? null;
+    const radiusKm = data.radiusKm ?? 10;
+    if (!origin) return { ok: true as const, vendors: [] };
     const publicVendors = (vendors ?? [])
-      .filter((v: any) => v.lat != null && v.lng != null)
-      .map((v: any) => ({
+      .filter((v: any) => v.status === "active" && v.is_blocked === false)
+      .map((v: any) => {
+        const dynamic = v.operation_mode === "dynamic";
+        const fresh = !!v.location_updated_at && Date.now() - new Date(v.location_updated_at).getTime() <= 10 * 60 * 1000;
+        const useLive = dynamic && fresh && v.live_lat != null && v.live_lng != null;
+        const rawLat = useLive ? v.live_lat : v.lat;
+        const rawLng = useLive ? v.live_lng : v.lng;
+        const lat = rawLat == null ? null : Number(rawLat);
+        const lng = rawLng == null ? null : Number(rawLng);
+        const online = Boolean(v.is_online) && (!dynamic || useLive);
+        const km = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) ? kmBetween(origin, { lat, lng }) : null;
+        return {
         id: String(v.id),
         user_id: String(v.user_id),
         business_name: v.business_name as string | null,
         owner_name: v.owner_name as string | null,
         avatar_url: v.avatar_url as string | null,
         status: v.status as string | null,
-        lat: Number(v.lat),
-        lng: Number(v.lng),
+        is_online: online,
+        lat,
+        lng,
         service_radius_km: Number(v.service_radius_km ?? 10),
-        km: origin ? kmBetween(origin, { lat: Number(v.lat), lng: Number(v.lng) }) : null,
-      }))
-      .filter((v: any) => v.km == null || v.km <= Math.max(10, Number(v.service_radius_km ?? 10)))
+        km,
+        };
+      })
+      .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && v.km != null)
+      .filter((v: any) => (radiusKm === 0 || v.km <= radiusKm) && (v.service_radius_km === 0 || v.km <= v.service_radius_km))
       .sort((a: any, b: any) => (a.km ?? 9999) - (b.km ?? 9999))
       .slice(0, 8);
 

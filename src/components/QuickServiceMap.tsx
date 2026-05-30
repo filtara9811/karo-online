@@ -17,7 +17,9 @@ export type QuickMapVendor = {
   y: number;
   area?: string;
   km?: number;
-  status?: "Office" | "Online";
+  status?: "Office" | "Online" | "Offline";
+  lat?: number;
+  lng?: number;
   onClick?: () => void;
 };
 
@@ -73,8 +75,9 @@ function buildVendorCardHTML(v: QuickMapVendor) {
   const safeArea = (v.area || "Nearby").replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const km = typeof v.km === "number" ? `${v.km.toFixed(1)} km.` : "";
   const status = v.status || "Office";
+  const statusClass = status === "Online" ? "ko-online" : status === "Offline" ? "ko-offline" : "ko-office";
   return `
-    <div class="ko-vcard" data-vid="${v.id}">
+    <div class="ko-vcard ${statusClass}" data-vid="${v.id}">
       <div class="ko-vcard-avatar"><img src="${safeAvatar}" alt="" /></div>
       <div class="ko-vcard-body">
         <div class="ko-vcard-name">${safeName}</div>
@@ -322,7 +325,7 @@ export function QuickServiceMap({
       const dLat = ((50 - v.y) / 50) * 0.006;
       const dLng = ((v.x - 50) / 50) * 0.006;
       const overlay = new VendorCardOverlay(
-        { lat: pos.lat + dLat, lng: pos.lng + dLng },
+        v.lat != null && v.lng != null ? { lat: v.lat, lng: v.lng } : { lat: pos.lat + dLat, lng: pos.lng + dLng },
         v,
       );
       overlay.setMap(mapRef.current);
@@ -497,6 +500,10 @@ export function QuickServiceMap({
         .ko-vcard-area span { font-size: 8px; }
         .ko-vcard-meta { font-size: 9.5px; color: #4b5563; margin-top: 1px; }
         .ko-vcard-meta u { color: #b45309; font-weight: 600; }
+        .ko-vcard.ko-online { box-shadow: 0 6px 16px rgba(0,0,0,.16), 0 0 0 2px rgba(16,185,129,.45); }
+        .ko-vcard.ko-online .ko-vcard-meta u { color: #059669; }
+        .ko-vcard.ko-offline { opacity: .86; box-shadow: 0 6px 16px rgba(0,0,0,.14), 0 0 0 2px rgba(245,158,11,.42); }
+        .ko-vcard.ko-offline .ko-vcard-meta u, .ko-vcard.ko-office .ko-vcard-meta u { color: #d97706; }
       `}</style>
       <div ref={ref} className="absolute inset-0" />
       {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} />}
