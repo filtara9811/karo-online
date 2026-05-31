@@ -412,6 +412,22 @@ function VendorDashboard() {
     }
   };
 
+  const openProfileFinder = () => {
+    setProfileFinderOpen(true);
+    void loadNeedCategories();
+  };
+
+  const startNeedSearch = (cat: NeedCategory) => {
+    setFindingNeedId(cat.id);
+    toast.loading(`${cat.name} needs find ho rahi hain…`, { id: "vendor-need-find" });
+    window.setTimeout(() => {
+      const matches = leads.filter((lead) => lead.service === cat.name || lead.items.some((item) => item.name === cat.name)).length;
+      setFindingNeedId(null);
+      toast.success(matches ? `${matches} matching customer need mili` : "Is category ki live customer need abhi nahi hai", { id: "vendor-need-find" });
+      if (matches) setLeadsSheetOpen(true);
+    }, 1200);
+  };
+
 
 
   const stats = useMemo(() => {
@@ -441,6 +457,22 @@ function VendorDashboard() {
 
   const vendorLat = vendor?.live_lat ?? vendor?.lat ?? 28.6692;
   const vendorLng = vendor?.live_lng ?? vendor?.lng ?? 77.2008;
+
+  const vendorMapCards: QuickMapVendor[] = [
+    {
+      id: "vendor-home",
+      name: vendor?.business_name || "My Shop",
+      avatar: vendor?.avatar_url || avatarUser,
+      x: 50,
+      y: 50,
+      area: vendor?.operation_mode === "dynamic" ? "Live GPS" : "Shop address",
+      km: 0,
+      status: vendor?.is_online ? "Online" : "Office",
+      lat: vendorLat,
+      lng: vendorLng,
+      onClick: openProfileFinder,
+    },
+  ];
 
   const statTiles = [
     { value: stats.total,    label: "All Leads",    border: "oklch(0.72 0.01 260 / 0.55)", tint: "from-[#f5f6f8] to-[#eef0f3]" },
