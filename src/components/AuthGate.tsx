@@ -102,26 +102,49 @@ export function AuthGate({ children }: { children?: ReactNode }) {
 
   if (!ready) return <Ctx.Provider value={{ requireAuth, isReady: false }}>{children}</Ctx.Provider>;
 
+  // FORCED GATE: on customer routes, block the entire app behind login/registration
+  // until the profile is complete. Admin/vendor/register routes skip this.
+  const forceGate = !skip && !profileComplete;
+
   return (
     <Ctx.Provider value={{ requireAuth, isReady }}>
-      {children}
-      {open && !skip && (
+      {forceGate ? (
         <div
           data-auth-gate
           className="fixed inset-0 z-[60]"
           style={{
-            background: "linear-gradient(180deg, rgba(255,250,235,0.18) 0%, rgba(245,217,122,0.22) 100%)",
-            backdropFilter: "blur(2px)",
-            WebkitBackdropFilter: "blur(2px)",
+            background: "linear-gradient(180deg, #fffaeb 0%, #f5e8c4 100%)",
           }}
         >
           <RegistrationFlow
             transparent
-            hideBack={false}
-            onBack={handleClose}
+            hideBack
+            onBack={() => { /* cannot dismiss — forced gate */ }}
             onComplete={handleComplete}
           />
         </div>
+      ) : (
+        <>
+          {children}
+          {open && !skip && (
+            <div
+              data-auth-gate
+              className="fixed inset-0 z-[60]"
+              style={{
+                background: "linear-gradient(180deg, rgba(255,250,235,0.18) 0%, rgba(245,217,122,0.22) 100%)",
+                backdropFilter: "blur(2px)",
+                WebkitBackdropFilter: "blur(2px)",
+              }}
+            >
+              <RegistrationFlow
+                transparent
+                hideBack={false}
+                onBack={handleClose}
+                onComplete={handleComplete}
+              />
+            </div>
+          )}
+        </>
       )}
     </Ctx.Provider>
   );
