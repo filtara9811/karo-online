@@ -734,8 +734,9 @@ function VendorDashboard() {
               </span>
               <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
             </Link>
-            <Link
-              to="/profile"
+            <button
+              type="button"
+              onClick={openProfileFinder}
               className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
               <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
@@ -744,7 +745,7 @@ function VendorDashboard() {
               <span className="text-[9px] font-bold text-[color:oklch(0.45_0.01_260)]">
                 Profile
               </span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
