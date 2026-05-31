@@ -18,6 +18,7 @@ export type IncomingLead = {
   images: string[];
   address?: string | null;
   createdAt: string;
+  notificationStatus?: string | null;
   /** ISO timestamp; alert auto-expires 15 s after this. */
   expiresAt: string;
 };
@@ -41,10 +42,10 @@ export function useVendorLeadAlerts(): State {
 
     let cancelled = false;
 
-    const handleNotification = async (notifId: string, leadId: string) => {
+    const handleNotification = async (notifId: string, leadId: string, notificationCreatedAt?: string | null, notificationStatus?: string | null) => {
       if (seen.current.has(notifId)) return;
       seen.current.add(notifId);
-      const fallbackCreatedAt = new Date().toISOString();
+      const fallbackCreatedAt = notificationCreatedAt ?? new Date().toISOString();
       const fallbackIncoming: IncomingLead = {
         notificationId: notifId,
         leadId,
@@ -52,6 +53,7 @@ export function useVendorLeadAlerts(): State {
         itemNames: [],
         images: [],
         createdAt: fallbackCreatedAt,
+        notificationStatus,
         expiresAt: new Date(Date.now() + 15_000).toISOString(),
       };
       setAlerts((p) => [fallbackIncoming, ...p].slice(0, 8));
@@ -117,7 +119,7 @@ export function useVendorLeadAlerts(): State {
       const phone = leadInfo.customer_phone as string | null;
       const phoneDigits = phone ? phone.replace(/\D/g, "") : "";
       const masked = phoneDigits.length >= 4 ? `•••• ${phoneDigits.slice(-4)}` : null;
-      const createdAt = leadInfo.created_at as string;
+      const createdAt = (notificationCreatedAt ?? leadInfo.created_at) as string;
       const incoming: IncomingLead = {
         notificationId: notifId,
         leadId: leadInfo.id as string,
@@ -133,6 +135,7 @@ export function useVendorLeadAlerts(): State {
         images: (leadInfo.images ?? []) as string[],
         address: leadInfo.address,
         createdAt,
+        notificationStatus,
         expiresAt: new Date(new Date(createdAt).getTime() + 15_000).toISOString(),
       };
       setAlerts((p) => p.map((a) => (a.notificationId === notifId ? incoming : a)).slice(0, 8));
@@ -150,12 +153,12 @@ export function useVendorLeadAlerts(): State {
         .from("lead_notifications")
         .select("id, lead_id, status, created_at")
         .eq("vendor_id", user.id)
-        .eq("status", "pending")
+        .in("status", ["pending", "accepted"])
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(5);
       for (const n of data ?? []) {
-        await handleNotification((n as any).id, (n as any).lead_id);
+        await handleNotification((n as any).id, (n as any).lead_id, (n as any).created_at, (n as any).status);
       }
     })();
 
@@ -163,10 +166,10 @@ export function useVendorLeadAlerts(): State {
       .channel(`lead-notif-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
         (payload) => {
           const row = payload.new as any;
-          handleNotification(row.id, row.lead_id);
+          handleNotification(row.id, row.lead_id, row.created_at, row.status);
         },
       )
       .subscribe();
