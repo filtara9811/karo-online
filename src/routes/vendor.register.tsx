@@ -892,27 +892,8 @@ function Step1Business(p: Step1Props) {
 
       {/* Email field removed — auto-populated silently in background */}
 
-      {showEmail && (
-        <CounterField
-          Icon={User}
-          label="Current team"
-          hint="Work team members"
-          value={p.teamCount}
-          min={1}
-          onChange={p.setTeamCount}
-        />
-      )}
+      {/* Team/van counters removed — moved to menu Settings */}
 
-      {showEmail && (
-        <CounterField
-          Icon={Building2}
-          label="Van / vehicle"
-          hint="Multiple vans add kar sakte hain"
-          value={p.vanCount}
-          min={0}
-          onChange={p.setVanCount}
-        />
-      )}
 
       {showReferral && (
         <Field
