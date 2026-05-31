@@ -781,30 +781,88 @@ function VendorDashboard() {
   );
 }
 
-function VendorMapHero({ lat, lng, avatarUrl, businessName }: { lat: number; lng: number; avatarUrl: string | null; businessName: string }) {
+function VendorMapHero({ center, vendors, businessName }: { center: { lat: number; lng: number }; vendors: QuickMapVendor[]; businessName: string }) {
   return (
     <div className="relative h-full w-full">
-      {/* Map is purely decorative here — disable pointer events so page scroll
-          works smoothly on mobile (greedy gestureHandling otherwise eats swipes). */}
-      <div className="absolute inset-0 pointer-events-none" style={{ touchAction: "pan-y" }}>
-        <MapView
-          center={{ lat, lng }}
-          zoom={14}
-          height="100%"
-          showUserDot={false}
-          markers={[]}
-        />
-      </div>
-      {/* Center vendor pin overlay */}
+      <QuickServiceMap
+        center={center}
+        vendors={vendors}
+        userAvatar={vendors[0]?.avatar || avatarUser}
+        userLabel={businessName}
+        gestureHandling="cooperative"
+        showControls={false}
+        showUserPin={false}
+        countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
+      />
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="relative -translate-y-2 flex flex-col items-center" style={{ animation: "float-y 3.5s ease-in-out infinite" }}>
-          <div className="h-14 w-14 rounded-full overflow-hidden border-[3px] shadow-[0_8px_22px_-4px_rgba(212,175,55,0.7)]" style={{ borderColor: "#d4af37", background: "#fff" }}>
-            <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+        <span className="h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+      </div>
+    </div>
+  );
+}
+
+function VendorProfileFinderSheet({
+  open,
+  onClose,
+  vendorName,
+  categories,
+  loading,
+  findingId,
+  onFind,
+  onMenu,
+}: {
+  open: boolean;
+  onClose: () => void;
+  vendorName: string;
+  categories: NeedCategory[];
+  loading: boolean;
+  findingId: string | null;
+  onFind: (cat: NeedCategory) => void;
+  onMenu: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-gradient-to-b from-white via-[#fffaf0] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[90vh] overflow-y-auto"
+        style={{ animation: "sheet-up 0.35s cubic-bezier(0.22,1,0.36,1)" }}
+      >
+        <div className="flex justify-center pb-2"><span className="h-1.5 w-14 rounded-full bg-[color:oklch(0.78_0.14_82/0.45)]" /></div>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-[color:oklch(0.50_0.10_82)]">Find user needs</p>
+            <h3 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] truncate">{vendorName}</h3>
           </div>
-          <div className="mt-1 px-2.5 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] shadow whitespace-nowrap max-w-[180px] truncate">
-            📍 {businessName}
-          </div>
+          <button onClick={onClose} className="h-9 w-9 rounded-full bg-white border grid place-items-center active:scale-90" aria-label="Close">
+            <XCircle className="h-4 w-4" />
+          </button>
         </div>
+        <button onClick={onMenu} className="mb-3 w-full rounded-2xl bg-white/90 border p-3 flex items-center gap-3 text-left active:scale-[0.98]">
+          <User className="h-5 w-5 text-[color:oklch(0.45_0.10_82)]" />
+          <span className="flex-1 text-sm font-bold text-[color:oklch(0.25_0.05_85)]">Open full vendor profile menu</span>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        {loading ? (
+          <div className="py-10 grid place-items-center text-[color:oklch(0.45_0.10_82)]"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : categories.length === 0 ? (
+          <div className="rounded-2xl bg-white/90 border p-5 text-center text-xs text-[color:oklch(0.45_0.05_85)]">Pehle Inventory Mapping me services ON karein.</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {categories.map((cat) => (
+              <button key={cat.id} onClick={() => onFind(cat)} className="rounded-2xl bg-white/95 border p-3 text-left shadow-sm active:scale-[0.97]">
+                <div className="h-20 rounded-xl overflow-hidden bg-[#fff8dc] grid place-items-center mb-2">
+                  {cat.image_url ? <img src={cat.image_url} alt="" className="h-full w-full object-cover" /> : <Radar className="h-7 w-7 text-[color:oklch(0.55_0.10_82)]" />}
+                </div>
+                <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{cat.name}</p>
+                <p className="text-[10px] text-[color:oklch(0.50_0.06_85)]">{cat.enabled} mapped · ₹{cat.lead_price_inr ?? 20}/lead</p>
+                <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
+                  {findingId === cat.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />} Find users
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
