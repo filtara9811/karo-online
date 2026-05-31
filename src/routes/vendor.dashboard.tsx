@@ -503,6 +503,7 @@ function VendorDashboard() {
 
         {/* Auto / Manual accept toggle */}
         <button
+          type="button"
           onClick={toggleAutoAccept}
           className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
         >
