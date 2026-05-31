@@ -700,6 +700,32 @@ function VendorDashboard() {
   );
 }
 
+function VendorMapHero({ lat, lng, avatarUrl, businessName }: { lat: number; lng: number; avatarUrl: string | null; businessName: string }) {
+  return (
+    <div className="relative h-full w-full">
+      <MapView
+        center={{ lat, lng }}
+        zoom={14}
+        height="100%"
+        showUserDot={false}
+        markers={[]}
+      />
+      {/* Center vendor pin overlay */}
+      <div className="pointer-events-none absolute inset-0 grid place-items-center">
+        <div className="relative -translate-y-2 flex flex-col items-center" style={{ animation: "float-y 3.5s ease-in-out infinite" }}>
+          <div className="h-14 w-14 rounded-full overflow-hidden border-[3px] shadow-[0_8px_22px_-4px_rgba(212,175,55,0.7)]" style={{ borderColor: "#d4af37", background: "#fff" }}>
+            <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div className="mt-1 px-2.5 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] shadow whitespace-nowrap max-w-[180px] truncate">
+            📍 {businessName}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function StatCell({ value, label, active }: { value: number; label: string; active?: boolean }) {
   return (
     <div className="px-1">
