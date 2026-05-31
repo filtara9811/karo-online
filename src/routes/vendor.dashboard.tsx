@@ -703,13 +703,17 @@ function VendorDashboard() {
 function VendorMapHero({ lat, lng, avatarUrl, businessName }: { lat: number; lng: number; avatarUrl: string | null; businessName: string }) {
   return (
     <div className="relative h-full w-full">
-      <MapView
-        center={{ lat, lng }}
-        zoom={14}
-        height="100%"
-        showUserDot={false}
-        markers={[]}
-      />
+      {/* Map is purely decorative here — disable pointer events so page scroll
+          works smoothly on mobile (greedy gestureHandling otherwise eats swipes). */}
+      <div className="absolute inset-0 pointer-events-none" style={{ touchAction: "pan-y" }}>
+        <MapView
+          center={{ lat, lng }}
+          zoom={14}
+          height="100%"
+          showUserDot={false}
+          markers={[]}
+        />
+      </div>
       {/* Center vendor pin overlay */}
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         <div className="relative -translate-y-2 flex flex-col items-center" style={{ animation: "float-y 3.5s ease-in-out infinite" }}>
