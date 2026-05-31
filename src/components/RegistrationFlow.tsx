@@ -86,6 +86,7 @@ const readDraft = (): CustomerDraft => {
   } catch { return {}; }
 };
 
+const phoneDigitsFromValue = (value: string) => value.replace(/\D/g, "").slice(-10);
 const formatIndianMobile = (digits: string) => "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
 
 const GENDER_CHIPS: { value: string; label: string; icon: string }[] = [
@@ -132,7 +133,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [step, setStep] = useState<Step>(normalizeStep(draft.step));
 
   const [phone, setPhone] = useState(draft.phone ?? "");
-  const [phoneDigits, setPhoneDigits] = useState("");
+  const [phoneDigits, setPhoneDigits] = useState(() => phoneDigitsFromValue(draft.phone ?? ""));
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
   const [firstName, setFirstName] = useState(draft.firstName ?? "");
   const [lastName, setLastName] = useState(draft.lastName ?? "");
@@ -244,7 +245,11 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     try {
       const res = await sendOtpFn({ data: { phone: digits } });
       if (!res.ok) {
-        setOtpError(res.error || "Could not send OTP");
+        const rawError = res.error || "Could not send OTP";
+        const friendlyError = /No active SMS gateway|SMS gateway lookup/i.test(rawError)
+          ? "OTP service temporary issue hai. Please dobara Send OTP try karein."
+          : rawError;
+        setOtpError(friendlyError);
         return;
       }
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
@@ -493,8 +498,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                     verifying={otpVerifying}
                     onVerify={() => handleOtpVerify(otp)}
                     onEdit={() => {
-                      const digits = phone.replace(/\D/g, "").slice(-10);
+                      const digits = phoneDigitsFromValue(phone);
                       setPhoneDigits(digits);
+                      setPhone(digits);
                       setOtp("");
                       setTestOtpCode(null);
                       setIsTestNumber(false);
