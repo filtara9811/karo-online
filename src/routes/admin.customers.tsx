@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { Users, Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { Users, Mail, Phone, MapPin, ShieldCheck, Trash2 } from "lucide-react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -49,6 +49,16 @@ function CustomersPage() {
     if (error) toast.error("Customers load fail");
     else setCustomers((data as Customer[]) ?? []);
     setLoading(false);
+  };
+
+  const deleteCustomer = async (e: React.MouseEvent, c: Customer) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm(`Delete customer "${c.name || c.email || c.phone || c.id}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("customers").delete().eq("id", c.id);
+    if (error) return toast.error(error.message);
+    toast.success("Customer deleted");
+    setCustomers((rs) => rs.filter((r) => r.id !== c.id));
   };
 
   useEffect(() => {
