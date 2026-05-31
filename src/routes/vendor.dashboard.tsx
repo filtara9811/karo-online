@@ -240,7 +240,7 @@ function VendorDashboard() {
 
 
   const toggleAutoAccept = async () => {
-    if (!user || savingAuto) return;
+    if (!user) return;
     const next = !vendor?.auto_accept_leads;
     setSavingAuto(true);
     setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
@@ -285,15 +285,16 @@ function VendorDashboard() {
   }, [user, vendor?.is_online, vendor?.operation_mode, vendor?.live_lat, vendor?.live_lng]);
 
   const toggleOnline = async () => {
-    if (!user || savingOnline) return;
+    if (!user) return;
     haptic();
     const prev = !!vendor?.is_online;
     const next = !prev;
-    setSavingOnline(true);
+    // Optimistic UI immediately — never block the toggle on GPS or network.
     setVendor((p) => (p ? { ...p, is_online: next } : p));
-    const gps = next && vendor?.operation_mode === "dynamic" ? await getFreshGps() : null;
-    const seedLat = gps?.lat ?? vendor?.lat ?? null;
-    const seedLng = gps?.lng ?? vendor?.lng ?? null;
+    setSavingOnline(true);
+    // Seed with whatever coords we already have; background GPS refresh below.
+    const seedLat = vendor?.live_lat ?? vendor?.lat ?? null;
+    const seedLng = vendor?.live_lng ?? vendor?.lng ?? null;
     const seedLiveLocation = next && vendor?.operation_mode === "dynamic" && seedLat != null && seedLng != null;
     const { data, error } = await supabase
       .from("vendors")
@@ -313,10 +314,22 @@ function VendorDashboard() {
     }
     setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online), live_lat: (data as any)?.live_lat ?? p.live_lat, live_lng: (data as any)?.live_lng ?? p.live_lng } : p));
     toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+
+    // Background GPS refresh — non-blocking. Silently times out without freezing the button.
+    if (next && vendor?.operation_mode === "dynamic") {
+      getFreshGps().then(async (gps) => {
+        if (!gps || !user) return;
+        await supabase
+          .from("vendors")
+          .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor?.lat ?? gps.lat, lng: vendor?.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
+          .eq("user_id", user.id);
+        setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
+      }).catch(() => undefined);
+    }
   };
 
   const toggleOperationMode = async () => {
-    if (!user || savingMode) return;
+    if (!user) return;
     haptic();
     const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
     const next = current === "dynamic" ? "static" : "dynamic";
@@ -463,9 +476,9 @@ function VendorDashboard() {
 
         {/* Online / Offline toggle — broadcast engine reads this directly */}
         <button
+          type="button"
           onClick={toggleOnline}
-          disabled={savingOnline}
-          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
+          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
         >
           <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
             {savingOnline ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
@@ -490,6 +503,7 @@ function VendorDashboard() {
 
         {/* Auto / Manual accept toggle */}
         <button
+          type="button"
           onClick={toggleAutoAccept}
           className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
         >
@@ -519,9 +533,9 @@ function VendorDashboard() {
           const isDynamic = vendor?.operation_mode === "dynamic";
           return (
             <button
+              type="button"
               onClick={toggleOperationMode}
-              disabled={savingMode}
-              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
+              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
             >
               <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
                 {savingMode ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>}
