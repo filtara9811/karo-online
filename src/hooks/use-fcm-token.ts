@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { requestFcmToken, onForegroundMessage } from "@/lib/firebase";
 import { toast } from "sonner";
 import { speakForKind, setAppBadge } from "@/lib/tts";
+import { playLeadAlert } from "@/lib/lead-sound";
 
 const SAVED_KEY = "ko-fcm-token-v1";
 const BADGE_KEY = "ko-badge-count-v1";
@@ -59,6 +60,10 @@ export function useFcmToken() {
 
       const title = n.title || d.title || "Karoonline";
       const body = n.body || d.body || "";
+
+      if (kind === "lead_alert" || kind === "new_lead") {
+        playLeadAlert("quick", { loop: true, durationMs: 30_000 });
+      }
 
       // 1) Speak in Hindi based on type
       speakForKind(kind);
