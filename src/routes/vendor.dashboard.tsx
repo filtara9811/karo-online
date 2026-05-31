@@ -476,9 +476,9 @@ function VendorDashboard() {
 
         {/* Online / Offline toggle — broadcast engine reads this directly */}
         <button
+          type="button"
           onClick={toggleOnline}
-          disabled={savingOnline}
-          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
+          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
         >
           <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
             {savingOnline ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
