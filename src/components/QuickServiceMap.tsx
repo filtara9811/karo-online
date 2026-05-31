@@ -93,12 +93,20 @@ export function QuickServiceMap({
   userAvatar,
   userLabel,
   geoStatus,
+  gestureHandling = "greedy",
+  showControls = true,
+  showUserPin = true,
+  countLabel,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
   userAvatar: string;
   userLabel?: string;
   geoStatus?: "idle" | "loading" | "ready" | "denied" | "unsupported" | "error";
+  gestureHandling?: "cooperative" | "greedy" | "none" | "auto";
+  showControls?: boolean;
+  showUserPin?: boolean;
+  countLabel?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -146,7 +154,7 @@ export function QuickServiceMap({
         zoom: 16,
         mapTypeId: mapType,
         disableDefaultUI: true,
-        gestureHandling: "greedy",
+        gestureHandling,
         zoomControl: true,
         zoomControlOptions: { position: controlPosition },
         clickableIcons: false,
@@ -201,6 +209,14 @@ export function QuickServiceMap({
     if (status !== "ready" || !mapRef.current) return;
     const g = (window as any).google;
     const pos = center ?? DEFAULT_CENTER;
+
+    if (!showUserPin) {
+      if (userOverlayRef.current) {
+        userOverlayRef.current.setMap(null);
+        userOverlayRef.current = null;
+      }
+      return;
+    }
 
     if (userOverlayRef.current) {
       userOverlayRef.current.setMap(null);
@@ -261,7 +277,7 @@ export function QuickServiceMap({
     const overlay = new AvatarPinOverlay(pos, userAvatar, userLabel || "Detecting your location…");
     overlay.setMap(mapRef.current);
     userOverlayRef.current = overlay;
-  }, [status, userAvatar]);
+  }, [status, userAvatar, showUserPin]);
 
   // move overlay when center changes (avoid re-creating)
   useEffect(() => {
@@ -506,7 +522,7 @@ export function QuickServiceMap({
         .ko-vcard.ko-offline .ko-vcard-meta u, .ko-vcard.ko-office .ko-vcard-meta u { color: #d97706; }
       `}</style>
       <div ref={ref} className="absolute inset-0" />
-      {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} />}
+      {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} showUserPin={showUserPin} />}
       {status === "loading" && (
         <div className="absolute inset-0 grid place-items-center bg-[#f5f1e8]">
           <Loader2 className="h-5 w-5 animate-spin text-amber-700" />
@@ -514,7 +530,7 @@ export function QuickServiceMap({
       )}
 
       {/* Right-side floating controls — light & translucent so map stays clean */}
-      <div className="absolute top-3 right-2 z-30 flex flex-col gap-1.5 items-end">
+      {showControls && <div className="absolute top-3 right-2 z-30 flex flex-col gap-1.5 items-end">
         <button
           onClick={() => setMapTypeOpen((o) => !o)}
           className="h-8 w-8 rounded-full bg-white/55 backdrop-blur-sm shadow-sm grid place-items-center border border-white/70 active:scale-95 transition opacity-70 hover:opacity-100"
@@ -556,11 +572,11 @@ export function QuickServiceMap({
         >
           <LocateFixed className="h-4 w-4 text-blue-600/90" />
         </button>
-      </div>
+      </div>}
 
       {/* Vendor count chip */}
       <div className="absolute top-3 left-3 z-30 px-2.5 py-1 rounded-full bg-white/90 border border-amber-300/60 shadow text-[10px] font-bold text-amber-900">
-        {vendors.length} nearby vendors
+        {countLabel ?? `${vendors.length} nearby vendors`}
       </div>
 
       {/* Tap-to-enable — tiny corner chip so it doesn't cover the search area */}
