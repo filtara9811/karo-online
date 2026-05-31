@@ -24,6 +24,9 @@ import {
   Wallet as WalletIcon,
   Loader2,
   Handshake,
+  Search,
+  User,
+  Radar,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
@@ -34,7 +37,7 @@ import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
-import { MapView } from "@/components/MapView";
+import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
 
@@ -51,6 +54,8 @@ export const Route = createFileRoute("/vendor/dashboard")({
 });
 
 type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
+
+type NeedCategory = { id: string; name: string; image_url: string | null; lead_price_inr: number | null; enabled: number };
 
 type CustomerLookup = {
   name: string | null;
