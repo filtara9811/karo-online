@@ -142,15 +142,17 @@ function VendorRegister() {
   // Auto-skip if vendor already onboarded (unless ?edit=1 from menu)
   useEffect(() => {
     if (!user || profileLoaded) return;
-    // Fast-path: sessionStorage cache → instant redirect, no flash
+    // Fast-path: localStorage cache → instant redirect, no flash
     if (!editMode && typeof window !== "undefined") {
       try {
-        if (sessionStorage.getItem(`vendor:registered:${user.id}`) === "1") {
+        const k = `vendor:registered:${user.id}`;
+        if (localStorage.getItem(k) === "1" || sessionStorage.getItem(k) === "1") {
           navigate({ to: "/vendor/dashboard" });
           return;
         }
       } catch {}
     }
+
     let cancelled = false;
     (async () => {
       // Best-effort: relink an orphaned vendor row (created under a previous
