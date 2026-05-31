@@ -597,11 +597,13 @@ function MapFallback({
   vendors,
   userAvatar,
   userLabel,
+  showUserPin = true,
 }: {
   center: { lat: number; lng: number };
   vendors: QuickMapVendor[];
   userAvatar: string;
   userLabel?: string;
+  showUserPin?: boolean;
 }) {
   return (
     <div className="absolute inset-0 z-20 overflow-hidden bg-[linear-gradient(135deg,#faf5e8_0%,#efe6d2_45%,#f5efdc_100%)]">
@@ -617,10 +619,12 @@ function MapFallback({
           dangerouslySetInnerHTML={{ __html: buildVendorCardHTML(v) }}
         />
       ))}
-      <div
-        className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-full"
-        dangerouslySetInnerHTML={{ __html: buildUserPinHTML(userAvatar, userLabel || "Detecting your location…") }}
-      />
+      {showUserPin && (
+        <div
+          className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-full"
+          dangerouslySetInnerHTML={{ __html: buildUserPinHTML(userAvatar, userLabel || "Detecting your location…") }}
+        />
+      )}
     </div>
   );
 }
