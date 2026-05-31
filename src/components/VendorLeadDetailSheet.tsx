@@ -270,7 +270,10 @@ export function VendorLeadDetailSheet({ open, lead, otherLeads = [], onClose, on
                 <X className="h-4 w-4 text-slate-700" />
               </button>
 
-              <div className="overflow-y-auto flex-1 pb-6">
+              <div
+                className="overflow-y-auto flex-1 pb-6"
+                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
+              >
                 {/* ===== Lead identity card ===== */}
                 <section className="mx-3 mt-4 rounded-2xl bg-white border border-slate-200 p-3 shadow-sm">
                   <div className="flex items-start gap-3">
