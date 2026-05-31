@@ -51,7 +51,7 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
         const rawLng = useLive ? v.live_lng : v.lng;
         const lat = rawLat == null ? null : Number(rawLat);
         const lng = rawLng == null ? null : Number(rawLng);
-        const online = Boolean(v.is_online) && (!dynamic || useLive);
+        const online = Boolean(v.is_online);
         const km = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) ? kmBetween(origin, { lat, lng }) : null;
         return {
         id: String(v.id),
@@ -70,7 +70,7 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
       .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && v.km != null)
       .filter((v: any) => (radiusKm === 0 || v.km <= radiusKm) && (v.service_radius_km === 0 || v.km <= v.service_radius_km))
       .sort((a: any, b: any) => (a.km ?? 9999) - (b.km ?? 9999))
-      .slice(0, 8);
+      .slice(0, 12);
 
     return { ok: true as const, vendors: publicVendors };
   });

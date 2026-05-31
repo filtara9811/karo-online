@@ -111,7 +111,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         setCurrentRing(ring);
         const { data } = await supabase.rpc("broadcast_next_lead_batch", {
           _lead_id: leadId,
-          _batch_size: 3,
+          _batch_size: 5,
           _ring_index: ring,
         });
         const res = data as { count?: number; ring_empty?: boolean; vendor_ids?: string[] } | null;

@@ -385,7 +385,7 @@ function QuickPage() {
       return;
     }
     let cancelled = false;
-    (async () => {
+    const loadRealVendors = async () => {
       setRealVendorsLoading(true);
       try {
         const res = await getQuickMapVendorsFn({
@@ -409,8 +409,14 @@ function QuickPage() {
       } finally {
         if (!cancelled) setRealVendorsLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+    loadRealVendors();
+    const ch = supabase
+      .channel(`quick-map-vendors-${selectedSub.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendors" }, () => loadRealVendors())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendor_item_mappings" }, () => loadRealVendors())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [selectedSub, items, geo.lat, geo.lng]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
@@ -763,7 +769,7 @@ function QuickPage() {
             // FindingVendorOverlay re-broadcasts every 30s until cap/exhausted.
             const { data: matchRes, error: matchErr } = await supabase.rpc("broadcast_next_lead_batch", {
               _lead_id: lead.id,
-              _batch_size: 3,
+              _batch_size: 5,
               _ring_index: 0, // Phase 3 — start at innermost ring (0–1 km)
             });
             const notified = Number((matchRes as any)?.notified ?? 0);
