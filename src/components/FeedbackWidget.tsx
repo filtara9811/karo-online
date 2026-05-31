@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { MessageSquareWarning, X, Camera, Loader2, Send, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,11 @@ export function FeedbackWidget() {
     if (location.pathname.startsWith("/vendor")) setRole("vendor");
     else setRole("user");
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setPos((p) => ({ ...p, x: Math.max(8, window.innerWidth - 52) }));
+  }, []);
 
   const openSheet = async () => {
     if (dragRef.current?.moved) return;
@@ -109,12 +114,12 @@ export function FeedbackWidget() {
 
   if (hidden) return null;
 
-  const startDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const startDrag = (e: PointerEvent<HTMLButtonElement>) => {
     dragRef.current = { startX: e.clientX, startY: e.clientY, x: pos.x, y: pos.y, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const moveDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const moveDrag = (e: PointerEvent<HTMLButtonElement>) => {
     const d = dragRef.current;
     if (!d) return;
     const dx = e.clientX - d.startX;
