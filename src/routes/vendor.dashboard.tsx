@@ -87,6 +87,7 @@ function VendorDashboard() {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
