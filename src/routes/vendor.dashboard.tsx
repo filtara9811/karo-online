@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { RadiusSlider } from "@/components/RadiusSlider";
+
 import { VendorSideMenu } from "@/components/VendorSideMenu";
 import {
   Download,
@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Wallet as WalletIcon,
   Loader2,
+  Handshake,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
@@ -32,8 +33,11 @@ import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
+import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
+import { MapView } from "@/components/MapView";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
+
 
 
 export const Route = createFileRoute("/vendor/dashboard")({
@@ -83,6 +87,7 @@ function VendorDashboard() {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
@@ -395,182 +400,106 @@ function VendorDashboard() {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "process" } : l)));
   };
 
+  const vendorLat = vendor?.live_lat ?? vendor?.lat ?? 28.6692;
+  const vendorLng = vendor?.live_lng ?? vendor?.lng ?? 77.2008;
+
+  const statTiles = [
+    { value: stats.total,    label: "All Leads",    border: "oklch(0.72 0.01 260 / 0.55)", tint: "from-[#f5f6f8] to-[#eef0f3]" },
+    { value: pendingCount,   label: "Pending",      border: "oklch(0.78 0.14 82 / 0.7)",   tint: "from-[#fff8dc] to-[#f5e9b8]" },
+    { value: stats.process,  label: "In Process",   border: "#b91c1c66",                   tint: "from-[#fef2f2] to-[#fde0e0]" },
+    { value: stats.success,  label: "Success",      border: "#15803d66",                   tint: "from-[#f0fdf4] to-[#d6f5df]" },
+    { value: stats.rejected, label: "Rejected",     border: "oklch(0.78 0.14 82 / 0.4)",   tint: "from-[#fffaeb] to-[#fdf3c8]" },
+  ];
+
   return (
     <div
       className="relative min-h-dvh overflow-x-hidden pb-32 isolate"
       style={{
         background:
-          "radial-gradient(ellipse at top, #f5f6f8 0%, transparent 55%), linear-gradient(160deg, #f5f6f8 0%, #f5f6f8 60%, #eef0f3 100%)",
+          "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
       }}
     >
       {/* Decorative orbs */}
-      <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.25),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.28),transparent_70%)] blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.35),transparent_70%)] blur-2xl" />
 
       <ActionAlertBanner role="vendor" />
-      {/* Top bar — avatar (opens menu) at left, status banner if pending */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
-        <div className="max-w-md mx-auto px-3 py-2 flex items-center justify-between gap-3">
+
+      {/* Map hero with vendor pin in center */}
+      <section className="relative">
+        <div className="relative h-[240px] w-full overflow-hidden">
+          <VendorMapHero lat={vendorLat} lng={vendorLng} avatarUrl={vendor?.avatar_url ?? null} businessName={vendor?.business_name ?? "My Shop"} />
+          {/* Vendor count chip — like user home */}
+          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
+            {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+          </div>
+          <div className="absolute top-3 right-3">
+            <VendorNotificationBell />
+          </div>
+        </div>
+        {/* Soft cream fade into content */}
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-12 bg-gradient-to-b from-transparent to-[#fdf8ec]" />
+      </section>
+
+      <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
+        {/* Shop icon + search + profile icon */}
+        <div
+          className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]"
+        >
+          <button
+            onClick={() => setActionsOpen(true)}
+            aria-label="Quick actions"
+            className="h-10 w-10 rounded-xl grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] active:scale-90 shadow-sm"
+          >
+            <Store className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+          </button>
+          <div className="flex-1 relative">
+            <input
+              placeholder="Search leads, customer, service…"
+              className="w-full h-10 px-3 rounded-xl bg-[#fffaeb] border border-[color:oklch(0.78_0.14_82/0.4)] text-xs text-[color:oklch(0.22_0.05_85)] placeholder:text-[color:oklch(0.55_0.10_82)] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/40"
+            />
+          </div>
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="relative h-11 w-11 rounded-full overflow-hidden border-2 shadow-md active:scale-95 shrink-0"
+            className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0"
             style={{ borderColor: "#d4af37" }}
           >
             <img src={vendor?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
             {vendor?.verified && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
             )}
           </button>
-          <div className="flex-1 min-w-0 text-center">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ Vendor Panel ✦</p>
-            <h1 className="font-display text-base text-silver-gradient leading-tight font-bold truncate">
-              {vendor?.business_name || "My Dashboard"}
-            </h1>
-          </div>
-          <VendorNotificationBell />
         </div>
+
         {vendor?.status === "pending" && (
-          <div className="bg-amber-100 border-t border-amber-300 px-4 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-amber-800">
+          <div className="rounded-xl bg-amber-100 border border-amber-300 px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-amber-800">
             ⏳ Pending Admin Approval
           </div>
         )}
-      </header>
 
-      <div className="max-w-md mx-auto px-4 pt-4 space-y-4 relative">
-        {/* Compact action chip — Services + Wallet (avatar moved to top) */}
-        <section
-          className="relative rounded-2xl overflow-hidden px-3 py-2 flex items-center gap-2 shadow-silver-glow"
-          style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #f5f6f8 60%, #eef0f3 100%)",
-            border: "1px solid rgba(212,175,55,0.5)",
-          }}
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">
-              {vendor?.verified ? "Verified · ID K-91824" : "Vendor Profile"}
-            </p>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] italic truncate">
-              {vendor?.owner_name || "Quick Service · Beauty"}
-            </p>
-          </div>
-          <Link
-            to="/vendor/services"
-            className="h-9 px-3 grid place-items-center rounded-full shadow-md active:scale-95 text-[10px] font-display font-bold text-[#1a1208] uppercase tracking-wider"
-            style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
-          >
-            Services
-          </Link>
-          <Link
-            to="/vendor/wallet"
-            aria-label="Wallet"
-            className="h-9 w-9 grid place-items-center rounded-full shadow-md active:scale-90"
-            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}
-          >
-            <WalletIcon className="h-4 w-4 text-[#1a1208]" />
-          </Link>
-        </section>
+        {/* Horizontal stats strip */}
+        <div className="flex gap-2.5 overflow-x-auto -mx-3 px-3 pb-1 scrollbar-hide" style={{ animation: "fade-up 0.5s ease-out both" }}>
+          {statTiles.map((t, i) => (
+            <button
+              key={t.label}
+              onClick={() => setLeadsSheetOpen(true)}
+              className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
+              style={{ border: `1.5px solid ${t.border}`, animation: `fade-up 0.5s ease-out ${i * 60}ms both` }}
+            >
+              <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
+                <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+              </div>
+              <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">{t.value}</p>
+              <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">{t.label}</p>
+            </button>
+          ))}
+        </div>
 
-        {/* Live lead pricing & wallet balance — surfaced on home */}
+        {/* Live lead pricing & wallet balance */}
         <LeadPricingStrip />
 
-        {/* Online / Offline toggle — broadcast engine reads this directly */}
-        <button
-          type="button"
-          onClick={toggleOnline}
-          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
-        >
-          <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-            {savingOnline ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Vendor Status</p>
-            <p className="text-sm font-display font-bold text-slate-800 leading-tight">
-              {vendor?.is_online ? "Online · Leads ON" : "Offline · Leads OFF"}
-            </p>
-            <p className="text-[10px] text-slate-500 truncate">
-              {vendor?.is_online ? "Nearby requests aur ring alerts receive honge" : "Broadcast engine aapko skip karega"}
-            </p>
-          </div>
-          <span
-            role="switch"
-            aria-checked={!!vendor?.is_online}
-            className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.is_online ? "bg-emerald-500" : "bg-amber-400"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.is_online ? "translate-x-5" : ""}`} />
-          </span>
-        </button>
 
-        {/* Auto / Manual accept toggle */}
-        <button
-          type="button"
-          onClick={toggleAutoAccept}
-          className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
-        >
-          <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.auto_accept_leads ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-            <Zap className="h-5 w-5" fill={vendor?.auto_accept_leads ? "currentColor" : "none"} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Lead Acceptance</p>
-            <p className="text-sm font-display font-bold text-slate-800 leading-tight">
-              {vendor?.auto_accept_leads ? "Auto Accept · ON" : "Manual Accept"}
-            </p>
-            <p className="text-[10px] text-slate-500 truncate">
-              {vendor?.auto_accept_leads ? "Har naya lead automatic accept ho raha hai" : "Naye lead pe pop-up aayega — aap accept karein"}
-            </p>
-          </div>
-          <span
-            role="switch"
-            aria-checked={!!vendor?.auto_accept_leads}
-            className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.auto_accept_leads ? "bg-emerald-500" : "bg-slate-300"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.auto_accept_leads ? "translate-x-5" : ""}`} />
-          </span>
-        </button>
-
-        {/* Operation Mode toggle — Static (shop address) vs Dynamic (live GPS) */}
-        {(() => {
-          const isDynamic = vendor?.operation_mode === "dynamic";
-          return (
-            <button
-              type="button"
-              onClick={toggleOperationMode}
-              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
-            >
-              <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
-                {savingMode ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:oklch(0.55_0.10_82)] font-bold">Location Mode</p>
-                <p className="text-sm font-display font-bold text-slate-800 leading-tight">
-                  {isDynamic ? "Live GPS · Dynamic" : "Shop Address · Static"}
-                </p>
-                <p className="text-[10px] text-slate-500 truncate">
-                  {isDynamic ? "Aap jahan honge wahin se leads milengi (multi-city)" : "Registered shop address se hi leads milengi"}
-                </p>
-              </div>
-              <span
-                role="switch"
-                aria-checked={isDynamic}
-                className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${isDynamic ? "bg-sky-500" : "bg-slate-300"}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${isDynamic ? "translate-x-5" : ""}`} />
-              </span>
-            </button>
-          );
-        })()}
-
-        {/* Service radius slider — vendor side cap */}
-        <div className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 shadow-sm">
-          <RadiusSlider
-            value={vendor?.service_radius_km ?? 10}
-            onChange={updateServiceRadius}
-            label={`Service radius${savingRadius ? " · saving…" : ""}`}
-          />
-          <p className="text-[10px] text-slate-500 mt-2 leading-snug">
-            Aapko sirf iss radius ke andar wale leads milenge. Unlimited (∞) = poora area cover.
-          </p>
-        </div>
 
 
 
@@ -750,6 +679,16 @@ function VendorDashboard() {
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorQuickActionsSheet
+        open={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        vendor={vendor}
+        saving={{ online: savingOnline, auto: savingAuto, mode: savingMode, radius: savingRadius }}
+        onToggleOnline={toggleOnline}
+        onToggleAuto={toggleAutoAccept}
+        onToggleMode={toggleOperationMode}
+        onRadius={updateServiceRadius}
+      />
       <VendorLeadDetailSheet
         open={!!detailLeadId}
         lead={leads.find((l) => l.id === detailLeadId) ?? null}
@@ -760,6 +699,32 @@ function VendorDashboard() {
     </div>
   );
 }
+
+function VendorMapHero({ lat, lng, avatarUrl, businessName }: { lat: number; lng: number; avatarUrl: string | null; businessName: string }) {
+  return (
+    <div className="relative h-full w-full">
+      <MapView
+        center={{ lat, lng }}
+        zoom={14}
+        height="100%"
+        showUserDot={false}
+        markers={[]}
+      />
+      {/* Center vendor pin overlay */}
+      <div className="pointer-events-none absolute inset-0 grid place-items-center">
+        <div className="relative -translate-y-2 flex flex-col items-center" style={{ animation: "float-y 3.5s ease-in-out infinite" }}>
+          <div className="h-14 w-14 rounded-full overflow-hidden border-[3px] shadow-[0_8px_22px_-4px_rgba(212,175,55,0.7)]" style={{ borderColor: "#d4af37", background: "#fff" }}>
+            <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div className="mt-1 px-2.5 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] shadow whitespace-nowrap max-w-[180px] truncate">
+            📍 {businessName}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function StatCell({ value, label, active }: { value: number; label: string; active?: boolean }) {
   return (
