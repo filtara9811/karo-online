@@ -61,12 +61,8 @@ export function VendorQuickActionsSheet({
 
         <div className="space-y-3">
           {/* Online toggle */}
-          <button
-            type="button"
-            onClick={onToggleOnline}
-            className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.99] text-left"
-          >
-            <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+          <div className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)]">
+            <span className={`h-10 w-10 rounded-full grid place-items-center transition-colors ${vendor?.is_online ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
               {saving.online ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
             </span>
             <div className="flex-1 min-w-0">
@@ -78,22 +74,25 @@ export function VendorQuickActionsSheet({
                 {vendor?.is_online ? "Nearby requests aur ring alerts on hain" : "Broadcast engine aapko skip karega"}
               </p>
             </div>
-            <span
+            <button
+              type="button"
+              onClick={onToggleOnline}
               role="switch"
               aria-checked={!!vendor?.is_online}
-              className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.is_online ? "bg-emerald-500" : "bg-amber-400"}`}
+              aria-label="Vendor online status"
+              disabled={saving.online}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${vendor?.is_online ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.is_online ? "translate-x-5" : ""}`} />
-            </span>
-          </button>
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${vendor?.is_online ? "left-9" : "left-1"}`} />
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${vendor?.is_online ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {vendor?.is_online ? "ON" : "OFF"}
+              </span>
+            </button>
+          </div>
 
           {/* Auto accept */}
-          <button
-            type="button"
-            onClick={onToggleAuto}
-            className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.99] text-left"
-          >
-            <span className={`h-10 w-10 rounded-full grid place-items-center ${vendor?.auto_accept_leads ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+          <div className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)]">
+            <span className={`h-10 w-10 rounded-full grid place-items-center transition-colors ${vendor?.auto_accept_leads ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
               {saving.auto ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" fill={vendor?.auto_accept_leads ? "currentColor" : "none"} />}
             </span>
             <div className="flex-1 min-w-0">
@@ -105,22 +104,25 @@ export function VendorQuickActionsSheet({
                 {vendor?.auto_accept_leads ? "Har naya lead automatic accept ho raha hai" : "Naye lead pe pop-up aayega — aap accept karein"}
               </p>
             </div>
-            <span
+            <button
+              type="button"
+              onClick={onToggleAuto}
               role="switch"
               aria-checked={!!vendor?.auto_accept_leads}
-              className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${vendor?.auto_accept_leads ? "bg-emerald-500" : "bg-slate-300"}`}
+              aria-label="Auto accept leads"
+              disabled={saving.auto}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${vendor?.auto_accept_leads ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${vendor?.auto_accept_leads ? "translate-x-5" : ""}`} />
-            </span>
-          </button>
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${vendor?.auto_accept_leads ? "left-9" : "left-1"}`} />
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${vendor?.auto_accept_leads ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {vendor?.auto_accept_leads ? "ON" : "OFF"}
+              </span>
+            </button>
+          </div>
 
           {/* Mode */}
-          <button
-            type="button"
-            onClick={onToggleMode}
-            className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)] active:scale-[0.99] text-left"
-          >
-            <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"}`}>
+          <div className="w-full rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)]">
+            <span className={`h-10 w-10 rounded-full grid place-items-center transition-colors ${isDynamic ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
               {saving.mode ? <Loader2 className="h-5 w-5 animate-spin" /> : <MapPin className="h-5 w-5" />}
             </span>
             <div className="flex-1 min-w-0">
@@ -132,14 +134,21 @@ export function VendorQuickActionsSheet({
                 {isDynamic ? "Aap jahan honge wahin se leads milengi" : "Registered shop address se hi leads milengi"}
               </p>
             </div>
-            <span
+            <button
+              type="button"
+              onClick={onToggleMode}
               role="switch"
               aria-checked={isDynamic}
-              className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${isDynamic ? "bg-sky-500" : "bg-slate-300"}`}
+              aria-label="Location mode"
+              disabled={saving.mode}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${isDynamic ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${isDynamic ? "translate-x-5" : ""}`} />
-            </span>
-          </button>
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${isDynamic ? "left-9" : "left-1"}`} />
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${isDynamic ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {isDynamic ? "ON" : "OFF"}
+              </span>
+            </button>
+          </div>
 
           {/* Radius */}
           <div className="rounded-2xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.45)] p-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.4)]">
