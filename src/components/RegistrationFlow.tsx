@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X, Pencil,
+  Mail, ChevronDown, Volume2, VolumeX, Play, Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
@@ -14,26 +15,30 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { checkTestAccountPhone, finalizeCustomerRegistration, sendOtp, verifyOtp } from "@/lib/otp.functions";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 export const CUSTOMER_ONBOARDED_KEY = "ko-customer-onboarded";
-const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v5";
+const CUSTOMER_DRAFT_KEY = "ko-customer-registration-draft-v6";
 const STALE_CUSTOMER_DRAFT_KEYS = [
   "ko-customer-registration-draft",
   "ko-customer-registration-draft-v1",
   "ko-customer-registration-draft-v2",
   "ko-customer-registration-draft-v3",
   "ko-customer-registration-draft-v4",
+  "ko-customer-registration-draft-v5",
 ];
 
 type CustomerDraft = {
   step?: Step;
   gender?: string | null;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   phone?: string;
   referral?: string;
 };
 
-const normalizeStep = (value: unknown): Step => (value === 1 || value === 2 || value === 3 ? value : 1);
+const normalizeStep = (value: unknown): Step =>
+  (value === 1 || value === 2 || value === 3 || value === 4 ? value : 1);
 
 // ── Hindi voice prompts ───────────────────────────────────────────────
 let __voicesPrimed = false;
@@ -44,7 +49,6 @@ const primeVoices = () => {
 };
 const speakHi = (text: string) => {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
-  // Respect global mute toggle set from splash / OTP screen.
   try { if (localStorage.getItem("ko-tts-muted") === "1") return; } catch { /* */ }
   try {
     primeVoices();
@@ -63,6 +67,7 @@ const STEP_VOICE: Record<Step, string> = {
   1: "अपना मोबाइल नंबर दर्ज करें",
   2: "अपना ओटीपी दर्ज करें",
   3: "रजिस्टर पेज, अपनी बेसिक डिटेल्स भरें",
+  4: "वीडियो देखें और प्राइवेसी पॉलिसी स्वीकार करें",
 };
 
 const clearStaleCustomerDrafts = () => {
@@ -89,12 +94,14 @@ const GENDER_CHIPS: { value: string; label: string; icon: string }[] = [
   { value: "other", label: "Other", icon: goldOther },
 ];
 
+const genderLabel = (v: string | null) =>
+  GENDER_CHIPS.find((g) => g.value === v)?.label ?? "";
+
 export type RegistrationFlowProps = {
   transparent?: boolean;
   hideBack?: boolean;
   onBack?: () => void;
   onComplete?: () => void;
-  /** "vendor" enables vendor-claim-by-phone fast path + skips /quick navigation. */
   flow?: "customer" | "vendor";
 };
 
@@ -127,9 +134,13 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const [phone, setPhone] = useState(draft.phone ?? "");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [gender, setGender] = useState<string | null>(draft.gender ?? null);
-  const [name, setName] = useState(draft.name ?? "");
+  const [firstName, setFirstName] = useState(draft.firstName ?? "");
+  const [lastName, setLastName] = useState(draft.lastName ?? "");
+  const [email, setEmail] = useState(draft.email ?? "");
   const [referral, setReferral] = useState<string>(initialRef.code || draft.referral || "");
   const referralLocked = initialRef.locked && !!initialRef.code;
+
+  const [genderSheetOpen, setGenderSheetOpen] = useState(false);
 
   const [otp, setOtp] = useState("");
   const [otpSeconds, setOtpSeconds] = useState(45);
@@ -149,11 +160,18 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const checkTestAccountPhoneFn = useServerFn(checkTestAccountPhone);
   const finalizeCustomerFn = useServerFn(finalizeCustomerRegistration);
 
-  // Prefill name from session
+  // Prefill from session
   useEffect(() => {
-    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const meta = user?.user_metadata as { full_name?: string; name?: string; first_name?: string; last_name?: string } | undefined;
+    if (meta?.first_name && !firstName) setFirstName(meta.first_name);
+    if (meta?.last_name && !lastName) setLastName(meta.last_name);
     const metaName = meta?.full_name || meta?.name;
-    if (metaName && !name) setName(metaName);
+    if (metaName && !firstName && !lastName) {
+      const parts = metaName.split(" ");
+      setFirstName(parts[0] || "");
+      setLastName(parts.slice(1).join(" ") || "");
+    }
+    if (user?.email && !email) setEmail(user.email);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -161,9 +179,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify({
-      step, gender, name, phone, referral,
+      step, gender, firstName, lastName, email, phone, referral,
     }));
-  }, [step, gender, name, phone, referral]);
+  }, [step, gender, firstName, lastName, email, phone, referral]);
 
   // OTP timer
   useEffect(() => {
@@ -172,7 +190,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     return () => clearTimeout(t);
   }, [step, otpSeconds]);
 
-  // Hindi voice prompt per step (gated until first user gesture)
+  // Hindi voice prompt per step
   const spokenSteps = useRef<Set<Step>>(new Set());
   useEffect(() => {
     const fire = () => {
@@ -180,7 +198,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       spokenSteps.current.add(step);
       speakHi(STEP_VOICE[step]);
     };
-    // try immediately; if blocked (no gesture yet), fire on first interaction
     const t = setTimeout(fire, 250);
     const onGesture = () => { fire(); cleanup(); };
     const cleanup = () => {
@@ -194,7 +211,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const goNext = (target: Step) => setStep(target);
 
-  // Normal users verify manually; enabled admin test accounts auto-fill and auto-verify.
   useEffect(() => {
     if (step !== 1) return;
     if (phoneDigits.length !== 10) {
@@ -215,8 +231,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       window.clearTimeout(t);
     };
   }, [step, phoneDigits, checkTestAccountPhoneFn]);
-
-
 
   const handleSendOtp = async (digits: string) => {
     if (otpSendInFlightRef.current) return;
@@ -269,8 +283,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtp("");
         return;
       }
-      // Vendor flow: relink existing vendor row to current auth user (handles
-      // duplicate-auth-identity case) and skip the customer name/gender step.
       if (flow === "vendor") {
         try {
           const { data: v } = await supabase.rpc("vendor_claim_by_phone", { _phone: phone });
@@ -284,16 +296,17 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
           }
         } catch (e) { console.warn("[vendor_claim_by_phone]", e); }
       }
-      // Lookup existing customer by phone
       try {
         const { data, error } = await supabase.rpc("lookup_customer_by_phone", { _phone: phone });
         if (!error && data && data.length > 0) {
           const row = data[0] as { name: string | null; gender: string | null };
           if (row.name) {
-            setName(row.name);
+            const parts = (row.name || "").trim().split(" ");
+            setFirstName(parts[0] || "");
+            setLastName(parts.slice(1).join(" ") || "");
             if (row.gender) setGender(row.gender);
             toast.success(`Welcome back, ${row.name}`);
-            await finalizeNow({ name: row.name, gender: row.gender ?? "" });
+            await finalizeNow({ name: row.name, gender: row.gender ?? "", email });
             return;
           }
         }
@@ -308,7 +321,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     const digits = phone.replace(/\D/g, "").slice(-10);
     setOtp("");
     setTestOtpCode(null);
-      setIsTestNumber(false);
+    setIsTestNumber(false);
     setOtpSeconds(45);
     handleSendOtp(digits);
   };
@@ -321,15 +334,16 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     } catch { /* permission denied */ }
   };
 
-  const finalizeNow = async (override?: { name: string; gender: string }) => {
+  const finalizeNow = async (override?: { name: string; gender: string; email: string }) => {
     if (finalizing) return;
     setFinalizing(true);
     try {
+      const fullName = override?.name ?? `${firstName.trim()} ${lastName.trim()}`.trim();
       const payload = {
-        name: (override?.name ?? name).trim(),
+        name: fullName,
         gender: override?.gender ?? gender ?? "",
         phone,
-        email: "",
+        email: (override?.email ?? email ?? "").trim(),
         address: "",
       };
       try {
@@ -338,7 +352,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
             _name: payload.name,
             _gender: payload.gender,
             _phone: payload.phone,
-            _email: user.email || "",
+            _email: payload.email || user.email || "",
             _address: "",
           });
           if (error) {
@@ -372,7 +386,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         toast.error((err as Error)?.message || "Sign up fail hua, dobara try karein");
         return;
       }
-      // Apply referral
       try {
         if (referral && referral.trim()) {
           window.localStorage.setItem("ko-pending-referral-code", referral.trim().toUpperCase());
@@ -381,8 +394,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         await applyPendingReferralCode();
       } catch (err) { console.error("apply referral error", err); }
 
-      toast.success(`Thank you for login, ${payload.name}`);
-      setSuccessOpen(true);
+      toast.success(`Registered — ${payload.name}`);
+      // If invoked via auto-finalize on lookup (override), go straight to success.
+      // Otherwise, advance to the welcome video step.
+      if (override) {
+        setSuccessOpen(true);
+      } else {
+        goNext(4);
+      }
     } finally {
       setFinalizing(false);
     }
@@ -391,7 +410,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const handleSuccessHome = () => {
     setSuccessOpen(false);
     onComplete?.();
-    // Customer flow falls back to /quick; vendor flow's onComplete navigates itself.
     if (flow !== "vendor") {
       try { navigate({ to: "/quick" }); } catch { /* ignore */ }
     }
@@ -428,7 +446,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
           <div className="px-5 pt-1 flex items-center justify-center">
             <div className="flex items-center gap-1.5">
-              {[1, 2, 3].map((n) => (
+              {[1, 2, 3, 4].map((n) => (
                 <span
                   key={n}
                   className={`h-1.5 rounded-full transition-all ${
@@ -441,7 +459,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
             </div>
           </div>
           <p className="mt-1 text-center text-[10px] uppercase tracking-[0.35em] text-[color:oklch(0.50_0.10_82)] font-semibold">
-            Step {step} / 3
+            Step {step} / 4
           </p>
 
           <div className="px-6 pb-8 pt-3 min-h-[320px] relative overflow-hidden">
@@ -489,15 +507,24 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                 )}
                 {step === 3 && (
                   <ProfileStep
-                    name={name}
+                    firstName={firstName}
+                    lastName={lastName}
+                    email={email}
                     gender={gender}
                     referral={referral}
                     referralLocked={referralLocked}
-                    onName={setName}
-                    onGender={setGender}
+                    onFirstName={setFirstName}
+                    onLastName={setLastName}
+                    onEmail={setEmail}
+                    onOpenGender={() => setGenderSheetOpen(true)}
                     onReferral={setReferral}
                     submitting={finalizing}
                     onSubmit={() => finalizeNow()}
+                  />
+                )}
+                {step === 4 && (
+                  <WelcomeVideoStep
+                    onDone={() => setSuccessOpen(true)}
                   />
                 )}
               </motion.div>
@@ -506,9 +533,20 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         </div>
       </motion.section>
 
+      {/* Gender bottom sheet */}
+      <AnimatePresence>
+        {genderSheetOpen && (
+          <GenderSheet
+            value={gender}
+            onSelect={(v) => { setGender(v); setGenderSheetOpen(false); }}
+            onClose={() => setGenderSheetOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <SuccessOverlay
         open={successOpen}
-        name={name}
+        name={`${firstName} ${lastName}`.trim() || "Friend"}
         ctaLabel="Go to Home"
         autoClose
         onDone={handleSuccessHome}
@@ -553,6 +591,7 @@ function StepHeader({ Icon, title, subtitle }: { Icon: React.ComponentType<{ cla
 function NextButton({ disabled, label = "Next", onClick, icon = true }: { disabled?: boolean; label?: string; onClick: () => void; icon?: boolean }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className="mt-6 w-full rounded-2xl py-4 font-display text-lg font-bold text-[color:oklch(0.18_0.06_18)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:grayscale active:scale-[0.98] transition-transform"
@@ -567,12 +606,14 @@ function NextButton({ disabled, label = "Next", onClick, icon = true }: { disabl
   );
 }
 
-function FieldShell({ Icon, children }: { Icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+function FieldShell({ Icon, children }: { Icon?: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-white/85 px-4 py-3.5 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)]">
-      <span className="h-9 w-9 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
-        <Icon className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
-      </span>
+      {Icon && (
+        <span className="h-9 w-9 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
+          <Icon className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+        </span>
+      )}
       {children}
     </div>
   );
@@ -652,13 +693,13 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 320);
   }, []);
-  // Support both 4-digit (standard) and 6-digit (admin-configured test accounts) OTPs.
   const boxCount = otp.length > 4 ? 6 : 4;
   const ready = (otp.length === 4 || otp.length === 6) && !verifying;
   return (
     <div>
       <StepHeader Icon={KeyRound} title="Enter OTP" subtitle={isTestNumber ? "Test number · auto verification" : "Auto-detect or paste from SMS"} />
       <button
+        type="button"
         onClick={onEdit}
         disabled={verifying}
         aria-label="Edit mobile number"
@@ -715,6 +756,7 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
 
       <div className="mt-5 flex items-center justify-between text-xs">
         <button
+          type="button"
           onClick={onResend}
           disabled={seconds > 0}
           className="text-[color:oklch(0.45_0.10_82)] underline disabled:opacity-50 disabled:no-underline"
@@ -722,6 +764,7 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
           Resend OTP
         </button>
         <button
+          type="button"
           onClick={onPaste}
           disabled={verifying}
           className="text-[color:oklch(0.45_0.10_82)] underline"
@@ -744,78 +787,112 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
 }
 
 // ============================================================
-// Step 3: Name + Gender + Referral (single screen) → Sign Up
+// Step 3: Registered page (first/last name, email, gender sheet, referral)
 // ============================================================
 function ProfileStep({
-  name, gender, referral, referralLocked,
-  onName, onGender, onReferral,
+  firstName, lastName, email, gender, referral, referralLocked,
+  onFirstName, onLastName, onEmail, onOpenGender, onReferral,
   submitting, onSubmit,
 }: {
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   gender: string | null;
   referral: string;
   referralLocked: boolean;
-  onName: (v: string) => void;
-  onGender: (v: string) => void;
+  onFirstName: (v: string) => void;
+  onLastName: (v: string) => void;
+  onEmail: (v: string) => void;
+  onOpenGender: () => void;
   onReferral: (v: string) => void;
   submitting: boolean;
   onSubmit: () => void;
 }) {
-  const ref = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 320); }, []);
+  const fnameRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => { setTimeout(() => fnameRef.current?.focus(), 320); }, []);
 
-  const ready = !!name.trim() && !!gender;
+  const emailValid = !email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const ready = !!firstName.trim() && !!lastName.trim() && !!gender && emailValid && !!email.trim();
 
   return (
     <div>
-      <StepHeader Icon={UserCircle2} title="Almost done" subtitle="Name, gender — that's it" />
+      <StepHeader Icon={UserCircle2} title="Registered page" subtitle="Apni basic details bharein" />
 
-      <FieldShell Icon={UserCircle2}>
-        <input
-          ref={ref}
-          value={name}
-          onChange={(e) => onName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && ready) onSubmit(); }}
-          inputMode="text"
-          autoCapitalize="words"
-          autoComplete="name"
-          placeholder="Your full name"
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)]"
-        />
-      </FieldShell>
-
-      {/* Gender chips inline */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {GENDER_CHIPS.map((g) => (
-          <button
-            key={g.value}
-            onClick={() => onGender(g.value)}
-            className={`flex flex-col items-center gap-1 rounded-2xl border-2 px-2 py-3 transition-all active:scale-[0.97] ${
-              gender === g.value
-                ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]"
-                : "border-[color:oklch(0.78_0.14_82/0.4)] bg-white/85"
-            }`}
-          >
-            <img src={g.icon} alt="" className="h-9 w-9 object-contain" />
-            <span className="text-[11px] font-display font-bold text-[color:oklch(0.30_0.10_82)]">{g.label}</span>
-          </button>
-        ))}
+      {/* First + Last name side by side */}
+      <div className="grid grid-cols-2 gap-2">
+        <FieldShell>
+          <input
+            ref={fnameRef}
+            value={firstName}
+            onChange={(e) => onFirstName(e.target.value)}
+            inputMode="text"
+            autoCapitalize="words"
+            autoComplete="given-name"
+            placeholder="First name"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+          />
+        </FieldShell>
+        <FieldShell>
+          <input
+            value={lastName}
+            onChange={(e) => onLastName(e.target.value)}
+            inputMode="text"
+            autoCapitalize="words"
+            autoComplete="family-name"
+            placeholder="Last name"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+          />
+        </FieldShell>
       </div>
 
-      {/* Referral — auto-locked if from invite, else editable */}
-      {referralLocked ? (
-        <div className="mt-4 rounded-2xl border-2 border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] px-4 py-3 flex items-center gap-3 shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]">
-          <span className="h-9 w-9 rounded-full grid place-items-center bg-white/70">
-            <Gift className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+      {/* Email */}
+      <div className="mt-2.5">
+        <FieldShell Icon={Mail}>
+          <input
+            value={email}
+            onChange={(e) => onEmail(e.target.value)}
+            inputMode="email"
+            autoComplete="email"
+            placeholder="Enter gmail account"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+          />
+        </FieldShell>
+        {email.trim() && !emailValid && (
+          <p className="mt-1 text-[11px] text-red-600 pl-2">Valid email enter karein</p>
+        )}
+      </div>
+
+      {/* Gender trigger → opens bottom sheet */}
+      <div className="mt-2.5">
+        <button
+          type="button"
+          onClick={onOpenGender}
+          className="w-full rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-white/85 px-4 py-3.5 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] active:scale-[0.99] transition"
+        >
+          <span className="h-9 w-9 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
+            <UserCircle2 className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
           </span>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.10_82)] font-semibold">Referral applied</div>
-            <div className="font-display text-base font-bold text-[color:oklch(0.28_0.06_85)] truncate">{referral}</div>
+          <span className={`flex-1 min-w-0 text-left text-base font-semibold ${gender ? "text-[color:oklch(0.28_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
+            {gender ? genderLabel(gender) : "Select gender"}
+          </span>
+          <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
+        </button>
+      </div>
+
+      {/* Referral */}
+      <div className="mt-2.5">
+        {referralLocked ? (
+          <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] px-4 py-3 flex items-center gap-3 shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]">
+            <span className="h-9 w-9 rounded-full grid place-items-center bg-white/70">
+              <Gift className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.10_82)] font-semibold">Referral applied</div>
+              <div className="font-display text-base font-bold text-[color:oklch(0.28_0.06_85)] truncate">{referral}</div>
+            </div>
+            <ShieldCheck className="h-5 w-5 text-emerald-700" />
           </div>
-          <ShieldCheck className="h-5 w-5 text-emerald-700" />
-        </div>
-      ) : (
-        <div className="mt-4">
+        ) : (
           <FieldShell Icon={Gift}>
             <input
               value={referral}
@@ -823,13 +900,255 @@ function ProfileStep({
               inputMode="text"
               autoCapitalize="characters"
               placeholder="Referral code (optional)"
-              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] uppercase tracking-wider"
+              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
             />
           </FieldShell>
-        </div>
-      )}
+        )}
+      </div>
 
-      <NextButton disabled={!ready || submitting} label={submitting ? "Signing in…" : "Sign Up"} icon={false} onClick={onSubmit} />
+      <NextButton disabled={!ready || submitting} label={submitting ? "Registering…" : "Registered"} icon={false} onClick={onSubmit} />
+    </div>
+  );
+}
+
+// ============================================================
+// Step 4: Welcome video + privacy + Thank you
+// ============================================================
+function WelcomeVideoStep({ onDone }: { onDone: () => void }) {
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [agreed, setAgreed] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "welcome_video")
+          .maybeSingle();
+        if (cancelled) return;
+        const v = (data?.value ?? {}) as { video_url?: string; message?: string };
+        setVideoUrl(v.video_url ?? "");
+        setMessage(v.message ?? "Welcome to Karo Online — let's get started!");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const togglePlay = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (el.paused) { el.play().catch(() => { /* ignore */ }); setPlaying(true); }
+    else { el.pause(); setPlaying(false); }
+  };
+
+  const toggleMute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = !el.muted;
+    setMuted(el.muted);
+  };
+
+  const onTimeUpdate = () => {
+    const el = videoRef.current;
+    if (!el || !el.duration) return;
+    setProgress(Math.min(100, (el.currentTime / el.duration) * 100));
+  };
+
+  return (
+    <div>
+      <div className="mb-3 text-center">
+        <h2
+          className="font-display text-xl font-bold text-gold-gradient"
+          style={{ textDecoration: "underline", textDecorationColor: "rgba(212,175,55,0.55)", textUnderlineOffset: 4 }}
+        >
+          Welcome aboard
+        </h2>
+        {message && <p className="text-[11px] text-[color:oklch(0.50_0.08_85)] mt-1 italic">{message}</p>}
+      </div>
+
+      {/* Video card */}
+      <div
+        className="relative aspect-[9/12] w-full rounded-2xl overflow-hidden bg-black/85"
+        style={{ boxShadow: "0 12px 30px -10px rgba(212,175,55,0.45)" }}
+      >
+        {loading ? (
+          <div className="absolute inset-0 grid place-items-center text-[#f5d97a] text-xs">Loading…</div>
+        ) : videoUrl ? (
+          <>
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              playsInline
+              muted={muted}
+              onTimeUpdate={onTimeUpdate}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onEnded={() => setPlaying(false)}
+              className="h-full w-full object-cover"
+            />
+            {!playing && (
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="absolute inset-0 grid place-items-center bg-black/30 active:bg-black/40"
+                aria-label="Play"
+              >
+                <span className="h-16 w-16 rounded-full bg-white/85 grid place-items-center shadow-lg">
+                  <Play className="h-7 w-7 text-[color:oklch(0.30_0.10_82)] fill-current ml-1" />
+                </span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute" : "Mute"}
+              className="absolute top-2 right-2 h-9 w-9 rounded-full bg-black/45 backdrop-blur grid place-items-center text-white active:scale-95"
+            >
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
+          </>
+        ) : (
+          // Graceful fallback when no welcome video is configured
+          <div
+            className="absolute inset-0 grid place-items-center text-center px-6"
+            style={{
+              background: "linear-gradient(160deg,#fff8dc 0%,#f5d97a 55%,#d4af37 100%)",
+            }}
+          >
+            <div>
+              <p className="font-display text-2xl font-bold text-[color:oklch(0.22_0.10_82)]">
+                Welcome to Karo Online
+              </p>
+              <p className="mt-2 text-xs text-[color:oklch(0.32_0.10_82)] italic">
+                Your premium services partner
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-3 h-1.5 w-full rounded-full bg-[color:oklch(0.78_0.14_82/0.25)] overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-[#d4af37] to-[#8b6508] transition-all"
+          style={{ width: `${videoUrl ? progress : 100}%` }}
+        />
+      </div>
+
+      {/* Privacy policy checkbox */}
+      <label className="mt-4 flex items-start gap-3 cursor-pointer select-none">
+        <span
+          className={`mt-0.5 h-5 w-5 shrink-0 rounded-md border-2 grid place-items-center transition ${
+            agreed
+              ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#8b6508]"
+              : "border-[color:oklch(0.78_0.14_82)] bg-white"
+          }`}
+          onClick={() => setAgreed((v) => !v)}
+        >
+          {agreed && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+        </span>
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="sr-only"
+        />
+        <span className="text-[12px] text-[color:oklch(0.32_0.08_85)] font-medium leading-snug">
+          I agree to the <span className="underline text-[color:oklch(0.42_0.12_82)]">privacy policy</span> &amp; <span className="underline text-[color:oklch(0.42_0.12_82)]">terms</span>
+        </span>
+      </label>
+
+      <NextButton
+        disabled={!agreed}
+        label="Thank you"
+        icon={false}
+        onClick={onDone}
+      />
+    </div>
+  );
+}
+
+// ============================================================
+// Gender bottom sheet
+// ============================================================
+function GenderSheet({ value, onSelect, onClose }: {
+  value: string | null;
+  onSelect: (v: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", stiffness: 300, damping: 32 }}
+        className="absolute inset-x-0 bottom-0 mx-auto max-w-md"
+      >
+        <div
+          className="rounded-t-[28px] overflow-hidden"
+          style={{
+            background: "linear-gradient(180deg,#fffdf5 0%,#fbf3d9 100%)",
+            boxShadow: "0 -22px 60px -16px rgba(212,175,55,0.55)",
+          }}
+        >
+          <div className="pt-3 pb-1 grid place-items-center">
+            <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
+          </div>
+          <div className="px-6 pt-3 pb-2 flex items-center justify-between">
+            <h3 className="font-display text-lg font-bold text-gold-gradient">Select gender</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="h-8 w-8 rounded-full grid place-items-center bg-white/70 active:scale-95"
+            >
+              <X className="h-4 w-4 text-[color:oklch(0.45_0.10_82)]" />
+            </button>
+          </div>
+          <div className="px-6 pb-7 pt-2 space-y-2">
+            {GENDER_CHIPS.map((g) => {
+              const active = value === g.value;
+              return (
+                <button
+                  type="button"
+                  key={g.value}
+                  onClick={() => onSelect(g.value)}
+                  className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-3 transition active:scale-[0.99] ${
+                    active
+                      ? "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]"
+                      : "border-[color:oklch(0.78_0.14_82/0.4)] bg-white/85"
+                  }`}
+                >
+                  <img src={g.icon} alt="" className="h-10 w-10 object-contain" />
+                  <span className="flex-1 text-left font-display text-base font-bold text-[color:oklch(0.30_0.10_82)]">
+                    {g.label}
+                  </span>
+                  {active && <Check className="h-5 w-5 text-emerald-700" strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
