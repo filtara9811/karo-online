@@ -329,7 +329,7 @@ function VendorDashboard() {
   };
 
   const toggleOperationMode = async () => {
-    if (!user || savingMode) return;
+    if (!user) return;
     haptic();
     const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
     const next = current === "dynamic" ? "static" : "dynamic";
