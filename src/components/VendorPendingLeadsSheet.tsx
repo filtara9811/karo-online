@@ -227,7 +227,10 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+            <div
+              className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5"
+              style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
+            >
               {loading ? (
                 <div className="grid place-items-center py-16 text-sm text-amber-900/60">Loading…</div>
               ) : (
