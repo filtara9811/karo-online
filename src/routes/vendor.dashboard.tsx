@@ -93,6 +93,10 @@ function VendorDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [profileFinderOpen, setProfileFinderOpen] = useState(false);
+  const [needCategories, setNeedCategories] = useState<NeedCategory[]>([]);
+  const [loadingNeeds, setLoadingNeeds] = useState(false);
+  const [findingNeedId, setFindingNeedId] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
@@ -110,6 +114,36 @@ function VendorDashboard() {
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
   }, [user]);
+
+  const loadNeedCategories = async () => {
+    if (!user) return;
+    setLoadingNeeds(true);
+    const { data: mappings } = await supabase
+      .from("vendor_item_mappings")
+      .select("item_id, catalog_items(category_id)")
+      .eq("vendor_id", user.id)
+      .eq("is_active", true)
+      .limit(80);
+    const subIds = Array.from(new Set((mappings ?? []).map((m: any) => m.catalog_items?.category_id).filter(Boolean)));
+    if (!subIds.length) {
+      setNeedCategories([]);
+      setLoadingNeeds(false);
+      return;
+    }
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("id, name, image_url, lead_price_inr")
+      .in("id", subIds)
+      .eq("is_active", true)
+      .order("name");
+    const counts = new Map<string, number>();
+    (mappings ?? []).forEach((m: any) => {
+      const cid = m.catalog_items?.category_id;
+      if (cid) counts.set(cid, (counts.get(cid) ?? 0) + 1);
+    });
+    setNeedCategories(((cats ?? []) as any[]).map((c) => ({ ...c, enabled: counts.get(c.id) ?? 0 })));
+    setLoadingNeeds(false);
+  };
 
   // Load REAL leads for this vendor: only the ones the vendor has STARTED WORK on.
   // (Auto-accept sets vendor_started_at = now() in accept_lead; manual must press "Start Work")
