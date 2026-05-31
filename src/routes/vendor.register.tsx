@@ -188,7 +188,7 @@ function VendorRegister() {
         setPan((data as any).pan ?? "");
         setGst((data as any).gst ?? "");
         // Cache for next opens
-        try { sessionStorage.setItem(`vendor:registered:${user.id}`, "1"); } catch {}
+        try { localStorage.setItem(`vendor:registered:${user.id}`, "1"); sessionStorage.setItem(`vendor:registered:${user.id}`, "1"); } catch {}
         if (!editMode) {
           navigate({ to: "/vendor/dashboard" });
           return;
