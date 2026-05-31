@@ -240,7 +240,7 @@ function VendorDashboard() {
 
 
   const toggleAutoAccept = async () => {
-    if (!user || savingAuto) return;
+    if (!user) return;
     const next = !vendor?.auto_accept_leads;
     setSavingAuto(true);
     setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
