@@ -259,6 +259,31 @@ function VendorDashboard() {
 
   const haptic = () => { try { navigator.vibrate?.(18); } catch {} };
 
+  const getFreshGps = () => new Promise<{ lat: number; lng: number } | null>((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  });
+
+  useEffect(() => {
+    if (!user || !vendor?.is_online || vendor.operation_mode !== "dynamic") return;
+    if (vendor.live_lat != null && vendor.live_lng != null) return;
+    let cancelled = false;
+    (async () => {
+      const gps = await getFreshGps();
+      if (!gps || cancelled) return;
+      const { error } = await supabase
+        .from("vendors")
+        .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor.lat ?? gps.lat, lng: vendor.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+      if (!error && !cancelled) setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
+    })();
+    return () => { cancelled = true; };
+  }, [user, vendor?.is_online, vendor?.operation_mode, vendor?.live_lat, vendor?.live_lng]);
+
   const toggleOnline = async () => {
     if (!user || savingOnline) return;
     haptic();
@@ -266,13 +291,16 @@ function VendorDashboard() {
     const next = !prev;
     setSavingOnline(true);
     setVendor((p) => (p ? { ...p, is_online: next } : p));
-    const seedLiveLocation = vendor?.operation_mode === "dynamic" && vendor?.lat != null && vendor?.lng != null && (vendor?.live_lat == null || vendor?.live_lng == null);
+    const gps = next && vendor?.operation_mode === "dynamic" ? await getFreshGps() : null;
+    const seedLat = gps?.lat ?? vendor?.lat ?? null;
+    const seedLng = gps?.lng ?? vendor?.lng ?? null;
+    const seedLiveLocation = next && vendor?.operation_mode === "dynamic" && seedLat != null && seedLng != null;
     const { data, error } = await supabase
       .from("vendors")
       .update({
         is_online: next,
         location_updated_at: next ? new Date().toISOString() : null,
-        ...(next && seedLiveLocation ? { live_lat: vendor.lat, live_lng: vendor.lng } : {}),
+        ...(seedLiveLocation ? { live_lat: seedLat, live_lng: seedLng, lat: vendor?.lat ?? seedLat, lng: vendor?.lng ?? seedLng } : {}),
       } as any)
       .eq("user_id", user.id)
       .select("is_online, live_lat, live_lng")
