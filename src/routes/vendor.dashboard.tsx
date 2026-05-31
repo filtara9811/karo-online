@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Wallet as WalletIcon,
   Loader2,
+  Handshake,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
@@ -32,8 +33,11 @@ import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
+import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
+import { MapView } from "@/components/MapView";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
+
 
 
 export const Route = createFileRoute("/vendor/dashboard")({
