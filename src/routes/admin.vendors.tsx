@@ -282,7 +282,7 @@ function VendorsPage() {
                   </div>
                 </div>
               </GoldCard>
-            </button>
+            </div>
           ))}
         </div>
       )}
