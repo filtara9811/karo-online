@@ -56,8 +56,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
-      { name: "theme-color", content: "#FFFFFF" },
-      { name: "background-color", content: "#FFFFFF" },
+      // Glass / translucent cream status bar — matches map background so it
+      // blends naturally with the page (true transparency requires native).
+      { name: "theme-color", content: "#F5EFE0" },
+      { name: "background-color", content: "#F5EFE0" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Karo Online" },

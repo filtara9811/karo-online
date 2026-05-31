@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { Store, Mail, Phone, ShieldCheck, Crown } from "lucide-react";
+import { Store, Mail, Phone, ShieldCheck, Crown, Trash2 } from "lucide-react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,6 +62,16 @@ function VendorsPage() {
     if (error) toast.error("Vendors load fail");
     else setRows((data as Vendor[]) ?? []);
     setLoading(false);
+  };
+
+  const deleteVendor = async (e: React.MouseEvent, v: Vendor) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm(`Delete vendor "${v.business_name || v.owner_name || v.id}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("vendors").delete().eq("id", v.id);
+    if (error) return toast.error(error.message);
+    toast.success("Vendor deleted");
+    setRows((rs) => rs.filter((r) => r.id !== v.id));
   };
 
   useEffect(() => {
@@ -159,14 +169,24 @@ function VendorsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((v) => (
-            <button
+            <div
               key={v.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => navigate({ to: "/admin/view/$userId", params: { userId: v.user_id } })}
-              className="block w-full text-left"
+              onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: "/admin/view/$userId", params: { userId: v.user_id } }); }}
+              className="block w-full text-left cursor-pointer"
             >
-              <GoldCard className="p-4">
-                <div className="flex items-start gap-3">
+              <GoldCard className="p-4 relative">
+                <button
+                  type="button"
+                  onClick={(e) => deleteVendor(e, v)}
+                  aria-label="Delete vendor"
+                  className="absolute top-2 right-2 z-10 p-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/25"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+                <div className="flex items-start gap-3 pr-8">
                   <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-[#d4af37]/40 flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center">
                     {v.avatar_url ? (
                       <img src={v.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -262,7 +282,7 @@ function VendorsPage() {
                   </div>
                 </div>
               </GoldCard>
-            </button>
+            </div>
           ))}
         </div>
       )}
