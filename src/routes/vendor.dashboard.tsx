@@ -421,7 +421,7 @@ function VendorDashboard() {
     setFindingNeedId(cat.id);
     toast.loading(`${cat.name} needs find ho rahi hain…`, { id: "vendor-need-find" });
     window.setTimeout(() => {
-      const matches = leads.filter((lead) => lead.service === cat.name || lead.items.some((item) => item.name === cat.name)).length;
+      const matches = leads.filter((lead) => lead.service === cat.name || (lead.items ?? []).some((item) => item.name === cat.name)).length;
       setFindingNeedId(null);
       toast.success(matches ? `${matches} matching customer need mili` : "Is category ki live customer need abhi nahi hai", { id: "vendor-need-find" });
       if (matches) setLeadsSheetOpen(true);
@@ -499,7 +499,7 @@ function VendorDashboard() {
       {/* Map hero with vendor pin in center */}
       <section className="relative">
         <div className="relative h-[240px] w-full overflow-hidden">
-          <VendorMapHero lat={vendorLat} lng={vendorLng} avatarUrl={vendor?.avatar_url ?? null} businessName={vendor?.business_name ?? "My Shop"} />
+          <VendorMapHero center={{ lat: vendorLat, lng: vendorLng }} vendors={vendorMapCards} businessName={vendor?.business_name ?? "My Shop"} />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
             {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
@@ -531,7 +531,7 @@ function VendorDashboard() {
             />
           </div>
           <button
-            onClick={() => setMenuOpen(true)}
+            onClick={openProfileFinder}
             aria-label="Open menu"
             className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0"
             style={{ borderColor: "#d4af37" }}
@@ -749,6 +749,16 @@ function VendorDashboard() {
         </div>
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
+      <VendorProfileFinderSheet
+        open={profileFinderOpen}
+        onClose={() => setProfileFinderOpen(false)}
+        vendorName={vendor?.business_name || "My Shop"}
+        categories={needCategories}
+        loading={loadingNeeds}
+        findingId={findingNeedId}
+        onFind={startNeedSearch}
+        onMenu={() => { setProfileFinderOpen(false); setMenuOpen(true); }}
+      />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
       <VendorQuickActionsSheet
         open={actionsOpen}
