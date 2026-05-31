@@ -87,14 +87,21 @@ export function VendorSideMenu({
             onClick={onClose}
           />
           <motion.aside
-            initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 32 }}
-            className="fixed top-0 left-0 bottom-0 z-[61] w-[86%] max-w-sm overflow-y-auto"
+            className="fixed left-0 right-0 bottom-0 z-[61] mx-auto w-full max-w-md overflow-y-auto rounded-t-3xl pb-[env(safe-area-inset-bottom)]"
             style={{
+              height: "90vh",
               background: "linear-gradient(180deg, #0a0a0a 0%, #04231a 60%, #053024 100%)",
-              borderRight: "1px solid rgba(212,175,55,0.3)",
+              borderTop: "1px solid rgba(212,175,55,0.35)",
+              boxShadow: "0 -20px 60px -12px rgba(0,0,0,0.6)",
             }}
           >
+            {/* Drag handle */}
+            <div className="grid place-items-center pt-2 pb-1">
+              <span className="block h-1.5 w-12 rounded-full bg-[#d4af37]/40" />
+            </div>
+
             {/* Header */}
             <div className="relative px-5 pt-5 pb-4 border-b border-[#d4af37]/20">
               <button

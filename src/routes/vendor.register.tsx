@@ -142,15 +142,17 @@ function VendorRegister() {
   // Auto-skip if vendor already onboarded (unless ?edit=1 from menu)
   useEffect(() => {
     if (!user || profileLoaded) return;
-    // Fast-path: sessionStorage cache → instant redirect, no flash
+    // Fast-path: localStorage cache → instant redirect, no flash
     if (!editMode && typeof window !== "undefined") {
       try {
-        if (sessionStorage.getItem(`vendor:registered:${user.id}`) === "1") {
+        const k = `vendor:registered:${user.id}`;
+        if (localStorage.getItem(k) === "1" || sessionStorage.getItem(k) === "1") {
           navigate({ to: "/vendor/dashboard" });
           return;
         }
       } catch {}
     }
+
     let cancelled = false;
     (async () => {
       // Best-effort: relink an orphaned vendor row (created under a previous
@@ -186,7 +188,7 @@ function VendorRegister() {
         setPan((data as any).pan ?? "");
         setGst((data as any).gst ?? "");
         // Cache for next opens
-        try { sessionStorage.setItem(`vendor:registered:${user.id}`, "1"); } catch {}
+        try { localStorage.setItem(`vendor:registered:${user.id}`, "1"); sessionStorage.setItem(`vendor:registered:${user.id}`, "1"); } catch {}
         if (!editMode) {
           navigate({ to: "/vendor/dashboard" });
           return;
@@ -381,6 +383,13 @@ function VendorRegister() {
     } else {
       setSaving(false);
     }
+
+    // Mark vendor as onboarded so /vendor/register auto-skips next time
+    try {
+      localStorage.setItem(`vendor:registered:${user.id}`, "1");
+      sessionStorage.setItem(`vendor:registered:${user.id}`, "1");
+    } catch {}
+
 
     // Open Cashfree for plan payment (LeadX coin pack)
     setPaying(true);
@@ -892,27 +901,8 @@ function Step1Business(p: Step1Props) {
 
       {/* Email field removed — auto-populated silently in background */}
 
-      {showEmail && (
-        <CounterField
-          Icon={User}
-          label="Current team"
-          hint="Work team members"
-          value={p.teamCount}
-          min={1}
-          onChange={p.setTeamCount}
-        />
-      )}
+      {/* Team/van counters removed — moved to menu Settings */}
 
-      {showEmail && (
-        <CounterField
-          Icon={Building2}
-          label="Van / vehicle"
-          hint="Multiple vans add kar sakte hain"
-          value={p.vanCount}
-          min={0}
-          onChange={p.setVanCount}
-        />
-      )}
 
       {showReferral && (
         <Field
