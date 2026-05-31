@@ -285,15 +285,16 @@ function VendorDashboard() {
   }, [user, vendor?.is_online, vendor?.operation_mode, vendor?.live_lat, vendor?.live_lng]);
 
   const toggleOnline = async () => {
-    if (!user || savingOnline) return;
+    if (!user) return;
     haptic();
     const prev = !!vendor?.is_online;
     const next = !prev;
-    setSavingOnline(true);
+    // Optimistic UI immediately — never block the toggle on GPS or network.
     setVendor((p) => (p ? { ...p, is_online: next } : p));
-    const gps = next && vendor?.operation_mode === "dynamic" ? await getFreshGps() : null;
-    const seedLat = gps?.lat ?? vendor?.lat ?? null;
-    const seedLng = gps?.lng ?? vendor?.lng ?? null;
+    setSavingOnline(true);
+    // Seed with whatever coords we already have; background GPS refresh below.
+    const seedLat = vendor?.live_lat ?? vendor?.lat ?? null;
+    const seedLng = vendor?.live_lng ?? vendor?.lng ?? null;
     const seedLiveLocation = next && vendor?.operation_mode === "dynamic" && seedLat != null && seedLng != null;
     const { data, error } = await supabase
       .from("vendors")
@@ -313,6 +314,18 @@ function VendorDashboard() {
     }
     setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online), live_lat: (data as any)?.live_lat ?? p.live_lat, live_lng: (data as any)?.live_lng ?? p.live_lng } : p));
     toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+
+    // Background GPS refresh — non-blocking. Silently times out without freezing the button.
+    if (next && vendor?.operation_mode === "dynamic") {
+      getFreshGps().then(async (gps) => {
+        if (!gps || !user) return;
+        await supabase
+          .from("vendors")
+          .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor?.lat ?? gps.lat, lng: vendor?.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
+          .eq("user_id", user.id);
+        setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
+      }).catch(() => undefined);
+    }
   };
 
   const toggleOperationMode = async () => {
