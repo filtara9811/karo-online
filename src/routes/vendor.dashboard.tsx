@@ -533,9 +533,9 @@ function VendorDashboard() {
           const isDynamic = vendor?.operation_mode === "dynamic";
           return (
             <button
+              type="button"
               onClick={toggleOperationMode}
-              disabled={savingMode}
-              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left disabled:opacity-75"
+              className="w-full rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.45)] p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] text-left"
             >
               <span className={`h-10 w-10 rounded-full grid place-items-center ${isDynamic ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
                 {savingMode ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-lg">{isDynamic ? "📍" : "🏪"}</span>}
