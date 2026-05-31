@@ -679,6 +679,16 @@ function VendorDashboard() {
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorQuickActionsSheet
+        open={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        vendor={vendor}
+        saving={{ online: savingOnline, auto: savingAuto, mode: savingMode, radius: savingRadius }}
+        onToggleOnline={toggleOnline}
+        onToggleAuto={toggleAutoAccept}
+        onToggleMode={toggleOperationMode}
+        onRadius={updateServiceRadius}
+      />
       <VendorLeadDetailSheet
         open={!!detailLeadId}
         lead={leads.find((l) => l.id === detailLeadId) ?? null}
