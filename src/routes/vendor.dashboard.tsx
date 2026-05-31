@@ -85,7 +85,7 @@ function VendorDashboard() {
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
+  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
 
   const [savingAuto, setSavingAuto] = useState(false);
   const [savingOnline, setSavingOnline] = useState(false);
@@ -95,7 +95,7 @@ function VendorDashboard() {
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, operation_mode, service_radius_km")
+      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
@@ -266,11 +266,16 @@ function VendorDashboard() {
     const next = !prev;
     setSavingOnline(true);
     setVendor((p) => (p ? { ...p, is_online: next } : p));
+    const seedLiveLocation = vendor?.operation_mode === "dynamic" && vendor?.lat != null && vendor?.lng != null && (vendor?.live_lat == null || vendor?.live_lng == null);
     const { data, error } = await supabase
       .from("vendors")
-      .update({ is_online: next, location_updated_at: next ? new Date().toISOString() : null } as any)
+      .update({
+        is_online: next,
+        location_updated_at: next ? new Date().toISOString() : null,
+        ...(next && seedLiveLocation ? { live_lat: vendor.lat, live_lng: vendor.lng } : {}),
+      } as any)
       .eq("user_id", user.id)
-      .select("is_online")
+      .select("is_online, live_lat, live_lng")
       .maybeSingle();
     setSavingOnline(false);
     if (error) {
@@ -278,7 +283,7 @@ function VendorDashboard() {
       toast.error("Online status save nahi hua");
       return;
     }
-    setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online) } : p));
+    setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online), live_lat: (data as any)?.live_lat ?? p.live_lat, live_lng: (data as any)?.live_lng ?? p.live_lng } : p));
     toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
   };
 
