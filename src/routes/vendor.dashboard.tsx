@@ -24,6 +24,9 @@ import {
   Wallet as WalletIcon,
   Loader2,
   Handshake,
+  Search,
+  User,
+  Radar,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
@@ -34,7 +37,7 @@ import { LeadPricingStrip } from "@/components/LeadPricingStrip";
 import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
-import { MapView } from "@/components/MapView";
+import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
 
@@ -51,6 +54,8 @@ export const Route = createFileRoute("/vendor/dashboard")({
 });
 
 type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
+
+type NeedCategory = { id: string; name: string; image_url: string | null; lead_price_inr: number | null; enabled: number };
 
 type CustomerLookup = {
   name: string | null;
@@ -88,6 +93,10 @@ function VendorDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [profileFinderOpen, setProfileFinderOpen] = useState(false);
+  const [needCategories, setNeedCategories] = useState<NeedCategory[]>([]);
+  const [loadingNeeds, setLoadingNeeds] = useState(false);
+  const [findingNeedId, setFindingNeedId] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
   const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
@@ -105,6 +114,36 @@ function VendorDashboard() {
       .maybeSingle()
       .then(({ data }) => setVendor(data as any));
   }, [user]);
+
+  const loadNeedCategories = async () => {
+    if (!user) return;
+    setLoadingNeeds(true);
+    const { data: mappings } = await supabase
+      .from("vendor_item_mappings")
+      .select("item_id, catalog_items(category_id)")
+      .eq("vendor_id", user.id)
+      .eq("is_active", true)
+      .limit(80);
+    const subIds = Array.from(new Set((mappings ?? []).map((m: any) => m.catalog_items?.category_id).filter(Boolean)));
+    if (!subIds.length) {
+      setNeedCategories([]);
+      setLoadingNeeds(false);
+      return;
+    }
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("id, name, image_url, lead_price_inr")
+      .in("id", subIds)
+      .eq("is_active", true)
+      .order("name");
+    const counts = new Map<string, number>();
+    (mappings ?? []).forEach((m: any) => {
+      const cid = m.catalog_items?.category_id;
+      if (cid) counts.set(cid, (counts.get(cid) ?? 0) + 1);
+    });
+    setNeedCategories(((cats ?? []) as any[]).map((c) => ({ ...c, enabled: counts.get(c.id) ?? 0 })));
+    setLoadingNeeds(false);
+  };
 
   // Load REAL leads for this vendor: only the ones the vendor has STARTED WORK on.
   // (Auto-accept sets vendor_started_at = now() in accept_lead; manual must press "Start Work")
@@ -373,6 +412,22 @@ function VendorDashboard() {
     }
   };
 
+  const openProfileFinder = () => {
+    setProfileFinderOpen(true);
+    void loadNeedCategories();
+  };
+
+  const startNeedSearch = (cat: NeedCategory) => {
+    setFindingNeedId(cat.id);
+    toast.loading(`${cat.name} needs find ho rahi hain…`, { id: "vendor-need-find" });
+    window.setTimeout(() => {
+      const matches = leads.filter((lead) => lead.service === cat.name || (lead.items ?? []).some((item) => item.name === cat.name)).length;
+      setFindingNeedId(null);
+      toast.success(matches ? `${matches} matching customer need mili` : "Is category ki live customer need abhi nahi hai", { id: "vendor-need-find" });
+      if (matches) setLeadsSheetOpen(true);
+    }, 1200);
+  };
+
 
 
   const stats = useMemo(() => {
@@ -403,6 +458,22 @@ function VendorDashboard() {
   const vendorLat = vendor?.live_lat ?? vendor?.lat ?? 28.6692;
   const vendorLng = vendor?.live_lng ?? vendor?.lng ?? 77.2008;
 
+  const vendorMapCards: QuickMapVendor[] = [
+    {
+      id: "vendor-home",
+      name: vendor?.business_name || "My Shop",
+      avatar: vendor?.avatar_url || avatarUser,
+      x: 50,
+      y: 50,
+      area: vendor?.operation_mode === "dynamic" ? "Live GPS" : "Shop address",
+      km: 0,
+      status: vendor?.is_online ? "Online" : "Office",
+      lat: vendorLat,
+      lng: vendorLng,
+      onClick: openProfileFinder,
+    },
+  ];
+
   const statTiles = [
     { value: stats.total,    label: "All Leads",    border: "oklch(0.72 0.01 260 / 0.55)", tint: "from-[#f5f6f8] to-[#eef0f3]" },
     { value: pendingCount,   label: "Pending",      border: "oklch(0.78 0.14 82 / 0.7)",   tint: "from-[#fff8dc] to-[#f5e9b8]" },
@@ -413,7 +484,7 @@ function VendorDashboard() {
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden pb-32 isolate"
+      className="relative min-h-dvh overflow-x-hidden pb-32"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
@@ -428,7 +499,7 @@ function VendorDashboard() {
       {/* Map hero with vendor pin in center */}
       <section className="relative">
         <div className="relative h-[240px] w-full overflow-hidden">
-          <VendorMapHero lat={vendorLat} lng={vendorLng} avatarUrl={vendor?.avatar_url ?? null} businessName={vendor?.business_name ?? "My Shop"} />
+          <VendorMapHero center={{ lat: vendorLat, lng: vendorLng }} vendors={vendorMapCards} businessName={vendor?.business_name ?? "My Shop"} />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
             {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
@@ -460,7 +531,7 @@ function VendorDashboard() {
             />
           </div>
           <button
-            onClick={() => setMenuOpen(true)}
+            onClick={openProfileFinder}
             aria-label="Open menu"
             className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0"
             style={{ borderColor: "#d4af37" }}
@@ -663,8 +734,9 @@ function VendorDashboard() {
               </span>
               <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
             </Link>
-            <Link
-              to="/profile"
+            <button
+              type="button"
+              onClick={openProfileFinder}
               className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
               <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
@@ -673,11 +745,21 @@ function VendorDashboard() {
               <span className="text-[9px] font-bold text-[color:oklch(0.45_0.01_260)]">
                 Profile
               </span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
       <VendorSideMenu open={menuOpen} onClose={() => setMenuOpen(false)} vendor={vendor} />
+      <VendorProfileFinderSheet
+        open={profileFinderOpen}
+        onClose={() => setProfileFinderOpen(false)}
+        vendorName={vendor?.business_name || "My Shop"}
+        categories={needCategories}
+        loading={loadingNeeds}
+        findingId={findingNeedId}
+        onFind={startNeedSearch}
+        onMenu={() => { setProfileFinderOpen(false); setMenuOpen(true); }}
+      />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
       <VendorQuickActionsSheet
         open={actionsOpen}
@@ -700,30 +782,88 @@ function VendorDashboard() {
   );
 }
 
-function VendorMapHero({ lat, lng, avatarUrl, businessName }: { lat: number; lng: number; avatarUrl: string | null; businessName: string }) {
+function VendorMapHero({ center, vendors, businessName }: { center: { lat: number; lng: number }; vendors: QuickMapVendor[]; businessName: string }) {
   return (
     <div className="relative h-full w-full">
-      {/* Map is purely decorative here — disable pointer events so page scroll
-          works smoothly on mobile (greedy gestureHandling otherwise eats swipes). */}
-      <div className="absolute inset-0 pointer-events-none" style={{ touchAction: "pan-y" }}>
-        <MapView
-          center={{ lat, lng }}
-          zoom={14}
-          height="100%"
-          showUserDot={false}
-          markers={[]}
-        />
-      </div>
-      {/* Center vendor pin overlay */}
+      <QuickServiceMap
+        center={center}
+        vendors={vendors}
+        userAvatar={vendors[0]?.avatar || avatarUser}
+        userLabel={businessName}
+        gestureHandling="cooperative"
+        showControls={false}
+        showUserPin={false}
+        countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
+      />
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="relative -translate-y-2 flex flex-col items-center" style={{ animation: "float-y 3.5s ease-in-out infinite" }}>
-          <div className="h-14 w-14 rounded-full overflow-hidden border-[3px] shadow-[0_8px_22px_-4px_rgba(212,175,55,0.7)]" style={{ borderColor: "#d4af37", background: "#fff" }}>
-            <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+        <span className="h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+      </div>
+    </div>
+  );
+}
+
+function VendorProfileFinderSheet({
+  open,
+  onClose,
+  vendorName,
+  categories,
+  loading,
+  findingId,
+  onFind,
+  onMenu,
+}: {
+  open: boolean;
+  onClose: () => void;
+  vendorName: string;
+  categories: NeedCategory[];
+  loading: boolean;
+  findingId: string | null;
+  onFind: (cat: NeedCategory) => void;
+  onMenu: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-gradient-to-b from-white via-[#fffaf0] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[90vh] overflow-y-auto"
+        style={{ animation: "sheet-up 0.35s cubic-bezier(0.22,1,0.36,1)" }}
+      >
+        <div className="flex justify-center pb-2"><span className="h-1.5 w-14 rounded-full bg-[color:oklch(0.78_0.14_82/0.45)]" /></div>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-[color:oklch(0.50_0.10_82)]">Find user needs</p>
+            <h3 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] truncate">{vendorName}</h3>
           </div>
-          <div className="mt-1 px-2.5 py-0.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] shadow whitespace-nowrap max-w-[180px] truncate">
-            📍 {businessName}
-          </div>
+          <button onClick={onClose} className="h-9 w-9 rounded-full bg-white border grid place-items-center active:scale-90" aria-label="Close">
+            <XCircle className="h-4 w-4" />
+          </button>
         </div>
+        <button onClick={onMenu} className="mb-3 w-full rounded-2xl bg-white/90 border p-3 flex items-center gap-3 text-left active:scale-[0.98]">
+          <User className="h-5 w-5 text-[color:oklch(0.45_0.10_82)]" />
+          <span className="flex-1 text-sm font-bold text-[color:oklch(0.25_0.05_85)]">Open full vendor profile menu</span>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        {loading ? (
+          <div className="py-10 grid place-items-center text-[color:oklch(0.45_0.10_82)]"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : categories.length === 0 ? (
+          <div className="rounded-2xl bg-white/90 border p-5 text-center text-xs text-[color:oklch(0.45_0.05_85)]">Pehle Inventory Mapping me services ON karein.</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {categories.map((cat) => (
+              <button key={cat.id} onClick={() => onFind(cat)} className="rounded-2xl bg-white/95 border p-3 text-left shadow-sm active:scale-[0.97]">
+                <div className="h-20 rounded-xl overflow-hidden bg-[#fff8dc] grid place-items-center mb-2">
+                  {cat.image_url ? <img src={cat.image_url} alt="" className="h-full w-full object-cover" /> : <Radar className="h-7 w-7 text-[color:oklch(0.55_0.10_82)]" />}
+                </div>
+                <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{cat.name}</p>
+                <p className="text-[10px] text-[color:oklch(0.50_0.06_85)]">{cat.enabled} mapped · ₹{cat.lead_price_inr ?? 20}/lead</p>
+                <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
+                  {findingId === cat.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />} Find users
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

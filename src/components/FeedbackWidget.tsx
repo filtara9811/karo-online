@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { MessageSquareWarning, X, Camera, Loader2, Send, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,8 @@ export function FeedbackWidget() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [role, setRole] = useState<"user" | "vendor" | "technical">("user");
+  const [pos, setPos] = useState({ x: 12, y: 220 });
+  const dragRef = useRef<{ startX: number; startY: number; x: number; y: number; moved: boolean } | null>(null);
 
   // Hide on admin (admins have their own console) and on auth/registration screens
   const hidden =
@@ -33,7 +35,13 @@ export function FeedbackWidget() {
     else setRole("user");
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setPos((p) => ({ ...p, x: Math.max(8, window.innerWidth - 52) }));
+  }, []);
+
   const openSheet = async () => {
+    if (dragRef.current?.moved) return;
     setOpen(true);
     setSent(false);
     setMessage("");
@@ -106,21 +114,41 @@ export function FeedbackWidget() {
 
   if (hidden) return null;
 
+  const startDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, x: pos.x, y: pos.y, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const moveDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 6) d.moved = true;
+    const maxX = Math.max(8, window.innerWidth - 52);
+    const maxY = Math.max(56, window.innerHeight - 80);
+    setPos({ x: Math.min(Math.max(8, d.x + dx), maxX), y: Math.min(Math.max(56, d.y + dy), maxY) });
+  };
+
   return (
     <>
       {/* Floating bubble — top right, just below the safe area */}
       <button
         onClick={openSheet}
+        onPointerDown={startDrag}
+        onPointerMove={moveDrag}
+        onPointerUp={() => window.setTimeout(() => { dragRef.current = null; }, 0)}
         aria-label="Send feedback"
-        className="fixed z-40 right-3 grid place-items-center h-10 w-10 rounded-full shadow-[0_6px_20px_-6px_rgba(212,175,55,0.6)] active:scale-90 transition-transform"
+        className="fixed z-20 grid place-items-center h-9 w-9 rounded-full shadow-[0_6px_20px_-6px_rgba(212,175,55,0.45)] active:scale-90 transition-transform opacity-55 hover:opacity-90 touch-none"
         style={{
-          top: "calc(env(safe-area-inset-top) + 220px)",
+          left: pos.x,
+          top: `calc(env(safe-area-inset-top) + ${pos.y}px)`,
           background: "linear-gradient(180deg,#fff8dc,#f5d97a 45%,#d4af37)",
           border: "1.5px solid rgba(255,255,255,0.7)",
         }}
       >
-        <MessageSquareWarning className="h-4 w-4 text-[#1a1208]" strokeWidth={2.4} />
-        <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white animate-pulse" />
+        <MessageSquareWarning className="h-3.5 w-3.5 text-[#1a1208]" strokeWidth={2.4} />
+        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-400/70 border-2 border-white" />
       </button>
 
       {open && (
