@@ -384,6 +384,13 @@ function VendorRegister() {
       setSaving(false);
     }
 
+    // Mark vendor as onboarded so /vendor/register auto-skips next time
+    try {
+      localStorage.setItem(`vendor:registered:${user.id}`, "1");
+      sessionStorage.setItem(`vendor:registered:${user.id}`, "1");
+    } catch {}
+
+
     // Open Cashfree for plan payment (LeadX coin pack)
     setPaying(true);
     try {
