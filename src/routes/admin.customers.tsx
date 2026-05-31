@@ -129,14 +129,24 @@ function CustomersPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (
-            <button
+            <div
               key={c.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => navigate({ to: "/admin/view/$userId", params: { userId: c.user_id } })}
-              className="block w-full text-left"
+              onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: "/admin/view/$userId", params: { userId: c.user_id } }); }}
+              className="block w-full text-left cursor-pointer"
             >
-              <GoldCard className="p-4">
-              <div className="flex items-start gap-3">
+              <GoldCard className="p-4 relative">
+                <button
+                  type="button"
+                  onClick={(e) => deleteCustomer(e, c)}
+                  aria-label="Delete customer"
+                  className="absolute top-2 right-2 z-10 p-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/25"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              <div className="flex items-start gap-3 pr-8">
                 <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-[#d4af37]/40 flex-shrink-0 bg-gradient-to-br from-[#fff8dc] to-[#d4af37] grid place-items-center">
                   {c.avatar_url ? (
                     <img src={c.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -202,7 +212,7 @@ function CustomersPage() {
                 </div>
               </div>
             </GoldCard>
-            </button>
+            </div>
           ))}
         </div>
       )}
