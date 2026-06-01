@@ -46,6 +46,7 @@ import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
+import { getNearbyCustomers } from "@/lib/nearby-customers.functions";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -654,6 +655,35 @@ function VendorDashboard() {
   const vendorLat = liveGeo?.lat ?? vendor?.live_lat ?? vendor?.lat ?? 28.6692;
   const vendorLng = liveGeo?.lng ?? vendor?.live_lng ?? vendor?.lng ?? 77.2008;
 
+  // Floating nearby customers (10km) — auto-refresh every 60s
+  const fetchNearbyCustomers = useServerFn(getNearbyCustomers);
+  const [nearbyCustomers, setNearbyCustomers] = useState<
+    Array<{ id: string; name: string; avatar_url: string | null; lat: number; lng: number; km: number; area: string | null; is_online: boolean }>
+  >([]);
+  useEffect(() => {
+    if (!Number.isFinite(vendorLat) || !Number.isFinite(vendorLng)) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res: any = await fetchNearbyCustomers({
+          data: { origin: { lat: vendorLat, lng: vendorLng }, radiusKm: 10 },
+        });
+        if (!cancelled && res?.ok) setNearbyCustomers(res.customers ?? []);
+      } catch {
+        /* silent */
+      }
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [vendorLat, vendorLng, fetchNearbyCustomers]);
+
+  const onlineCustomerCount = nearbyCustomers.filter((c) => c.is_online).length;
+  const offlineCustomerCount = nearbyCustomers.length - onlineCustomerCount;
+
   const vendorMapCards: QuickMapVendor[] = [
     {
       id: "vendor-home",
@@ -668,6 +698,18 @@ function VendorDashboard() {
       lng: vendorLng,
       onClick: openProfileFinder,
     },
+    ...nearbyCustomers.map((c) => ({
+      id: `cust-${c.id}`,
+      name: c.name,
+      avatar: c.avatar_url || avatarUser,
+      x: 50,
+      y: 50,
+      area: c.area ?? "Nearby",
+      km: c.km,
+      status: (c.is_online ? "Online" : "Offline") as "Online" | "Offline",
+      lat: c.lat,
+      lng: c.lng,
+    })),
   ];
 
   const statTiles = [
@@ -734,9 +776,21 @@ function VendorDashboard() {
                   : "Shop address"
             }
           />
-          {/* Vendor count chip — like user home */}
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
-            {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+          {/* Status + nearby customers chip */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
+              {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+            </div>
+            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {onlineCustomerCount} online
+              <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+              {offlineCustomerCount} offline
+            </div>
+            <div className="px-2.5 py-1 rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] shadow text-[9px] font-bold text-[color:oklch(0.45_0.05_85)]">
+              10 km radius
+            </div>
           </div>
           <div className="absolute top-3 right-3">
             <VendorNotificationBell />
@@ -1052,15 +1106,16 @@ function VendorMapHero({
 }) {
   return (
     <div className="relative h-full w-full">
-      <div className="pointer-events-none absolute inset-0">
+      <div className="absolute inset-0">
         <QuickServiceMap
           center={center}
-          vendors={[]}
+          vendors={vendors.filter((v) => v.id !== "vendor-home")}
           userAvatar={vendors[0]?.avatar || avatarUser}
           userLabel={locationLabel || businessName}
           gestureHandling="none"
           showControls={false}
           showUserPin
+          radiusKm={10}
           countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
         />
       </div>
