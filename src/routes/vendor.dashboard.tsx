@@ -724,9 +724,11 @@ function VendorDashboard() {
               badge={pendingCount}
               onClick={() => setLeadsSheetOpen(true)}
             />
-            <Link
-              to="/vendor/shop"
-              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+            <button
+              type="button"
+              onClick={openProfileFinder}
+              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl active:scale-95"
+              aria-label="Find users"
             >
               <span
                 className="h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow-md"
@@ -734,8 +736,8 @@ function VendorDashboard() {
               >
                 <Plus className="h-4 w-4" strokeWidth={3} />
               </span>
-              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
-            </Link>
+              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Find</span>
+            </button>
             <button
               type="button"
               onClick={openProfileFinder}
@@ -760,7 +762,7 @@ function VendorDashboard() {
         loading={loadingNeeds}
         findingId={findingNeedId}
         onFind={startNeedSearch}
-        onMenu={() => { setProfileFinderOpen(false); setMenuOpen(true); }}
+        onMenu={() => { setProfileFinderOpen(false); navigate({ to: "/vendor/shop" }); }}
       />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
       <VendorQuickActionsSheet
@@ -797,8 +799,18 @@ function VendorMapHero({ center, vendors, businessName }: { center: { lat: numbe
         showUserPin={false}
         countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
       />
-      <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <span className="h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+      <div className="pointer-events-none absolute inset-0 grid place-items-center z-30">
+        <span className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+        <button
+          type="button"
+          onClick={vendors[0]?.onClick}
+          className="pointer-events-auto relative h-16 w-16 rounded-full grid place-items-center border-2 border-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.55)] active:scale-95 overflow-hidden"
+          style={{ background: "linear-gradient(180deg,#fff8dc,#f5d97a 45%,#d4af37)", borderColor: "rgba(255,255,255,0.9)" }}
+          aria-label="Open vendor profile finder"
+        >
+          <img src={vendors[0]?.avatar || avatarUser} alt="" className="h-12 w-12 rounded-full object-cover border-2 border-white" />
+          <span className="absolute -bottom-1 h-4 w-4 rotate-45 bg-[#d4af37] border-r border-b border-white/80" />
+        </button>
       </div>
     </div>
   );
