@@ -36,27 +36,33 @@ async function ensureVendorForUser(userId: string, claims: any) {
 
   const phones = phoneCandidates(claims);
   for (const phone of phones) {
-    const found = await admin
+    // Fetch by last-5-digit ilike (formatting-tolerant), then exact-match normalized in JS.
+    const tail = phone.slice(-5);
+    const candidates = await admin
       .from("vendors")
       .select(`id, user_id, whatsapp, ${vendorFields}`)
-      .filter("whatsapp", "ilike", `%${phone}%`)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .filter("whatsapp", "ilike", `%${tail}%`)
+      .limit(50);
 
-    if (found.error) throw new Error(found.error.message);
-    if (!found.data) continue;
+    if (candidates.error) throw new Error(candidates.error.message);
+    const match = (candidates.data ?? []).find(
+      (row: any) => String(row.whatsapp ?? "").replace(/\D/g, "").slice(-10) === phone,
+    );
+    if (!match) continue;
+
+    if (match.user_id === userId) return match;
 
     const relinked = await admin
       .from("vendors")
       .update({ user_id: userId, updated_at: new Date().toISOString() })
-      .eq("id", found.data.id)
+      .eq("id", match.id)
       .select(`id, ${vendorFields}`)
       .maybeSingle();
 
     if (relinked.error) throw new Error(relinked.error.message);
     if (relinked.data) return relinked.data;
   }
+
 
   // Auto-create a minimal vendor row so quick controls work for first-time vendors.
   const primaryPhone = phones[0] ?? null;
