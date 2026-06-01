@@ -43,7 +43,7 @@ const VendorQuickControlSchema = z.discriminatedUnion("key", [
 const vendorFields =
   "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
 
-function phoneCandidates(claims: any) {
+function phoneCandidates(claims: AuthClaims) {
   const meta = claims?.user_metadata ?? {};
   const raw = [claims?.phone, meta.phone, meta.phone_number, claims?.email, meta.email]
     .filter(Boolean)
@@ -53,7 +53,7 @@ function phoneCandidates(claims: any) {
   return Array.from(new Set(raw));
 }
 
-function emailCandidates(claims: any) {
+function emailCandidates(claims: AuthClaims) {
   const meta = claims?.user_metadata ?? {};
   return Array.from(
     new Set(
@@ -70,7 +70,7 @@ function normalizePhone10(value: unknown) {
   return digits.length >= 10 ? digits.slice(-10) : null;
 }
 
-async function claimVendorRow(admin: any, row: any, userId: string) {
+async function claimVendorRow(admin: LooseClient, row: VendorRow, userId: string) {
   if (row.user_id === userId) return row;
   const relinked = await admin
     .from("vendors")
@@ -84,7 +84,7 @@ async function claimVendorRow(admin: any, row: any, userId: string) {
   throw new Error("Vendor profile relink nahi ho saka. Dobara login karke try karein.");
 }
 
-async function findVendorByPhone(admin: any, phones: string[]) {
+async function findVendorByPhone(admin: LooseClient, phones: string[]) {
   const selectFields = `id, user_id, whatsapp, ${vendorFields}`;
   for (const phone of phones) {
     const seen = new Set<string>();
@@ -97,7 +97,7 @@ async function findVendorByPhone(admin: any, phones: string[]) {
         .limit(100);
 
       if (candidates.error) throw new Error(candidates.error.message);
-      const match = (candidates.data ?? []).find((row: any) => {
+      const match = (candidates.data ?? []).find((row) => {
         if (seen.has(row.id)) return false;
         seen.add(row.id);
         return normalizePhone10(row.whatsapp) === phone;
@@ -117,14 +117,14 @@ async function findVendorByPhone(admin: any, phones: string[]) {
       .range(from, from + 999);
     if (page.error) throw new Error(page.error.message);
     const rows = page.data ?? [];
-    const match = rows.find((row: any) => phones.includes(normalizePhone10(row.whatsapp) ?? ""));
+    const match = rows.find((row) => phones.includes(normalizePhone10(row.whatsapp) ?? ""));
     if (match) return match;
     if (rows.length < 1000) break;
   }
   return null;
 }
 
-async function findVendorByEmail(admin: any, emails: string[]) {
+async function findVendorByEmail(admin: LooseClient, emails: string[]) {
   if (!emails.length) return null;
   const selectFields = `id, user_id, email, manager_email, ${vendorFields}`;
   for (const email of emails) {
