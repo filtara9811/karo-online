@@ -184,27 +184,55 @@ function TopHeader() {
         </Link>
       </div>
 
-      {/* Location + search row */}
-      {/* Premium search row */}
-      <div className="max-w-md mx-auto px-4 pb-2.5 flex items-center gap-2">
-        <label className="flex-1 group flex items-center gap-2 rounded-full bg-gradient-to-b from-white to-[#fdfaf0] border border-[color:oklch(0.78_0.14_82/0.5)] px-3.5 py-2.5 shadow-[0_2px_10px_-3px_rgba(212,175,55,0.25),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:shadow-gold-glow transition-shadow">
-          <Search className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] flex-shrink-0" strokeWidth={2.4} />
-          <input
-            type="search"
-            placeholder="Search markets, brands…"
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-[color:oklch(0.55_0.05_85/0.7)] placeholder:italic min-w-0"
-          />
-        </label>
-        <button onClick={() => setNotifOpen(true)} aria-label="Notifications" className="contents">
-          <ChipIcon label="Notifications" badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}>
-            <Bell className="h-5 w-5" strokeWidth={2.2} />
-          </ChipIcon>
-        </button>
-        <Link to="/cart" aria-label="Cart">
-          <ChipIcon label="Cart" badge="3">
-            <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
-          </ChipIcon>
-        </Link>
+      {/* My Orders + search + profile — ditto vendor dashboard bar */}
+      <div className="max-w-md mx-auto px-4 pb-2.5">
+        <div className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]">
+          <Link
+            to="/orders"
+            aria-label="My Orders"
+            className="relative h-10 w-10 rounded-xl grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] active:scale-90 shadow-sm shrink-0"
+          >
+            <Package className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+          </Link>
+          <div className="flex-1 relative">
+            <input
+              type="search"
+              placeholder="Search markets, brands…"
+              className="w-full h-10 px-3 rounded-xl bg-[#fffaeb] border border-[color:oklch(0.78_0.14_82/0.4)] text-xs text-[color:oklch(0.22_0.05_85)] placeholder:text-[color:oklch(0.55_0.10_82)] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/40"
+            />
+          </div>
+          <Link
+            to="/profile"
+            aria-label="Profile"
+            className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0 bg-white"
+            style={{ borderColor: "#d4af37" }}
+          >
+            <img
+              src={profile?.avatar_url || avatarUser}
+              alt=""
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+              className="h-full w-full object-cover"
+            />
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 border-2 border-white text-[8px] font-bold text-white grid place-items-center">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Link>
+        </div>
+        {/* Bell + Cart quick access row */}
+        <div className="flex items-center justify-end gap-2 mt-2">
+          <button onClick={() => setNotifOpen(true)} aria-label="Notifications" className="contents">
+            <ChipIcon label="Notifications" badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}>
+              <Bell className="h-5 w-5" strokeWidth={2.2} />
+            </ChipIcon>
+          </button>
+          <Link to="/cart" aria-label="Cart">
+            <ChipIcon label="Cart" badge="3">
+              <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
+            </ChipIcon>
+          </Link>
+        </div>
       </div>
 
       {/* Premium shop rating strip */}
