@@ -792,7 +792,7 @@ function VendorMapHero({ center, vendors, businessName }: { center: { lat: numbe
       <div className="pointer-events-none absolute inset-0">
         <QuickServiceMap
           center={center}
-          vendors={vendors}
+          vendors={[]}
           userAvatar={vendors[0]?.avatar || avatarUser}
           userLabel={businessName}
           gestureHandling="none"
