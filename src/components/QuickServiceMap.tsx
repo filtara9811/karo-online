@@ -294,6 +294,35 @@ export function QuickServiceMap({
     userOverlayRef.current.updateLabel(userLabel || "Detecting your location…");
   }, [userLabel]);
 
+  // Geofence circle around the user (e.g. 10 km service radius)
+  useEffect(() => {
+    if (status !== "ready" || !mapRef.current) return;
+    const g = (window as any).google;
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+      circleRef.current = null;
+    }
+    if (!center || !radiusKm || radiusKm <= 0) return;
+    circleRef.current = new g.maps.Circle({
+      map: mapRef.current,
+      center,
+      radius: radiusKm * 1000,
+      strokeColor: "#d97706",
+      strokeOpacity: 0.85,
+      strokeWeight: 2,
+      fillColor: "#facc15",
+      fillOpacity: 0.08,
+      clickable: false,
+      zIndex: 1,
+    });
+    return () => {
+      if (circleRef.current) {
+        circleRef.current.setMap(null);
+        circleRef.current = null;
+      }
+    };
+  }, [status, center?.lat, center?.lng, radiusKm]);
+
   // vendor info-cards around user (custom HTML overlays)
   useEffect(() => {
     if (status !== "ready" || !mapRef.current) return;
