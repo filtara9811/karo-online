@@ -89,8 +89,7 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: vendors, error } = await (supabaseAdmin as any)
       .from("vendors")
-      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km, address")
-      .eq("status", "active")
+      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
       .eq("is_blocked", false);
 
     if (error) return { ok: false as const, error: error.message, vendors: [], onlineCount: 0, offlineCount: 0 };
@@ -98,6 +97,17 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
     const origin = data.origin;
     const radiusKm = data.radiusKm ?? 10;
     const FRESH_MS = 24 * 60 * 60 * 1000; // 24h tolerance for live coords
+    const vendorUserIds = Array.from(new Set((vendors ?? []).map((v: any) => v.user_id).filter(Boolean)));
+    const profileMap = new Map<string, { address: string | null; avatar_url: string | null }>();
+    if (vendorUserIds.length) {
+      const { data: customerRows } = await (supabaseAdmin as any)
+        .from("customers")
+        .select("user_id, address, avatar_url")
+        .in("user_id", vendorUserIds);
+      (customerRows ?? []).forEach((c: any) =>
+        profileMap.set(String(c.user_id), { address: c.address ?? null, avatar_url: c.avatar_url ?? null }),
+      );
+    }
     const publicVendors = (vendors ?? [])
       .map((v: any) => {
         const fresh = !!v.location_updated_at && Date.now() - new Date(v.location_updated_at).getTime() <= FRESH_MS;
@@ -108,14 +118,17 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
         const lng = rawLng == null ? null : Number(rawLng);
         const km = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
           ? kmBetween(origin, { lat, lng }) : null;
-        const areaRaw = String(v.address ?? "").split(",").slice(0, 2).join(",").trim();
+        const profile = profileMap.get(String(v.user_id));
+        const areaRaw = String(profile?.address ?? "").split(",").slice(0, 2).join(",").trim();
+        const isOnline = v.status === "active" && Boolean(v.is_online);
         return {
           id: String(v.id),
           user_id: String(v.user_id),
           business_name: v.business_name as string | null,
           owner_name: v.owner_name as string | null,
-          avatar_url: v.avatar_url as string | null,
-          is_online: Boolean(v.is_online),
+          avatar_url: (v.avatar_url || profile?.avatar_url || null) as string | null,
+          status: v.status as string | null,
+          is_online: isOnline,
           area: areaRaw || null,
           lat,
           lng,
