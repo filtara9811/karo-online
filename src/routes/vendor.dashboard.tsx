@@ -85,7 +85,7 @@ function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?:
 }
 
 function VendorDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
@@ -107,12 +107,26 @@ function VendorDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors")
-      .select("business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setVendor(data as any));
-  }, [user]);
+    let cancelled = false;
+    const fields = "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
+    const loadVendor = async () => {
+      const readOwnVendor = () => supabase.from("vendors").select(fields).eq("user_id", user.id).maybeSingle();
+      let { data } = await readOwnVendor();
+
+      if (!data) {
+        const metaPhone = String((user.user_metadata as any)?.phone ?? (user.user_metadata as any)?.phone_number ?? "");
+        const phoneDigits = String(user.phone || profile?.phone || metaPhone).replace(/\D/g, "");
+        if (phoneDigits.length >= 10) {
+          await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits });
+          ({ data } = await readOwnVendor());
+        }
+      }
+
+      if (!cancelled) setVendor((data as any) ?? null);
+    };
+    loadVendor();
+    return () => { cancelled = true; };
+  }, [profile?.phone, user]);
 
   const loadNeedCategories = async () => {
     if (!user) return;
