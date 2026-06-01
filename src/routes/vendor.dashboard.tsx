@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,14 +35,16 @@ import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
-import { VendorPendingLeadsSheet, usePendingLeadsCount } from "@/components/VendorPendingLeadsSheet";
+import {
+  VendorPendingLeadsSheet,
+  usePendingLeadsCount,
+} from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
-
-
+import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
@@ -50,12 +53,22 @@ export const Route = createFileRoute("/vendor/dashboard")({
       { name: "description", content: "Manage your leads, products and digital shop." },
     ],
   }),
-  component: () => (<VendorAuthGate><VendorDashboard /></VendorAuthGate>),
+  component: () => (
+    <VendorAuthGate>
+      <VendorDashboard />
+    </VendorAuthGate>
+  ),
 });
 
 type Potential = { id: string; title: string; earn: number; customers: number; chance: string };
 
-type NeedCategory = { id: string; name: string; image_url: string | null; lead_price_inr: number | null; enabled: number };
+type NeedCategory = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  lead_price_inr: number | null;
+  enabled: number;
+};
 
 type CustomerLookup = {
   name: string | null;
@@ -63,6 +76,23 @@ type CustomerLookup = {
   avatar_url: string | null;
   address: string | null;
 };
+
+const QUICK_CONTROL_TIMEOUT_MS = 12000;
+
+async function withQuickControlTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} request timed out`)),
+      QUICK_CONTROL_TIMEOUT_MS,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function timeAgo(iso: string): string {
   const d = Date.now() - new Date(iso).getTime();
@@ -75,17 +105,23 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
-function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?: { lat?: number | null; lng?: number | null } | null) {
+function distanceKm(
+  a?: { lat?: number | null; lng?: number | null } | null,
+  b?: { lat?: number | null; lng?: number | null } | null,
+) {
   if (a?.lat == null || a?.lng == null || b?.lat == null || b?.lng == null) return null;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return Math.round(6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)) * 10) / 10;
 }
 
 function VendorDashboard() {
   const { user, profile } = useAuth();
+  const updateQuickControl = useServerFn(updateVendorQuickControl);
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
@@ -98,7 +134,21 @@ function VendorDashboard() {
   const [findingNeedId, setFindingNeedId] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
-  const [vendor, setVendor] = useState<{ business_name?: string | null; owner_name?: string | null; avatar_url?: string | null; status?: string | null; verified?: boolean | null; auto_accept_leads?: boolean | null; is_online?: boolean | null; lat?: number | null; lng?: number | null; live_lat?: number | null; live_lng?: number | null; operation_mode?: string | null; service_radius_km?: number | null } | null>(null);
+  const [vendor, setVendor] = useState<{
+    business_name?: string | null;
+    owner_name?: string | null;
+    avatar_url?: string | null;
+    status?: string | null;
+    verified?: boolean | null;
+    auto_accept_leads?: boolean | null;
+    is_online?: boolean | null;
+    lat?: number | null;
+    lng?: number | null;
+    live_lat?: number | null;
+    live_lng?: number | null;
+    operation_mode?: string | null;
+    service_radius_km?: number | null;
+  } | null>(null);
 
   const [savingAuto, setSavingAuto] = useState(false);
   const [savingOnline, setSavingOnline] = useState(false);
@@ -108,13 +158,17 @@ function VendorDashboard() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    const fields = "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
+    const fields =
+      "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
     const loadVendor = async () => {
-      const readOwnVendor = () => supabase.from("vendors").select(fields).eq("user_id", user.id).maybeSingle();
+      const readOwnVendor = () =>
+        supabase.from("vendors").select(fields).eq("user_id", user.id).maybeSingle();
       let { data } = await readOwnVendor();
 
       if (!data) {
-        const metaPhone = String((user.user_metadata as any)?.phone ?? (user.user_metadata as any)?.phone_number ?? "");
+        const metaPhone = String(
+          (user.user_metadata as any)?.phone ?? (user.user_metadata as any)?.phone_number ?? "",
+        );
         const phoneDigits = String(user.phone || profile?.phone || metaPhone).replace(/\D/g, "");
         if (phoneDigits.length >= 10) {
           await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits });
@@ -125,7 +179,9 @@ function VendorDashboard() {
       if (!cancelled) setVendor((data as any) ?? null);
     };
     loadVendor();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [profile?.phone, user]);
 
   const loadNeedCategories = async () => {
@@ -137,7 +193,9 @@ function VendorDashboard() {
       .eq("vendor_id", user.id)
       .eq("is_active", true)
       .limit(80);
-    const subIds = Array.from(new Set((mappings ?? []).map((m: any) => m.catalog_items?.category_id).filter(Boolean)));
+    const subIds = Array.from(
+      new Set((mappings ?? []).map((m: any) => m.catalog_items?.category_id).filter(Boolean)),
+    );
     if (!subIds.length) {
       setNeedCategories([]);
       setLoadingNeeds(false);
@@ -154,14 +212,19 @@ function VendorDashboard() {
       const cid = m.catalog_items?.category_id;
       if (cid) counts.set(cid, (counts.get(cid) ?? 0) + 1);
     });
-    setNeedCategories(((cats ?? []) as any[]).map((c) => ({ ...c, enabled: counts.get(c.id) ?? 0 })));
+    setNeedCategories(
+      ((cats ?? []) as any[]).map((c) => ({ ...c, enabled: counts.get(c.id) ?? 0 })),
+    );
     setLoadingNeeds(false);
   };
 
   // Load REAL leads for this vendor: only the ones the vendor has STARTED WORK on.
   // (Auto-accept sets vendor_started_at = now() in accept_lead; manual must press "Start Work")
   useEffect(() => {
-    if (!user) { setLoadingLeads(false); return; }
+    if (!user) {
+      setLoadingLeads(false);
+      return;
+    }
     let cancelled = false;
     const load = async () => {
       const { data: notifs } = await supabase
@@ -172,13 +235,23 @@ function VendorDashboard() {
         .order("vendor_started_at", { ascending: false })
         .limit(50);
       const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
-      if (ids.length === 0) { if (!cancelled) { setLeads([]); setLoadingLeads(false); } return; }
+      if (ids.length === 0) {
+        if (!cancelled) {
+          setLeads([]);
+          setLoadingLeads(false);
+        }
+        return;
+      }
       const { data: rows } = await supabase
         .from("leads")
-        .select("id, customer_id, customer_name, customer_phone, sub_category_id, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng, item_ids, item_names, images")
+        .select(
+          "id, customer_id, customer_name, customer_phone, sub_category_id, sub_category_name, address, note, lead_price_inr, source, status, accepted_vendor_ids, created_at, lat, lng, item_ids, item_names, images",
+        )
         .in("id", ids);
       if (cancelled) return;
-      const customerIds = Array.from(new Set((rows ?? []).map((r: any) => r.customer_id).filter(Boolean)));
+      const customerIds = Array.from(
+        new Set((rows ?? []).map((r: any) => r.customer_id).filter(Boolean)),
+      );
       const customerMap = new Map<string, CustomerLookup>();
       if (customerIds.length) {
         const { data: customers } = await supabase
@@ -187,7 +260,9 @@ function VendorDashboard() {
           .in("user_id", customerIds);
         (customers ?? []).forEach((c: any) => customerMap.set(c.user_id, c));
       }
-      const subIds = Array.from(new Set((rows ?? []).map((r: any) => r.sub_category_id).filter(Boolean)));
+      const subIds = Array.from(
+        new Set((rows ?? []).map((r: any) => r.sub_category_id).filter(Boolean)),
+      );
       const subImageMap = new Map<string, string | null>();
       if (subIds.length) {
         const { data: cats } = await supabase
@@ -199,9 +274,7 @@ function VendorDashboard() {
 
       // Fetch catalog items (name, image) for ALL referenced item_ids across leads
       const allItemIds = Array.from(
-        new Set(
-          (rows ?? []).flatMap((r: any) => (Array.isArray(r.item_ids) ? r.item_ids : [])),
-        ),
+        new Set((rows ?? []).flatMap((r: any) => (Array.isArray(r.item_ids) ? r.item_ids : []))),
       ) as string[];
       const itemMap = new Map<string, { name: string; image: string | null }>();
       const priceMap = new Map<string, { price_min: number | null; price_max: number | null }>();
@@ -214,7 +287,9 @@ function VendorDashboard() {
             .eq("vendor_id", user.id)
             .in("item_id", allItemIds),
         ]);
-        (items ?? []).forEach((it: any) => itemMap.set(it.id, { name: it.name, image: it.image_url ?? null }));
+        (items ?? []).forEach((it: any) =>
+          itemMap.set(it.id, { name: it.name, image: it.image_url ?? null }),
+        );
         (mappings ?? []).forEach((m: any) =>
           priceMap.set(m.item_id, { price_min: m.price_min, price_max: m.price_max }),
         );
@@ -229,7 +304,9 @@ function VendorDashboard() {
         if (r.status === "completed" && accepted) st = "success";
         else if (accepted) st = "process";
         else if (nstatus === "rejected") st = "rejected";
-        const src: LeadSource = (["whatsapp","call","digital","quick"].includes(r.source) ? r.source : "quick") as LeadSource;
+        const src: LeadSource = (
+          ["whatsapp", "call", "digital", "quick"].includes(r.source) ? r.source : "quick"
+        ) as LeadSource;
 
         const itemIds: string[] = Array.isArray(r.item_ids) ? r.item_ids : [];
         const itemNames: string[] = Array.isArray(r.item_names) ? r.item_names : [];
@@ -278,10 +355,11 @@ function VendorDashboard() {
           progressPct: st === "success" ? 100 : 55,
           note: r.note ?? "",
           items,
-          timeline: [{ at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const }],
+          timeline: [
+            { at: timeAgo(r.created_at), label: "Lead received", kind: "created" as const },
+          ],
         };
       });
-
 
       setLeads(mapped);
       setLoadingLeads(false);
@@ -289,42 +367,73 @@ function VendorDashboard() {
     load();
     const channel = supabase
       .channel(`vendor-leads-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` }, () => load())
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "lead_notifications",
+          filter: `vendor_id=eq.${user.id}`,
+        },
+        () => load(),
+      )
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, () => load())
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [user, vendor]);
 
-
   const toggleAutoAccept = async () => {
-    if (!user) return;
+    if (!user || savingAuto) return;
     const next = !vendor?.auto_accept_leads;
     haptic();
+    console.info("[VendorQuickControls] auto_accept_leads toggle requested", { next });
     setSavingAuto(true);
-    setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
-    const { error } = await supabase
-      .from("vendors")
-      .update({ auto_accept_leads: next })
-      .eq("user_id", user.id);
-    setSavingAuto(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, auto_accept_leads: !next } : p));
-      toast.error("Setting save nahi hua");
-    } else {
-      toast.success(next ? "Auto Accept ON — har lead automatic accept hogi" : "Manual Accept ON — har lead aapko accept karni hogi");
+    const toastId = toast.loading(
+      next ? "Auto Accept ON save ho raha hai…" : "Auto Accept OFF save ho raha hai…",
+    );
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "auto_accept_leads", value: next } }),
+        "Auto Accept",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] auto_accept_leads saved", updated);
+      toast.success(
+        next
+          ? "Auto Accept ON — har lead automatic accept hogi"
+          : "Manual Accept ON — har lead aapko accept karni hogi",
+      );
+      toast.dismiss(toastId);
+    } catch (error: any) {
+      console.error("[VendorQuickControls] auto_accept_leads save failed", error);
+      toast.error(error?.message || "Auto Accept save nahi hua — permission/network issue", {
+        id: toastId,
+      });
+    } finally {
+      setSavingAuto(false);
     }
   };
 
-  const haptic = () => { try { navigator.vibrate?.(18); } catch {} };
+  const haptic = () => {
+    try {
+      navigator.vibrate?.(18);
+    } catch {
+      // Haptics are optional.
+    }
+  };
 
-  const getFreshGps = () => new Promise<{ lat: number; lng: number } | null>((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
-  });
+  const getFreshGps = () =>
+    new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+      );
+    });
 
   useEffect(() => {
     if (!user || !vendor?.is_online || vendor.operation_mode !== "dynamic") return;
@@ -335,95 +444,143 @@ function VendorDashboard() {
       if (!gps || cancelled) return;
       const { error } = await supabase
         .from("vendors")
-        .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor.lat ?? gps.lat, lng: vendor.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
+        .update({
+          live_lat: gps.lat,
+          live_lng: gps.lng,
+          lat: vendor.lat ?? gps.lat,
+          lng: vendor.lng ?? gps.lng,
+          location_updated_at: new Date().toISOString(),
+        } as any)
         .eq("user_id", user.id);
-      if (!error && !cancelled) setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
+      if (!error && !cancelled)
+        setVendor((p) =>
+          p
+            ? {
+                ...p,
+                live_lat: gps.lat,
+                live_lng: gps.lng,
+                lat: p.lat ?? gps.lat,
+                lng: p.lng ?? gps.lng,
+              }
+            : p,
+        );
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user, vendor?.is_online, vendor?.operation_mode, vendor?.live_lat, vendor?.live_lng]);
 
   const toggleOnline = async () => {
-    if (!user) return;
+    if (!user || savingOnline) return;
     haptic();
-    const prev = !!vendor?.is_online;
-    const next = !prev;
-    // Optimistic UI immediately — never block the toggle on GPS or network.
-    setVendor((p) => (p ? { ...p, is_online: next } : p));
+    const next = !vendor?.is_online;
+    console.info("[VendorQuickControls] is_online toggle requested", { next });
     setSavingOnline(true);
-    // Seed with whatever coords we already have; background GPS refresh below.
-    const seedLat = vendor?.live_lat ?? vendor?.lat ?? null;
-    const seedLng = vendor?.live_lng ?? vendor?.lng ?? null;
-    const seedLiveLocation = next && vendor?.operation_mode === "dynamic" && seedLat != null && seedLng != null;
-    const { data, error } = await supabase
-      .from("vendors")
-      .update({
-        is_online: next,
-        location_updated_at: next ? new Date().toISOString() : null,
-        ...(seedLiveLocation ? { live_lat: seedLat, live_lng: seedLng, lat: vendor?.lat ?? seedLat, lng: vendor?.lng ?? seedLng } : {}),
-      } as any)
-      .eq("user_id", user.id)
-      .select("is_online, live_lat, live_lng")
-      .maybeSingle();
-    setSavingOnline(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, is_online: prev } : p));
-      toast.error("Online status save nahi hua");
-      return;
-    }
-    const returned = Array.isArray(data) ? data[0] : data;
-    setVendor((p) => (p ? { ...p, is_online: typeof (returned as any)?.is_online === "boolean" ? Boolean((returned as any).is_online) : next, live_lat: (returned as any)?.live_lat ?? p.live_lat, live_lng: (returned as any)?.live_lng ?? p.live_lng } : p));
-    toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+    const toastId = toast.loading(
+      next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…",
+    );
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "is_online", value: next } }),
+        "Vendor Status",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] is_online saved", updated);
+      toast.success(
+        next
+          ? "Online — ab leads receive kar sakte hain"
+          : "Offline — ab broadcast me nahi aayenge",
+      );
+      toast.dismiss(toastId);
 
-    // Background GPS refresh — non-blocking. Silently times out without freezing the button.
-    if (next && vendor?.operation_mode === "dynamic") {
-      getFreshGps().then(async (gps) => {
-        if (!gps || !user) return;
-        await supabase
-          .from("vendors")
-          .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor?.lat ?? gps.lat, lng: vendor?.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
-          .eq("user_id", user.id);
-        setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
-      }).catch(() => undefined);
+      // Background GPS refresh — non-blocking. Silently times out without freezing the button.
+      if (next && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
+        getFreshGps()
+          .then(async (gps) => {
+            if (!gps || !user) return;
+            const { error } = await supabase
+              .from("vendors")
+              .update({
+                live_lat: gps.lat,
+                live_lng: gps.lng,
+                lat: vendor?.lat ?? gps.lat,
+                lng: vendor?.lng ?? gps.lng,
+                location_updated_at: new Date().toISOString(),
+              } as any)
+              .eq("user_id", user.id);
+            if (error) console.warn("[VendorQuickControls] background GPS update failed", error);
+            else
+              setVendor((p) =>
+                p
+                  ? {
+                      ...p,
+                      live_lat: gps.lat,
+                      live_lng: gps.lng,
+                      lat: p.lat ?? gps.lat,
+                      lng: p.lng ?? gps.lng,
+                    }
+                  : p,
+              );
+          })
+          .catch((error) => console.warn("[VendorQuickControls] GPS unavailable", error));
+      }
+    } catch (error: any) {
+      console.error("[VendorQuickControls] is_online save failed", error);
+      toast.error(error?.message || "Online status save nahi hua — permission/network issue", {
+        id: toastId,
+      });
+    } finally {
+      setSavingOnline(false);
     }
   };
 
   const toggleOperationMode = async () => {
-    if (!user) return;
+    if (!user || savingMode) return;
     haptic();
     const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
     const next = current === "dynamic" ? "static" : "dynamic";
+    console.info("[VendorQuickControls] operation_mode toggle requested", { next });
     setSavingMode(true);
-    setVendor((p) => (p ? { ...p, operation_mode: next } : p));
-    const { error } = await supabase
-      .from("vendors")
-      .update({ operation_mode: next } as any)
-      .eq("user_id", user.id);
-    setSavingMode(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, operation_mode: current } : p));
-      toast.error("Mode save nahi hua");
-    } else {
+    const toastId = toast.loading(
+      next === "dynamic" ? "Live GPS Mode save ho raha hai…" : "Shop Mode save ho raha hai…",
+    );
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "operation_mode", value: next } }),
+        "Location Mode",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] operation_mode saved", updated);
       toast.success(
         next === "dynamic"
           ? "Live GPS Mode ON — aap jahan honge wahin se leads milengi"
           : "Shop Mode ON — registered shop address se leads milengi",
       );
+      toast.dismiss(toastId);
+    } catch (error: any) {
+      console.error("[VendorQuickControls] operation_mode save failed", error);
+      toast.error(error?.message || "Location Mode save nahi hua — permission/network issue", {
+        id: toastId,
+      });
+    } finally {
+      setSavingMode(false);
     }
   };
 
   const updateServiceRadius = async (km: number) => {
-    if (!user) return;
-    const prev = vendor?.service_radius_km ?? 10;
-    setVendor((p) => (p ? { ...p, service_radius_km: km } : p));
+    if (!user || savingRadius) return;
     setSavingRadius(true);
-    const { error } = await supabase
-      .from("vendors")
-      .update({ service_radius_km: km } as any)
-      .eq("user_id", user.id);
-    setSavingRadius(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, service_radius_km: prev } : p));
-      toast.error("Radius save nahi hua");
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "service_radius_km", value: km } }),
+        "Service Radius",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+    } catch (error: any) {
+      console.error("[VendorQuickControls] service_radius_km save failed", error);
+      toast.error(error?.message || "Radius save nahi hua — permission/network issue");
+    } finally {
+      setSavingRadius(false);
     }
   };
 
@@ -436,14 +593,20 @@ function VendorDashboard() {
     setFindingNeedId(cat.id);
     toast.loading(`${cat.name} needs find ho rahi hain…`, { id: "vendor-need-find" });
     window.setTimeout(() => {
-      const matches = leads.filter((lead) => lead.service === cat.name || (lead.items ?? []).some((item) => item.name === cat.name)).length;
+      const matches = leads.filter(
+        (lead) =>
+          lead.service === cat.name || (lead.items ?? []).some((item) => item.name === cat.name),
+      ).length;
       setFindingNeedId(null);
-      toast.success(matches ? `${matches} matching customer need mili` : "Is category ki live customer need abhi nahi hai", { id: "vendor-need-find" });
+      toast.success(
+        matches
+          ? `${matches} matching customer need mili`
+          : "Is category ki live customer need abhi nahi hai",
+        { id: "vendor-need-find" },
+      );
       if (matches) setLeadsSheetOpen(true);
     }, 1200);
   };
-
-
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -456,13 +619,16 @@ function VendorDashboard() {
 
   const unreadByLead = useLeadUnreadCounts(leads.map((l) => l.id));
 
-
   const acceptLead = async (id: string) => {
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       const { data, error } = await supabase.rpc("accept_lead", { _lead_id: id });
       const res = data as any;
       if (error || !res?.ok) {
-        toast.error(res?.reason === "insufficient_coins" ? "LeadX coins low hain — wallet recharge karein" : "Lead accept nahi ho paayi");
+        toast.error(
+          res?.reason === "insufficient_coins"
+            ? "LeadX coins low hain — wallet recharge karein"
+            : "Lead accept nahi ho paayi",
+        );
         return;
       }
       toast.success("Lead accept ho gayi — customer ko profile dikh rahi hai");
@@ -490,19 +656,46 @@ function VendorDashboard() {
   ];
 
   const statTiles = [
-    { value: stats.total,    label: "All Leads",    border: "oklch(0.72 0.01 260 / 0.55)", tint: "from-[#f5f6f8] to-[#eef0f3]" },
-    { value: pendingCount,   label: "Pending",      border: "oklch(0.78 0.14 82 / 0.7)",   tint: "from-[#fff8dc] to-[#f5e9b8]" },
-    { value: stats.process,  label: "In Process",   border: "#b91c1c66",                   tint: "from-[#fef2f2] to-[#fde0e0]" },
-    { value: stats.success,  label: "Success",      border: "#15803d66",                   tint: "from-[#f0fdf4] to-[#d6f5df]" },
-    { value: stats.rejected, label: "Rejected",     border: "oklch(0.78 0.14 82 / 0.4)",   tint: "from-[#fffaeb] to-[#fdf3c8]" },
+    {
+      value: stats.total,
+      label: "All Leads",
+      border: "oklch(0.72 0.01 260 / 0.55)",
+      tint: "from-[#f5f6f8] to-[#eef0f3]",
+    },
+    {
+      value: pendingCount,
+      label: "Pending",
+      border: "oklch(0.78 0.14 82 / 0.7)",
+      tint: "from-[#fff8dc] to-[#f5e9b8]",
+    },
+    {
+      value: stats.process,
+      label: "In Process",
+      border: "#b91c1c66",
+      tint: "from-[#fef2f2] to-[#fde0e0]",
+    },
+    {
+      value: stats.success,
+      label: "Success",
+      border: "#15803d66",
+      tint: "from-[#f0fdf4] to-[#d6f5df]",
+    },
+    {
+      value: stats.rejected,
+      label: "Rejected",
+      border: "oklch(0.78 0.14 82 / 0.4)",
+      tint: "from-[#fffaeb] to-[#fdf3c8]",
+    },
   ];
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden pb-32"
+      className="relative min-h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-32"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
+        touchAction: "pan-y",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       {/* Decorative orbs */}
@@ -514,7 +707,11 @@ function VendorDashboard() {
       {/* Map hero with vendor pin in center */}
       <section className="relative">
         <div className="relative h-[240px] w-full overflow-hidden">
-          <VendorMapHero center={{ lat: vendorLat, lng: vendorLng }} vendors={vendorMapCards} businessName={vendor?.business_name ?? "My Shop"} />
+          <VendorMapHero
+            center={{ lat: vendorLat, lng: vendorLng }}
+            vendors={vendorMapCards}
+            businessName={vendor?.business_name ?? "My Shop"}
+          />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
             {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
@@ -529,9 +726,7 @@ function VendorDashboard() {
 
       <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
         {/* Shop icon + search + profile icon */}
-        <div
-          className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]"
-        >
+        <div className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]">
           <button
             onClick={() => setActionsOpen(true)}
             aria-label="Quick actions"
@@ -551,7 +746,11 @@ function VendorDashboard() {
             className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0"
             style={{ borderColor: "#d4af37" }}
           >
-            <img src={vendor?.avatar_url || avatarUser} alt="" className="h-full w-full object-cover" />
+            <img
+              src={vendor?.avatar_url || avatarUser}
+              alt=""
+              className="h-full w-full object-cover"
+            />
             {vendor?.verified && (
               <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
             )}
@@ -565,32 +764,35 @@ function VendorDashboard() {
         )}
 
         {/* Horizontal stats strip */}
-        <div className="flex gap-2.5 overflow-x-auto -mx-3 px-3 pb-1 scrollbar-hide" style={{ animation: "fade-up 0.5s ease-out both" }}>
+        <div
+          className="flex gap-2.5 overflow-x-auto -mx-3 px-3 pb-1 scrollbar-hide"
+          style={{ animation: "fade-up 0.5s ease-out both" }}
+        >
           {statTiles.map((t, i) => (
             <button
               key={t.label}
               onClick={() => setLeadsSheetOpen(true)}
               className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
-              style={{ border: `1.5px solid ${t.border}`, animation: `fade-up 0.5s ease-out ${i * 60}ms both` }}
+              style={{
+                border: `1.5px solid ${t.border}`,
+                animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
+              }}
             >
               <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
                 <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
               </div>
-              <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">{t.value}</p>
-              <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">{t.label}</p>
+              <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
+                {t.value}
+              </p>
+              <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                {t.label}
+              </p>
             </button>
           ))}
         </div>
 
         {/* Live lead pricing & wallet balance */}
         <LeadPricingStrip />
-
-
-
-
-
-
-
 
         {/* Tabs */}
         <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
@@ -633,7 +835,9 @@ function VendorDashboard() {
               onClick={() => setLeadsSheetOpen(true)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true);
+              }}
               className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] cursor-pointer active:scale-[0.99] transition"
               style={{
                 background:
@@ -651,7 +855,9 @@ function VendorDashboard() {
               />
               <div className="relative flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">Total Added Leads</p>
+                  <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
+                    Total Added Leads
+                  </p>
                   <p className="text-xs italic opacity-75">Tap to view all leads</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -660,7 +866,9 @@ function VendorDashboard() {
                   </span>
                   <button
                     aria-label="Download"
-                    onClick={(e) => { e.stopPropagation(); /* TODO: CSV export */ }}
+                    onClick={(e) => {
+                      e.stopPropagation(); /* TODO: CSV export */
+                    }}
                     className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
                   >
                     <Download className="h-5 w-5" />
@@ -681,13 +889,19 @@ function VendorDashboard() {
             {/* Lead cards */}
             <div className="space-y-3">
               {loadingLeads && (
-                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">Leads load ho rahi hain…</div>
+                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">
+                  Leads load ho rahi hain…
+                </div>
               )}
               {!loadingLeads && leads.length === 0 && (
                 <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
                   <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
-                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Abhi koi lead nahi</p>
-                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Naya customer request karte hi yahan pop-up aayega.</p>
+                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+                    Abhi koi lead nahi
+                  </p>
+                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+                    Naya customer request karte hi yahan pop-up aayega.
+                  </p>
                 </div>
               )}
               {leads.map((lead) => (
@@ -701,11 +915,14 @@ function VendorDashboard() {
             </div>
           </>
         ) : (
-
           <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
             <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
-            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">Potential Leads coming soon</p>
-            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">Aapke area ke high-value leads yahan dikhenge.</p>
+            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+              Potential Leads coming soon
+            </p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+              Aapke area ke high-value leads yahan dikhenge.
+            </p>
           </div>
         )}
       </div>
@@ -727,9 +944,7 @@ function VendorDashboard() {
       {/* Bottom dock — quick actions */}
       <div className="fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-6 pb-3">
-          <div
-            className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2"
-          >
+          <div className="flex items-center justify-around rounded-3xl bg-white/95 border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_-8px_32px_-8px_rgba(212,175,55,0.35)] px-2 py-2">
             <DockItem
               label="Leads"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -775,7 +990,10 @@ function VendorDashboard() {
         loading={loadingNeeds}
         findingId={findingNeedId}
         onFind={startNeedSearch}
-        onMenu={() => { setProfileFinderOpen(false); setMenuOpen(true); }}
+        onMenu={() => {
+          setProfileFinderOpen(false);
+          setMenuOpen(true);
+        }}
       />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
       <VendorQuickActionsSheet
@@ -799,7 +1017,15 @@ function VendorDashboard() {
   );
 }
 
-function VendorMapHero({ center, vendors, businessName }: { center: { lat: number; lng: number }; vendors: QuickMapVendor[]; businessName: string }) {
+function VendorMapHero({
+  center,
+  vendors,
+  businessName,
+}: {
+  center: { lat: number; lng: number };
+  vendors: QuickMapVendor[];
+  businessName: string;
+}) {
   return (
     <div className="relative h-full w-full">
       <div className="pointer-events-none absolute inset-0">
@@ -815,15 +1041,25 @@ function VendorMapHero({ center, vendors, businessName }: { center: { lat: numbe
         />
       </div>
       <div className="pointer-events-none absolute inset-0 grid place-items-center z-30">
-        <span className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+        <span
+          className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]"
+          style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }}
+        />
         <button
           type="button"
           onClick={vendors[0]?.onClick}
           className="pointer-events-auto relative h-16 w-16 rounded-full grid place-items-center border-2 border-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.55)] active:scale-95 overflow-hidden"
-          style={{ background: "linear-gradient(180deg,#fff8dc,#f5d97a 45%,#d4af37)", borderColor: "rgba(255,255,255,0.9)" }}
+          style={{
+            background: "linear-gradient(180deg,#fff8dc,#f5d97a 45%,#d4af37)",
+            borderColor: "rgba(255,255,255,0.9)",
+          }}
           aria-label="Open vendor profile finder"
         >
-          <img src={vendors[0]?.avatar || avatarUser} alt="" className="h-12 w-12 rounded-full object-cover border-2 border-white" />
+          <img
+            src={vendors[0]?.avatar || avatarUser}
+            alt=""
+            className="h-12 w-12 rounded-full object-cover border-2 border-white"
+          />
           <span className="absolute -bottom-1 h-4 w-4 rotate-45 bg-[#d4af37] border-r border-b border-white/80" />
         </button>
       </div>
@@ -852,42 +1088,81 @@ function VendorProfileFinderSheet({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45"
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-t-3xl bg-gradient-to-b from-white via-[#fffaf0] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[90vh] overflow-y-auto"
         style={{ animation: "sheet-up 0.35s cubic-bezier(0.22,1,0.36,1)" }}
       >
-        <div className="flex justify-center pb-2"><span className="h-1.5 w-14 rounded-full bg-[color:oklch(0.78_0.14_82/0.45)]" /></div>
+        <div className="flex justify-center pb-2">
+          <span className="h-1.5 w-14 rounded-full bg-[color:oklch(0.78_0.14_82/0.45)]" />
+        </div>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-[color:oklch(0.50_0.10_82)]">Find user needs</p>
-            <h3 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] truncate">{vendorName}</h3>
+            <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-[color:oklch(0.50_0.10_82)]">
+              Find user needs
+            </p>
+            <h3 className="font-display text-xl font-bold text-[color:oklch(0.25_0.05_85)] truncate">
+              {vendorName}
+            </h3>
           </div>
-          <button onClick={onClose} className="h-9 w-9 rounded-full bg-white border grid place-items-center active:scale-90" aria-label="Close">
+          <button
+            onClick={onClose}
+            className="h-9 w-9 rounded-full bg-white border grid place-items-center active:scale-90"
+            aria-label="Close"
+          >
             <XCircle className="h-4 w-4" />
           </button>
         </div>
-        <button onClick={onMenu} className="mb-3 w-full rounded-2xl bg-white/90 border p-3 flex items-center gap-3 text-left active:scale-[0.98]">
+        <button
+          onClick={onMenu}
+          className="mb-3 w-full rounded-2xl bg-white/90 border p-3 flex items-center gap-3 text-left active:scale-[0.98]"
+        >
           <User className="h-5 w-5 text-[color:oklch(0.45_0.10_82)]" />
-          <span className="flex-1 text-sm font-bold text-[color:oklch(0.25_0.05_85)]">Open full vendor profile menu</span>
+          <span className="flex-1 text-sm font-bold text-[color:oklch(0.25_0.05_85)]">
+            Open full vendor profile menu
+          </span>
           <ChevronRight className="h-4 w-4" />
         </button>
         {loading ? (
-          <div className="py-10 grid place-items-center text-[color:oklch(0.45_0.10_82)]"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          <div className="py-10 grid place-items-center text-[color:oklch(0.45_0.10_82)]">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
         ) : categories.length === 0 ? (
-          <div className="rounded-2xl bg-white/90 border p-5 text-center text-xs text-[color:oklch(0.45_0.05_85)]">Pehle Inventory Mapping me services ON karein.</div>
+          <div className="rounded-2xl bg-white/90 border p-5 text-center text-xs text-[color:oklch(0.45_0.05_85)]">
+            Pehle Inventory Mapping me services ON karein.
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {categories.map((cat) => (
-              <button key={cat.id} onClick={() => onFind(cat)} className="rounded-2xl bg-white/95 border p-3 text-left shadow-sm active:scale-[0.97]">
+              <button
+                key={cat.id}
+                onClick={() => onFind(cat)}
+                className="rounded-2xl bg-white/95 border p-3 text-left shadow-sm active:scale-[0.97]"
+              >
                 <div className="h-20 rounded-xl overflow-hidden bg-[#fff8dc] grid place-items-center mb-2">
-                  {cat.image_url ? <img src={cat.image_url} alt="" className="h-full w-full object-cover" /> : <Radar className="h-7 w-7 text-[color:oklch(0.55_0.10_82)]" />}
+                  {cat.image_url ? (
+                    <img src={cat.image_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Radar className="h-7 w-7 text-[color:oklch(0.55_0.10_82)]" />
+                  )}
                 </div>
-                <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">{cat.name}</p>
-                <p className="text-[10px] text-[color:oklch(0.50_0.06_85)]">{cat.enabled} mapped · ₹{cat.lead_price_inr ?? 20}/lead</p>
+                <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.05_85)] truncate">
+                  {cat.name}
+                </p>
+                <p className="text-[10px] text-[color:oklch(0.50_0.06_85)]">
+                  {cat.enabled} mapped · ₹{cat.lead_price_inr ?? 20}/lead
+                </p>
                 <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
-                  {findingId === cat.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />} Find users
+                  {findingId === cat.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Search className="h-3 w-3" />
+                  )}{" "}
+                  Find users
                 </span>
               </button>
             ))}
@@ -898,31 +1173,73 @@ function VendorProfileFinderSheet({
   );
 }
 
-
 function StatCell({ value, label, active }: { value: number; label: string; active?: boolean }) {
   return (
     <div className="px-1">
-      <p className={`font-display font-bold text-xl leading-none ${active ? "text-[#8b1a1a]" : "text-[color:oklch(0.20_0.01_260)]"}`}>
+      <p
+        className={`font-display font-bold text-xl leading-none ${active ? "text-[#8b1a1a]" : "text-[color:oklch(0.20_0.01_260)]"}`}
+      >
         {value}
       </p>
       <p className="text-[8px] uppercase tracking-[0.18em] mt-1 opacity-90">{label}</p>
-      {active && <span className="block mx-auto mt-1 h-0.5 w-6 rounded-full bg-[color:oklch(0.20_0.01_260)]" />}
+      {active && (
+        <span className="block mx-auto mt-1 h-0.5 w-6 rounded-full bg-[color:oklch(0.20_0.01_260)]" />
+      )}
     </div>
   );
 }
 
-const SOURCE_META: Record<LeadSource, { label: string; icon: React.ReactNode; bg: string; text: string }> = {
-  whatsapp: { label: "WhatsApp", icon: <MessageCircle className="h-2.5 w-2.5" />, bg: "linear-gradient(135deg, #f5f6f8, #eef0f3)", text: "oklch(0.42 0.01 260)" },
-  call:     { label: "Calling",  icon: <Phone className="h-2.5 w-2.5" />,         bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)", text: "oklch(0.30 0.05 85)" },
-  digital:  { label: "Digital Dukan", icon: <Store className="h-2.5 w-2.5" />,    bg: "linear-gradient(135deg, #eef0f3, #a8acb3)", text: "oklch(0.20 0.01 260)" },
-  quick:    { label: "Quick Service", icon: <Zap className="h-2.5 w-2.5" />,      bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)", text: "oklch(0.30 0.05 85)" },
+const SOURCE_META: Record<
+  LeadSource,
+  { label: string; icon: React.ReactNode; bg: string; text: string }
+> = {
+  whatsapp: {
+    label: "WhatsApp",
+    icon: <MessageCircle className="h-2.5 w-2.5" />,
+    bg: "linear-gradient(135deg, #f5f6f8, #eef0f3)",
+    text: "oklch(0.42 0.01 260)",
+  },
+  call: {
+    label: "Calling",
+    icon: <Phone className="h-2.5 w-2.5" />,
+    bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)",
+    text: "oklch(0.30 0.05 85)",
+  },
+  digital: {
+    label: "Digital Dukan",
+    icon: <Store className="h-2.5 w-2.5" />,
+    bg: "linear-gradient(135deg, #eef0f3, #a8acb3)",
+    text: "oklch(0.20 0.01 260)",
+  },
+  quick: {
+    label: "Quick Service",
+    icon: <Zap className="h-2.5 w-2.5" />,
+    bg: "linear-gradient(135deg, #f5f6f8, #d8dde3)",
+    text: "oklch(0.30 0.05 85)",
+  },
 };
 
 const STATUS_META: Record<LeadStatus, { label: string; icon: React.ReactNode; tint: string }> = {
-  new:      { label: "Action Required", icon: <AlertCircle className="h-3 w-3" />, tint: "bg-[#eef0f3] text-[#3f4750]" },
-  process:  { label: "In Process",      icon: <Clock className="h-3 w-3" />,       tint: "bg-[#f5f6f8] text-[color:oklch(0.42_0.01_260)]" },
-  success:  { label: "Payout Released", icon: <CheckCircle2 className="h-3 w-3" />, tint: "bg-[#f0fdf4] text-[#15803d]" },
-  rejected: { label: "Rejected",        icon: <XCircle className="h-3 w-3" />,     tint: "bg-[#fef2f2] text-[#b91c1c]" },
+  new: {
+    label: "Action Required",
+    icon: <AlertCircle className="h-3 w-3" />,
+    tint: "bg-[#eef0f3] text-[#3f4750]",
+  },
+  process: {
+    label: "In Process",
+    icon: <Clock className="h-3 w-3" />,
+    tint: "bg-[#f5f6f8] text-[color:oklch(0.42_0.01_260)]",
+  },
+  success: {
+    label: "Payout Released",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+    tint: "bg-[#f0fdf4] text-[#15803d]",
+  },
+  rejected: {
+    label: "Rejected",
+    icon: <XCircle className="h-3 w-3" />,
+    tint: "bg-[#fef2f2] text-[#b91c1c]",
+  },
 };
 
 function formatLiveDate(iso?: string): string {
@@ -967,12 +1284,18 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
   const items =
     lead.items && lead.items.length > 0
       ? lead.items
-      : [{ id: lead.id, name: lead.service, image: lead.productImage ?? null, amount: lead.amount }];
+      : [
+          {
+            id: lead.id,
+            name: lead.service,
+            image: lead.productImage ?? null,
+            amount: lead.amount,
+          },
+        ];
   const allDone = completed >= 3;
 
   const area =
-    lead.address ||
-    (lead.distanceKm != null ? `${lead.distanceKm} km away` : "Location pending");
+    lead.address || (lead.distanceKm != null ? `${lead.distanceKm} km away` : "Location pending");
 
   return (
     <article
@@ -987,17 +1310,27 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
         </span>
       </div>
 
-      <button type="button" onClick={onOpen} className="block w-full text-left active:scale-[0.99] transition">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full text-left active:scale-[0.99] transition"
+      >
         {/* HEAD: avatar + name + area + live timer (right-side status pill removed) */}
         <div className="px-3.5 pt-1 pb-2 flex items-start gap-2.5">
           <span
             className="h-12 w-12 rounded-full overflow-hidden grid place-items-center font-display text-base font-bold text-white flex-shrink-0 shadow-sm border-2 border-white"
             style={{ background: "linear-gradient(135deg, #d4af37 0%, #b8860b 100%)" }}
           >
-            {avatar ? <img src={avatar} alt={lead.name} className="h-full w-full object-cover" /> : initial}
+            {avatar ? (
+              <img src={avatar} alt={lead.name} className="h-full w-full object-cover" />
+            ) : (
+              initial
+            )}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">{lead.name}</p>
+            <p className="font-display text-[15px] font-bold text-slate-900 leading-tight truncate">
+              {lead.name}
+            </p>
             <p className="text-[11px] text-slate-600 mt-0.5 truncate flex items-center gap-1">
               <span className="text-[10px]">📍</span>
               <span className="truncate">{area}</span>
@@ -1023,19 +1356,25 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-display text-[14px] font-bold text-slate-900 leading-tight truncate">{it.name}</p>
+                <p className="font-display text-[14px] font-bold text-slate-900 leading-tight truncate">
+                  {it.name}
+                </p>
                 {idx === 0 && lead.note && (
-                  <p className="text-[11px] text-slate-600 italic mt-0.5 line-clamp-2 leading-snug">“{lead.note}”</p>
+                  <p className="text-[11px] text-slate-600 italic mt-0.5 line-clamp-2 leading-snug">
+                    “{lead.note}”
+                  </p>
                 )}
                 <div className="mt-1 flex items-center gap-2">
                   {it.amount > 0 ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800">
                       ₹ {it.amount.toLocaleString()}
-                      {it.priceMin != null && it.priceMax != null && it.priceMin !== it.priceMax && (
-                        <span className="text-[9px] font-medium text-emerald-700/80">
-                          ({it.priceMin.toLocaleString()}–{it.priceMax.toLocaleString()})
-                        </span>
-                      )}
+                      {it.priceMin != null &&
+                        it.priceMax != null &&
+                        it.priceMin !== it.priceMax && (
+                          <span className="text-[9px] font-medium text-emerald-700/80">
+                            ({it.priceMin.toLocaleString()}–{it.priceMax.toLocaleString()})
+                          </span>
+                        )}
                     </span>
                   ) : (
                     <span className="text-[10px] italic text-slate-400">Rate not set</span>
@@ -1055,8 +1394,12 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
         aria-label="Open status timeline"
       >
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Workflow · {completed}/3</span>
-          <span className={`text-[10px] font-bold ${allDone ? "text-emerald-700" : "text-amber-700"}`}>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+            Workflow · {completed}/3
+          </span>
+          <span
+            className={`text-[10px] font-bold ${allDone ? "text-emerald-700" : "text-amber-700"}`}
+          >
             {allDone ? "✓ All steps done" : "Tap for status"}
           </span>
         </div>
@@ -1080,7 +1423,9 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
           aria-label="Call"
           className="px-5 grid place-items-center border-l border-slate-200/70 active:scale-95"
         >
-          <Phone className={`h-4 w-4 ${steps.call ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`} />
+          <Phone
+            className={`h-4 w-4 ${steps.call ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`}
+          />
         </a>
         <Link
           to="/vendor/chat"
@@ -1089,7 +1434,9 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
           aria-label="Open chat"
           className="relative px-5 grid place-items-center border-l border-slate-200/70 active:scale-95"
         >
-          <MessageCircle className={`h-4 w-4 ${steps.msg ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`} />
+          <MessageCircle
+            className={`h-4 w-4 ${steps.msg ? "text-emerald-600" : "text-[color:oklch(0.42_0.01_260)]"}`}
+          />
           {unread > 0 && (
             <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
               {unread > 99 ? "99+" : unread}
@@ -1106,12 +1453,16 @@ function StepDot({ done, label }: { done: boolean; label: string }) {
     <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
       <span
         className={`h-5 w-5 rounded-full grid place-items-center text-[10px] font-bold border-2 transition ${
-          done ? "bg-emerald-500 text-white border-emerald-600 shadow" : "bg-white text-slate-400 border-slate-300"
+          done
+            ? "bg-emerald-500 text-white border-emerald-600 shadow"
+            : "bg-white text-slate-400 border-slate-300"
         }`}
       >
         {done ? "✓" : ""}
       </span>
-      <span className={`text-[8px] font-bold uppercase tracking-wider ${done ? "text-emerald-700" : "text-slate-500"}`}>
+      <span
+        className={`text-[8px] font-bold uppercase tracking-wider ${done ? "text-emerald-700" : "text-slate-500"}`}
+      >
         {label}
       </span>
     </div>
@@ -1119,17 +1470,34 @@ function StepDot({ done, label }: { done: boolean; label: string }) {
 }
 
 function StepBar({ done }: { done: boolean }) {
-  return <span className={`flex-1 h-0.5 rounded-full transition mb-2.5 ${done ? "bg-emerald-500" : "bg-slate-300"}`} />;
+  return (
+    <span
+      className={`flex-1 h-0.5 rounded-full transition mb-2.5 ${done ? "bg-emerald-500" : "bg-slate-300"}`}
+    />
+  );
 }
 
-
-
-
-
-function DockItem({ label, icon, active, badge, onClick }: { label: string; icon: React.ReactNode; active?: boolean; badge?: number; onClick?: () => void }) {
+function DockItem({
+  label,
+  icon,
+  active,
+  badge,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  badge?: number;
+  onClick?: () => void;
+}) {
   return (
-    <button onClick={onClick} className="relative flex flex-col items-center gap-0.5 px-3 py-1 active:scale-95 transition">
-      <span className={`relative h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+    <button
+      onClick={onClick}
+      className="relative flex flex-col items-center gap-0.5 px-3 py-1 active:scale-95 transition"
+    >
+      <span
+        className={`relative h-8 w-8 rounded-full grid place-items-center ${active ? "bg-[color:oklch(0.97_0.05_85)] text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}
+      >
         {icon}
         {badge && badge > 0 ? (
           <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 grid place-items-center rounded-full bg-rose-500 text-white text-[9px] font-bold border border-white shadow animate-pulse">
@@ -1137,7 +1505,9 @@ function DockItem({ label, icon, active, badge, onClick }: { label: string; icon
           </span>
         ) : null}
       </span>
-      <span className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}>
+      <span
+        className={`text-[9px] font-bold ${active ? "text-[color:oklch(0.42_0.01_260)]" : "text-[color:oklch(0.55_0.10_82)]"}`}
+      >
         {label}
       </span>
     </button>
