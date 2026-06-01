@@ -390,11 +390,9 @@ function QuickPage() {
     const loadRealVendors = async () => {
       setRealVendorsLoading(true);
       try {
-        // If a sub-category is picked → filter by its items.
-        // Otherwise → show ALL online vendors near the user (floating on map by default).
-        const res = selectedSub && subItemIds.length > 0
-          ? await getQuickMapVendorsFn({ data: { itemIds: subItemIds, origin, radiusKm: 10 } })
-          : await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
+        // Customer map must always show all nearby vendors by location.
+        // Online/active vendors become green; offline/inactive vendors stay visible in amber.
+        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
         const mapped: Vendor[] = realRows.slice(0, 20).map((v: any, i: number) => {
