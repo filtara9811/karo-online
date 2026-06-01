@@ -189,9 +189,9 @@ async function ensureVendorForUser(userId: string, claims: AuthClaims) {
 
   // Auto-create a minimal vendor row so quick controls work for first-time vendors.
   const primaryPhone = phones[0] ?? null;
-  const ownerName =
-    String(claims?.user_metadata?.full_name || claims?.user_metadata?.name || claims?.email || "") ||
-    "Vendor";
+  const ownerName = String(
+    claims?.user_metadata?.full_name || claims?.user_metadata?.name || claims?.email || "",
+  ) || "Vendor";
   const created = await admin
     .from("vendors")
     .insert({
