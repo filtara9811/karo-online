@@ -485,7 +485,7 @@ function VendorDashboard() {
       next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…",
     );
     try {
-      const gps = next ? (await getFreshGps()) ?? currentVendorLocation() : null;
+      const gps = next ? ((await getFreshGps()) ?? currentVendorLocation()) : null;
       const updated = await withQuickControlTimeout(
         updateQuickControl({
           data: gps
@@ -504,7 +504,11 @@ function VendorDashboard() {
       toast.dismiss(toastId);
 
       // Background GPS refresh — non-blocking. Silently times out without freezing the button.
-      if (next && !gps && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
+      if (
+        next &&
+        !gps &&
+        ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic"
+      ) {
         getFreshGps()
           .then(async (gps) => {
             if (!gps || !user) return;
@@ -722,7 +726,13 @@ function VendorDashboard() {
             center={{ lat: vendorLat, lng: vendorLng }}
             vendors={vendorMapCards}
             businessName={vendor?.business_name ?? "My Shop"}
-            locationLabel={liveGeo ? geo.label : vendor?.operation_mode === "dynamic" ? "Live GPS" : "Shop address"}
+            locationLabel={
+              liveGeo
+                ? geo.label
+                : vendor?.operation_mode === "dynamic"
+                  ? "Live GPS"
+                  : "Shop address"
+            }
           />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
