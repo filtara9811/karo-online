@@ -9,7 +9,29 @@ type AuthClaims = {
   user_metadata?: Record<string, unknown> | null;
 };
 
-type VendorRow = Record<string, unknown> & { id: string; user_id?: string | null; whatsapp?: string | null };
+type VendorSettings = {
+  business_name?: string | null;
+  owner_name?: string | null;
+  avatar_url?: string | null;
+  status?: string | null;
+  verified?: boolean | null;
+  auto_accept_leads?: boolean | null;
+  is_online?: boolean | null;
+  lat?: number | null;
+  lng?: number | null;
+  live_lat?: number | null;
+  live_lng?: number | null;
+  operation_mode?: string | null;
+  service_radius_km?: number | null;
+};
+
+type VendorRow = VendorSettings & {
+  id: string;
+  user_id?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  manager_email?: string | null;
+};
 
 type DbError = { message?: string } | null;
 type DbSingleResult = { data: VendorRow | null; error: DbError };
