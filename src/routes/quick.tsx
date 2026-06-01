@@ -23,7 +23,7 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
-import { getQuickMapVendors } from "@/lib/quick-vendors.functions";
+import { getQuickMapVendors, getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -373,34 +373,34 @@ function QuickPage() {
   const [realVendors, setRealVendors] = useState<Vendor[]>([]);
   const [realVendorsLoading, setRealVendorsLoading] = useState(false);
   const getQuickMapVendorsFn = useServerFn(getQuickMapVendors);
+  const getNearbyOnlineVendorsFn = useServerFn(getNearbyOnlineVendors);
 
   useEffect(() => {
-    if (!selectedSub) {
+    // Need user location before we can compute nearby vendors at all.
+    if (geo.lat == null || geo.lng == null) {
       setRealVendors([]);
       return;
     }
-    const subItemIds = items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id).filter((id) => UUID_RE.test(id));
-    if (subItemIds.length === 0) {
-      setRealVendors([]);
-      return;
-    }
+    const origin = { lat: geo.lat, lng: geo.lng };
+    const subItemIds = selectedSub
+      ? items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id).filter((id) => UUID_RE.test(id))
+      : [];
+
     let cancelled = false;
     const loadRealVendors = async () => {
       setRealVendorsLoading(true);
       try {
-        const res = await getQuickMapVendorsFn({
-          data: {
-            itemIds: subItemIds,
-            origin: geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null,
-            radiusKm: 10,
-          },
-        });
+        // If a sub-category is picked → filter by its items.
+        // Otherwise → show ALL online vendors near the user (floating on map by default).
+        const res = selectedSub && subItemIds.length > 0
+          ? await getQuickMapVendorsFn({ data: { itemIds: subItemIds, origin, radiusKm: 10 } })
+          : await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
         const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
           const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42]];
           const [x, y] = positions[i % positions.length];
-          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub.slug };
+          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
         });
         setRealVendors(mapped);
       } catch (e) {
@@ -412,11 +412,13 @@ function QuickPage() {
     };
     loadRealVendors();
     const ch = supabase
-      .channel(`quick-map-vendors-${selectedSub.id}`)
+      .channel(`quick-map-vendors-${selectedSub?.id ?? "all"}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "vendors" }, () => loadRealVendors())
       .on("postgres_changes", { event: "*", schema: "public", table: "vendor_item_mappings" }, () => loadRealVendors())
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    // Auto-refresh every 60s so freshly-online vendors appear without a manual reload.
+    const interval = window.setInterval(loadRealVendors, 60_000);
+    return () => { cancelled = true; window.clearInterval(interval); supabase.removeChannel(ch); };
   }, [selectedSub, items, geo.lat, geo.lng]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
