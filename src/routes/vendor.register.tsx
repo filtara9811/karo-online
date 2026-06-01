@@ -157,7 +157,8 @@ function VendorRegister() {
     (async () => {
       // Best-effort: relink an orphaned vendor row (created under a previous
       // auth identity for the same phone) to this auth user.
-      const phoneDigits = (user.phone || profile?.phone || "").replace(/\D/g, "");
+      const metaPhone = String((user.user_metadata as any)?.phone ?? (user.user_metadata as any)?.phone_number ?? "");
+      const phoneDigits = (user.phone || profile?.phone || metaPhone).replace(/\D/g, "");
       if (phoneDigits.length >= 10) {
         try { await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits }); } catch { /* ignore */ }
       }
@@ -273,7 +274,8 @@ function VendorRegister() {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
     // Try to relink any pre-existing vendor row (by phone) to this auth user.
-    const phoneDigits = (auth.user.phone || profile?.phone || "").replace(/\D/g, "");
+    const metaPhone = String((auth.user.user_metadata as any)?.phone ?? (auth.user.user_metadata as any)?.phone_number ?? "");
+    const phoneDigits = (auth.user.phone || profile?.phone || metaPhone).replace(/\D/g, "");
     if (phoneDigits.length >= 10) {
       try { await supabase.rpc("vendor_claim_by_phone", { _phone: phoneDigits }); } catch { /* ignore */ }
     }
