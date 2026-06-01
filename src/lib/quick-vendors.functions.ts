@@ -161,7 +161,7 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
           km,
         };
       })
-      .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && v.km != null)
+      .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && (!origin || v.km != null))
       .filter((v: any) => !origin || radiusKm === 0 || v.km <= radiusKm)
       .sort((a: any, b: any) => {
         if (a.is_online !== b.is_online) return a.is_online ? -1 : 1;
