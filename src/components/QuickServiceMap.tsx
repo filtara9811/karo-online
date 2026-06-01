@@ -97,6 +97,7 @@ export function QuickServiceMap({
   showControls = true,
   showUserPin = true,
   countLabel,
+  radiusKm,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -107,11 +108,13 @@ export function QuickServiceMap({
   showControls?: boolean;
   showUserPin?: boolean;
   countLabel?: string;
+  radiusKm?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userOverlayRef = useRef<any>(null);
   const vendorOverlaysRef = useRef<any[]>([]);
+  const circleRef = useRef<any>(null);
   const didInitialCenterRef = useRef(false);
   // Always start in "loading" for SSR-safe hydration; switch to "error" in effect when running on a preview host.
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -290,6 +293,35 @@ export function QuickServiceMap({
     if (!userOverlayRef.current) return;
     userOverlayRef.current.updateLabel(userLabel || "Detecting your location…");
   }, [userLabel]);
+
+  // Geofence circle around the user (e.g. 10 km service radius)
+  useEffect(() => {
+    if (status !== "ready" || !mapRef.current) return;
+    const g = (window as any).google;
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+      circleRef.current = null;
+    }
+    if (!center || !radiusKm || radiusKm <= 0) return;
+    circleRef.current = new g.maps.Circle({
+      map: mapRef.current,
+      center,
+      radius: radiusKm * 1000,
+      strokeColor: "#d97706",
+      strokeOpacity: 0.85,
+      strokeWeight: 2,
+      fillColor: "#facc15",
+      fillOpacity: 0.08,
+      clickable: false,
+      zIndex: 1,
+    });
+    return () => {
+      if (circleRef.current) {
+        circleRef.current.setMap(null);
+        circleRef.current = null;
+      }
+    };
+  }, [status, center?.lat, center?.lng, radiusKm]);
 
   // vendor info-cards around user (custom HTML overlays)
   useEffect(() => {
@@ -574,9 +606,26 @@ export function QuickServiceMap({
         </button>
       </div>}
 
-      {/* Vendor count chip */}
-      <div className="absolute top-3 left-3 z-30 px-2.5 py-1 rounded-full bg-white/90 border border-amber-300/60 shadow text-[10px] font-bold text-amber-900">
-        {countLabel ?? `${vendors.length} nearby vendors`}
+      {/* Vendor count + geofence chips */}
+      <div className="absolute top-3 left-3 z-30 flex flex-col items-start gap-1">
+        <div className="px-2.5 py-1 rounded-full bg-white/95 border border-amber-300/60 shadow text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+          {(() => {
+            const online = vendors.filter((v) => v.status === "Online").length;
+            const offline = vendors.length - online;
+            return countLabel ?? (
+              <>
+                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{online} online</span>
+                <span className="text-amber-700/60">·</span>
+                <span className="inline-flex items-center gap-1 text-amber-700/80"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{offline} offline</span>
+              </>
+            );
+          })()}
+        </div>
+        {radiusKm ? (
+          <div className="px-2 py-0.5 rounded-full bg-amber-600/90 text-white text-[9px] font-bold shadow">
+            {radiusKm} km radius
+          </div>
+        ) : null}
       </div>
 
       {/* Tap-to-enable — tiny corner chip so it doesn't cover the search area */}

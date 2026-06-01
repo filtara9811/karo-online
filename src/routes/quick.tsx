@@ -397,10 +397,11 @@ function QuickPage() {
           : await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
-        const mapped: Vendor[] = realRows.slice(0, 8).map((v: any, i: number) => {
-          const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42]];
+        const mapped: Vendor[] = realRows.slice(0, 20).map((v: any, i: number) => {
+          const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42], [60, 18], [35, 50], [85, 70], [12, 75]];
           const [x, y] = positions[i % positions.length];
-          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area: v.km != null ? `${v.km} km away` : "Nearby", km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
+          const area = v.area || (v.km != null ? `${v.km} km away` : "Nearby");
+          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area, km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
         });
         setRealVendors(mapped);
       } catch (e) {
@@ -479,6 +480,7 @@ function QuickPage() {
           userAvatar={profile?.avatar_url || avatarUser}
           userLabel={geo.label}
           geoStatus={geo.status}
+          radiusKm={10}
         />
       </section>
 
