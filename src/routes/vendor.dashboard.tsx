@@ -520,10 +520,12 @@ function VendorDashboard() {
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden pb-32"
+      className="relative min-h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-32"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
+        touchAction: "pan-y",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       {/* Decorative orbs */}
