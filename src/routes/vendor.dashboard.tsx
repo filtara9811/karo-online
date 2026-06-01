@@ -367,8 +367,7 @@ function VendorDashboard() {
   const toggleOnline = async () => {
     if (!user || savingOnline) return;
     haptic();
-    const prev = !!vendor?.is_online;
-    const next = !prev;
+    const next = !vendor?.is_online;
     console.info("[VendorQuickControls] is_online toggle requested", { next });
     setSavingOnline(true);
     const toastId = toast.loading(next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…");
