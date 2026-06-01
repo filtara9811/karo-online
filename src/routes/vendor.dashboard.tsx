@@ -776,9 +776,21 @@ function VendorDashboard() {
                   : "Shop address"
             }
           />
-          {/* Vendor count chip — like user home */}
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
-            {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+          {/* Status + nearby customers chip */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
+              {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+            </div>
+            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {onlineCustomerCount} online
+              <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+              {offlineCustomerCount} offline
+            </div>
+            <div className="px-2.5 py-1 rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] shadow text-[9px] font-bold text-[color:oklch(0.45_0.05_85)]">
+              10 km radius
+            </div>
           </div>
           <div className="absolute top-3 right-3">
             <VendorNotificationBell />
