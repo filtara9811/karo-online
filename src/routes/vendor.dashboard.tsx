@@ -46,6 +46,7 @@ import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
+import { getNearbyCustomers } from "@/lib/nearby-customers.functions";
 
 export const Route = createFileRoute("/vendor/dashboard")({
   head: () => ({
