@@ -66,6 +66,20 @@ type CustomerLookup = {
   address: string | null;
 };
 
+const QUICK_CONTROL_TIMEOUT_MS = 12000;
+
+async function withQuickControlTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} request timed out`)), QUICK_CONTROL_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function timeAgo(iso: string): string {
   const d = Date.now() - new Date(iso).getTime();
   const m = Math.floor(d / 60000);
