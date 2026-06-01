@@ -80,13 +80,37 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
 // Offline vendors fall back to registered shop lat/lng so they always float
 // on the map as long as admin has approved them.
 const NearbyOnlineSchema = z.object({
-  origin: z.object({ lat: z.number(), lng: z.number() }),
+  origin: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
   radiusKm: z.number().min(0).max(50).optional(),
+  subCategoryId: z.string().uuid().nullable().optional(),
+  itemIds: z.array(z.string().uuid()).max(50).optional(),
 });
 
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
+    const itemIds = Array.from(new Set(data.itemIds ?? [])).slice(0, 50);
+    let mappedVendorIds: string[] | null = null;
+
+    if (itemIds.length || data.subCategoryId) {
+      let query = (supabaseAdmin as any)
+        .from("vendor_item_mappings")
+        .select("vendor_id, catalog_items!inner(category_id)")
+        .eq("is_active", true);
+
+      if (itemIds.length) query = query.in("item_id", itemIds);
+      if (data.subCategoryId) query = query.eq("catalog_items.category_id", data.subCategoryId);
+
+      const { data: mappings, error: mappingsError } = await query;
+      if (mappingsError) {
+        return { ok: false as const, error: mappingsError.message, vendors: [], onlineCount: 0, offlineCount: 0 };
+      }
+      mappedVendorIds = Array.from(new Set((mappings ?? []).map((m: any) => String(m.vendor_id)).filter(Boolean)));
+      if (mappedVendorIds.length === 0) {
+        return { ok: true as const, vendors: [], onlineCount: 0, offlineCount: 0 };
+      }
+    }
+
     const { data: vendors, error } = await (supabaseAdmin as any)
       .from("vendors")
       .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
@@ -94,7 +118,7 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
 
     if (error) return { ok: false as const, error: error.message, vendors: [], onlineCount: 0, offlineCount: 0 };
 
-    const origin = data.origin;
+    const origin = data.origin ?? null;
     const radiusKm = data.radiusKm ?? 10;
     const FRESH_MS = 24 * 60 * 60 * 1000; // 24h tolerance for live coords
     const vendorUserIds = Array.from(new Set((vendors ?? []).map((v: any) => v.user_id).filter(Boolean)));
@@ -109,14 +133,15 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
       );
     }
     const publicVendors = (vendors ?? [])
+      .filter((v: any) => !mappedVendorIds || mappedVendorIds.includes(String(v.user_id)) || mappedVendorIds.includes(String(v.id)))
       .map((v: any) => {
         const fresh = !!v.location_updated_at && Date.now() - new Date(v.location_updated_at).getTime() <= FRESH_MS;
         const useLive = fresh && v.live_lat != null && v.live_lng != null;
-        const rawLat = useLive ? v.live_lat : v.lat;
-        const rawLng = useLive ? v.live_lng : v.lng;
+        const rawLat = useLive ? v.live_lat : (v.lat ?? v.live_lat);
+        const rawLng = useLive ? v.live_lng : (v.lng ?? v.live_lng);
         const lat = rawLat == null ? null : Number(rawLat);
         const lng = rawLng == null ? null : Number(rawLng);
-        const km = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+        const km = origin && lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
           ? kmBetween(origin, { lat, lng }) : null;
         const profile = profileMap.get(String(v.user_id));
         const areaRaw = String(profile?.address ?? "").split(",").slice(0, 2).join(",").trim();
@@ -136,8 +161,8 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
           km,
         };
       })
-      .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && v.km != null)
-      .filter((v: any) => (radiusKm === 0 || v.km <= radiusKm))
+      .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng) && (!origin || v.km != null))
+      .filter((v: any) => !origin || radiusKm === 0 || v.km <= radiusKm)
       .sort((a: any, b: any) => {
         if (a.is_online !== b.is_online) return a.is_online ? -1 : 1;
         return (a.km ?? 9999) - (b.km ?? 9999);
