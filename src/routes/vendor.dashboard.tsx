@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +85,6 @@ function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?:
 }
 
 function VendorDashboard() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -740,7 +739,7 @@ function VendorDashboard() {
             </button>
             <button
               type="button"
-              onClick={openProfileFinder}
+              onClick={() => setMenuOpen(true)}
               className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
               <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
@@ -762,7 +761,7 @@ function VendorDashboard() {
         loading={loadingNeeds}
         findingId={findingNeedId}
         onFind={startNeedSearch}
-        onMenu={() => { setProfileFinderOpen(false); navigate({ to: "/vendor/shop" }); }}
+        onMenu={() => { setProfileFinderOpen(false); setMenuOpen(true); }}
       />
       <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
       <VendorQuickActionsSheet
