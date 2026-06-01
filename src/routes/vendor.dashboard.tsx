@@ -432,18 +432,19 @@ function VendorDashboard() {
   };
 
   const updateServiceRadius = async (km: number) => {
-    if (!user) return;
-    const prev = vendor?.service_radius_km ?? 10;
-    setVendor((p) => (p ? { ...p, service_radius_km: km } : p));
+    if (!user || savingRadius) return;
     setSavingRadius(true);
-    const { error } = await supabase
-      .from("vendors")
-      .update({ service_radius_km: km } as any)
-      .eq("user_id", user.id);
-    setSavingRadius(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, service_radius_km: prev } : p));
-      toast.error("Radius save nahi hua");
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "service_radius_km", value: km } }),
+        "Service Radius",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+    } catch (error: any) {
+      console.error("[VendorQuickControls] service_radius_km save failed", error);
+      toast.error(error?.message || "Radius save nahi hua — permission/network issue");
+    } finally {
+      setSavingRadius(false);
     }
   };
 
