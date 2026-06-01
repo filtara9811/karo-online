@@ -128,7 +128,11 @@ async function findVendorByEmail(admin: LooseClient, emails: string[]) {
   if (!emails.length) return null;
   const selectFields = `id, user_id, email, manager_email, ${vendorFields}`;
   for (const email of emails) {
-    const byEmail = await admin.from("vendors").select(selectFields).eq("email", email).maybeSingle();
+    const byEmail = await admin
+      .from("vendors")
+      .select(selectFields)
+      .eq("email", email)
+      .maybeSingle();
     if (byEmail.error) throw new Error(byEmail.error.message);
     if (byEmail.data) return byEmail.data;
 
@@ -143,8 +147,8 @@ async function findVendorByEmail(admin: LooseClient, emails: string[]) {
   return null;
 }
 
-async function ensureVendorForUser(userId: string, claims: any) {
-  const admin = supabaseAdmin as any;
+async function ensureVendorForUser(userId: string, claims: AuthClaims) {
+  const admin = supabaseAdmin as unknown as LooseClient;
   const byOwner = await admin
     .from("vendors")
     .select(`id, ${vendorFields}`)
@@ -161,13 +165,10 @@ async function ensureVendorForUser(userId: string, claims: any) {
   const emailMatch = await findVendorByEmail(admin, emailCandidates(claims));
   if (emailMatch) return claimVendorRow(admin, emailMatch, userId);
 
-
   // Auto-create a minimal vendor row so quick controls work for first-time vendors.
   const primaryPhone = phones[0] ?? null;
   const ownerName =
-    claims?.user_metadata?.full_name ||
-    claims?.user_metadata?.name ||
-    claims?.email ||
+    String(claims?.user_metadata?.full_name || claims?.user_metadata?.name || claims?.email || "") ||
     "Vendor";
   const created = await admin
     .from("vendors")
@@ -185,7 +186,9 @@ async function ensureVendorForUser(userId: string, claims: any) {
     if (created.error.message?.includes("vendors_unique_whatsapp10")) {
       const retryMatch = await findVendorByPhone(admin, phones);
       if (retryMatch) return claimVendorRow(admin, retryMatch, userId);
-      throw new Error("Is phone number ka vendor profile pehle se hai. Same phone se login karke retry karein.");
+      throw new Error(
+        "Is phone number ka vendor profile pehle se hai. Same phone se login karke retry karein.",
+      );
     }
     if (created.error.message?.includes("vendors_unique_email_norm")) {
       const retryMatch = await findVendorByEmail(admin, emailCandidates(claims));
@@ -203,7 +206,7 @@ export const updateVendorQuickControl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => VendorQuickControlSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context as any;
+    const { userId, claims } = context as { userId: string; claims: AuthClaims };
     const vendor = await ensureVendorForUser(userId, claims);
     const patch: Record<string, unknown> = {
       [data.key]: data.value,
@@ -221,7 +224,7 @@ export const updateVendorQuickControl = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: updated, error } = await (supabaseAdmin as any)
+    const { data: updated, error } = await (supabaseAdmin as unknown as LooseClient)
       .from("vendors")
       .update(patch)
       .eq("id", vendor.id)
