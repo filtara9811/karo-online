@@ -437,6 +437,9 @@ function VendorDashboard() {
       );
     });
 
+  const currentVendorLocation = () =>
+    geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+
   useEffect(() => {
     if (!user || !vendor?.is_online || vendor.operation_mode !== "dynamic") return;
     if (vendor.live_lat != null && vendor.live_lng != null) return;
@@ -482,8 +485,13 @@ function VendorDashboard() {
       next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…",
     );
     try {
+      const gps = next ? (await getFreshGps()) ?? currentVendorLocation() : null;
       const updated = await withQuickControlTimeout(
-        updateQuickControl({ data: { key: "is_online", value: next } }),
+        updateQuickControl({
+          data: gps
+            ? { key: "is_online", value: next, location: gps }
+            : { key: "is_online", value: next },
+        }),
         "Vendor Status",
       );
       setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
@@ -496,7 +504,7 @@ function VendorDashboard() {
       toast.dismiss(toastId);
 
       // Background GPS refresh — non-blocking. Silently times out without freezing the button.
-      if (next && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
+      if (next && !gps && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
         getFreshGps()
           .then(async (gps) => {
             if (!gps || !user) return;
