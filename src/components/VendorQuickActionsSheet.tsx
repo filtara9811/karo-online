@@ -147,11 +147,13 @@ export function VendorQuickActionsSheet({
               aria-checked={isDynamic}
               aria-label="Location mode"
               disabled={saving.mode}
-              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${isDynamic ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 touch-manipulation ${saving.mode ? "bg-slate-400" : isDynamic ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${isDynamic ? "left-9" : "left-1"}`} />
-              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${isDynamic ? "left-2 text-white" : "right-2 text-slate-500"}`}>
-                {isDynamic ? "ON" : "OFF"}
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 grid place-items-center ${saving.mode ? "left-5" : isDynamic ? "left-9" : "left-1"}`}>
+                {saving.mode && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+              </span>
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${saving.mode ? "right-2 text-white" : isDynamic ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {saving.mode ? "..." : isDynamic ? "ON" : "OFF"}
               </span>
             </button>
           </div>
