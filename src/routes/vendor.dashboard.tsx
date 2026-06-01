@@ -655,6 +655,35 @@ function VendorDashboard() {
   const vendorLat = liveGeo?.lat ?? vendor?.live_lat ?? vendor?.lat ?? 28.6692;
   const vendorLng = liveGeo?.lng ?? vendor?.live_lng ?? vendor?.lng ?? 77.2008;
 
+  // Floating nearby customers (10km) — auto-refresh every 60s
+  const fetchNearbyCustomers = useServerFn(getNearbyCustomers);
+  const [nearbyCustomers, setNearbyCustomers] = useState<
+    Array<{ id: string; name: string; avatar_url: string | null; lat: number; lng: number; km: number; area: string | null; is_online: boolean }>
+  >([]);
+  useEffect(() => {
+    if (!Number.isFinite(vendorLat) || !Number.isFinite(vendorLng)) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res: any = await fetchNearbyCustomers({
+          data: { origin: { lat: vendorLat, lng: vendorLng }, radiusKm: 10 },
+        });
+        if (!cancelled && res?.ok) setNearbyCustomers(res.customers ?? []);
+      } catch {
+        /* silent */
+      }
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [vendorLat, vendorLng, fetchNearbyCustomers]);
+
+  const onlineCustomerCount = nearbyCustomers.filter((c) => c.is_online).length;
+  const offlineCustomerCount = nearbyCustomers.length - onlineCustomerCount;
+
   const vendorMapCards: QuickMapVendor[] = [
     {
       id: "vendor-home",
@@ -669,6 +698,18 @@ function VendorDashboard() {
       lng: vendorLng,
       onClick: openProfileFinder,
     },
+    ...nearbyCustomers.map((c) => ({
+      id: `cust-${c.id}`,
+      name: c.name,
+      avatar: c.avatar_url || avatarUser,
+      x: 50,
+      y: 50,
+      area: c.area ?? "Nearby",
+      km: c.km,
+      status: (c.is_online ? "Online" : "Offline") as "Online" | "Offline",
+      lat: c.lat,
+      lng: c.lng,
+    })),
   ];
 
   const statTiles = [
