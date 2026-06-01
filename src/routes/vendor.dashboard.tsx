@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
+import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
 
 
 
@@ -86,6 +88,7 @@ function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?:
 
 function VendorDashboard() {
   const { user, profile } = useAuth();
+  const updateQuickControl = useServerFn(updateVendorQuickControl);
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
