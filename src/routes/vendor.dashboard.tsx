@@ -286,6 +286,7 @@ function VendorDashboard() {
   const toggleAutoAccept = async () => {
     if (!user) return;
     const next = !vendor?.auto_accept_leads;
+    haptic();
     setSavingAuto(true);
     setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
     const { error } = await supabase
@@ -356,7 +357,8 @@ function VendorDashboard() {
       toast.error("Online status save nahi hua");
       return;
     }
-    setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online), live_lat: (data as any)?.live_lat ?? p.live_lat, live_lng: (data as any)?.live_lng ?? p.live_lng } : p));
+    const returned = Array.isArray(data) ? data[0] : data;
+    setVendor((p) => (p ? { ...p, is_online: typeof (returned as any)?.is_online === "boolean" ? Boolean((returned as any).is_online) : next, live_lat: (returned as any)?.live_lat ?? p.live_lat, live_lng: (returned as any)?.live_lng ?? p.live_lng } : p));
     toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
 
     // Background GPS refresh — non-blocking. Silently times out without freezing the button.
