@@ -186,6 +186,13 @@ export const updateVendorQuickControl = createServerFn({ method: "POST" })
 
     if (data.key === "is_online") {
       patch.location_updated_at = data.value ? new Date().toISOString() : null;
+      if (data.value && data.location) {
+        patch.operation_mode = "dynamic";
+        patch.live_lat = data.location.lat;
+        patch.live_lng = data.location.lng;
+        patch.lat = data.location.lat;
+        patch.lng = data.location.lng;
+      }
     }
 
     const { data: updated, error } = await (supabaseAdmin as any)
