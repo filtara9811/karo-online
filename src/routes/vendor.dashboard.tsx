@@ -44,6 +44,7 @@ import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
 
 export const Route = createFileRoute("/vendor/dashboard")({
@@ -121,6 +122,7 @@ function distanceKm(
 
 function VendorDashboard() {
   const { user, profile } = useAuth();
+  const geo = useGeolocation();
   const updateQuickControl = useServerFn(updateVendorQuickControl);
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
