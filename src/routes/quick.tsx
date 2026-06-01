@@ -480,6 +480,7 @@ function QuickPage() {
           userAvatar={profile?.avatar_url || avatarUser}
           userLabel={geo.label}
           geoStatus={geo.status}
+          radiusKm={10}
         />
       </section>
 
