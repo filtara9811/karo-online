@@ -32,18 +32,20 @@ export function VendorQuickActionsSheet({
   const isDynamic = vendor?.operation_mode === "dynamic";
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/50 grid place-items-end"
+      className="fixed inset-0 z-[60] bg-black/50 grid place-items-end touch-manipulation"
       onClick={onClose}
-      style={{ animation: "overlay-in 0.25s ease-out" }}
+      style={{ animation: "overlay-in 0.25s ease-out", touchAction: "manipulation" }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md mx-auto rounded-t-3xl p-4 pb-6 max-h-[88vh] overflow-y-auto"
+        className="w-full max-w-md mx-auto rounded-t-3xl p-4 pb-6 max-h-[88vh] overflow-y-auto overscroll-contain touch-pan-y"
         style={{
           animation: "sheet-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
           background:
             "linear-gradient(180deg, #fffaeb 0%, #fdf3c8 50%, #f5e9b8 100%)",
           border: "1.5px solid rgba(212,175,55,0.55)",
+          touchAction: "pan-y",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         <div className="flex justify-center mb-2">
@@ -81,11 +83,13 @@ export function VendorQuickActionsSheet({
               aria-checked={!!vendor?.is_online}
               aria-label="Vendor online status"
               disabled={saving.online}
-              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${vendor?.is_online ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 touch-manipulation ${saving.online ? "bg-slate-400" : vendor?.is_online ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${vendor?.is_online ? "left-9" : "left-1"}`} />
-              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${vendor?.is_online ? "left-2 text-white" : "right-2 text-slate-500"}`}>
-                {vendor?.is_online ? "ON" : "OFF"}
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 grid place-items-center ${saving.online ? "left-5" : vendor?.is_online ? "left-9" : "left-1"}`}>
+                {saving.online && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+              </span>
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${saving.online ? "right-2 text-white" : vendor?.is_online ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {saving.online ? "..." : vendor?.is_online ? "ON" : "OFF"}
               </span>
             </button>
           </div>
@@ -111,11 +115,13 @@ export function VendorQuickActionsSheet({
               aria-checked={!!vendor?.auto_accept_leads}
               aria-label="Auto accept leads"
               disabled={saving.auto}
-              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 disabled:opacity-70 ${vendor?.auto_accept_leads ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
+              className={`relative h-8 w-16 rounded-full transition-colors flex-shrink-0 shadow-inner active:scale-95 touch-manipulation ${saving.auto ? "bg-slate-400" : vendor?.auto_accept_leads ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(16,185,129,0.55)]" : "bg-slate-300"}`}
             >
-              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ${vendor?.auto_accept_leads ? "left-9" : "left-1"}`} />
-              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${vendor?.auto_accept_leads ? "left-2 text-white" : "right-2 text-slate-500"}`}>
-                {vendor?.auto_accept_leads ? "ON" : "OFF"}
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 grid place-items-center ${saving.auto ? "left-5" : vendor?.auto_accept_leads ? "left-9" : "left-1"}`}>
+                {saving.auto && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+              </span>
+              <span className={`absolute inset-y-0 grid place-items-center text-[9px] font-extrabold tracking-wider pointer-events-none ${saving.auto ? "right-2 text-white" : vendor?.auto_accept_leads ? "left-2 text-white" : "right-2 text-slate-500"}`}>
+                {saving.auto ? "..." : vendor?.auto_accept_leads ? "ON" : "OFF"}
               </span>
             </button>
           </div>
