@@ -606,9 +606,26 @@ export function QuickServiceMap({
         </button>
       </div>}
 
-      {/* Vendor count chip */}
-      <div className="absolute top-3 left-3 z-30 px-2.5 py-1 rounded-full bg-white/90 border border-amber-300/60 shadow text-[10px] font-bold text-amber-900">
-        {countLabel ?? `${vendors.length} nearby vendors`}
+      {/* Vendor count + geofence chips */}
+      <div className="absolute top-3 left-3 z-30 flex flex-col items-start gap-1">
+        <div className="px-2.5 py-1 rounded-full bg-white/95 border border-amber-300/60 shadow text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+          {(() => {
+            const online = vendors.filter((v) => v.status === "Online").length;
+            const offline = vendors.length - online;
+            return countLabel ?? (
+              <>
+                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{online} online</span>
+                <span className="text-amber-700/60">·</span>
+                <span className="inline-flex items-center gap-1 text-amber-700/80"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{offline} offline</span>
+              </>
+            );
+          })()}
+        </div>
+        {radiusKm ? (
+          <div className="px-2 py-0.5 rounded-full bg-amber-600/90 text-white text-[9px] font-bold shadow">
+            {radiusKm} km radius
+          </div>
+        ) : null}
       </div>
 
       {/* Tap-to-enable — tiny corner chip so it doesn't cover the search area */}
