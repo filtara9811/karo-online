@@ -420,7 +420,9 @@ function VendorDashboard() {
   const haptic = () => {
     try {
       navigator.vibrate?.(18);
-    } catch {}
+    } catch {
+      // Haptics are optional.
+    }
   };
 
   const getFreshGps = () =>
@@ -529,7 +531,6 @@ function VendorDashboard() {
       });
     } finally {
       setSavingOnline(false);
-      return;
     }
   };
 
