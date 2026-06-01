@@ -1106,15 +1106,16 @@ function VendorMapHero({
 }) {
   return (
     <div className="relative h-full w-full">
-      <div className="pointer-events-none absolute inset-0">
+      <div className="absolute inset-0">
         <QuickServiceMap
           center={center}
-          vendors={[]}
+          vendors={vendors.filter((v) => v.id !== "vendor-home")}
           userAvatar={vendors[0]?.avatar || avatarUser}
           userLabel={locationLabel || businessName}
           gestureHandling="none"
           showControls={false}
           showUserPin
+          radiusKm={10}
           countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
         />
       </div>
