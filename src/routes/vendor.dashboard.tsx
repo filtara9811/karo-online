@@ -789,16 +789,18 @@ function VendorDashboard() {
 function VendorMapHero({ center, vendors, businessName }: { center: { lat: number; lng: number }; vendors: QuickMapVendor[]; businessName: string }) {
   return (
     <div className="relative h-full w-full">
-      <QuickServiceMap
-        center={center}
-        vendors={vendors}
-        userAvatar={vendors[0]?.avatar || avatarUser}
-        userLabel={businessName}
-        gestureHandling="cooperative"
-        showControls={false}
-        showUserPin={false}
-        countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
-      />
+      <div className="pointer-events-none absolute inset-0">
+        <QuickServiceMap
+          center={center}
+          vendors={vendors}
+          userAvatar={vendors[0]?.avatar || avatarUser}
+          userLabel={businessName}
+          gestureHandling="none"
+          showControls={false}
+          showUserPin={false}
+          countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
+        />
+      </div>
       <div className="pointer-events-none absolute inset-0 grid place-items-center z-30">
         <span className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
         <button
