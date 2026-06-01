@@ -3,11 +3,37 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+type AuthClaims = {
+  phone?: string | null;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+};
+
+type VendorRow = Record<string, unknown> & { id: string; user_id?: string | null; whatsapp?: string | null };
+
+type DbError = { message?: string } | null;
+type DbSingleResult = { data: VendorRow | null; error: DbError };
+type DbListResult = { data: VendorRow[] | null; error: DbError };
+type LooseQuery = {
+  select: (fields: string) => LooseQuery;
+  eq: (column: string, value: unknown) => LooseQuery;
+  filter: (column: string, operator: string, value: unknown) => LooseQuery;
+  not: (column: string, operator: string, value: unknown) => LooseQuery;
+  update: (patch: Record<string, unknown>) => LooseQuery;
+  insert: (patch: Record<string, unknown>) => LooseQuery;
+  maybeSingle: () => Promise<DbSingleResult>;
+  limit: (count: number) => Promise<DbListResult>;
+  range: (from: number, to: number) => Promise<DbListResult>;
+};
+type LooseClient = { from: (table: string) => LooseQuery };
+
 const VendorQuickControlSchema = z.discriminatedUnion("key", [
   z.object({
     key: z.literal("is_online"),
     value: z.boolean(),
-    location: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
+    location: z
+      .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+      .optional(),
   }),
   z.object({ key: z.literal("auto_accept_leads"), value: z.boolean() }),
   z.object({ key: z.literal("operation_mode"), value: z.enum(["static", "dynamic"]) }),
