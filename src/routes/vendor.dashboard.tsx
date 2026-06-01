@@ -314,21 +314,26 @@ function VendorDashboard() {
 
 
   const toggleAutoAccept = async () => {
-    if (!user) return;
+    if (!user || savingAuto) return;
     const next = !vendor?.auto_accept_leads;
     haptic();
+    console.info("[VendorQuickControls] auto_accept_leads toggle requested", { next });
     setSavingAuto(true);
-    setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
-    const { error } = await supabase
-      .from("vendors")
-      .update({ auto_accept_leads: next })
-      .eq("user_id", user.id);
-    setSavingAuto(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, auto_accept_leads: !next } : p));
-      toast.error("Setting save nahi hua");
-    } else {
+    const toastId = toast.loading(next ? "Auto Accept ON save ho raha hai…" : "Auto Accept OFF save ho raha hai…");
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "auto_accept_leads", value: next } }),
+        "Auto Accept",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] auto_accept_leads saved", updated);
       toast.success(next ? "Auto Accept ON — har lead automatic accept hogi" : "Manual Accept ON — har lead aapko accept karni hogi");
+      toast.dismiss(toastId);
+    } catch (error: any) {
+      console.error("[VendorQuickControls] auto_accept_leads save failed", error);
+      toast.error(error?.message || "Auto Accept save nahi hua — permission/network issue", { id: toastId });
+    } finally {
+      setSavingAuto(false);
     }
   };
 
@@ -360,71 +365,70 @@ function VendorDashboard() {
   }, [user, vendor?.is_online, vendor?.operation_mode, vendor?.live_lat, vendor?.live_lng]);
 
   const toggleOnline = async () => {
-    if (!user) return;
+    if (!user || savingOnline) return;
     haptic();
     const prev = !!vendor?.is_online;
     const next = !prev;
-    // Optimistic UI immediately — never block the toggle on GPS or network.
-    setVendor((p) => (p ? { ...p, is_online: next } : p));
+    console.info("[VendorQuickControls] is_online toggle requested", { next });
     setSavingOnline(true);
-    // Seed with whatever coords we already have; background GPS refresh below.
-    const seedLat = vendor?.live_lat ?? vendor?.lat ?? null;
-    const seedLng = vendor?.live_lng ?? vendor?.lng ?? null;
-    const seedLiveLocation = next && vendor?.operation_mode === "dynamic" && seedLat != null && seedLng != null;
-    const { data, error } = await supabase
-      .from("vendors")
-      .update({
-        is_online: next,
-        location_updated_at: next ? new Date().toISOString() : null,
-        ...(seedLiveLocation ? { live_lat: seedLat, live_lng: seedLng, lat: vendor?.lat ?? seedLat, lng: vendor?.lng ?? seedLng } : {}),
-      } as any)
-      .eq("user_id", user.id)
-      .select("is_online, live_lat, live_lng")
-      .maybeSingle();
-    setSavingOnline(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, is_online: prev } : p));
-      toast.error("Online status save nahi hua");
-      return;
-    }
-    const returned = Array.isArray(data) ? data[0] : data;
-    setVendor((p) => (p ? { ...p, is_online: typeof (returned as any)?.is_online === "boolean" ? Boolean((returned as any).is_online) : next, live_lat: (returned as any)?.live_lat ?? p.live_lat, live_lng: (returned as any)?.live_lng ?? p.live_lng } : p));
-    toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+    const toastId = toast.loading(next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…");
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "is_online", value: next } }),
+        "Vendor Status",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] is_online saved", updated);
+      toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
+      toast.dismiss(toastId);
 
-    // Background GPS refresh — non-blocking. Silently times out without freezing the button.
-    if (next && vendor?.operation_mode === "dynamic") {
-      getFreshGps().then(async (gps) => {
-        if (!gps || !user) return;
-        await supabase
-          .from("vendors")
-          .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor?.lat ?? gps.lat, lng: vendor?.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
-          .eq("user_id", user.id);
-        setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
-      }).catch(() => undefined);
+      // Background GPS refresh — non-blocking. Silently times out without freezing the button.
+      if (next && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
+        getFreshGps().then(async (gps) => {
+          if (!gps || !user) return;
+          const { error } = await supabase
+            .from("vendors")
+            .update({ live_lat: gps.lat, live_lng: gps.lng, lat: vendor?.lat ?? gps.lat, lng: vendor?.lng ?? gps.lng, location_updated_at: new Date().toISOString() } as any)
+            .eq("user_id", user.id);
+          if (error) console.warn("[VendorQuickControls] background GPS update failed", error);
+          else setVendor((p) => (p ? { ...p, live_lat: gps.lat, live_lng: gps.lng, lat: p.lat ?? gps.lat, lng: p.lng ?? gps.lng } : p));
+        }).catch((error) => console.warn("[VendorQuickControls] GPS unavailable", error));
+      }
+    } catch (error: any) {
+      console.error("[VendorQuickControls] is_online save failed", error);
+      toast.error(error?.message || "Online status save nahi hua — permission/network issue", { id: toastId });
+    } finally {
+      setSavingOnline(false);
+      return;
     }
   };
 
   const toggleOperationMode = async () => {
-    if (!user) return;
+    if (!user || savingMode) return;
     haptic();
     const current = vendor?.operation_mode === "dynamic" ? "dynamic" : "static";
     const next = current === "dynamic" ? "static" : "dynamic";
+    console.info("[VendorQuickControls] operation_mode toggle requested", { next });
     setSavingMode(true);
-    setVendor((p) => (p ? { ...p, operation_mode: next } : p));
-    const { error } = await supabase
-      .from("vendors")
-      .update({ operation_mode: next } as any)
-      .eq("user_id", user.id);
-    setSavingMode(false);
-    if (error) {
-      setVendor((p) => (p ? { ...p, operation_mode: current } : p));
-      toast.error("Mode save nahi hua");
-    } else {
+    const toastId = toast.loading(next === "dynamic" ? "Live GPS Mode save ho raha hai…" : "Shop Mode save ho raha hai…");
+    try {
+      const updated = await withQuickControlTimeout(
+        updateQuickControl({ data: { key: "operation_mode", value: next } }),
+        "Location Mode",
+      );
+      setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
+      console.info("[VendorQuickControls] operation_mode saved", updated);
       toast.success(
         next === "dynamic"
           ? "Live GPS Mode ON — aap jahan honge wahin se leads milengi"
           : "Shop Mode ON — registered shop address se leads milengi",
       );
+      toast.dismiss(toastId);
+    } catch (error: any) {
+      console.error("[VendorQuickControls] operation_mode save failed", error);
+      toast.error(error?.message || "Location Mode save nahi hua — permission/network issue", { id: toastId });
+    } finally {
+      setSavingMode(false);
     }
   };
 
