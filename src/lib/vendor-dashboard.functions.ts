@@ -58,7 +58,29 @@ async function ensureVendorForUser(userId: string, claims: any) {
     if (relinked.data) return relinked.data;
   }
 
-  throw new Error("Vendor profile linked nahi hai. Registration phone se dobara login karein.");
+  // Auto-create a minimal vendor row so quick controls work for first-time vendors.
+  const primaryPhone = phones[0] ?? null;
+  const ownerName =
+    claims?.user_metadata?.full_name ||
+    claims?.user_metadata?.name ||
+    claims?.email ||
+    "Vendor";
+  const created = await admin
+    .from("vendors")
+    .insert({
+      user_id: userId,
+      owner_name: ownerName,
+      whatsapp: primaryPhone,
+      email: claims?.email ?? null,
+      status: "pending",
+    })
+    .select(`id, ${vendorFields}`)
+    .maybeSingle();
+
+  if (created.error) throw new Error(created.error.message);
+  if (created.data) return created.data;
+
+  throw new Error("Vendor profile create nahi ho saka. Support se contact karein.");
 }
 
 export const updateVendorQuickControl = createServerFn({ method: "POST" })
