@@ -23,7 +23,7 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
-import { getQuickMapVendors, getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
+import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -179,8 +179,6 @@ const STATIC_ITEMS: DBItem[] = STATIC_CATEGORIES
     price_max: null,
     sort_order: idx + 1,
   }));
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 function fallbackCatalog(types: DBType[] = STATIC_TYPES): CatalogData {
   const fallbackType = types.find((t) => t.code === "service") ?? types[0] ?? STATIC_TYPES[0];
   const basicId = `static-basic-${fallbackType.id}`;
@@ -372,7 +370,6 @@ function QuickPage() {
   // ---- Real vendors mapped to current sub-category ----
   const [realVendors, setRealVendors] = useState<Vendor[]>([]);
   const [realVendorsLoading, setRealVendorsLoading] = useState(false);
-  const getQuickMapVendorsFn = useServerFn(getQuickMapVendors);
   const getNearbyOnlineVendorsFn = useServerFn(getNearbyOnlineVendors);
 
   useEffect(() => {
@@ -382,19 +379,14 @@ function QuickPage() {
       return;
     }
     const origin = { lat: geo.lat, lng: geo.lng };
-    const subItemIds = selectedSub
-      ? items.filter((it) => it.category_id === selectedSub.id).map((it) => it.id).filter((id) => UUID_RE.test(id))
-      : [];
 
     let cancelled = false;
     const loadRealVendors = async () => {
       setRealVendorsLoading(true);
       try {
-        // If a sub-category is picked → filter by its items.
-        // Otherwise → show ALL online vendors near the user (floating on map by default).
-        const res = selectedSub && subItemIds.length > 0
-          ? await getQuickMapVendorsFn({ data: { itemIds: subItemIds, origin, radiusKm: 10 } })
-          : await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
+        // Customer map must always show all nearby vendors by location.
+        // Online/active vendors become green; offline/inactive vendors stay visible in amber.
+        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
         const mapped: Vendor[] = realRows.slice(0, 20).map((v: any, i: number) => {
