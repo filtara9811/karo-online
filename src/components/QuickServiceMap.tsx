@@ -97,6 +97,7 @@ export function QuickServiceMap({
   showControls = true,
   showUserPin = true,
   countLabel,
+  radiusKm,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -107,11 +108,13 @@ export function QuickServiceMap({
   showControls?: boolean;
   showUserPin?: boolean;
   countLabel?: string;
+  radiusKm?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userOverlayRef = useRef<any>(null);
   const vendorOverlaysRef = useRef<any[]>([]);
+  const circleRef = useRef<any>(null);
   const didInitialCenterRef = useRef(false);
   // Always start in "loading" for SSR-safe hydration; switch to "error" in effect when running on a preview host.
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
