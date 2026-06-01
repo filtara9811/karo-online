@@ -44,6 +44,7 @@ import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { updateVendorQuickControl } from "@/lib/vendor-dashboard.functions";
 
 export const Route = createFileRoute("/vendor/dashboard")({
@@ -121,6 +122,7 @@ function distanceKm(
 
 function VendorDashboard() {
   const { user, profile } = useAuth();
+  const geo = useGeolocation();
   const updateQuickControl = useServerFn(updateVendorQuickControl);
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -435,6 +437,9 @@ function VendorDashboard() {
       );
     });
 
+  const currentVendorLocation = () =>
+    geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+
   useEffect(() => {
     if (!user || !vendor?.is_online || vendor.operation_mode !== "dynamic") return;
     if (vendor.live_lat != null && vendor.live_lng != null) return;
@@ -480,8 +485,13 @@ function VendorDashboard() {
       next ? "Vendor Status ON save ho raha hai…" : "Vendor Status OFF save ho raha hai…",
     );
     try {
+      const gps = next ? ((await getFreshGps()) ?? currentVendorLocation()) : null;
       const updated = await withQuickControlTimeout(
-        updateQuickControl({ data: { key: "is_online", value: next } }),
+        updateQuickControl({
+          data: gps
+            ? { key: "is_online", value: next, location: gps }
+            : { key: "is_online", value: next },
+        }),
         "Vendor Status",
       );
       setVendor((p) => ({ ...(p ?? {}), ...(updated as any) }));
@@ -494,7 +504,11 @@ function VendorDashboard() {
       toast.dismiss(toastId);
 
       // Background GPS refresh — non-blocking. Silently times out without freezing the button.
-      if (next && ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic") {
+      if (
+        next &&
+        !gps &&
+        ((updated as any)?.operation_mode ?? vendor?.operation_mode) === "dynamic"
+      ) {
         getFreshGps()
           .then(async (gps) => {
             if (!gps || !user) return;
@@ -636,8 +650,9 @@ function VendorDashboard() {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "process" } : l)));
   };
 
-  const vendorLat = vendor?.live_lat ?? vendor?.lat ?? 28.6692;
-  const vendorLng = vendor?.live_lng ?? vendor?.lng ?? 77.2008;
+  const liveGeo = currentVendorLocation();
+  const vendorLat = liveGeo?.lat ?? vendor?.live_lat ?? vendor?.lat ?? 28.6692;
+  const vendorLng = liveGeo?.lng ?? vendor?.live_lng ?? vendor?.lng ?? 77.2008;
 
   const vendorMapCards: QuickMapVendor[] = [
     {
@@ -711,6 +726,13 @@ function VendorDashboard() {
             center={{ lat: vendorLat, lng: vendorLng }}
             vendors={vendorMapCards}
             businessName={vendor?.business_name ?? "My Shop"}
+            locationLabel={
+              liveGeo
+                ? geo.label
+                : vendor?.operation_mode === "dynamic"
+                  ? "Live GPS"
+                  : "Shop address"
+            }
           />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
@@ -1021,10 +1043,12 @@ function VendorMapHero({
   center,
   vendors,
   businessName,
+  locationLabel,
 }: {
   center: { lat: number; lng: number };
   vendors: QuickMapVendor[];
   businessName: string;
+  locationLabel: string;
 }) {
   return (
     <div className="relative h-full w-full">
@@ -1033,14 +1057,14 @@ function VendorMapHero({
           center={center}
           vendors={[]}
           userAvatar={vendors[0]?.avatar || avatarUser}
-          userLabel={businessName}
+          userLabel={locationLabel || businessName}
           gestureHandling="none"
           showControls={false}
-          showUserPin={false}
+          showUserPin
           countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
         />
       </div>
-      <div className="pointer-events-none absolute inset-0 grid place-items-center z-30">
+      <div className="pointer-events-none absolute inset-0 grid place-items-center z-30 opacity-0">
         <span
           className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]"
           style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }}
