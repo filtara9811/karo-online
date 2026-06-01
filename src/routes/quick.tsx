@@ -373,26 +373,24 @@ function QuickPage() {
   const getNearbyOnlineVendorsFn = useServerFn(getNearbyOnlineVendors);
 
   useEffect(() => {
-    // Need user location before we can compute nearby vendors at all.
-    if (geo.lat == null || geo.lng == null) {
-      setRealVendors([]);
-      return;
-    }
-    const origin = { lat: geo.lat, lng: geo.lng };
+    const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+    const subCategoryId = selectedSub?.id ?? null;
+    const selectedItemIds = subItems.map((it) => it.id);
 
     let cancelled = false;
     const loadRealVendors = async () => {
       setRealVendorsLoading(true);
       try {
-        // Customer map must always show all nearby vendors by location.
+        // Customer map shows vendors mapped to the selected service/category.
         // Online/active vendors become green; offline/inactive vendors stay visible in amber.
-        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10 } });
+        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10, subCategoryId, itemIds: selectedItemIds } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
         const mapped: Vendor[] = realRows.slice(0, 20).map((v: any, i: number) => {
           const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42], [60, 18], [35, 50], [85, 70], [12, 75]];
           const [x, y] = positions[i % positions.length];
-          const area = v.area || (v.km != null ? `${v.km} km away` : "Nearby");
+          const distance = v.km != null ? `${v.km} km away` : null;
+          const area = [v.area, distance].filter(Boolean).join(", ") || "Nearby";
           return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area, km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
         });
         setRealVendors(mapped);
@@ -412,7 +410,7 @@ function QuickPage() {
     // Auto-refresh every 60s so freshly-online vendors appear without a manual reload.
     const interval = window.setInterval(loadRealVendors, 60_000);
     return () => { cancelled = true; window.clearInterval(interval); supabase.removeChannel(ch); };
-  }, [selectedSub, items, geo.lat, geo.lng]);
+  }, [selectedSub, subItems, geo.lat, geo.lng]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
