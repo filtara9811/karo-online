@@ -373,9 +373,11 @@ function QuickPage() {
   const getNearbyOnlineVendorsFn = useServerFn(getNearbyOnlineVendors);
 
   useEffect(() => {
+    const isUuid = (value: string | null | undefined) =>
+      !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
     const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
-    const subCategoryId = selectedSub?.id ?? null;
-    const selectedItemIds = subItems.map((it) => it.id);
+    const subCategoryId = isUuid(selectedSub?.id) ? selectedSub!.id : null;
+    const selectedItemIds = subItems.map((it) => it.id).filter(isUuid);
 
     let cancelled = false;
     const loadRealVendors = async () => {
