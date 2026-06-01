@@ -646,8 +646,9 @@ function VendorDashboard() {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "process" } : l)));
   };
 
-  const vendorLat = vendor?.live_lat ?? vendor?.lat ?? 28.6692;
-  const vendorLng = vendor?.live_lng ?? vendor?.lng ?? 77.2008;
+  const liveGeo = currentVendorLocation();
+  const vendorLat = liveGeo?.lat ?? vendor?.live_lat ?? vendor?.lat ?? 28.6692;
+  const vendorLng = liveGeo?.lng ?? vendor?.live_lng ?? vendor?.lng ?? 77.2008;
 
   const vendorMapCards: QuickMapVendor[] = [
     {
@@ -721,6 +722,7 @@ function VendorDashboard() {
             center={{ lat: vendorLat, lng: vendorLng }}
             vendors={vendorMapCards}
             businessName={vendor?.business_name ?? "My Shop"}
+            locationLabel={liveGeo ? geo.label : vendor?.operation_mode === "dynamic" ? "Live GPS" : "Shop address"}
           />
           {/* Vendor count chip — like user home */}
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
