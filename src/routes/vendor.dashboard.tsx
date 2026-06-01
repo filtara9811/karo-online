@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +85,6 @@ function distanceKm(a?: { lat?: number | null; lng?: number | null } | null, b?:
 }
 
 function VendorDashboard() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -286,6 +285,7 @@ function VendorDashboard() {
   const toggleAutoAccept = async () => {
     if (!user) return;
     const next = !vendor?.auto_accept_leads;
+    haptic();
     setSavingAuto(true);
     setVendor((p) => (p ? { ...p, auto_accept_leads: next } : p));
     const { error } = await supabase
@@ -356,7 +356,8 @@ function VendorDashboard() {
       toast.error("Online status save nahi hua");
       return;
     }
-    setVendor((p) => (p ? { ...p, is_online: Boolean((data as any)?.is_online), live_lat: (data as any)?.live_lat ?? p.live_lat, live_lng: (data as any)?.live_lng ?? p.live_lng } : p));
+    const returned = Array.isArray(data) ? data[0] : data;
+    setVendor((p) => (p ? { ...p, is_online: typeof (returned as any)?.is_online === "boolean" ? Boolean((returned as any).is_online) : next, live_lat: (returned as any)?.live_lat ?? p.live_lat, live_lng: (returned as any)?.live_lng ?? p.live_lng } : p));
     toast.success(next ? "Online — ab leads receive kar sakte hain" : "Offline — ab broadcast me nahi aayenge");
 
     // Background GPS refresh — non-blocking. Silently times out without freezing the button.
@@ -722,9 +723,11 @@ function VendorDashboard() {
               badge={pendingCount}
               onClick={() => setLeadsSheetOpen(true)}
             />
-            <Link
-              to="/vendor/shop"
-              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+            <button
+              type="button"
+              onClick={openProfileFinder}
+              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl active:scale-95"
+              aria-label="Find users"
             >
               <span
                 className="h-9 w-9 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow-md"
@@ -732,11 +735,11 @@ function VendorDashboard() {
               >
                 <Plus className="h-4 w-4" strokeWidth={3} />
               </span>
-              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Shop</span>
-            </Link>
+              <span className="text-[9px] font-bold text-[color:oklch(0.42_0.01_260)]">Find</span>
+            </button>
             <button
               type="button"
-              onClick={openProfileFinder}
+              onClick={() => setMenuOpen(true)}
               className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
               <span className="h-8 w-8 rounded-full grid place-items-center text-[color:oklch(0.45_0.01_260)]">
@@ -785,18 +788,30 @@ function VendorDashboard() {
 function VendorMapHero({ center, vendors, businessName }: { center: { lat: number; lng: number }; vendors: QuickMapVendor[]; businessName: string }) {
   return (
     <div className="relative h-full w-full">
-      <QuickServiceMap
-        center={center}
-        vendors={vendors}
-        userAvatar={vendors[0]?.avatar || avatarUser}
-        userLabel={businessName}
-        gestureHandling="cooperative"
-        showControls={false}
-        showUserPin={false}
-        countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
-      />
-      <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <span className="h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+      <div className="pointer-events-none absolute inset-0">
+        <QuickServiceMap
+          center={center}
+          vendors={[]}
+          userAvatar={vendors[0]?.avatar || avatarUser}
+          userLabel={businessName}
+          gestureHandling="none"
+          showControls={false}
+          showUserPin={false}
+          countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center z-30">
+        <span className="absolute h-28 w-28 rounded-full border border-[color:oklch(0.78_0.14_82/0.45)]" style={{ animation: "finder-radar 2.4s cubic-bezier(0.22,1,0.36,1) infinite" }} />
+        <button
+          type="button"
+          onClick={vendors[0]?.onClick}
+          className="pointer-events-auto relative h-16 w-16 rounded-full grid place-items-center border-2 border-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.55)] active:scale-95 overflow-hidden"
+          style={{ background: "linear-gradient(180deg,#fff8dc,#f5d97a 45%,#d4af37)", borderColor: "rgba(255,255,255,0.9)" }}
+          aria-label="Open vendor profile finder"
+        >
+          <img src={vendors[0]?.avatar || avatarUser} alt="" className="h-12 w-12 rounded-full object-cover border-2 border-white" />
+          <span className="absolute -bottom-1 h-4 w-4 rotate-45 bg-[#d4af37] border-r border-b border-white/80" />
+        </button>
       </div>
     </div>
   );
