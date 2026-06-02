@@ -573,6 +573,59 @@ export function VendorProfileSheet({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Custom item add sheet — build invoice */}
+          <AnimatePresence>
+            {customOpen && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[99] grid place-items-end bg-black/55 backdrop-blur-sm"
+                onClick={() => setCustomOpen(false)}
+              >
+                <motion.div
+                  initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+12px)]"
+                >
+                  <div className="grid place-items-center pb-2">
+                    <span className="h-1.5 w-12 rounded-full bg-slate-200" />
+                  </div>
+                  <h4 className="font-display font-bold text-base text-slate-900">Add item to invoice</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Product / service name aur price likhiye</p>
+                  <div className="mt-3 space-y-2">
+                    <input
+                      value={cName}
+                      onChange={(e) => setCName(e.target.value)}
+                      placeholder="Item name (e.g. AC service, Maison Cosmetics)"
+                      className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:border-amber-400"
+                    />
+                    <input
+                      value={cPrice}
+                      onChange={(e) => setCPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="Price ₹"
+                      inputMode="numeric"
+                      className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!cName.trim() || !cPrice}
+                    onClick={() => {
+                      setCustomItems((arr) => [
+                        ...arr,
+                        { id: `c-${Date.now()}`, name: cName.trim(), price: Number(cPrice), qty: 1 },
+                      ]);
+                      setCName(""); setCPrice(""); setCustomOpen(false);
+                    }}
+                    className="mt-4 w-full h-11 rounded-xl bg-gradient-to-b from-amber-500 to-amber-700 text-white font-display font-bold text-sm disabled:opacity-40 active:scale-95"
+                  >
+                    Add to invoice
+                  </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>
