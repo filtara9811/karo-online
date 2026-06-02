@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -126,11 +126,21 @@ function VendorDashboard() {
   const { user, profile } = useAuth();
   const geo = useGeolocation();
   const updateQuickControl = useServerFn(updateVendorQuickControl);
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [leadsSheetFilter, setLeadsSheetFilter] = useState<
+    "all" | "pending" | "in_process" | "success" | "rejected"
+  >("all");
+  const openLeadsSheet = (
+    f: "all" | "pending" | "in_process" | "success" | "rejected" = "all",
+  ) => {
+    setLeadsSheetFilter(f);
+    setLeadsSheetOpen(true);
+  };
   const [actionsOpen, setActionsOpen] = useState(false);
   const [profileFinderOpen, setProfileFinderOpen] = useState(false);
   const [needCategories, setNeedCategories] = useState<NeedCategory[]>([]);
@@ -713,36 +723,47 @@ function VendorDashboard() {
     })),
   ];
 
-  const statTiles = [
+  const statTiles: {
+    value: number;
+    label: string;
+    border: string;
+    tint: string;
+    filter: "all" | "pending" | "in_process" | "success" | "rejected";
+  }[] = [
     {
       value: stats.total,
       label: "All Leads",
       border: "oklch(0.72 0.01 260 / 0.55)",
       tint: "from-[#f5f6f8] to-[#eef0f3]",
+      filter: "all",
     },
     {
       value: pendingCount,
       label: "Pending",
       border: "oklch(0.78 0.14 82 / 0.7)",
       tint: "from-[#fff8dc] to-[#f5e9b8]",
+      filter: "pending",
     },
     {
       value: stats.process,
       label: "In Process",
       border: "#b91c1c66",
       tint: "from-[#fef2f2] to-[#fde0e0]",
+      filter: "in_process",
     },
     {
       value: stats.success,
       label: "Success",
       border: "#15803d66",
       tint: "from-[#f0fdf4] to-[#d6f5df]",
+      filter: "success",
     },
     {
       value: stats.rejected,
       label: "Rejected",
       border: "oklch(0.78 0.14 82 / 0.4)",
       tint: "from-[#fffaeb] to-[#fdf3c8]",
+      filter: "rejected",
     },
   ];
 
@@ -777,7 +798,7 @@ function VendorDashboard() {
                   : "Shop address"
             }
           />
-          <AcceptedLeadFloatingButton onOpenList={() => setLeadsSheetOpen(true)} />
+          <AcceptedLeadFloatingButton onOpenList={() => openLeadsSheet("in_process")} />
           {/* Status + nearby customers chip */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
@@ -849,7 +870,7 @@ function VendorDashboard() {
           {statTiles.map((t, i) => (
             <button
               key={t.label}
-              onClick={() => setLeadsSheetOpen(true)}
+              onClick={() => openLeadsSheet(t.filter)}
               className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
               style={{
                 border: `1.5px solid ${t.border}`,
@@ -1073,7 +1094,16 @@ function VendorDashboard() {
           setMenuOpen(true);
         }}
       />
-      <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorPendingLeadsSheet
+        open={leadsSheetOpen}
+        onClose={() => setLeadsSheetOpen(false)}
+        initialFilter={leadsSheetFilter}
+        onOpenLead={(id) => {
+          const exists = leads.some((l) => l.id === id);
+          if (exists) setDetailLeadId(id);
+          else navigate({ to: "/vendor/chat", search: { leadId: id } as any });
+        }}
+      />
       <VendorQuickActionsSheet
         open={actionsOpen}
         onClose={() => setActionsOpen(false)}

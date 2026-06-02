@@ -3911,6 +3911,10 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      set_my_lead_status: {
+        Args: { _lead_id: string; _status: string }
+        Returns: Json
+      }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
