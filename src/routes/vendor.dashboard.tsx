@@ -1093,7 +1093,12 @@ function VendorDashboard() {
           setMenuOpen(true);
         }}
       />
-      <VendorPendingLeadsSheet open={leadsSheetOpen} onClose={() => setLeadsSheetOpen(false)} />
+      <VendorPendingLeadsSheet
+        open={leadsSheetOpen}
+        onClose={() => setLeadsSheetOpen(false)}
+        initialFilter={leadsSheetFilter}
+        onOpenLead={(id) => setDetailLeadId(id)}
+      />
       <VendorQuickActionsSheet
         open={actionsOpen}
         onClose={() => setActionsOpen(false)}
