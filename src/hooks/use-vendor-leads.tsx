@@ -208,7 +208,10 @@ export function useVendorLeadAlerts(): State {
 
   const acceptLead = async (leadId: string) => {
     const { data, error } = await supabase.rpc("accept_lead", { _lead_id: leadId });
-    setAlerts((p) => p.filter((a) => a.leadId !== leadId));
+    setAlerts((p) => {
+      p.filter((a) => a.leadId === leadId).forEach((a) => persistSeen(a.notificationId));
+      return p.filter((a) => a.leadId !== leadId);
+    });
     if (error) return { ok: false, reason: error.message };
     const res = data as any;
     return { ok: !!res?.ok, reason: res?.reason };
@@ -216,7 +219,10 @@ export function useVendorLeadAlerts(): State {
 
   const rejectLead = async (leadId: string) => {
     await supabase.rpc("reject_lead", { _lead_id: leadId });
-    setAlerts((p) => p.filter((a) => a.leadId !== leadId));
+    setAlerts((p) => {
+      p.filter((a) => a.leadId === leadId).forEach((a) => persistSeen(a.notificationId));
+      return p.filter((a) => a.leadId !== leadId);
+    });
   };
 
   return { alerts, dismiss, acceptLead, rejectLead };
