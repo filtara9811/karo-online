@@ -367,26 +367,41 @@ export function VendorProfileSheet({
                 </div>
               </section>
 
-              {/* ====== Service/product list ====== */}
+              {/* ====== Service/product list — interactive invoice builder ====== */}
               <section className="mt-3 mx-4">
                 <div className="flex items-center justify-between px-1 mb-1.5">
                   <h3 className="font-display font-bold text-slate-900 text-sm inline-flex items-center gap-1">
                     <Briefcase className="h-4 w-4 text-amber-600" /> {category ?? "Services"} offered
                   </h3>
-                  <span className="text-[10px] text-slate-400 underline underline-offset-2">Recommended</span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomOpen(true)}
+                    className="text-[11px] font-bold text-amber-700 underline underline-offset-2 active:scale-95"
+                  >
+                    + Add item
+                  </button>
                 </div>
                 <div className="space-y-2">
-                  {items.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-3 text-center text-[11px] text-slate-400">
-                      No catalog items yet — vendor will quote on chat.
-                    </div>
+                  {items.length === 0 && customItems.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomOpen(true)}
+                      className="w-full rounded-2xl border border-dashed border-amber-300 bg-amber-50/40 p-3 text-center text-[12px] font-semibold text-amber-800 active:scale-[0.99]"
+                    >
+                      + Add items to build invoice
+                      <span className="block text-[10px] font-normal text-amber-700/70 mt-0.5">
+                        Tap to add product / service with price
+                      </span>
+                    </button>
                   )}
                   {items.map((it) => {
+                    const unit = it.price_min ?? it.price_max ?? 0;
                     const range = it.price_min != null && it.price_max != null
                       ? `₹${Number(it.price_min).toLocaleString("en-IN")} – ₹${Number(it.price_max).toLocaleString("en-IN")}`
                       : it.price_min != null
                         ? `₹${Number(it.price_min).toLocaleString("en-IN")}+`
                         : "On request";
+                    const q = qty[it.id] ?? 0;
                     return (
                       <div key={it.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
                         <div className="h-12 w-12 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 flex-shrink-0 grid place-items-center">
@@ -400,17 +415,64 @@ export function VendorProfileSheet({
                           <p className="font-display text-[13px] font-bold text-slate-900 truncate">
                             {it.catalog_items?.name ?? "Service"}
                           </p>
-                          {it.notes && (
-                            <p className="text-[10px] text-slate-500 truncate">{it.notes}</p>
-                          )}
+                          <span className="inline-flex items-center gap-0.5 font-display font-bold text-emerald-700 text-[12px]">
+                            <IndianRupee className="h-3 w-3" />{range.replace(/₹/g, "")}
+                          </span>
                         </div>
-                        <span className="inline-flex items-center gap-0.5 font-display font-bold text-emerald-700 text-[13px] flex-shrink-0">
-                          <IndianRupee className="h-3 w-3" />{range.replace(/₹/g, "")}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setQty((m) => ({ ...m, [it.id]: Math.max(0, (m[it.id] ?? 0) - 1) }))}
+                            disabled={q === 0}
+                            className="h-7 w-7 rounded-full border border-amber-300 text-amber-700 grid place-items-center disabled:opacity-30 active:scale-90"
+                          >−</button>
+                          <span className="font-display font-bold text-sm w-5 text-center">{q}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQty((m) => ({ ...m, [it.id]: (m[it.id] ?? 0) + 1 }))}
+                            className="h-7 w-7 rounded-full bg-amber-500 text-white grid place-items-center active:scale-90 shadow"
+                          >+</button>
+                        </div>
                       </div>
                     );
                   })}
+                  {customItems.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/30 p-2.5">
+                      <div className="h-12 w-12 rounded-xl bg-amber-100 grid place-items-center flex-shrink-0">
+                        <Sparkles className="h-5 w-5 text-amber-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
+                        <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 text-[12px]">
+                          <IndianRupee className="h-3 w-3" />{c.price.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCustomItems((arr) => arr.map((x) => x.id === c.id ? { ...x, qty: Math.max(0, x.qty - 1) } : x).filter((x) => x.qty > 0))}
+                          className="h-7 w-7 rounded-full border border-amber-300 text-amber-700 grid place-items-center active:scale-90"
+                        >−</button>
+                        <span className="font-display font-bold text-sm w-5 text-center">{c.qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCustomItems((arr) => arr.map((x) => x.id === c.id ? { ...x, qty: x.qty + 1 } : x))}
+                          className="h-7 w-7 rounded-full bg-amber-500 text-white grid place-items-center active:scale-90 shadow"
+                        >+</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                {/* Invoice total */}
+                {hasInvoice && (
+                  <div className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Invoice total</span>
+                    <span className="font-display font-bold text-emerald-800 inline-flex items-center">
+                      <IndianRupee className="h-3.5 w-3.5" />{invoiceTotal.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                )}
               </section>
 
               {/* Vendor tags (entity / trade / deals_in) */}
