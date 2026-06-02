@@ -11,7 +11,6 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
-import { AcceptedLeadFloatingButton } from "@/components/AcceptedLeadFloatingButton";
 
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { PermissionsGate } from "@/components/PermissionsGate";
@@ -78,8 +77,8 @@ export function AppShell() {
           </div>
           {!isMarketing && <SiteFooter />}
         </div>
-        {isVendorRoute && <VendorLeadAlerts />}
-        {isVendorRoute && <AcceptedLeadFloatingButton />}
+        {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && <GlobalNotificationEffects />}
 
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
@@ -112,8 +111,8 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
-        {isVendorRoute && <VendorLeadAlerts />}
-        {isVendorRoute && <AcceptedLeadFloatingButton />}
+        {!isMarketing && <VendorLeadAlerts />}
+        {(hideTopHeader || isVendorRoute) && <GlobalNotificationEffects />}
 
         <PermissionsGate />
         <FloatingInquiryWidget />
@@ -121,6 +120,11 @@ export function AppShell() {
       </div>
     </AuthGate>
   );
+}
+
+function GlobalNotificationEffects() {
+  useNotifications();
+  return null;
 }
 
 function TopHeader() {
