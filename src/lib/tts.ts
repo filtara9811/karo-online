@@ -95,11 +95,13 @@ type SpeakOpts = {
   dedupKey?: string;
   /** Skip dedup check (e.g. for the tap-to-test button). */
   force?: boolean;
+  /** Lead alerts must speak even if an old mute flag was saved. */
+  ignoreMute?: boolean;
 };
 
 export function speakHindi(text: string, opts: SpeakOpts = {}) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
-  if (!opts.force && isTTSMuted()) return;
+  if (!opts.force && !opts.ignoreMute && isTTSMuted()) return;
 
   const key = opts.dedupKey ?? text;
   const now = Date.now();

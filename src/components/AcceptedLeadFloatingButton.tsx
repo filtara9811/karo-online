@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Headphones, X, ChevronRight, Maximize2 } from "lucide-react";
+import { X, ChevronRight, Maximize2 } from "lucide-react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,7 @@ type AcceptedLead = {
   subCategoryName: string | null;
   customerName: string | null;
   customerAvatar: string | null;
+  productImage: string | null;
   acceptedAt: string;
 };
 
@@ -22,7 +23,7 @@ const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v2";
  * Tap → bottom-sheet picker listing each accepted lead with service name
  * and customer; tap a row → opens chat.
  */
-export function AcceptedLeadFloatingButton() {
+export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => void }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +45,7 @@ export function AcceptedLeadFloatingButton() {
     let cancelled = false;
 
     const load = async () => {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
         .from("lead_notifications")
         .select("id, lead_id, status, responded_at, created_at, sub_category_name")
@@ -62,9 +63,9 @@ export function AcceptedLeadFloatingButton() {
       if (leadIds.length) {
         const { data: ls } = await supabase
           .from("leads")
-          .select("id, customer_id, customer_name")
+          .select("id, customer_id, customer_name, images")
           .in("id", leadIds);
-        (ls ?? []).forEach((l: any) => leadMap.set(l.id, { customer_id: l.customer_id, customer_name: l.customer_name }));
+        (ls ?? []).forEach((l: any) => leadMap.set(l.id, { customer_id: l.customer_id, customer_name: l.customer_name, images: l.images } as any));
       }
       const custIds = Array.from(new Set([...leadMap.values()].map((v) => v.customer_id).filter(Boolean) as string[]));
       let avatarMap = new Map<string, string | null>();
@@ -75,13 +76,14 @@ export function AcceptedLeadFloatingButton() {
       }
 
       const mapped: AcceptedLead[] = rows.map((r) => {
-        const li = leadMap.get(r.lead_id);
+        const li = leadMap.get(r.lead_id) as any;
         return {
           notificationId: r.id,
           leadId: r.lead_id,
           subCategoryName: r.sub_category_name,
           customerName: li?.customer_name ?? null,
           customerAvatar: li?.customer_id ? avatarMap.get(li.customer_id) ?? null : null,
+          productImage: Array.isArray(li?.images) ? li.images[0] ?? null : null,
           acceptedAt: r.responded_at ?? r.created_at,
         };
       });
@@ -93,7 +95,7 @@ export function AcceptedLeadFloatingButton() {
       .channel(`accepted-lead-fab-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
         (payload) => {
           const row = payload.new as any;
           if (row.status !== "accepted") return;
@@ -135,16 +137,13 @@ export function AcceptedLeadFloatingButton() {
   };
 
   const handleTap = () => {
+    if (onOpenList) {
+      onOpenList();
+      return;
+    }
     if (count > 1) setPickerOpen(true);
     else openLead(primary.leadId);
   };
-
-  // Map hero on vendor dashboard is h-[240px]. Tuck the pill so its bottom
-  // sits ~28px behind the white search-bar (search-bar starts right after
-  // the map). Match the customer-side "sandwich" feel.
-  const MAP_H = 240;
-  const PILL_H = 56;
-  const topPx = `calc(${MAP_H}px + env(safe-area-inset-top) - ${PILL_H + 18}px)`;
 
   return (
     <>
@@ -163,8 +162,7 @@ export function AcceptedLeadFloatingButton() {
             y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
             rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
           }}
-          className="fixed z-[15] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
-          style={{ top: topPx }}
+          className="absolute z-[45] left-1/2 bottom-3 -translate-x-1/2 w-[88vw] max-w-sm"
         >
           {/* Pulse halo */}
           <motion.span
@@ -187,13 +185,19 @@ export function AcceptedLeadFloatingButton() {
               aria-label="Open accepted lead requests"
             >
               <div className="relative flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center shadow border-2 border-white relative overflow-hidden">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-500 grid place-items-center shadow border-2 border-white relative overflow-hidden">
                   <motion.span
                     className="absolute inset-0 rounded-full bg-emerald-400/50"
                     animate={{ scale: [1, 1.45], opacity: [0.55, 0] }}
                     transition={{ duration: 1.6, repeat: Infinity }}
                   />
-                  <Headphones className="h-5 w-5 text-white relative z-10" strokeWidth={2.4} />
+                  {primary.customerAvatar || primary.productImage ? (
+                    <img src={primary.customerAvatar ?? primary.productImage ?? ""} alt="" className="relative z-10 h-full w-full object-cover" />
+                  ) : (
+                    <span className="relative z-10 text-white font-display font-bold text-lg">
+                      {(primary.customerName ?? primary.subCategoryName ?? "L")[0].toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 {count > 1 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center border-2 border-white">

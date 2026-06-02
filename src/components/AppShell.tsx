@@ -11,7 +11,6 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
-import { AcceptedLeadFloatingButton } from "@/components/AcceptedLeadFloatingButton";
 
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { PermissionsGate } from "@/components/PermissionsGate";
@@ -62,6 +61,7 @@ export function AppShell() {
   const hideBottomBar = !showBottomBar;
   const isQuickRoute = location.pathname.startsWith("/quick");
   const isVendorRoute = location.pathname.startsWith("/vendor");
+  const isChatRoute = location.pathname === "/chat" || location.pathname === "/vendor/chat";
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => {
@@ -78,8 +78,8 @@ export function AppShell() {
           </div>
           {!isMarketing && <SiteFooter />}
         </div>
-        {isVendorRoute && <VendorLeadAlerts />}
-        {isVendorRoute && <AcceptedLeadFloatingButton />}
+        {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && !isChatRoute && <GlobalNotificationEffects />}
 
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
@@ -112,8 +112,8 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
-        {isVendorRoute && <VendorLeadAlerts />}
-        {isVendorRoute && <AcceptedLeadFloatingButton />}
+        {!isMarketing && <VendorLeadAlerts />}
+        {(hideTopHeader || isVendorRoute) && !isChatRoute && <GlobalNotificationEffects />}
 
         <PermissionsGate />
         <FloatingInquiryWidget />
@@ -121,6 +121,11 @@ export function AppShell() {
       </div>
     </AuthGate>
   );
+}
+
+function GlobalNotificationEffects() {
+  useNotifications();
+  return null;
 }
 
 function TopHeader() {

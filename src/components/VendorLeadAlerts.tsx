@@ -30,7 +30,7 @@ export function VendorLeadAlerts() {
     spokenIds.current.add(newestId);
     playLeadAlert("default");
     setTimeout(() => {
-      speakHindi("Aapko ek nayi lead receive hui hai. Please accept karein.", { dedupKey: `lead:${newestId}` });
+      speakHindi("Aapko ek nayi lead request receive hui hai. Please lead accept karein.", { dedupKey: `lead:${newestId}`, ignoreMute: true });
     }, 450);
   }, [newestId]);
 
