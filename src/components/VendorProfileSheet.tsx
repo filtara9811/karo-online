@@ -507,6 +507,8 @@ export function VendorProfileSheet({
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : isApproved ? (
                     <><CheckCircle2 className="h-5 w-5" /> Approved</>
+                  ) : hasInvoice ? (
+                    <>Approve · ₹{invoiceTotal.toLocaleString("en-IN")}</>
                   ) : (
                     <>Approve {priceRange ? `· ${priceRange}` : ""}</>
                   )}
