@@ -41,6 +41,7 @@ import {
 } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
+import { AcceptedLeadFloatingButton } from "@/components/AcceptedLeadFloatingButton";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
@@ -776,6 +777,7 @@ function VendorDashboard() {
                   : "Shop address"
             }
           />
+          <AcceptedLeadFloatingButton onOpenList={() => setLeadsSheetOpen(true)} />
           {/* Status + nearby customers chip */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
@@ -1113,7 +1115,7 @@ function VendorMapHero({
           userAvatar={vendors[0]?.avatar || avatarUser}
           userLabel={locationLabel || businessName}
           gestureHandling="none"
-          showControls={false}
+          showControls
           showUserPin
           radiusKm={10}
           countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
