@@ -35,6 +35,7 @@ import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
+import { CoinRateTicker } from "@/components/CoinRateTicker";
 import {
   VendorPendingLeadsSheet,
   usePendingLeadsCount,
@@ -824,6 +825,9 @@ function VendorDashboard() {
       </section>
 
       <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
+        {/* Coin-rate market ticker (dismissable) */}
+        <CoinRateTicker />
+
         {/* Shop icon + search + profile icon */}
         <div className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]">
           <button
@@ -862,70 +866,74 @@ function VendorDashboard() {
           </div>
         )}
 
-        {/* Horizontal stats strip */}
-        <div
-          className="flex gap-2.5 overflow-x-auto -mx-3 px-3 pb-1 scrollbar-hide"
-          style={{ animation: "fade-up 0.5s ease-out both" }}
-        >
-          {statTiles.map((t, i) => (
+        {/* Unified card — stat tiles + pricing strip + tabs */}
+        <div className="rounded-3xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-3">
+          {/* Horizontal stats strip */}
+          <div
+            className="flex gap-2.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide"
+            style={{ animation: "fade-up 0.5s ease-out both" }}
+          >
+            {statTiles.map((t, i) => (
+              <button
+                key={t.label}
+                onClick={() => openLeadsSheet(t.filter)}
+                className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
+                style={{
+                  border: `1.5px solid ${t.border}`,
+                  animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
+                }}
+              >
+                <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
+                  <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                </div>
+                <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
+                  {t.value}
+                </p>
+                <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                  {t.label}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          {/* Live lead pricing & wallet balance */}
+          <LeadPricingStrip />
+
+          {/* Tabs */}
+          <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
             <button
-              key={t.label}
-              onClick={() => openLeadsSheet(t.filter)}
-              className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
-              style={{
-                border: `1.5px solid ${t.border}`,
-                animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
-              }}
+              onClick={() => setTab("my")}
+              className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
+                tab === "my"
+                  ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
+                  : "text-[color:oklch(0.55_0.10_82)]"
+              }`}
+              style={
+                tab === "my"
+                  ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
+                  : undefined
+              }
             >
-              <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
-              </div>
-              <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
-                {t.value}
-              </p>
-              <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
-                {t.label}
-              </p>
+              My Leads
             </button>
-          ))}
+            <button
+              onClick={() => setTab("potential")}
+              className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
+                tab === "potential"
+                  ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
+                  : "text-[color:oklch(0.55_0.10_82)]"
+              }`}
+              style={
+                tab === "potential"
+                  ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
+                  : undefined
+              }
+            >
+              Potential Leads
+            </button>
+          </div>
         </div>
 
-        {/* Live lead pricing & wallet balance */}
-        <LeadPricingStrip />
-
-        {/* Tabs */}
-        <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
-          <button
-            onClick={() => setTab("my")}
-            className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
-              tab === "my"
-                ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
-                : "text-[color:oklch(0.55_0.10_82)]"
-            }`}
-            style={
-              tab === "my"
-                ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
-                : undefined
-            }
-          >
-            My Leads
-          </button>
-          <button
-            onClick={() => setTab("potential")}
-            className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
-              tab === "potential"
-                ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
-                : "text-[color:oklch(0.55_0.10_82)]"
-            }`}
-            style={
-              tab === "potential"
-                ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
-                : undefined
-            }
-          >
-            Potential Leads
-          </button>
-        </div>
 
         {tab === "my" ? (
           <>
