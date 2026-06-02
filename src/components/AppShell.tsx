@@ -112,8 +112,8 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
-        <VendorLeadAlerts />
-        <AcceptedLeadFloatingButton />
+        {isVendorRoute && <VendorLeadAlerts />}
+        {isVendorRoute && <AcceptedLeadFloatingButton />}
 
         <PermissionsGate />
         <FloatingInquiryWidget />
