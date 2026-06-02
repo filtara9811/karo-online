@@ -1,25 +1,63 @@
 /**
  * Shared Hindi Text-to-Speech utility (Web Speech API).
- * Used for foreground notification voice alerts.
  *
- * Mobile browsers load voices asynchronously, so we wait briefly for the
- * Hindi voice to become available before speaking. If none is found we
- * fall back to en-IN (still understandable, available on most Android).
+ * Highlights:
+ * - Dedup: same notificationId / phrase won't speak twice in a row.
+ * - Mute: user-controllable via localStorage flag (ko-tts-muted-v1).
+ * - Mobile unlock: speech APIs only work after a user gesture; we expose
+ *   `unlockTTS()` to be called once on first pointerdown/keydown which
+ *   speaks an empty utterance to "warm up" the engine.
+ * - Voice fallback: hi-IN → en-IN → en → first.
  */
+
+const MUTE_KEY = "ko-tts-muted-v1";
+const DEDUP_WINDOW_MS = 8000;
+const recentSpoken = new Map<string, number>(); // key -> timestamp
+
+let __unlocked = false;
 let __voicesPrimed = false;
+
+export function isTTSMuted(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(MUTE_KEY) === "1"; } catch { return false; }
+}
+
+export function setTTSMuted(muted: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+    if (muted) window.speechSynthesis?.cancel();
+  } catch { /* ignore */ }
+}
+
+export function toggleTTSMuted(): boolean {
+  const next = !isTTSMuted();
+  setTTSMuted(next);
+  return next;
+}
 
 export function primeVoices() {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   __voicesPrimed = true;
   try {
     window.speechSynthesis.getVoices();
-    // Some browsers only populate after this event fires.
     window.speechSynthesis.onvoiceschanged = () => {
       try { window.speechSynthesis.getVoices(); } catch { /* noop */ }
     };
-  } catch {
-    /* noop */
-  }
+  } catch { /* noop */ }
+}
+
+/** Call once on a real user gesture (pointerdown/keydown) to unlock TTS on mobile. */
+export function unlockTTS() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  if (__unlocked) return;
+  primeVoices();
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0; u.rate = 1; u.pitch = 1;
+    window.speechSynthesis.speak(u);
+    __unlocked = true;
+  } catch { /* ignore */ }
 }
 
 function pickVoice(): SpeechSynthesisVoice | null {
@@ -49,15 +87,35 @@ function doSpeak(text: string, lang: string) {
       if (v.lang) u.lang = v.lang;
     }
     window.speechSynthesis.speak(u);
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
 }
 
-export function speakHindi(text: string) {
+type SpeakOpts = {
+  /** Stable key used for dedup. If omitted, the text itself is the key. */
+  dedupKey?: string;
+  /** Skip dedup check (e.g. for the tap-to-test button). */
+  force?: boolean;
+};
+
+export function speakHindi(text: string, opts: SpeakOpts = {}) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  if (!opts.force && isTTSMuted()) return;
+
+  const key = opts.dedupKey ?? text;
+  const now = Date.now();
+  if (!opts.force) {
+    const last = recentSpoken.get(key);
+    if (last && now - last < DEDUP_WINDOW_MS) return;
+  }
+  recentSpoken.set(key, now);
+  // GC old entries
+  if (recentSpoken.size > 50) {
+    for (const [k, t] of recentSpoken) {
+      if (now - t > DEDUP_WINDOW_MS * 4) recentSpoken.delete(k);
+    }
+  }
+
   primeVoices();
-  // Wait briefly for voice list to populate on mobile.
   const voices = window.speechSynthesis.getVoices();
   if (voices && voices.length > 0) {
     doSpeak(text, "hi-IN");
@@ -74,7 +132,12 @@ export function speakHindi(text: string) {
   }, 120);
 }
 
-/** Map notification kinds → Hindi TTS phrase. */
+/** Tap-to-test: always speaks regardless of dedup, ignores mute flag. */
+export function testSpeak(text = "Nayi lead receive hui hai. Please accept karein.") {
+  unlockTTS();
+  speakHindi(text, { force: true });
+}
+
 const KIND_PHRASES: Record<string, string> = {
   lead_alert: "Aapko ek nayi lead receive hui hai. Please accept karein.",
   new_lead: "Aapko ek nayi lead receive hui hai. Please accept karein.",
@@ -85,10 +148,10 @@ const KIND_PHRASES: Record<string, string> = {
   inquiry: "Nayi inquiry aayi hai.",
 };
 
-export function speakForKind(kind: string | undefined | null) {
+export function speakForKind(kind: string | undefined | null, dedupKey?: string) {
   if (!kind) return;
   const phrase = KIND_PHRASES[kind.toLowerCase()];
-  if (phrase) speakHindi(phrase);
+  if (phrase) speakHindi(phrase, { dedupKey });
 }
 
 // ── App icon badge (Badging API) ───────────────────────────────────────
@@ -101,16 +164,9 @@ export function setAppBadge(count: number) {
   if (typeof navigator === "undefined") return;
   const n = navigator as BadgeNav;
   try {
-    if (count > 0 && n.setAppBadge) {
-      void n.setAppBadge(count);
-    } else if (n.clearAppBadge) {
-      void n.clearAppBadge();
-    }
-  } catch {
-    /* unsupported */
-  }
+    if (count > 0 && n.setAppBadge) void n.setAppBadge(count);
+    else if (n.clearAppBadge) void n.clearAppBadge();
+  } catch { /* unsupported */ }
 }
 
-export function clearAppBadge() {
-  setAppBadge(0);
-}
+export function clearAppBadge() { setAppBadge(0); }
