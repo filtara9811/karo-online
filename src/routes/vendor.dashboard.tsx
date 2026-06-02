@@ -35,6 +35,7 @@ import { VendorNotificationBell } from "@/components/VendorNotificationBell";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { LeadPricingStrip } from "@/components/LeadPricingStrip";
+import { CoinRateTicker } from "@/components/CoinRateTicker";
 import {
   VendorPendingLeadsSheet,
   usePendingLeadsCount,
