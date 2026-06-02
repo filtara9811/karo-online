@@ -4,6 +4,7 @@ import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Spar
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { playPing } from "@/lib/lead-sound";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 export type LeadChatPeer = {
@@ -71,6 +72,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const [showRating, setShowRating] = useState(false);
   const [rated, setRated] = useState<number>(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const heardMessageIds = useRef<Set<string>>(new Set());
   const chips = myRole === "vendor" ? QUICK_CHIPS_VENDOR : QUICK_CHIPS_CUSTOMER;
 
   // Identify self
@@ -118,7 +120,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
 
   // Realtime messages
   useEffect(() => {
-    if (!leadId) return;
+    if (!leadId || !me) return;
     const ch = supabase
       .channel(`lead-msg-${leadId}`)
       .on(
@@ -128,12 +130,16 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           const m = payload.new as Msg;
           if (peer?.id && m.sender_id !== peer.id && m.recipient_id !== peer.id) return;
           setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          if (m.sender_id !== me && !heardMessageIds.current.has(m.id)) {
+            heardMessageIds.current.add(m.id);
+            playPing("message");
+          }
           requestAnimationFrame(() => scrollerRef.current?.scrollTo({ top: 9e6, behavior: "smooth" }));
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [leadId, peer?.id]);
+  }, [leadId, peer?.id, me]);
 
   const send = async (override?: string) => {
     const body = (override ?? text).trim();
