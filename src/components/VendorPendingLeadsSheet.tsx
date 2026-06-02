@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Clock, MapPin, Phone, Inbox, Play } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ type ReadyRow = {
   address: string | null;
   note: string | null;
   acceptedAt: string;
+  startedAt: string | null;
   items: { name: string; image: string | null }[];
 };
 
@@ -76,6 +78,7 @@ export function usePendingLeadsCount(): number {
 
 export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<PendingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -91,10 +94,9 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
         supabase.rpc("get_my_pending_lead_briefs"),
         supabase
           .from("lead_notifications")
-          .select("lead_id, responded_at, leads!inner(id, customer_id, sub_category_name, customer_name, address, note, item_ids, item_names, images)")
+          .select("lead_id, responded_at, vendor_started_at, leads!inner(id, customer_id, sub_category_name, customer_name, address, note, item_ids, item_names, images)")
           .eq("vendor_id", user.id)
           .eq("status", "accepted")
-          .is("vendor_started_at", null)
           .order("responded_at", { ascending: false })
           .limit(20),
       ]);
@@ -149,6 +151,7 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
           address: r.leads?.address ?? null,
           note: r.leads?.note ?? null,
           acceptedAt: r.responded_at,
+          startedAt: r.vendor_started_at ?? null,
           items,
         };
       });
@@ -290,10 +293,17 @@ export function VendorPendingLeadsSheet({ open, onClose }: { open: boolean; onCl
                           )}
                           <button
                             disabled={busy === r.leadId}
-                            onClick={() => startWork(r.leadId)}
+                            onClick={() => {
+                              if (r.startedAt) {
+                                onClose();
+                                navigate({ to: "/vendor/chat", search: { leadId: r.leadId } as any });
+                              } else {
+                                startWork(r.leadId);
+                              }
+                            }}
                             className="w-full py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 active:from-emerald-600 active:to-emerald-700 disabled:opacity-50 flex items-center justify-center gap-1.5 border-t border-emerald-100"
                           >
-                            <Check className="h-3.5 w-3.5" /> Start Work — move to dashboard
+                            <Check className="h-3.5 w-3.5" /> {r.startedAt ? "Open Chat — work started" : "Start Work — move to dashboard"}
                           </button>
                         </article>
                       ))}
