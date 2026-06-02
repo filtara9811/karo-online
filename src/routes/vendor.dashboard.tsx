@@ -1097,7 +1097,11 @@ function VendorDashboard() {
         open={leadsSheetOpen}
         onClose={() => setLeadsSheetOpen(false)}
         initialFilter={leadsSheetFilter}
-        onOpenLead={(id) => setDetailLeadId(id)}
+        onOpenLead={(id) => {
+          const exists = leads.some((l) => l.id === id);
+          if (exists) setDetailLeadId(id);
+          else navigate({ to: "/vendor/chat", search: { leadId: id } as any });
+        }}
       />
       <VendorQuickActionsSheet
         open={actionsOpen}
