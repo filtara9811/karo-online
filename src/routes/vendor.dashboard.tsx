@@ -869,7 +869,7 @@ function VendorDashboard() {
           {statTiles.map((t, i) => (
             <button
               key={t.label}
-              onClick={() => setLeadsSheetOpen(true)}
+              onClick={() => openLeadsSheet(t.filter)}
               className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
               style={{
                 border: `1.5px solid ${t.border}`,
