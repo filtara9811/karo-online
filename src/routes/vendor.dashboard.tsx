@@ -797,7 +797,7 @@ function VendorDashboard() {
                   : "Shop address"
             }
           />
-          <AcceptedLeadFloatingButton onOpenList={() => setLeadsSheetOpen(true)} />
+          <AcceptedLeadFloatingButton onOpenList={() => openLeadsSheet("in_process")} />
           {/* Status + nearby customers chip */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
