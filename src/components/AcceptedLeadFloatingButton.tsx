@@ -22,7 +22,7 @@ const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v1";
  * the screen (position persists). X dismisses until next accept.
  */
 export function AcceptedLeadFloatingButton() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [leads, setLeads] = useState<AcceptedLead[]>([]);
@@ -36,11 +36,11 @@ export function AcceptedLeadFloatingButton() {
   });
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Only render for vendor accounts and vendor routes
-  const isVendor = profile?.role === "vendor" || profile?.is_vendor === true;
+  // Only render on vendor routes (vendor dashboard etc.), not on chat itself.
   const onVendorRoute = location.pathname.startsWith("/vendor");
   const onChatRoute = location.pathname.startsWith("/vendor/chat");
-  const shouldShow = isVendor && onVendorRoute && !onChatRoute;
+  const shouldShow = onVendorRoute && !onChatRoute;
+
 
   // Load saved position
   useEffect(() => {
