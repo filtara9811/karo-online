@@ -1,32 +1,33 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Headphones, X } from "lucide-react";
+import { Headphones, X, ChevronRight, Maximize2 } from "lucide-react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-
 
 type AcceptedLead = {
   notificationId: string;
   leadId: string;
   subCategoryName: string | null;
+  customerName: string | null;
+  customerAvatar: string | null;
   acceptedAt: string;
 };
 
-const STORAGE_POS_KEY = "ko-accepted-fab-pos-v1";
-const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v1";
+const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v2";
 
 /**
- * Floating, draggable button shown on the vendor dashboard after the vendor
- * accepts a lead. Tap → opens chat with that lead. User can drag anywhere on
- * the screen (position persists). X dismisses until next accept.
+ * Horizontal pill above the vendor dashboard search bar (mirrors the
+ * customer-side FloatingInquiryWidget). Shows count of accepted leads.
+ * Tap → bottom-sheet picker listing each accepted lead with service name
+ * and customer; tap a row → opens chat.
  */
 export function AcceptedLeadFloatingButton() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [leads, setLeads] = useState<AcceptedLead[]>([]);
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
@@ -34,27 +35,10 @@ export function AcceptedLeadFloatingButton() {
       return new Set(raw ? JSON.parse(raw) : []);
     } catch { return new Set(); }
   });
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Only render on vendor routes (vendor dashboard etc.), not on chat itself.
-  const onVendorRoute = location.pathname.startsWith("/vendor");
-  const onChatRoute = location.pathname.startsWith("/vendor/chat");
-  const shouldShow = onVendorRoute && !onChatRoute;
+  // Only render on vendor dashboard. Hide on chat/inner screens.
+  const shouldShow = location.pathname === "/vendor/dashboard";
 
-
-  // Load saved position
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_POS_KEY);
-      if (raw) setPos(JSON.parse(raw));
-      else setPos({ x: window.innerWidth - 84, y: window.innerHeight - 220 });
-    } catch {
-      setPos({ x: window.innerWidth - 84, y: window.innerHeight - 220 });
-    }
-  }, []);
-
-  // Fetch & subscribe accepted leads
   useEffect(() => {
     if (!user || !shouldShow) return;
     let cancelled = false;
@@ -68,14 +52,39 @@ export function AcceptedLeadFloatingButton() {
         .eq("status", "accepted")
         .gte("created_at", since)
         .order("responded_at", { ascending: false, nullsFirst: false })
-        .limit(5);
+        .limit(20);
       if (cancelled) return;
-      const mapped: AcceptedLead[] = (data ?? []).map((r: any) => ({
-        notificationId: r.id,
-        leadId: r.lead_id,
-        subCategoryName: r.sub_category_name,
-        acceptedAt: r.responded_at ?? r.created_at,
-      }));
+      const rows = (data ?? []) as any[];
+
+      // Enrich with customer name/avatar
+      const leadIds = rows.map((r) => r.lead_id);
+      let leadMap = new Map<string, { customer_id: string | null; customer_name: string | null }>();
+      if (leadIds.length) {
+        const { data: ls } = await supabase
+          .from("leads")
+          .select("id, customer_id, customer_name")
+          .in("id", leadIds);
+        (ls ?? []).forEach((l: any) => leadMap.set(l.id, { customer_id: l.customer_id, customer_name: l.customer_name }));
+      }
+      const custIds = Array.from(new Set([...leadMap.values()].map((v) => v.customer_id).filter(Boolean) as string[]));
+      let avatarMap = new Map<string, string | null>();
+      if (custIds.length) {
+        const { data: cs } = await supabase
+          .from("customers").select("user_id, avatar_url").in("user_id", custIds);
+        (cs ?? []).forEach((c: any) => avatarMap.set(c.user_id, c.avatar_url ?? null));
+      }
+
+      const mapped: AcceptedLead[] = rows.map((r) => {
+        const li = leadMap.get(r.lead_id);
+        return {
+          notificationId: r.id,
+          leadId: r.lead_id,
+          subCategoryName: r.sub_category_name,
+          customerName: li?.customer_name ?? null,
+          customerAvatar: li?.customer_id ? avatarMap.get(li.customer_id) ?? null : null,
+          acceptedAt: r.responded_at ?? r.created_at,
+        };
+      });
       setLeads(mapped);
     };
     load();
@@ -88,19 +97,8 @@ export function AcceptedLeadFloatingButton() {
         (payload) => {
           const row = payload.new as any;
           if (row.status !== "accepted") return;
-          setLeads((p) => {
-            const exists = p.find((l) => l.notificationId === row.id);
-            const next: AcceptedLead = {
-              notificationId: row.id,
-              leadId: row.lead_id,
-              subCategoryName: row.sub_category_name,
-              acceptedAt: row.responded_at ?? row.created_at,
-            };
-            return exists
-              ? p.map((l) => (l.notificationId === row.id ? next : l))
-              : [next, ...p].slice(0, 5);
-          });
-          // New accept → un-dismiss this id
+          void load();
+          // Un-dismiss this id on fresh accept
           setDismissedIds((s) => {
             const n = new Set(s); n.delete(row.id);
             try { window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n])); } catch { /* ignore */ }
@@ -113,88 +111,167 @@ export function AcceptedLeadFloatingButton() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [user, shouldShow]);
 
-  if (!shouldShow || !pos) return null;
-
+  if (!shouldShow) return null;
   const visible = leads.filter((l) => !dismissedIds.has(l.notificationId));
   if (visible.length === 0) return null;
-  const top = visible[0];
 
-  const persistPos = (x: number, y: number) => {
-    try { window.localStorage.setItem(STORAGE_POS_KEY, JSON.stringify({ x, y })); } catch { /* ignore */ }
-  };
+  const count = visible.length;
+  const primary = visible[0];
 
-  const handleDismiss = () => {
+  const handleDismissAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setDismissedIds((s) => {
       const n = new Set(s);
       visible.forEach((l) => n.add(l.notificationId));
       try { window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n])); } catch { /* ignore */ }
       return n;
     });
+    setPickerOpen(false);
   };
 
-  const handleOpen = () => {
-    navigate({ to: "/vendor/chat", search: { leadId: top.leadId } as any });
+  const openLead = (leadId: string) => {
+    setPickerOpen(false);
+    navigate({ to: "/vendor/chat", search: { leadId } as any });
   };
 
-  // Bounds for drag
-  const w = typeof window !== "undefined" ? window.innerWidth : 360;
-  const h = typeof window !== "undefined" ? window.innerHeight : 640;
+  const handleTap = () => {
+    if (count > 1) setPickerOpen(true);
+    else openLead(primary.leadId);
+  };
+
+  // Map hero on vendor dashboard is h-[240px]. Tuck the pill so its bottom
+  // sits ~28px behind the white search-bar (search-bar starts right after
+  // the map). Match the customer-side "sandwich" feel.
+  const MAP_H = 240;
+  const PILL_H = 56;
+  const topPx = `calc(${MAP_H}px + env(safe-area-inset-top) - ${PILL_H + 18}px)`;
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[90] pointer-events-none">
+    <>
       <AnimatePresence>
         <motion.div
-          key="acc-fab"
-          drag
-          dragMomentum={false}
-          dragConstraints={{ left: 8, right: w - 72, top: 60, bottom: h - 100 }}
-          initial={{ scale: 0.6, opacity: 0, x: pos.x, y: pos.y }}
-          animate={{ scale: 1, opacity: 1, x: pos.x, y: pos.y }}
-          exit={{ scale: 0.6, opacity: 0 }}
-          onDragEnd={(_, info) => {
-            const x = Math.max(8, Math.min(w - 72, pos.x + info.offset.x));
-            const y = Math.max(60, Math.min(h - 100, pos.y + info.offset.y));
-            setPos({ x, y });
-            persistPos(x, y);
+          key="accepted-lead-pill"
+          initial={{ opacity: 0, scale: 0.85, y: 20 }}
+          animate={{
+            opacity: 1, scale: 1,
+            y: [0, -3, 0, -1.5, 0],
+            rotate: [0, -1.2, 1.2, -0.6, 0.6, 0],
           }}
-          className="absolute top-0 left-0 pointer-events-auto"
-          style={{ touchAction: "none" }}
+          exit={{ opacity: 0, scale: 0.85 }}
+          transition={{
+            type: "spring", damping: 22, stiffness: 260,
+            y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
+          }}
+          className="fixed z-[15] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
+          style={{ top: topPx }}
         >
-          <div className="relative">
+          {/* Pulse halo */}
+          <motion.span
+            aria-hidden
+            className="absolute inset-0 rounded-2xl bg-emerald-400/25"
+            animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0, 0.55] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.span
+            aria-hidden
+            className="absolute -inset-1 rounded-2xl border-2 border-emerald-300"
+            animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.1, 0.6] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <div className="relative rounded-2xl shadow-[0_10px_30px_-8px_rgba(15,23,42,0.4)] border overflow-hidden backdrop-blur bg-gradient-to-br from-emerald-50 to-white border-emerald-300">
             <button
-              type="button"
-              onClick={handleOpen}
-              aria-label={`Open accepted lead${top.subCategoryName ? `: ${top.subCategoryName}` : ""}`}
-              className="relative h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_10px_28px_-4px_rgba(5,150,105,0.7)] border-[3px] border-white grid place-items-center active:scale-95"
+              onClick={handleTap}
+              className="w-full flex items-center gap-2.5 py-2 pl-3 pr-9 text-left active:scale-[0.98] transition"
+              aria-label="Open accepted lead requests"
             >
-              <motion.span
-                className="absolute inset-0 rounded-full bg-emerald-400/50"
-                animate={{ scale: [1, 1.45], opacity: [0.55, 0] }}
-                transition={{ duration: 1.6, repeat: Infinity }}
-              />
-              <Headphones className="h-7 w-7 text-white relative z-10" strokeWidth={2.4} />
-              {visible.length > 1 && (
-                <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold grid place-items-center border-2 border-white">
-                  {visible.length}
-                </span>
-              )}
+              <div className="relative flex-shrink-0">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center shadow border-2 border-white relative overflow-hidden">
+                  <motion.span
+                    className="absolute inset-0 rounded-full bg-emerald-400/50"
+                    animate={{ scale: [1, 1.45], opacity: [0.55, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity }}
+                  />
+                  <Headphones className="h-5 w-5 text-white relative z-10" strokeWidth={2.4} />
+                </div>
+                {count > 1 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center border-2 border-white">
+                    {count}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-[13px] font-bold leading-tight truncate text-emerald-800">
+                  {count > 1 ? `${count} accepted leads` : (primary.subCategoryName ?? "Accepted lead")}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate">
+                  {count > 1
+                    ? "Tap to choose which to chat"
+                    : `${primary.customerName ?? "Customer"} — tap to chat`}
+                </p>
+              </div>
+              <Maximize2 className="h-3.5 w-3.5 text-slate-400 ml-auto flex-shrink-0" />
             </button>
+
             <button
-              type="button"
-              onClick={handleDismiss}
+              onClick={handleDismissAll}
               aria-label="Hide"
-              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-white border border-amber-300 grid place-items-center text-amber-900 shadow active:scale-90"
+              className="absolute top-1 right-1 h-6 w-6 grid place-items-center rounded-full bg-white/90 border border-slate-200 active:scale-90"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3 text-slate-600" />
             </button>
-            {top.subCategoryName && (
-              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-900/90 text-white text-[10px] font-semibold shadow">
-                {top.subCategoryName}
-              </span>
-            )}
           </div>
         </motion.div>
       </AnimatePresence>
-    </div>
+
+      {/* Picker sheet — multi-lead */}
+      <AnimatePresence>
+        {pickerOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[88] flex items-end justify-center bg-black/40"
+            onClick={() => setPickerOpen(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl pb-[env(safe-area-inset-bottom)]"
+            >
+              <div className="flex justify-center pt-2 pb-1"><span className="h-1.5 w-14 rounded-full bg-slate-200" /></div>
+              <div className="px-5 pt-1 pb-3">
+                <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-emerald-700">✦ Accepted Leads</p>
+                <h3 className="font-display text-lg font-bold text-slate-800">Which lead do you want to chat?</h3>
+              </div>
+              <div className="px-3 pb-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                {visible.map((l) => (
+                  <button
+                    key={l.notificationId}
+                    onClick={() => openLead(l.leadId)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-2xl border border-emerald-200 bg-white hover:bg-emerald-50/40 active:scale-[0.98] text-left transition"
+                  >
+                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 flex-shrink-0 grid place-items-center">
+                      {l.customerAvatar
+                        ? <img src={l.customerAvatar} alt="" className="h-full w-full object-cover" />
+                        : <span className="text-emerald-700 font-bold">{(l.customerName ?? "C")[0]}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-sm font-bold text-slate-800 truncate">
+                        {l.subCategoryName ?? "Service"}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {l.customerName ?? "Customer"} · tap to chat
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
