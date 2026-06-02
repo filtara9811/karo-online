@@ -146,18 +146,25 @@ export function useVendorLeadAlerts(): State {
       );
     };
 
-    // Backfill recent pending notifications (last 10 min)
+    // Backfill recent pending notifications (last 2 min only, excluding
+    // ones the vendor already saw / dismissed on this device).
     (async () => {
-      const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      let seenLocal = new Set<string>();
+      try {
+        const raw = typeof window !== "undefined" ? window.localStorage.getItem(`ko-seen-leads-${user.id}`) : null;
+        if (raw) seenLocal = new Set(JSON.parse(raw));
+      } catch { /* ignore */ }
       const { data } = await supabase
         .from("lead_notifications")
         .select("id, lead_id, status, created_at")
         .eq("vendor_id", user.id)
-        .in("status", ["pending", "accepted"])
+        .eq("status", "pending")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(5);
       for (const n of data ?? []) {
+        if (seenLocal.has((n as any).id)) continue;
         await handleNotification((n as any).id, (n as any).lead_id, (n as any).created_at, (n as any).status);
       }
     })();
@@ -180,7 +187,24 @@ export function useVendorLeadAlerts(): State {
     };
   }, [user]);
 
-  const dismiss = (id: string) => setAlerts((p) => p.filter((a) => a.notificationId !== id));
+  const persistSeen = (notifId: string) => {
+    if (!user || typeof window === "undefined") return;
+    try {
+      const key = `ko-seen-leads-${user.id}`;
+      const raw = window.localStorage.getItem(key);
+      const arr: string[] = raw ? JSON.parse(raw) : [];
+      if (!arr.includes(notifId)) {
+        arr.push(notifId);
+        // keep last 200
+        window.localStorage.setItem(key, JSON.stringify(arr.slice(-200)));
+      }
+    } catch { /* ignore */ }
+  };
+
+  const dismiss = (id: string) => {
+    persistSeen(id);
+    setAlerts((p) => p.filter((a) => a.notificationId !== id));
+  };
 
   const acceptLead = async (leadId: string) => {
     const { data, error } = await supabase.rpc("accept_lead", { _lead_id: leadId });
