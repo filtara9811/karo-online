@@ -220,7 +220,7 @@ export function VendorProfileSheet({
             className="fixed left-0 right-0 bottom-0 z-[97] flex flex-col bg-gradient-to-b from-white to-[#f7f3ea] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.35)] pb-[env(safe-area-inset-bottom)]"
             style={{ height: "92vh" }}
           >
-            {/* Drag handle + Close */}
+            {/* Drag handle + Close + floating avatar */}
             <div className="relative flex-shrink-0">
               <div className="grid place-items-center pt-2 pb-1">
                 <span className="block h-1.5 w-12 rounded-full bg-slate-300" />
@@ -232,31 +232,34 @@ export function VendorProfileSheet({
               >
                 <X className="h-4 w-4" />
               </button>
+              {/* Floating avatar — sits half above the sheet edge */}
+              <div className="absolute left-1/2 -translate-x-1/2 -top-10 z-10">
+                <div className="relative">
+                  {vendor.avatar_url ? (
+                    <img
+                      src={vendor.avatar_url}
+                      alt={displayName}
+                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-xl bg-white"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full grid place-items-center font-display text-xl font-bold text-amber-800 bg-gradient-to-br from-amber-50 to-emerald-50 border-4 border-white shadow-xl">
+                      {initials(displayName)}
+                    </div>
+                  )}
+                  {extras?.verified && (
+                    <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                      <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pb-24">
-              {/* ====== Header: centered avatar + name + banner strip ====== */}
-              <section className="px-4 pt-2">
+              {/* ====== Header: name + banner strip (avatar floats above) ====== */}
+              <section className="px-4 pt-12">
                 <div className="flex flex-col items-center">
-                  <div className="relative">
-                    {vendor.avatar_url ? (
-                      <img
-                        src={vendor.avatar_url}
-                        alt={displayName}
-                        className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg bg-white"
-                      />
-                    ) : (
-                      <div className="h-20 w-20 rounded-full grid place-items-center font-display text-xl font-bold text-amber-800 bg-gradient-to-br from-amber-50 to-emerald-50 border-4 border-white shadow-lg">
-                        {initials(displayName)}
-                      </div>
-                    )}
-                    {extras?.verified && (
-                      <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
-                        <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="mt-2 font-display text-xl font-bold text-slate-900 text-center">{displayName}</h2>
+                  <h2 className="font-display text-xl font-bold text-slate-900 text-center">{displayName}</h2>
                   <p className="text-[11px] text-slate-500">{sub}</p>
                   {extras?.is_premium && (
                     <span className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold shadow">
