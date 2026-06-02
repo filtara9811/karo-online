@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useVendorLeadAlerts } from "@/hooks/use-vendor-leads";
 import { LeadAlertStack } from "@/components/LeadAlertStack";
 import { requestNotificationPermission, playLeadAlert, unlockLeadAlertAudio } from "@/lib/lead-sound";
+import { speakHindi, primeVoices } from "@/lib/tts";
 
 export function VendorLeadAlerts() {
   const { alerts, dismiss, acceptLead, rejectLead } = useVendorLeadAlerts();
@@ -26,7 +27,12 @@ export function VendorLeadAlerts() {
   // Ring the bell every time a new alert arrives
   const newestId = alerts[0]?.notificationId;
   useEffect(() => {
-    if (newestId) playLeadAlert("default");
+    if (newestId) {
+      playLeadAlert("default");
+      primeVoices();
+      // Small delay so TTS doesn't clash with start of ringtone
+      setTimeout(() => speakHindi("Nayi lead receive hui hai. Please accept karein."), 450);
+    }
   }, [newestId]);
 
   if (!hydrated) return null;
