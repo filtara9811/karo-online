@@ -77,6 +77,29 @@ export function VendorProfileSheet({
   const [items, setItems] = useState<CatalogRow[]>([]);
   const [reviewBreakdown, setReviewBreakdown] = useState<{ good: number; bad: number; total: number } | null>(null);
   const [openJourney, setOpenJourney] = useState<"good" | "bad" | null>(null);
+  const [qty, setQty] = useState<Record<string, number>>({});
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customItems, setCustomItems] = useState<{ id: string; name: string; price: number; qty: number }[]>([]);
+  const [cName, setCName] = useState("");
+  const [cPrice, setCPrice] = useState("");
+
+  // Reset cart when sheet opens for a different vendor
+  useEffect(() => {
+    if (open) { setQty({}); setCustomItems([]); setCustomOpen(false); }
+  }, [open, vendor?.vendor_id]);
+
+  const invoiceTotal = useMemo(() => {
+    let t = 0;
+    for (const it of items) {
+      const q = qty[it.id] ?? 0;
+      if (!q) continue;
+      const unit = it.price_min ?? it.price_max ?? 0;
+      t += unit * q;
+    }
+    for (const c of customItems) t += c.price * c.qty;
+    return t;
+  }, [items, qty, customItems]);
+  const hasInvoice = invoiceTotal > 0;
 
   useEffect(() => {
     if (!open || !vendor) return;
@@ -197,7 +220,7 @@ export function VendorProfileSheet({
             className="fixed left-0 right-0 bottom-0 z-[97] flex flex-col bg-gradient-to-b from-white to-[#f7f3ea] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.35)] pb-[env(safe-area-inset-bottom)]"
             style={{ height: "92vh" }}
           >
-            {/* Drag handle + Close */}
+            {/* Drag handle + Close + floating avatar */}
             <div className="relative flex-shrink-0">
               <div className="grid place-items-center pt-2 pb-1">
                 <span className="block h-1.5 w-12 rounded-full bg-slate-300" />
@@ -209,31 +232,34 @@ export function VendorProfileSheet({
               >
                 <X className="h-4 w-4" />
               </button>
+              {/* Floating avatar — sits half above the sheet edge */}
+              <div className="absolute left-1/2 -translate-x-1/2 -top-10 z-10">
+                <div className="relative">
+                  {vendor.avatar_url ? (
+                    <img
+                      src={vendor.avatar_url}
+                      alt={displayName}
+                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-xl bg-white"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full grid place-items-center font-display text-xl font-bold text-amber-800 bg-gradient-to-br from-amber-50 to-emerald-50 border-4 border-white shadow-xl">
+                      {initials(displayName)}
+                    </div>
+                  )}
+                  {extras?.verified && (
+                    <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
+                      <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pb-24">
-              {/* ====== Header: centered avatar + name + banner strip ====== */}
-              <section className="px-4 pt-2">
+              {/* ====== Header: name + banner strip (avatar floats above) ====== */}
+              <section className="px-4 pt-12">
                 <div className="flex flex-col items-center">
-                  <div className="relative">
-                    {vendor.avatar_url ? (
-                      <img
-                        src={vendor.avatar_url}
-                        alt={displayName}
-                        className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg bg-white"
-                      />
-                    ) : (
-                      <div className="h-20 w-20 rounded-full grid place-items-center font-display text-xl font-bold text-amber-800 bg-gradient-to-br from-amber-50 to-emerald-50 border-4 border-white shadow-lg">
-                        {initials(displayName)}
-                      </div>
-                    )}
-                    {extras?.verified && (
-                      <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white grid place-items-center shadow border border-emerald-200">
-                        <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="mt-2 font-display text-xl font-bold text-slate-900 text-center">{displayName}</h2>
+                  <h2 className="font-display text-xl font-bold text-slate-900 text-center">{displayName}</h2>
                   <p className="text-[11px] text-slate-500">{sub}</p>
                   {extras?.is_premium && (
                     <span className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold shadow">
@@ -341,26 +367,41 @@ export function VendorProfileSheet({
                 </div>
               </section>
 
-              {/* ====== Service/product list ====== */}
+              {/* ====== Service/product list — interactive invoice builder ====== */}
               <section className="mt-3 mx-4">
                 <div className="flex items-center justify-between px-1 mb-1.5">
                   <h3 className="font-display font-bold text-slate-900 text-sm inline-flex items-center gap-1">
                     <Briefcase className="h-4 w-4 text-amber-600" /> {category ?? "Services"} offered
                   </h3>
-                  <span className="text-[10px] text-slate-400 underline underline-offset-2">Recommended</span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomOpen(true)}
+                    className="text-[11px] font-bold text-amber-700 underline underline-offset-2 active:scale-95"
+                  >
+                    + Add item
+                  </button>
                 </div>
                 <div className="space-y-2">
-                  {items.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-3 text-center text-[11px] text-slate-400">
-                      No catalog items yet — vendor will quote on chat.
-                    </div>
+                  {items.length === 0 && customItems.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomOpen(true)}
+                      className="w-full rounded-2xl border border-dashed border-amber-300 bg-amber-50/40 p-3 text-center text-[12px] font-semibold text-amber-800 active:scale-[0.99]"
+                    >
+                      + Add items to build invoice
+                      <span className="block text-[10px] font-normal text-amber-700/70 mt-0.5">
+                        Tap to add product / service with price
+                      </span>
+                    </button>
                   )}
                   {items.map((it) => {
+                    const unit = it.price_min ?? it.price_max ?? 0;
                     const range = it.price_min != null && it.price_max != null
                       ? `₹${Number(it.price_min).toLocaleString("en-IN")} – ₹${Number(it.price_max).toLocaleString("en-IN")}`
                       : it.price_min != null
                         ? `₹${Number(it.price_min).toLocaleString("en-IN")}+`
                         : "On request";
+                    const q = qty[it.id] ?? 0;
                     return (
                       <div key={it.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
                         <div className="h-12 w-12 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 flex-shrink-0 grid place-items-center">
@@ -374,17 +415,64 @@ export function VendorProfileSheet({
                           <p className="font-display text-[13px] font-bold text-slate-900 truncate">
                             {it.catalog_items?.name ?? "Service"}
                           </p>
-                          {it.notes && (
-                            <p className="text-[10px] text-slate-500 truncate">{it.notes}</p>
-                          )}
+                          <span className="inline-flex items-center gap-0.5 font-display font-bold text-emerald-700 text-[12px]">
+                            <IndianRupee className="h-3 w-3" />{range.replace(/₹/g, "")}
+                          </span>
                         </div>
-                        <span className="inline-flex items-center gap-0.5 font-display font-bold text-emerald-700 text-[13px] flex-shrink-0">
-                          <IndianRupee className="h-3 w-3" />{range.replace(/₹/g, "")}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setQty((m) => ({ ...m, [it.id]: Math.max(0, (m[it.id] ?? 0) - 1) }))}
+                            disabled={q === 0}
+                            className="h-7 w-7 rounded-full border border-amber-300 text-amber-700 grid place-items-center disabled:opacity-30 active:scale-90"
+                          >−</button>
+                          <span className="font-display font-bold text-sm w-5 text-center">{q}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQty((m) => ({ ...m, [it.id]: (m[it.id] ?? 0) + 1 }))}
+                            className="h-7 w-7 rounded-full bg-amber-500 text-white grid place-items-center active:scale-90 shadow"
+                          >+</button>
+                        </div>
                       </div>
                     );
                   })}
+                  {customItems.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/30 p-2.5">
+                      <div className="h-12 w-12 rounded-xl bg-amber-100 grid place-items-center flex-shrink-0">
+                        <Sparkles className="h-5 w-5 text-amber-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
+                        <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 text-[12px]">
+                          <IndianRupee className="h-3 w-3" />{c.price.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCustomItems((arr) => arr.map((x) => x.id === c.id ? { ...x, qty: Math.max(0, x.qty - 1) } : x).filter((x) => x.qty > 0))}
+                          className="h-7 w-7 rounded-full border border-amber-300 text-amber-700 grid place-items-center active:scale-90"
+                        >−</button>
+                        <span className="font-display font-bold text-sm w-5 text-center">{c.qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCustomItems((arr) => arr.map((x) => x.id === c.id ? { ...x, qty: x.qty + 1 } : x))}
+                          className="h-7 w-7 rounded-full bg-amber-500 text-white grid place-items-center active:scale-90 shadow"
+                        >+</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                {/* Invoice total */}
+                {hasInvoice && (
+                  <div className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Invoice total</span>
+                    <span className="font-display font-bold text-emerald-800 inline-flex items-center">
+                      <IndianRupee className="h-3.5 w-3.5" />{invoiceTotal.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                )}
               </section>
 
               {/* Vendor tags (entity / trade / deals_in) */}
@@ -419,6 +507,8 @@ export function VendorProfileSheet({
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : isApproved ? (
                     <><CheckCircle2 className="h-5 w-5" /> Approved</>
+                  ) : hasInvoice ? (
+                    <>Approve · ₹{invoiceTotal.toLocaleString("en-IN")}</>
                   ) : (
                     <>Approve {priceRange ? `· ${priceRange}` : ""}</>
                   )}
@@ -478,6 +568,59 @@ export function VendorProfileSheet({
                     className="mt-4 w-full h-10 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm active:scale-95"
                   >
                     Close
+                  </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Custom item add sheet — build invoice */}
+          <AnimatePresence>
+            {customOpen && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[99] grid place-items-end bg-black/55 backdrop-blur-sm"
+                onClick={() => setCustomOpen(false)}
+              >
+                <motion.div
+                  initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+12px)]"
+                >
+                  <div className="grid place-items-center pb-2">
+                    <span className="h-1.5 w-12 rounded-full bg-slate-200" />
+                  </div>
+                  <h4 className="font-display font-bold text-base text-slate-900">Add item to invoice</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Product / service name aur price likhiye</p>
+                  <div className="mt-3 space-y-2">
+                    <input
+                      value={cName}
+                      onChange={(e) => setCName(e.target.value)}
+                      placeholder="Item name (e.g. AC service, Maison Cosmetics)"
+                      className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:border-amber-400"
+                    />
+                    <input
+                      value={cPrice}
+                      onChange={(e) => setCPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="Price ₹"
+                      inputMode="numeric"
+                      className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!cName.trim() || !cPrice}
+                    onClick={() => {
+                      setCustomItems((arr) => [
+                        ...arr,
+                        { id: `c-${Date.now()}`, name: cName.trim(), price: Number(cPrice), qty: 1 },
+                      ]);
+                      setCName(""); setCPrice(""); setCustomOpen(false);
+                    }}
+                    className="mt-4 w-full h-11 rounded-xl bg-gradient-to-b from-amber-500 to-amber-700 text-white font-display font-bold text-sm disabled:opacity-40 active:scale-95"
+                  >
+                    Add to invoice
                   </button>
                 </motion.div>
               </motion.div>
