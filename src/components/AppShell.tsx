@@ -78,6 +78,8 @@ export function AppShell() {
           {!isMarketing && <SiteFooter />}
         </div>
         {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && <AcceptedLeadFloatingButton />}
+
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
       </AuthGate>
