@@ -530,6 +530,31 @@ export function VendorListSheet({ open, category: propCategory, productImage: pr
                             <Phone className="h-4 w-4" />
                           </a>
                         )}
+                        {(v.whatsapp || v.phone) && (() => {
+                          const raw = String(v.whatsapp || v.phone || "").replace(/\D/g, "");
+                          const num = raw.length === 10 ? `91${raw}` : raw;
+                          const origin = typeof window !== "undefined" ? window.location.origin : "https://karoonline.in";
+                          const text = encodeURIComponent(
+                            `🔔 नई Lead — Karo Online\n` +
+                            `Service: ${category ?? "Service"}\n\n` +
+                            `Accept / View करने के लिए यहाँ click करें:\n` +
+                            `${origin}/vendor/dashboard${leadId ? `?leadId=${leadId}` : ""}`
+                          );
+                          return (
+                            <a
+                              href={`https://wa.me/${num}?text=${text}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="h-10 w-10 rounded-xl bg-[#25D366] text-white grid place-items-center active:scale-95 shadow-sm"
+                              aria-label="Send on WhatsApp"
+                              title="WhatsApp पर भेजें"
+                            >
+                              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+                                <path d="M19.05 4.91A10 10 0 0 0 4.1 18.36L3 22l3.73-1.08A10 10 0 1 0 19.05 4.91ZM12 20a8 8 0 0 1-4.07-1.11l-.29-.17-2.21.64.66-2.15-.19-.31A8 8 0 1 1 12 20Zm4.6-5.79c-.25-.13-1.47-.72-1.7-.8s-.39-.13-.56.13-.65.8-.79.96-.29.2-.54.07a6.55 6.55 0 0 1-1.93-1.19 7.2 7.2 0 0 1-1.33-1.66c-.14-.25 0-.38.11-.5s.25-.29.37-.43a1.7 1.7 0 0 0 .25-.41.46.46 0 0 0 0-.43c-.06-.13-.56-1.34-.77-1.83s-.4-.42-.56-.43h-.48a.93.93 0 0 0-.67.31 2.83 2.83 0 0 0-.87 2.1 4.9 4.9 0 0 0 1 2.6 11.23 11.23 0 0 0 4.27 3.77c.6.26 1.06.41 1.42.53a3.45 3.45 0 0 0 1.57.1 2.58 2.58 0 0 0 1.69-1.19 2.09 2.09 0 0 0 .15-1.19c-.06-.11-.23-.18-.48-.31Z"/>
+                              </svg>
+                            </a>
+                          );
+                        })()}
                       </div>
                     </motion.div>
                   );
