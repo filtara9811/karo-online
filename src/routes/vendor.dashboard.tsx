@@ -794,7 +794,7 @@ function VendorDashboard() {
               10 km radius
             </div>
           </div>
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-12">
             <VendorNotificationBell />
           </div>
         </div>
