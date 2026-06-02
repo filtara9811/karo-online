@@ -126,6 +126,7 @@ function VendorDashboard() {
   const { user, profile } = useAuth();
   const geo = useGeolocation();
   const updateQuickControl = useServerFn(updateVendorQuickControl);
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
