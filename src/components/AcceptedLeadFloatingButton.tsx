@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
+
 type AcceptedLead = {
   notificationId: string;
   leadId: string;
