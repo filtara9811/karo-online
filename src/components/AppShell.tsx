@@ -61,6 +61,7 @@ export function AppShell() {
   const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
   const isQuickRoute = location.pathname.startsWith("/quick");
+  const isVendorRoute = location.pathname.startsWith("/vendor");
 
   const [fadeKey, setFadeKey] = useState(location.pathname);
   useEffect(() => {
@@ -77,8 +78,8 @@ export function AppShell() {
           </div>
           {!isMarketing && <SiteFooter />}
         </div>
-        {!isMarketing && <VendorLeadAlerts />}
-        {!isMarketing && <AcceptedLeadFloatingButton />}
+        {isVendorRoute && <VendorLeadAlerts />}
+        {isVendorRoute && <AcceptedLeadFloatingButton />}
 
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
@@ -111,8 +112,8 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
-        <VendorLeadAlerts />
-        <AcceptedLeadFloatingButton />
+        {isVendorRoute && <VendorLeadAlerts />}
+        {isVendorRoute && <AcceptedLeadFloatingButton />}
 
         <PermissionsGate />
         <FloatingInquiryWidget />
