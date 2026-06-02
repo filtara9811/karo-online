@@ -77,6 +77,29 @@ export function VendorProfileSheet({
   const [items, setItems] = useState<CatalogRow[]>([]);
   const [reviewBreakdown, setReviewBreakdown] = useState<{ good: number; bad: number; total: number } | null>(null);
   const [openJourney, setOpenJourney] = useState<"good" | "bad" | null>(null);
+  const [qty, setQty] = useState<Record<string, number>>({});
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customItems, setCustomItems] = useState<{ id: string; name: string; price: number; qty: number }[]>([]);
+  const [cName, setCName] = useState("");
+  const [cPrice, setCPrice] = useState("");
+
+  // Reset cart when sheet opens for a different vendor
+  useEffect(() => {
+    if (open) { setQty({}); setCustomItems([]); setCustomOpen(false); }
+  }, [open, vendor?.vendor_id]);
+
+  const invoiceTotal = useMemo(() => {
+    let t = 0;
+    for (const it of items) {
+      const q = qty[it.id] ?? 0;
+      if (!q) continue;
+      const unit = it.price_min ?? it.price_max ?? 0;
+      t += unit * q;
+    }
+    for (const c of customItems) t += c.price * c.qty;
+    return t;
+  }, [items, qty, customItems]);
+  const hasInvoice = invoiceTotal > 0;
 
   useEffect(() => {
     if (!open || !vendor) return;
