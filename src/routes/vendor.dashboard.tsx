@@ -131,6 +131,15 @@ function VendorDashboard() {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadsSheetOpen, setLeadsSheetOpen] = useState(false);
+  const [leadsSheetFilter, setLeadsSheetFilter] = useState<
+    "all" | "pending" | "in_process" | "success" | "rejected"
+  >("all");
+  const openLeadsSheet = (
+    f: "all" | "pending" | "in_process" | "success" | "rejected" = "all",
+  ) => {
+    setLeadsSheetFilter(f);
+    setLeadsSheetOpen(true);
+  };
   const [actionsOpen, setActionsOpen] = useState(false);
   const [profileFinderOpen, setProfileFinderOpen] = useState(false);
   const [needCategories, setNeedCategories] = useState<NeedCategory[]>([]);
