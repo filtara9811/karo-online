@@ -929,61 +929,165 @@ function VendorDashboard() {
 
         {tab === "my" ? (
           <>
-            {/* Hero stats card — visiting card style */}
-            <section
-              onClick={() => setLeadsSheetOpen(true)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true);
-              }}
-              className="relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] cursor-pointer active:scale-[0.99] transition"
-              style={{
-                background:
-                  "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
-                border: "1.5px solid rgba(255,255,255,0.6)",
-              }}
+            {/* Visiting-card carousel: My Leads / Digital Shop / Find Lead */}
+            <div
+              className="-mx-3 px-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3"
+              style={{ scrollPaddingLeft: "0.75rem", scrollPaddingRight: "0.75rem" }}
             >
-              {/* Diamond pattern overlay */}
-              <div
-                className="absolute inset-0 opacity-25 pointer-events-none"
-                style={{
-                  backgroundImage:
-                    "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px)",
+              {/* Card 1 — My Leads (existing silver) */}
+              <section
+                onClick={() => setLeadsSheetOpen(true)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true);
                 }}
-              />
-              <div className="relative flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
-                    Total Added Leads
-                  </p>
-                  <p className="text-xs italic opacity-75">Tap to view all leads</p>
+                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] cursor-pointer active:scale-[0.99] transition"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
+                  border: "1.5px solid rgba(255,255,255,0.6)",
+                }}
+              >
+                <div
+                  className="absolute inset-0 opacity-25 pointer-events-none"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px)",
+                  }}
+                />
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
+                      My Leads
+                    </p>
+                    <p className="text-xs italic opacity-75">Tap to view all leads</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.20_0.01_260)] grid place-items-center font-display text-2xl font-bold shadow">
+                      {stats.total}
+                    </span>
+                    <button
+                      aria-label="Download"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
+                    >
+                      <Download className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.20_0.01_260)] grid place-items-center font-display text-2xl font-bold shadow">
-                    {stats.total}
+
+                <div className="relative my-3 border-t border-dashed border-white/70" />
+
+                {/* Same colored stat tiles as top strip — scrollable + clickable */}
+                <div
+                  className="relative flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {statTiles.map((t) => (
+                    <button
+                      key={`card-${t.label}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openLeadsSheet(t.filter);
+                      }}
+                      className={`flex-shrink-0 w-[68px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
+                      style={{ border: `1.5px solid ${t.border}` }}
+                    >
+                      <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
+                        <Handshake className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                      </div>
+                      <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
+                        {t.value}
+                      </p>
+                      <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                        {t.label}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Card 2 — Digital Shop */}
+              <Link
+                to="/vendor/shop"
+                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] active:scale-[0.99] transition no-underline"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #fffaeb 0%, #fdf3c8 40%, #f5e9b8 80%, #d4af37 100%)",
+                  border: "1.5px solid rgba(255,255,255,0.6)",
+                }}
+              >
+                <div
+                  className="absolute inset-0 opacity-25 pointer-events-none"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px)",
+                  }}
+                />
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
+                      Digital Shop
+                    </p>
+                    <p className="text-xs italic opacity-75">Apni dukan manage karein</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow">
+                      <Store className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
+                    </span>
+                  </div>
+                </div>
+                <div className="relative my-3 border-t border-dashed border-white/70" />
+                <div className="relative flex items-center justify-between text-[11px] font-semibold">
+                  <span className="opacity-80">Products • Stock • Pricing</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 shadow-sm">
+                    Open <ChevronRight className="h-3 w-3" />
                   </span>
-                  <button
-                    aria-label="Download"
-                    onClick={(e) => {
-                      e.stopPropagation(); /* TODO: CSV export */
-                    }}
-                    className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
-                  >
-                    <Download className="h-5 w-5" />
-                  </button>
                 </div>
-              </div>
+              </Link>
 
-              <div className="relative my-3 border-t border-dashed border-white/70" />
-
-              <div className="relative grid grid-cols-4 gap-1 text-center">
-                <StatCell value={stats.success} label="Success" />
-                <StatCell value={stats.process} label="In Process" />
-                <StatCell value={stats.rejected} label="Rejected" />
-                <StatCell value={stats.action} label="Action Req." active />
-              </div>
-            </section>
+              {/* Card 3 — Find Lead */}
+              <button
+                onClick={openProfileFinder}
+                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-white shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] active:scale-[0.99] transition text-left"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #1f2937 0%, #3f4750 35%, #5a6470 70%, #1f2937 100%)",
+                  border: "1.5px solid rgba(255,255,255,0.25)",
+                }}
+              >
+                <div
+                  className="absolute inset-0 opacity-20 pointer-events-none"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0 1px, transparent 1px 18px)",
+                  }}
+                />
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">
+                      Find Lead
+                    </p>
+                    <p className="text-xs italic opacity-80">Nearby customer needs scan</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-12 w-12 rounded-2xl bg-white/15 grid place-items-center shadow border border-white/30">
+                      <Radar className="h-6 w-6 text-white" strokeWidth={2.2} />
+                    </span>
+                  </div>
+                </div>
+                <div className="relative my-3 border-t border-dashed border-white/40" />
+                <div className="relative flex items-center justify-between text-[11px] font-semibold">
+                  <span className="opacity-90">{nearbyCustomers.length} customers nearby</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 border border-white/25">
+                    Scan <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </button>
+            </div>
 
             {/* Lead cards */}
             <div className="space-y-3">
