@@ -722,36 +722,47 @@ function VendorDashboard() {
     })),
   ];
 
-  const statTiles = [
+  const statTiles: {
+    value: number;
+    label: string;
+    border: string;
+    tint: string;
+    filter: "all" | "pending" | "in_process" | "success" | "rejected";
+  }[] = [
     {
       value: stats.total,
       label: "All Leads",
       border: "oklch(0.72 0.01 260 / 0.55)",
       tint: "from-[#f5f6f8] to-[#eef0f3]",
+      filter: "all",
     },
     {
       value: pendingCount,
       label: "Pending",
       border: "oklch(0.78 0.14 82 / 0.7)",
       tint: "from-[#fff8dc] to-[#f5e9b8]",
+      filter: "pending",
     },
     {
       value: stats.process,
       label: "In Process",
       border: "#b91c1c66",
       tint: "from-[#fef2f2] to-[#fde0e0]",
+      filter: "in_process",
     },
     {
       value: stats.success,
       label: "Success",
       border: "#15803d66",
       tint: "from-[#f0fdf4] to-[#d6f5df]",
+      filter: "success",
     },
     {
       value: stats.rejected,
       label: "Rejected",
       border: "oklch(0.78 0.14 82 / 0.4)",
       tint: "from-[#fffaeb] to-[#fdf3c8]",
+      filter: "rejected",
     },
   ];
 
