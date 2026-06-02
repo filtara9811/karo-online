@@ -78,8 +78,8 @@ export function AppShell() {
           </div>
           {!isMarketing && <SiteFooter />}
         </div>
-        {!isMarketing && <VendorLeadAlerts />}
-        {!isMarketing && <AcceptedLeadFloatingButton />}
+        {isVendorRoute && <VendorLeadAlerts />}
+        {isVendorRoute && <AcceptedLeadFloatingButton />}
 
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
