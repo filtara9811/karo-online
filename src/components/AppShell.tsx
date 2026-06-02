@@ -11,6 +11,8 @@ import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { AuthGate } from "@/components/AuthGate";
 import { VendorLeadAlerts } from "@/components/VendorLeadAlerts";
+import { AcceptedLeadFloatingButton } from "@/components/AcceptedLeadFloatingButton";
+
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { PermissionsGate } from "@/components/PermissionsGate";
 import { useAuth } from "@/hooks/use-auth";
@@ -76,6 +78,8 @@ export function AppShell() {
           {!isMarketing && <SiteFooter />}
         </div>
         {!isMarketing && <VendorLeadAlerts />}
+        {!isMarketing && <AcceptedLeadFloatingButton />}
+
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
       </AuthGate>
@@ -108,6 +112,8 @@ export function AppShell() {
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
 
         <VendorLeadAlerts />
+        <AcceptedLeadFloatingButton />
+
         <PermissionsGate />
         <FloatingInquiryWidget />
         <FeedbackWidget />
