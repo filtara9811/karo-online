@@ -31,7 +31,11 @@ import {
   ShoppingBag,
   Loader,
   ListChecks,
+  Box,
+  Filter as FilterIcon,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
@@ -133,7 +137,30 @@ function VendorDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [activePanel, setActivePanel] = useState<0 | 1 | 2>(0);
-  const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year">("day");
+  const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year" | "custom">("day");
+  const [customRange, setCustomRange] = useState<{ from: string; to: string }>(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - 14);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return { from: fmt(from), to: fmt(to) };
+  });
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [liveStamp, setLiveStamp] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      const day = d.getDate();
+      const month = d.toLocaleString("en-US", { month: "long" });
+      const year = d.getFullYear();
+      const hh = d.getHours().toString().padStart(2, "0");
+      const mm = d.getMinutes().toString().padStart(2, "0");
+      setLiveStamp(`${day} ${month} ${year} · ${hh}:${mm}`);
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
   const panelScrollRef = useRef<HTMLDivElement | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
@@ -901,103 +928,201 @@ function VendorDashboard() {
           className="-mx-3 px-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3"
           style={{ scrollPaddingLeft: "0.75rem", scrollPaddingRight: "0.75rem" }}
         >
-          {/* Panel 1 — Leads dashboard */}
+          {/* Panel 1 — Leads dashboard (Digital-Shop style) */}
           <section
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-2.5"
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.72_0.01_260/0.45)] p-0 overflow-hidden"
+            style={{
+              background: "linear-gradient(180deg, #f5f6f8 0%, #f5f6f8 100%)",
+              boxShadow:
+                "0 10px 30px -14px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.9)",
+            }}
           >
-            <div className="flex items-center justify-between px-0.5">
-              <p className="font-display font-bold text-[13px] text-[color:oklch(0.22_0.05_85)]">
-                ✦ Leads Dashboard
-              </p>
-              <div className="flex items-center gap-0.5 bg-[#fffaeb] border border-[color:oklch(0.78_0.14_82/0.45)] rounded-full p-0.5">
+            {/* Brand header */}
+            <header className="relative px-4 pt-3.5 pb-2 flex items-start gap-3">
+              <span
+                className="h-12 w-12 rounded-full grid place-items-center text-[color:oklch(0.20_0.01_260)] shadow border-2 border-white"
+                style={{ background: "linear-gradient(180deg, #f5f6f8, #d8dde3, #a8acb3, #3f4750)" }}
+              >
+                <Sparkles className="h-5 w-5" strokeWidth={2.2} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-display text-base text-silver-gradient font-bold leading-tight tracking-wide truncate uppercase">
+                  Leads | Dashboard
+                </h2>
+                <p className="text-[10px] text-[color:oklch(0.45_0.01_260)] font-bold flex items-center gap-1 leading-tight">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {liveStamp}
+                </p>
+              </div>
+              <button
+                aria-label="Custom date range"
+                onClick={() => setShowCustomDate((s) => !s)}
+                className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+              >
+                <CalendarIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
+              </button>
+              <button
+                aria-label="Filter"
+                className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+              >
+                <FilterIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
+              </button>
+            </header>
+
+            {/* Range pill */}
+            <div className="relative px-3 pb-2">
+              <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/80 p-1 border border-[color:oklch(0.72_0.01_260/0.3)]">
                 {(["day", "week", "month", "year"] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setStatRange(r)}
-                    className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full transition ${
+                    className={`py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition ${
                       statRange === r
-                        ? "bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[color:oklch(0.22_0.05_85)] shadow-sm"
+                        ? "text-[color:oklch(0.20_0.01_260)] shadow"
                         : "text-[color:oklch(0.55_0.10_82)]"
                     }`}
+                    style={
+                      statRange === r
+                        ? { background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }
+                        : undefined
+                    }
                   >
                     {r}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Mini sparkline */}
-            <div className="h-10 rounded-xl bg-gradient-to-br from-[#fffaeb] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.35)] px-2 flex items-end gap-[2px] overflow-hidden">
-              {Array.from({ length: 28 }).map((_, i) => {
-                const seed = (i * 37 + stats.total * 13 + (statRange.length * 11)) % 100;
-                const h = 18 + (seed % 22);
-                return (
-                  <span
-                    key={i}
-                    className="flex-1 rounded-t-sm bg-gradient-to-t from-[#d4af37] to-[#fff8dc] opacity-80"
-                    style={{ height: `${h}px` }}
+              {showCustomDate && (
+                <div className="mt-2 rounded-xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-2 flex items-center gap-2 shadow-sm">
+                  <input
+                    type="date"
+                    value={customRange.from}
+                    onChange={(e) => {
+                      setCustomRange((r) => ({ ...r, from: e.target.value }));
+                      setStatRange("custom");
+                    }}
+                    className="flex-1 min-w-0 text-[11px] bg-transparent border border-[color:oklch(0.72_0.01_260/0.3)] rounded-md px-2 py-1"
                   />
-                );
-              })}
+                  <span className="text-[10px] text-[color:oklch(0.45_0.01_260)]">→</span>
+                  <input
+                    type="date"
+                    value={customRange.to}
+                    onChange={(e) => {
+                      setCustomRange((r) => ({ ...r, to: e.target.value }));
+                      setStatRange("custom");
+                    }}
+                    className="flex-1 min-w-0 text-[11px] bg-transparent border border-[color:oklch(0.72_0.01_260/0.3)] rounded-md px-2 py-1"
+                  />
+                </div>
+              )}
+              {statRange === "custom" && !showCustomDate && (
+                <p className="mt-1.5 text-[10px] text-center text-[color:oklch(0.45_0.01_260)] font-semibold">
+                  {customRange.from} → {customRange.to}
+                </p>
+              )}
             </div>
 
-            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
-              {statTiles.map((t, i) => (
+            {/* Auto-scrolling product strip from leads */}
+            {(() => {
+              const images = leads
+                .flatMap((l) => (l.items ?? []).map((it: any) => it?.image).filter(Boolean))
+                .slice(0, 8) as string[];
+              if (images.length === 0) return null;
+              const loop = [...images, ...images];
+              return (
+                <div className="relative px-3 pb-1">
+                  <div
+                    className="overflow-hidden rounded-xl border border-[color:oklch(0.72_0.01_260/0.25)] bg-white/60"
+                    style={{
+                      maskImage:
+                        "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+                    }}
+                  >
+                    <div
+                      className="marquee-x flex gap-2 w-max py-1.5 px-1.5"
+                      style={{ animationDuration: "42s" }}
+                    >
+                      {loop.map((src, i) => (
+                        <div
+                          key={`${src}-${i}`}
+                          className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.72_0.01_260/0.4)] bg-white flex-shrink-0"
+                        >
+                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Caption */}
+            <div className="relative px-4 text-center pt-1">
+              <p className="font-display text-base font-bold text-[color:oklch(0.40_0.10_82)] tracking-wide">
+                Live | Leads Desbord
+              </p>
+              <span className="block mx-auto mt-0.5 h-px w-3/4 bg-gradient-to-r from-transparent via-[#a8acb3] to-transparent" />
+            </div>
+
+            {/* 5-tile metric strip — animated numbers */}
+            <div className="relative px-2 pt-3 pb-3 grid grid-cols-5 gap-1.5">
+              {statTiles.map((t) => (
                 <button
                   key={t.label}
+                  type="button"
                   onClick={() => openLeadsSheet(t.filter)}
-                  className={`flex-shrink-0 w-[68px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
-                  style={{
-                    border: `1.5px solid ${t.border}`,
-                    animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
-                  }}
+                  className="group relative rounded-xl bg-white/90 border border-[color:oklch(0.72_0.01_260/0.4)] py-2 px-1 flex flex-col items-center text-center active:scale-[0.96] transition"
                 >
-                  {(() => {
-                    const map: Record<string, { Icon: any; cls: string }> = {
-                      all: { Icon: ListChecks, cls: "text-slate-600" },
-                      pending: { Icon: Clock, cls: "text-amber-500" },
-                      in_process: { Icon: Loader, cls: "text-rose-600 animate-spin-slow" },
-                      success: { Icon: CheckCircle2, cls: "text-emerald-600" },
-                      rejected: { Icon: XCircle, cls: "text-slate-400" },
-                    };
-                    const { Icon, cls } = map[t.filter] ?? map.all;
-                    return (
-                      <div className="h-6 w-6 mx-auto rounded-lg bg-white grid place-items-center shadow-sm">
-                        <Icon className={`h-4 w-4 ${cls}`} strokeWidth={2.4} />
-                      </div>
-                    );
-                  })()}
-                  <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
-                    {t.value}
-                  </p>
-                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                  <span className="h-7 w-7 grid place-items-center rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#a8acb3] text-[color:oklch(0.20_0.01_260)] shadow">
+                    <Box className="h-3.5 w-3.5" strokeWidth={2.4} />
+                  </span>
+                  <AnimatedNumber
+                    value={Number(t.value) || 0}
+                    format={(n) => Math.round(n).toLocaleString()}
+                    className="font-display font-bold leading-none mt-1.5 tabular-nums text-silver-gradient"
+                    style={{ fontSize: "13px", letterSpacing: "-0.02em" }}
+                  />
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-[color:oklch(0.30_0.05_85)] mt-1 leading-tight truncate w-full">
                     {t.label}
                   </p>
                 </button>
               ))}
             </div>
 
-            <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
-              <button
-                onClick={() => setTab("my")}
-                className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
-                  tab === "my" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
-                }`}
-                style={tab === "my" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
-              >
-                My Leads
-              </button>
-              <button
-                onClick={() => setTab("potential")}
-                className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
-                  tab === "potential" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
-                }`}
-                style={tab === "potential" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
-              >
-                Potential
-              </button>
+            {/* Footer micro-trend */}
+            <div className="relative px-4 pb-3 flex items-center justify-between text-[10px] text-[color:oklch(0.45_0.01_260)] font-bold">
+              <span className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-emerald-600" />
+                <span className="text-emerald-700">+{Math.max(0, stats.success * 3)}%</span> success
+              </span>
+              <span className="font-display">Total: {stats.total.toLocaleString()}</span>
+            </div>
+
+            {/* My Leads / Potential tabs */}
+            <div className="px-3 pb-3">
+              <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
+                <button
+                  onClick={() => setTab("my")}
+                  className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
+                    tab === "my" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
+                  }`}
+                  style={tab === "my" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
+                >
+                  My Leads
+                </button>
+                <button
+                  onClick={() => setTab("potential")}
+                  className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
+                    tab === "potential" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
+                  }`}
+                  style={tab === "potential" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
+                >
+                  Potential
+                </button>
+              </div>
             </div>
           </section>
+
 
           {/* Panel 2 — Digital POS Dashboard */}
           <section
