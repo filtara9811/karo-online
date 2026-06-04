@@ -19,6 +19,43 @@ type AcceptedLead = {
   acceptedAt: string;
 };
 
+type NotificationRow = {
+  id: string;
+  lead_id: string;
+  sub_category_name: string | null;
+  responded_at: string | null;
+  created_at: string;
+  status?: string | null;
+};
+
+type LeadLookup = {
+  customer_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  address: string | null;
+  note: string | null;
+  images: string[] | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+type CustomerRow = {
+  user_id: string;
+  avatar_url: string | null;
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+type VendorLocationRow = {
+  lat: number | null;
+  lng: number | null;
+  live_lat: number | null;
+  live_lng: number | null;
+};
+
 const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v2";
 
 function maskPhone(phone?: string | null) {
@@ -28,7 +65,9 @@ function maskPhone(phone?: string | null) {
 }
 
 function areaLine(lead: AcceptedLead) {
-  const parts = [lead.address, lead.distanceKm != null ? `${lead.distanceKm} km` : null].filter(Boolean);
+  const parts = [lead.address, lead.distanceKm != null ? `${lead.distanceKm} km` : null].filter(
+    Boolean,
+  );
   return parts.length ? parts.join(" · ") : "Location pending";
 }
 
@@ -49,7 +88,9 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
     try {
       const raw = window.localStorage.getItem(STORAGE_DISMISS_KEY);
       return new Set(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
+    } catch {
+      return new Set();
+    }
   });
 
   // Only render on vendor dashboard. Hide on chat/inner screens.
