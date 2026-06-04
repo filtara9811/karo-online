@@ -952,9 +952,21 @@ function VendorDashboard() {
                     animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
                   }}
                 >
-                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                    <Handshake className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
-                  </div>
+                  {(() => {
+                    const map: Record<string, { Icon: any; cls: string }> = {
+                      all: { Icon: ListChecks, cls: "text-slate-600" },
+                      pending: { Icon: Clock, cls: "text-amber-500" },
+                      in_process: { Icon: Loader, cls: "text-rose-600 animate-spin-slow" },
+                      success: { Icon: CheckCircle2, cls: "text-emerald-600" },
+                      rejected: { Icon: XCircle, cls: "text-slate-400" },
+                    };
+                    const { Icon, cls } = map[t.filter] ?? map.all;
+                    return (
+                      <div className="h-6 w-6 mx-auto rounded-lg bg-white grid place-items-center shadow-sm">
+                        <Icon className={`h-4 w-4 ${cls}`} strokeWidth={2.4} />
+                      </div>
+                    );
+                  })()}
                   <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
                     {t.value}
                   </p>
