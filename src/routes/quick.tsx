@@ -697,6 +697,7 @@ function QuickPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* (Search-radius slider removed — now shown only in the NoVendorsFallback "Try again" sheet) */}
 
