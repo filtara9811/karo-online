@@ -28,6 +28,7 @@ import {
   Search,
   User,
   Radar,
+  ShoppingBag,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
