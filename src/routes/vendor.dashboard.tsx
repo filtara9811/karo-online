@@ -136,9 +136,7 @@ function VendorDashboard() {
   const [leadsSheetFilter, setLeadsSheetFilter] = useState<
     "all" | "pending" | "in_process" | "success" | "rejected"
   >("all");
-  const openLeadsSheet = (
-    f: "all" | "pending" | "in_process" | "success" | "rejected" = "all",
-  ) => {
+  const openLeadsSheet = (f: "all" | "pending" | "in_process" | "success" | "rejected" = "all") => {
     setLeadsSheetFilter(f);
     setLeadsSheetOpen(true);
   };
@@ -670,7 +668,16 @@ function VendorDashboard() {
   // Floating nearby customers (10km) — auto-refresh every 60s
   const fetchNearbyCustomers = useServerFn(getNearbyCustomers);
   const [nearbyCustomers, setNearbyCustomers] = useState<
-    Array<{ id: string; name: string; avatar_url: string | null; lat: number; lng: number; km: number; area: string | null; is_online: boolean }>
+    Array<{
+      id: string;
+      name: string;
+      avatar_url: string | null;
+      lat: number;
+      lng: number;
+      km: number;
+      area: string | null;
+      is_online: boolean;
+    }>
   >([]);
   useEffect(() => {
     if (!Number.isFinite(vendorLat) || !Number.isFinite(vendorLng)) return;
@@ -770,12 +777,13 @@ function VendorDashboard() {
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-32"
+      className="fixed inset-0 z-0 h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-[calc(10.5rem+env(safe-area-inset-bottom))]"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
         touchAction: "pan-y",
         WebkitOverflowScrolling: "touch",
+        overscrollBehaviorY: "contain",
       }}
     >
       {/* Decorative orbs */}
@@ -785,21 +793,23 @@ function VendorDashboard() {
       <ActionAlertBanner role="vendor" />
 
       {/* Map hero with vendor pin in center */}
-      <section className="relative">
+      <section className="relative touch-pan-y">
         <div className="relative h-[240px] w-full overflow-hidden">
-          <VendorMapHero
-            center={{ lat: vendorLat, lng: vendorLng }}
-            vendors={vendorMapCards}
-            businessName={vendor?.business_name ?? "My Shop"}
-            locationLabel={
-              liveGeo
-                ? geo.label
-                : vendor?.operation_mode === "dynamic"
-                  ? "Live GPS"
-                  : "Shop address"
-            }
-          />
-          <AcceptedLeadFloatingButton onOpenList={() => openLeadsSheet("in_process")} />
+          <div className="pointer-events-none absolute inset-0 touch-pan-y">
+            <VendorMapHero
+              center={{ lat: vendorLat, lng: vendorLng }}
+              vendors={vendorMapCards}
+              businessName={vendor?.business_name ?? "My Shop"}
+              locationLabel={
+                liveGeo
+                  ? geo.label
+                  : vendor?.operation_mode === "dynamic"
+                    ? "Live GPS"
+                    : "Shop address"
+              }
+            />
+          </div>
+          <AcceptedLeadFloatingButton />
           {/* Status + nearby customers chip */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
@@ -884,7 +894,10 @@ function VendorDashboard() {
                 }}
               >
                 <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                  <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                  <Handshake
+                    className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]"
+                    strokeWidth={2.2}
+                  />
                 </div>
                 <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
                   {t.value}
@@ -934,7 +947,6 @@ function VendorDashboard() {
           </div>
         </div>
 
-
         {tab === "my" ? (
           <>
             {/* Visiting-card carousel: My Leads / Digital Shop / Find Lead */}
@@ -966,9 +978,7 @@ function VendorDashboard() {
                 />
                 <div className="relative flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
-                      My Leads
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">My Leads</p>
                     <p className="text-xs italic opacity-75">Tap to view all leads</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1005,7 +1015,10 @@ function VendorDashboard() {
                       style={{ border: `1.5px solid ${t.border}` }}
                     >
                       <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                        <Handshake className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                        <Handshake
+                          className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]"
+                          strokeWidth={2.2}
+                        />
                       </div>
                       <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
                         {t.value}
@@ -1044,7 +1057,10 @@ function VendorDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow">
-                      <Store className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
+                      <Store
+                        className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]"
+                        strokeWidth={2.2}
+                      />
                     </span>
                   </div>
                 </div>
@@ -1076,9 +1092,7 @@ function VendorDashboard() {
                 />
                 <div className="relative flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">
-                      Find Lead
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">Find Lead</p>
                     <p className="text-xs italic opacity-80">Nearby customer needs scan</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1136,6 +1150,7 @@ function VendorDashboard() {
             </p>
           </div>
         )}
+        <div aria-hidden className="h-36" />
       </div>
 
       {/* Floating action: open digital shop */}
@@ -1213,7 +1228,7 @@ function VendorDashboard() {
         onOpenLead={(id) => {
           const exists = leads.some((l) => l.id === id);
           if (exists) setDetailLeadId(id);
-          else navigate({ to: "/vendor/chat", search: { leadId: id } as any });
+          else navigate({ to: "/vendor/chat", search: { leadId: id } as never });
         }}
       />
       <VendorQuickActionsSheet
