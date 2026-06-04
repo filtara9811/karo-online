@@ -852,11 +852,11 @@ function VendorDashboard() {
         {/* Shop icon + search + profile icon */}
         <div className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]">
           <button
-            onClick={() => setActionsOpen(true)}
-            aria-label="Quick actions"
+            onClick={() => navigate({ to: "/" })}
+            aria-label="Open customer shop"
             className="h-10 w-10 rounded-xl grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] active:scale-90 shadow-sm"
           >
-            <Store className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+            <ShoppingBag className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
           </button>
           <div className="flex-1 relative">
             <input
