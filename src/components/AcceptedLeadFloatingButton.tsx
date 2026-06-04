@@ -201,7 +201,8 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
           void load();
           // Un-dismiss this id on fresh accept
           setDismissedIds((s) => {
-            const n = new Set(s); n.delete(row.id);
+            const n = new Set(s);
+            if (row.id) n.delete(row.id);
             try { window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n])); } catch { /* ignore */ }
             return n;
           });
