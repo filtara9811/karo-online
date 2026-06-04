@@ -45,8 +45,6 @@ type CustomerRow = {
   name: string | null;
   phone: string | null;
   address: string | null;
-  lat: number | null;
-  lng: number | null;
 };
 
 type VendorLocationRow = {
@@ -130,7 +128,7 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
       if (custIds.length) {
         const { data: cs } = await supabase
           .from("customers")
-          .select("user_id, avatar_url, name, phone, address, lat, lng")
+          .select("user_id, avatar_url, name, phone, address")
           .in("user_id", custIds);
         (cs ?? []).forEach((c) => avatarMap.set(c.user_id, c.avatar_url ?? null));
         (cs ?? []).forEach((c) => {
@@ -142,8 +140,6 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
               customer_name: leadInfo.customer_name ?? customer.name ?? null,
               customer_phone: leadInfo.customer_phone ?? customer.phone ?? null,
               address: leadInfo.address ?? customer.address ?? null,
-              lat: leadInfo.lat ?? customer.lat ?? null,
-              lng: leadInfo.lng ?? customer.lng ?? null,
             });
           }
         });
