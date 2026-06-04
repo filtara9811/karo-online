@@ -160,7 +160,8 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
       }
 
       const calcDistance = (lat?: number | null, lng?: number | null) => {
-        if (vendorLoc?.lat == null || vendorLoc?.lng == null || lat == null || lng == null) return null;
+        if (vendorLoc?.lat == null || vendorLoc?.lng == null || lat == null || lng == null)
+          return null;
         const toRad = (d: number) => (d * Math.PI) / 180;
         const dLat = toRad(lat - vendorLoc.lat);
         const dLng = toRad(lng - vendorLoc.lng);
@@ -178,8 +179,8 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
           subCategoryName: r.sub_category_name,
           customerName: li?.customer_name ?? null,
           customerPhone: li?.customer_phone ?? null,
-          customerAvatar: li?.customer_id ? avatarMap.get(li.customer_id) ?? null : null,
-          productImage: Array.isArray(li?.images) ? li.images[0] ?? null : null,
+          customerAvatar: li?.customer_id ? (avatarMap.get(li.customer_id) ?? null) : null,
+          productImage: Array.isArray(li?.images) ? (li.images[0] ?? null) : null,
           address: li?.address ?? null,
           distanceKm: calcDistance(li?.lat, li?.lng),
           note: li?.note ?? null,
@@ -194,7 +195,12 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
       .channel(`accepted-lead-fab-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "lead_notifications",
+          filter: `vendor_id=eq.${user.id}`,
+        },
         (payload) => {
           const row = payload.new as Partial<NotificationRow>;
           if (row.status !== "accepted") return;
@@ -203,14 +209,21 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
           setDismissedIds((s) => {
             const n = new Set(s);
             if (row.id) n.delete(row.id);
-            try { window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n])); } catch { /* ignore */ }
+            try {
+              window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n]));
+            } catch {
+              /* ignore */
+            }
             return n;
           });
         },
       )
       .subscribe();
 
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+    };
   }, [user, shouldShow]);
 
   if (!shouldShow) return null;
@@ -256,13 +269,16 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
           key="accepted-lead-pill"
           initial={{ opacity: 0, scale: 0.85, y: 20 }}
           animate={{
-            opacity: 1, scale: 1,
+            opacity: 1,
+            scale: 1,
             y: [0, -3, 0, -1.5, 0],
             rotate: [0, -1.2, 1.2, -0.6, 0.6, 0],
           }}
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{
-            type: "spring", damping: 22, stiffness: 260,
+            type: "spring",
+            damping: 22,
+            stiffness: 260,
             y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
             rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
           }}
@@ -296,7 +312,11 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                     transition={{ duration: 1.6, repeat: Infinity }}
                   />
                   {primary.customerAvatar || primary.productImage ? (
-                    <img src={primary.customerAvatar ?? primary.productImage ?? ""} alt="" className="relative z-10 h-full w-full object-cover" />
+                    <img
+                      src={primary.customerAvatar ?? primary.productImage ?? ""}
+                      alt=""
+                      className="relative z-10 h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="relative z-10 text-white font-display font-bold text-lg">
                       {(primary.customerName ?? primary.subCategoryName ?? "L")[0].toUpperCase()}
@@ -313,14 +333,13 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                 <p className="font-display text-[13px] font-bold leading-tight truncate text-emerald-900">
                   {count > 1
                     ? `${count} leads · ${primary.customerName ?? "Customer"}`
-                    : primary.customerName ?? "Customer profile"}
+                    : (primary.customerName ?? "Customer profile")}
                 </p>
                 <p className="text-[10px] text-slate-600 truncate font-semibold">
-                  {maskPhone(primary.customerPhone)} · {primary.subCategoryName ?? "Product enquiry"}
+                  {maskPhone(primary.customerPhone)} ·{" "}
+                  {primary.subCategoryName ?? "Product enquiry"}
                 </p>
-                <p className="text-[9px] text-slate-500 truncate">
-                  {areaLine(primary)}
-                </p>
+                <p className="text-[9px] text-slate-500 truncate">{areaLine(primary)}</p>
               </div>
               <Maximize2 className="h-3.5 w-3.5 text-slate-400 ml-auto flex-shrink-0" />
             </button>
@@ -340,20 +359,30 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
       <AnimatePresence>
         {pickerOpen && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[88] flex items-end justify-center bg-black/40"
             onClick={() => setPickerOpen(false)}
           >
             <motion.div
-              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl pb-[env(safe-area-inset-bottom)]"
             >
-              <div className="flex justify-center pt-2 pb-1"><span className="h-1.5 w-14 rounded-full bg-slate-200" /></div>
+              <div className="flex justify-center pt-2 pb-1">
+                <span className="h-1.5 w-14 rounded-full bg-slate-200" />
+              </div>
               <div className="px-5 pt-1 pb-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-emerald-700">✦ Accepted Leads</p>
-                <h3 className="font-display text-lg font-bold text-slate-800">Which lead do you want to chat?</h3>
+                <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-emerald-700">
+                  ✦ Accepted Leads
+                </p>
+                <h3 className="font-display text-lg font-bold text-slate-800">
+                  Which lead do you want to chat?
+                </h3>
               </div>
               <div className="px-3 pb-4 space-y-2 max-h-[60vh] overflow-y-auto">
                 {visible.map((l) => (
@@ -363,9 +392,17 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                     className="w-full flex items-start gap-3 p-2.5 rounded-2xl border border-emerald-200 bg-white hover:bg-emerald-50/40 active:scale-[0.98] text-left transition"
                   >
                     <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 flex-shrink-0 grid place-items-center">
-                      {l.customerAvatar || l.productImage
-                        ? <img src={l.customerAvatar ?? l.productImage ?? ""} alt="" className="h-full w-full object-cover" />
-                        : <span className="text-emerald-700 font-bold">{(l.customerName ?? "C")[0]}</span>}
+                      {l.customerAvatar || l.productImage ? (
+                        <img
+                          src={l.customerAvatar ?? l.productImage ?? ""}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-emerald-700 font-bold">
+                          {(l.customerName ?? "C")[0]}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-display text-sm font-bold text-slate-800 truncate">
@@ -374,10 +411,12 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                       <p className="text-[11px] text-slate-600 truncate font-semibold">
                         {maskPhone(l.customerPhone)} · {l.subCategoryName ?? "Product enquiry"}
                       </p>
-                      <p className="text-[10px] text-slate-500 truncate">
-                        📍 {areaLine(l)}
-                      </p>
-                      {l.note && <p className="mt-1 text-[10px] italic text-slate-500 line-clamp-2">“{l.note}”</p>}
+                      <p className="text-[10px] text-slate-500 truncate">📍 {areaLine(l)}</p>
+                      {l.note && (
+                        <p className="mt-1 text-[10px] italic text-slate-500 line-clamp-2">
+                          “{l.note}”
+                        </p>
+                      )}
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
                   </button>

@@ -136,9 +136,7 @@ function VendorDashboard() {
   const [leadsSheetFilter, setLeadsSheetFilter] = useState<
     "all" | "pending" | "in_process" | "success" | "rejected"
   >("all");
-  const openLeadsSheet = (
-    f: "all" | "pending" | "in_process" | "success" | "rejected" = "all",
-  ) => {
+  const openLeadsSheet = (f: "all" | "pending" | "in_process" | "success" | "rejected" = "all") => {
     setLeadsSheetFilter(f);
     setLeadsSheetOpen(true);
   };
@@ -670,7 +668,16 @@ function VendorDashboard() {
   // Floating nearby customers (10km) — auto-refresh every 60s
   const fetchNearbyCustomers = useServerFn(getNearbyCustomers);
   const [nearbyCustomers, setNearbyCustomers] = useState<
-    Array<{ id: string; name: string; avatar_url: string | null; lat: number; lng: number; km: number; area: string | null; is_online: boolean }>
+    Array<{
+      id: string;
+      name: string;
+      avatar_url: string | null;
+      lat: number;
+      lng: number;
+      km: number;
+      area: string | null;
+      is_online: boolean;
+    }>
   >([]);
   useEffect(() => {
     if (!Number.isFinite(vendorLat) || !Number.isFinite(vendorLng)) return;
@@ -885,7 +892,10 @@ function VendorDashboard() {
                 }}
               >
                 <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                  <Handshake className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                  <Handshake
+                    className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]"
+                    strokeWidth={2.2}
+                  />
                 </div>
                 <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
                   {t.value}
@@ -935,7 +945,6 @@ function VendorDashboard() {
           </div>
         </div>
 
-
         {tab === "my" ? (
           <>
             {/* Visiting-card carousel: My Leads / Digital Shop / Find Lead */}
@@ -967,9 +976,7 @@ function VendorDashboard() {
                 />
                 <div className="relative flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
-                      My Leads
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">My Leads</p>
                     <p className="text-xs italic opacity-75">Tap to view all leads</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1006,7 +1013,10 @@ function VendorDashboard() {
                       style={{ border: `1.5px solid ${t.border}` }}
                     >
                       <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                        <Handshake className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                        <Handshake
+                          className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]"
+                          strokeWidth={2.2}
+                        />
                       </div>
                       <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
                         {t.value}
@@ -1045,7 +1055,10 @@ function VendorDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow">
-                      <Store className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.2} />
+                      <Store
+                        className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]"
+                        strokeWidth={2.2}
+                      />
                     </span>
                   </div>
                 </div>
@@ -1077,9 +1090,7 @@ function VendorDashboard() {
                 />
                 <div className="relative flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">
-                      Find Lead
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">Find Lead</p>
                     <p className="text-xs italic opacity-80">Nearby customer needs scan</p>
                   </div>
                   <div className="flex items-center gap-2">
