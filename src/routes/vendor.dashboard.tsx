@@ -987,11 +987,10 @@ function VendorDashboard() {
         >
           {/* Panel 1 — Leads dashboard (Digital-Shop style) */}
           <section
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.72_0.01_260/0.45)] p-0 overflow-hidden"
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.92_0.005_260)] p-0 overflow-hidden bg-white"
             style={{
-              background: "linear-gradient(180deg, #f5f6f8 0%, #f5f6f8 100%)",
               boxShadow:
-                "0 10px 30px -14px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.9)",
+                "0 10px 30px -14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)",
             }}
           >
             {/* Brand header */}
