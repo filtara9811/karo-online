@@ -1079,35 +1079,56 @@ function VendorDashboard() {
               )}
             </div>
 
-            {/* Auto-scrolling product strip — merges live lead-product images
-                with the vendor's mapped inventory so the strip stays populated
-                and reflects real catalog/leads in realtime. */}
+            {/* Auto-scrolling circular avatars — accepted customer profiles
+                + their product images. Tap to open the lead dashboard. */}
             {(() => {
-              const leadImgs = rangedLeads
-                .flatMap((l) => (l.items ?? []).map((it: any) => it?.image).filter(Boolean)) as string[];
-              const merged = Array.from(new Set([...leadImgs, ...inventoryImages])).slice(0, 8);
-              if (merged.length === 0) return null;
-              const loop = [...merged, ...merged];
+              const acceptedLeads = rangedLeads.filter(
+                (l) => l.status === "process" || l.status === "success",
+              );
+              type Entry = { kind: "user" | "product"; src: string; leadId: string; name: string };
+              const entries: Entry[] = [];
+              acceptedLeads.forEach((l) => {
+                if (l.avatarUrl) entries.push({ kind: "user", src: l.avatarUrl, leadId: l.id, name: l.name });
+                (l.items ?? []).forEach((it: any) => {
+                  if (it?.image) entries.push({ kind: "product", src: it.image, leadId: l.id, name: it.name || "Item" });
+                });
+              });
+              // De-dupe by src+leadId
+              const seen = new Set<string>();
+              const unique = entries.filter((e) => {
+                const k = `${e.leadId}:${e.src}`;
+                if (seen.has(k)) return false;
+                seen.add(k);
+                return true;
+              }).slice(0, 12);
+              if (unique.length === 0) return null;
+              const loop = [...unique, ...unique];
               return (
                 <div className="relative px-3 pb-1">
                   <div
-                    className="overflow-hidden rounded-xl border border-[color:oklch(0.72_0.01_260/0.25)] bg-white/60"
+                    className="overflow-hidden rounded-xl bg-white"
                     style={{
                       maskImage:
                         "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
                     }}
                   >
                     <div
-                      className="marquee-x flex gap-2 w-max py-1.5 px-1.5"
-                      style={{ animationDuration: "42s" }}
+                      className="marquee-x flex gap-2.5 w-max py-2 px-2"
+                      style={{ animationDuration: "38s" }}
                     >
-                      {loop.map((src, i) => (
-                        <div
-                          key={`${src}-${i}`}
-                          className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.72_0.01_260/0.4)] bg-white flex-shrink-0"
+                      {loop.map((e, i) => (
+                        <button
+                          key={`${e.leadId}-${i}`}
+                          type="button"
+                          onClick={() => setDetailLeadId(e.leadId)}
+                          aria-label={`Open lead ${e.name}`}
+                          className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-white ring-1 ring-[color:oklch(0.85_0.01_260)] bg-white flex-shrink-0 active:scale-95 transition shadow-sm"
                         >
-                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                        </div>
+                          <img src={e.src} alt={e.name} loading="lazy" className="h-full w-full object-cover" />
+                          {e.kind === "user" && (
+                            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border border-white" />
+                          )}
+                        </button>
                       ))}
                     </div>
                   </div>
