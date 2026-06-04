@@ -830,7 +830,14 @@ function VendorDashboard() {
               10 km radius
             </div>
           </div>
-          <div className="absolute top-3 right-12">
+          <div className="absolute top-3 right-12 flex items-center gap-2">
+            <button
+              onClick={() => setActionsOpen(true)}
+              aria-label="Quick actions"
+              className="h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm active:scale-90 shrink-0"
+            >
+              <Store className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+            </button>
             <VendorNotificationBell />
           </div>
         </div>
