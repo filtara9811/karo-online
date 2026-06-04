@@ -703,20 +703,22 @@ function QuickPage() {
 
 
       {/* Floating + button */}
-      <button
-        onClick={() => requireAuth(() => setNeedsOpen(true))}
-        aria-label="Add need"
-        className="btn-3d fixed z-40 right-5 grid place-items-center"
-        style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
-      >
-        <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
-          <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
-          <Plus className="relative h-8 w-8 text-[color:oklch(0.30_0.05_85)]" strokeWidth={3} />
-        </span>
-        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 whitespace-nowrap">
-          Add | Neds
-        </span>
-      </button>
+      {!needsOpen && (
+        <button
+          onClick={() => requireAuth(() => setNeedsOpen(true))}
+          aria-label="Add need"
+          className="btn-3d fixed z-40 right-5 grid place-items-center"
+          style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
+        >
+          <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
+            <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
+            <Plus className="relative h-8 w-8 text-[color:oklch(0.30_0.05_85)]" strokeWidth={3} />
+          </span>
+          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 whitespace-nowrap">
+            Add | Neds
+          </span>
+        </button>
+      )}
 
       <MyNeedsSheet
         open={needsOpen}
