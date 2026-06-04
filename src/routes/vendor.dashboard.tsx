@@ -31,7 +31,11 @@ import {
   ShoppingBag,
   Loader,
   ListChecks,
+  Box,
+  Filter as FilterIcon,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
 import { VendorNotificationBell } from "@/components/VendorNotificationBell";
