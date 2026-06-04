@@ -1079,13 +1079,15 @@ function VendorDashboard() {
               )}
             </div>
 
-            {/* Auto-scrolling product strip from leads */}
+            {/* Auto-scrolling product strip — merges live lead-product images
+                with the vendor's mapped inventory so the strip stays populated
+                and reflects real catalog/leads in realtime. */}
             {(() => {
-              const images = leads
-                .flatMap((l) => (l.items ?? []).map((it: any) => it?.image).filter(Boolean))
-                .slice(0, 8) as string[];
-              if (images.length === 0) return null;
-              const loop = [...images, ...images];
+              const leadImgs = rangedLeads
+                .flatMap((l) => (l.items ?? []).map((it: any) => it?.image).filter(Boolean)) as string[];
+              const merged = Array.from(new Set([...leadImgs, ...inventoryImages])).slice(0, 8);
+              if (merged.length === 0) return null;
+              const loop = [...merged, ...merged];
               return (
                 <div className="relative px-3 pb-1">
                   <div
