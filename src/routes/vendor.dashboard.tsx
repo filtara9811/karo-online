@@ -129,6 +129,9 @@ function VendorDashboard() {
   const updateQuickControl = useServerFn(updateVendorQuickControl);
   const navigate = useNavigate();
   const [tab, setTab] = useState<"my" | "potential">("my");
+  const [activePanel, setActivePanel] = useState<0 | 1 | 2>(0);
+  const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year">("day");
+  const panelScrollRef = useRef<HTMLDivElement | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
