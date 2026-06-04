@@ -1018,8 +1018,9 @@ function VendorDashboard() {
                 <CalendarIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
               </button>
               <button
-                aria-label="Filter"
-                className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+                aria-label="Inventory mapping"
+                onClick={() => navigate({ to: "/vendor/services" })}
+                className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.85_0.01_260)] active:scale-90 shadow-sm"
               >
                 <FilterIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
               </button>
