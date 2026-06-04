@@ -656,3 +656,13 @@ body.search-overlay-open [data-bottom-action-bar] {
   transform: translateY(120%);
   transition: opacity 0.2s ease, transform 0.25s ease;
 }
+
+/* Hide global bottom action bar when My Needs sheet is open */
+body.needs-sheet-open [data-bottom-action-bar] {
+  display: none !important;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 3s linear infinite; }
