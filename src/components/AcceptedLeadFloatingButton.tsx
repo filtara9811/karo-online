@@ -152,9 +152,10 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
         .eq("user_id", user.id)
         .maybeSingle();
       if (vrow) {
+        const vendorRow = vrow as VendorLocationRow;
         vendorLoc = {
-          lat: (vrow as any).live_lat ?? (vrow as any).lat ?? null,
-          lng: (vrow as any).live_lng ?? (vrow as any).lng ?? null,
+          lat: vendorRow.live_lat ?? vendorRow.lat ?? null,
+          lng: vendorRow.live_lng ?? vendorRow.lng ?? null,
         };
       }
 
@@ -163,12 +164,14 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
         const toRad = (d: number) => (d * Math.PI) / 180;
         const dLat = toRad(lat - vendorLoc.lat);
         const dLng = toRad(lng - vendorLoc.lng);
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(vendorLoc.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(vendorLoc.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
         return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
       };
 
       const mapped: AcceptedLead[] = rows.map((r) => {
-        const li = leadMap.get(r.lead_id) as any;
+        const li = leadMap.get(r.lead_id);
         return {
           notificationId: r.id,
           leadId: r.lead_id,
@@ -221,7 +224,11 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
     setDismissedIds((s) => {
       const n = new Set(s);
       visible.forEach((l) => n.add(l.notificationId));
-      try { window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n])); } catch { /* ignore */ }
+      try {
+        window.localStorage.setItem(STORAGE_DISMISS_KEY, JSON.stringify([...n]));
+      } catch {
+        /* ignore */
+      }
       return n;
     });
     setPickerOpen(false);
@@ -229,7 +236,7 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
 
   const openLead = (leadId: string) => {
     setPickerOpen(false);
-    navigate({ to: "/vendor/chat", search: { leadId } as any });
+    navigate({ to: "/vendor/chat", search: { leadId } as never });
   };
 
   const handleTap = () => {
