@@ -1269,32 +1269,32 @@ function VendorDashboard() {
           >
             <div className="flex items-center justify-between px-0.5">
               <p className="font-display font-bold text-[13px]">✦ Find Users</p>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/15 border border-white/30">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white border border-[color:oklch(0.85_0.01_260)] text-[color:oklch(0.42_0.01_260)]">
                 Scan →
               </span>
             </div>
             <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
               {[
-                { label: "Nearby", value: nearbyCustomers.length, tint: "from-white/15 to-white/5" },
-                { label: "Online", value: onlineCustomerCount, tint: "from-emerald-500/30 to-emerald-700/10" },
-                { label: "Offline", value: offlineCustomerCount, tint: "from-amber-500/25 to-amber-700/10" },
-                { label: "Radius", value: `${vendor?.service_radius_km ?? 10}km`, tint: "from-white/15 to-white/5" },
+                { label: "Nearby", value: nearbyCustomers.length },
+                { label: "Online", value: onlineCustomerCount },
+                { label: "Offline", value: offlineCustomerCount },
+                { label: "Radius", value: `${vendor?.service_radius_km ?? 10}km` },
               ].map((t) => (
                 <div
                   key={t.label}
-                  className={`flex-shrink-0 w-[72px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center border border-white/20`}
+                  className="flex-shrink-0 w-[72px] rounded-2xl bg-white p-2 text-center border border-[color:oklch(0.92_0.005_260)] shadow-sm"
                 >
-                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/15 grid place-items-center">
-                    <Radar className="h-3.5 w-3.5 text-white" strokeWidth={2.2} />
+                  <div className="h-6 w-6 mx-auto rounded-lg bg-[color:oklch(0.96_0.005_260)] grid place-items-center">
+                    <Radar className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" strokeWidth={2.2} />
                   </div>
-                  <p className="font-display text-base font-bold leading-none mt-1.5">{t.value}</p>
-                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 opacity-80 font-semibold truncate">
+                  <p className="font-display text-base font-bold leading-none mt-1.5 text-[color:oklch(0.20_0.01_260)]">{t.value}</p>
+                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.55_0.01_260)] font-semibold truncate">
                     {t.label}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-[11px] opacity-80 px-0.5">
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] px-0.5">
               Tap to open category-based find — find leads matching your products near you.
             </p>
           </section>
