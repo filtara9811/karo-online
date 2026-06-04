@@ -29,6 +29,11 @@ import {
   User,
   Radar,
   ShoppingBag,
+  CheckCircle2,
+  Clock,
+  Loader,
+  XCircle,
+  ListChecks,
 } from "lucide-react";
 import avatarUser from "@/assets/avatar-user.png";
 import type { Lead, LeadSource, LeadStatus } from "@/lib/leads";
