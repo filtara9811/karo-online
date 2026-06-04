@@ -793,20 +793,22 @@ function VendorDashboard() {
       <ActionAlertBanner role="vendor" />
 
       {/* Map hero with vendor pin in center */}
-      <section className="relative">
+      <section className="relative touch-pan-y">
         <div className="relative h-[240px] w-full overflow-hidden">
-          <VendorMapHero
-            center={{ lat: vendorLat, lng: vendorLng }}
-            vendors={vendorMapCards}
-            businessName={vendor?.business_name ?? "My Shop"}
-            locationLabel={
-              liveGeo
-                ? geo.label
-                : vendor?.operation_mode === "dynamic"
-                  ? "Live GPS"
-                  : "Shop address"
-            }
-          />
+          <div className="pointer-events-none absolute inset-0 touch-pan-y">
+            <VendorMapHero
+              center={{ lat: vendorLat, lng: vendorLng }}
+              vendors={vendorMapCards}
+              businessName={vendor?.business_name ?? "My Shop"}
+              locationLabel={
+                liveGeo
+                  ? geo.label
+                  : vendor?.operation_mode === "dynamic"
+                    ? "Live GPS"
+                    : "Shop address"
+              }
+            />
+          </div>
           <AcceptedLeadFloatingButton />
           {/* Status + nearby customers chip */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
