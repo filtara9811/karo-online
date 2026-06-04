@@ -666,14 +666,71 @@ function VendorDashboard() {
     }, 1200);
   };
 
+  // Filter leads by selected date range (day / week / month / year / custom).
+  // Re-runs automatically whenever leads change (realtime push from Supabase)
+  // or the user picks a different range — so stat tiles animate to the new value.
+  const rangedLeads = useMemo(() => {
+    const now = Date.now();
+    let fromMs = 0;
+    let toMs = Number.POSITIVE_INFINITY;
+    if (statRange === "day") fromMs = now - 24 * 3600_000;
+    else if (statRange === "week") fromMs = now - 7 * 24 * 3600_000;
+    else if (statRange === "month") fromMs = now - 30 * 24 * 3600_000;
+    else if (statRange === "year") fromMs = now - 365 * 24 * 3600_000;
+    else if (statRange === "custom") {
+      fromMs = new Date(customRange.from + "T00:00:00").getTime();
+      toMs = new Date(customRange.to + "T23:59:59").getTime();
+    }
+    return leads.filter((l) => {
+      if (!l.createdAtIso) return true;
+      const t = new Date(l.createdAtIso).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+  }, [leads, statRange, customRange]);
+
   const stats = useMemo(() => {
-    const total = leads.length;
-    const success = leads.filter((l) => l.status === "success").length;
-    const process = leads.filter((l) => l.status === "process").length;
-    const rejected = leads.filter((l) => l.status === "rejected").length;
-    const action = leads.filter((l) => l.status === "new").length;
+    const total = rangedLeads.length;
+    const success = rangedLeads.filter((l) => l.status === "success").length;
+    const process = rangedLeads.filter((l) => l.status === "process").length;
+    const rejected = rangedLeads.filter((l) => l.status === "rejected").length;
+    const action = rangedLeads.filter((l) => l.status === "new").length;
     return { total, success, process, rejected, action };
-  }, [leads]);
+  }, [rangedLeads]);
+
+  // Live inventory images (vendor's mapped catalog items) — used to keep the
+  // product strip populated even when no leads exist yet, and refreshed in
+  // realtime when the vendor adds/removes products.
+  const [inventoryImages, setInventoryImages] = useState<string[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("vendor_item_mappings")
+        .select("catalog_items(image_url)")
+        .eq("vendor_id", user.id)
+        .eq("is_active", true)
+        .limit(40);
+      if (cancelled) return;
+      const imgs = ((data ?? []) as any[])
+        .map((m) => m?.catalog_items?.image_url)
+        .filter(Boolean) as string[];
+      setInventoryImages(imgs);
+    };
+    load();
+    const channel = supabase
+      .channel(`vendor-inventory-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vendor_item_mappings", filter: `vendor_id=eq.${user.id}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const unreadByLead = useLeadUnreadCounts(leads.map((l) => l.id));
 
