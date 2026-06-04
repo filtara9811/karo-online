@@ -621,6 +621,7 @@ function QuickPage() {
       </section>
 
       {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
+      {!needsOpen && (
       <section
         className="fixed left-0 right-0 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
         style={{
