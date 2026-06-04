@@ -498,6 +498,21 @@ function QuickPage() {
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
+            onClick={() => {
+              const user = (profile as any)?.user_id || (profile as any)?.id;
+              let registered = false;
+              try {
+                if (user) registered = localStorage.getItem(`vendor:registered:${user}`) === "1";
+              } catch {}
+              navigate({ to: registered ? "/vendor/dashboard" : "/vendor/register" });
+            }}
+            className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
+            aria-label="Join as vendor"
+            title="Join vendor"
+          >
+            <Store className="h-5 w-5 text-[color:oklch(0.35_0.12_60)]" strokeWidth={2.2} />
+          </button>
+          <button
             onClick={() => requireAuth(() => setSearchOpen(true))}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
             aria-label="Open search"
