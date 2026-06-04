@@ -319,20 +319,24 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                   <button
                     key={l.notificationId}
                     onClick={() => openLead(l.leadId)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-2xl border border-emerald-200 bg-white hover:bg-emerald-50/40 active:scale-[0.98] text-left transition"
+                    className="w-full flex items-start gap-3 p-2.5 rounded-2xl border border-emerald-200 bg-white hover:bg-emerald-50/40 active:scale-[0.98] text-left transition"
                   >
-                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 flex-shrink-0 grid place-items-center">
-                      {l.customerAvatar
-                        ? <img src={l.customerAvatar} alt="" className="h-full w-full object-cover" />
+                    <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 flex-shrink-0 grid place-items-center">
+                      {l.customerAvatar || l.productImage
+                        ? <img src={l.customerAvatar ?? l.productImage ?? ""} alt="" className="h-full w-full object-cover" />
                         : <span className="text-emerald-700 font-bold">{(l.customerName ?? "C")[0]}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-display text-sm font-bold text-slate-800 truncate">
-                        {l.subCategoryName ?? "Service"}
+                        {l.customerName ?? "Customer"}
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {l.customerName ?? "Customer"} · tap to chat
+                      <p className="text-[11px] text-slate-600 truncate font-semibold">
+                        {maskPhone(l.customerPhone)} · {l.subCategoryName ?? "Product enquiry"}
                       </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        📍 {areaLine(l)}
+                      </p>
+                      {l.note && <p className="mt-1 text-[10px] italic text-slate-500 line-clamp-2">“{l.note}”</p>}
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
                   </button>
