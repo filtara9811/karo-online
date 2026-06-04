@@ -987,11 +987,10 @@ function VendorDashboard() {
         >
           {/* Panel 1 — Leads dashboard (Digital-Shop style) */}
           <section
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.72_0.01_260/0.45)] p-0 overflow-hidden"
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.92_0.005_260)] p-0 overflow-hidden bg-white"
             style={{
-              background: "linear-gradient(180deg, #f5f6f8 0%, #f5f6f8 100%)",
               boxShadow:
-                "0 10px 30px -14px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.9)",
+                "0 10px 30px -14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)",
             }}
           >
             {/* Brand header */}
@@ -1019,8 +1018,9 @@ function VendorDashboard() {
                 <CalendarIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
               </button>
               <button
-                aria-label="Filter"
-                className="h-8 w-8 grid place-items-center rounded-full bg-white/90 border border-[color:oklch(0.72_0.01_260/0.5)] active:scale-90"
+                aria-label="Inventory mapping"
+                onClick={() => navigate({ to: "/vendor/services" })}
+                className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.85_0.01_260)] active:scale-90 shadow-sm"
               >
                 <FilterIcon className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" />
               </button>
@@ -1079,35 +1079,56 @@ function VendorDashboard() {
               )}
             </div>
 
-            {/* Auto-scrolling product strip — merges live lead-product images
-                with the vendor's mapped inventory so the strip stays populated
-                and reflects real catalog/leads in realtime. */}
+            {/* Auto-scrolling circular avatars — accepted customer profiles
+                + their product images. Tap to open the lead dashboard. */}
             {(() => {
-              const leadImgs = rangedLeads
-                .flatMap((l) => (l.items ?? []).map((it: any) => it?.image).filter(Boolean)) as string[];
-              const merged = Array.from(new Set([...leadImgs, ...inventoryImages])).slice(0, 8);
-              if (merged.length === 0) return null;
-              const loop = [...merged, ...merged];
+              const acceptedLeads = rangedLeads.filter(
+                (l) => l.status === "process" || l.status === "success",
+              );
+              type Entry = { kind: "user" | "product"; src: string; leadId: string; name: string };
+              const entries: Entry[] = [];
+              acceptedLeads.forEach((l) => {
+                if (l.avatarUrl) entries.push({ kind: "user", src: l.avatarUrl, leadId: l.id, name: l.name });
+                (l.items ?? []).forEach((it: any) => {
+                  if (it?.image) entries.push({ kind: "product", src: it.image, leadId: l.id, name: it.name || "Item" });
+                });
+              });
+              // De-dupe by src+leadId
+              const seen = new Set<string>();
+              const unique = entries.filter((e) => {
+                const k = `${e.leadId}:${e.src}`;
+                if (seen.has(k)) return false;
+                seen.add(k);
+                return true;
+              }).slice(0, 12);
+              if (unique.length === 0) return null;
+              const loop = [...unique, ...unique];
               return (
                 <div className="relative px-3 pb-1">
                   <div
-                    className="overflow-hidden rounded-xl border border-[color:oklch(0.72_0.01_260/0.25)] bg-white/60"
+                    className="overflow-hidden rounded-xl bg-white"
                     style={{
                       maskImage:
                         "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
                     }}
                   >
                     <div
-                      className="marquee-x flex gap-2 w-max py-1.5 px-1.5"
-                      style={{ animationDuration: "42s" }}
+                      className="marquee-x flex gap-2.5 w-max py-2 px-2"
+                      style={{ animationDuration: "38s" }}
                     >
-                      {loop.map((src, i) => (
-                        <div
-                          key={`${src}-${i}`}
-                          className="h-10 w-10 rounded-lg overflow-hidden border border-[color:oklch(0.72_0.01_260/0.4)] bg-white flex-shrink-0"
+                      {loop.map((e, i) => (
+                        <button
+                          key={`${e.leadId}-${i}`}
+                          type="button"
+                          onClick={() => setDetailLeadId(e.leadId)}
+                          aria-label={`Open lead ${e.name}`}
+                          className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-white ring-1 ring-[color:oklch(0.85_0.01_260)] bg-white flex-shrink-0 active:scale-95 transition shadow-sm"
                         >
-                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                        </div>
+                          <img src={e.src} alt={e.name} loading="lazy" className="h-full w-full object-cover" />
+                          {e.kind === "user" && (
+                            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border border-white" />
+                          )}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -1185,8 +1206,7 @@ function VendorDashboard() {
 
           {/* Panel 2 — Digital POS Dashboard */}
           <section
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)]"
-            style={{ background: "linear-gradient(135deg, #fffaeb 0%, #fdf3c8 50%, #f5e9b8 100%)" }}
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.92_0.005_260)] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.12)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)] bg-white"
           >
             <div className="flex items-center justify-between px-0.5">
               <p className="font-display font-bold text-[13px]">✦ Digital POS</p>
@@ -1245,40 +1265,36 @@ function VendorDashboard() {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") openProfileFinder();
             }}
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border p-3 space-y-2.5 text-white shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] cursor-pointer active:scale-[0.99] transition"
-            style={{
-              background: "linear-gradient(135deg, #1f2937 0%, #3f4750 40%, #5a6470 80%, #1f2937 100%)",
-              borderColor: "rgba(255,255,255,0.25)",
-            }}
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.92_0.005_260)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.12)] cursor-pointer active:scale-[0.99] transition bg-white"
           >
             <div className="flex items-center justify-between px-0.5">
               <p className="font-display font-bold text-[13px]">✦ Find Users</p>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/15 border border-white/30">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white border border-[color:oklch(0.85_0.01_260)] text-[color:oklch(0.42_0.01_260)]">
                 Scan →
               </span>
             </div>
             <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
               {[
-                { label: "Nearby", value: nearbyCustomers.length, tint: "from-white/15 to-white/5" },
-                { label: "Online", value: onlineCustomerCount, tint: "from-emerald-500/30 to-emerald-700/10" },
-                { label: "Offline", value: offlineCustomerCount, tint: "from-amber-500/25 to-amber-700/10" },
-                { label: "Radius", value: `${vendor?.service_radius_km ?? 10}km`, tint: "from-white/15 to-white/5" },
+                { label: "Nearby", value: nearbyCustomers.length },
+                { label: "Online", value: onlineCustomerCount },
+                { label: "Offline", value: offlineCustomerCount },
+                { label: "Radius", value: `${vendor?.service_radius_km ?? 10}km` },
               ].map((t) => (
                 <div
                   key={t.label}
-                  className={`flex-shrink-0 w-[72px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center border border-white/20`}
+                  className="flex-shrink-0 w-[72px] rounded-2xl bg-white p-2 text-center border border-[color:oklch(0.92_0.005_260)] shadow-sm"
                 >
-                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/15 grid place-items-center">
-                    <Radar className="h-3.5 w-3.5 text-white" strokeWidth={2.2} />
+                  <div className="h-6 w-6 mx-auto rounded-lg bg-[color:oklch(0.96_0.005_260)] grid place-items-center">
+                    <Radar className="h-3.5 w-3.5 text-[color:oklch(0.42_0.01_260)]" strokeWidth={2.2} />
                   </div>
-                  <p className="font-display text-base font-bold leading-none mt-1.5">{t.value}</p>
-                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 opacity-80 font-semibold truncate">
+                  <p className="font-display text-base font-bold leading-none mt-1.5 text-[color:oklch(0.20_0.01_260)]">{t.value}</p>
+                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.55_0.01_260)] font-semibold truncate">
                     {t.label}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-[11px] opacity-80 px-0.5">
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] px-0.5">
               Tap to open category-based find — find leads matching your products near you.
             </p>
           </section>
