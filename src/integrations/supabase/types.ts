@@ -2219,6 +2219,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_needs: {
+        Row: {
+          created_at: string
+          id: string
+          images: string[]
+          item_id: string | null
+          notes: string
+          quantity: number
+          root_category_id: string | null
+          status: string
+          sub_category_id: string | null
+          title: string
+          type_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          images?: string[]
+          item_id?: string | null
+          notes?: string
+          quantity?: number
+          root_category_id?: string | null
+          status?: string
+          sub_category_id?: string | null
+          title?: string
+          type_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          images?: string[]
+          item_id?: string | null
+          notes?: string
+          quantity?: number
+          root_category_id?: string | null
+          status?: string
+          sub_category_id?: string | null
+          title?: string
+          type_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Mic, Plus, Star, ShieldCheck,
+  Mic, Plus, Star, ShieldCheck, Store,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { NeedsSheet } from "@/components/NeedsSheet";
+import { MyNeedsSheet } from "@/components/MyNeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
@@ -351,6 +351,24 @@ function QuickPage() {
     [items, selectedSub],
   );
 
+  // Maps for the MyNeedsSheet picker — root → sub list, sub → items list.
+  const subCategoriesByRoot = useMemo<Record<string, DBCategory[]>>(() => {
+    const out: Record<string, DBCategory[]> = {};
+    for (const r of rootCategories) {
+      out[r.id] = categories.filter((c) => c.parent_id === r.id);
+    }
+    return out;
+  }, [rootCategories, categories]);
+
+  const itemsBySub = useMemo<Record<string, DBItem[]>>(() => {
+    const out: Record<string, DBItem[]> = {};
+    for (const c of categories) {
+      const list = items.filter((it) => it.category_id === c.id);
+      if (list.length) out[c.id] = list;
+    }
+    return out;
+  }, [categories, items]);
+
   // Items become "variations" inside the variation sheet
   const variationItems = useMemo<VariationItem[]>(() => {
     if (!selectedSub) return [];
@@ -480,6 +498,21 @@ function QuickPage() {
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
+            onClick={() => {
+              const user = (profile as any)?.user_id || (profile as any)?.id;
+              let registered = false;
+              try {
+                if (user) registered = localStorage.getItem(`vendor:registered:${user}`) === "1";
+              } catch {}
+              navigate({ to: registered ? "/vendor/dashboard" : "/vendor/register" });
+            }}
+            className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
+            aria-label="Join as vendor"
+            title="Join vendor"
+          >
+            <Store className="h-5 w-5 text-[color:oklch(0.35_0.12_60)]" strokeWidth={2.2} />
+          </button>
+          <button
             onClick={() => requireAuth(() => setSearchOpen(true))}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
             aria-label="Open search"
@@ -588,6 +621,7 @@ function QuickPage() {
       </section>
 
       {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
+      {!needsOpen && (
       <section
         className="fixed left-0 right-0 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
         style={{
@@ -663,31 +697,38 @@ function QuickPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* (Search-radius slider removed — now shown only in the NoVendorsFallback "Try again" sheet) */}
 
 
       {/* Floating + button */}
-      <button
-        onClick={() => requireAuth(() => setNeedsOpen(true))}
-        aria-label="Add need"
-        className="btn-3d fixed z-40 right-5 grid place-items-center"
-        style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
-      >
-        <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
-          <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
-          <Plus className="relative h-8 w-8 text-[color:oklch(0.30_0.05_85)]" strokeWidth={3} />
-        </span>
-        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 whitespace-nowrap">
-          Add | Neds
-        </span>
-      </button>
+      {!needsOpen && (
+        <button
+          onClick={() => requireAuth(() => setNeedsOpen(true))}
+          aria-label="Add need"
+          className="btn-3d fixed z-40 right-5 grid place-items-center"
+          style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
+        >
+          <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
+            <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
+            <Plus className="relative h-8 w-8 text-[color:oklch(0.30_0.05_85)]" strokeWidth={3} />
+          </span>
+          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-display font-semibold text-[color:oklch(0.30_0.05_85)] underline underline-offset-2 whitespace-nowrap">
+            Add | Neds
+          </span>
+        </button>
+      )}
 
-      <NeedsSheet
+      <MyNeedsSheet
         open={needsOpen}
-        category={selectedSub?.name ?? null}
         onClose={() => setNeedsOpen(false)}
-        onSubmit={() => setNeedsOpen(false)}
+        typeId={activeType?.id ?? null}
+        rootCategories={rootCategories}
+        subCategoriesByRoot={subCategoriesByRoot}
+        itemsBySub={itemsBySub}
+        defaultRootId={selectedRootId}
+        defaultSubId={selectedSubId}
       />
 
       <VariationSheet
