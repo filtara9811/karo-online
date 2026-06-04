@@ -1335,7 +1335,7 @@ function VendorMapHero({
           userAvatar={vendors[0]?.avatar || avatarUser}
           userLabel={locationLabel || businessName}
           gestureHandling="none"
-          showControls
+          showControls={false}
           showUserPin
           radiusKm={10}
           countLabel={vendors[0]?.status === "Online" ? "Online shop" : "My shop"}
