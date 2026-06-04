@@ -10,8 +10,12 @@ type AcceptedLead = {
   leadId: string;
   subCategoryName: string | null;
   customerName: string | null;
+  customerPhone: string | null;
   customerAvatar: string | null;
   productImage: string | null;
+  address: string | null;
+  distanceKm: number | null;
+  note: string | null;
   acceptedAt: string;
 };
 
@@ -57,23 +61,67 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
       if (cancelled) return;
       const rows = (data ?? []) as any[];
 
-      // Enrich with customer name/avatar
+      // Enrich with customer profile, masked phone, address, distance and product/notes.
       const leadIds = rows.map((r) => r.lead_id);
-      let leadMap = new Map<string, { customer_id: string | null; customer_name: string | null }>();
+      let leadMap = new Map<string, {
+        customer_id: string | null;
+        customer_name: string | null;
+        customer_phone: string | null;
+        address: string | null;
+        note: string | null;
+        images: string[] | null;
+        lat: number | null;
+        lng: number | null;
+      }>();
       if (leadIds.length) {
         const { data: ls } = await supabase
           .from("leads")
-          .select("id, customer_id, customer_name, images")
+          .select("id, customer_id, customer_name, customer_phone, address, note, images, lat, lng")
           .in("id", leadIds);
-        (ls ?? []).forEach((l: any) => leadMap.set(l.id, { customer_id: l.customer_id, customer_name: l.customer_name, images: l.images } as any));
+        (ls ?? []).forEach((l: any) => leadMap.set(l.id, l as any));
       }
       const custIds = Array.from(new Set([...leadMap.values()].map((v) => v.customer_id).filter(Boolean) as string[]));
       let avatarMap = new Map<string, string | null>();
       if (custIds.length) {
         const { data: cs } = await supabase
-          .from("customers").select("user_id, avatar_url").in("user_id", custIds);
+          .from("customers").select("user_id, avatar_url, name, phone, address, lat, lng").in("user_id", custIds);
         (cs ?? []).forEach((c: any) => avatarMap.set(c.user_id, c.avatar_url ?? null));
+        (cs ?? []).forEach((c: any) => {
+          for (const [leadId, leadInfo] of leadMap) {
+            if (leadInfo.customer_id !== c.user_id) continue;
+            leadMap.set(leadId, {
+              ...leadInfo,
+              customer_name: leadInfo.customer_name ?? c.name ?? null,
+              customer_phone: leadInfo.customer_phone ?? c.phone ?? null,
+              address: leadInfo.address ?? c.address ?? null,
+              lat: leadInfo.lat ?? c.lat ?? null,
+              lng: leadInfo.lng ?? c.lng ?? null,
+            });
+          }
+        });
       }
+
+      let vendorLoc: { lat: number | null; lng: number | null } | null = null;
+      const { data: vrow } = await supabase
+        .from("vendors")
+        .select("lat, lng, live_lat, live_lng")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (vrow) {
+        vendorLoc = {
+          lat: (vrow as any).live_lat ?? (vrow as any).lat ?? null,
+          lng: (vrow as any).live_lng ?? (vrow as any).lng ?? null,
+        };
+      }
+
+      const calcDistance = (lat?: number | null, lng?: number | null) => {
+        if (vendorLoc?.lat == null || vendorLoc?.lng == null || lat == null || lng == null) return null;
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const dLat = toRad(lat - vendorLoc.lat);
+        const dLng = toRad(lng - vendorLoc.lng);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(vendorLoc.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+        return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+      };
 
       const mapped: AcceptedLead[] = rows.map((r) => {
         const li = leadMap.get(r.lead_id) as any;
@@ -82,8 +130,12 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
           leadId: r.lead_id,
           subCategoryName: r.sub_category_name,
           customerName: li?.customer_name ?? null,
+          customerPhone: li?.customer_phone ?? null,
           customerAvatar: li?.customer_id ? avatarMap.get(li.customer_id) ?? null : null,
           productImage: Array.isArray(li?.images) ? li.images[0] ?? null : null,
+          address: li?.address ?? null,
+          distanceKm: calcDistance(li?.lat, li?.lng),
+          note: li?.note ?? null,
           acceptedAt: r.responded_at ?? r.created_at,
         };
       });
