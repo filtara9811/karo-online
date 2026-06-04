@@ -830,7 +830,7 @@ function VendorDashboard() {
               10 km radius
             </div>
           </div>
-          <div className="absolute top-3 right-12 flex items-center gap-2">
+          <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
             <button
               onClick={() => setActionsOpen(true)}
               aria-label="Quick actions"
