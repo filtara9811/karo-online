@@ -22,7 +22,7 @@ import {
   Plus,
   Sparkles,
   ArrowLeft,
-  Wallet as WalletIcon,
+  
   Loader2,
   Handshake,
   Search,
