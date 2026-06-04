@@ -879,270 +879,255 @@ function VendorDashboard() {
           </div>
         )}
 
-        {/* Unified card — stat tiles + pricing strip + tabs */}
-        <div className="rounded-3xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-3">
-          {/* Horizontal stats strip */}
-          <div
-            className="flex gap-2.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide"
-            style={{ animation: "fade-up 0.5s ease-out both" }}
+        {/* Swipeable dashboard carousel: Leads / Digital Shop / Find Users */}
+        <div
+          ref={panelScrollRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const idx = Math.round(el.scrollLeft / el.clientWidth);
+            const next = Math.max(0, Math.min(2, idx)) as 0 | 1 | 2;
+            if (next !== activePanel) setActivePanel(next);
+          }}
+          className="-mx-3 px-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3"
+          style={{ scrollPaddingLeft: "0.75rem", scrollPaddingRight: "0.75rem" }}
+        >
+          {/* Panel 1 — Leads dashboard */}
+          <section
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-2.5"
           >
-            {statTiles.map((t, i) => (
-              <button
-                key={t.label}
-                onClick={() => openLeadsSheet(t.filter)}
-                className={`flex-shrink-0 w-[70px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
-                style={{
-                  border: `1.5px solid ${t.border}`,
-                  animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
-                }}
-              >
-                <div className="h-7 w-7 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                  <Handshake
-                    className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]"
-                    strokeWidth={2.2}
-                  />
-                </div>
-                <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
-                  {t.value}
-                </p>
-                <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
-                  {t.label}
-                </p>
-              </button>
-            ))}
-          </div>
-
-          {/* Live lead pricing & wallet balance */}
-          <LeadPricingStrip />
-
-          {/* Tabs */}
-          <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
-            <button
-              onClick={() => setTab("my")}
-              className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
-                tab === "my"
-                  ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
-                  : "text-[color:oklch(0.55_0.10_82)]"
-              }`}
-              style={
-                tab === "my"
-                  ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
-                  : undefined
-              }
-            >
-              My Leads
-            </button>
-            <button
-              onClick={() => setTab("potential")}
-              className={`flex-1 py-2 text-sm font-display font-bold rounded-xl transition-all ${
-                tab === "potential"
-                  ? "text-[color:oklch(0.20_0.01_260)] shadow-md"
-                  : "text-[color:oklch(0.55_0.10_82)]"
-              }`}
-              style={
-                tab === "potential"
-                  ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" }
-                  : undefined
-              }
-            >
-              Potential Leads
-            </button>
-          </div>
-        </div>
-
-        {tab === "my" ? (
-          <>
-            {/* Visiting-card carousel: My Leads / Digital Shop / Find Lead */}
-            <div
-              className="-mx-3 px-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3"
-              style={{ scrollPaddingLeft: "0.75rem", scrollPaddingRight: "0.75rem" }}
-            >
-              {/* Card 1 — My Leads (existing silver) */}
-              <section
-                onClick={() => setLeadsSheetOpen(true)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") setLeadsSheetOpen(true);
-                }}
-                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] cursor-pointer active:scale-[0.99] transition"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 35%, #a8acb3 80%, #6b7280 100%)",
-                  border: "1.5px solid rgba(255,255,255,0.6)",
-                }}
-              >
-                <div
-                  className="absolute inset-0 opacity-25 pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px)",
-                  }}
-                />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">My Leads</p>
-                    <p className="text-xs italic opacity-75">Tap to view all leads</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-12 w-14 rounded-2xl bg-white text-[color:oklch(0.20_0.01_260)] grid place-items-center font-display text-2xl font-bold shadow">
-                      {stats.total}
-                    </span>
-                    <button
-                      aria-label="Download"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      className="h-12 w-12 rounded-2xl bg-white grid place-items-center text-[color:oklch(0.42_0.01_260)] shadow active:scale-90"
-                    >
-                      <Download className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative my-3 border-t border-dashed border-white/70" />
-
-                {/* Same colored stat tiles as top strip — scrollable + clickable */}
-                <div
-                  className="relative flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {statTiles.map((t) => (
-                    <button
-                      key={`card-${t.label}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openLeadsSheet(t.filter);
-                      }}
-                      className={`flex-shrink-0 w-[68px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
-                      style={{ border: `1.5px solid ${t.border}` }}
-                    >
-                      <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
-                        <Handshake
-                          className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]"
-                          strokeWidth={2.2}
-                        />
-                      </div>
-                      <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
-                        {t.value}
-                      </p>
-                      <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
-                        {t.label}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* Card 2 — Digital Shop */}
-              <Link
-                to="/vendor/shop"
-                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-[color:oklch(0.20_0.01_260)] shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] active:scale-[0.99] transition no-underline"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #fffaeb 0%, #fdf3c8 40%, #f5e9b8 80%, #d4af37 100%)",
-                  border: "1.5px solid rgba(255,255,255,0.6)",
-                }}
-              >
-                <div
-                  className="absolute inset-0 opacity-25 pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.4) 0 1px, transparent 1px 18px)",
-                  }}
-                />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">
-                      Digital Shop
-                    </p>
-                    <p className="text-xs italic opacity-75">Apni dukan manage karein</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow">
-                      <Store
-                        className="h-6 w-6 text-[color:oklch(0.30_0.05_85)]"
-                        strokeWidth={2.2}
-                      />
-                    </span>
-                  </div>
-                </div>
-                <div className="relative my-3 border-t border-dashed border-white/70" />
-                <div className="relative flex items-center justify-between text-[11px] font-semibold">
-                  <span className="opacity-80">Products • Stock • Pricing</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 shadow-sm">
-                    Open <ChevronRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </Link>
-
-              {/* Card 3 — Find Lead */}
-              <button
-                onClick={openProfileFinder}
-                className="snap-center shrink-0 w-[calc(100%-0.5rem)] relative rounded-3xl overflow-hidden p-4 text-white shadow-[0_12px_30px_-10px_rgba(212,175,55,0.55)] active:scale-[0.99] transition text-left"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #1f2937 0%, #3f4750 35%, #5a6470 70%, #1f2937 100%)",
-                  border: "1.5px solid rgba(255,255,255,0.25)",
-                }}
-              >
-                <div
-                  className="absolute inset-0 opacity-20 pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0 1px, transparent 1px 18px)",
-                  }}
-                />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-90">Find Lead</p>
-                    <p className="text-xs italic opacity-80">Nearby customer needs scan</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-12 w-12 rounded-2xl bg-white/15 grid place-items-center shadow border border-white/30">
-                      <Radar className="h-6 w-6 text-white" strokeWidth={2.2} />
-                    </span>
-                  </div>
-                </div>
-                <div className="relative my-3 border-t border-dashed border-white/40" />
-                <div className="relative flex items-center justify-between text-[11px] font-semibold">
-                  <span className="opacity-90">{nearbyCustomers.length} customers nearby</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 border border-white/25">
-                    Scan <ChevronRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </button>
+            <div className="flex items-center justify-between px-0.5">
+              <p className="font-display font-bold text-[13px] text-[color:oklch(0.22_0.05_85)]">
+                ✦ Leads Dashboard
+              </p>
+              <div className="flex items-center gap-0.5 bg-[#fffaeb] border border-[color:oklch(0.78_0.14_82/0.45)] rounded-full p-0.5">
+                {(["day", "week", "month", "year"] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setStatRange(r)}
+                    className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full transition ${
+                      statRange === r
+                        ? "bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[color:oklch(0.22_0.05_85)] shadow-sm"
+                        : "text-[color:oklch(0.55_0.10_82)]"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Lead cards */}
-            <div className="space-y-3">
-              {loadingLeads && (
-                <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">
-                  Leads load ho rahi hain…
-                </div>
-              )}
-              {!loadingLeads && leads.length === 0 && (
-                <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
-                  <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
-                  <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
-                    Abhi koi lead nahi
+            {/* Mini sparkline */}
+            <div className="h-10 rounded-xl bg-gradient-to-br from-[#fffaeb] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.35)] px-2 flex items-end gap-[2px] overflow-hidden">
+              {Array.from({ length: 28 }).map((_, i) => {
+                const seed = (i * 37 + stats.total * 13 + (statRange.length * 11)) % 100;
+                const h = 18 + (seed % 22);
+                return (
+                  <span
+                    key={i}
+                    className="flex-1 rounded-t-sm bg-gradient-to-t from-[#d4af37] to-[#fff8dc] opacity-80"
+                    style={{ height: `${h}px` }}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
+              {statTiles.map((t, i) => (
+                <button
+                  key={t.label}
+                  onClick={() => openLeadsSheet(t.filter)}
+                  className={`flex-shrink-0 w-[68px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-[0_4px_12px_-4px_rgba(212,175,55,0.4)] active:scale-95 transition`}
+                  style={{
+                    border: `1.5px solid ${t.border}`,
+                    animation: `fade-up 0.5s ease-out ${i * 60}ms both`,
+                  }}
+                >
+                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
+                    <Handshake className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                  </div>
+                  <p className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5">
+                    {t.value}
                   </p>
-                  <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
-                    Naya customer request karte hi yahan pop-up aayega.
+                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                    {t.label}
                   </p>
-                </div>
-              )}
-              {leads.map((lead) => (
-                <LeadCard
-                  key={lead.id}
-                  lead={lead}
-                  unread={unreadByLead[lead.id] ?? 0}
-                  onOpen={() => setDetailLeadId(lead.id)}
-                />
+                </button>
               ))}
             </div>
-          </>
-        ) : (
+
+            <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
+              <button
+                onClick={() => setTab("my")}
+                className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
+                  tab === "my" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
+                }`}
+                style={tab === "my" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
+              >
+                My Leads
+              </button>
+              <button
+                onClick={() => setTab("potential")}
+                className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
+                  tab === "potential" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
+                }`}
+                style={tab === "potential" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
+              >
+                Potential
+              </button>
+            </div>
+          </section>
+
+          {/* Panel 2 — Digital POS Dashboard */}
+          <section
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)]"
+            style={{ background: "linear-gradient(135deg, #fffaeb 0%, #fdf3c8 50%, #f5e9b8 100%)" }}
+          >
+            <div className="flex items-center justify-between px-0.5">
+              <p className="font-display font-bold text-[13px]">✦ Digital POS</p>
+              <Link
+                to="/vendor/shop"
+                className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 shadow-sm border border-[color:oklch(0.78_0.14_82/0.5)] no-underline text-[color:oklch(0.22_0.05_85)] active:scale-95"
+              >
+                Bill Now →
+              </Link>
+            </div>
+            <div className="h-10 rounded-xl bg-white/70 border border-[color:oklch(0.78_0.14_82/0.35)] px-2 flex items-end gap-[2px] overflow-hidden">
+              {Array.from({ length: 28 }).map((_, i) => {
+                const seed = (i * 23 + 41) % 100;
+                const h = 14 + (seed % 24);
+                return (
+                  <span
+                    key={i}
+                    className="flex-1 rounded-t-sm bg-gradient-to-t from-emerald-500 to-emerald-200 opacity-80"
+                    style={{ height: `${h}px` }}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
+              {[
+                { label: "Stock", value: "₹38,467", tint: "from-[#f5f6f8] to-[#eef0f3]" },
+                { label: "Profit", value: "₹6,511", tint: "from-[#f0fdf4] to-[#d6f5df]" },
+                { label: "Sales", value: "6", tint: "from-[#fffaeb] to-[#fdf3c8]" },
+                { label: "Expense", value: "₹22,909", tint: "from-[#fef2f2] to-[#fde0e0]" },
+                { label: "Invest", value: "₹81,981", tint: "from-[#fff8dc] to-[#f5e9b8]" },
+              ].map((t) => (
+                <Link
+                  to="/vendor/shop"
+                  key={t.label}
+                  className={`flex-shrink-0 w-[68px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center shadow-sm border border-[color:oklch(0.78_0.14_82/0.4)] no-underline active:scale-95 transition`}
+                >
+                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/90 grid place-items-center shadow-sm">
+                    <Store className="h-3.5 w-3.5 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.2} />
+                  </div>
+                  <p className="font-display text-[12px] font-bold text-[color:oklch(0.22_0.05_85)] leading-none mt-1.5 truncate">
+                    {t.value}
+                  </p>
+                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 text-[color:oklch(0.45_0.05_85)] font-semibold truncate">
+                    {t.label}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Panel 3 — Find Users Dashboard */}
+          <section
+            onClick={openProfileFinder}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") openProfileFinder();
+            }}
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border p-3 space-y-2.5 text-white shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] cursor-pointer active:scale-[0.99] transition"
+            style={{
+              background: "linear-gradient(135deg, #1f2937 0%, #3f4750 40%, #5a6470 80%, #1f2937 100%)",
+              borderColor: "rgba(255,255,255,0.25)",
+            }}
+          >
+            <div className="flex items-center justify-between px-0.5">
+              <p className="font-display font-bold text-[13px]">✦ Find Users</p>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/15 border border-white/30">
+                Scan →
+              </span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide">
+              {[
+                { label: "Nearby", value: nearbyCustomers.length, tint: "from-white/15 to-white/5" },
+                { label: "Online", value: onlineCustomerCount, tint: "from-emerald-500/30 to-emerald-700/10" },
+                { label: "Offline", value: offlineCustomerCount, tint: "from-amber-500/25 to-amber-700/10" },
+                { label: "Radius", value: `${vendor?.service_radius_km ?? 10}km`, tint: "from-white/15 to-white/5" },
+              ].map((t) => (
+                <div
+                  key={t.label}
+                  className={`flex-shrink-0 w-[72px] rounded-2xl bg-gradient-to-br ${t.tint} p-2 text-center border border-white/20`}
+                >
+                  <div className="h-6 w-6 mx-auto rounded-lg bg-white/15 grid place-items-center">
+                    <Radar className="h-3.5 w-3.5 text-white" strokeWidth={2.2} />
+                  </div>
+                  <p className="font-display text-base font-bold leading-none mt-1.5">{t.value}</p>
+                  <p className="text-[8px] uppercase tracking-[0.1em] mt-1 opacity-80 font-semibold truncate">
+                    {t.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] opacity-80 px-0.5">
+              Tap to open category-based find — find leads matching your products near you.
+            </p>
+          </section>
+        </div>
+
+        {/* Carousel dot indicators */}
+        <div className="flex items-center justify-center gap-1.5 -mt-1">
+          {[0, 1, 2].map((i) => (
+            <button
+              key={i}
+              aria-label={`Panel ${i + 1}`}
+              onClick={() => {
+                const el = panelScrollRef.current;
+                if (el) el.scrollTo({ left: el.clientWidth * i, behavior: "smooth" });
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                activePanel === i
+                  ? "w-5 bg-[color:oklch(0.55_0.14_82)]"
+                  : "w-1.5 bg-[color:oklch(0.78_0.14_82/0.4)]"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Panel-specific content below */}
+        {activePanel === 0 && tab === "my" && (
+          <div className="space-y-3">
+            {loadingLeads && (
+              <div className="text-center py-10 text-xs text-[color:oklch(0.45_0.01_260)]">
+                Leads load ho rahi hain…
+              </div>
+            )}
+            {!loadingLeads && leads.length === 0 && (
+              <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+                <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
+                <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+                  Abhi koi lead nahi
+                </p>
+                <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+                  Naya customer request karte hi yahan pop-up aayega.
+                </p>
+              </div>
+            )}
+            {leads.map((lead) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                unread={unreadByLead[lead.id] ?? 0}
+                onOpen={() => setDetailLeadId(lead.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {activePanel === 0 && tab === "potential" && (
           <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
             <Sparkles className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
             <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
@@ -1153,8 +1138,75 @@ function VendorDashboard() {
             </p>
           </div>
         )}
+
+        {activePanel === 1 && (
+          <Link
+            to="/vendor/shop"
+            className="block rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.5)] p-5 text-center shadow-sm no-underline active:scale-[0.99] transition"
+          >
+            <Store className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)]" />
+            <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+              Open Digital Shop
+            </p>
+            <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+              Products, stock, billing aur invoices yahan se manage karein.
+            </p>
+            <span className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#d4af37] text-[color:oklch(0.22_0.05_85)] text-[11px] font-bold shadow-sm">
+              Bill Now <ChevronRight className="h-3 w-3" />
+            </span>
+          </Link>
+        )}
+
+        {activePanel === 2 && (
+          <div className="space-y-2">
+            {nearbyCustomers.length === 0 ? (
+              <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
+                <Radar className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
+                <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+                  Koi nearby user nahi
+                </p>
+                <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+                  10 km radius mein abhi koi customer online nahi hai.
+                </p>
+              </div>
+            ) : (
+              nearbyCustomers.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={openProfileFinder}
+                  className="w-full flex items-center gap-3 rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-3 shadow-sm active:scale-[0.99] text-left"
+                >
+                  <img
+                    src={c.avatar_url || avatarUser}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover border border-[color:oklch(0.78_0.14_82/0.4)]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)] truncate">
+                      {c.name}
+                    </p>
+                    <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] truncate">
+                      {c.area ?? "Nearby"} · {c.km} km
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full ${
+                      c.is_online
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {c.is_online ? "Online" : "Offline"}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
         <div aria-hidden className="h-36" />
       </div>
+
 
       {/* Floating action: open digital shop */}
       <Link
