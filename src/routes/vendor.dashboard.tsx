@@ -770,12 +770,13 @@ function VendorDashboard() {
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-32"
+      className="fixed inset-0 z-0 h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-[calc(10.5rem+env(safe-area-inset-bottom))]"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
         touchAction: "pan-y",
         WebkitOverflowScrolling: "touch",
+        overscrollBehaviorY: "contain",
       }}
     >
       {/* Decorative orbs */}
@@ -1136,6 +1137,7 @@ function VendorDashboard() {
             </p>
           </div>
         )}
+        <div aria-hidden className="h-36" />
       </div>
 
       {/* Floating action: open digital shop */}
