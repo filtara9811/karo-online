@@ -683,11 +683,15 @@ function QuickPage() {
         </span>
       </button>
 
-      <NeedsSheet
+      <MyNeedsSheet
         open={needsOpen}
-        category={selectedSub?.name ?? null}
         onClose={() => setNeedsOpen(false)}
-        onSubmit={() => setNeedsOpen(false)}
+        typeId={activeType?.id ?? null}
+        rootCategories={rootCategories}
+        subCategoriesByRoot={subCategoriesByRoot}
+        itemsBySub={itemsBySub}
+        defaultRootId={selectedRootId}
+        defaultSubId={selectedSubId}
       />
 
       <VariationSheet
