@@ -196,7 +196,7 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
         "postgres_changes",
         { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
         (payload) => {
-          const row = payload.new as any;
+          const row = payload.new as Partial<NotificationRow>;
           if (row.status !== "accepted") return;
           void load();
           // Un-dismiss this id on fresh accept
