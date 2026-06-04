@@ -21,6 +21,17 @@ type AcceptedLead = {
 
 const STORAGE_DISMISS_KEY = "ko-accepted-fab-dismissed-v2";
 
+function maskPhone(phone?: string | null) {
+  const digits = String(phone ?? "").replace(/\D/g, "");
+  if (digits.length < 4) return "Phone hidden";
+  return `${digits.slice(0, 2)}••••••${digits.slice(-2)}`;
+}
+
+function areaLine(lead: AcceptedLead) {
+  const parts = [lead.address, lead.distanceKm != null ? `${lead.distanceKm} km` : null].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Location pending";
+}
+
 /**
  * Horizontal pill above the vendor dashboard search bar (mirrors the
  * customer-side FloatingInquiryWidget). Shows count of accepted leads.
@@ -257,14 +268,17 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
                   </span>
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="font-display text-[13px] font-bold leading-tight truncate text-emerald-800">
-                  {count > 1 ? `${count} accepted leads` : (primary.subCategoryName ?? "Accepted lead")}
-                </p>
-                <p className="text-[10px] text-slate-500 truncate">
+              <div className="min-w-0 flex-1 py-0.5">
+                <p className="font-display text-[13px] font-bold leading-tight truncate text-emerald-900">
                   {count > 1
-                    ? "Tap to choose which to chat"
-                    : `${primary.customerName ?? "Customer"} — tap to chat`}
+                    ? `${count} leads · ${primary.customerName ?? "Customer"}`
+                    : primary.customerName ?? "Customer profile"}
+                </p>
+                <p className="text-[10px] text-slate-600 truncate font-semibold">
+                  {maskPhone(primary.customerPhone)} · {primary.subCategoryName ?? "Product enquiry"}
+                </p>
+                <p className="text-[9px] text-slate-500 truncate">
+                  {areaLine(primary)}
                 </p>
               </div>
               <Maximize2 className="h-3.5 w-3.5 text-slate-400 ml-auto flex-shrink-0" />
