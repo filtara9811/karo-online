@@ -215,8 +215,14 @@ export function MyNeedsSheet({
     setView("list");
     loadNeeds();
   };
+  useEffect(() => {
+    if (!open) return;
+    document.body.classList.add("needs-sheet-open");
+    return () => document.body.classList.remove("needs-sheet-open");
+  }, [open]);
 
   if (!open) return null;
+
 
   const subName = (id: string | null) => {
     if (!id) return "";
