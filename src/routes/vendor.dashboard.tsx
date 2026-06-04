@@ -137,7 +137,30 @@ function VendorDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"my" | "potential">("my");
   const [activePanel, setActivePanel] = useState<0 | 1 | 2>(0);
-  const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year">("day");
+  const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year" | "custom">("day");
+  const [customRange, setCustomRange] = useState<{ from: string; to: string }>(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - 14);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return { from: fmt(from), to: fmt(to) };
+  });
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [liveStamp, setLiveStamp] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      const day = d.getDate();
+      const month = d.toLocaleString("en-US", { month: "long" });
+      const year = d.getFullYear();
+      const hh = d.getHours().toString().padStart(2, "0");
+      const mm = d.getMinutes().toString().padStart(2, "0");
+      setLiveStamp(`${day} ${month} ${year} · ${hh}:${mm}`);
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
   const panelScrollRef = useRef<HTMLDivElement | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
