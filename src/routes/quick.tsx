@@ -351,6 +351,24 @@ function QuickPage() {
     [items, selectedSub],
   );
 
+  // Maps for the MyNeedsSheet picker — root → sub list, sub → items list.
+  const subCategoriesByRoot = useMemo<Record<string, DBCategory[]>>(() => {
+    const out: Record<string, DBCategory[]> = {};
+    for (const r of rootCategories) {
+      out[r.id] = categories.filter((c) => c.parent_id === r.id);
+    }
+    return out;
+  }, [rootCategories, categories]);
+
+  const itemsBySub = useMemo<Record<string, DBItem[]>>(() => {
+    const out: Record<string, DBItem[]> = {};
+    for (const c of categories) {
+      const list = items.filter((it) => it.category_id === c.id);
+      if (list.length) out[c.id] = list;
+    }
+    return out;
+  }, [categories, items]);
+
   // Items become "variations" inside the variation sheet
   const variationItems = useMemo<VariationItem[]>(() => {
     if (!selectedSub) return [];
