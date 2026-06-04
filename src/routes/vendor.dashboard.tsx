@@ -1206,8 +1206,7 @@ function VendorDashboard() {
 
           {/* Panel 2 — Digital POS Dashboard */}
           <section
-            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_8px_22px_-10px_rgba(212,175,55,0.5)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)]"
-            style={{ background: "linear-gradient(135deg, #fffaeb 0%, #fdf3c8 50%, #f5e9b8 100%)" }}
+            className="snap-center shrink-0 w-[calc(100%-0.5rem)] rounded-3xl border border-[color:oklch(0.92_0.005_260)] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.12)] p-3 space-y-2.5 text-[color:oklch(0.20_0.01_260)] bg-white"
           >
             <div className="flex items-center justify-between px-0.5">
               <p className="font-display font-bold text-[13px]">✦ Digital POS</p>
