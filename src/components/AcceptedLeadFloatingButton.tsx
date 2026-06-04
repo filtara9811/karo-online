@@ -111,43 +111,39 @@ export function AcceptedLeadFloatingButton({ onOpenList }: { onOpenList?: () => 
         .order("responded_at", { ascending: false, nullsFirst: false })
         .limit(20);
       if (cancelled) return;
-      const rows = (data ?? []) as any[];
+      const rows = (data ?? []) as NotificationRow[];
 
       // Enrich with customer profile, masked phone, address, distance and product/notes.
       const leadIds = rows.map((r) => r.lead_id);
-      let leadMap = new Map<string, {
-        customer_id: string | null;
-        customer_name: string | null;
-        customer_phone: string | null;
-        address: string | null;
-        note: string | null;
-        images: string[] | null;
-        lat: number | null;
-        lng: number | null;
-      }>();
+      const leadMap = new Map<string, LeadLookup>();
       if (leadIds.length) {
         const { data: ls } = await supabase
           .from("leads")
           .select("id, customer_id, customer_name, customer_phone, address, note, images, lat, lng")
           .in("id", leadIds);
-        (ls ?? []).forEach((l: any) => leadMap.set(l.id, l as any));
+        (ls ?? []).forEach((l) => leadMap.set(l.id, l as LeadLookup));
       }
-      const custIds = Array.from(new Set([...leadMap.values()].map((v) => v.customer_id).filter(Boolean) as string[]));
-      let avatarMap = new Map<string, string | null>();
+      const custIds = Array.from(
+        new Set([...leadMap.values()].map((v) => v.customer_id).filter(Boolean) as string[]),
+      );
+      const avatarMap = new Map<string, string | null>();
       if (custIds.length) {
         const { data: cs } = await supabase
-          .from("customers").select("user_id, avatar_url, name, phone, address, lat, lng").in("user_id", custIds);
-        (cs ?? []).forEach((c: any) => avatarMap.set(c.user_id, c.avatar_url ?? null));
-        (cs ?? []).forEach((c: any) => {
+          .from("customers")
+          .select("user_id, avatar_url, name, phone, address, lat, lng")
+          .in("user_id", custIds);
+        (cs ?? []).forEach((c) => avatarMap.set(c.user_id, c.avatar_url ?? null));
+        (cs ?? []).forEach((c) => {
+          const customer = c as CustomerRow;
           for (const [leadId, leadInfo] of leadMap) {
-            if (leadInfo.customer_id !== c.user_id) continue;
+            if (leadInfo.customer_id !== customer.user_id) continue;
             leadMap.set(leadId, {
               ...leadInfo,
-              customer_name: leadInfo.customer_name ?? c.name ?? null,
-              customer_phone: leadInfo.customer_phone ?? c.phone ?? null,
-              address: leadInfo.address ?? c.address ?? null,
-              lat: leadInfo.lat ?? c.lat ?? null,
-              lng: leadInfo.lng ?? c.lng ?? null,
+              customer_name: leadInfo.customer_name ?? customer.name ?? null,
+              customer_phone: leadInfo.customer_phone ?? customer.phone ?? null,
+              address: leadInfo.address ?? customer.address ?? null,
+              lat: leadInfo.lat ?? customer.lat ?? null,
+              lng: leadInfo.lng ?? customer.lng ?? null,
             });
           }
         });
