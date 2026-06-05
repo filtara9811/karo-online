@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
+import { speakHindi } from "@/lib/tts";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
+
+function haptic(ms = 12) {
+  try { if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(ms); } catch { /* ignore */ }
+}
+
 
 export type LeadChatPeer = {
   id: string;
@@ -25,6 +31,10 @@ type Msg = {
   image_url: string | null;
   read_at: string | null;
   created_at: string;
+  is_deleted?: boolean | null;
+  deleted_at?: string | null;
+  edited_at?: string | null;
+  original_body?: string | null;
 };
 
 type Props = {
