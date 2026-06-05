@@ -484,6 +484,130 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
         </div>
       </div>
 
+      {/* Action sheet (long-press own message) */}
+      <AnimatePresence>
+        {actionMsg && (
+          <div className="fixed inset-0 z-[96] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setActionMsg(null)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-4 pb-6 shadow-2xl"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="text-[11px] uppercase tracking-wider text-slate-500 text-center mb-3">Message actions</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { haptic(); setEditingMsg(actionMsg); setEditText(actionMsg?.body ?? ""); setActionMsg(null); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-50 active:scale-[0.98]"
+                >
+                  <Pencil className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-semibold text-slate-700">Edit message</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    const target = actionMsg; setActionMsg(null);
+                    if (!target) return;
+                    haptic(35);
+                    const { error } = await supabase.from("lead_messages").update({
+                      is_deleted: true,
+                      deleted_at: new Date().toISOString(),
+                      original_body: target.body,
+                      body: null,
+                    }).eq("id", target.id);
+                    if (error) { toast.error("Delete nahi ho paya"); return; }
+                    setMessages((prev) => prev.map((x) => x.id === target.id
+                      ? { ...x, is_deleted: true, deleted_at: new Date().toISOString(), original_body: target.body, body: null }
+                      : x));
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-50 active:scale-[0.98]"
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                  <span className="text-sm font-semibold text-red-700">Delete for everyone</span>
+                </button>
+                <button
+                  onClick={() => setActionMsg(null)}
+                  className="w-full px-4 py-3 rounded-2xl text-sm font-semibold text-slate-500"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit composer */}
+      <AnimatePresence>
+        {editingMsg && (
+          <div className="fixed inset-0 z-[97] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setEditingMsg(null)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-5 pb-6 shadow-2xl"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="font-display font-bold text-slate-800 mb-2">Edit message</p>
+              <textarea
+                value={editText} onChange={(e) => setEditText(e.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400"
+              />
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => setEditingMsg(null)} className="flex-1 h-11 rounded-full bg-slate-100 text-sm font-semibold text-slate-600">Cancel</button>
+                <button
+                  onClick={async () => {
+                    const target = editingMsg; const next = editText.trim();
+                    if (!target || !next || next === target.body) { setEditingMsg(null); return; }
+                    const { error } = await supabase.from("lead_messages").update({
+                      body: next,
+                      edited_at: new Date().toISOString(),
+                      original_body: target.original_body ?? target.body,
+                    }).eq("id", target.id);
+                    if (error) { toast.error("Edit nahi ho paya"); return; }
+                    setMessages((prev) => prev.map((x) => x.id === target.id
+                      ? { ...x, body: next, edited_at: new Date().toISOString(), original_body: x.original_body ?? x.body }
+                      : x));
+                    setEditingMsg(null);
+                  }}
+                  className="flex-1 h-11 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-bold"
+                >Save</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Original content viewer (sender only) */}
+      <AnimatePresence>
+        {viewOriginal && (
+          <div className="fixed inset-0 z-[98] grid place-items-center p-5">
+            <motion.button
+              aria-label="Close" onClick={() => setViewOriginal(null)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl"
+            >
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">Original (only you can see)</p>
+              <p className="text-sm text-slate-800 whitespace-pre-wrap break-words">{viewOriginal.original_body}</p>
+              <button onClick={() => setViewOriginal(null)} className="mt-4 w-full h-10 rounded-full bg-slate-900 text-white text-sm font-bold">Close</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Rating sheet */}
       <AnimatePresence>
         {showRating && (
