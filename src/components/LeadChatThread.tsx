@@ -243,6 +243,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
               {peer?.subtitle ?? "Live · Lead chat"}
             </p>
           </div>
+          <button
+            onClick={() => { haptic(); setTtsOn((v) => !v); toast.success(ttsOn ? "Read-aloud off" : "Read-aloud on"); }}
+            aria-label="Toggle read aloud"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/10 active:scale-90"
+          >
+            {ttsOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
+          </button>
           {peer?.phone && (
             <>
               <a
