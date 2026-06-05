@@ -85,6 +85,11 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const [editingMsg, setEditingMsg] = useState<Msg | null>(null);
   const [editText, setEditText] = useState("");
   const [viewOriginal, setViewOriginal] = useState<Msg | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalog, setCatalog] = useState<Array<{ id: string; name: string; price: number | null; image: string | null }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [ttsOn, setTtsOn] = useState(true);
   const lastSpokenId = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
