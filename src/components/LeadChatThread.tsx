@@ -466,6 +466,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
             <button aria-label="Mic" className="h-8 w-8 grid place-items-center rounded-full bg-[#f3f4f6] active:scale-90">
               <Mic className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
             </button>
+            <button
+              aria-label="Attach"
+              onClick={() => { haptic(); setAttachOpen(true); }}
+              className="h-8 w-8 grid place-items-center rounded-full bg-[color:oklch(0.96_0.05_82)] border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+            >
+              <Paperclip className="h-4 w-4 text-[color:oklch(0.45_0.12_82)]" />
+            </button>
           </div>
           <motion.button
             whileTap={{ scale: 0.85 }}
@@ -478,6 +485,120 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           </motion.button>
         </div>
       </div>
+
+      {/* Hidden file pickers */}
+      <input
+        ref={fileInputRef} type="file" accept="image/*" hidden
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAndSendImage(f); e.target.value = ""; }}
+      />
+      <input
+        ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAndSendImage(f); e.target.value = ""; }}
+      />
+
+      {/* Attachment sheet */}
+      <AnimatePresence>
+        {attachOpen && (
+          <div className="fixed inset-0 z-[96] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setAttachOpen(false)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-4 pb-7 shadow-2xl"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="text-[11px] uppercase tracking-wider text-slate-500 text-center mb-4">Share with {peer?.name ?? "user"}</p>
+              <div className="grid grid-cols-4 gap-3">
+                <AttachTile
+                  icon={Package} label="Catalog" tone="amber"
+                  onClick={() => { haptic(); setAttachOpen(false); loadCatalog(); setCatalogOpen(true); }}
+                />
+                <AttachTile
+                  icon={ImageIcon} label="Gallery" tone="violet"
+                  onClick={() => { haptic(); setAttachOpen(false); fileInputRef.current?.click(); }}
+                />
+                <AttachTile
+                  icon={Camera} label="Camera" tone="rose"
+                  onClick={() => { haptic(); setAttachOpen(false); cameraInputRef.current?.click(); }}
+                />
+                <AttachTile
+                  icon={CreditCard} label="Payment" tone="emerald"
+                  onClick={() => { haptic(); setAttachOpen(false); sendPaymentLink(); }}
+                />
+                <AttachTile
+                  icon={Phone} label="Call" tone="sky"
+                  disabled={!peer?.phone}
+                  onClick={() => { haptic(); setAttachOpen(false); if (peer?.phone) window.location.href = `tel:${peer.phone}`; else toast.error("Phone number nahi mila"); }}
+                />
+                <AttachTile
+                  icon={WhatsAppIcon} label="WhatsApp" tone="green"
+                  disabled={!peer?.phone}
+                  onClick={() => { haptic(); setAttachOpen(false); if (peer?.phone) window.open(`https://wa.me/${peer.phone.replace(/\D/g, "")}`, "_blank"); else toast.error("Phone number nahi mila"); }}
+                />
+                <AttachTile
+                  icon={MapPin} label="Location" tone="blue"
+                  onClick={() => { haptic(); setAttachOpen(false); shareLocation(); }}
+                />
+                <AttachTile
+                  icon={Sparkles} label="Quick quote" tone="gold"
+                  onClick={() => { haptic(); setAttachOpen(false); send("💰 Quote: ₹___ (please confirm)"); }}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Catalog sheet */}
+      <AnimatePresence>
+        {catalogOpen && (
+          <div className="fixed inset-0 z-[97] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setCatalogOpen(false)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-4 pb-7 shadow-2xl max-h-[75vh] flex flex-col"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="font-display font-bold text-slate-800 mb-2 text-center">Send from catalog</p>
+              <div className="overflow-y-auto flex-1 -mx-1 px-1">
+                {catalog.length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-12">No products found. Add items in your catalog first.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {catalog.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => {
+                          haptic();
+                          const price = it.price != null ? ` — ₹${it.price}` : "";
+                          send(`🛍️ ${it.name}${price}`);
+                          setCatalogOpen(false);
+                        }}
+                        className="text-left rounded-2xl border border-slate-200 bg-white p-2 active:scale-[0.98] shadow-sm"
+                      >
+                        {it.image && <img src={it.image} alt="" className="w-full h-24 object-cover rounded-xl mb-1.5" />}
+                        <p className="text-xs font-semibold text-slate-800 truncate">{it.name}</p>
+                        {it.price != null && <p className="text-[11px] font-bold text-emerald-600">₹{it.price}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setCatalogOpen(false)} className="mt-3 w-full h-11 rounded-full bg-slate-100 text-sm font-semibold text-slate-600">Close</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       {/* Action sheet (long-press own message) */}
       <AnimatePresence>
