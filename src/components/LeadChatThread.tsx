@@ -867,7 +867,7 @@ const TONE_MAP: Record<AttachTone, string> = {
 function AttachTile({
   icon: Icon, label, tone, onClick, disabled,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   tone: AttachTone;
   onClick: () => void;
