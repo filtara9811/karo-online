@@ -847,3 +847,42 @@ function InlineRatingSheet({
     </div>
   );
 }
+
+function WhatsAppIcon() {
+  return <img src={whatsappIcon} alt="" className="h-5 w-5" />;
+}
+
+type AttachTone = "amber" | "violet" | "rose" | "emerald" | "sky" | "green" | "blue" | "gold";
+const TONE_MAP: Record<AttachTone, string> = {
+  amber: "from-amber-100 to-amber-200 text-amber-700 border-amber-300",
+  violet: "from-violet-100 to-violet-200 text-violet-700 border-violet-300",
+  rose: "from-rose-100 to-rose-200 text-rose-700 border-rose-300",
+  emerald: "from-emerald-100 to-emerald-200 text-emerald-700 border-emerald-300",
+  sky: "from-sky-100 to-sky-200 text-sky-700 border-sky-300",
+  green: "from-green-100 to-green-200 text-green-700 border-green-300",
+  blue: "from-blue-100 to-blue-200 text-blue-700 border-blue-300",
+  gold: "from-[#fff8dc] to-[#fde68a] text-[#92400e] border-[#d4af37]/60",
+};
+
+function AttachTile({
+  icon: Icon, label, tone, onClick, disabled,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tone: AttachTone;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1.5 active:scale-95 disabled:opacity-40"
+    >
+      <span className={`h-14 w-14 grid place-items-center rounded-2xl bg-gradient-to-br border shadow-sm ${TONE_MAP[tone]}`}>
+        <Icon className="h-6 w-6" />
+      </span>
+      <span className="text-[10px] font-semibold text-slate-700 text-center leading-tight">{label}</span>
+    </button>
+  );
+}
