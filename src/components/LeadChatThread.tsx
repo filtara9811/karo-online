@@ -224,13 +224,6 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
       {/* Header — gold accent like classic chat */}
       <header className="flex-shrink-0 bg-gradient-to-b from-[#3f4750] to-[#1a1d22] text-white shadow-md">
         <div className="flex items-center gap-2.5 px-3 py-3">
-          <button
-            onClick={() => (onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }))}
-            aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/10 active:scale-90"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
           {peer?.avatar_url ? (
             <img src={peer.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border-2 border-[#d4af37]/70" />
           ) : (
@@ -255,25 +248,15 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           >
             {ttsOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
           </button>
-          {peer?.phone && (
-            <>
-              <a
-                href={`https://wa.me/${(peer.phone || "").replace(/\D/g, "")}`}
-                target="_blank" rel="noreferrer" aria-label="WhatsApp"
-                className="h-9 w-9 grid place-items-center rounded-full bg-white border border-emerald-300 active:scale-90"
-              >
-                <img src={whatsappIcon} alt="" className="h-5 w-5" />
-              </a>
-              <a
-                href={`tel:${peer.phone}`}
-                aria-label="Call"
-                className="h-9 w-9 grid place-items-center rounded-full bg-emerald-500 active:scale-90"
-              >
-                <Phone className="h-4 w-4" />
-              </a>
-            </>
-          )}
+          <button
+            onClick={() => { haptic(); onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }); }}
+            aria-label="Close"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 active:scale-90"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
+
 
         {/* Status pipeline */}
         <div className="px-3 pb-2.5 flex items-center gap-1.5">
