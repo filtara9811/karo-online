@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye, Paperclip, Image as ImageIcon, Camera, CreditCard, Package, MapPin } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
