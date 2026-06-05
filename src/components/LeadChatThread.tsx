@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye } from "lucide-react";
+import { Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye, Paperclip, Image as ImageIcon, Camera, CreditCard, Package, MapPin } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
