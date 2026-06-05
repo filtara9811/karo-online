@@ -974,9 +974,13 @@ export type Database = {
           attachment: Json
           body: string | null
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
           image_url: string | null
+          is_deleted: boolean
           lead_id: string
+          original_body: string | null
           read_at: string | null
           recipient_id: string | null
           sender_id: string
@@ -986,9 +990,13 @@ export type Database = {
           attachment?: Json
           body?: string | null
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean
           lead_id: string
+          original_body?: string | null
           read_at?: string | null
           recipient_id?: string | null
           sender_id: string
@@ -998,9 +1006,13 @@ export type Database = {
           attachment?: Json
           body?: string | null
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean
           lead_id?: string
+          original_body?: string | null
           read_at?: string | null
           recipient_id?: string | null
           sender_id?: string
