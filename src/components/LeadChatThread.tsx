@@ -221,13 +221,14 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
       const up = await supabase.storage.from("chat-media").upload(path, file, { upsert: false, contentType: file.type });
       let imageUrl: string | null = null;
       if (!up.error) {
-        imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
-      } else {
-        // Fallback: inline base64 (small previews only)
+        const signed = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+        imageUrl = signed.data?.signedUrl ?? null;
+      }
+      if (!imageUrl) {
         if (file.size < 250_000) {
           imageUrl = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(file); });
         } else {
-          toast.error("Image upload nahi ho paya. Storage 'chat-media' setup karein.");
+          toast.error("Image upload nahi ho paya. Dobara try karein.");
           return;
         }
       }
@@ -238,6 +239,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
       if (error) toast.error("Image send fail");
     } catch { toast.error("Image send fail"); }
   };
+
 
   const sendPaymentLink = () => {
     const amt = window.prompt("Amount (₹) for payment request?");
