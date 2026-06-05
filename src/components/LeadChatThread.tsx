@@ -213,6 +213,64 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
     if (next === "completed" && myRole === "customer") setShowRating(true);
   };
 
+
+  const uploadAndSendImage = async (file: File) => {
+    if (!me) return;
+    try {
+      const path = `${leadId}/${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
+      const up = await supabase.storage.from("chat-media").upload(path, file, { upsert: false, contentType: file.type });
+      let imageUrl: string | null = null;
+      if (!up.error) {
+        imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+      } else {
+        // Fallback: inline base64 (small previews only)
+        if (file.size < 250_000) {
+          imageUrl = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(file); });
+        } else {
+          toast.error("Image upload nahi ho paya. Storage 'chat-media' setup karein.");
+          return;
+        }
+      }
+      const { error } = await supabase.from("lead_messages").insert({
+        lead_id: leadId, sender_id: me, sender_role: myRole, recipient_id: peer?.id ?? null,
+        body: null, image_url: imageUrl,
+      });
+      if (error) toast.error("Image send fail");
+    } catch { toast.error("Image send fail"); }
+  };
+
+  const sendPaymentLink = () => {
+    const amt = window.prompt("Amount (₹) for payment request?");
+    if (!amt) return;
+    const n = Number(amt.replace(/[^\d.]/g, ""));
+    if (!n || n <= 0) { toast.error("Sahi amount daaliye"); return; }
+    send(`💳 Payment Request: ₹${n}\nTap to pay (UPI link coming).`);
+  };
+
+  const shareLocation = () => {
+    if (!("geolocation" in navigator)) { toast.error("Location not supported"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        send(`📍 My location: ${url}`);
+      },
+      () => toast.error("Location permission denied"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const loadCatalog = async () => {
+    if (!me) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from("catalog_items") as any)
+      .select("id,name,price,image_url,vendor_id")
+      .eq("vendor_id", me)
+      .limit(40);
+    setCatalog((data ?? []).map((r: { id: string; name: string; price: number | null; image_url: string | null }) => ({
+      id: r.id, name: r.name, price: r.price, image: r.image_url,
+    })));
+  };
+
   const stepIndex = Math.max(0, STATUS_FLOW.findIndex((s) => s.key === leadStatus));
   const isPending = leadStatus === "pending" || leadStatus === "new" || leadStatus === "accepted";
   const showApproveBanner = myRole === "customer" && isPending;
