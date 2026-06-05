@@ -447,7 +447,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
             <motion.button
               key={c.label}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              onClick={() => send(c.label)}
+              onClick={() => { haptic(18); send(c.label); }}
               className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-95"
             >
               <span className="text-xs">{c.emoji}</span>
