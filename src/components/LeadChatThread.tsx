@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye } from "lucide-react";
+import { Send, Phone, Mic, Loader2, Check, X, Star, ShieldCheck, Sparkles, Pencil, Trash2, Volume2, VolumeX, Eye, Paperclip, Image as ImageIcon, Camera, CreditCard, Package, MapPin } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,11 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const [editingMsg, setEditingMsg] = useState<Msg | null>(null);
   const [editText, setEditText] = useState("");
   const [viewOriginal, setViewOriginal] = useState<Msg | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalog, setCatalog] = useState<Array<{ id: string; name: string; price: number | null; image: string | null }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [ttsOn, setTtsOn] = useState(true);
   const lastSpokenId = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -208,6 +213,66 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
     if (next === "completed" && myRole === "customer") setShowRating(true);
   };
 
+
+  const uploadAndSendImage = async (file: File) => {
+    if (!me) return;
+    try {
+      const path = `${leadId}/${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
+      const up = await supabase.storage.from("chat-media").upload(path, file, { upsert: false, contentType: file.type });
+      let imageUrl: string | null = null;
+      if (!up.error) {
+        const signed = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+        imageUrl = signed.data?.signedUrl ?? null;
+      }
+      if (!imageUrl) {
+        if (file.size < 250_000) {
+          imageUrl = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(file); });
+        } else {
+          toast.error("Image upload nahi ho paya. Dobara try karein.");
+          return;
+        }
+      }
+      const { error } = await supabase.from("lead_messages").insert({
+        lead_id: leadId, sender_id: me, sender_role: myRole, recipient_id: peer?.id ?? null,
+        body: null, image_url: imageUrl,
+      });
+      if (error) toast.error("Image send fail");
+    } catch { toast.error("Image send fail"); }
+  };
+
+
+  const sendPaymentLink = () => {
+    const amt = window.prompt("Amount (₹) for payment request?");
+    if (!amt) return;
+    const n = Number(amt.replace(/[^\d.]/g, ""));
+    if (!n || n <= 0) { toast.error("Sahi amount daaliye"); return; }
+    send(`💳 Payment Request: ₹${n}\nTap to pay (UPI link coming).`);
+  };
+
+  const shareLocation = () => {
+    if (!("geolocation" in navigator)) { toast.error("Location not supported"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        send(`📍 My location: ${url}`);
+      },
+      () => toast.error("Location permission denied"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const loadCatalog = async () => {
+    if (!me) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from("catalog_items") as any)
+      .select("id,name,price,image_url,vendor_id")
+      .eq("vendor_id", me)
+      .limit(40);
+    setCatalog((data ?? []).map((r: { id: string; name: string; price: number | null; image_url: string | null }) => ({
+      id: r.id, name: r.name, price: r.price, image: r.image_url,
+    })));
+  };
+
   const stepIndex = Math.max(0, STATUS_FLOW.findIndex((s) => s.key === leadStatus));
   const isPending = leadStatus === "pending" || leadStatus === "new" || leadStatus === "accepted";
   const showApproveBanner = myRole === "customer" && isPending;
@@ -219,13 +284,6 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
       {/* Header — gold accent like classic chat */}
       <header className="flex-shrink-0 bg-gradient-to-b from-[#3f4750] to-[#1a1d22] text-white shadow-md">
         <div className="flex items-center gap-2.5 px-3 py-3">
-          <button
-            onClick={() => (onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }))}
-            aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/10 active:scale-90"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
           {peer?.avatar_url ? (
             <img src={peer.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border-2 border-[#d4af37]/70" />
           ) : (
@@ -250,25 +308,15 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           >
             {ttsOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
           </button>
-          {peer?.phone && (
-            <>
-              <a
-                href={`https://wa.me/${(peer.phone || "").replace(/\D/g, "")}`}
-                target="_blank" rel="noreferrer" aria-label="WhatsApp"
-                className="h-9 w-9 grid place-items-center rounded-full bg-white border border-emerald-300 active:scale-90"
-              >
-                <img src={whatsappIcon} alt="" className="h-5 w-5" />
-              </a>
-              <a
-                href={`tel:${peer.phone}`}
-                aria-label="Call"
-                className="h-9 w-9 grid place-items-center rounded-full bg-emerald-500 active:scale-90"
-              >
-                <Phone className="h-4 w-4" />
-              </a>
-            </>
-          )}
+          <button
+            onClick={() => { haptic(); onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }); }}
+            aria-label="Close"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 active:scale-90"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
+
 
         {/* Status pipeline */}
         <div className="px-3 pb-2.5 flex items-center gap-1.5">
@@ -478,6 +526,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
             <button aria-label="Mic" className="h-8 w-8 grid place-items-center rounded-full bg-[#f3f4f6] active:scale-90">
               <Mic className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
             </button>
+            <button
+              aria-label="Attach"
+              onClick={() => { haptic(); setAttachOpen(true); }}
+              className="h-8 w-8 grid place-items-center rounded-full bg-[color:oklch(0.96_0.05_82)] border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+            >
+              <Paperclip className="h-4 w-4 text-[color:oklch(0.45_0.12_82)]" />
+            </button>
           </div>
           <motion.button
             whileTap={{ scale: 0.85 }}
@@ -490,6 +545,120 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           </motion.button>
         </div>
       </div>
+
+      {/* Hidden file pickers */}
+      <input
+        ref={fileInputRef} type="file" accept="image/*" hidden
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAndSendImage(f); e.target.value = ""; }}
+      />
+      <input
+        ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAndSendImage(f); e.target.value = ""; }}
+      />
+
+      {/* Attachment sheet */}
+      <AnimatePresence>
+        {attachOpen && (
+          <div className="fixed inset-0 z-[96] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setAttachOpen(false)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-4 pb-7 shadow-2xl"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="text-[11px] uppercase tracking-wider text-slate-500 text-center mb-4">Share with {peer?.name ?? "user"}</p>
+              <div className="grid grid-cols-4 gap-3">
+                <AttachTile
+                  icon={Package} label="Catalog" tone="amber"
+                  onClick={() => { haptic(); setAttachOpen(false); loadCatalog(); setCatalogOpen(true); }}
+                />
+                <AttachTile
+                  icon={ImageIcon} label="Gallery" tone="violet"
+                  onClick={() => { haptic(); setAttachOpen(false); fileInputRef.current?.click(); }}
+                />
+                <AttachTile
+                  icon={Camera} label="Camera" tone="rose"
+                  onClick={() => { haptic(); setAttachOpen(false); cameraInputRef.current?.click(); }}
+                />
+                <AttachTile
+                  icon={CreditCard} label="Payment" tone="emerald"
+                  onClick={() => { haptic(); setAttachOpen(false); sendPaymentLink(); }}
+                />
+                <AttachTile
+                  icon={Phone} label="Call" tone="sky"
+                  disabled={!peer?.phone}
+                  onClick={() => { haptic(); setAttachOpen(false); if (peer?.phone) window.location.href = `tel:${peer.phone}`; else toast.error("Phone number nahi mila"); }}
+                />
+                <AttachTile
+                  icon={WhatsAppIcon} label="WhatsApp" tone="green"
+                  disabled={!peer?.phone}
+                  onClick={() => { haptic(); setAttachOpen(false); if (peer?.phone) window.open(`https://wa.me/${peer.phone.replace(/\D/g, "")}`, "_blank"); else toast.error("Phone number nahi mila"); }}
+                />
+                <AttachTile
+                  icon={MapPin} label="Location" tone="blue"
+                  onClick={() => { haptic(); setAttachOpen(false); shareLocation(); }}
+                />
+                <AttachTile
+                  icon={Sparkles} label="Quick quote" tone="gold"
+                  onClick={() => { haptic(); setAttachOpen(false); send("💰 Quote: ₹___ (please confirm)"); }}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Catalog sheet */}
+      <AnimatePresence>
+        {catalogOpen && (
+          <div className="fixed inset-0 z-[97] flex items-end justify-center">
+            <motion.button
+              aria-label="Close" onClick={() => setCatalogOpen(false)}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-4 pb-7 shadow-2xl max-h-[75vh] flex flex-col"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-gray-300 mb-3" />
+              <p className="font-display font-bold text-slate-800 mb-2 text-center">Send from catalog</p>
+              <div className="overflow-y-auto flex-1 -mx-1 px-1">
+                {catalog.length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-12">No products found. Add items in your catalog first.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {catalog.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => {
+                          haptic();
+                          const price = it.price != null ? ` — ₹${it.price}` : "";
+                          send(`🛍️ ${it.name}${price}`);
+                          setCatalogOpen(false);
+                        }}
+                        className="text-left rounded-2xl border border-slate-200 bg-white p-2 active:scale-[0.98] shadow-sm"
+                      >
+                        {it.image && <img src={it.image} alt="" className="w-full h-24 object-cover rounded-xl mb-1.5" />}
+                        <p className="text-xs font-semibold text-slate-800 truncate">{it.name}</p>
+                        {it.price != null && <p className="text-[11px] font-bold text-emerald-600">₹{it.price}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setCatalogOpen(false)} className="mt-3 w-full h-11 rounded-full bg-slate-100 text-sm font-semibold text-slate-600">Close</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       {/* Action sheet (long-press own message) */}
       <AnimatePresence>
@@ -678,5 +847,44 @@ function InlineRatingSheet({
         </button>
       </motion.div>
     </div>
+  );
+}
+
+function WhatsAppIcon() {
+  return <img src={whatsappIcon} alt="" className="h-5 w-5" />;
+}
+
+type AttachTone = "amber" | "violet" | "rose" | "emerald" | "sky" | "green" | "blue" | "gold";
+const TONE_MAP: Record<AttachTone, string> = {
+  amber: "from-amber-100 to-amber-200 text-amber-700 border-amber-300",
+  violet: "from-violet-100 to-violet-200 text-violet-700 border-violet-300",
+  rose: "from-rose-100 to-rose-200 text-rose-700 border-rose-300",
+  emerald: "from-emerald-100 to-emerald-200 text-emerald-700 border-emerald-300",
+  sky: "from-sky-100 to-sky-200 text-sky-700 border-sky-300",
+  green: "from-green-100 to-green-200 text-green-700 border-green-300",
+  blue: "from-blue-100 to-blue-200 text-blue-700 border-blue-300",
+  gold: "from-[#fff8dc] to-[#fde68a] text-[#92400e] border-[#d4af37]/60",
+};
+
+function AttachTile({
+  icon: Icon, label, tone, onClick, disabled,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  tone: AttachTone;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1.5 active:scale-95 disabled:opacity-40"
+    >
+      <span className={`h-14 w-14 grid place-items-center rounded-2xl bg-gradient-to-br border shadow-sm ${TONE_MAP[tone]}`}>
+        <Icon className="h-6 w-6" />
+      </span>
+      <span className="text-[10px] font-semibold text-slate-700 text-center leading-tight">{label}</span>
+    </button>
   );
 }
