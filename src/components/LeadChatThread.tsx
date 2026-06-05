@@ -371,28 +371,66 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           <AnimatePresence mode="popLayout">
             {messages.map((m) => {
               const mine = m.sender_id === me;
+              const deleted = !!m.is_deleted;
+              const startLong = () => {
+                if (!mine || deleted || String(m.id).startsWith("tmp-")) return;
+                longPressTimer.current = setTimeout(() => {
+                  haptic(25);
+                  setActionMsg(m);
+                }, 450);
+              };
+              const cancelLong = () => {
+                if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+              };
               return (
                 <motion.div
                   key={m.id} layout
                   initial={{ opacity: 0, y: 8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                  className={`flex ${mine ? "justify-end" : "justify-start"} items-end gap-1.5`}
                 >
+                  {!mine && !deleted && m.body && (
+                    <button
+                      aria-label="Read aloud"
+                      onClick={() => { haptic(); speakHindi(m.body!, { force: true }); }}
+                      className="h-7 w-7 grid place-items-center rounded-full bg-white border border-slate-200 shadow-sm active:scale-90 mb-1"
+                    >
+                      <Volume2 className="h-3.5 w-3.5 text-slate-500" />
+                    </button>
+                  )}
                   <div
-                    className={`max-w-[78%] px-3.5 py-2 rounded-2xl shadow-sm ${
-                      mine
-                        ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-sm"
-                        : "bg-white border border-[color:oklch(0.78_0.14_82/0.30)] text-slate-800 rounded-bl-sm"
+                    onPointerDown={startLong}
+                    onPointerUp={cancelLong}
+                    onPointerLeave={cancelLong}
+                    onContextMenu={(e) => { if (mine && !deleted) { e.preventDefault(); haptic(25); setActionMsg(m); } }}
+                    onClick={() => { if (deleted && mine && m.original_body) setViewOriginal(m); }}
+                    className={`max-w-[78%] px-3.5 py-2 rounded-2xl shadow-sm select-none ${
+                      deleted
+                        ? "bg-slate-100 text-slate-400 italic border border-slate-200 rounded-bl-sm rounded-br-sm"
+                        : mine
+                          ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-sm"
+                          : "bg-white border border-[color:oklch(0.78_0.14_82/0.30)] text-slate-800 rounded-bl-sm"
                     }`}
                   >
-                    {m.body && <p className="text-sm leading-snug whitespace-pre-wrap break-words">{m.body}</p>}
-                    {m.image_url && (
-                      <img src={m.image_url} alt="" className="mt-1 rounded-lg max-h-60 object-cover" />
+                    {deleted ? (
+                      <p className="text-sm leading-snug flex items-center gap-1.5">
+                        <Trash2 className="h-3.5 w-3.5" />
+                        This message was deleted
+                        {mine && m.original_body && <Eye className="h-3 w-3 ml-1 opacity-60" />}
+                      </p>
+                    ) : (
+                      <>
+                        {m.body && <p className="text-sm leading-snug whitespace-pre-wrap break-words">{m.body}</p>}
+                        {m.image_url && (
+                          <img src={m.image_url} alt="" className="mt-1 rounded-lg max-h-60 object-cover" />
+                        )}
+                      </>
                     )}
-                    <p className={`text-[10px] mt-0.5 text-right ${mine ? "text-white/75" : "text-slate-400"}`}>
+                    <p className={`text-[10px] mt-0.5 text-right ${deleted ? "text-slate-400" : mine ? "text-white/75" : "text-slate-400"}`}>
                       {fmtTime(m.created_at)}
-                      {mine && <span className="ml-1 font-bold">✓✓</span>}
+                      {m.edited_at && !deleted && <span className="ml-1 opacity-80">(edited)</span>}
+                      {mine && !deleted && <span className="ml-1 font-bold">✓✓</span>}
                     </p>
                   </div>
                 </motion.div>
