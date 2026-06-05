@@ -81,6 +81,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const [acting, setActing] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [rated, setRated] = useState<number>(0);
+  const [actionMsg, setActionMsg] = useState<Msg | null>(null);
+  const [editingMsg, setEditingMsg] = useState<Msg | null>(null);
+  const [editText, setEditText] = useState("");
+  const [viewOriginal, setViewOriginal] = useState<Msg | null>(null);
+  const [ttsOn, setTtsOn] = useState(true);
+  const lastSpokenId = useRef<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const heardMessageIds = useRef<Set<string>>(new Set());
   const chips = myRole === "vendor" ? QUICK_CHIPS_VENDOR : QUICK_CHIPS_CUSTOMER;
@@ -143,13 +150,26 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           if (m.sender_id !== me && !heardMessageIds.current.has(m.id)) {
             heardMessageIds.current.add(m.id);
             playPing("message");
+            haptic(20);
+            if (ttsOn && m.body && lastSpokenId.current !== m.id) {
+              lastSpokenId.current = m.id;
+              speakHindi(m.body, { dedupKey: m.id, ignoreMute: true });
+            }
           }
           requestAnimationFrame(() => scrollerRef.current?.scrollTo({ top: 9e6, behavior: "smooth" }));
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "lead_messages", filter: `lead_id=eq.${leadId}` },
+        (payload) => {
+          const m = payload.new as Msg;
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [leadId, peer?.id, me]);
+  }, [leadId, peer?.id, me, ttsOn]);
 
   const send = async (override?: string) => {
     const body = (override ?? text).trim();
