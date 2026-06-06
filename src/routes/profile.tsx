@@ -1720,6 +1720,10 @@ function BusinessCardSheet({
   };
   const [vis, setVis] = useState<Required<CardFieldVisibility>>(initialVis);
   const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
+  const [accentColor, setAccentColor] = useState<string>(profile?.card_accent_color ?? "");
+  const [customFields, setCustomFields] = useState<CardCustomField[]>(
+    Array.isArray(profile?.card_custom_fields) ? (profile!.card_custom_fields as CardCustomField[]) : []
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
@@ -1728,6 +1732,41 @@ function BusinessCardSheet({
   const shareUrl = typeof window !== "undefined" && refCode
     ? `${window.location.origin}/c/${refCode}`
     : "";
+
+  const previewProfile: CustomerProfile = {
+    ...(profile ?? {}),
+    name, phone, email, address,
+    shop_name: company,
+    card_link_url: link,
+    card_field_visibility: vis,
+    card_accent_color: accentColor || null,
+    card_custom_fields: customFields,
+  };
+
+  const addCustomField = (type: "text" | "image") => {
+    setCustomFields((arr) => [
+      ...arr,
+      { id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, type, label: "", value: "", on: true },
+    ]);
+  };
+  const updateCustomField = (id: string, patch: Partial<CardCustomField>) =>
+    setCustomFields((arr) => arr.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const removeCustomField = (id: string) =>
+    setCustomFields((arr) => arr.filter((c) => c.id !== id));
+
+  const uploadCustomImage = async (id: string, file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/custom-${id}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        updateCustomField(id, { value: data.publicUrl });
+      }
+    } finally { setUploading(false); }
+  };
 
   const save = async () => {
     if (!userId) return;
@@ -1741,6 +1780,8 @@ function BusinessCardSheet({
       card_link_url: link.trim() || null,
       card_field_visibility: vis,
       card_back_image_url: backImage || null,
+      card_accent_color: accentColor || null,
+      card_custom_fields: customFields,
     };
     if (profile?.id) {
       await supabase.from("customers").update(payload).eq("user_id", userId);
