@@ -742,7 +742,7 @@ type OrderStats = {
   cancelled: number; ratingAvg: number; reviewCount: number;
 };
 function DashboardCardVisual({
-  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats,
+  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats, shareBump = 0,
 }: {
   card: DashCard;
   profile?: CustomerProfile | null;
@@ -750,12 +750,17 @@ function DashboardCardVisual({
   onShareTap?: () => void;
   avatarUrl?: string | null;
   orderStats?: OrderStats;
+  shareBump?: number;
 }) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
     const showName = vis.name !== false;
     const showPhone = vis.phone !== false;
     const showEmail = vis.email !== false;
+    const showAddress = vis.address !== false && !!profile?.address;
+    const customs = Array.isArray(profile?.card_custom_fields) ? profile!.card_custom_fields! : [];
+    const visibleCustoms = customs.filter((c) => c?.on !== false && c?.value);
+    const accentColor = profile?.card_accent_color || null;
     return (
       <div data-card-capture="personal" className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
@@ -776,16 +781,28 @@ function DashboardCardVisual({
             {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
             {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
             {showEmail && <MiniRow Icon={Mail} text={realEmail(profile?.email) || "Email"} wrap />}
+            {showAddress && <MiniRow Icon={MapPin} text={profile?.address || ""} wrap />}
+            {visibleCustoms.slice(0, 3).map((c) =>
+              c.type === "image" ? (
+                <div key={c.id} className="flex items-center gap-1.5">
+                  <img src={c.value} alt={c.label || ""} className="h-4 w-4 rounded object-cover border border-amber-200" />
+                  <span className="truncate">{c.label || "Custom"}</span>
+                </div>
+              ) : (
+                <MiniRow key={c.id} Icon={IdCard} text={c.label ? `${c.label}: ${c.value}` : c.value} />
+              )
+            )}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
         <FooterBand
-          card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }}
+          card={{ ...card, code: profile?.referral_code || card.code, badge: String((profile?.card_share_count ?? 0) + shareBump) }}
           avatarUrl={avatarUrl ?? profile?.avatar_url ?? null}
           onCodeTap={onCodeTap}
           onShareTap={onShareTap}
+          accentColor={accentColor}
         />
       </div>
     );
