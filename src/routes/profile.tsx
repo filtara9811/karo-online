@@ -9,6 +9,7 @@ import {
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
   Download, Share2, Camera, PackageOpen, Gift, Bell, Headset,
+  Plus, Trash2, Image as ImageIcon, Palette,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
 import { useMyOrders } from "@/hooks/use-my-orders";
