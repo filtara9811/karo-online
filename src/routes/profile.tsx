@@ -897,7 +897,7 @@ function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => s
       <SectionTitle>{t("personal_details")}</SectionTitle>
       <DetailRow Icon={User} label={t("full_name")} value={profile?.name || dash} />
       <DetailRow Icon={Phone} label={t("contact")} value={profile?.phone || dash} />
-      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || dash} wrap />
+      <DetailRow Icon={Mail} label={t("email")} value={realEmail(profile?.email) || dash} wrap />
       <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || dash} wrap />
       <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || dash} />
     </div>
