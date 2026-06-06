@@ -9,6 +9,7 @@ import {
   Users, Truck, ChevronRight, X, LayoutGrid,
   Sun, Moon, Languages, LifeBuoy, Ticket, PhoneCall, AtSign,
   Download, Share2, Camera, PackageOpen, Gift, Bell, Headset,
+  Plus, Trash2, Image as ImageIcon, Palette,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
 import { useMyOrders } from "@/hooks/use-my-orders";
@@ -27,7 +28,7 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import goldServices from "@/assets/gold-services.png";
 import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
-import { useAuth, type CustomerProfile, type CardFieldVisibility } from "@/hooks/use-auth";
+import { useAuth, type CustomerProfile, type CardFieldVisibility, type CardCustomField } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
@@ -148,6 +149,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const { links: socialLinks } = useSocialLinks();
   const { counts: notifCounts } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [shareBump, setShareBump] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -227,31 +229,36 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   // ---- Direct WhatsApp share for the personal business card ----
   const shareCardDirect = async () => {
     const refCode = profile?.referral_code ?? "";
-    const shareUrl = typeof window !== "undefined"
-      ? (profile?.card_link_url?.trim() || (refCode ? `${window.location.origin}/c/${refCode}` : window.location.origin))
-      : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const cardUrl = profile?.card_link_url?.trim() || (refCode ? `${origin}/c/${refCode}` : origin);
+    const vcardUrl = refCode ? `${origin}/api/public/vcard/${refCode}` : "";
+    const installUrl = `${origin}/download`;
     const name = profile?.name || "";
     const shopName = profile?.shop_name || "";
     const phone = profile?.phone || "";
     const email = realEmail(profile?.email);
+
     const lines: string[] = [];
     if (shopName) lines.push(`*${shopName}*`);
     if (name) lines.push(`👤 ${name}`);
     if (phone) lines.push(`📞 ${phone}`);
     if (email) lines.push(`✉️ ${email}`);
     lines.push("");
-    lines.push(`🔗 ${shareUrl}`);
+    if (vcardUrl) lines.push(`📇 Save my contact: ${vcardUrl}`);
+    lines.push(`🔗 View card: ${cardUrl}`);
+    lines.push(`📲 Get KaroOnline: ${installUrl}`);
     lines.push("");
     lines.push("— My Digital Business Card · KaroOnline");
     const caption = lines.join("\n");
 
-    // Optimistically bump count + animate
+    // Optimistic local bump so the count animates immediately
+    setShareBump((n) => n + 1);
     if (user?.id) {
-      const next = (profile?.card_share_count ?? 0) + 1;
+      const next = (profile?.card_share_count ?? 0) + shareBump + 1;
       supabase
         .from("customers")
         .update({ card_share_count: next })
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .then(() => { refreshProfile?.(); });
     }
 
@@ -263,13 +270,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
         const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
         if (blob) {
-          const file = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
+          const imgFile = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
           const navAny = navigator as Navigator & {
             canShare?: (d: { files?: File[] }) => boolean;
-            share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+            share?: (d: { files?: File[]; text?: string; title?: string; url?: string }) => Promise<void>;
           };
-          if (navAny.canShare?.({ files: [file] }) && navAny.share) {
-            await navAny.share({ files: [file], text: caption, title: shopName || "My Business Card" });
+          if (navAny.canShare?.({ files: [imgFile] }) && navAny.share) {
+            await navAny.share({ files: [imgFile], text: caption, title: shopName || "My Business Card" });
             sharedAsFile = true;
           }
         }
@@ -366,9 +373,10 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
                     <DashboardCardVisual
                       card={card}
                       profile={profile}
-                      onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                      onCodeTap={isPersonal ? () => setCardSheet("edit") : undefined}
                       onShareTap={isPersonal ? shareCardDirect : undefined}
                       orderStats={card.type === "orders" ? orderStats : undefined}
+                      shareBump={isPersonal ? shareBump : 0}
                     />
                   </button>
                   <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
@@ -735,7 +743,7 @@ type OrderStats = {
   cancelled: number; ratingAvg: number; reviewCount: number;
 };
 function DashboardCardVisual({
-  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats,
+  card, profile, onCodeTap, onShareTap, avatarUrl, orderStats, shareBump = 0,
 }: {
   card: DashCard;
   profile?: CustomerProfile | null;
@@ -743,12 +751,17 @@ function DashboardCardVisual({
   onShareTap?: () => void;
   avatarUrl?: string | null;
   orderStats?: OrderStats;
+  shareBump?: number;
 }) {
   if (card.type === "personal") {
     const vis = (profile?.card_field_visibility ?? {}) as CardFieldVisibility;
     const showName = vis.name !== false;
     const showPhone = vis.phone !== false;
     const showEmail = vis.email !== false;
+    const showAddress = vis.address !== false && !!profile?.address;
+    const customs = Array.isArray(profile?.card_custom_fields) ? profile!.card_custom_fields! : [];
+    const visibleCustoms = customs.filter((c) => c?.on !== false && c?.value);
+    const accentColor = profile?.card_accent_color || null;
     return (
       <div data-card-capture="personal" className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
@@ -769,16 +782,28 @@ function DashboardCardVisual({
             {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
             {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
             {showEmail && <MiniRow Icon={Mail} text={realEmail(profile?.email) || "Email"} wrap />}
+            {showAddress && <MiniRow Icon={MapPin} text={profile?.address || ""} wrap />}
+            {visibleCustoms.slice(0, 3).map((c) =>
+              c.type === "image" ? (
+                <div key={c.id} className="flex items-center gap-1.5">
+                  <img src={c.value} alt={c.label || ""} className="h-4 w-4 rounded object-cover border border-amber-200" />
+                  <span className="truncate">{c.label || "Custom"}</span>
+                </div>
+              ) : (
+                <MiniRow key={c.id} Icon={IdCard} text={c.label ? `${c.label}: ${c.value}` : c.value} />
+              )
+            )}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
           </div>
         </div>
         <FooterBand
-          card={{ ...card, code: profile?.referral_code || card.code, badge: String(profile?.card_share_count ?? 0) }}
+          card={{ ...card, code: profile?.referral_code || card.code, badge: String((profile?.card_share_count ?? 0) + shareBump) }}
           avatarUrl={avatarUrl ?? profile?.avatar_url ?? null}
           onCodeTap={onCodeTap}
           onShareTap={onShareTap}
+          accentColor={accentColor}
         />
       </div>
     );
@@ -898,11 +923,17 @@ function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald";
 }
 
 function FooterBand({
-  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap,
-}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
+  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap, accentColor,
+}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void; accentColor?: string | null }) {
   const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
+  const accentStyle = accentColor
+    ? { backgroundImage: `linear-gradient(to right, ${accentColor}, ${accentColor})` }
+    : undefined;
   return (
-    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-2 py-1.5 flex items-center justify-between text-white`}>
+    <div
+      className={`absolute bottom-0 inset-x-0 ${accentColor ? "" : `bg-gradient-to-r ${card.accent}`} px-2 py-1.5 flex items-center justify-between text-white`}
+      style={accentStyle}
+    >
       <button
         type="button"
         onClick={(e) => { stop(e); onCodeTap?.(); }}
@@ -1690,6 +1721,10 @@ function BusinessCardSheet({
   };
   const [vis, setVis] = useState<Required<CardFieldVisibility>>(initialVis);
   const [backImage, setBackImage] = useState(profile?.card_back_image_url ?? "");
+  const [accentColor, setAccentColor] = useState<string>(profile?.card_accent_color ?? "");
+  const [customFields, setCustomFields] = useState<CardCustomField[]>(
+    Array.isArray(profile?.card_custom_fields) ? (profile!.card_custom_fields as CardCustomField[]) : []
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
@@ -1698,6 +1733,41 @@ function BusinessCardSheet({
   const shareUrl = typeof window !== "undefined" && refCode
     ? `${window.location.origin}/c/${refCode}`
     : "";
+
+  const previewProfile: CustomerProfile = {
+    ...(profile ?? {}),
+    name, phone, email, address,
+    shop_name: company,
+    card_link_url: link,
+    card_field_visibility: vis,
+    card_accent_color: accentColor || null,
+    card_custom_fields: customFields,
+  };
+
+  const addCustomField = (type: "text" | "image") => {
+    setCustomFields((arr) => [
+      ...arr,
+      { id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, type, label: "", value: "", on: true },
+    ]);
+  };
+  const updateCustomField = (id: string, patch: Partial<CardCustomField>) =>
+    setCustomFields((arr) => arr.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const removeCustomField = (id: string) =>
+    setCustomFields((arr) => arr.filter((c) => c.id !== id));
+
+  const uploadCustomImage = async (id: string, file: File) => {
+    if (!userId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/custom-${id}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("business-cards").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+        updateCustomField(id, { value: data.publicUrl });
+      }
+    } finally { setUploading(false); }
+  };
 
   const save = async () => {
     if (!userId) return;
@@ -1711,6 +1781,8 @@ function BusinessCardSheet({
       card_link_url: link.trim() || null,
       card_field_visibility: vis,
       card_back_image_url: backImage || null,
+      card_accent_color: accentColor || null,
+      card_custom_fields: customFields,
     };
     if (profile?.id) {
       await supabase.from("customers").update(payload).eq("user_id", userId);
@@ -1824,10 +1896,24 @@ function BusinessCardSheet({
 
       {tab === "edit" && (
         <div className="space-y-3">
+          {/* Live preview at top */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-2">
+            <div className="aspect-[1.7/1] w-full">
+              <DashboardCardVisual
+                card={{ id: "p", type: "personal", title: "Personal", subtitle: "Personal | Card",
+                  code: refCode || "—", badge: String(profile?.card_share_count ?? 0),
+                  accent: "from-[#b45309] via-[#d4af37] to-[#f59e0b]" }}
+                profile={previewProfile}
+              />
+            </div>
+            <p className="text-[10px] text-center text-amber-700/80 mt-1">Live preview — updates as you edit</p>
+          </div>
+
           <h3 className="font-display text-lg text-amber-700 font-bold">Business Card</h3>
           <p className="text-xs text-slate-500 -mt-2">
             Edit any field. Toggle <strong>on/off</strong> to choose what shows on the card.
           </p>
+
 
           {/* Profile picture uploader */}
           <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3">
@@ -1882,6 +1968,120 @@ function BusinessCardSheet({
               </p>
             )}
           </div>
+
+          {/* Accent color picker for the orange strip */}
+          <div className="rounded-2xl bg-white border border-amber-200 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-2 flex items-center gap-1.5">
+              <Palette className="h-3.5 w-3.5" /> Card strip color
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                "", "#d4af37", "#b45309", "#0ea5e9", "#10b981",
+                "#ef4444", "#8b5cf6", "#ec4899", "#0f172a",
+              ].map((c, i) => {
+                const active = (accentColor || "") === c;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setAccentColor(c)}
+                    className={`h-8 w-8 rounded-full border-2 transition ${active ? "border-slate-900 scale-110" : "border-white shadow"}`}
+                    style={{ background: c || "linear-gradient(135deg,#b45309,#d4af37,#f59e0b)" }}
+                    aria-label={c ? `Color ${c}` : "Default gold"}
+                  />
+                );
+              })}
+              <label className="h-8 w-8 rounded-full border-2 border-amber-200 grid place-items-center cursor-pointer overflow-hidden relative">
+                <Palette className="h-4 w-4 text-amber-600" />
+                <input
+                  type="color"
+                  value={accentColor || "#d4af37"}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Custom fields */}
+          <div className="rounded-2xl bg-white border border-amber-200 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Extra fields</p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => addCustomField("text")}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addCustomField("image")}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Image
+                </button>
+              </div>
+            </div>
+            {customFields.length === 0 && (
+              <p className="text-[10px] text-slate-500 italic">Add your own rows — pricing, social handle, banner image, etc.</p>
+            )}
+            {customFields.map((c) => (
+              <div key={c.id} className={`rounded-xl border p-2.5 ${c.on === false ? "bg-slate-50 border-slate-200 opacity-70" : "bg-amber-50/40 border-amber-200"}`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  {c.type === "image" ? <ImageIcon className="h-4 w-4 text-amber-700" /> : <IdCard className="h-4 w-4 text-amber-700" />}
+                  <input
+                    value={c.label ?? ""}
+                    onChange={(e) => updateCustomField(c.id, { label: e.target.value })}
+                    placeholder="Label (e.g. Website, Offer)"
+                    className="flex-1 px-2 py-1 rounded-md bg-white border border-amber-200 outline-none text-xs"
+                  />
+                  <button
+                    onClick={() => updateCustomField(c.id, { on: c.on === false })}
+                    aria-label="Toggle"
+                    className={`relative h-5 w-9 rounded-full transition ${c.on === false ? "bg-slate-300" : "bg-emerald-500"}`}
+                  >
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${c.on === false ? "left-0.5" : "left-4"}`} />
+                  </button>
+                  <button onClick={() => removeCustomField(c.id)} aria-label="Remove" className="h-7 w-7 grid place-items-center rounded-md bg-white border border-rose-200 text-rose-600 active:scale-90">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {c.type === "text" ? (
+                  <input
+                    value={c.value}
+                    onChange={(e) => updateCustomField(c.id, { value: e.target.value })}
+                    placeholder="Value"
+                    className="w-full px-2 py-1.5 rounded-md bg-white border border-amber-200 outline-none text-sm"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {c.value ? (
+                      <img src={c.value} alt="" className="h-12 w-12 rounded-md object-cover border border-amber-200" />
+                    ) : (
+                      <div className="h-12 w-12 rounded-md border border-dashed border-amber-300 grid place-items-center text-amber-400">
+                        <ImageIcon className="h-5 w-5" />
+                      </div>
+                    )}
+                    <label className="flex-1 cursor-pointer">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[11px] font-semibold shadow active:scale-95">
+                        <Upload className="h-3.5 w-3.5" /> {c.value ? "Replace" : "Upload"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCustomImage(c.id, f); e.currentTarget.value = ""; }}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+
 
           {/* QR code · download · share */}
           {shareUrl && (

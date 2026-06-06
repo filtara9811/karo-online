@@ -445,7 +445,9 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           avatar_url: string | null
+          card_accent_color: string | null
           card_back_image_url: string | null
+          card_custom_fields: Json
           card_field_visibility: Json
           card_link_url: string | null
           card_share_count: number
@@ -475,7 +477,9 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
+          card_accent_color?: string | null
           card_back_image_url?: string | null
+          card_custom_fields?: Json
           card_field_visibility?: Json
           card_link_url?: string | null
           card_share_count?: number
@@ -505,7 +509,9 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
+          card_accent_color?: string | null
           card_back_image_url?: string | null
+          card_custom_fields?: Json
           card_field_visibility?: Json
           card_link_url?: string | null
           card_share_count?: number
@@ -3746,7 +3752,9 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           avatar_url: string | null
+          card_accent_color: string | null
           card_back_image_url: string | null
+          card_custom_fields: Json
           card_field_visibility: Json
           card_link_url: string | null
           card_share_count: number
@@ -3792,7 +3800,9 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           avatar_url: string | null
+          card_accent_color: string | null
           card_back_image_url: string | null
+          card_custom_fields: Json
           card_field_visibility: Json
           card_link_url: string | null
           card_share_count: number
