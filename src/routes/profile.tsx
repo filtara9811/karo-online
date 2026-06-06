@@ -1896,10 +1896,24 @@ function BusinessCardSheet({
 
       {tab === "edit" && (
         <div className="space-y-3">
+          {/* Live preview at top */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-2">
+            <div className="aspect-[1.7/1] w-full">
+              <DashboardCardVisual
+                card={{ id: "p", type: "personal", title: "Personal", subtitle: "Personal | Card",
+                  code: refCode || "—", badge: String(profile?.card_share_count ?? 0),
+                  accent: "from-[#b45309] via-[#d4af37] to-[#f59e0b]" }}
+                profile={previewProfile}
+              />
+            </div>
+            <p className="text-[10px] text-center text-amber-700/80 mt-1">Live preview — updates as you edit</p>
+          </div>
+
           <h3 className="font-display text-lg text-amber-700 font-bold">Business Card</h3>
           <p className="text-xs text-slate-500 -mt-2">
             Edit any field. Toggle <strong>on/off</strong> to choose what shows on the card.
           </p>
+
 
           {/* Profile picture uploader */}
           <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3">
