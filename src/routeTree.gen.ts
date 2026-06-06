@@ -93,6 +93,7 @@ import { Route as AdminWebFaqsRouteImport } from './routes/admin.web.faqs'
 import { Route as AdminWebBlogRouteImport } from './routes/admin.web.blog'
 import { Route as AdminWebApkRouteImport } from './routes/admin.web.apk'
 import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
+import { Route as ApiPublicVcardCodeRouteImport } from './routes/api.public.vcard.$code'
 
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
@@ -514,6 +515,11 @@ const AdminViewUserIdRoute = AdminViewUserIdRouteImport.update({
   path: '/view/$userId',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicVcardCodeRoute = ApiPublicVcardCodeRouteImport.update({
+  id: '/api/public/vcard/$code',
+  path: '/api/public/vcard/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -600,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
+  '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -685,6 +692,7 @@ export interface FileRoutesByTo {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
+  '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -772,6 +780,7 @@ export interface FileRoutesById {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
+  '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -860,6 +869,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
+    | '/api/public/vcard/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -945,6 +955,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web'
+    | '/api/public/vcard/$code'
   id:
     | '__root__'
     | '/'
@@ -1031,6 +1042,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
+    | '/api/public/vcard/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1077,6 +1089,7 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
+  ApiPublicVcardCodeRoute: typeof ApiPublicVcardCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1669,6 +1682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminViewUserIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/vcard/$code': {
+      id: '/api/public/vcard/$code'
+      path: '/api/public/vcard/$code'
+      fullPath: '/api/public/vcard/$code'
+      preLoaderRoute: typeof ApiPublicVcardCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1806,6 +1826,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
+  ApiPublicVcardCodeRoute: ApiPublicVcardCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
