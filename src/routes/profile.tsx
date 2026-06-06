@@ -16,6 +16,9 @@ import { Star } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { ShareCardSheet } from "@/components/ShareCardSheet";
 import avatarUser from "@/assets/avatar-user.png";
+import karoLogo from "@/assets/karo-logo.png";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -221,6 +224,68 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
     [vendors],
   );
 
+  // ---- Direct WhatsApp share for the personal business card ----
+  const shareCardDirect = async () => {
+    const refCode = profile?.referral_code ?? "";
+    const shareUrl = typeof window !== "undefined"
+      ? (profile?.card_link_url?.trim() || (refCode ? `${window.location.origin}/c/${refCode}` : window.location.origin))
+      : "";
+    const name = profile?.name || "";
+    const shopName = profile?.shop_name || "";
+    const phone = profile?.phone || "";
+    const email = realEmail(profile?.email);
+    const lines: string[] = [];
+    if (shopName) lines.push(`*${shopName}*`);
+    if (name) lines.push(`👤 ${name}`);
+    if (phone) lines.push(`📞 ${phone}`);
+    if (email) lines.push(`✉️ ${email}`);
+    lines.push("");
+    lines.push(`🔗 ${shareUrl}`);
+    lines.push("");
+    lines.push("— My Digital Business Card · KaroOnline");
+    const caption = lines.join("\n");
+
+    // Optimistically bump count + animate
+    if (user?.id) {
+      const next = (profile?.card_share_count ?? 0) + 1;
+      supabase
+        .from("customers")
+        .update({ card_share_count: next })
+        .eq("id", user.id)
+        .then(() => { refreshProfile?.(); });
+    }
+
+    // Try to capture the card image and share via Web Share API
+    let sharedAsFile = false;
+    try {
+      const el = document.querySelector('[data-card-capture="personal"]') as HTMLElement | null;
+      if (el) {
+        const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
+        const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
+        if (blob) {
+          const file = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
+          const navAny = navigator as Navigator & {
+            canShare?: (d: { files?: File[] }) => boolean;
+            share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+          };
+          if (navAny.canShare?.({ files: [file] }) && navAny.share) {
+            await navAny.share({ files: [file], text: caption, title: shopName || "My Business Card" });
+            sharedAsFile = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Card image share failed, falling back to WhatsApp link", err);
+    }
+
+    if (!sharedAsFile) {
+      const url = `https://wa.me/?text=${encodeURIComponent(caption)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    toast.success("Card shared ✨");
+  };
+
+
   // Inject live values into the visible cards
   const liveCards: DashCard[] = useMemo(() => {
     return CARDS.map((c) =>
@@ -302,7 +367,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
                       card={card}
                       profile={profile}
                       onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
-                      onShareTap={isPersonal ? () => setShareOpen(true) : undefined}
+                      onShareTap={isPersonal ? shareCardDirect : undefined}
                       orderStats={card.type === "orders" ? orderStats : undefined}
                     />
                   </button>
@@ -685,7 +750,7 @@ function DashboardCardVisual({
     const showPhone = vis.phone !== false;
     const showEmail = vis.email !== false;
     return (
-      <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
+      <div data-card-capture="personal" className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
         <div className="absolute bottom-0 left-0 w-24 h-14 bg-gradient-to-tr from-[oklch(0.88_0.12_88/0.4)] to-transparent" />
         <div className="relative px-4 pt-3">
@@ -833,7 +898,7 @@ function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald";
 }
 
 function FooterBand({
-  card, avatarUrl, onCodeTap, onShareTap,
+  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap,
 }: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
   const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
   return (
@@ -842,15 +907,15 @@ function FooterBand({
         type="button"
         onClick={(e) => { stop(e); onCodeTap?.(); }}
         onPointerDown={stop}
-        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-0.5 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
+        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-1 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
         aria-label={onCodeTap ? "Open profile details" : undefined}
       >
-        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10">
-          <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10 grid place-items-center p-0.5">
+          <img src={karoLogo} alt="KaroOnline" className="h-full w-full object-contain" crossOrigin="anonymous" />
         </div>
         <div className="leading-tight min-w-0 text-left">
-          <p className="text-[10px] font-bold truncate">{card.subtitle}</p>
-          <p className="text-[9px] opacity-90 truncate">Code : {card.code}</p>
+          <p className="text-[10px] font-extrabold tracking-wide truncate">KaroOnline</p>
+          <p className="text-[8px] opacity-90 truncate uppercase tracking-[0.15em]">Digital Card · {card.code}</p>
         </div>
       </button>
 
@@ -861,16 +926,30 @@ function FooterBand({
           onClick={(e) => { stop(e); onShareTap(); }}
           onPointerDown={stop}
           className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#b45309] font-bold text-[11px] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)] border border-white/80"
-          aria-label="Share card"
+          aria-label="Share card on WhatsApp"
         >
           <Share2 className="h-3.5 w-3.5" strokeWidth={2.6} />
           <span>Share</span>
-          <span className="text-[9px] font-semibold opacity-70">· {card.badge}</span>
+          <span className="inline-flex items-center text-[9px] font-bold opacity-80">
+            ·&nbsp;
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={card.badge}
+                initial={{ y: -8, opacity: 0, scale: 0.6 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 8, opacity: 0, scale: 0.6 }}
+                transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                className="inline-block tabular-nums"
+              >
+                {card.badge}
+              </motion.span>
+            </AnimatePresence>
+          </span>
         </motion.button>
       ) : (
         <div className="text-right leading-tight flex-shrink-0 pr-1">
           <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
-          <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
+          <p className="text-[8px] mt-0.5">Shares · {card.badge}</p>
         </div>
       )}
     </div>
