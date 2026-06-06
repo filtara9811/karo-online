@@ -91,10 +91,16 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [ttsOn, setTtsOn] = useState(true);
+  const [peerOnline, setPeerOnline] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
   const lastSpokenId = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
+  const presenceChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const heardMessageIds = useRef<Set<string>>(new Set());
+  const readMarkedIds = useRef<Set<string>>(new Set());
   const chips = myRole === "vendor" ? QUICK_CHIPS_VENDOR : QUICK_CHIPS_CUSTOMER;
 
   // Identify self
