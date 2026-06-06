@@ -372,9 +372,10 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
                     <DashboardCardVisual
                       card={card}
                       profile={profile}
-                      onCodeTap={isPersonal ? () => setActiveRow("profile") : undefined}
+                      onCodeTap={isPersonal ? () => setCardSheet("edit") : undefined}
                       onShareTap={isPersonal ? shareCardDirect : undefined}
                       orderStats={card.type === "orders" ? orderStats : undefined}
+                      shareBump={isPersonal ? shareBump : 0}
                     />
                   </button>
                   <span className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.6)] shadow pointer-events-none">
