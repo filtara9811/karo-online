@@ -836,7 +836,7 @@ function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald";
 }
 
 function FooterBand({
-  card, avatarUrl, onCodeTap, onShareTap,
+  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap,
 }: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
   const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
   return (
@@ -845,15 +845,15 @@ function FooterBand({
         type="button"
         onClick={(e) => { stop(e); onCodeTap?.(); }}
         onPointerDown={stop}
-        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-0.5 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
+        className={`flex items-center gap-2 min-w-0 rounded-full pr-2.5 pl-1 py-0.5 transition ${onCodeTap ? "hover:bg-white/15 active:bg-white/25 active:scale-[0.97]" : "pointer-events-none"}`}
         aria-label={onCodeTap ? "Open profile details" : undefined}
       >
-        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10">
-          <img src={avatarUrl || avatarUser} alt="" className="h-full w-full object-cover" />
+        <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-white/90 bg-white flex-shrink-0 ring-1 ring-black/10 grid place-items-center p-0.5">
+          <img src={karoLogo} alt="KaroOnline" className="h-full w-full object-contain" crossOrigin="anonymous" />
         </div>
         <div className="leading-tight min-w-0 text-left">
-          <p className="text-[10px] font-bold truncate">{card.subtitle}</p>
-          <p className="text-[9px] opacity-90 truncate">Code : {card.code}</p>
+          <p className="text-[10px] font-extrabold tracking-wide truncate">KaroOnline</p>
+          <p className="text-[8px] opacity-90 truncate uppercase tracking-[0.15em]">Digital Card · {card.code}</p>
         </div>
       </button>
 
@@ -864,16 +864,30 @@ function FooterBand({
           onClick={(e) => { stop(e); onShareTap(); }}
           onPointerDown={stop}
           className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#b45309] font-bold text-[11px] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)] border border-white/80"
-          aria-label="Share card"
+          aria-label="Share card on WhatsApp"
         >
           <Share2 className="h-3.5 w-3.5" strokeWidth={2.6} />
           <span>Share</span>
-          <span className="text-[9px] font-semibold opacity-70">· {card.badge}</span>
+          <span className="inline-flex items-center text-[9px] font-bold opacity-80">
+            ·&nbsp;
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={card.badge}
+                initial={{ y: -8, opacity: 0, scale: 0.6 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 8, opacity: 0, scale: 0.6 }}
+                transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                className="inline-block tabular-nums"
+              >
+                {card.badge}
+              </motion.span>
+            </AnimatePresence>
+          </span>
         </motion.button>
       ) : (
         <div className="text-right leading-tight flex-shrink-0 pr-1">
           <Check className="h-3.5 w-3.5 ml-auto" strokeWidth={3} />
-          <p className="text-[8px] mt-0.5">Shre | {card.badge}</p>
+          <p className="text-[8px] mt-0.5">Shares · {card.badge}</p>
         </div>
       )}
     </div>
