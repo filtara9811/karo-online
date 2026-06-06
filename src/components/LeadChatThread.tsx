@@ -91,10 +91,16 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [ttsOn, setTtsOn] = useState(true);
+  const [peerOnline, setPeerOnline] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
   const lastSpokenId = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
+  const presenceChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const heardMessageIds = useRef<Set<string>>(new Set());
+  const readMarkedIds = useRef<Set<string>>(new Set());
   const chips = myRole === "vendor" ? QUICK_CHIPS_VENDOR : QUICK_CHIPS_CUSTOMER;
 
   // Identify self
@@ -176,11 +182,65 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [leadId, peer?.id, me, ttsOn]);
 
+  // Presence + typing broadcast channel
+  useEffect(() => {
+    if (!leadId || !me) return;
+    const ch = supabase.channel(`lead-presence-${leadId}`, {
+      config: { presence: { key: me }, broadcast: { self: false } },
+    });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      const others = Object.keys(state).filter((k) => k !== me);
+      setPeerOnline(others.length > 0);
+    })
+      .on("broadcast", { event: "typing" }, () => {
+        setPeerTyping(true);
+        if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+        typingHideTimer.current = setTimeout(() => setPeerTyping(false), 2500);
+      })
+      .on("broadcast", { event: "stop-typing" }, () => {
+        if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+        setPeerTyping(false);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") await ch.track({ at: new Date().toISOString() });
+      });
+    presenceChRef.current = ch;
+    return () => {
+      if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+      supabase.removeChannel(ch);
+      presenceChRef.current = null;
+    };
+  }, [leadId, me]);
+
+  // Mark messages addressed to me as read
+  useEffect(() => {
+    if (!me || messages.length === 0) return;
+    const ids = messages
+      .filter((m) => m.recipient_id === me && !m.read_at && !String(m.id).startsWith("tmp-") && !readMarkedIds.current.has(m.id))
+      .map((m) => m.id);
+    if (ids.length === 0) return;
+    ids.forEach((id) => readMarkedIds.current.add(id));
+    void supabase.from("lead_messages").update({ read_at: new Date().toISOString() }).in("id", ids);
+  }, [me, messages]);
+
+  const broadcastTyping = () => {
+    const now = Date.now();
+    if (now - lastTypingSent.current < 1500) return;
+    lastTypingSent.current = now;
+    presenceChRef.current?.send({ type: "broadcast", event: "typing", payload: { from: me } });
+  };
+  const broadcastStopTyping = () => {
+    lastTypingSent.current = 0;
+    presenceChRef.current?.send({ type: "broadcast", event: "stop-typing", payload: { from: me } });
+  };
+
   const send = async (override?: string) => {
     const body = (override ?? text).trim();
     if (!body || !me || sending) return;
     setSending(true);
     if (!override) setText("");
+    broadcastStopTyping();
     const optimistic: Msg = {
       id: `tmp-${Date.now()}`, lead_id: leadId, sender_id: me, sender_role: myRole,
       recipient_id: peer?.id ?? null, body, image_url: null, read_at: null,
@@ -297,8 +357,14 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
             </p>
             <p className="text-[11px] opacity-80 truncate flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {peer?.subtitle ?? "Live · Lead chat"}
+              <span className={`h-1.5 w-1.5 rounded-full ${peerOnline ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
+              {peerTyping ? (
+                <span className="text-emerald-300 font-semibold">typing…</span>
+              ) : peerOnline ? (
+                <span>Online · Live chat</span>
+              ) : (
+                <span>{peer?.subtitle ?? "Live · Lead chat"}</span>
+              )}
             </p>
           </div>
           <button
@@ -485,7 +551,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
                     <p className={`text-[10px] mt-0.5 text-right ${deleted ? "text-slate-400" : mine ? "text-white/75" : "text-slate-400"}`}>
                       {fmtTime(m.created_at)}
                       {m.edited_at && !deleted && <span className="ml-1 opacity-80">(edited)</span>}
-                      {mine && !deleted && <span className="ml-1 font-bold">✓✓</span>}
+                      {mine && !deleted && (() => {
+                        const isSending = String(m.id).startsWith("tmp-");
+                        if (isSending) return <span className="ml-1 opacity-70" title="Sending">🕒</span>;
+                        if (m.read_at) return <span className="ml-1 font-bold text-sky-300" title="Read">✓✓</span>;
+                        if (peerOnline) return <span className="ml-1 font-bold opacity-90" title="Delivered">✓✓</span>;
+                        return <span className="ml-1 font-bold opacity-70" title="Sent">✓</span>;
+                      })()}
                     </p>
                   </div>
                 </motion.div>
@@ -493,6 +565,23 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
             })}
           </AnimatePresence>
         )}
+        <AnimatePresence>
+          {peerTyping && (
+            <motion.div
+              key="typing-bubble"
+              initial={{ opacity: 0, y: 6, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              className="flex justify-start"
+            >
+              <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-sm bg-white border border-[color:oklch(0.78_0.14_82/0.30)] shadow-sm flex items-center gap-1">
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0 }} />
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0.15 }} />
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0.3 }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Quick-reply chips */}
@@ -518,7 +607,8 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
             <input
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); if (e.target.value.trim()) broadcastTyping(); else broadcastStopTyping(); }}
+              onBlur={broadcastStopTyping}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="| Type a message…"
               className="flex-1 bg-transparent text-sm outline-none placeholder:italic placeholder:text-[#9ca3af]"
