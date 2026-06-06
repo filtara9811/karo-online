@@ -991,7 +991,7 @@ function ProfileDetailsSheet({
     setSaving(true);
     const before = {
       name: profile?.name ?? "",
-      email: profile?.email ?? "",
+      email: realEmail(profile?.email),
       phone: profile?.phone ?? "",
       address: profile?.address ?? "",
     };
