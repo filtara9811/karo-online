@@ -224,6 +224,68 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
     [vendors],
   );
 
+  // ---- Direct WhatsApp share for the personal business card ----
+  const shareCardDirect = async () => {
+    const refCode = profile?.referral_code ?? "";
+    const shareUrl = typeof window !== "undefined"
+      ? (profile?.card_link_url?.trim() || (refCode ? `${window.location.origin}/c/${refCode}` : window.location.origin))
+      : "";
+    const name = profile?.name || "";
+    const shopName = profile?.shop_name || "";
+    const phone = profile?.phone || "";
+    const email = realEmail(profile?.email);
+    const lines: string[] = [];
+    if (shopName) lines.push(`*${shopName}*`);
+    if (name) lines.push(`👤 ${name}`);
+    if (phone) lines.push(`📞 ${phone}`);
+    if (email) lines.push(`✉️ ${email}`);
+    lines.push("");
+    lines.push(`🔗 ${shareUrl}`);
+    lines.push("");
+    lines.push("— My Digital Business Card · KaroOnline");
+    const caption = lines.join("\n");
+
+    // Optimistically bump count + animate
+    if (user?.id) {
+      const next = (profile?.card_share_count ?? 0) + 1;
+      supabase
+        .from("profiles")
+        .update({ card_share_count: next })
+        .eq("id", user.id)
+        .then(() => { refreshProfile?.(); });
+    }
+
+    // Try to capture the card image and share via Web Share API
+    let sharedAsFile = false;
+    try {
+      const el = document.querySelector('[data-card-capture="personal"]') as HTMLElement | null;
+      if (el) {
+        const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
+        const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
+        if (blob) {
+          const file = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
+          const navAny = navigator as Navigator & {
+            canShare?: (d: { files?: File[] }) => boolean;
+            share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+          };
+          if (navAny.canShare?.({ files: [file] }) && navAny.share) {
+            await navAny.share({ files: [file], text: caption, title: shopName || "My Business Card" });
+            sharedAsFile = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Card image share failed, falling back to WhatsApp link", err);
+    }
+
+    if (!sharedAsFile) {
+      const url = `https://wa.me/?text=${encodeURIComponent(caption)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    toast.success("Card shared ✨");
+  };
+
+
   // Inject live values into the visible cards
   const liveCards: DashCard[] = useMemo(() => {
     return CARDS.map((c) =>
