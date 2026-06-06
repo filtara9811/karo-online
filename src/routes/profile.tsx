@@ -35,6 +35,16 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { OtpModal } from "@/components/OtpModal";
 import { Lock } from "lucide-react";
 
+/**
+ * Strip auto-generated synthetic auth emails (e.g. `phone-9876543210@auth.karoonline.local`)
+ * so customers don't see internal placeholders. Returns "" for synthetic, original otherwise.
+ */
+function realEmail(value?: string | null): string {
+  if (!value) return "";
+  const v = value.trim();
+  if (/^phone-\d+@auth\.karoonline\.local$/i.test(v)) return "";
+  return v;
+}
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
