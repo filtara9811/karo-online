@@ -1969,6 +1969,120 @@ function BusinessCardSheet({
             )}
           </div>
 
+          {/* Accent color picker for the orange strip */}
+          <div className="rounded-2xl bg-white border border-amber-200 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-2 flex items-center gap-1.5">
+              <Palette className="h-3.5 w-3.5" /> Card strip color
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                "", "#d4af37", "#b45309", "#0ea5e9", "#10b981",
+                "#ef4444", "#8b5cf6", "#ec4899", "#0f172a",
+              ].map((c, i) => {
+                const active = (accentColor || "") === c;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setAccentColor(c)}
+                    className={`h-8 w-8 rounded-full border-2 transition ${active ? "border-slate-900 scale-110" : "border-white shadow"}`}
+                    style={{ background: c || "linear-gradient(135deg,#b45309,#d4af37,#f59e0b)" }}
+                    aria-label={c ? `Color ${c}` : "Default gold"}
+                  />
+                );
+              })}
+              <label className="h-8 w-8 rounded-full border-2 border-amber-200 grid place-items-center cursor-pointer overflow-hidden relative">
+                <Palette className="h-4 w-4 text-amber-600" />
+                <input
+                  type="color"
+                  value={accentColor || "#d4af37"}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Custom fields */}
+          <div className="rounded-2xl bg-white border border-amber-200 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Extra fields</p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => addCustomField("text")}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addCustomField("image")}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Image
+                </button>
+              </div>
+            </div>
+            {customFields.length === 0 && (
+              <p className="text-[10px] text-slate-500 italic">Add your own rows — pricing, social handle, banner image, etc.</p>
+            )}
+            {customFields.map((c) => (
+              <div key={c.id} className={`rounded-xl border p-2.5 ${c.on === false ? "bg-slate-50 border-slate-200 opacity-70" : "bg-amber-50/40 border-amber-200"}`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  {c.type === "image" ? <ImageIcon className="h-4 w-4 text-amber-700" /> : <IdCard className="h-4 w-4 text-amber-700" />}
+                  <input
+                    value={c.label ?? ""}
+                    onChange={(e) => updateCustomField(c.id, { label: e.target.value })}
+                    placeholder="Label (e.g. Website, Offer)"
+                    className="flex-1 px-2 py-1 rounded-md bg-white border border-amber-200 outline-none text-xs"
+                  />
+                  <button
+                    onClick={() => updateCustomField(c.id, { on: c.on === false })}
+                    aria-label="Toggle"
+                    className={`relative h-5 w-9 rounded-full transition ${c.on === false ? "bg-slate-300" : "bg-emerald-500"}`}
+                  >
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${c.on === false ? "left-0.5" : "left-4"}`} />
+                  </button>
+                  <button onClick={() => removeCustomField(c.id)} aria-label="Remove" className="h-7 w-7 grid place-items-center rounded-md bg-white border border-rose-200 text-rose-600 active:scale-90">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {c.type === "text" ? (
+                  <input
+                    value={c.value}
+                    onChange={(e) => updateCustomField(c.id, { value: e.target.value })}
+                    placeholder="Value"
+                    className="w-full px-2 py-1.5 rounded-md bg-white border border-amber-200 outline-none text-sm"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {c.value ? (
+                      <img src={c.value} alt="" className="h-12 w-12 rounded-md object-cover border border-amber-200" />
+                    ) : (
+                      <div className="h-12 w-12 rounded-md border border-dashed border-amber-300 grid place-items-center text-amber-400">
+                        <ImageIcon className="h-5 w-5" />
+                      </div>
+                    )}
+                    <label className="flex-1 cursor-pointer">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[11px] font-semibold shadow active:scale-95">
+                        <Upload className="h-3.5 w-3.5" /> {c.value ? "Replace" : "Upload"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCustomImage(c.id, f); e.currentTarget.value = ""; }}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+
+
           {/* QR code · download · share */}
           {shareUrl && (
             <div className="rounded-2xl bg-white border border-amber-200 p-3 flex gap-3 items-center">
