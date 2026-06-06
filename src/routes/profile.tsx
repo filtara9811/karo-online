@@ -1597,7 +1597,7 @@ function BusinessCardSheet({
   const [tab, setTab] = useState<"edit" | "flip">(mode);
   const [name, setName] = useState(profile?.name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
+  const [email, setEmail] = useState(realEmail(profile?.email));
   const [address, setAddress] = useState(profile?.address ?? "");
   const [company, setCompany] = useState(profile?.shop_name ?? "");
   const [link, setLink] = useState(profile?.card_link_url ?? "");
