@@ -24,8 +24,8 @@ export function ImageCropper({ file, aspect = 1, shape = "circle", onCancel, onC
   const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number; pinchDist?: number; baseScale?: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // viewport size (square or aspect)
-  const VW = 280;
+  // viewport size — responsive to screen width so mobile gets a comfortable crop area
+  const VW = typeof window !== "undefined" ? Math.min(320, Math.max(240, window.innerWidth - 80)) : 300;
   const VH = Math.round(VW / aspect);
 
   useEffect(() => {
