@@ -972,7 +972,7 @@ function ProfileDetailsSheet({
   userId, profile, refreshProfile, onClose,
 }: { userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const [name, setName] = useState(profile?.name ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
+  const [email, setEmail] = useState(realEmail(profile?.email));
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [address, setAddress] = useState(profile?.address ?? "");
   const [saving, setSaving] = useState(false);
