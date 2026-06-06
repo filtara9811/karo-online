@@ -607,7 +607,8 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
           <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
             <input
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); if (e.target.value.trim()) broadcastTyping(); else broadcastStopTyping(); }}
+              onBlur={broadcastStopTyping}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="| Type a message…"
               className="flex-1 bg-transparent text-sm outline-none placeholder:italic placeholder:text-[#9ca3af]"
