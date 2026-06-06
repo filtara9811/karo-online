@@ -11,6 +11,14 @@ export type CardFieldVisibility = {
   company?: boolean;
 };
 
+export type CardCustomField = {
+  id: string;
+  type: "text" | "image";
+  label?: string;
+  value: string; // text value or image URL
+  on?: boolean;
+};
+
 export type CustomerProfile = {
   id?: string;
   user_id?: string;
@@ -26,6 +34,8 @@ export type CustomerProfile = {
   card_field_visibility?: CardFieldVisibility | null;
   card_share_count?: number | null;
   card_view_count?: number | null;
+  card_accent_color?: string | null;
+  card_custom_fields?: CardCustomField[] | null;
   referral_code?: string | null;
 };
 
