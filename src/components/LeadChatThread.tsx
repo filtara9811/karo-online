@@ -357,8 +357,14 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
             </p>
             <p className="text-[11px] opacity-80 truncate flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {peer?.subtitle ?? "Live · Lead chat"}
+              <span className={`h-1.5 w-1.5 rounded-full ${peerOnline ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
+              {peerTyping ? (
+                <span className="text-emerald-300 font-semibold">typing…</span>
+              ) : peerOnline ? (
+                <span>Online · Live chat</span>
+              ) : (
+                <span>{peer?.subtitle ?? "Live · Lead chat"}</span>
+              )}
             </p>
           </div>
           <button
