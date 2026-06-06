@@ -35,6 +35,16 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { OtpModal } from "@/components/OtpModal";
 import { Lock } from "lucide-react";
 
+/**
+ * Strip auto-generated synthetic auth emails (e.g. `phone-9876543210@auth.karoonline.local`)
+ * so customers don't see internal placeholders. Returns "" for synthetic, original otherwise.
+ */
+function realEmail(value?: string | null): string {
+  if (!value) return "";
+  const v = value.trim();
+  if (/^phone-\d+@auth\.karoonline\.local$/i.test(v)) return "";
+  return v;
+}
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -311,17 +321,10 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
 
 
-      {/* My Account sub-bar (back + title + theme/lang/support) */}
+      {/* My Account sub-bar (title + theme/lang/support + close on right) */}
       <section className="px-4 mt-4">
         <div className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border ${isDark ? "bg-[oklch(0.20_0.03_85)] border-amber-200/20" : "bg-white border-[color:oklch(0.78_0.14_82/0.35)] shadow-[0_4px_14px_-8px_rgba(212,175,55,0.45)]"}`}>
-          <button
-            onClick={() => (onClose ? onClose() : router.history.back())}
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0"
-            aria-label={onClose ? "Close" : "Back"}
-          >
-            {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
-          </button>
-          <h1 className="flex-1 text-center font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
+          <h1 className="flex-1 font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide pl-1">
             {t("my_account")}
           </h1>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -338,6 +341,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             <TopIconButton onClick={() => setTopSheet("language")} aria-label={t("language")}>
               <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
             </TopIconButton>
+            <button
+              onClick={() => (onClose ? onClose() : router.history.back())}
+              className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0 ml-1"
+              aria-label={onClose ? "Close" : "Back"}
+            >
+              {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
+            </button>
           </div>
         </div>
       </section>
@@ -693,7 +703,7 @@ function DashboardCardVisual({
           <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
             {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
             {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
-            {showEmail && <MiniRow Icon={Mail} text={profile?.email || "Email"} wrap />}
+            {showEmail && <MiniRow Icon={Mail} text={realEmail(profile?.email) || "Email"} wrap />}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
@@ -887,7 +897,7 @@ function CardDetails({ type, t, profile }: { type: CardType; t: (k: string) => s
       <SectionTitle>{t("personal_details")}</SectionTitle>
       <DetailRow Icon={User} label={t("full_name")} value={profile?.name || dash} />
       <DetailRow Icon={Phone} label={t("contact")} value={profile?.phone || dash} />
-      <DetailRow Icon={Mail} label={t("email")} value={profile?.email || dash} wrap />
+      <DetailRow Icon={Mail} label={t("email")} value={realEmail(profile?.email) || dash} wrap />
       <DetailRow Icon={MapPin} label={t("address")} value={profile?.address || dash} wrap />
       <DetailRow Icon={IdCard} label={t("member_code")} value={profile?.referral_code || dash} />
     </div>
@@ -962,7 +972,7 @@ function ProfileDetailsSheet({
   userId, profile, refreshProfile, onClose,
 }: { userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const [name, setName] = useState(profile?.name ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
+  const [email, setEmail] = useState(realEmail(profile?.email));
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [address, setAddress] = useState(profile?.address ?? "");
   const [saving, setSaving] = useState(false);
@@ -981,7 +991,7 @@ function ProfileDetailsSheet({
     setSaving(true);
     const before = {
       name: profile?.name ?? "",
-      email: profile?.email ?? "",
+      email: realEmail(profile?.email),
       phone: profile?.phone ?? "",
       address: profile?.address ?? "",
     };
@@ -1587,7 +1597,7 @@ function BusinessCardSheet({
   const [tab, setTab] = useState<"edit" | "flip">(mode);
   const [name, setName] = useState(profile?.name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
+  const [email, setEmail] = useState(realEmail(profile?.email));
   const [address, setAddress] = useState(profile?.address ?? "");
   const [company, setCompany] = useState(profile?.shop_name ?? "");
   const [link, setLink] = useState(profile?.card_link_url ?? "");
