@@ -703,7 +703,7 @@ function DashboardCardVisual({
           <div className="flex-1 min-w-0 space-y-1 text-[10px] text-slate-700">
             {showName && <MiniRow Icon={User} text={profile?.name || "Name"} />}
             {showPhone && <MiniRow Icon={Phone} text={profile?.phone || "Contact"} />}
-            {showEmail && <MiniRow Icon={Mail} text={profile?.email || "Email"} wrap />}
+            {showEmail && <MiniRow Icon={Mail} text={realEmail(profile?.email) || "Email"} wrap />}
           </div>
           <div className="h-12 w-12 grid place-items-center rounded-md bg-white border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             <QrCode className="h-10 w-10 text-slate-800" strokeWidth={1.5} />
