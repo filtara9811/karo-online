@@ -249,7 +249,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
     if (user?.id) {
       const next = (profile?.card_share_count ?? 0) + 1;
       supabase
-        .from("profiles")
+        .from("customers")
         .update({ card_share_count: next })
         .eq("id", user.id)
         .then(() => { refreshProfile?.(); });
