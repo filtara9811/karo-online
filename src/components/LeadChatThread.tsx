@@ -551,7 +551,13 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
                     <p className={`text-[10px] mt-0.5 text-right ${deleted ? "text-slate-400" : mine ? "text-white/75" : "text-slate-400"}`}>
                       {fmtTime(m.created_at)}
                       {m.edited_at && !deleted && <span className="ml-1 opacity-80">(edited)</span>}
-                      {mine && !deleted && <span className="ml-1 font-bold">✓✓</span>}
+                      {mine && !deleted && (() => {
+                        const isSending = String(m.id).startsWith("tmp-");
+                        if (isSending) return <span className="ml-1 opacity-70" title="Sending">🕒</span>;
+                        if (m.read_at) return <span className="ml-1 font-bold text-sky-300" title="Read">✓✓</span>;
+                        if (peerOnline) return <span className="ml-1 font-bold opacity-90" title="Delivered">✓✓</span>;
+                        return <span className="ml-1 font-bold opacity-70" title="Sent">✓</span>;
+                      })()}
                     </p>
                   </div>
                 </motion.div>
