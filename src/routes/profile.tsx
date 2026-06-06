@@ -228,31 +228,36 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   // ---- Direct WhatsApp share for the personal business card ----
   const shareCardDirect = async () => {
     const refCode = profile?.referral_code ?? "";
-    const shareUrl = typeof window !== "undefined"
-      ? (profile?.card_link_url?.trim() || (refCode ? `${window.location.origin}/c/${refCode}` : window.location.origin))
-      : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const cardUrl = profile?.card_link_url?.trim() || (refCode ? `${origin}/c/${refCode}` : origin);
+    const vcardUrl = refCode ? `${origin}/api/public/vcard/${refCode}` : "";
+    const installUrl = `${origin}/download`;
     const name = profile?.name || "";
     const shopName = profile?.shop_name || "";
     const phone = profile?.phone || "";
     const email = realEmail(profile?.email);
+
     const lines: string[] = [];
     if (shopName) lines.push(`*${shopName}*`);
     if (name) lines.push(`👤 ${name}`);
     if (phone) lines.push(`📞 ${phone}`);
     if (email) lines.push(`✉️ ${email}`);
     lines.push("");
-    lines.push(`🔗 ${shareUrl}`);
+    if (vcardUrl) lines.push(`📇 Save my contact: ${vcardUrl}`);
+    lines.push(`🔗 View card: ${cardUrl}`);
+    lines.push(`📲 Get KaroOnline: ${installUrl}`);
     lines.push("");
     lines.push("— My Digital Business Card · KaroOnline");
     const caption = lines.join("\n");
 
-    // Optimistically bump count + animate
+    // Optimistic local bump so the count animates immediately
+    setShareBump((n) => n + 1);
     if (user?.id) {
-      const next = (profile?.card_share_count ?? 0) + 1;
+      const next = (profile?.card_share_count ?? 0) + shareBump + 1;
       supabase
         .from("customers")
         .update({ card_share_count: next })
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .then(() => { refreshProfile?.(); });
     }
 
@@ -264,13 +269,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
         const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
         if (blob) {
-          const file = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
+          const imgFile = new File([blob], `karo-card-${refCode || "card"}.png`, { type: "image/png" });
           const navAny = navigator as Navigator & {
             canShare?: (d: { files?: File[] }) => boolean;
-            share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+            share?: (d: { files?: File[]; text?: string; title?: string; url?: string }) => Promise<void>;
           };
-          if (navAny.canShare?.({ files: [file] }) && navAny.share) {
-            await navAny.share({ files: [file], text: caption, title: shopName || "My Business Card" });
+          if (navAny.canShare?.({ files: [imgFile] }) && navAny.share) {
+            await navAny.share({ files: [imgFile], text: caption, title: shopName || "My Business Card" });
             sharedAsFile = true;
           }
         }
