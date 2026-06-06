@@ -148,6 +148,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
   const { links: socialLinks } = useSocialLinks();
   const { counts: notifCounts } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [shareBump, setShareBump] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
