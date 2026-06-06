@@ -688,7 +688,7 @@ function DashboardCardVisual({
     const showPhone = vis.phone !== false;
     const showEmail = vis.email !== false;
     return (
-      <div className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
+      <div data-card-capture="personal" className="relative h-full w-full rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-br from-[oklch(0.99_0.02_88)] via-white to-[oklch(0.96_0.04_85)] shadow-[0_8px_24px_-8px_rgba(212,175,55,0.55)]">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[oklch(0.84_0.15_85/0.35)] to-transparent" />
         <div className="absolute bottom-0 left-0 w-24 h-14 bg-gradient-to-tr from-[oklch(0.88_0.12_88/0.4)] to-transparent" />
         <div className="relative px-4 pt-3">
