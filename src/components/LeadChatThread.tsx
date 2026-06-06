@@ -565,6 +565,23 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
             })}
           </AnimatePresence>
         )}
+        <AnimatePresence>
+          {peerTyping && (
+            <motion.div
+              key="typing-bubble"
+              initial={{ opacity: 0, y: 6, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              className="flex justify-start"
+            >
+              <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-sm bg-white border border-[color:oklch(0.78_0.14_82/0.30)] shadow-sm flex items-center gap-1">
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0 }} />
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0.15 }} />
+                <motion.span className="h-1.5 w-1.5 rounded-full bg-slate-400" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0.3 }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Quick-reply chips */}
