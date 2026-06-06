@@ -922,11 +922,17 @@ function StatPill({ color, label, value }: { color: "amber" | "sky" | "emerald";
 }
 
 function FooterBand({
-  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap,
-}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void }) {
+  card, avatarUrl: _avatarUrl, onCodeTap, onShareTap, accentColor,
+}: { card: DashCard; avatarUrl?: string | null; onCodeTap?: () => void; onShareTap?: () => void; accentColor?: string | null }) {
   const stop = (e: React.MouseEvent | React.PointerEvent) => { e.stopPropagation(); };
+  const accentStyle = accentColor
+    ? { backgroundImage: `linear-gradient(to right, ${accentColor}, ${accentColor})` }
+    : undefined;
   return (
-    <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-r ${card.accent} px-2 py-1.5 flex items-center justify-between text-white`}>
+    <div
+      className={`absolute bottom-0 inset-x-0 ${accentColor ? "" : `bg-gradient-to-r ${card.accent}`} px-2 py-1.5 flex items-center justify-between text-white`}
+      style={accentStyle}
+    >
       <button
         type="button"
         onClick={(e) => { stop(e); onCodeTap?.(); }}
