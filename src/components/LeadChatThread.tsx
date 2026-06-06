@@ -182,6 +182,59 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [leadId, peer?.id, me, ttsOn]);
 
+  // Presence + typing broadcast channel
+  useEffect(() => {
+    if (!leadId || !me) return;
+    const ch = supabase.channel(`lead-presence-${leadId}`, {
+      config: { presence: { key: me }, broadcast: { self: false } },
+    });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      const others = Object.keys(state).filter((k) => k !== me);
+      setPeerOnline(others.length > 0);
+    })
+      .on("broadcast", { event: "typing" }, () => {
+        setPeerTyping(true);
+        if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+        typingHideTimer.current = setTimeout(() => setPeerTyping(false), 2500);
+      })
+      .on("broadcast", { event: "stop-typing" }, () => {
+        if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+        setPeerTyping(false);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") await ch.track({ at: new Date().toISOString() });
+      });
+    presenceChRef.current = ch;
+    return () => {
+      if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+      supabase.removeChannel(ch);
+      presenceChRef.current = null;
+    };
+  }, [leadId, me]);
+
+  // Mark messages addressed to me as read
+  useEffect(() => {
+    if (!me || messages.length === 0) return;
+    const ids = messages
+      .filter((m) => m.recipient_id === me && !m.read_at && !String(m.id).startsWith("tmp-") && !readMarkedIds.current.has(m.id))
+      .map((m) => m.id);
+    if (ids.length === 0) return;
+    ids.forEach((id) => readMarkedIds.current.add(id));
+    void supabase.from("lead_messages").update({ read_at: new Date().toISOString() }).in("id", ids);
+  }, [me, messages]);
+
+  const broadcastTyping = () => {
+    const now = Date.now();
+    if (now - lastTypingSent.current < 1500) return;
+    lastTypingSent.current = now;
+    presenceChRef.current?.send({ type: "broadcast", event: "typing", payload: { from: me } });
+  };
+  const broadcastStopTyping = () => {
+    lastTypingSent.current = 0;
+    presenceChRef.current?.send({ type: "broadcast", event: "stop-typing", payload: { from: me } });
+  };
+
   const send = async (override?: string) => {
     const body = (override ?? text).trim();
     if (!body || !me || sending) return;
