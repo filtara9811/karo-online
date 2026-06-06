@@ -240,6 +240,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
     if (!body || !me || sending) return;
     setSending(true);
     if (!override) setText("");
+    broadcastStopTyping();
     const optimistic: Msg = {
       id: `tmp-${Date.now()}`, lead_id: leadId, sender_id: me, sender_role: myRole,
       recipient_id: peer?.id ?? null, body, image_url: null, read_at: null,
