@@ -311,17 +311,10 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
       <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
 
 
-      {/* My Account sub-bar (back + title + theme/lang/support) */}
+      {/* My Account sub-bar (title + theme/lang/support + close on right) */}
       <section className="px-4 mt-4">
         <div className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border ${isDark ? "bg-[oklch(0.20_0.03_85)] border-amber-200/20" : "bg-white border-[color:oklch(0.78_0.14_82/0.35)] shadow-[0_4px_14px_-8px_rgba(212,175,55,0.45)]"}`}>
-          <button
-            onClick={() => (onClose ? onClose() : router.history.back())}
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0"
-            aria-label={onClose ? "Close" : "Back"}
-          >
-            {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
-          </button>
-          <h1 className="flex-1 text-center font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide">
+          <h1 className="flex-1 font-display text-base bg-gradient-to-r from-[#d4af37] via-[#f59e0b] to-[#b45309] bg-clip-text text-transparent font-bold tracking-wide pl-1">
             {t("my_account")}
           </h1>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -338,6 +331,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             <TopIconButton onClick={() => setTopSheet("language")} aria-label={t("language")}>
               <Languages className="h-4 w-4 text-[#b45309]" strokeWidth={2.2} />
             </TopIconButton>
+            <button
+              onClick={() => (onClose ? onClose() : router.history.back())}
+              className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm active:scale-90 transition flex-shrink-0 ml-1"
+              aria-label={onClose ? "Close" : "Back"}
+            >
+              {onClose ? <X className="h-4 w-4 text-[#b45309]" /> : <ArrowLeft className="h-4 w-4 text-[#b45309]" />}
+            </button>
           </div>
         </div>
       </section>
