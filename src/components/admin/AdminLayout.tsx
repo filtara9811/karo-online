@@ -43,6 +43,7 @@ const NAV: NavItem[] = [
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
   { to: "/admin/cashfree", label: "Cashfree Services", icon: Zap },
   { to: "/admin/kyc", label: "KYC Verification", icon: ShieldCheck },
+  { to: "/admin/kyc-review", label: "🔍 KYC Submissions", icon: ClipboardList },
   { to: "/admin/sms", label: "SMS Gateways", icon: MessageSquare },
   { to: "/admin/whatsapp", label: "WhatsApp API", icon: MessageCircle },
   { to: "/admin/firebase", label: "Firebase Services", icon: Flame },
