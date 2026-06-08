@@ -195,13 +195,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         .select("check_type, status")
         .eq("subject_user_id", user.id);
       if (cancelled) return;
-      const types = ["aadhaar", "pan", "gst"];
-      const verifiedTypes = new Set(
+      const types = ["selfie", "aadhaar", "pan", "bank"];
+      const completed = new Set(
         ((data ?? []) as Array<{ check_type: string; status: string }>)
-          .filter((r) => ["verified", "approved", "passed"].includes((r.status ?? "").toLowerCase()))
+          .filter((r) => ["verified", "approved", "passed", "submitted"].includes((r.status ?? "").toLowerCase()))
           .map((r) => r.check_type),
       );
-      const filled = types.filter((t) => verifiedTypes.has(t)).length;
+      const filled = types.filter((t) => completed.has(t)).length;
       setKycPct(Math.round((filled / types.length) * 100));
     })();
     return () => { cancelled = true; };
