@@ -1059,7 +1059,7 @@ function RowDetailSheet({
 }: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
   if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
-  if (rowId === "kyc" || rowId === "bank") return <KycSheet onClose={onClose} initialTab={rowId === "bank" ? "bank" : "aadhaar"} />;
+  if (rowId === "kyc" || rowId === "bank") return <KycStepFlow onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
   return (
