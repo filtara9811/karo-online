@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, IdCard, FileText, Building2, CheckCircle2,
-  Upload, Loader2, ChevronRight, ChevronLeft, ShieldCheck, AtSign, User,
+  Upload, Loader2, ChevronRight, ChevronLeft, ShieldCheck, AtSign, User, Store,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { ImageCropper } from "@/components/ImageCropper";
 
 type StepKey = "selfie" | "aadhaar" | "pan" | "bank";
 type StepStatus = "todo" | "submitted" | "verified" | "rejected";
+type SubjectType = "customer" | "vendor";
 
 const STEPS: { key: StepKey; label: string; Icon: typeof Camera }[] = [
   { key: "selfie", label: "Selfie", Icon: Camera },
@@ -18,7 +20,20 @@ const STEPS: { key: StepKey; label: string; Icon: typeof Camera }[] = [
   { key: "bank", label: "Bank", Icon: Building2 },
 ];
 
-export function KycStepFlow({ onClose }: { onClose: () => void }) {
+const VENDOR_LABELS: Record<StepKey, string> = {
+  selfie: "Shop Photo",
+  aadhaar: "Aadhaar",
+  pan: "PAN",
+  bank: "Bank",
+};
+
+export function KycStepFlow({
+  onClose,
+  subjectType = "customer",
+}: {
+  onClose: () => void;
+  subjectType?: SubjectType;
+}) {
   const { user } = useAuth();
   const [statuses, setStatuses] = useState<Record<StepKey, StepStatus>>({
     selfie: "todo", aadhaar: "todo", pan: "todo", bank: "todo",
@@ -29,36 +44,44 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
   const [active, setActive] = useState<StepKey>("selfie");
   const [loading, setLoading] = useState(true);
 
-  // Load existing
   useEffect(() => {
-    if (!user?.id) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("kyc_verifications")
-        .select("*")
-        .eq("subject_user_id", user.id)
-        .in("check_type", ["selfie", "aadhaar", "pan", "bank"]);
-      const st: Record<StepKey, StepStatus> = { selfie: "todo", aadhaar: "todo", pan: "todo", bank: "todo" };
-      const rec: Record<StepKey, any> = { selfie: null, aadhaar: null, pan: null, bank: null };
-      ((data ?? []) as any[]).forEach((r) => {
-        const k = r.check_type as StepKey;
-        if (!STEPS.find((s) => s.key === k)) return;
-        const s = (r.status ?? "").toLowerCase();
-        st[k] = ["verified", "approved", "passed"].includes(s)
-          ? "verified"
-          : s === "rejected"
-          ? "rejected"
-          : "submitted";
-        rec[k] = r;
-      });
-      setStatuses(st);
-      setRecords(rec);
-      // Jump to first incomplete step
-      const next = STEPS.find((s) => st[s.key] === "todo" || st[s.key] === "rejected");
-      if (next) setActive(next.key);
-      setLoading(false);
+      if (!user?.id) {
+        // No user yet — still show the form so users can see structure.
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("kyc_verifications")
+          .select("*")
+          .eq("subject_user_id", user.id)
+          .eq("subject_type", subjectType)
+          .in("check_type", ["selfie", "aadhaar", "pan", "bank"]);
+        const st: Record<StepKey, StepStatus> = { selfie: "todo", aadhaar: "todo", pan: "todo", bank: "todo" };
+        const rec: Record<StepKey, any> = { selfie: null, aadhaar: null, pan: null, bank: null };
+        ((data ?? []) as any[]).forEach((r) => {
+          const k = r.check_type as StepKey;
+          if (!STEPS.find((s) => s.key === k)) return;
+          const s = (r.status ?? "").toLowerCase();
+          st[k] = ["verified", "approved", "passed"].includes(s)
+            ? "verified" : s === "rejected" ? "rejected" : "submitted";
+          rec[k] = r;
+        });
+        if (cancelled) return;
+        setStatuses(st);
+        setRecords(rec);
+        const next = STEPS.find((s) => st[s.key] === "todo" || st[s.key] === "rejected");
+        if (next) setActive(next.key);
+      } catch (e) {
+        console.warn("[kyc] load failed", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [user?.id]);
+    return () => { cancelled = true; };
+  }, [user?.id, subjectType]);
 
   const completedCount = STEPS.filter((s) =>
     statuses[s.key] === "verified" || statuses[s.key] === "submitted",
@@ -70,11 +93,11 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
     key: StepKey,
     payload: { document_number?: string | null; document_urls?: string[]; request_payload?: any },
   ) => {
-    if (!user?.id) throw new Error("Not signed in");
+    if (!user?.id) throw new Error("Please sign in first");
     const existing = records[key];
     const body: any = {
       subject_user_id: user.id,
-      subject_type: "customer",
+      subject_type: subjectType,
       check_type: key,
       method: "manual",
       status: "submitted",
@@ -84,16 +107,11 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
     };
     if (existing?.id) {
       const { error } = await supabase
-        .from("kyc_verifications")
-        .update(body)
-        .eq("id", existing.id);
+        .from("kyc_verifications").update(body).eq("id", existing.id);
       if (error) throw error;
     } else {
       const { data, error } = await supabase
-        .from("kyc_verifications")
-        .insert(body)
-        .select("*")
-        .single();
+        .from("kyc_verifications").insert(body).select("*").single();
       if (error) throw error;
       setRecords((p) => ({ ...p, [key]: data }));
     }
@@ -126,7 +144,9 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-6 w-6 text-amber-600" />
-              <h3 className="font-display text-lg font-bold text-amber-700">KYC Verification</h3>
+              <h3 className="font-display text-lg font-bold text-amber-700">
+                {subjectType === "vendor" ? "Shop KYC" : "KYC Verification"}
+              </h3>
             </div>
             <button
               onClick={onClose} aria-label="Close"
@@ -136,7 +156,6 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          {/* Overall % */}
           <div className="flex items-center gap-2 mt-1">
             <div className="flex-1 h-2 rounded-full bg-amber-100 overflow-hidden">
               <motion.div
@@ -150,37 +169,30 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
             </span>
           </div>
 
-          {/* Stepper */}
           <div className="mt-4 flex items-center justify-between relative">
             <div className="absolute left-5 right-5 top-5 h-[2px] bg-amber-200 -z-0" />
             {STEPS.map((s) => {
               const st = statuses[s.key];
               const done = st === "verified" || st === "submitted";
               const isActive = active === s.key;
+              const label = subjectType === "vendor" ? VENDOR_LABELS[s.key] : s.label;
               return (
-                <button
-                  key={s.key}
-                  onClick={() => setActive(s.key)}
-                  className="relative z-10 flex flex-col items-center gap-1"
-                >
+                <button key={s.key} onClick={() => setActive(s.key)}
+                  className="relative z-10 flex flex-col items-center gap-1">
                   <motion.div
                     animate={{ scale: isActive ? 1.1 : 1 }}
                     className={`h-10 w-10 rounded-full grid place-items-center border-2 transition ${
-                      st === "verified"
-                        ? "bg-emerald-500 border-emerald-600 text-white"
-                        : st === "submitted"
-                        ? "bg-amber-500 border-amber-600 text-white"
-                        : st === "rejected"
-                        ? "bg-rose-500 border-rose-600 text-white"
-                        : isActive
-                        ? "bg-white border-amber-500 text-amber-700 shadow-lg"
-                        : "bg-amber-50 border-amber-200 text-amber-400"
+                      st === "verified" ? "bg-emerald-500 border-emerald-600 text-white"
+                      : st === "submitted" ? "bg-amber-500 border-amber-600 text-white"
+                      : st === "rejected" ? "bg-rose-500 border-rose-600 text-white"
+                      : isActive ? "bg-white border-amber-500 text-amber-700 shadow-lg"
+                      : "bg-amber-50 border-amber-200 text-amber-400"
                     }`}
                   >
                     {done ? <CheckCircle2 className="h-5 w-5" /> : <s.Icon className="h-5 w-5" />}
                   </motion.div>
                   <span className={`text-[10px] font-bold ${isActive ? "text-amber-700" : "text-slate-500"}`}>
-                    {s.label}
+                    {label}
                   </span>
                 </button>
               );
@@ -205,11 +217,12 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
               >
                 {active === "selfie" && (
                   <SelfieStep
+                    subjectType={subjectType}
                     status={statuses.selfie}
                     record={records.selfie}
                     onSubmit={async (payload) => {
                       await upsertStep("selfie", payload);
-                      toast.success("Selfie submitted");
+                      toast.success(subjectType === "vendor" ? "Shop photo saved" : "Selfie saved");
                       goNext();
                     }}
                   />
@@ -217,13 +230,15 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
                 {active === "aadhaar" && (
                   <DocStep
                     title="Aadhaar Card"
-                    description="Aadhaar number daalein aur Front + Back image upload karein."
+                    description="Aadhaar number daalein, fir card ki saaf photo upload karein. Photo upload ke baad usse crop karke center mein laayein."
                     numberLabel="Aadhaar Number"
                     placeholder="XXXX XXXX XXXX"
                     maxLength={14}
+                    minLen={12}
                     needs={["front", "back"]}
                     status={statuses.aadhaar}
                     record={records.aadhaar}
+                    checkType="aadhaar"
                     onSubmit={async (payload) => {
                       await upsertStep("aadhaar", payload);
                       toast.success("Aadhaar submitted");
@@ -234,14 +249,16 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
                 {active === "pan" && (
                   <DocStep
                     title="PAN Card"
-                    description="PAN number daalein aur PAN card ki photo upload karein."
+                    description="PAN number daalein aur PAN card ki photo upload karein. Photo ko crop karke saaf center mein rakhein."
                     numberLabel="PAN Number"
                     placeholder="ABCDE1234F"
                     maxLength={10}
+                    minLen={10}
                     needs={["front"]}
                     upperCase
                     status={statuses.pan}
                     record={records.pan}
+                    checkType="pan"
                     onSubmit={async (payload) => {
                       await upsertStep("pan", payload);
                       toast.success("PAN submitted");
@@ -267,7 +284,6 @@ export function KycStepFlow({ onClose }: { onClose: () => void }) {
             </AnimatePresence>
           )}
 
-          {/* Nav */}
           {!loading && (
             <div className="flex items-center justify-between mt-5 gap-2">
               <button
@@ -322,32 +338,53 @@ function InstructionBox({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ---------------- Step: Selfie ---------------- */
+/* ---------------- Step: Selfie / Shop photo ---------------- */
 function SelfieStep({
-  status, record, onSubmit,
-}: { status: StepStatus; record: any; onSubmit: (p: { document_urls: string[]; request_payload: any }) => Promise<void> }) {
+  subjectType, status, record, onSubmit,
+}: {
+  subjectType: SubjectType;
+  status: StepStatus; record: any;
+  onSubmit: (p: { document_urls: string[]; request_payload: any }) => Promise<void>;
+}) {
   const { user } = useAuth();
-  const [first, setFirst] = useState((record?.request_payload?.first_name as string) ?? "");
-  const [last, setLast] = useState((record?.request_payload?.last_name as string) ?? "");
-  const [file, setFile] = useState<File | null>(null);
+  const isVendor = subjectType === "vendor";
+  const rp = record?.request_payload ?? {};
+  const [first, setFirst] = useState((rp.first_name as string) ?? "");
+  const [last, setLast] = useState((rp.last_name as string) ?? "");
+  const [shopName, setShopName] = useState((rp.shop_name as string) ?? "");
+  const [ceo, setCeo] = useState((rp.ceo_name as string) ?? "");
+  const [rawFile, setRawFile] = useState<File | null>(null);
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onPick = (f: File | null) => {
-    setFile(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
+    if (!f) return;
+    setRawFile(f);
+    setShowCropper(true);
   };
 
   const submit = async () => {
-    if (!first.trim() || !last.trim()) return toast.error("Name required");
-    if (!file && !record?.document_urls?.length) return toast.error("Selfie required");
-    if (!user?.id) return;
+    if (isVendor) {
+      if (!shopName.trim()) return toast.error("Shop name required");
+      if (!ceo.trim()) return toast.error("CEO / Owner name required");
+    } else {
+      if (!first.trim() || !last.trim()) return toast.error("Name required");
+    }
+    if (!croppedFile && !record?.document_urls?.length) return toast.error("Photo required");
+    if (!user?.id) return toast.error("Please sign in first");
     setBusy(true);
     try {
       let urls: string[] = record?.document_urls ?? [];
-      if (file) urls = [await uploadFile(user.id, "selfie", file)];
-      await onSubmit({ document_urls: urls, request_payload: { first_name: first, last_name: last } });
+      if (croppedFile) urls = [await uploadFile(user.id, "selfie", croppedFile)];
+      await onSubmit({
+        document_urls: urls,
+        request_payload: isVendor
+          ? { shop_name: shopName, ceo_name: ceo }
+          : { first_name: first, last_name: last },
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
     } finally { setBusy(false); }
@@ -356,44 +393,61 @@ function SelfieStep({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h4 className="font-display text-lg font-bold text-slate-800">Step 1 · Selfie</h4>
+        <h4 className="font-display text-lg font-bold text-slate-800">
+          Step 1 · {isVendor ? "Shop Photo" : "Selfie"}
+        </h4>
         <StatusPill status={status} />
       </div>
       <InstructionBox>
-        Ek clear selfie lijiye — chehra frame ke center mein, achchi roshni mein. Glasses / mask na pehnein.
+        {isVendor
+          ? "Apni dukan ke front ki ek clear photo lijiye — board / sign visible ho. Photo lene ke baad use crop karke center mein laayein."
+          : "Ek clear selfie lijiye — chehra frame ke center mein, achchi roshni mein. Glasses / mask na pehnein."}
       </InstructionBox>
 
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <input
-          value={first} onChange={(e) => setFirst(e.target.value)}
-          placeholder="First name"
-          className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm"
-        />
-        <input
-          value={last} onChange={(e) => setLast(e.target.value)}
-          placeholder="Last name"
-          className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm"
-        />
-      </div>
+      {isVendor ? (
+        <div className="space-y-2 mb-3">
+          <div className="relative">
+            <Store className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+            <input value={shopName} onChange={(e) => setShopName(e.target.value)}
+              placeholder="Shop / Business name"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm" />
+          </div>
+          <div className="relative">
+            <User className="absolute left-3 top-3.5 h-5 w-5 text-amber-500" />
+            <input value={ceo} onChange={(e) => setCeo(e.target.value)}
+              placeholder="CEO / Owner full name"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm" />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name"
+            className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm" />
+          <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name"
+            className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200 outline-none focus:border-amber-500 text-sm" />
+        </div>
+      )}
 
       <div
         onClick={() => inputRef.current?.click()}
         className="relative rounded-3xl border-2 border-dashed border-amber-300 bg-amber-50/40 aspect-[3/4] grid place-items-center overflow-hidden cursor-pointer active:bg-amber-100/50"
       >
         {preview ? (
-          <img src={preview} alt="selfie" className="w-full h-full object-cover" />
+          <img src={preview} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-amber-700">
-            {/* Face outline guide */}
+          <div className="flex flex-col items-center gap-2 text-amber-700 px-6 text-center">
             <div className="h-40 w-32 rounded-[50%] border-4 border-dashed border-emerald-400/70 grid place-items-center">
-              <Camera className="h-10 w-10 opacity-60" />
+              {isVendor ? <Store className="h-10 w-10 opacity-60" /> : <Camera className="h-10 w-10 opacity-60" />}
             </div>
-            <p className="text-sm font-bold">Tap to open camera</p>
-            <p className="text-[11px] text-slate-500">Face inside the oval, look straight</p>
+            <p className="text-sm font-bold">Tap to {isVendor ? "upload shop photo" : "open camera"}</p>
+            <p className="text-[11px] text-slate-500">
+              {isVendor ? "Choose from gallery, then crop to center" : "Camera ya gallery, then crop to center"}
+            </p>
           </div>
         )}
         <input
-          ref={inputRef} type="file" accept="image/*" capture="user"
+          ref={inputRef} type="file" accept="image/*"
+          {...(isVendor ? {} : { capture: "user" as any })}
           className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)}
         />
       </div>
@@ -405,50 +459,64 @@ function SelfieStep({
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
         {busy ? "Saving…" : "Save & Continue"}
       </button>
+
+      <AnimatePresence>
+        {showCropper && rawFile && (
+          <ImageCropper
+            file={rawFile}
+            aspect={isVendor ? 4 / 3 : 1}
+            shape={isVendor ? "square" : "circle"}
+            onCancel={() => { setRawFile(null); setShowCropper(false); }}
+            onCropped={(f) => {
+              setCroppedFile(f);
+              setPreview(URL.createObjectURL(f));
+              setShowCropper(false);
+              setRawFile(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* ---------------- Step: Aadhaar / PAN ---------------- */
 function DocStep({
-  title, description, numberLabel, placeholder, maxLength,
-  needs, upperCase, status, record, onSubmit,
+  title, description, numberLabel, placeholder, maxLength, minLen,
+  needs, upperCase, status, record, checkType, onSubmit,
 }: {
   title: string; description: string; numberLabel: string; placeholder: string;
-  maxLength: number; needs: ("front" | "back")[]; upperCase?: boolean;
-  status: StepStatus; record: any;
+  maxLength: number; minLen: number; needs: ("front" | "back")[]; upperCase?: boolean;
+  status: StepStatus; record: any; checkType: StepKey;
   onSubmit: (p: { document_number: string; document_urls: string[]; request_payload: any }) => Promise<void>;
 }) {
   const { user } = useAuth();
   const [num, setNum] = useState((record?.document_number as string) ?? "");
   const [files, setFiles] = useState<Record<"front" | "back", File | null>>({ front: null, back: null });
-  const [previews, setPreviews] = useState<Record<"front" | "back", string | null>>({
-    front: record?.document_urls?.[0] ? null : null,
-    back: record?.document_urls?.[1] ? null : null,
-  });
+  const [previews, setPreviews] = useState<Record<"front" | "back", string | null>>({ front: null, back: null });
+  const [cropping, setCropping] = useState<{ side: "front" | "back"; file: File } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const pick = (side: "front" | "back", f: File | null) => {
-    setFiles((p) => ({ ...p, [side]: f }));
-    setPreviews((p) => ({ ...p, [side]: f ? URL.createObjectURL(f) : null }));
+  const beginPick = (side: "front" | "back", f: File | null) => {
+    if (!f) return;
+    setCropping({ side, file: f });
   };
 
   const submit = async () => {
-    if (!num.trim() || num.replace(/\s/g, "").length < Math.min(maxLength - 4, 8))
-      return toast.error("Valid number required");
+    const clean = num.replace(/\s/g, "");
+    if (!clean || clean.length < minLen) return toast.error(`Valid ${numberLabel} required`);
     if (needs.some((side) => !files[side] && !(record?.document_urls?.length)))
       return toast.error("Upload required images");
-    if (!user?.id) return;
+    if (!user?.id) return toast.error("Please sign in first");
     setBusy(true);
     try {
-      const ck = title.toLowerCase().includes("pan") ? "pan" : "aadhaar";
       const urls: string[] = [];
       for (const side of needs) {
-        if (files[side]) urls.push(await uploadFile(user.id, ck as StepKey, files[side]!));
+        if (files[side]) urls.push(await uploadFile(user.id, checkType, files[side]!));
       }
       const finalUrls = urls.length ? urls : (record?.document_urls ?? []);
       await onSubmit({
-        document_number: num.trim(),
+        document_number: clean,
         document_urls: finalUrls,
         request_payload: { sides: needs },
       });
@@ -480,8 +548,9 @@ function DocStep({
         {needs.map((side) => (
           <UploadTile
             key={side} label={side === "front" ? "Front Side" : "Back Side"}
-            preview={previews[side]} hasExisting={!!record?.document_urls?.length && !files[side]}
-            onPick={(f) => pick(side, f)}
+            preview={previews[side]}
+            hasExisting={!!record?.document_urls?.length && !files[side]}
+            onPick={(f) => beginPick(side, f)}
           />
         ))}
       </div>
@@ -493,6 +562,22 @@ function DocStep({
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
         {busy ? "Saving…" : "Save & Continue"}
       </button>
+
+      <AnimatePresence>
+        {cropping && (
+          <ImageCropper
+            file={cropping.file}
+            aspect={1.6}
+            shape="square"
+            onCancel={() => setCropping(null)}
+            onCropped={(f) => {
+              setFiles((p) => ({ ...p, [cropping.side]: f }));
+              setPreviews((p) => ({ ...p, [cropping.side]: URL.createObjectURL(f) }));
+              setCropping(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
