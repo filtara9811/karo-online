@@ -38,6 +38,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { useNotifications } from "@/hooks/use-notifications";
 import { OtpModal } from "@/components/OtpModal";
 import { Lock } from "lucide-react";
+import { KycStepFlow } from "@/components/KycStepFlow";
 
 /**
  * Strip auto-generated synthetic auth emails (e.g. `phone-9876543210@auth.karoonline.local`)
