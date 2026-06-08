@@ -38,6 +38,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { useNotifications } from "@/hooks/use-notifications";
 import { OtpModal } from "@/components/OtpModal";
 import { Lock } from "lucide-react";
+import { KycStepFlow } from "@/components/KycStepFlow";
 
 /**
  * Strip auto-generated synthetic auth emails (e.g. `phone-9876543210@auth.karoonline.local`)
@@ -194,13 +195,13 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         .select("check_type, status")
         .eq("subject_user_id", user.id);
       if (cancelled) return;
-      const types = ["aadhaar", "pan", "gst"];
-      const verifiedTypes = new Set(
+      const types = ["selfie", "aadhaar", "pan", "bank"];
+      const completed = new Set(
         ((data ?? []) as Array<{ check_type: string; status: string }>)
-          .filter((r) => ["verified", "approved", "passed"].includes((r.status ?? "").toLowerCase()))
+          .filter((r) => ["verified", "approved", "passed", "submitted"].includes((r.status ?? "").toLowerCase()))
           .map((r) => r.check_type),
       );
-      const filled = types.filter((t) => verifiedTypes.has(t)).length;
+      const filled = types.filter((t) => completed.has(t)).length;
       setKycPct(Math.round((filled / types.length) * 100));
     })();
     return () => { cancelled = true; };
@@ -1059,7 +1060,7 @@ function RowDetailSheet({
 }: { rowId: string; userId?: string; profile: CustomerProfile | null; refreshProfile: () => Promise<void>; onClose: () => void }) {
   const { t } = useAppPrefs();
   if (rowId === "profile") return <ProfileDetailsSheet userId={userId} profile={profile} refreshProfile={refreshProfile} onClose={onClose} />;
-  if (rowId === "kyc" || rowId === "bank") return <KycSheet onClose={onClose} initialTab={rowId === "bank" ? "bank" : "aadhaar"} />;
+  if (rowId === "kyc" || rowId === "bank") return <KycStepFlow onClose={onClose} />;
 
   const row = ROWS.find((r) => r.id === rowId);
   return (
