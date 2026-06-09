@@ -32,7 +32,8 @@ type CmsTable =
   | "web_faqs"
   | "web_forms"
   | "web_blog_posts"
-  | "web_media_assets";
+  | "web_media_assets"
+  | "web_virtual_devices";
 
 export function CmsListEditor({
   table,
