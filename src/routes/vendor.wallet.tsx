@@ -565,7 +565,7 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
         />
       </label>
       <button onClick={pay} disabled={busy || !amount} className="mt-4 w-full py-3 rounded-xl text-[#1a1208] font-bold text-sm disabled:opacity-50" style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37, #8b6508)" }}>
-        {busy ? "Opening Cashfree…" : amount ? `Pay ₹${amount} with Cashfree` : "Select / Enter Amount"}
+        {busy ? "Opening Razorpay…" : amount ? `Pay ₹${amount} with Razorpay` : "Select / Enter Amount"}
       </button>
     </Sheet>
   );
