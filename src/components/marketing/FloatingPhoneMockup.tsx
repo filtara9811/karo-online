@@ -297,40 +297,25 @@ export function FloatingPhoneMockup() {
               className="absolute inset-0 h-full w-full border-0"
               allow="geolocation; clipboard-write; camera; microphone"
             />
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1 rounded-full bg-black/85 backdrop-blur border border-white/10">
-              <button
-                onClick={() => persistView("app")}
-                className={`px-2.5 py-0.5 text-[10px] rounded-full font-medium transition ${
-                  view === "app" ? "text-[#1a1208]" : "text-white/70 hover:text-white"
-                }`}
-                style={view === "app" ? { background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" } : undefined}
-              >
-                App
-              </button>
-              <button
-                onClick={() => persistView("quick")}
-                className={`px-2.5 py-0.5 text-[10px] rounded-full font-medium transition ${
-                  view === "quick" ? "text-[#1a1208]" : "text-white/70 hover:text-white"
-                }`}
-                style={view === "quick" ? { background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" } : undefined}
-              >
-                Quick
-              </button>
-              <button
-                onClick={() => persistView("home")}
-                className={`px-2.5 py-0.5 text-[10px] rounded-full font-medium transition ${
-                  view === "home" ? "text-[#1a1208]" : "text-white/70 hover:text-white"
-                }`}
-                style={view === "home" ? { background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" } : undefined}
-              >
-                Home
-              </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 p-1 rounded-full bg-black/85 backdrop-blur border border-white/10 max-w-[90%] overflow-x-auto">
+              {(["app", "quick", "home", "vendor", "admin"] as const).map((id) => (
+                <button
+                  key={id}
+                  onClick={() => persistView(id)}
+                  className={`px-2 py-0.5 text-[9px] rounded-full font-medium transition shrink-0 ${
+                    view === id ? "text-[#1a1208]" : "text-white/70 hover:text-white"
+                  }`}
+                  style={view === id ? { background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" } : undefined}
+                >
+                  {id === "app" ? "App" : id === "quick" ? "Quick" : id === "home" ? "Home" : id === "vendor" ? "Vendor" : "Admin"}
+                </button>
+              ))}
               <button
                 onClick={() => {
                   const f = frameRef.current?.querySelector("iframe");
                   if (f) (f as HTMLIFrameElement).src = (f as HTMLIFrameElement).src;
                 }}
-                className="ml-0.5 h-5 w-5 rounded-full grid place-items-center text-white/70 hover:text-white"
+                className="ml-0.5 h-5 w-5 rounded-full grid place-items-center text-white/70 hover:text-white shrink-0"
                 title="Reload"
               >
                 <RotateCcw className="h-3 w-3" />
