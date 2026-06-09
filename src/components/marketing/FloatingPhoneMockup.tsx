@@ -93,8 +93,20 @@ export function FloatingPhoneMockup() {
     } catch {}
 
     const onResize = () => setPos((p) => clampPos(p.x, p.y));
+    const onOpen = () => {
+      try {
+        localStorage.setItem(STORAGE_HIDDEN, "0");
+        localStorage.setItem(STORAGE_MIN, "0");
+      } catch {}
+      setHidden(false);
+      setMinimized(false);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("ko-open-phone", onOpen as EventListener);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("ko-open-phone", onOpen as EventListener);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
