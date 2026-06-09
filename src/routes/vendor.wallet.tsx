@@ -489,8 +489,8 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
   const [custom, setCustom] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const createOrder = useServerFn(createCashfreeOrder);
-  const verify = useServerFn(verifyCashfreeOrder);
+  const createOrder = useServerFn(createPaymentOrder);
+  const verify = useServerFn(verifyPayment);
   const amount = selected ?? Number(custom || 0);
 
   const pay = async () => {
@@ -505,13 +505,29 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
     }
     setBusy(true);
     try {
-      const r = await createOrder({ data: { amount_inr: amount, purpose: "vendor_wallet_recharge" } });
+      const r = await createOrder({ data: { amount_inr: amount, purpose: "wallet_recharge" } });
       if (!r.ok) {
         toast.error(r.error);
         return;
       }
-      await openCashfreeCheckout(r.payment_session_id, r.mode);
-      const v = await verify({ data: { order_id: r.order_id, purpose: "vendor_wallet_recharge" } });
+      const resp = await openRazorpayCheckout({
+        key_id: r.key_id,
+        order_id: r.order_id,
+        amount: r.amount,
+        currency: r.currency,
+        name: "Karo Online — Wallet Recharge",
+        description: `Service wallet recharge ₹${amount}${r.is_test_mode ? " (TEST)" : ""}`,
+        prefill: { email: auth.user.email ?? undefined },
+      });
+      const v = await verify({
+        data: {
+          razorpay_order_id: resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature: resp.razorpay_signature,
+          amount_inr: amount,
+          purpose: "wallet_recharge",
+        },
+      });
       if (v.ok) {
         toast.success("Wallet recharged");
         await onPaid();
@@ -525,6 +541,7 @@ function RechargeSheet({ packs, onClose, onPaid }: { packs: WalletPack[]; onClos
       setBusy(false);
     }
   };
+
 
   return (
     <Sheet title="Recharge Service Wallet" onClose={onClose}>
