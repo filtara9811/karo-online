@@ -159,6 +159,8 @@ export function FloatingPhoneMockup() {
   const iframeSrc =
     view === "app" ? "/register?web=1&embed=1"
       : view === "quick" ? "/quick?web=1&embed=1"
+      : view === "vendor" ? "/vendor/dashboard?web=1&embed=1"
+      : view === "admin" ? "/admin?web=1&embed=1"
       : "/home?web=1&embed=1";
 
   if (hidden) {
