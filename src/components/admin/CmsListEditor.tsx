@@ -63,7 +63,7 @@ export function CmsListEditor({
 
   const load = async () => {
     setLoading(true);
-    let q = (supabase.from as (t: string) => ReturnType<typeof supabase.from>)(table).select("*").order(orderBy, { ascending: orderAsc });
+    let q = supabase.from(table as never).select("*").order(orderBy, { ascending: orderAsc });
     if (filter) q = q.eq(filter.column, filter.value);
     const { data, error } = await q;
     if (error) toast.error(error.message);
