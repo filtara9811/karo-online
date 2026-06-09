@@ -155,58 +155,89 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
       <FloatingPhoneMockup />
 
 
-      {/* Footer */}
-      <footer className="mt-24 border-t border-white/5 bg-black/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-4">
+      {/* Footer — Filipra-inspired layout */}
+      <footer className="mt-24 border-t border-white/5" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #1a0612 100%)" }}>
+        {/* Top contact strip */}
+        <div className="border-b border-white/5" style={{ background: "rgba(120,20,60,0.35)" }}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm">
+            <a href="mailto:Ashu@filipra.com" className="inline-flex items-center gap-2 text-white/85 hover:text-[#f5d97a]">
+              <span className="text-[#f5d97a]">✉</span> Ashu@filipra.com
+            </a>
+            <a href="https://wa.me/919599202558" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-white/85 hover:text-[#f5d97a]">
+              <span className="text-[#f5d97a]">⌬</span> WhatsApp +91 95992 02558
+            </a>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-3">
+          {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-3 mb-4">
               <span
-                className="h-8 w-8 rounded-lg grid place-items-center font-bold text-[#1a1208]"
+                className="h-10 w-10 rounded-xl grid place-items-center font-bold text-[#1a1208]"
                 style={{ background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" }}
               >
                 K
               </span>
-              <span className="font-display text-lg">
-                <span className="ko-gold-text">Karo</span>Online
-              </span>
+              <div>
+                <div className="font-display text-xl ko-gold-text leading-none">KaroOnline</div>
+                <div className="text-[10px] uppercase tracking-[0.22em] text-white/55 mt-1">
+                  Powered by Filipra Private Limited
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-white/55 leading-relaxed">
-              India's premium hyperlocal marketplace — trusted vendors, instant service, secure payments.
+            <p className="text-sm text-white/60 leading-relaxed">
+              India's premium hyperlocal marketplace — trusted vendors, instant service, secure payments. Built with the quiet craftsmanship of a heritage house.
             </p>
           </div>
 
+          {/* Navigate */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Product</h4>
-            <ul className="space-y-2 text-sm text-white/60">
+            <h4 className="text-xs font-bold tracking-[0.22em] text-[#f5d97a] uppercase mb-4">Navigate</h4>
+            <ul className="space-y-2.5 text-sm text-white/75">
+              <li><Link to="/" className="hover:text-[#f5d97a]">Home</Link></li>
+              <li><Link to="/about" className="hover:text-[#f5d97a]">About Us</Link></li>
               <li><Link to="/features" className="hover:text-[#f5d97a]">Features</Link></li>
-              <li><Link to="/for-customers" className="hover:text-[#f5d97a]">For Customers</Link></li>
               <li><Link to="/for-vendors" className="hover:text-[#f5d97a]">For Vendors</Link></li>
+              <li><Link to="/for-customers" className="hover:text-[#f5d97a]">For Customers</Link></li>
               <li><Link to="/pricing" className="hover:text-[#f5d97a]">Pricing</Link></li>
-              <li><Link to="/download" className="hover:text-[#f5d97a]">Download App</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Company</h4>
-            <ul className="space-y-2 text-sm text-white/60">
-              <li><Link to="/about" className="hover:text-[#f5d97a]">About</Link></li>
               <li><Link to="/contact" className="hover:text-[#f5d97a]">Contact</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Legal</h4>
-            <ul className="space-y-2 text-sm text-white/60">
               <li><Link to="/privacy-policy" className="hover:text-[#f5d97a]">Privacy Policy</Link></li>
-              <li><Link to="/terms-and-conditions" className="hover:text-[#f5d97a]">Terms & Conditions</Link></li>
+              <li><Link to="/terms-and-conditions" className="hover:text-[#f5d97a]">Terms &amp; Conditions</Link></li>
               <li><Link to="/refund-policy" className="hover:text-[#f5d97a]">Refund Policy</Link></li>
               <li><Link to="/shipping-policy" className="hover:text-[#f5d97a]">Shipping Policy</Link></li>
             </ul>
           </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="text-xs font-bold tracking-[0.22em] text-[#f5d97a] uppercase mb-4">Contact</h4>
+            <ul className="space-y-3 text-sm text-white/80">
+              <li className="flex gap-3">
+                <span className="text-[#f5d97a] mt-0.5">📍</span>
+                <span>4988, First Floor, Gali Maliyan Chowk,<br />Ahata Kidara, Sadar Bazar, Delhi, India</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#f5d97a]">✉</span>
+                <a href="mailto:Ashu@filipra.com" className="hover:text-[#f5d97a]">Ashu@filipra.com</a>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#f5d97a]">⌬</span>
+                <a href="https://wa.me/919599202558" target="_blank" rel="noreferrer" className="hover:text-[#f5d97a]">
+                  WhatsApp +91 95992 02558
+                </a>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#f5d97a]">🌐</span>
+                <a href="https://filipra.com" target="_blank" rel="noreferrer" className="hover:text-[#f5d97a]">filipra.com</a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div className="border-t border-white/5">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/45">
-            <span>© {new Date().getFullYear()} KaroOnline. All rights reserved.</span>
+
+        <div className="border-t border-white/10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/55">
+            <span>© {new Date().getFullYear()} KaroOnline · Powered by Filipra Private Limited. All rights reserved.</span>
             <span>Made with ♥ in India</span>
           </div>
         </div>
