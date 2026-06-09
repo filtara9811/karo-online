@@ -4,7 +4,7 @@ import {
   ZoomIn, ZoomOut, Maximize2,
 } from "lucide-react";
 
-type View = "app" | "quick" | "home";
+type View = "app" | "quick" | "home" | "vendor" | "admin";
 
 const STORAGE_POS = "ko-floating-phone-pos";
 const STORAGE_HIDDEN = "ko-floating-phone-hidden";
