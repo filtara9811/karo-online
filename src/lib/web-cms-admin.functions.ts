@@ -22,6 +22,7 @@ const TableEnum = z.enum([
   "web_forms",
   "web_blog_posts",
   "web_media_assets",
+  "web_virtual_devices",
 ]);
 type WebTable = z.infer<typeof TableEnum>;
 
