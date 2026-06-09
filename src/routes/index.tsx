@@ -66,7 +66,12 @@ function LandingPage() {
     let entered = false;
     try { entered = window.localStorage.getItem("ko-entered-app") === "true"; } catch {}
 
-    if (isStandalone || isCapacitor || isWebView || entered) {
+    // Only auto-redirect when running as an installed app or on a real mobile device.
+    // On desktop browsers, always show the marketing landing page (with the floating phone frame),
+    // even if the user previously tapped "Open Mobile App".
+    const isMobileViewport = window.matchMedia?.("(max-width: 1023px)").matches;
+
+    if (isStandalone || isCapacitor || isWebView || (entered && isMobileViewport)) {
       enterApp();
       navigate({ to: "/quick", replace: true });
       return;
