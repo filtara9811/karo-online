@@ -45,9 +45,12 @@ async function getActiveGateway(purpose: "wallet_recharge" | "coin_purchase") {
     .in("purpose", [purpose, "both"])
     .order("priority", { ascending: true });
   if (error) throw new Error(error.message);
-  // Prefer Razorpay (per user) then fallback Cashfree
-  const rz = data?.find((g) => g.provider === "razorpay");
-  return rz ?? data?.[0] ?? null;
+  // Split by purpose so admin can test each gateway independently:
+  //  - wallet_recharge → prefer Razorpay
+  //  - coin_purchase (LeadX) → prefer Cashfree
+  const preferred = purpose === "wallet_recharge" ? "razorpay" : "cashfree";
+  const pick = data?.find((g) => g.provider === preferred);
+  return pick ?? data?.[0] ?? null;
 }
 
 export const createPaymentOrder = createServerFn({ method: "POST" })
