@@ -67,7 +67,7 @@ export function FloatingPhoneMockup() {
       setHidden(localStorage.getItem(STORAGE_HIDDEN) === "1");
       setMinimized(localStorage.getItem(STORAGE_MIN) === "1");
       const v = localStorage.getItem(STORAGE_VIEW) as View | null;
-      if (v === "app" || v === "quick" || v === "home") setView(v);
+      if (v === "app" || v === "quick" || v === "home" || v === "vendor" || v === "admin") setView(v);
       const z = parseFloat(localStorage.getItem(STORAGE_ZOOM) || "1");
       const initZ = isFinite(z) ? Math.max(ZOOM_MIN, Math.min(z, ZOOM_MAX)) : 1;
       setZoom(initZ);
