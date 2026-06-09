@@ -29,9 +29,11 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   const goToApp = () => {
-    enterApp();
-    navigate({ to: "/quick" });
+    // Open the floating phone frame instead of navigating away from the website.
+    try { window.dispatchEvent(new Event("ko-open-phone")); } catch {}
   };
+  // navigate is intentionally unused now (kept import for future use)
+  void navigate;
 
   return (
     <div className="ko-marketing min-h-screen text-white" style={{ background: "#0a0a0a" }}>
