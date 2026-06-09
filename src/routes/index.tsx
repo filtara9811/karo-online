@@ -87,8 +87,8 @@ function LandingPage() {
   }
 
   const handleOpenApp = () => {
-    enterApp();
-    navigate({ to: "/quick" });
+    // Open the in-page floating phone preview instead of leaving the website.
+    try { window.dispatchEvent(new Event("ko-open-phone")); } catch {}
   };
 
   return (
