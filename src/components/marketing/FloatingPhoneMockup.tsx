@@ -1,329 +1,294 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  X, Minus, Smartphone, RotateCcw, GripHorizontal, ExternalLink,
-  ZoomIn, ZoomOut, Maximize2,
+  X, Minus, Smartphone, GripHorizontal, ExternalLink,
+  ZoomIn, ZoomOut, Maximize2, Plus, RotateCcw,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-type View = "app" | "quick" | "home" | "vendor" | "admin";
+type Device = { id: string; label: string; src: string; icon?: string };
 
-const STORAGE_POS = "ko-floating-phone-pos";
-const STORAGE_HIDDEN = "ko-floating-phone-hidden";
-const STORAGE_MIN = "ko-floating-phone-min";
-const STORAGE_VIEW = "ko-floating-phone-view";
-const STORAGE_ZOOM = "ko-floating-phone-zoom";
+const DEFAULT_DEVICES: Device[] = [
+  { id: "app", label: "App", src: "/register?web=1&embed=1", icon: "📱" },
+  { id: "quick", label: "Quick", src: "/quick?web=1&embed=1", icon: "⚡" },
+  { id: "home", label: "Home", src: "/home?web=1&embed=1", icon: "🏠" },
+  { id: "vendor", label: "Vendor", src: "/vendor/dashboard?web=1&embed=1", icon: "🏪" },
+  { id: "admin", label: "Admin", src: "/admin?web=1&embed=1", icon: "👑" },
+];
 
-// Base intrinsic device size. Final on-screen size = base * scale.
 const FRAME_W = 300;
 const FRAME_H = 620;
-
 const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.1;
 
-function viewportSize() {
-  if (typeof window === "undefined") return { w: 1024, h: 768 };
-  return { w: window.innerWidth, h: window.innerHeight };
-}
+const LS_VISIBLE = "ko-devices-visible-v2";
+const LS_STATE = (id: string) => `ko-device-state-v2-${id}`;
 
-// Fit-to-viewport scale so frame never overflows.
+function vw() { return typeof window === "undefined" ? 1024 : window.innerWidth; }
+function vh() { return typeof window === "undefined" ? 768 : window.innerHeight; }
 function fitScale() {
-  const { w, h } = viewportSize();
-  const maxW = Math.min(w * 0.92, 380);
-  const maxH = h * 0.86;
+  const maxW = Math.min(vw() * 0.92, 380);
+  const maxH = vh() * 0.86;
   return Math.min(maxW / FRAME_W, maxH / FRAME_H, 1.4);
 }
 
-export function FloatingPhoneMockup() {
-  const [mounted, setMounted] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [minimized, setMinimized] = useState(false);
-  const [view, setView] = useState<View>("app");
-  const [zoom, setZoom] = useState<number>(1);
-  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const dragRef = useRef<{ dx: number; dy: number; active: boolean }>({ dx: 0, dy: 0, active: false });
-  const frameRef = useRef<HTMLDivElement | null>(null);
-  const posRef = useRef(pos);
-  posRef.current = pos;
+type FrameState = { x: number; y: number; zoom: number; minimized: boolean };
 
-  // currentScale = user zoom * fitScale baseline, clamped
-  function currentScale(z = zoom) {
-    const base = fitScale();
-    return Math.max(0.3, Math.min(z * base, ZOOM_MAX));
+function PhoneFrame({
+  device, indexOffset, onClose,
+}: { device: Device; indexOffset: number; onClose: () => void }) {
+  const [state, setState] = useState<FrameState>(() => {
+    if (typeof window === "undefined") return { x: 24, y: 80, zoom: 1, minimized: false };
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_STATE(device.id)) || "null");
+      if (saved && typeof saved.x === "number") return saved;
+    } catch {}
+    const s = fitScale();
+    const baseX = vw() >= 1024
+      ? vw() - FRAME_W * s - 24 - indexOffset * 40
+      : Math.max(8, (vw() - FRAME_W * s) / 2);
+    const baseY = Math.max(16, (vh() - FRAME_H * s) / 2) + indexOffset * 30;
+    return { x: baseX, y: baseY, zoom: 1, minimized: false };
+  });
+  const stateRef = useRef(state); stateRef.current = state;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const drag = useRef<{ dx: number; dy: number; active: boolean }>({ dx: 0, dy: 0, active: false });
+
+  const scale = Math.max(0.3, Math.min(state.zoom * fitScale(), ZOOM_MAX));
+
+  function clamp(x: number, y: number, isMin = state.minimized) {
+    const W = isMin ? 64 : FRAME_W * scale;
+    const H = isMin ? 64 : FRAME_H * scale;
+    return {
+      x: Math.min(Math.max(8, x), Math.max(8, vw() - W - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, vh() - H - 8)),
+    };
   }
 
-  function clampPos(x: number, y: number, z = zoom, isMin = minimized) {
-    const { w, h } = viewportSize();
-    const s = currentScale(z);
-    const W = isMin ? 64 : FRAME_W * s;
-    const H = isMin ? 64 : FRAME_H * s;
-    const maxX = Math.max(8, w - W - 8);
-    const maxY = Math.max(8, h - H - 8);
-    return { x: Math.min(Math.max(8, x), maxX), y: Math.min(Math.max(8, y), maxY) };
+  function persist(next: Partial<FrameState>) {
+    setState((s) => {
+      const merged = { ...s, ...next };
+      const c = clamp(merged.x, merged.y, merged.minimized);
+      const out = { ...merged, x: c.x, y: c.y };
+      try { localStorage.setItem(LS_STATE(device.id), JSON.stringify(out)); } catch {}
+      return out;
+    });
   }
 
   useEffect(() => {
-    setMounted(true);
-    try {
-      setHidden(localStorage.getItem(STORAGE_HIDDEN) === "1");
-      setMinimized(localStorage.getItem(STORAGE_MIN) === "1");
-      const v = localStorage.getItem(STORAGE_VIEW) as View | null;
-      if (v === "app" || v === "quick" || v === "home" || v === "vendor" || v === "admin") setView(v);
-      const z = parseFloat(localStorage.getItem(STORAGE_ZOOM) || "1");
-      const initZ = isFinite(z) ? Math.max(ZOOM_MIN, Math.min(z, ZOOM_MAX)) : 1;
-      setZoom(initZ);
-
-      const saved = localStorage.getItem(STORAGE_POS);
-      const { w, h } = viewportSize();
-      const s = Math.max(0.3, Math.min(initZ * fitScale(), ZOOM_MAX));
-      if (saved) {
-        const p = JSON.parse(saved);
-        setPos(clampPos(p.x, p.y, initZ));
-      } else {
-        // default: right side on desktop, centered on small screens
-        if (w >= 1024) {
-          const x = w - FRAME_W * s - 24;
-          const y = Math.max(16, (h - FRAME_H * s) / 2);
-          setPos(clampPos(x, y, initZ));
-        } else {
-          const x = (w - FRAME_W * s) / 2;
-          const y = 72;
-          setPos(clampPos(x, y, initZ));
-        }
-      }
-    } catch {}
-
-    const onResize = () => setPos((p) => clampPos(p.x, p.y));
-    const onOpen = () => {
-      try {
-        localStorage.setItem(STORAGE_HIDDEN, "0");
-        localStorage.setItem(STORAGE_MIN, "0");
-      } catch {}
-      setHidden(false);
-      setMinimized(false);
-    };
+    const onResize = () => persist({});
     window.addEventListener("resize", onResize);
-    window.addEventListener("ko-open-phone", onOpen as EventListener);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("ko-open-phone", onOpen as EventListener);
-    };
+    return () => window.removeEventListener("resize", onResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-clamp when zoom/minimized changes
-  useEffect(() => {
-    setPos((p) => clampPos(p.x, p.y));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom, minimized]);
-
   function onPointerDown(e: React.PointerEvent) {
-    if (!frameRef.current) return;
+    if (!ref.current) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
-    const rect = frameRef.current.getBoundingClientRect();
-    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, active: true };
+    const r = ref.current.getBoundingClientRect();
+    drag.current = { dx: e.clientX - r.left, dy: e.clientY - r.top, active: true };
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    setPos(clampPos(e.clientX - dragRef.current.dx, e.clientY - dragRef.current.dy));
+    if (!drag.current.active) return;
+    const c = clamp(e.clientX - drag.current.dx, e.clientY - drag.current.dy);
+    setState((s) => ({ ...s, x: c.x, y: c.y }));
   }
   function onPointerUp(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    dragRef.current.active = false;
-    try { localStorage.setItem(STORAGE_POS, JSON.stringify(posRef.current)); } catch {}
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    persist({});
     (e.target as Element).releasePointerCapture?.(e.pointerId);
   }
 
-  function persistHidden(v: boolean) {
-    setHidden(v);
-    try { localStorage.setItem(STORAGE_HIDDEN, v ? "1" : "0"); } catch {}
-  }
-  function persistMin(v: boolean) {
-    setMinimized(v);
-    try { localStorage.setItem(STORAGE_MIN, v ? "1" : "0"); } catch {}
-  }
-  function persistView(v: View) {
-    setView(v);
-    try { localStorage.setItem(STORAGE_VIEW, v); } catch {}
-  }
-  function persistZoom(z: number) {
-    const c = Math.max(ZOOM_MIN, Math.min(z, ZOOM_MAX));
-    setZoom(c);
-    try { localStorage.setItem(STORAGE_ZOOM, String(c)); } catch {}
-  }
+  const isInternal = device.src.startsWith("/");
+  const openHref = isInternal ? device.src.split("?")[0] : device.src;
 
-  if (!mounted) return null;
-
-  const scale = currentScale();
-  // Inside-frame UI scale: keep iframe content readable when zoomed out
-  // by counter-scaling slightly; cap so it doesn't get too tiny.
-  const iframeSrc =
-    view === "app" ? "/register?web=1&embed=1"
-      : view === "quick" ? "/quick?web=1&embed=1"
-      : view === "vendor" ? "/vendor/dashboard?web=1&embed=1"
-      : view === "admin" ? "/admin?web=1&embed=1"
-      : "/home?web=1&embed=1";
-
-  if (hidden) {
-    return (
-      <button
-        onClick={() => persistHidden(false)}
-        className="fixed bottom-6 right-6 z-[90] h-12 w-12 rounded-full grid place-items-center text-[#1a1208] shadow-lg hover:scale-105 transition"
-        style={{ background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" }}
-        title="Open phone preview"
-      >
-        <Smartphone className="h-5 w-5" />
-      </button>
-    );
-  }
-
-  if (minimized) {
+  if (state.minimized) {
     return (
       <div
-        ref={frameRef}
+        ref={ref}
         className="fixed z-[90] h-16 w-16 rounded-2xl grid place-items-center text-[#1a1208] shadow-xl cursor-grab active:cursor-grabbing"
         style={{
-          left: pos.x, top: pos.y,
+          left: state.x, top: state.y,
           background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onDoubleClick={() => persistMin(false)}
-        title="Drag — double-click to expand"
+        onDoubleClick={() => persist({ minimized: false })}
+        title={`${device.label} — drag / double-click to expand`}
       >
-        <Smartphone className="h-6 w-6" />
+        {device.icon ? <span className="text-lg">{device.icon}</span> : <Smartphone className="h-6 w-6" />}
       </div>
     );
   }
 
   return (
     <div
-      ref={frameRef}
+      ref={ref}
       className="fixed z-[90] select-none"
-      style={{
-        left: pos.x,
-        top: pos.y,
-        width: FRAME_W * scale,
-        height: FRAME_H * scale,
-      }}
+      style={{ left: state.x, top: state.y, width: FRAME_W * scale, height: FRAME_H * scale }}
     >
-      <div
-        style={{
-          width: FRAME_W,
-          height: FRAME_H,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          position: "relative",
-        }}
-      >
-        {/* Phone bezel */}
+      <div style={{ width: FRAME_W, height: FRAME_H, transform: `scale(${scale})`, transformOrigin: "top left", position: "relative" }}>
         <div
           className="relative h-full w-full rounded-[40px] p-2.5 shadow-2xl"
           style={{
             background: "linear-gradient(160deg,#1a1a1a,#0a0a0a)",
             border: "2px solid #2a2a2a",
-            boxShadow:
-              "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,175,55,0.18)",
+            boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,175,55,0.18)",
           }}
         >
-          {/* Drag handle */}
           <div
             className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-1 rounded-full bg-[#1a1a1a]/95 border border-[#d4af37]/30 cursor-grab active:cursor-grabbing"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            title="Drag to move"
           >
             <GripHorizontal className="h-3.5 w-3.5 text-[#d4af37]" />
-            <span className="text-[10px] uppercase tracking-widest text-white/60">
-              Karo Online
-            </span>
+            <span className="text-[10px] uppercase tracking-widest text-white/70">{device.label}</span>
           </div>
 
-          {/* Top-right controls */}
           <div className="absolute -top-2 right-2 z-20 flex items-center gap-1">
-            <button
-              onClick={() => persistZoom(zoom - ZOOM_STEP)}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-[#d4af37]/60"
-              title="Zoom out"
-            >
+            <button onClick={() => persist({ zoom: Math.max(ZOOM_MIN, state.zoom - ZOOM_STEP) })}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/60" title="Zoom out">
               <ZoomOut className="h-3 w-3" />
             </button>
-            <button
-              onClick={() => persistZoom(zoom + ZOOM_STEP)}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-[#d4af37]/60"
-              title="Zoom in"
-            >
+            <button onClick={() => persist({ zoom: Math.min(ZOOM_MAX, state.zoom + ZOOM_STEP) })}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/60" title="Zoom in">
               <ZoomIn className="h-3 w-3" />
             </button>
-            <button
-              onClick={() => persistZoom(1)}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-[#d4af37]/60"
-              title="Reset zoom"
-            >
+            <button onClick={() => persist({ zoom: 1 })}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/60" title="Reset zoom">
               <Maximize2 className="h-3 w-3" />
             </button>
-            <a
-              href={view === "app" ? "/register" : view === "quick" ? "/quick" : "/home"}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-[#d4af37]/60"
-              title="Open full screen"
-              onClick={() => { try { localStorage.setItem("ko-entered-app", "true"); } catch {} }}
-            >
+            <button onClick={() => { const f = ref.current?.querySelector("iframe") as HTMLIFrameElement | null; if (f) f.src = f.src; }}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/60" title="Reload">
+              <RotateCcw className="h-3 w-3" />
+            </button>
+            <a href={openHref} target={isInternal ? "_self" : "_blank"} rel="noreferrer"
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/60" title="Open full">
               <ExternalLink className="h-3 w-3" />
             </a>
-            <button
-              onClick={() => persistMin(true)}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-[#d4af37]/50"
-              title="Minimize"
-            >
+            <button onClick={() => persist({ minimized: true })}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-[#d4af37]/50" title="Minimize">
               <Minus className="h-3 w-3" />
             </button>
-            <button
-              onClick={() => persistHidden(true)}
-              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:text-white hover:border-red-400/60"
-              title="Close"
-            >
+            <button onClick={onClose}
+              className="h-6 w-6 rounded-full grid place-items-center bg-[#1a1a1a] border border-white/15 text-white/80 hover:border-red-400/60" title="Close">
               <X className="h-3 w-3" />
             </button>
           </div>
 
-          {/* Screen */}
           <div className="relative h-full w-full rounded-[32px] overflow-hidden bg-white">
             <div className="absolute top-1.5 left-1/2 -translate-x-1/2 z-20 h-4 w-20 rounded-full bg-black/90" />
             <iframe
-              key={view}
-              src={iframeSrc}
-              title="Karo Online preview"
+              src={device.src}
+              title={`${device.label} preview`}
               className="absolute inset-0 h-full w-full border-0"
               allow="geolocation; clipboard-write; camera; microphone"
             />
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 p-1 rounded-full bg-black/85 backdrop-blur border border-white/10 max-w-[90%] overflow-x-auto">
-              {(["app", "quick", "home", "vendor", "admin"] as const).map((id) => (
-                <button
-                  key={id}
-                  onClick={() => persistView(id)}
-                  className={`px-2 py-0.5 text-[9px] rounded-full font-medium transition shrink-0 ${
-                    view === id ? "text-[#1a1208]" : "text-white/70 hover:text-white"
-                  }`}
-                  style={view === id ? { background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" } : undefined}
-                >
-                  {id === "app" ? "App" : id === "quick" ? "Quick" : id === "home" ? "Home" : id === "vendor" ? "Vendor" : "Admin"}
-                </button>
-              ))}
-              <button
-                onClick={() => {
-                  const f = frameRef.current?.querySelector("iframe");
-                  if (f) (f as HTMLIFrameElement).src = (f as HTMLIFrameElement).src;
-                }}
-                className="ml-0.5 h-5 w-5 rounded-full grid place-items-center text-white/70 hover:text-white shrink-0"
-                title="Reload"
-              >
-                <RotateCcw className="h-3 w-3" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export function FloatingPhoneMockup() {
+  const [mounted, setMounted] = useState(false);
+  const [extras, setExtras] = useState<Device[]>([]);
+  const [visible, setVisible] = useState<Record<string, boolean>>({});
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const v = JSON.parse(localStorage.getItem(LS_VISIBLE) || "null");
+      if (v && typeof v === "object") setVisible(v);
+      else setVisible({ app: true });
+    } catch { setVisible({ app: true }); }
+
+    // Fetch admin-defined extras
+    (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (k: string, v: unknown) => { order: (c: string) => Promise<{ data: Array<{ id: string; label: string; url: string; icon: string | null }> | null }> } } } })
+      .from("web_virtual_devices")
+      .select("id,label,url,icon")
+      .eq("is_active", true)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (!data) return;
+        setExtras(data.map((d) => ({ id: `db-${d.id}`, label: d.label, src: d.url, icon: d.icon ?? undefined })));
+      });
+
+    const onOpen = () => {
+      setVisible((v) => {
+        const next = { ...v, app: true };
+        try { localStorage.setItem(LS_VISIBLE, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    };
+    window.addEventListener("ko-open-phone", onOpen);
+    return () => window.removeEventListener("ko-open-phone", onOpen);
+  }, []);
+
+  const allDevices = useMemo(() => [...DEFAULT_DEVICES, ...extras], [extras]);
+
+  function toggle(id: string) {
+    setVisible((v) => {
+      const next = { ...v, [id]: !v[id] };
+      try { localStorage.setItem(LS_VISIBLE, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  if (!mounted) return null;
+
+  const activeDevices = allDevices.filter((d) => visible[d.id]);
+
+  return (
+    <>
+      {activeDevices.map((d, i) => (
+        <PhoneFrame key={d.id} device={d} indexOffset={i} onClose={() => toggle(d.id)} />
+      ))}
+
+      {/* Launcher FAB */}
+      <div className="fixed bottom-6 right-6 z-[95] flex flex-col items-end gap-2">
+        {menuOpen && (
+          <div className="w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#d4af37]/30 bg-[#0a0a0a]/95 backdrop-blur p-2 shadow-2xl">
+            <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-[#d4af37]/80">Virtual Devices</div>
+            {allDevices.map((d) => {
+              const on = !!visible[d.id];
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => toggle(d.id)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left"
+                >
+                  <span className="h-7 w-7 rounded-lg grid place-items-center bg-white/5 text-sm">
+                    {d.icon || "📱"}
+                  </span>
+                  <span className="flex-1 text-sm text-white/90 truncate">{d.label}</span>
+                  <span className={`h-5 w-9 rounded-full relative transition ${on ? "bg-[#d4af37]" : "bg-white/15"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${on ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                </button>
+              );
+            })}
+            {extras.length === 0 && (
+              <div className="px-3 py-2 text-[10px] text-white/40">
+                Admin can add more devices in /admin/web/devices
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          onClick={() => setMenuOpen((o) => !o)}
+          className="h-12 w-12 rounded-full grid place-items-center text-[#1a1208] shadow-2xl hover:scale-105 transition"
+          style={{ background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" }}
+          title="Add / hide virtual devices"
+        >
+          {menuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+        </button>
+      </div>
+    </>
   );
 }
