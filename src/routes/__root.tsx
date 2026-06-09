@@ -114,9 +114,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   useEffect(() => {
-    // Canonical hostname: keep installed PWA on a single origin so Chrome
-    // never shows the "in-app browser" bar when navigating between
-    // www.karoonline.in and karoonline.in.
     try {
       const h = window.location.hostname;
       if (h === "www.karoonline.in") {
@@ -125,9 +122,15 @@ function RootComponent() {
         window.location.replace(url.toString());
         return;
       }
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
+    // Shrink base font when rendered inside the floating phone mockup iframe
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("embed") === "1") {
+        document.documentElement.classList.add("ko-embed");
+        document.documentElement.style.fontSize = "13px";
+      }
+    } catch { /* noop */ }
     registerPwaServiceWorker();
   }, []);
   return (
