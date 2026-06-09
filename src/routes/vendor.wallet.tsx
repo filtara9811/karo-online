@@ -26,6 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
 import { openCashfreeCheckout, getPaymentError } from "@/lib/cashfree-client";
+import { createPaymentOrder, verifyPayment } from "@/lib/payments.functions";
+import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { toast } from "sonner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 
