@@ -63,15 +63,10 @@ function LandingPage() {
     const isCapacitor = !!(window as any).Capacitor;
     const isWebView = /wv|KaroOnlineApp/i.test(navigator.userAgent);
 
-    let entered = false;
-    try { entered = window.localStorage.getItem("ko-entered-app") === "true"; } catch {}
-
-    // Only auto-redirect when running as an installed app or on a real mobile device.
-    // On desktop browsers, always show the marketing landing page (with the floating phone frame),
-    // even if the user previously tapped "Open Mobile App".
-    const isMobileViewport = window.matchMedia?.("(max-width: 1023px)").matches;
-
-    if (isStandalone || isCapacitor || isWebView || (entered && isMobileViewport)) {
+    // Only auto-redirect when running as an installed app (PWA / Capacitor / WebView).
+    // In ALL browsers (mobile + desktop), show the marketing site with the floating
+    // phone frame so the website sits behind and the app preview sits in front.
+    if (isStandalone || isCapacitor || isWebView) {
       enterApp();
       navigate({ to: "/quick", replace: true });
       return;
