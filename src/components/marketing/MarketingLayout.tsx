@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Menu, X, Download, ArrowRight } from "lucide-react";
+import { FloatingPhoneMockup } from "@/components/marketing/FloatingPhoneMockup";
 
 const NAV = [
   { to: "/", label: "Home" },
