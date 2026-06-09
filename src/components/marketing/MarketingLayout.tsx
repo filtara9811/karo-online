@@ -150,6 +150,9 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
 
       <main>{children}</main>
 
+      <FloatingPhoneMockup />
+
+
       {/* Footer */}
       <footer className="mt-24 border-t border-white/5 bg-black/60">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-4">
