@@ -46,7 +46,7 @@ export const cmsUpsert = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const row = { ...data.row, updated_by: context.userId };
     const { data: out, error } = await supabaseAdmin
-      .from(data.table)
+      .from(data.table as never)
       .upsert(row as never)
       .select()
       .single();
