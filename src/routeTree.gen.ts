@@ -91,6 +91,7 @@ import { Route as AdminWebMediaRouteImport } from './routes/admin.web.media'
 import { Route as AdminWebHeroRouteImport } from './routes/admin.web.hero'
 import { Route as AdminWebFormsRouteImport } from './routes/admin.web.forms'
 import { Route as AdminWebFaqsRouteImport } from './routes/admin.web.faqs'
+import { Route as AdminWebDevicesRouteImport } from './routes/admin.web.devices'
 import { Route as AdminWebBlogRouteImport } from './routes/admin.web.blog'
 import { Route as AdminWebApkRouteImport } from './routes/admin.web.apk'
 import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
@@ -506,6 +507,11 @@ const AdminWebFaqsRoute = AdminWebFaqsRouteImport.update({
   path: '/web/faqs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminWebDevicesRoute = AdminWebDevicesRouteImport.update({
+  id: '/web/devices',
+  path: '/web/devices',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminWebBlogRoute = AdminWebBlogRouteImport.update({
   id: '/web/blog',
   path: '/web/blog',
@@ -601,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/devices': typeof AdminWebDevicesRoute
   '/admin/web/faqs': typeof AdminWebFaqsRoute
   '/admin/web/forms': typeof AdminWebFormsRoute
   '/admin/web/hero': typeof AdminWebHeroRoute
@@ -688,6 +695,7 @@ export interface FileRoutesByTo {
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/devices': typeof AdminWebDevicesRoute
   '/admin/web/faqs': typeof AdminWebFaqsRoute
   '/admin/web/forms': typeof AdminWebFormsRoute
   '/admin/web/hero': typeof AdminWebHeroRoute
@@ -777,6 +785,7 @@ export interface FileRoutesById {
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
+  '/admin/web/devices': typeof AdminWebDevicesRoute
   '/admin/web/faqs': typeof AdminWebFaqsRoute
   '/admin/web/forms': typeof AdminWebFormsRoute
   '/admin/web/hero': typeof AdminWebHeroRoute
@@ -867,6 +876,7 @@ export interface FileRouteTypes {
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
+    | '/admin/web/devices'
     | '/admin/web/faqs'
     | '/admin/web/forms'
     | '/admin/web/hero'
@@ -954,6 +964,7 @@ export interface FileRouteTypes {
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
+    | '/admin/web/devices'
     | '/admin/web/faqs'
     | '/admin/web/forms'
     | '/admin/web/hero'
@@ -1042,6 +1053,7 @@ export interface FileRouteTypes {
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
+    | '/admin/web/devices'
     | '/admin/web/faqs'
     | '/admin/web/forms'
     | '/admin/web/hero'
@@ -1680,6 +1692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWebFaqsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/web/devices': {
+      id: '/admin/web/devices'
+      path: '/web/devices'
+      fullPath: '/admin/web/devices'
+      preLoaderRoute: typeof AdminWebDevicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/web/blog': {
       id: '/admin/web/blog'
       path: '/web/blog'
@@ -1744,6 +1763,7 @@ interface AdminRouteChildren {
   AdminViewUserIdRoute: typeof AdminViewUserIdRoute
   AdminWebApkRoute: typeof AdminWebApkRoute
   AdminWebBlogRoute: typeof AdminWebBlogRoute
+  AdminWebDevicesRoute: typeof AdminWebDevicesRoute
   AdminWebFaqsRoute: typeof AdminWebFaqsRoute
   AdminWebFormsRoute: typeof AdminWebFormsRoute
   AdminWebHeroRoute: typeof AdminWebHeroRoute
@@ -1789,6 +1809,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminViewUserIdRoute: AdminViewUserIdRoute,
   AdminWebApkRoute: AdminWebApkRoute,
   AdminWebBlogRoute: AdminWebBlogRoute,
+  AdminWebDevicesRoute: AdminWebDevicesRoute,
   AdminWebFaqsRoute: AdminWebFaqsRoute,
   AdminWebFormsRoute: AdminWebFormsRoute,
   AdminWebHeroRoute: AdminWebHeroRoute,

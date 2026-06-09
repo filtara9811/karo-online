@@ -22,6 +22,7 @@ const TableEnum = z.enum([
   "web_forms",
   "web_blog_posts",
   "web_media_assets",
+  "web_virtual_devices",
 ]);
 type WebTable = z.infer<typeof TableEnum>;
 
@@ -45,7 +46,7 @@ export const cmsUpsert = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const row = { ...data.row, updated_by: context.userId };
     const { data: out, error } = await supabaseAdmin
-      .from(data.table)
+      .from(data.table as never)
       .upsert(row as never)
       .select()
       .single();
@@ -60,7 +61,7 @@ export const cmsDelete = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from(data.table).delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from(data.table as never).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

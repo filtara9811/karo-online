@@ -32,7 +32,8 @@ type CmsTable =
   | "web_faqs"
   | "web_forms"
   | "web_blog_posts"
-  | "web_media_assets";
+  | "web_media_assets"
+  | "web_virtual_devices";
 
 export function CmsListEditor({
   table,
@@ -62,7 +63,7 @@ export function CmsListEditor({
 
   const load = async () => {
     setLoading(true);
-    let q = supabase.from(table).select("*").order(orderBy, { ascending: orderAsc });
+    let q = supabase.from(table as never).select("*").order(orderBy, { ascending: orderAsc });
     if (filter) q = q.eq(filter.column, filter.value);
     const { data, error } = await q;
     if (error) toast.error(error.message);

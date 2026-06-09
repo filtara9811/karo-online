@@ -25,6 +25,7 @@ const TILES = [
   { to: "/admin/web/forms", label: "Custom Forms", icon: ClipboardList, desc: "Lead capture & submissions" },
   { to: "/admin/web/blog", label: "Blog", icon: BookOpen, desc: "SEO articles, rich content" },
   { to: "/admin/web/media", label: "Media Library", icon: MessageSquare, desc: "Browse uploaded assets" },
+  { to: "/admin/web/devices", label: "Virtual Devices", icon: Smartphone, desc: "Floating phone mockups shown on site" },
 ];
 
 function WebHub() {
