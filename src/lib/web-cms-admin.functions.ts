@@ -61,7 +61,7 @@ export const cmsDelete = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from(data.table).delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from(data.table as never).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
