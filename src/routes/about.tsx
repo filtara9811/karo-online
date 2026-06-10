@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Heart, Target, Sparkles } from "lucide-react";
+import { Heart, Target, Sparkles, Building2, Mail, Globe, MapPin } from "lucide-react";
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Section, SectionHeader, FeatureCard } from "@/components/marketing/sections";
 
@@ -33,6 +33,44 @@ function AboutPage() {
           <FeatureCard icon={<Target className="h-5 w-5" />} title="Our Mission" desc="Every Indian neighbourhood deserves access to verified, fairly-priced, premium-quality local services." />
           <FeatureCard icon={<Heart className="h-5 w-5" />} title="Our Values" desc="Trust, transparency, and respect for both customers and the vendors who serve them." />
           <FeatureCard icon={<Sparkles className="h-5 w-5" />} title="Our Promise" desc="Premium experience at hyperlocal scale — from booking to delivery, every detail matters." />
+        </div>
+      </Section>
+
+      {/* COMPANY INFO — PUBLIC */}
+      <Section>
+        <div className="ko-glass rounded-3xl p-8 md:p-12">
+          <div className="text-xs uppercase tracking-[0.22em] text-[#f5d97a] mb-3">Company Information</div>
+          <h3 className="font-display text-3xl text-white mb-6">Filipra Private Limited</h3>
+          <div className="grid gap-4 sm:grid-cols-2 text-white/80">
+            <div className="flex items-start gap-3">
+              <Building2 className="h-5 w-5 text-[#d4af37] mt-0.5 shrink-0" />
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/50">Service</div>
+                <div>Hyperlocal Lead Generation Marketplace</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Globe className="h-5 w-5 text-[#d4af37] mt-0.5 shrink-0" />
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/50">Website</div>
+                <a href="https://karoonline.in" className="text-[#f5d97a] hover:underline">karoonline.in</a>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Mail className="h-5 w-5 text-[#d4af37] mt-0.5 shrink-0" />
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/50">Email</div>
+                <a href="mailto:Ashu@filipra.com" className="text-[#f5d97a] hover:underline">Ashu@filipra.com</a>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-[#d4af37] mt-0.5 shrink-0" />
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/50">Address</div>
+                <div>4988, First Floor, Gali Maliyan Chowk, Ahata Kidara, Sadar Bazar, Delhi</div>
+              </div>
+            </div>
+          </div>
         </div>
       </Section>
 
