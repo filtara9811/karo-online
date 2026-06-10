@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   X, Minus, Smartphone, GripHorizontal, ExternalLink,
   ZoomIn, ZoomOut, Maximize2, Plus, RotateCcw,
@@ -6,6 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 type Device = { id: string; label: string; src: string; icon?: string };
+type DbDevice = { id: string; label: string; url: string; icon: string | null };
 
 const DEFAULT_DEVICES: Device[] = [
   { id: "app", label: "App", src: "/register?web=1&embed=1", icon: "📱" },
@@ -23,6 +24,26 @@ const ZOOM_STEP = 0.1;
 
 const LS_VISIBLE = "ko-devices-visible-v2";
 const LS_STATE = (id: string) => `ko-device-state-v2-${id}`;
+
+function withEmbedParams(src: string) {
+  const clean = src.trim() || "/";
+  if (typeof window === "undefined") return clean;
+  try {
+    const url = new URL(clean, window.location.origin);
+    const internalHost =
+      url.origin === window.location.origin ||
+      url.hostname === "karoonline.in" ||
+      url.hostname === "www.karoonline.in";
+    if (clean.startsWith("/") || internalHost) {
+      url.searchParams.set("web", "1");
+      url.searchParams.set("embed", "1");
+      return clean.startsWith("/") || url.origin === window.location.origin
+        ? `${url.pathname}${url.search}${url.hash}`
+        : url.toString();
+    }
+  } catch {}
+  return clean;
+}
 
 function vw() { return typeof window === "undefined" ? 1024 : window.innerWidth; }
 function vh() { return typeof window === "undefined" ? 768 : window.innerHeight; }
