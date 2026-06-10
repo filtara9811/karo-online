@@ -21,7 +21,7 @@ export const Route = createFileRoute("/admin/web/devices")({
           { key: "sort_order", label: "Sort order", type: "number" },
           { key: "is_active", label: "Enabled (show button on website)", type: "bool" },
         ]}
-        defaults={{ is_active: true, sort_order: 100 }}
+        defaults={{ label: "New Device", url: "https://", is_active: true, sort_order: 100 }}
       />
     </AdminLayout>
   ),
