@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Heart, Target, Sparkles } from "lucide-react";
+import { Heart, Target, Sparkles, Building2, Mail, Globe, MapPin } from "lucide-react";
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Section, SectionHeader, FeatureCard } from "@/components/marketing/sections";
 
