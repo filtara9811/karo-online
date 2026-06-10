@@ -221,6 +221,42 @@ export function FloatingPhoneMockup() {
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const loadDevices = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as unknown as {
+        from: (t: string) => {
+          select: (s: string) => {
+            eq: (k: string, v: unknown) => {
+              order: (c: string) => Promise<{ data: DbDevice[] | null; error: Error | null }>;
+            };
+          };
+        };
+      })
+        .from("web_virtual_devices")
+        .select("id,label,url,icon")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) throw error;
+      const next = (data ?? []).map((d) => ({
+        id: `db-${d.id}`,
+        label: d.label,
+        src: withEmbedParams(d.url),
+        icon: d.icon ?? undefined,
+      }));
+      setExtras(next);
+      setVisible((current) => {
+        const allowed = new Set([...DEFAULT_DEVICES.map((d) => d.id), ...next.map((d) => d.id)]);
+        const cleaned = Object.fromEntries(
+          Object.entries(current).filter(([id]) => allowed.has(id)),
+        ) as Record<string, boolean>;
+        try { localStorage.setItem(LS_VISIBLE, JSON.stringify(cleaned)); } catch {}
+        return cleaned;
+      });
+    } catch {
+      setExtras([]);
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     try {
@@ -229,16 +265,11 @@ export function FloatingPhoneMockup() {
       else setVisible({ app: true });
     } catch { setVisible({ app: true }); }
 
-    // Fetch admin-defined extras
-    (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (k: string, v: unknown) => { order: (c: string) => Promise<{ data: Array<{ id: string; label: string; url: string; icon: string | null }> | null }> } } } })
-      .from("web_virtual_devices")
-      .select("id,label,url,icon")
-      .eq("is_active", true)
-      .order("sort_order")
-      .then(({ data }) => {
-        if (!data) return;
-        setExtras(data.map((d) => ({ id: `db-${d.id}`, label: d.label, src: d.url, icon: d.icon ?? undefined })));
-      });
+    loadDevices();
+    const channel = supabase
+      .channel("ko-web-virtual-devices")
+      .on("postgres_changes", { event: "*", schema: "public", table: "web_virtual_devices" }, loadDevices)
+      .subscribe();
 
     const onOpen = () => {
       setVisible((v) => {
@@ -248,8 +279,11 @@ export function FloatingPhoneMockup() {
       });
     };
     window.addEventListener("ko-open-phone", onOpen);
-    return () => window.removeEventListener("ko-open-phone", onOpen);
-  }, []);
+    return () => {
+      window.removeEventListener("ko-open-phone", onOpen);
+      supabase.removeChannel(channel);
+    };
+  }, [loadDevices]);
 
   const allDevices = useMemo(() => [...DEFAULT_DEVICES, ...extras], [extras]);
 
