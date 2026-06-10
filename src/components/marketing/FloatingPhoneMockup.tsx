@@ -217,7 +217,7 @@ function PhoneFrame({
 
 export function FloatingPhoneMockup() {
   const [mounted, setMounted] = useState(false);
-  const [extras, setExtras] = useState<Device[]>([]);
+  const [devices, setDevices] = useState<Device[]>(DEFAULT_DEVICES);
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -243,17 +243,18 @@ export function FloatingPhoneMockup() {
         src: withEmbedParams(d.url),
         icon: d.icon ?? undefined,
       }));
-      setExtras(next);
+      setDevices(next);
       setVisible((current) => {
-        const allowed = new Set([...DEFAULT_DEVICES.map((d) => d.id), ...next.map((d) => d.id)]);
+        const allowed = new Set(next.map((d) => d.id));
         const cleaned = Object.fromEntries(
           Object.entries(current).filter(([id]) => allowed.has(id)),
         ) as Record<string, boolean>;
+        if (!Object.values(cleaned).some(Boolean) && next[0]) cleaned[next[0].id] = true;
         try { localStorage.setItem(LS_VISIBLE, JSON.stringify(cleaned)); } catch {}
         return cleaned;
       });
     } catch {
-      setExtras([]);
+      setDevices(DEFAULT_DEVICES);
     }
   }, []);
 
@@ -285,7 +286,7 @@ export function FloatingPhoneMockup() {
     };
   }, [loadDevices]);
 
-  const allDevices = useMemo(() => [...DEFAULT_DEVICES, ...extras], [extras]);
+  const allDevices = useMemo(() => devices, [devices]);
 
   function toggle(id: string) {
     setVisible((v) => {
@@ -328,9 +329,9 @@ export function FloatingPhoneMockup() {
                 </button>
               );
             })}
-            {extras.length === 0 && (
+            {allDevices.length === 0 && (
               <div className="px-3 py-2 text-[10px] text-white/40">
-                Admin can add more devices in /admin/web/devices
+                No enabled devices. Enable one from Admin → Special Web → Virtual Devices.
               </div>
             )}
           </div>
