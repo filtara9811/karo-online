@@ -1,14 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 // ============ PUBLIC READS (anon-safe via supabaseAdmin scoped by is_active) ============
+
+async function cmsClient() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
 
 export const getMarketingPage = createServerFn({ method: "GET" })
   .inputValidator((d: { slug: string }) =>
     z.object({ slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await cmsClient();
     const slug = data.slug;
     const [pageR, heroR, blocksR, faqsR, offerR] = await Promise.all([
       supabaseAdmin.from("web_pages").select("*").eq("slug", slug).eq("is_active", true).maybeSingle(),
@@ -33,6 +38,7 @@ export const getMarketingPage = createServerFn({ method: "GET" })
   });
 
 export const getPricingPlans = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await cmsClient();
   const { data } = await supabaseAdmin
     .from("web_pricing_plans")
     .select("*")
@@ -42,6 +48,7 @@ export const getPricingPlans = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const getApkReleases = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await cmsClient();
   const { data } = await supabaseAdmin
     .from("web_apk_releases")
     .select("*")
@@ -51,6 +58,7 @@ export const getApkReleases = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const listBlogPosts = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await cmsClient();
   const { data } = await supabaseAdmin
     .from("web_blog_posts")
     .select("id, slug, title, excerpt, cover_image_url, cover_image_alt, tags, author_name, published_at, reading_minutes")
@@ -64,6 +72,7 @@ export const getBlogPost = createServerFn({ method: "GET" })
     z.object({ slug: z.string().min(1).max(120).regex(/^[a-z0-9-]+$/) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await cmsClient();
     const { data: post } = await supabaseAdmin
       .from("web_blog_posts")
       .select("*")
@@ -74,6 +83,7 @@ export const getBlogPost = createServerFn({ method: "GET" })
   });
 
 export const getTestimonials = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await cmsClient();
   const { data } = await supabaseAdmin
     .from("web_testimonials")
     .select("*")
@@ -83,6 +93,7 @@ export const getTestimonials = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const getBrandLogos = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await cmsClient();
   const { data } = await supabaseAdmin
     .from("web_brand_logos")
     .select("*")
@@ -96,6 +107,7 @@ export const getFormBySlug = createServerFn({ method: "GET" })
     z.object({ slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await cmsClient();
     const { data: form } = await supabaseAdmin
       .from("web_forms")
       .select("id, slug, name, description, fields, submit_label, success_message, redirect_url, seo_title, seo_description")
@@ -119,6 +131,7 @@ export const submitWebForm = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await cmsClient();
     if (data.honeypot && data.honeypot.length > 0) return { ok: true }; // bot
     const { data: form } = await supabaseAdmin
       .from("web_forms")
