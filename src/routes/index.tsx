@@ -198,6 +198,21 @@ function LandingPage() {
           </Link>
         </div>
       </Section>
+
+      {/* PUBLIC COMPANY STRIP */}
+      <Section className="!py-10">
+        <div className="ko-glass rounded-3xl p-6 md:p-8 text-center space-y-3">
+          <p className="font-display text-xl md:text-2xl text-white">
+            Powered by <span className="ko-gold-text">Filipra Private Limited</span> — India's Hyperlocal Service Marketplace
+          </p>
+          <p className="text-white/70 text-sm md:text-base max-w-3xl mx-auto">
+            <span className="text-[#f5d97a] font-semibold">Our Services:</span> Lead Generation for Plumbers, Electricians, Carpenters, Painters and other local service providers.
+          </p>
+          <Link to="/about" className="inline-flex items-center gap-2 text-[#f5d97a] hover:text-white text-sm font-semibold">
+            About the company <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </Section>
     </MarketingLayout>
   );
 }
