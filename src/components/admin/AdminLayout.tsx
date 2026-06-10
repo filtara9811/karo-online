@@ -314,6 +314,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           {children ?? <Outlet />}
         </main>
       </div>
+      <FloatingPhoneMockup />
     </div>
   );
 }
