@@ -34,7 +34,7 @@ export const Route = createFileRoute("/admin/web/apk")({
           { key: "is_current", label: "Current Release (only one per audience)", type: "bool" },
           { key: "is_active", label: "Visible Publicly", type: "bool" },
         ]}
-        defaults={{ audience: "customer", is_current: false, is_active: true }}
+        defaults={{ audience: "customer", version: "1.0.0", is_current: false, is_active: true }}
       />
     </AdminLayout>
   ),

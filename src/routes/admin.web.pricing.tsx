@@ -24,7 +24,7 @@ export const Route = createFileRoute("/admin/web/pricing")({
           { key: "sort_order", label: "Sort Order", type: "number" },
           { key: "is_active", label: "Active", type: "bool" },
         ]}
-        defaults={{ currency: "INR", period: "mo", sort_order: 10, is_active: true }}
+        defaults={{ name: "New Plan", price: "0", currency: "INR", period: "mo", cta_label: "Get Started", cta_url: "/quick", sort_order: 10, is_featured: false, is_active: true }}
       />
     </AdminLayout>
   ),
