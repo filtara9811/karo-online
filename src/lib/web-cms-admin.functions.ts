@@ -45,7 +45,10 @@ export const cmsUpsert = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await requireAdminClient(context.userId);
-    const row = { ...data.row, updated_by: context.userId };
+    const row =
+      data.table === "web_media_assets"
+        ? { ...data.row, uploaded_by: context.userId }
+        : { ...data.row, updated_by: context.userId };
     const { data: out, error } = await supabaseAdmin
       .from(data.table as never)
       .upsert(row as never)
