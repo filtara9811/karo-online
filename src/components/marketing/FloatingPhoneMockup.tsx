@@ -128,7 +128,7 @@ function PhoneFrame({
     return (
       <div
         ref={ref}
-        className="fixed z-[90] h-16 w-16 rounded-2xl grid place-items-center text-[#1a1208] shadow-xl cursor-grab active:cursor-grabbing"
+        className="fixed z-[999] h-16 w-16 rounded-2xl grid place-items-center text-[#1a1208] shadow-xl cursor-grab active:cursor-grabbing"
         style={{
           left: state.x, top: state.y,
           background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)",
@@ -147,7 +147,7 @@ function PhoneFrame({
   return (
     <div
       ref={ref}
-      className="fixed z-[90] select-none"
+      className="fixed z-[999] select-none"
       style={{ left: state.x, top: state.y, width: FRAME_W * scale, height: FRAME_H * scale }}
     >
       <div style={{ width: FRAME_W, height: FRAME_H, transform: `scale(${scale})`, transformOrigin: "top left", position: "relative" }}>
@@ -307,7 +307,7 @@ export function FloatingPhoneMockup() {
       ))}
 
       {/* Launcher FAB */}
-      <div className="fixed bottom-6 right-6 z-[95] flex flex-col items-end gap-2">
+      <div className="fixed bottom-4 right-4 z-[1000] flex flex-col items-end gap-2">
         {menuOpen && (
           <div className="w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#d4af37]/30 bg-[#0a0a0a]/95 backdrop-blur p-2 shadow-2xl">
             <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-[#d4af37]/80">Virtual Devices</div>
@@ -337,7 +337,10 @@ export function FloatingPhoneMockup() {
           </div>
         )}
         <button
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={() => {
+            loadDevices();
+            setMenuOpen((o) => !o);
+          }}
           className="h-12 w-12 rounded-full grid place-items-center text-[#1a1208] shadow-2xl hover:scale-105 transition"
           style={{ background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" }}
           title="Add / hide virtual devices"
