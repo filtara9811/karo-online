@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
+import { FloatingPhoneMockup } from "@/components/marketing/FloatingPhoneMockup";
 
 type NavItem = { to: string; label: string; icon: typeof Crown };
 
