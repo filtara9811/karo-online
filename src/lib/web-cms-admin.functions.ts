@@ -6,7 +6,6 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const TableEnum = z.enum([
@@ -26,7 +25,8 @@ const TableEnum = z.enum([
 ]);
 type WebTable = z.infer<typeof TableEnum>;
 
-async function assertAdmin(userId: string) {
+async function requireAdminClient(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("user_roles")
     .select("role")
@@ -35,6 +35,7 @@ async function assertAdmin(userId: string) {
     ["super_admin", "admin", "moderator", "support"].includes(String(r.role)),
   );
   if (!ok) throw new Error("Forbidden");
+  return supabaseAdmin;
 }
 
 export const cmsUpsert = createServerFn({ method: "POST" })
@@ -43,8 +44,11 @@ export const cmsUpsert = createServerFn({ method: "POST" })
     z.object({ table: TableEnum, row: z.record(z.string(), z.unknown()) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
-    const row = { ...data.row, updated_by: context.userId };
+    const supabaseAdmin = await requireAdminClient(context.userId);
+    const row =
+      data.table === "web_media_assets"
+        ? { ...data.row, uploaded_by: context.userId }
+        : { ...data.row, updated_by: context.userId };
     const { data: out, error } = await supabaseAdmin
       .from(data.table as never)
       .upsert(row as never)
@@ -60,7 +64,7 @@ export const cmsDelete = createServerFn({ method: "POST" })
     z.object({ table: TableEnum, id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    const supabaseAdmin = await requireAdminClient(context.userId);
     const { error } = await supabaseAdmin.from(data.table as never).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -72,7 +76,7 @@ export const listFormSubmissions = createServerFn({ method: "GET" })
     z.object({ form_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    const supabaseAdmin = await requireAdminClient(context.userId);
     const { data: subs, error } = await supabaseAdmin
       .from("web_form_submissions")
       .select("*")

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   X, Minus, Smartphone, GripHorizontal, ExternalLink,
   ZoomIn, ZoomOut, Maximize2, Plus, RotateCcw,
@@ -6,6 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 type Device = { id: string; label: string; src: string; icon?: string };
+type DbDevice = { id: string; label: string; url: string; icon: string | null };
 
 const DEFAULT_DEVICES: Device[] = [
   { id: "app", label: "App", src: "/register?web=1&embed=1", icon: "📱" },
@@ -21,8 +22,28 @@ const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.1;
 
-const LS_VISIBLE = "ko-devices-visible-v2";
-const LS_STATE = (id: string) => `ko-device-state-v2-${id}`;
+const LS_VISIBLE = "ko-devices-visible-v3";
+const LS_STATE = (id: string) => `ko-device-state-v3-${id}`;
+
+function withEmbedParams(src: string) {
+  const clean = src.trim() || "/";
+  if (typeof window === "undefined") return clean;
+  try {
+    const url = new URL(clean, window.location.origin);
+    const internalHost =
+      url.origin === window.location.origin ||
+      url.hostname === "karoonline.in" ||
+      url.hostname === "www.karoonline.in";
+    if (clean.startsWith("/") || internalHost) {
+      url.searchParams.set("web", "1");
+      url.searchParams.set("embed", "1");
+      return clean.startsWith("/") || url.origin === window.location.origin
+        ? `${url.pathname}${url.search}${url.hash}`
+        : url.toString();
+    }
+  } catch {}
+  return clean;
+}
 
 function vw() { return typeof window === "undefined" ? 1024 : window.innerWidth; }
 function vh() { return typeof window === "undefined" ? 768 : window.innerHeight; }
@@ -45,9 +66,9 @@ function PhoneFrame({
     } catch {}
     const s = fitScale();
     const baseX = vw() >= 1024
-      ? vw() - FRAME_W * s - 24 - indexOffset * 40
+      ? Math.max(8, vw() - (FRAME_W * s + 16) * (indexOffset + 1) - 24)
       : Math.max(8, (vw() - FRAME_W * s) / 2);
-    const baseY = Math.max(16, (vh() - FRAME_H * s) / 2) + indexOffset * 30;
+    const baseY = Math.max(16, (vh() - FRAME_H * s) / 2) + (vw() >= 1024 ? 0 : indexOffset * 30);
     return { x: baseX, y: baseY, zoom: 1, minimized: false };
   });
   const stateRef = useRef(state); stateRef.current = state;
@@ -107,7 +128,7 @@ function PhoneFrame({
     return (
       <div
         ref={ref}
-        className="fixed z-[90] h-16 w-16 rounded-2xl grid place-items-center text-[#1a1208] shadow-xl cursor-grab active:cursor-grabbing"
+        className="fixed z-[999] h-16 w-16 rounded-2xl grid place-items-center text-[#1a1208] shadow-xl cursor-grab active:cursor-grabbing"
         style={{
           left: state.x, top: state.y,
           background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)",
@@ -126,7 +147,7 @@ function PhoneFrame({
   return (
     <div
       ref={ref}
-      className="fixed z-[90] select-none"
+      className="fixed z-[999] select-none"
       style={{ left: state.x, top: state.y, width: FRAME_W * scale, height: FRAME_H * scale }}
     >
       <div style={{ width: FRAME_W, height: FRAME_H, transform: `scale(${scale})`, transformOrigin: "top left", position: "relative" }}>
@@ -196,9 +217,46 @@ function PhoneFrame({
 
 export function FloatingPhoneMockup() {
   const [mounted, setMounted] = useState(false);
-  const [extras, setExtras] = useState<Device[]>([]);
+  const [devices, setDevices] = useState<Device[]>(DEFAULT_DEVICES);
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const loadDevices = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as unknown as {
+        from: (t: string) => {
+          select: (s: string) => {
+            eq: (k: string, v: unknown) => {
+              order: (c: string) => Promise<{ data: DbDevice[] | null; error: Error | null }>;
+            };
+          };
+        };
+      })
+        .from("web_virtual_devices")
+        .select("id,label,url,icon")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) throw error;
+      const next = (data ?? []).map((d) => ({
+        id: `db-${d.id}`,
+        label: d.label,
+        src: withEmbedParams(d.url),
+        icon: d.icon ?? undefined,
+      }));
+      setDevices(next);
+      setVisible((current) => {
+        const allowed = new Set(next.map((d) => d.id));
+        const cleaned = Object.fromEntries(
+          Object.entries(current).filter(([id]) => allowed.has(id)),
+        ) as Record<string, boolean>;
+        if (!Object.values(cleaned).some(Boolean) && next[0]) cleaned[next[0].id] = true;
+        try { localStorage.setItem(LS_VISIBLE, JSON.stringify(cleaned)); } catch {}
+        return cleaned;
+      });
+    } catch {
+      setDevices(DEFAULT_DEVICES);
+    }
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -208,16 +266,11 @@ export function FloatingPhoneMockup() {
       else setVisible({ app: true });
     } catch { setVisible({ app: true }); }
 
-    // Fetch admin-defined extras
-    (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (k: string, v: unknown) => { order: (c: string) => Promise<{ data: Array<{ id: string; label: string; url: string; icon: string | null }> | null }> } } } })
-      .from("web_virtual_devices")
-      .select("id,label,url,icon")
-      .eq("is_active", true)
-      .order("sort_order")
-      .then(({ data }) => {
-        if (!data) return;
-        setExtras(data.map((d) => ({ id: `db-${d.id}`, label: d.label, src: d.url, icon: d.icon ?? undefined })));
-      });
+    loadDevices();
+    const channel = supabase
+      .channel("ko-web-virtual-devices")
+      .on("postgres_changes", { event: "*", schema: "public", table: "web_virtual_devices" }, loadDevices)
+      .subscribe();
 
     const onOpen = () => {
       setVisible((v) => {
@@ -227,10 +280,13 @@ export function FloatingPhoneMockup() {
       });
     };
     window.addEventListener("ko-open-phone", onOpen);
-    return () => window.removeEventListener("ko-open-phone", onOpen);
-  }, []);
+    return () => {
+      window.removeEventListener("ko-open-phone", onOpen);
+      supabase.removeChannel(channel);
+    };
+  }, [loadDevices]);
 
-  const allDevices = useMemo(() => [...DEFAULT_DEVICES, ...extras], [extras]);
+  const allDevices = useMemo(() => devices, [devices]);
 
   function toggle(id: string) {
     setVisible((v) => {
@@ -251,7 +307,7 @@ export function FloatingPhoneMockup() {
       ))}
 
       {/* Launcher FAB */}
-      <div className="fixed bottom-6 right-6 z-[95] flex flex-col items-end gap-2">
+      <div className="fixed bottom-4 right-4 z-[1000] flex flex-col items-end gap-2">
         {menuOpen && (
           <div className="w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#d4af37]/30 bg-[#0a0a0a]/95 backdrop-blur p-2 shadow-2xl">
             <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-[#d4af37]/80">Virtual Devices</div>
@@ -273,15 +329,18 @@ export function FloatingPhoneMockup() {
                 </button>
               );
             })}
-            {extras.length === 0 && (
+            {allDevices.length === 0 && (
               <div className="px-3 py-2 text-[10px] text-white/40">
-                Admin can add more devices in /admin/web/devices
+                No enabled devices. Enable one from Admin → Special Web → Virtual Devices.
               </div>
             )}
           </div>
         )}
         <button
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={() => {
+            loadDevices();
+            setMenuOpen((o) => !o);
+          }}
           className="h-12 w-12 rounded-full grid place-items-center text-[#1a1208] shadow-2xl hover:scale-105 transition"
           style={{ background: "linear-gradient(180deg,#fff3c8,#d4af37 60%,#8b6508)" }}
           title="Add / hide virtual devices"

@@ -22,7 +22,7 @@ export const Route = createFileRoute("/admin/web/offers")({
           { key: "ends_at", label: "Ends At (ISO datetime)", type: "text" },
           { key: "is_active", label: "Active", type: "bool" },
         ]}
-        defaults={{ bg_color: "#d4af37", text_color: "#1a1208", is_active: true }}
+        defaults={{ title: "New Offer", bg_color: "#d4af37", text_color: "#1a1208", is_active: true }}
       />
     </AdminLayout>
   ),

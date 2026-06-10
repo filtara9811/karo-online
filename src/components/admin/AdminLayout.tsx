@@ -76,6 +76,9 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const isEmbed =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("embed") === "1";
 
   useEffect(() => {
     let cancelled = false;
@@ -314,7 +317,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
           {children ?? <Outlet />}
         </main>
       </div>
-      <FloatingPhoneMockup />
+      {!isEmbed && <FloatingPhoneMockup />}
     </div>
   );
 }

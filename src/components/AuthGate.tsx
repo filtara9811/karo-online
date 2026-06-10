@@ -5,6 +5,12 @@ import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/Registrat
 
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
+const PUBLIC_EXACT = new Set([
+  "/", "/about", "/features", "/pricing", "/for-vendors", "/for-customers",
+  "/download", "/contact", "/services", "/privacy-policy", "/terms-and-conditions",
+  "/refund-policy", "/shipping-policy",
+]);
+const PUBLIC_PREFIXES = ["/blog", "/f/", "/c/", "/r/"];
 
 type AuthGateCtx = {
   /** Run `cb` if profile complete; otherwise open the login bottom sheet and run `cb` after it completes. */
@@ -43,7 +49,10 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const [locallyOnboarded, setLocallyOnboarded] = useState(false);
   const pendingCb = useRef<(() => void) | null>(null);
 
-  const skip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
+  const skip =
+    PUBLIC_EXACT.has(location.pathname) ||
+    PUBLIC_PREFIXES.some((p) => location.pathname.startsWith(p)) ||
+    SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     const sync = () => {
