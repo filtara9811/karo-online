@@ -22,8 +22,8 @@ const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.1;
 
-const LS_VISIBLE = "ko-devices-visible-v2";
-const LS_STATE = (id: string) => `ko-device-state-v2-${id}`;
+const LS_VISIBLE = "ko-devices-visible-v3";
+const LS_STATE = (id: string) => `ko-device-state-v3-${id}`;
 
 function withEmbedParams(src: string) {
   const clean = src.trim() || "/";
@@ -66,9 +66,9 @@ function PhoneFrame({
     } catch {}
     const s = fitScale();
     const baseX = vw() >= 1024
-      ? vw() - FRAME_W * s - 24 - indexOffset * 40
+      ? Math.max(8, vw() - (FRAME_W * s + 16) * (indexOffset + 1) - 24)
       : Math.max(8, (vw() - FRAME_W * s) / 2);
-    const baseY = Math.max(16, (vh() - FRAME_H * s) / 2) + indexOffset * 30;
+    const baseY = Math.max(16, (vh() - FRAME_H * s) / 2) + (vw() >= 1024 ? 0 : indexOffset * 30);
     return { x: baseX, y: baseY, zoom: 1, minimized: false };
   });
   const stateRef = useRef(state); stateRef.current = state;
