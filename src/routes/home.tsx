@@ -250,7 +250,7 @@ function HomePage() {
         </div>
       </section>
 
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
