@@ -17,8 +17,10 @@ function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 }
 
 export const getQuickMapVendors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => QuickVendorsSchema.parse(d))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const itemIds = Array.from(new Set(data.itemIds)).slice(0, 50);
     const { data: mappings, error: mappingsError } = await (supabaseAdmin as any)
       .from("vendor_item_mappings")
@@ -87,8 +89,10 @@ const NearbyOnlineSchema = z.object({
 });
 
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const itemIds = Array.from(new Set(data.itemIds ?? [])).slice(0, 50);
     let mappedVendorIds: string[] | null = null;
 
