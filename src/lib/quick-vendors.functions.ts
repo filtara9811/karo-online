@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const QuickVendorsSchema = z.object({
   itemIds: z.array(z.string().uuid()).min(1).max(50),
@@ -17,8 +17,10 @@ function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 }
 
 export const getQuickMapVendors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => QuickVendorsSchema.parse(d))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const itemIds = Array.from(new Set(data.itemIds)).slice(0, 50);
     const { data: mappings, error: mappingsError } = await (supabaseAdmin as any)
       .from("vendor_item_mappings")
@@ -87,8 +89,10 @@ const NearbyOnlineSchema = z.object({
 });
 
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const itemIds = Array.from(new Set(data.itemIds ?? [])).slice(0, 50);
     let mappedVendorIds: string[] | null = null;
 
@@ -121,17 +125,6 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
     const origin = data.origin ?? null;
     const radiusKm = data.radiusKm ?? 10;
     const FRESH_MS = 24 * 60 * 60 * 1000; // 24h tolerance for live coords
-    const vendorUserIds = Array.from(new Set((vendors ?? []).map((v: any) => v.user_id).filter(Boolean)));
-    const profileMap = new Map<string, { address: string | null; avatar_url: string | null }>();
-    if (vendorUserIds.length) {
-      const { data: customerRows } = await (supabaseAdmin as any)
-        .from("customers")
-        .select("user_id, address, avatar_url")
-        .in("user_id", vendorUserIds);
-      (customerRows ?? []).forEach((c: any) =>
-        profileMap.set(String(c.user_id), { address: c.address ?? null, avatar_url: c.avatar_url ?? null }),
-      );
-    }
     const publicVendors = (vendors ?? [])
       .filter((v: any) => !mappedVendorIds || mappedVendorIds.includes(String(v.user_id)) || mappedVendorIds.includes(String(v.id)))
       .map((v: any) => {
@@ -143,18 +136,16 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
         const lng = rawLng == null ? null : Number(rawLng);
         const km = origin && lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
           ? kmBetween(origin, { lat, lng }) : null;
-        const profile = profileMap.get(String(v.user_id));
-        const areaRaw = String(profile?.address ?? "").split(",").slice(0, 2).join(",").trim();
         const isOnline = v.status === "active" && Boolean(v.is_online);
         return {
           id: String(v.id),
           user_id: String(v.user_id),
           business_name: v.business_name as string | null,
           owner_name: v.owner_name as string | null,
-          avatar_url: (v.avatar_url || profile?.avatar_url || null) as string | null,
+          avatar_url: (v.avatar_url ?? null) as string | null,
           status: v.status as string | null,
           is_online: isOnline,
-          area: areaRaw || null,
+          area: null as string | null,
           lat,
           lng,
           service_radius_km: Number(v.service_radius_km ?? 10),

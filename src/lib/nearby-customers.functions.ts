@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const NearbyCustomersSchema = z.object({
   origin: z.object({ lat: z.number(), lng: z.number() }),
@@ -19,13 +19,27 @@ function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 
 /**
  * Floating customers around a vendor's location.
- * Source = recent leads (last 24h) with lat/lng. A customer is "Online"
- * (green) if their most recent lead is < 30 min old or status is still
- * 'new' / 'process'; otherwise "Offline" (amber).
+ * SECURITY: requires authenticated vendor. Uses admin client to bypass RLS,
+ * so we verify the caller is an approved vendor before returning any data.
+ * Returns only coarse area (no full address) and no customer phone/email.
  */
 export const getNearbyCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => NearbyCustomersSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { userId } = context as { userId: string };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Caller must be a known vendor (active/approved).
+    const { data: vendorRow } = await (supabaseAdmin as any)
+      .from("vendors")
+      .select("user_id, status, is_blocked")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!vendorRow || vendorRow.is_blocked || vendorRow.status !== "active") {
+      return { ok: false as const, error: "forbidden", customers: [], onlineCount: 0, offlineCount: 0 };
+    }
+
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: leads, error } = await (supabaseAdmin as any)
       .from("leads")
@@ -41,7 +55,6 @@ export const getNearbyCustomers = createServerFn({ method: "POST" })
     const origin = data.origin;
     const radiusKm = data.radiusKm ?? 10;
 
-    // Keep latest lead per customer
     const seen = new Map<string, any>();
     for (const l of leads ?? []) {
       if (!l.customer_id) continue;
@@ -60,6 +73,12 @@ export const getNearbyCustomers = createServerFn({ method: "POST" })
       );
     }
 
+    const firstName = (n: string | null | undefined) => {
+      const s = String(n ?? "").trim();
+      if (!s) return "Customer";
+      return s.split(/\s+/)[0];
+    };
+
     const list = Array.from(seen.values())
       .map((l: any) => {
         const lat = Number(l.lat);
@@ -70,16 +89,19 @@ export const getNearbyCustomers = createServerFn({ method: "POST" })
         const active = l.status === "new" || l.status === "process";
         const online = active || ageMs <= 30 * 60 * 1000;
         const profile = profileMap.get(l.customer_id);
-        const area = String(l.address ?? profile?.address ?? "").split(",").slice(0, 2).join(",").trim();
+        // Coarse area only — take the broadest part (last comma chunk).
+        const rawAddr = String(l.address ?? profile?.address ?? "");
+        const parts = rawAddr.split(",").map((s) => s.trim()).filter(Boolean);
+        const area = parts.length ? parts[parts.length - 1] : null;
         return {
           id: String(l.customer_id),
           lead_id: String(l.id),
-          name: (profile?.name || l.customer_name || "Customer") as string,
+          name: firstName(profile?.name || l.customer_name),
           avatar_url: profile?.avatar_url ?? null,
           lat,
           lng,
           km,
-          area: area || null,
+          area,
           is_online: online,
           sub_category_name: (l.sub_category_name ?? null) as string | null,
         };
