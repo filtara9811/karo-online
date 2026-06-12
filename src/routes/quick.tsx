@@ -588,10 +588,13 @@ function QuickPage() {
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
             return (
-              <button
+              <div
                 key={s.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleServiceCardTap(s.id)}
-                className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] ${
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleServiceCardTap(s.id); }}
+                className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer ${
                   isSelected
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.25)]"
@@ -617,7 +620,22 @@ function QuickPage() {
                     <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
                   </div>
                 </div>
-              </button>
+                {/* Find Vendor pill — only on the selected card */}
+                {isSelected && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requireAuth(() => setVariationOpen(true));
+                    }}
+                    aria-label="Find Vendor"
+                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[10px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition animate-pulse"
+                    style={{ animation: "fade-up 0.3s ease-out both" }}
+                  >
+                    Find Vendor
+                    <ArrowRight className="h-3 w-3" strokeWidth={3} />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
