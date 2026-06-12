@@ -1,0 +1,29 @@
+# Karo Online
+
+> Karo Online is India's hyperlocal marketplace connecting customers with trusted local vendors for instant on-demand services, secure payments, and real-time order tracking.
+
+Karo Online (karoonline.in) helps people in India quickly find verified nearby vendors for services like AC repair, carpentry, electronics, painting, movers, and more. Customers post a need, get instant quotes from nearby professionals, chat, pay securely, and track the work in real time. Vendors get qualified leads in their service area and tools to run their business.
+
+## Pages
+
+- [Home](/): Overview of Karo Online, the app, and how the hyperlocal marketplace works.
+- [Quick Service](/quick): Live map to find nearby vendors by category and request instant quotes.
+- [Services](/services): Catalogue of services available on Karo Online.
+- [Vendors](/vendors): Directory of verified local vendors.
+- [For Customers](/for-customers): What customers can do on Karo Online.
+- [For Vendors](/for-vendors): How vendors get leads and grow their business with Karo Online.
+- [Features](/features): Key product features of the Karo Online platform.
+- [Pricing](/pricing): Plans and pricing for vendors.
+- [Download](/download): Get the Karo Online mobile app.
+- [Blog](/blog): Stories, guides and updates from Karo Online.
+- [About](/about): About Karo Online and Filipra Private Limited.
+- [Contact](/contact): Reach the Karo Online team.
+- [Sign Up](/register): Create a customer account.
+- [Referral](/referral): Refer friends and earn rewards.
+
+## Optional
+
+- [Privacy Policy](/privacy-policy)
+- [Terms & Conditions](/terms-and-conditions)
+- [Refund Policy](/refund-policy)
+- [Shipping Policy](/shipping-policy)

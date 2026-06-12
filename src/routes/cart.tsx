@@ -6,8 +6,12 @@ export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
       { title: "Your Cart — Karo Online" },
-      { name: "description", content: "Review and checkout your selections from the Karo Online maison." },
+      { name: "description", content: "Review services and products in your Karo Online cart, adjust quantities, and proceed to secure checkout." },
+      { property: "og:title", content: "Your Cart — Karo Online" },
+      { property: "og:description", content: "Review your Karo Online cart and check out securely." },
+      { property: "og:url", content: "https://karoonline.in/cart" },
     ],
+    links: [{ rel: "canonical", href: "https://karoonline.in/cart" }],
   }),
   component: CartPage,
 });
