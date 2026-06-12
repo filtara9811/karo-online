@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHmac } from "crypto";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const OrderSchema = z.object({
@@ -18,6 +17,11 @@ const VerifySchema = z.object({
   purpose: z.enum(["wallet_recharge", "coin_purchase"]),
 });
 
+async function getAdmin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
 async function logSystem(
   provider: string | null,
   status: "success" | "error",
@@ -25,7 +29,8 @@ async function logSystem(
   meta: Record<string, unknown> = {},
 ) {
   try {
-    await (supabaseAdmin.from("system_logs") as any).insert({
+    const admin = await getAdmin();
+    await (admin.from("system_logs") as any).insert({
       kind: "payment",
       provider,
       status,
@@ -38,16 +43,17 @@ async function logSystem(
 }
 
 async function getActiveGateway(purpose: "wallet_recharge" | "coin_purchase") {
-  const { data, error } = await supabaseAdmin
+  const admin = await getAdmin();
+  const { data, error } = await admin
     .from("payment_gateways")
     .select("provider, is_active, is_test_mode, public_key, config, purpose, priority")
     .eq("is_active", true)
     .in("purpose", [purpose, "both"])
     .order("priority", { ascending: true });
+  console.log("[getActiveGateway]", { purpose, rows: data?.length ?? 0, error: error?.message });
   if (error) throw new Error(error.message);
-  // Split by purpose so admin can test each gateway independently:
-  //  - wallet_recharge → prefer Razorpay
-  //  - coin_purchase (LeadX) → prefer Cashfree
+  // Prefer Razorpay for wallet_recharge, Cashfree for coin_purchase.
+  // Fallback to whatever active gateway exists if preferred isn't configured.
   const preferred = purpose === "wallet_recharge" ? "razorpay" : "cashfree";
   const pick = data?.find((g) => g.provider === preferred);
   return pick ?? data?.[0] ?? null;
@@ -150,8 +156,9 @@ export const verifyPayment = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Signature verification failed" };
     }
 
+    const admin = await getAdmin();
     // Idempotency: if this payment id was already processed, return success without re-crediting
-    const { data: existingTxn } = await supabaseAdmin
+    const { data: existingTxn } = await admin
       .from("wallet_transactions")
       .select("id")
       .eq("reference_id", data.razorpay_payment_id)
@@ -168,17 +175,17 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const amountPaise = data.amount_inr * 100;
     if (data.purpose === "wallet_recharge") {
       // Insert wallet row if missing then increment
-      await supabaseAdmin
+      await admin
         .from("vendor_wallets")
         .upsert({ vendor_id: userId }, { onConflict: "vendor_id", ignoreDuplicates: true });
-      const { data: wallet } = await supabaseAdmin
+      const { data: wallet } = await admin
         .from("vendor_wallets")
         .select("service_balance_paise, lifetime_recharged_paise")
         .eq("vendor_id", userId)
         .maybeSingle();
       const newBal = (wallet?.service_balance_paise ?? 0) + amountPaise;
       const newLifetime = (wallet?.lifetime_recharged_paise ?? 0) + amountPaise;
-      await supabaseAdmin
+      await admin
         .from("vendor_wallets")
         .update({
           service_balance_paise: newBal,
@@ -186,7 +193,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         })
         .eq("vendor_id", userId);
-      const { error: insErr } = await supabaseAdmin.from("wallet_transactions").insert({
+      const { error: insErr } = await admin.from("wallet_transactions").insert({
         vendor_id: userId,
         wallet_kind: "service",
         txn_type: "recharge",
@@ -199,7 +206,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       });
       // If a concurrent request already inserted this reference_id, roll back the balance increment
       if (insErr && /duplicate key|unique/i.test(insErr.message)) {
-        await supabaseAdmin
+        await admin
           .from("vendor_wallets")
           .update({
             service_balance_paise: wallet?.service_balance_paise ?? 0,
