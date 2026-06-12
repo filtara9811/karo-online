@@ -35,9 +35,14 @@ import svcElectronics from "@/assets/svc-electronics.png";
 export const Route = createFileRoute("/quick")({
   head: () => ({
     meta: [
-      { title: "Quick Service — Karo Online" },
-      { name: "description", content: "Live map of nearby vendors. Tap a category to filter, drop your need, and get instant quotes." },
+      { title: "Quick Service — Find Local Vendors Near You | Karo Online" },
+      { name: "description", content: "Live map of nearby vendors on Karo Online. Filter by category, drop your need, and get instant quotes from trusted local professionals." },
+      { property: "og:title", content: "Quick Service — Find Local Vendors Near You" },
+      { property: "og:description", content: "Live map of nearby vendors. Tap a category, drop your need, get instant quotes." },
+      { property: "og:url", content: "https://karoonline.in/quick" },
+      { property: "og:type", content: "website" },
     ],
+    links: [{ rel: "canonical", href: "https://karoonline.in/quick" }],
   }),
   component: QuickPage,
 });
