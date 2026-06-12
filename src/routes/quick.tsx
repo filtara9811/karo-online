@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Mic, Plus, Star, ShieldCheck, Store,
+  Mic, Plus, Star, ShieldCheck, Package, ArrowRight,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
   type LucideIcon,
 } from "lucide-react";
+import { VendorModeToggle } from "@/components/VendorModeToggle";
 import { AnimatePresence, motion } from "framer-motion";
 import { MyNeedsSheet } from "@/components/MyNeedsSheet";
 import { VariationSheet, type VariationItem } from "@/components/VariationSheet";
@@ -497,25 +498,22 @@ function QuickPage() {
           geoStatus={geo.status}
           radiusKm={10}
         />
+        {/* Top-right: Join Business / Vendor on-off toggle */}
+        <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <VendorModeToggle mode="customer" />
+        </div>
       </section>
 
       {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => {
-              const user = (profile as any)?.user_id || (profile as any)?.id;
-              let registered = false;
-              try {
-                if (user) registered = localStorage.getItem(`vendor:registered:${user}`) === "1";
-              } catch {}
-              navigate({ to: registered ? "/vendor/dashboard" : "/vendor/register" });
-            }}
-            className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
-            aria-label="Join as vendor"
-            title="Join vendor"
+            onClick={() => navigate({ to: "/orders" })}
+            className="relative h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
+            aria-label="My Orders"
+            title="My Orders"
           >
-            <Store className="h-5 w-5 text-[color:oklch(0.35_0.12_60)]" strokeWidth={2.2} />
+            <Package className="h-5 w-5 text-[color:oklch(0.35_0.12_60)]" strokeWidth={2.2} />
           </button>
           <button
             onClick={() => requireAuth(() => setSearchOpen(true))}
