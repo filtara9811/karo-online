@@ -156,8 +156,9 @@ export const verifyPayment = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Signature verification failed" };
     }
 
+    const admin = await getAdmin();
     // Idempotency: if this payment id was already processed, return success without re-crediting
-    const { data: existingTxn } = await supabaseAdmin
+    const { data: existingTxn } = await admin
       .from("wallet_transactions")
       .select("id")
       .eq("reference_id", data.razorpay_payment_id)
@@ -174,17 +175,17 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const amountPaise = data.amount_inr * 100;
     if (data.purpose === "wallet_recharge") {
       // Insert wallet row if missing then increment
-      await supabaseAdmin
+      await admin
         .from("vendor_wallets")
         .upsert({ vendor_id: userId }, { onConflict: "vendor_id", ignoreDuplicates: true });
-      const { data: wallet } = await supabaseAdmin
+      const { data: wallet } = await admin
         .from("vendor_wallets")
         .select("service_balance_paise, lifetime_recharged_paise")
         .eq("vendor_id", userId)
         .maybeSingle();
       const newBal = (wallet?.service_balance_paise ?? 0) + amountPaise;
       const newLifetime = (wallet?.lifetime_recharged_paise ?? 0) + amountPaise;
-      await supabaseAdmin
+      await admin
         .from("vendor_wallets")
         .update({
           service_balance_paise: newBal,
@@ -192,7 +193,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         })
         .eq("vendor_id", userId);
-      const { error: insErr } = await supabaseAdmin.from("wallet_transactions").insert({
+      const { error: insErr } = await admin.from("wallet_transactions").insert({
         vendor_id: userId,
         wallet_kind: "service",
         txn_type: "recharge",
@@ -205,7 +206,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       });
       // If a concurrent request already inserted this reference_id, roll back the balance increment
       if (insErr && /duplicate key|unique/i.test(insErr.message)) {
-        await supabaseAdmin
+        await admin
           .from("vendor_wallets")
           .update({
             service_balance_paise: wallet?.service_balance_paise ?? 0,
