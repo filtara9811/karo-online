@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 
 const QuickVendorsSchema = z.object({
   itemIds: z.array(z.string().uuid()).min(1).max(50),
@@ -17,7 +17,6 @@ function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 }
 
 export const getQuickMapVendors = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d) => QuickVendorsSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -89,7 +88,6 @@ const NearbyOnlineSchema = z.object({
 });
 
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
