@@ -5,6 +5,16 @@ import { IntroSplash, SPLASH_SESSION_KEY } from "@/components/IntroSplash";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
+  head: () => ({
+    meta: [
+      { title: "Sign Up — Karo Online" },
+      { name: "description", content: "Create your Karo Online account in seconds. Verify your mobile, set up your profile, and start booking trusted local vendors near you." },
+      { property: "og:title", content: "Sign Up — Karo Online" },
+      { property: "og:description", content: "Create your Karo Online account in seconds and start booking trusted local vendors near you." },
+      { property: "og:url", content: "https://karoonline.in/register" },
+    ],
+    links: [{ rel: "canonical", href: "https://karoonline.in/register" }],
+  }),
   component: Register,
 });
 
