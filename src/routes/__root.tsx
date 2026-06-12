@@ -89,6 +89,33 @@ export const Route = createRootRoute({
         href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap",
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Karo Online",
+          url: "https://karoonline.in",
+          logo: "https://karoonline.in/icon-512.png",
+          sameAs: ["https://karoonline.in"],
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Karo Online",
+          url: "https://karoonline.in",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://karoonline.in/quick?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
