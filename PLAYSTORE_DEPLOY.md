@@ -247,9 +247,12 @@ Re-deploy karo. Verify: https://karoonline.in/.well-known/assetlinks.json browse
 
 Har naye update ke liye:
 1. Code change → commit
-2. `android/app/build.gradle` mein `versionCode` +1, `versionName` update
-3. `bun run build && bunx cap sync android && cd android && ./gradlew bundleRelease`
-4. Play Console → new release → upload AAB → rollout
+2. `.github/workflows/main.yml` mein `appVersionCode` +1 aur `appVersion` update karo (Play Store har upload ke liye NAYA version code maangta hai)
+3. GitHub → **Actions** → "Build Karo Online AAB" → **Run workflow**
+4. Artifact `Karo-Online-Final-App` download karo → sirf `UPLOAD-THIS-Karo-Online-signed.aab` upload karo
+5. Play Console → new release → upload AAB → rollout
+
+⚠️ Release mein purani files (jaise `Karo.aab`) pehle ❌ se REMOVE karo — ek release mein sirf ek hi naya AAB hona chahiye. Package name `app.karoonline.twa` fixed hai; koi aur package wali file reject hogi.
 
 ---
 
