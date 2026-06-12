@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHmac } from "crypto";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const OrderSchema = z.object({
@@ -18,6 +17,11 @@ const VerifySchema = z.object({
   purpose: z.enum(["wallet_recharge", "coin_purchase"]),
 });
 
+async function getAdmin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
 async function logSystem(
   provider: string | null,
   status: "success" | "error",
@@ -25,7 +29,8 @@ async function logSystem(
   meta: Record<string, unknown> = {},
 ) {
   try {
-    await (supabaseAdmin.from("system_logs") as any).insert({
+    const admin = await getAdmin();
+    await (admin.from("system_logs") as any).insert({
       kind: "payment",
       provider,
       status,
@@ -38,16 +43,17 @@ async function logSystem(
 }
 
 async function getActiveGateway(purpose: "wallet_recharge" | "coin_purchase") {
-  const { data, error } = await supabaseAdmin
+  const admin = await getAdmin();
+  const { data, error } = await admin
     .from("payment_gateways")
     .select("provider, is_active, is_test_mode, public_key, config, purpose, priority")
     .eq("is_active", true)
     .in("purpose", [purpose, "both"])
     .order("priority", { ascending: true });
+  console.log("[getActiveGateway]", { purpose, rows: data?.length ?? 0, error: error?.message });
   if (error) throw new Error(error.message);
-  // Split by purpose so admin can test each gateway independently:
-  //  - wallet_recharge → prefer Razorpay
-  //  - coin_purchase (LeadX) → prefer Cashfree
+  // Prefer Razorpay for wallet_recharge, Cashfree for coin_purchase.
+  // Fallback to whatever active gateway exists if preferred isn't configured.
   const preferred = purpose === "wallet_recharge" ? "razorpay" : "cashfree";
   const pick = data?.find((g) => g.provider === preferred);
   return pick ?? data?.[0] ?? null;
