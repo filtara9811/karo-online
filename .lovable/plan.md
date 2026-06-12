@@ -1,57 +1,51 @@
-# Master Engine — Phased Launch Plan
+## What you'll get
 
-हम 5 phases में deliver करेंगे। हर phase के end पर मैं आपको बताऊँगा "क्या हो गया, क्या बाकी है"। आप next phase approve करेंगे तब आगे बढ़ेंगे।
+This plan covers the `/quick` (customer home) screen tweaks you marked, plus finishing the Search Console + LCP items left over from SEO.
 
----
+### 1. Top-right "Join Business / Vendor On-Off" pill (`/quick`)
+- Replace the current "Join Business" button with a smart pill:
+  - **New users (no vendor profile):** shows `🏪 Join Business` → opens vendor registration.
+  - **Existing vendors:** shows an `ON / OFF` slide toggle labelled `Vendor`.
+    - Sliding **ON** → animates and routes to `/vendor/dashboard` (customer → vendor mode).
+    - On the vendor dashboard, the same pill appears top-right showing **ON**; sliding **OFF** → routes back to `/quick` (vendor → customer mode).
+- State is detected by querying the `vendors` table for the signed-in user (cached locally so the pill renders instantly).
 
-## Phase 1 — Vendor Operation Mode (Static / Dynamic)
-**Goal:** Vendor अपनी मर्जी से Static या Dynamic mode चुन सके।
+### 2. My Orders icon next to the search bar
+- Move the "My Orders" entry out of the side menu (`VendorSideMenu` / profile menu).
+- Add a small circular icon button **just left of the search bar** on `/quick` (where the package-refresh icon currently sits — replace that with a proper Orders icon that routes to `/orders`).
+- Show a tiny gold dot when there are active orders.
 
-- DB: `vendors` में `operation_mode` ('static' | 'dynamic') column add।
-- Vendor Dashboard में toggle card: "Shop location (Static)" vs "Live GPS (Dynamic)"।
-- Dynamic mode पर pre-existing `/api/public/vendor-location` endpoint हर 30s update करेगा (Android Foreground Service से)।
-- `broadcast_next_lead_batch` RPC update — Static vendors की `vendors.lat/lng` use हो, Dynamic vendors की `live_lat/live_lng` (नए columns) use हो।
+### 3. "Find Vendor" button on the selected category card
+- In the sub-category list (the cards that currently get the orange ring when tapped), when a card becomes `selected`:
+  - Show a small pill button in the **top-right corner of that card only**, label `Find Vendor →`, gold gradient.
+  - Tapping it triggers the existing "find vendor" flow (same action as the current bottom CTA), so users don't have to scroll.
+- Unselected cards do not show the button.
 
-## Phase 2 — Radius Sliders (Vendor + User)
-**Goal:** दोनों side volume-style slider 1km → 50km + Unlimited।
+### 4. Side menu cleanup
+- Remove "My Orders" from `VendorSideMenu` / customer side menu since it's now in the header.
 
-- DB: `vendors.service_radius_km` (0 = Unlimited convention) + `leads.search_radius_km` add।
-- Vendor settings: slider component (1–50 + ∞ stop)।
-- User Quick screen: same slider before raising request।
-- Matching RPC में intersection check: `distance ≤ min(user_radius, vendor_radius)` (अगर कोई unlimited है तो वो side skip)।
+### 5. Google Search Console verification
+- Generate a META verification token for `https://karoonline.in/` via the Search Console connector.
+- Inject the `<meta name="google-site-verification" …>` tag into `src/routes/__root.tsx` head.
+- Call the verify endpoint, then add the site to Search Console so it appears in your property list.
+- Submit `https://karoonline.in/sitemap.xml` to Search Console.
 
-## Phase 3 — Sequential Proximity Search (0→1→2→5→10 km)
-**Goal:** Phase 1 priority rings, premium ऊपर।
+### 6. Lighthouse LCP
+- Run Lighthouse against the **published** site (`https://karoonline.in`) after the above ships.
+- Report the LCP number + the single biggest fix (likely: preload the hero image / dim the hero gradient layer / mark hero `<img>` as `fetchpriority="high"`).
+- Apply that one fix in the same turn.
 
-- `broadcast_next_lead_batch` को rings में refactor: 0–1 → 1–2 → 2–5 → 5–10 km।
-- Premium vendors (नया `vendors.is_premium` bool) हर ring में पहले pick।
-- FindingVendorOverlay current state पर ring label दिखाए: "Searching within 2 km…"।
+## Technical notes
 
-## Phase 4 — Fallback: Not-Available Video + Find More + Referral
-**Goal:** 10 km पर 0 vendor → fallback flow।
+- Vendor-mode detection: `supabase.from('vendors').select('id,status').eq('user_id', user.id).maybeSingle()` — cache in `localStorage` under `ko-vendor-mode-v1` for instant render.
+- The on/off pill is a single shared component (`VendorModeToggle`) reused on `/quick` and `/vendor/dashboard`.
+- "Find Vendor" button reuses the existing `onPickItem` handler that already drives the bottom CTA — no new business logic.
+- Search Console: META method only (DNS/file upload not available on Lovable hosting).
 
-- New `NoVendorsFallback` component:
-  - MP4 video (आप upload करेंगे, या placeholder)।
-  - Left button **Find More** → opens expansion sheet (slider: 20 / 30 / 50 km, plus "City-wise" picker → city + area)।
-  - Right button **Referral** → मौजूदा referral route पर deep link, WhatsApp share पहले से wired।
-- Expansion पर new lead batch fire।
+## Out of scope
 
-## Phase 5 — Remote/Virtual Services Bypass + Wholesaler/Retailer Filter
-**Goal:** Service category के हिसाब से radius ignore करना।
+- No changes to the vendor dashboard layout itself — only the top-right pill is added.
+- No changes to the orders list page.
+- No backend schema changes.
 
-- DB: `service_items.delivery_type` ('on_site' | 'remote') + `vendors.vendor_type` ('wholesaler' | 'retailer' | 'both')।
-- Remote services के लिए matching engine radius skip करे — सिर्फ rating + skill tags से sort।
-- User Quick screen पर Wholesaler/Retailer filter chip।
-
----
-
-## Technical Notes
-
-- सारी matching logic **Postgres RPC** में रहेगी (atomic, single round-trip)।
-- Migration approval हर phase में अलग माँगा जाएगा।
-- Android Foreground Service code (Kotlin) इस web project के दायरे में नहीं है — endpoint ready है, native app team को सिर्फ POST करना है (docs मैं phase 1 में दूँगा)।
-- "Unlimited" convention: `radius_km = 0` = unlimited (NULL के comparison से बेहतर)।
-
-## आज मैं Phase 1 से start करना चाहता हूँ — सही है?
-
-Approve करते ही Phase 1 migration + UI ship करूँगा, फिर Phase 1 का status report देकर Phase 2 के लिए पूछूँगा।
+Reply **"go"** (or edit any step) and I'll switch to build mode and ship it.
