@@ -54,9 +54,14 @@ function realEmail(value?: string | null): string {
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile — Karo Online" },
-      { name: "description", content: "Manage your business cards, KYC, bank & order details." },
+      { title: "My Profile — Karo Online" },
+      { name: "description", content: "Manage your Karo Online profile: personal details, KYC, wallet, business cards, and order history — all in one place." },
+      { property: "og:title", content: "My Profile — Karo Online" },
+      { property: "og:description", content: "Manage your Karo Online profile, KYC, wallet and order history." },
+      { property: "og:url", content: "https://karoonline.in/profile" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://karoonline.in/profile" }],
   }),
   component: () => <ProfilePage />,
 });
