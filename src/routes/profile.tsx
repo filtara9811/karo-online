@@ -318,7 +318,6 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
 
   const TAB_META: Array<{ type: CardType; label: string; Icon: typeof User }> = [
     { type: "personal", label: "Profile", Icon: User },
-    { type: "orders", label: "My orders", Icon: PackageCheck },
     { type: "wallet", label: "My wallet", Icon: Wallet },
     { type: "reselling", label: "Earning", Icon: Users },
   ];
@@ -1556,7 +1555,6 @@ function QuickTiles({ onPick, onOpenNotifications, orderBadge = 0 }: { onPick: (
   const [revealed, setRevealed] = useState<string | null>(null);
   const { counts } = useNotifications();
   const TILES: Array<{ id: string; label: string; Icon: typeof PackageOpen; sheet: QuickSheetKey; badge: number }> = [
-    { id: "orders", label: "My | Order", Icon: PackageOpen, sheet: "orders", badge: orderBadge },
     { id: "referral", label: "Refferal | Ernig", Icon: Gift, sheet: "referral", badge: counts.referral },
     { id: "leads", label: "My | Neds", Icon: Bell, sheet: "leads", badge: counts.messages },
     { id: "support", label: "Manager | support", Icon: Headset, sheet: "support", badge: counts.support },

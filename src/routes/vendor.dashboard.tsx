@@ -51,6 +51,7 @@ import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
 import { VendorQuickActionsSheet } from "@/components/VendorQuickActionsSheet";
 import { AcceptedLeadFloatingButton } from "@/components/AcceptedLeadFloatingButton";
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
+import { VendorModeToggle } from "@/components/VendorModeToggle";
 import { useLeadUnreadCounts } from "@/hooks/use-lead-unread";
 import { useLeadSteps } from "@/hooks/use-lead-steps";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -1010,6 +1011,7 @@ function VendorDashboard() {
                   {liveStamp}
                 </p>
               </div>
+              <VendorModeToggle mode="vendor" />
               <button
                 aria-label="Custom date range"
                 onClick={() => setShowCustomDate((s) => !s)}
