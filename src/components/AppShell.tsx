@@ -138,22 +138,6 @@ function TopHeader() {
     <>
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-[color:oklch(0.78_0.14_82/0.35)]">
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
-        {/* Sign-up / Login icon (top-left) */}
-        <Link
-          to="/register"
-          aria-label="Sign up or Login"
-          className="btn-3d relative h-10 w-10 grid place-items-center rounded-full text-[color:oklch(0.18_0.06_18)] shadow-gold-glow active:scale-90 flex-shrink-0"
-          style={{
-            background: "linear-gradient(180deg, #fff3c8 0%, #f5d97a 50%, #d4af37 100%)",
-            border: "1.5px solid rgba(255,255,255,0.7)",
-          }}
-        >
-          <UserPlus className="h-4 w-4" strokeWidth={2.4} />
-          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-white border border-[#d4af37] grid place-items-center text-[8px] font-bold text-[#8b6508]">
-            +
-          </span>
-        </Link>
-
         {/* User chip */}
         <Link to="/profile" className="flex items-center gap-2 flex-1 min-w-0">
           <span className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-gold-glow flex-shrink-0 bg-white">
@@ -163,14 +147,6 @@ function TopHeader() {
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
               className="h-full w-full object-cover"
             />
-            {unread > 0 && (
-              <span
-                aria-label={`${unread} new notifications`}
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full text-[10px] font-bold text-white bg-emerald-500 border-2 border-white shadow-[0_0_0_1px_rgba(16,185,129,0.4)] animate-pulse"
-              >
-                {unread > 99 ? "99+" : unread}
-              </span>
-            )}
           </span>
           <span className="flex flex-col leading-tight min-w-0">
             <span className="font-display text-sm text-gold-gradient truncate">{profile?.name || "Welcome"}</span>
@@ -180,33 +156,16 @@ function TopHeader() {
           </span>
         </Link>
 
-        {/* Refferal Join CTA */}
-        <Link
-          to="/register"
-          className="btn-3d relative overflow-hidden rounded-xl px-4 py-2.5 bg-gold-bar text-[color:oklch(0.13_0.06_18)] font-display font-semibold text-sm shadow-gold-glow"
-        >
-          <span
-            className="absolute inset-0 opacity-50 pointer-events-none"
-            style={{
-              backgroundImage: "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%)",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 3s linear infinite",
-            }}
-          />
-          <span className="relative">Refferal join</span>
+        <Link to="/cart" aria-label="Cart" className="shrink-0">
+          <ChipIcon label="Cart" badge="3">
+            <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
+          </ChipIcon>
         </Link>
       </div>
 
-      {/* My Orders + search + profile — ditto vendor dashboard bar */}
+      {/* Search bar */}
       <div className="max-w-md mx-auto px-4 pb-2.5">
         <div className="rounded-2xl flex items-center gap-2 p-2 bg-white/95 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-6px_rgba(212,175,55,0.5)]">
-          <Link
-            to="/orders"
-            aria-label="My Orders"
-            className="relative h-10 w-10 rounded-xl grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] active:scale-90 shadow-sm shrink-0"
-          >
-            <Package className="h-5 w-5 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-          </Link>
           <div className="flex-1 relative">
             <input
               type="search"
@@ -214,39 +173,9 @@ function TopHeader() {
               className="w-full h-10 px-3 rounded-xl bg-[#fffaeb] border border-[color:oklch(0.78_0.14_82/0.4)] text-xs text-[color:oklch(0.22_0.05_85)] placeholder:text-[color:oklch(0.55_0.10_82)] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/40"
             />
           </div>
-          <Link
-            to="/profile"
-            aria-label="Profile"
-            className="relative h-10 w-10 rounded-xl overflow-hidden border-2 active:scale-90 shrink-0 bg-white"
-            style={{ borderColor: "#d4af37" }}
-          >
-            <img
-              src={profile?.avatar_url || avatarUser}
-              alt=""
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
-              className="h-full w-full object-cover"
-            />
-            {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 border-2 border-white text-[8px] font-bold text-white grid place-items-center">
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
-          </Link>
-        </div>
-        {/* Bell + Cart quick access row */}
-        <div className="flex items-center justify-end gap-2 mt-2">
-          <button onClick={() => setNotifOpen(true)} aria-label="Notifications" className="contents">
-            <ChipIcon label="Notifications" badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}>
-              <Bell className="h-5 w-5" strokeWidth={2.2} />
-            </ChipIcon>
-          </button>
-          <Link to="/cart" aria-label="Cart">
-            <ChipIcon label="Cart" badge="3">
-              <ShoppingBasket className="h-5 w-5" strokeWidth={2.2} />
-            </ChipIcon>
-          </Link>
         </div>
       </div>
+
 
       {/* Premium shop rating strip */}
       <div className="max-w-md mx-auto px-4 pb-2.5">
