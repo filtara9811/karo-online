@@ -1094,15 +1094,11 @@ function ProfileDetailsSheet({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [subSheet, setSubSheet] = useState<null | "kyc" | "bank">(null);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(true);
   const [otpOpen, setOtpOpen] = useState(false);
 
   const save = async () => {
     if (!userId) return;
-    if (!unlocked) {
-      setOtpOpen(true);
-      return;
-    }
     setSaving(true);
     const before = {
       name: profile?.name ?? "",
