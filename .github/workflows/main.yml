@@ -99,12 +99,12 @@ jobs:
             "maskableIconUrl": "https://karoonline.in/icon-512.png",
             "splashScreenFadeOutDuration": 300,
             "signingKey": { "path": "./android.keystore", "alias": "__KEY_ALIAS__" },
-            "appVersionCode": 3,
-            "appVersion": "1.0.2",
+            "appVersionCode": 4,
+            "appVersion": "1.0.3",
             "fallbackType": "customtabs",
             "features": {},
             "enableSiteSettingsShortcut": false,
-            "orientation": "portrait",
+            "orientation": "any",
             "fingerprints": [],
             "additionalTrustedOrigins": []
           }
@@ -113,6 +113,32 @@ jobs:
           sed -i "s/__KEY_ALIAS__/$BUBBLEWRAP_KEY_ALIAS/g" twa-manifest.json
 
           bubblewrap update --skipVersionUpgrade --manifest=twa-manifest.json
+
+          # ---- Android 16 readiness patches on generated wrapper ----
+          # 1) Bump compile/target SDK to 35 for edge-to-edge + Android 16 large-screen rules.
+          if [ -f app/build.gradle ]; then
+            sed -i -E "s/compileSdkVersion[[:space:]]+[0-9]+/compileSdkVersion 35/g" app/build.gradle
+            sed -i -E "s/targetSdkVersion[[:space:]]+[0-9]+/targetSdkVersion 35/g" app/build.gradle
+            echo "✅ build.gradle SDK bumped to 35"
+          fi
+
+          # 2) AndroidManifest: remove fixed screenOrientation, allow resizing, mark large-screen support.
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            # Drop any android:screenOrientation="portrait|landscape|..." attributes on activities
+            sed -i -E 's/[[:space:]]+android:screenOrientation="[^"]*"//g' "$MANIFEST"
+            # Force resizeableActivity=true on every activity (replace existing, then inject if missing)
+            sed -i -E 's/android:resizeableActivity="false"/android:resizeableActivity="true"/g' "$MANIFEST"
+            if ! grep -q 'android:resizeableActivity' "$MANIFEST"; then
+              sed -i -E 's|<activity |<activity android:resizeableActivity="true" |g' "$MANIFEST"
+            fi
+            # Ensure <supports-screens> for foldables/tablets is present
+            if ! grep -q '<supports-screens' "$MANIFEST"; then
+              sed -i -E 's|</manifest>|    <supports-screens android:smallScreens="true" android:normalScreens="true" android:largeScreens="true" android:xlargeScreens="true" android:resizeable="true" android:anyDensity="true"/>\n</manifest>|' "$MANIFEST"
+            fi
+            echo "✅ AndroidManifest patched: orientation freed, resizeable=true, large-screen support added"
+          fi
+
           timeout 25m bubblewrap build --manifest=twa-manifest.json
 
       - name: Collect Play Console Upload File
