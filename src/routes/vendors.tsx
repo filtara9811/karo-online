@@ -17,6 +17,8 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { getNearbyDigitalShops, type DigitalShop } from "@/lib/digital-shops.functions";
+import { QuickServiceMap } from "@/components/QuickServiceMap";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
@@ -224,8 +226,14 @@ const SECTION_RAILS: { id: string; title: string; icon: typeof Flame; vendors: V
 function VendorsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [activePin, setActivePin] = useState<string | null>(null);
   const geo = useGeolocation();
+
+  // Filter state (lifted up so map + sheet share the same visible set)
+  const [city, setCity] = useState<string>("All");
+  const [area, setArea] = useState<string>("All");
+  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
+  const [maxKm, setMaxKm] = useState<number>(25);
+  const [category, setCategory] = useState<string>("All");
 
   // Live origin for both Google ETA and real-data nearby query
   const origin0 = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
@@ -268,7 +276,6 @@ function VendorsPage() {
     });
   }, [shops]);
 
-  // Use real data when available; fallback to dummy demo data until vendors onboard.
   const sourceList: Vendor[] = realVendors.length > 0 ? realVendors : VENDORS;
 
   const filtered = useMemo(() => {
@@ -277,88 +284,102 @@ function VendorsPage() {
     return sourceList.filter((v) => v.title.toLowerCase().includes(q));
   }, [query, sourceList]);
 
-  // Live driving distance + ETA from user's location to every vendor
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
+      if (c) set.add(c);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+  const areaOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      if (city !== "All" && vCity !== city) return;
+      if (parts.length >= 2) set.add(parts[0]);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered, city]);
+
+  const visible = useMemo(() => {
+    const catLabel = CATS.find((c) => c.key === category)?.label.toLowerCase();
+    return filtered.filter((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      const vArea = parts[0] ?? "";
+      if (city !== "All" && vCity !== city) return false;
+      if (area !== "All" && vArea !== area) return false;
+      if (maxKm > 0 && v.km > maxKm) return false;
+      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
+      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
+      if (catLabel && category !== "All") {
+        const hay = `${v.title} ${v.tagline}`.toLowerCase();
+        if (!hay.includes(catLabel)) return false;
+      }
+      return true;
+    });
+  }, [filtered, city, area, maxKm, trader, category]);
+
   const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
-  const dests = useMemo(() => filtered.map((v) => ({ lat: v.lat, lng: v.lng })), [filtered]);
+  const dests = useMemo(() => visible.map((v) => ({ lat: v.lat, lng: v.lng })), [visible]);
   const etaList = useDistanceMatrix(origin, dests);
   const etas = useMemo(() => {
     const map: Record<string, { km: string; eta: string; live: boolean }> = {};
-    filtered.forEach((v, i) => {
+    visible.forEach((v, i) => {
       const e = etaList[i];
       if (e) map[v.id] = { km: e.kmText, eta: e.etaText, live: e.source === "google" };
     });
     return map;
-  }, [filtered, etaList]);
+  }, [visible, etaList]);
 
+  const mapVendors = useMemo(
+    () =>
+      visible
+        .filter((v) => v.lat && v.lng)
+        .map((v) => ({
+          id: v.id,
+          name: v.title,
+          avatar: v.avatar,
+          x: 50,
+          y: 50,
+          area: v.address,
+          km: v.km,
+          status: "Office" as const,
+          lat: v.lat,
+          lng: v.lng,
+        })),
+    [visible],
+  );
 
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
-      {/* MAP — fills entire screen, sheet sits on top */}
+      {/* Real Google Map (same component as /quick) — pins follow filters */}
       <section className="absolute inset-0">
-        <MapBg />
-
-        {/* Header removed (back, bulb, language) per user request */}
-
-        {/* Pins */}
-        <AnimatePresence>
-          {PINS.map((p, i) => (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, y: -16, scale: 0.6 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 320, damping: 22, delay: i * 0.06 }}
-              onClick={() => setActivePin(activePin === p.id ? null : p.id)}
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${p.x}%`, top: `${p.y}%` }}
-            >
-              <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl pl-1 pr-2 py-1 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md">
-                <span className="relative h-7 w-7 rounded-full overflow-hidden border-2 border-white">
-                  <img src={p.avatar} alt="" className="h-full w-full object-cover" />
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
-                    <svg viewBox="0 0 12 16" className="h-3 w-2.5 text-[color:oklch(0.55_0.18_55)] drop-shadow"><path d="M6 0 C2 0 0 3 0 6 C0 11 6 16 6 16 C6 16 12 11 12 6 C12 3 10 0 6 0 Z" fill="currentColor" /></svg>
-                  </span>
-                </span>
-                <div className="leading-tight text-left">
-                  <p className="font-display text-[10px] font-bold text-[color:oklch(0.25_0.05_85)] whitespace-nowrap">{p.name}</p>
-                  <p className="text-[7px] text-[color:oklch(0.45_0.08_85)]">📍 {p.area}</p>
-                  <p className="text-[7px]">
-                    <span className="text-[color:oklch(0.45_0.08_85)]">{p.km} km. </span>
-                    <span className={`underline ${p.status === "Online" ? "text-emerald-600" : "text-[color:oklch(0.45_0.18_55)]"} font-semibold`}>{p.status}</span>
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-          ))}
-        </AnimatePresence>
-
-        {/* Center "My current location" */}
-        <div className="absolute left-1/2 top-[34%] -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center pointer-events-none">
-          <div className="relative">
-            <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(212,175,55,0.45)" }} />
-            <svg viewBox="0 0 32 40" className="relative h-14 w-11 drop-shadow-[0_4px_8px_rgba(212,175,55,0.5)]">
-              <path d="M16 0 C7 0 0 7 0 16 C0 28 16 40 16 40 C16 40 32 28 32 16 C32 7 25 0 16 0 Z" fill="oklch(0.55 0.18 82)" stroke="white" strokeWidth="1.5" />
-              <circle cx="16" cy="15" r="9" fill="white" />
-            </svg>
-            <span className="absolute top-[6px] left-1/2 -translate-x-1/2 h-[18px] w-[18px] rounded-full overflow-hidden">
-              <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
-            </span>
-          </div>
-          <span
-            className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap max-w-[200px] truncate"
-            title={geo.label}
-          >
-            📍 {geo.status === "loading" || geo.status === "idle" ? "Detecting your location…" : geo.label}
-          </span>
-        </div>
+        <QuickServiceMap
+          center={origin}
+          vendors={mapVendors}
+          userAvatar={avatarUser}
+          userLabel={geo.label}
+          geoStatus={geo.status}
+          radiusKm={maxKm}
+        />
       </section>
 
-      {/* DRAGGABLE BOTTOM SHEET */}
       <DraggableSheet>
         <SheetBody
           query={query}
           setQuery={setQuery}
-          filtered={filtered}
+          visible={visible}
           etas={etas}
+          city={city} setCity={setCity}
+          area={area} setArea={setArea}
+          trader={trader} setTrader={setTrader}
+          maxKm={maxKm} setMaxKm={setMaxKm}
+          category={category} setCategory={setCategory}
+          cityOptions={cityOptions}
+          areaOptions={areaOptions}
           onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
           onInquiry={(v) => navigate({
             to: "/chat",
@@ -375,6 +396,7 @@ function VendorsPage() {
     </div>
   );
 }
+
 
 /* -------- Draggable Sheet (peek / half / 90%) -------- */
 
@@ -467,14 +489,23 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
 /* -------- Sheet body -------- */
 
 function SheetBody({
-  query, setQuery, filtered, etas, onOpen, onInquiry,
+  query, setQuery, visible, etas, onOpen, onInquiry,
+  city, setCity, area, setArea, trader, setTrader, maxKm, setMaxKm,
+  category, setCategory, cityOptions, areaOptions,
 }: {
   query: string;
   setQuery: (s: string) => void;
-  filtered: Vendor[];
+  visible: Vendor[];
   etas: Record<string, { km: string; eta: string; live: boolean }>;
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
+  city: string; setCity: (v: string) => void;
+  area: string; setArea: (v: string) => void;
+  trader: "All" | "Wholesaler" | "Retailer"; setTrader: (v: "All" | "Wholesaler" | "Retailer") => void;
+  maxKm: number; setMaxKm: (v: number) => void;
+  category: string; setCategory: (v: string) => void;
+  cityOptions: string[];
+  areaOptions: string[];
 }) {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -483,11 +514,7 @@ function SheetBody({
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [city, setCity] = useState<string>("All");
-  const [area, setArea] = useState<string>("All");
-  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
-  const [maxKm, setMaxKm] = useState<number>(25);
+  const [openPicker, setOpenPicker] = useState<null | "city" | "area" | "trader" | "range" | "category">(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -510,42 +537,10 @@ function SheetBody({
     setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
   };
 
-  // Derive city/area options from current vendor pool (address last chunk = city)
-  const cityOptions = useMemo(() => {
-    const set = new Set<string>();
-    filtered.forEach((v) => {
-      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
-      if (c) set.add(c);
-    });
-    return ["All", ...Array.from(set)];
-  }, [filtered]);
-  const areaOptions = useMemo(() => {
-    const set = new Set<string>();
-    filtered.forEach((v) => {
-      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
-      if (parts.length >= 2) set.add(parts[0]);
-    });
-    return ["All", ...Array.from(set)];
-  }, [filtered]);
-
-  // Apply filters on top of `filtered` (already query-filtered upstream)
-  const visible = useMemo(() => {
-    return filtered.filter((v) => {
-      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
-      const vCity = parts[parts.length - 1] ?? "";
-      const vArea = parts[0] ?? "";
-      if (city !== "All" && vCity !== city) return false;
-      if (area !== "All" && vArea !== area) return false;
-      if (maxKm > 0 && v.km > maxKm) return false;
-      // Wholesaler/Retailer: dummy heuristic — priceFrom>=500 => Wholesaler
-      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
-      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
-      return true;
-    });
-  }, [filtered, city, area, maxKm, trader]);
-
+  const categoryLabel = category === "All" ? "All" : (CATS.find((c) => c.key === category)?.label ?? "All");
   const activeFilterCount =
-    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
+    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) +
+    (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -579,47 +574,27 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Filters row — city / area / trader / range */}
+        {/* Filter pills — each opens a bottom-sheet picker */}
         <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
           <button
-            onClick={() => setFiltersOpen((s) => !s)}
+            onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
+            disabled={activeFilterCount === 0}
             className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
               activeFilterCount > 0
                 ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
-                : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.5)]"
+                : "bg-white text-[color:oklch(0.55_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)] opacity-60"
             }`}
+            aria-label="Reset filters"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-0.5 h-4 w-4 rounded-full bg-white/30 text-[9px] grid place-items-center">{activeFilterCount}</span>
-            )}
+            {activeFilterCount > 0 ? `Clear (${activeFilterCount})` : "Filters"}
           </button>
-          <FilterPill label="City" value={city} options={cityOptions} onPick={setCity} />
-          <FilterPill label="Area" value={area} options={areaOptions} onPick={setArea} />
-          <FilterPill label="Trade" value={trader} options={["All", "Wholesaler", "Retailer"]} onPick={(v) => setTrader(v as typeof trader)} />
-          <FilterPill label="Range" value={`${maxKm} km`} options={["5 km", "10 km", "25 km", "50 km"]} onPick={(v) => setMaxKm(parseInt(v))} />
+          <FilterPill label="City" value={city} onTap={() => setOpenPicker("city")} />
+          <FilterPill label="Area" value={area} onTap={() => setOpenPicker("area")} />
+          <FilterPill label="Category" value={categoryLabel} onTap={() => setOpenPicker("category")} />
+          <FilterPill label="Trade" value={trader} onTap={() => setOpenPicker("trader")} />
+          <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
         </div>
-
-        {filtersOpen && (
-          <div className="mb-3 p-3 rounded-2xl bg-gradient-to-b from-white to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm space-y-2">
-            <p className="text-[10px] uppercase tracking-wider font-bold text-[color:oklch(0.55_0.10_82)]">Distance: within {maxKm} km</p>
-            <input
-              type="range"
-              min={1}
-              max={50}
-              value={maxKm}
-              onChange={(e) => setMaxKm(parseInt(e.target.value))}
-              className="w-full accent-[#d97706]"
-            />
-            <button
-              onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); }}
-              className="text-[11px] font-bold text-[color:oklch(0.50_0.18_50)] underline"
-            >
-              Reset all filters
-            </button>
-          </div>
-        )}
 
         {/* Compact vendor cards — 3 visible per screen */}
         <div className="space-y-2">
@@ -645,6 +620,75 @@ function SheetBody({
           ✦ End of digital marketplace ✦
         </p>
       </div>
+
+      {/* Bottom-sheet pickers for filters */}
+      <PickerSheet
+        open={openPicker === "city"}
+        title="Select City"
+        options={cityOptions}
+        value={city}
+        onPick={(v) => { setCity(v); if (v !== city) setArea("All"); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "area"}
+        title={city === "All" ? "Select Area" : `Areas in ${city}`}
+        options={areaOptions}
+        value={area}
+        onPick={(v) => { setArea(v); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "trader"}
+        title="Trade Type"
+        options={["All", "Wholesaler", "Retailer"]}
+        value={trader}
+        onPick={(v) => { setTrader(v as typeof trader); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "category"}
+        title="Choose Category"
+        options={["All", ...CATS.map((c) => c.label)]}
+        value={categoryLabel}
+        onPick={(label) => {
+          if (label === "All") setCategory("All");
+          else {
+            const hit = CATS.find((c) => c.label === label);
+            if (hit) setCategory(hit.key);
+          }
+          setOpenPicker(null);
+        }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <Sheet open={openPicker === "range"} onOpenChange={(o) => !o && setOpenPicker(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle>Distance: within {maxKm} km</SheetTitle>
+          </SheetHeader>
+          <div className="pt-4 pb-2">
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={maxKm}
+              onChange={(e) => setMaxKm(parseInt(e.target.value))}
+              className="w-full accent-[#d97706]"
+            />
+            <div className="flex justify-between text-[10px] text-[color:oklch(0.45_0.08_85)] font-bold mt-1">
+              <span>1 km</span><span>25 km</span><span>50 km</span>
+            </div>
+            <button
+              onClick={() => setOpenPicker(null)}
+              className="mt-4 w-full h-11 rounded-full bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white text-sm font-bold"
+            >
+              Apply
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+
 
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
@@ -824,6 +868,27 @@ function ShopCard3D({
         )}
       </div>
 
+      {/* Shop "chhatri" — striped awning canopy on top of the media */}
+      <div className="relative">
+        <div
+          aria-hidden
+          className="h-3.5 w-full rounded-t-2xl border-x border-t border-[color:oklch(0.78_0.14_82/0.4)]"
+          style={{
+            background:
+              "repeating-linear-gradient(135deg, #f97316 0 14px, #ffffff 14px 28px)",
+            boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.08)",
+          }}
+        />
+        <svg
+          aria-hidden
+          viewBox="0 0 120 8"
+          preserveAspectRatio="none"
+          className="-mt-px block h-2 w-full"
+        >
+          <path d="M0 0 L0 2 Q6 8 12 2 Q18 8 24 2 Q30 8 36 2 Q42 8 48 2 Q54 8 60 2 Q66 8 72 2 Q78 8 84 2 Q90 8 96 2 Q102 8 108 2 Q114 8 120 2 L120 0 Z" fill="#f97316" />
+        </svg>
+      </div>
+
       {/* Media stage — calm, smooth, no metallic shimmer */}
       <div className={`relative ${featured ? "h-40" : "h-20"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
         {/* Horizontal sliding image track — banner style, ~700ms ease */}
@@ -963,77 +1028,66 @@ function ShopCard3D({
   );
 }
 
-/* -------- Filter pill dropdown -------- */
+/* -------- Filter pill (opens a bottom-sheet picker on tap) -------- */
 function FilterPill({
-  label, value, options, onPick,
+  label, value, onTap,
 }: {
   label: string;
   value: string;
-  options: string[];
-  onPick: (v: string) => void;
+  onTap: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const active = value !== "All" && !value.startsWith("25 km");
+  const active = value !== "All" && value !== "25 km";
   return (
-    <div className="relative flex-shrink-0">
-      <button
-        onClick={() => setOpen((s) => !s)}
-        className={`h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
-          active
-            ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
-            : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
-        }`}
-      >
-        <span className="opacity-70">{label}:</span>
-        <span className="max-w-[90px] truncate">{value}</span>
-        <span className="text-[9px] opacity-60">▾</span>
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 mt-1 min-w-[140px] bg-white rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl overflow-hidden">
-            {options.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => { onPick(opt); setOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between ${
-                  opt === value ? "bg-[color:oklch(0.96_0.04_85)] text-[color:oklch(0.30_0.05_85)]" : "text-[color:oklch(0.35_0.05_85)] hover:bg-[#fffaf0]"
-                }`}
-              >
-                <span className="truncate">{opt}</span>
-                {opt === value && <Check className="h-3.5 w-3.5 text-[color:oklch(0.50_0.18_50)]" />}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    <button
+      onClick={onTap}
+      className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
+        active
+          ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
+          : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+      }`}
+    >
+      <span className="opacity-70">{label}:</span>
+      <span className="max-w-[90px] truncate">{value}</span>
+      <span className="text-[9px] opacity-60">▾</span>
+    </button>
   );
 }
 
-
-/* -------- Map background -------- */
-
-function MapBg() {
+/* -------- Generic bottom-sheet picker -------- */
+function PickerSheet({
+  open, title, options, value, onPick, onClose,
+}: {
+  open: boolean;
+  title: string;
+  options: string[];
+  value: string;
+  onPick: (v: string) => void;
+  onClose: () => void;
+}) {
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(160deg, #fff8e7 0%, #fdeec4 40%, #f8e1a0 100%)" }}
-      />
-      <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <path d="M 0 30 Q 25 25 50 35 T 100 33" stroke="rgba(255,255,255,0.85)" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <path d="M 0 70 Q 35 75 55 65 T 100 72" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M 25 0 Q 30 40 45 55 T 50 100" stroke="rgba(255,255,255,0.7)" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M 75 0 Q 70 35 80 55 T 78 100" stroke="rgba(255,255,255,0.6)" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M -5 48 Q 30 55 55 47 Q 75 42 105 50" stroke="oklch(0.78 0.14 82)" strokeWidth="6" fill="none" opacity="0.55" />
-        {[
-          [10, 15, 6, 5], [60, 12, 8, 6], [85, 30, 5, 5],
-          [12, 80, 7, 5], [45, 88, 6, 4], [88, 82, 5, 5],
-        ].map(([x, y, w, h], i) => (
-          <rect key={i} x={x} y={y} width={w} height={h} rx="0.5" fill="rgba(255,255,255,0.6)" />
-        ))}
-      </svg>
-    </div>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
+        <div className="pt-3 pb-2 grid gap-1">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => onPick(opt)}
+              className={`w-full px-3 py-3 rounded-xl text-left text-sm font-semibold flex items-center justify-between transition ${
+                opt === value
+                  ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.25_0.05_60)] border border-[color:oklch(0.78_0.14_82)]"
+                  : "text-[color:oklch(0.30_0.05_85)] hover:bg-[#fffaf0] border border-transparent"
+              }`}
+            >
+              <span className="truncate">{opt}</span>
+              {opt === value && <Check className="h-4 w-4 text-[color:oklch(0.50_0.18_50)]" />}
+            </button>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
+

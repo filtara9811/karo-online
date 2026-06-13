@@ -1,51 +1,33 @@
-## What you'll get
 
-This plan covers the `/quick` (customer home) screen tweaks you marked, plus finishing the Search Console + LCP items left over from SEO.
+## 1. Real Google Map (same as Quick page)
 
-### 1. Top-right "Join Business / Vendor On-Off" pill (`/quick`)
-- Replace the current "Join Business" button with a smart pill:
-  - **New users (no vendor profile):** shows `🏪 Join Business` → opens vendor registration.
-  - **Existing vendors:** shows an `ON / OFF` slide toggle labelled `Vendor`.
-    - Sliding **ON** → animates and routes to `/vendor/dashboard` (customer → vendor mode).
-    - On the vendor dashboard, the same pill appears top-right showing **ON**; sliding **OFF** → routes back to `/quick` (vendor → customer mode).
-- State is detected by querying the `vendors` table for the signed-in user (cached locally so the pill renders instantly).
+In `src/routes/vendors.tsx`, replace the decorative `MapBg` + fake `PINS` block with the actual `QuickServiceMap` component used on `/quick`. Pins are built from the real `visible` vendor list (id, name, avatar, lat, lng, km, status) — so when filters change (city/area/range), only matching shops plot on the map. Keeps the existing center "my location" + radius behaviour.
 
-### 2. My Orders icon next to the search bar
-- Move the "My Orders" entry out of the side menu (`VendorSideMenu` / profile menu).
-- Add a small circular icon button **just left of the search bar** on `/quick` (where the package-refresh icon currently sits — replace that with a proper Orders icon that routes to `/orders`).
-- Show a tiny gold dot when there are active orders.
+## 2. Bottom-sheet pickers for filters
 
-### 3. "Find Vendor" button on the selected category card
-- In the sub-category list (the cards that currently get the orange ring when tapped), when a card becomes `selected`:
-  - Show a small pill button in the **top-right corner of that card only**, label `Find Vendor →`, gold gradient.
-  - Tapping it triggers the existing "find vendor" flow (same action as the current bottom CTA), so users don't have to scroll.
-- Unselected cards do not show the button.
+Right now City / Area / Trade / Range are inline dropdown pills. Convert each pill so that tapping it opens a bottom sheet picker (using existing `Sheet` primitive — Radix dialog from `src/components/ui/sheet.tsx`):
 
-### 4. Side menu cleanup
-- Remove "My Orders" from `VendorSideMenu` / customer side menu since it's now in the header.
+- **City** — list of cities (Delhi, Mumbai, Agra, …) derived from vendor pool. After picking, the Area picker auto-refreshes to that city's areas.
+- **Area** — cascaded from selected city.
+- **Trade** — Wholesaler / Retailer / All.
+- **Range** — slider 1–50 km inside the sheet.
+- **Category** (new pill, replacing the unclear "color wise" filter) — picks from the existing CATS list (Tools, AC, Carpentry, …).
 
-### 5. Google Search Console verification
-- Generate a META verification token for `https://karoonline.in/` via the Search Console connector.
-- Inject the `<meta name="google-site-verification" …>` tag into `src/routes/__root.tsx` head.
-- Call the verify endpoint, then add the site to Search Console so it appears in your property list.
-- Submit `https://karoonline.in/sitemap.xml` to Search Console.
+Selected values show on the pill itself; an X chip clears.
 
-### 6. Lighthouse LCP
-- Run Lighthouse against the **published** site (`https://karoonline.in`) after the above ships.
-- Report the LCP number + the single biggest fix (likely: preload the hero image / dim the hero gradient layer / mark hero `<img>` as `fetchpriority="high"`).
-- Apply that one fix in the same turn.
+## 3. Shop "chhatri" (awning) on each card
 
-## Technical notes
+Add a decorative striped canopy strip on top of `ShopCard3D`'s media area so each card looks like a physical dukan front:
+- Pure CSS — repeating linear-gradient stripes in shop orange (#f97316) + white, ~14 px tall, sitting just above the media image with a scalloped bottom edge (SVG mask).
+- No external image; lightweight and themeable.
 
-- Vendor-mode detection: `supabase.from('vendors').select('id,status').eq('user_id', user.id).maybeSingle()` — cache in `localStorage` under `ko-vendor-mode-v1` for instant render.
-- The on/off pill is a single shared component (`VendorModeToggle`) reused on `/quick` and `/vendor/dashboard`.
-- "Find Vendor" button reuses the existing `onPickItem` handler that already drives the bottom CTA — no new business logic.
-- Search Console: META method only (DNS/file upload not available on Lovable hosting).
+## 4. Bottom action bar layout (unchanged structurally, polished)
 
-## Out of scope
+Current bar already has **Sarvic|Products** picker on the left and **Quick|Sarvic** picker on the right, with the categories row above. Keeping this — only tightening spacing so both pickers stay tucked at the bottom corners and the category row sits cleanly centered between them (matches screenshot annotation).
 
-- No changes to the vendor dashboard layout itself — only the top-right pill is added.
-- No changes to the orders list page.
-- No backend schema changes.
+## Files touched
 
-Reply **"go"** (or edit any step) and I'll switch to build mode and ship it.
+- `src/routes/vendors.tsx` — swap map, wire pickers into sheets, add awning wrapper, add Category filter pill.
+- `src/components/ShopCard3D` (defined inside vendors.tsx) — add awning element.
+
+No backend / data-layer changes. No new dependencies.
