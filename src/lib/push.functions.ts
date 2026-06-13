@@ -226,6 +226,7 @@ async function pushToUser(opts: {
   catch (e: any) { return { ok: false, reason: "oauth_failed" as const, error: String(e?.message ?? e) }; }
 
   let okCount = 0;
+  const results: Array<{ token: string; ok: boolean; status: number; error?: string }> = [];
   for (const tk of list) {
     const r = await sendOne({
       projectId: fcm.project_id,
@@ -240,11 +241,27 @@ async function pushToUser(opts: {
       extraData: opts.extraData,
     });
     if (r.ok) okCount += 1;
+    results.push({ token: tk, ...r });
+    // Log every send attempt for observability so we can debug delivery issues.
+    await supabaseAdmin.from("notification_logs").insert({
+      user_id: opts.userId,
+      device_token: tk,
+      provider: "fcm",
+      channel: "push",
+      status: r.ok ? "delivered" : "failed",
+      error: r.ok ? null : (r.error ?? `http_${r.status}`).slice(0, 500),
+      payload: {
+        title: opts.title,
+        body: opts.body,
+        action_url: opts.actionUrl ?? null,
+        kind: opts.extraData?.kind ?? null,
+      },
+    } as any).then(() => null, () => null);
     if (!r.ok && (r.status === 404 || r.status === 400)) {
       await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk);
     }
   }
-  return { ok: okCount > 0, sent: okCount, total: list.length };
+  return { ok: okCount > 0, sent: okCount, total: list.length, results };
 }
 
 /** High-priority push to a vendor when a new lead is targeted at them. */
