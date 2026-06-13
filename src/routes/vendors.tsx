@@ -17,6 +17,8 @@ import goldBriefcase from "@/assets/gold-briefcase.png";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { getNearbyDigitalShops, type DigitalShop } from "@/lib/digital-shops.functions";
+import { QuickServiceMap } from "@/components/QuickServiceMap";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
