@@ -489,14 +489,23 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
 /* -------- Sheet body -------- */
 
 function SheetBody({
-  query, setQuery, filtered, etas, onOpen, onInquiry,
+  query, setQuery, visible, etas, onOpen, onInquiry,
+  city, setCity, area, setArea, trader, setTrader, maxKm, setMaxKm,
+  category, setCategory, cityOptions, areaOptions,
 }: {
   query: string;
   setQuery: (s: string) => void;
-  filtered: Vendor[];
+  visible: Vendor[];
   etas: Record<string, { km: string; eta: string; live: boolean }>;
   onOpen: (id: string) => void;
   onInquiry: (v: Vendor) => void;
+  city: string; setCity: (v: string) => void;
+  area: string; setArea: (v: string) => void;
+  trader: "All" | "Wholesaler" | "Retailer"; setTrader: (v: "All" | "Wholesaler" | "Retailer") => void;
+  maxKm: number; setMaxKm: (v: number) => void;
+  category: string; setCategory: (v: string) => void;
+  cityOptions: string[];
+  areaOptions: string[];
 }) {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -505,11 +514,7 @@ function SheetBody({
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [city, setCity] = useState<string>("All");
-  const [area, setArea] = useState<string>("All");
-  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
-  const [maxKm, setMaxKm] = useState<number>(25);
+  const [openPicker, setOpenPicker] = useState<null | "city" | "area" | "trader" | "range" | "category">(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -532,42 +537,10 @@ function SheetBody({
     setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
   };
 
-  // Derive city/area options from current vendor pool (address last chunk = city)
-  const cityOptions = useMemo(() => {
-    const set = new Set<string>();
-    filtered.forEach((v) => {
-      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
-      if (c) set.add(c);
-    });
-    return ["All", ...Array.from(set)];
-  }, [filtered]);
-  const areaOptions = useMemo(() => {
-    const set = new Set<string>();
-    filtered.forEach((v) => {
-      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
-      if (parts.length >= 2) set.add(parts[0]);
-    });
-    return ["All", ...Array.from(set)];
-  }, [filtered]);
-
-  // Apply filters on top of `filtered` (already query-filtered upstream)
-  const visible = useMemo(() => {
-    return filtered.filter((v) => {
-      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
-      const vCity = parts[parts.length - 1] ?? "";
-      const vArea = parts[0] ?? "";
-      if (city !== "All" && vCity !== city) return false;
-      if (area !== "All" && vArea !== area) return false;
-      if (maxKm > 0 && v.km > maxKm) return false;
-      // Wholesaler/Retailer: dummy heuristic — priceFrom>=500 => Wholesaler
-      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
-      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
-      return true;
-    });
-  }, [filtered, city, area, maxKm, trader]);
-
+  const categoryLabel = category === "All" ? "All" : (CATS.find((c) => c.key === category)?.label ?? "All");
   const activeFilterCount =
-    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
+    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) +
+    (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -601,47 +574,27 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Filters row — city / area / trader / range */}
+        {/* Filter pills — each opens a bottom-sheet picker */}
         <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
           <button
-            onClick={() => setFiltersOpen((s) => !s)}
+            onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
+            disabled={activeFilterCount === 0}
             className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
               activeFilterCount > 0
                 ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
-                : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.5)]"
+                : "bg-white text-[color:oklch(0.55_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)] opacity-60"
             }`}
+            aria-label="Reset filters"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-0.5 h-4 w-4 rounded-full bg-white/30 text-[9px] grid place-items-center">{activeFilterCount}</span>
-            )}
+            {activeFilterCount > 0 ? `Clear (${activeFilterCount})` : "Filters"}
           </button>
-          <FilterPill label="City" value={city} options={cityOptions} onPick={setCity} />
-          <FilterPill label="Area" value={area} options={areaOptions} onPick={setArea} />
-          <FilterPill label="Trade" value={trader} options={["All", "Wholesaler", "Retailer"]} onPick={(v) => setTrader(v as typeof trader)} />
-          <FilterPill label="Range" value={`${maxKm} km`} options={["5 km", "10 km", "25 km", "50 km"]} onPick={(v) => setMaxKm(parseInt(v))} />
+          <FilterPill label="City" value={city} onTap={() => setOpenPicker("city")} />
+          <FilterPill label="Area" value={area} onTap={() => setOpenPicker("area")} />
+          <FilterPill label="Category" value={categoryLabel} onTap={() => setOpenPicker("category")} />
+          <FilterPill label="Trade" value={trader} onTap={() => setOpenPicker("trader")} />
+          <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
         </div>
-
-        {filtersOpen && (
-          <div className="mb-3 p-3 rounded-2xl bg-gradient-to-b from-white to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm space-y-2">
-            <p className="text-[10px] uppercase tracking-wider font-bold text-[color:oklch(0.55_0.10_82)]">Distance: within {maxKm} km</p>
-            <input
-              type="range"
-              min={1}
-              max={50}
-              value={maxKm}
-              onChange={(e) => setMaxKm(parseInt(e.target.value))}
-              className="w-full accent-[#d97706]"
-            />
-            <button
-              onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); }}
-              className="text-[11px] font-bold text-[color:oklch(0.50_0.18_50)] underline"
-            >
-              Reset all filters
-            </button>
-          </div>
-        )}
 
         {/* Compact vendor cards — 3 visible per screen */}
         <div className="space-y-2">
@@ -667,6 +620,75 @@ function SheetBody({
           ✦ End of digital marketplace ✦
         </p>
       </div>
+
+      {/* Bottom-sheet pickers for filters */}
+      <PickerSheet
+        open={openPicker === "city"}
+        title="Select City"
+        options={cityOptions}
+        value={city}
+        onPick={(v) => { setCity(v); if (v !== city) setArea("All"); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "area"}
+        title={city === "All" ? "Select Area" : `Areas in ${city}`}
+        options={areaOptions}
+        value={area}
+        onPick={(v) => { setArea(v); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "trader"}
+        title="Trade Type"
+        options={["All", "Wholesaler", "Retailer"]}
+        value={trader}
+        onPick={(v) => { setTrader(v as typeof trader); setOpenPicker(null); }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <PickerSheet
+        open={openPicker === "category"}
+        title="Choose Category"
+        options={["All", ...CATS.map((c) => c.label)]}
+        value={categoryLabel}
+        onPick={(label) => {
+          if (label === "All") setCategory("All");
+          else {
+            const hit = CATS.find((c) => c.label === label);
+            if (hit) setCategory(hit.key);
+          }
+          setOpenPicker(null);
+        }}
+        onClose={() => setOpenPicker(null)}
+      />
+      <Sheet open={openPicker === "range"} onOpenChange={(o) => !o && setOpenPicker(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle>Distance: within {maxKm} km</SheetTitle>
+          </SheetHeader>
+          <div className="pt-4 pb-2">
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={maxKm}
+              onChange={(e) => setMaxKm(parseInt(e.target.value))}
+              className="w-full accent-[#d97706]"
+            />
+            <div className="flex justify-between text-[10px] text-[color:oklch(0.45_0.08_85)] font-bold mt-1">
+              <span>1 km</span><span>25 km</span><span>50 km</span>
+            </div>
+            <button
+              onClick={() => setOpenPicker(null)}
+              className="mt-4 w-full h-11 rounded-full bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white text-sm font-bold"
+            >
+              Apply
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+
 
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
