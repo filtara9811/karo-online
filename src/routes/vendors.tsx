@@ -5,6 +5,7 @@ import {
   Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
   FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
+  Package, SlidersHorizontal, Check,
   type LucideIcon,
 } from "lucide-react";
 import goldPin from "@/assets/gold-pin.png";
@@ -482,6 +483,11 @@ function SheetBody({
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [city, setCity] = useState<string>("All");
+  const [area, setArea] = useState<string>("All");
+  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
+  const [maxKm, setMaxKm] = useState<number>(25);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -504,12 +510,57 @@ function SheetBody({
     setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
   };
 
+  // Derive city/area options from current vendor pool (address last chunk = city)
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
+      if (c) set.add(c);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+  const areaOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 2) set.add(parts[0]);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+
+  // Apply filters on top of `filtered` (already query-filtered upstream)
+  const visible = useMemo(() => {
+    return filtered.filter((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      const vArea = parts[0] ?? "";
+      if (city !== "All" && vCity !== city) return false;
+      if (area !== "All" && vArea !== area) return false;
+      if (maxKm > 0 && v.km > maxKm) return false;
+      // Wholesaler/Retailer: dummy heuristic — priceFrom>=500 => Wholesaler
+      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
+      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
+      return true;
+    });
+  }, [filtered, city, area, maxKm, trader]);
+
+  const activeFilterCount =
+    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
+
   return (
     <div className="flex flex-col h-full">
       {/* SCROLLABLE TOP — search + product cards */}
       <div className="flex-1 overflow-y-auto px-4 pt-2" style={{ paddingBottom: "16px" }}>
-        {/* Search bar — same shape as Quick page */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* Search row: My Orders | Search | Profile */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={() => navigate({ to: "/orders" })}
+            className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-b from-[#fff5e6] to-[#fde0b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_3px_10px_-2px_rgba(212,175,55,0.45)] active:scale-95 flex-shrink-0 relative"
+            aria-label="My Orders"
+          >
+            <Package className="h-5 w-5 text-[color:oklch(0.50_0.18_50)]" strokeWidth={2.4} />
+            <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold grid place-items-center">•</span>
+          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
@@ -528,12 +579,54 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Compact uniform vendor cards — 3-4 visible */}
-        <div className="space-y-3">
-          {filtered.map((v, i) => (
+        {/* Filters row — city / area / trader / range */}
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+          <button
+            onClick={() => setFiltersOpen((s) => !s)}
+            className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
+              activeFilterCount > 0
+                ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
+                : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.5)]"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-0.5 h-4 w-4 rounded-full bg-white/30 text-[9px] grid place-items-center">{activeFilterCount}</span>
+            )}
+          </button>
+          <FilterPill label="City" value={city} options={cityOptions} onPick={setCity} />
+          <FilterPill label="Area" value={area} options={areaOptions} onPick={setArea} />
+          <FilterPill label="Trade" value={trader} options={["All", "Wholesaler", "Retailer"]} onPick={(v) => setTrader(v as typeof trader)} />
+          <FilterPill label="Range" value={`${maxKm} km`} options={["5 km", "10 km", "25 km", "50 km"]} onPick={(v) => setMaxKm(parseInt(v))} />
+        </div>
+
+        {filtersOpen && (
+          <div className="mb-3 p-3 rounded-2xl bg-gradient-to-b from-white to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm space-y-2">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-[color:oklch(0.55_0.10_82)]">Distance: within {maxKm} km</p>
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={maxKm}
+              onChange={(e) => setMaxKm(parseInt(e.target.value))}
+              className="w-full accent-[#d97706]"
+            />
+            <button
+              onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); }}
+              className="text-[11px] font-bold text-[color:oklch(0.50_0.18_50)] underline"
+            >
+              Reset all filters
+            </button>
+          </div>
+        )}
+
+        {/* Compact vendor cards — 3 visible per screen */}
+        <div className="space-y-2">
+          {visible.map((v, i) => (
             <motion.div
               key={v.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ delay: i * 0.04 }}
@@ -541,12 +634,18 @@ function SheetBody({
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
             </motion.div>
           ))}
+          {visible.length === 0 && (
+            <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
+              No shops match these filters. Try clearing them.
+            </div>
+          )}
         </div>
 
         <p className="text-center text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold mt-6 mb-2 italic">
           ✦ End of digital marketplace ✦
         </p>
       </div>
+
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
       <div className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
@@ -726,7 +825,7 @@ function ShopCard3D({
       </div>
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
-      <div className={`relative ${featured ? "h-44" : "h-28"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
+      <div className={`relative ${featured ? "h-40" : "h-20"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
         {/* Horizontal sliding image track — banner style, ~700ms ease */}
         <div
           className="absolute inset-0 flex h-full"
@@ -822,60 +921,96 @@ function ShopCard3D({
         </div>
       </div>
 
-      {/* Bottom info row */}
-      <div className="pt-3 pb-1 px-0.5">
+      {/* Bottom info row — compact */}
+      <div className="pt-1.5 pb-0.5 px-0.5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h4 className="font-display text-base text-gold-gradient font-bold leading-tight truncate">
+            <h4 className="font-display text-[13px] text-gold-gradient font-bold leading-tight truncate">
               {vendor.title}
             </h4>
-            <p className="text-[10px] text-[color:oklch(0.45_0.05_85)] truncate">{vendor.tagline}</p>
-            <p className="text-[9px] text-[color:oklch(0.55_0.10_82)] mt-0.5 flex items-center gap-1 truncate">
-              <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-              <span className="truncate">{vendor.address}</span>
-            </p>
+            <p className="text-[9px] text-[color:oklch(0.45_0.05_85)] truncate leading-tight">{vendor.tagline}</p>
           </div>
           {vendor.priceFrom !== undefined && (
             <div className="text-right flex-shrink-0">
-              <p className="text-[8px] uppercase tracking-wider text-[color:oklch(0.55_0.10_82)] font-bold">From</p>
-              <p className="font-display text-sm text-gold-gradient font-bold leading-none">₹{vendor.priceFrom}</p>
+              <p className="font-display text-[11px] text-gold-gradient font-bold leading-none">From ₹{vendor.priceFrom}</p>
             </div>
           )}
         </div>
 
-        {/* Rating + verified row */}
-        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.45)] text-[9px] font-bold text-[color:oklch(0.40_0.10_82)]">
+        {/* Rating + verified + inquiry on one compact row */}
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.45)] text-[9px] font-bold text-[color:oklch(0.40_0.10_82)]">
             <Star className="h-2.5 w-2.5 fill-[#d4af37] text-[#d4af37]" />
             {vendor.rating}
-            <span className="opacity-70">· {vendor.reviews}</span>
           </span>
           {vendor.verified && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-300 text-[9px] font-bold text-emerald-700">
+            <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-[9px] font-bold text-emerald-700">
               <BadgeCheck className="h-2.5 w-2.5 fill-emerald-600 text-white" />
               Trusted
             </span>
           )}
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] text-[9px] font-bold text-[color:oklch(0.40_0.10_82)]">
-            <ShieldCheck className="h-2.5 w-2.5 text-[color:oklch(0.55_0.18_55)]" />
-            Assured
-          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onInquiry(vendor); }}
+            className="ml-auto flex items-center justify-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-[0_3px_10px_-3px_rgba(212,175,55,0.6)] active:scale-95"
+          >
+            <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.4} />
+            <span className="font-display text-[11px] font-bold italic tracking-tight">Inquiry</span>
+          </button>
         </div>
-
-        {/* Inquiry CTA — calm gold button (no sweeping reflection) */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onInquiry(vendor); }}
-          className="btn-3d mt-3 w-full relative overflow-hidden flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.6),inset_0_1px_0_rgba(255,255,255,0.7)] active:scale-[0.97]"
-        >
-          <MessageCircle className="h-4 w-4 relative" strokeWidth={2.4} />
-          <span className="font-display text-[13px] font-bold italic tracking-tight relative">
-            Send Inquiry now
-          </span>
-        </button>
       </div>
     </motion.article>
+
   );
 }
+
+/* -------- Filter pill dropdown -------- */
+function FilterPill({
+  label, value, options, onPick,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onPick: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const active = value !== "All" && !value.startsWith("25 km");
+  return (
+    <div className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen((s) => !s)}
+        className={`h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
+          active
+            ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
+            : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+        }`}
+      >
+        <span className="opacity-70">{label}:</span>
+        <span className="max-w-[90px] truncate">{value}</span>
+        <span className="text-[9px] opacity-60">▾</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 mt-1 min-w-[140px] bg-white rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl overflow-hidden">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => { onPick(opt); setOpen(false); }}
+                className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between ${
+                  opt === value ? "bg-[color:oklch(0.96_0.04_85)] text-[color:oklch(0.30_0.05_85)]" : "text-[color:oklch(0.35_0.05_85)] hover:bg-[#fffaf0]"
+                }`}
+              >
+                <span className="truncate">{opt}</span>
+                {opt === value && <Check className="h-3.5 w-3.5 text-[color:oklch(0.50_0.18_50)]" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 
 /* -------- Map background -------- */
 
