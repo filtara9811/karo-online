@@ -168,21 +168,21 @@ function VendorShop() {
     >
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
 
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
-        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
-          <button
-            onClick={() => navigate({ to: "/vendor/dashboard" })}
-            aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90 flex-shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
-          </button>
+      {/* Full-bleed cover hero with floating top controls */}
+      <section className="relative">
+        <ShopMediaUploader variant="hero" />
+
+        {/* Top-left: Live toggle */}
+        <div className="absolute top-3 left-3 z-30">
           <ShopLiveToggle />
+        </div>
+
+        {/* Top-right: Invoice + Close (X) */}
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
           <button
             onClick={() => setPosOpen(true)}
             aria-label="Create Invoice"
-            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90 flex-shrink-0"
+            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90"
             style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
           >
             <Receipt className="h-4 w-4" />
@@ -192,19 +192,31 @@ function VendorShop() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => navigate({ to: "/vendor/dashboard" })}
+            aria-label="Close"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow-md active:scale-90"
+          >
+            <X className="h-4 w-4 text-[color:oklch(0.30_0.01_260)]" strokeWidth={2.6} />
+          </button>
         </div>
-        <div className="max-w-md mx-auto px-4 pb-2 text-center">
+
+        {/* Profile logo overhang — pokes below the cover */}
+        <div className="absolute -bottom-7 left-4 z-30">
+          <div className="h-14 w-14 rounded-full grid place-items-center bg-black border-4 border-white shadow-lg">
+            <span className="text-white text-2xl">🏬</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-md mx-auto px-4 pt-10 space-y-4">
+        {/* Shop title — moved out of the old header */}
+        <div className="text-center">
           <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
           <h1 className="font-display text-base text-silver-gradient leading-tight font-bold">
             Ashhu's Digital Shop
           </h1>
         </div>
-      </header>
-
-
-      <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
-        {/* === Digital-shop cover uploader (video / image) === */}
-        <ShopMediaUploader />
 
         {/* Search */}
         <ShopSearchBar value={search} onChange={setSearch} />
