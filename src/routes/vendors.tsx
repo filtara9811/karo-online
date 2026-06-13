@@ -663,7 +663,7 @@ function SheetBody({
         </div>
 
         {/* Filter pills — each opens a bottom-sheet picker */}
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide touch-pan-x overscroll-x-contain">
           <button
             onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
             disabled={activeFilterCount === 0}
@@ -789,7 +789,7 @@ function SheetBody({
         </button>
 
         {/* Categories — same as Quick page */}
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide touch-pan-x overscroll-x-contain">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
             const isActive = categoryFilter === c.key;
