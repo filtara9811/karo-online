@@ -15,7 +15,6 @@ import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { useQuery } from "@tanstack/react-query";
 import { getNearbyDigitalShops, type DigitalShop } from "@/lib/digital-shops.functions";
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
@@ -230,16 +229,21 @@ function VendorsPage() {
   // Live origin for both Google ETA and real-data nearby query
   const origin0 = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
 
-  // Real digital shops from DB (nearby + approved). Falls back to dummy when empty.
-  const shopsQuery = useQuery({
-    queryKey: ["digital-shops-nearby", origin0?.lat ?? null, origin0?.lng ?? null],
-    queryFn: () => getNearbyDigitalShops({ data: { origin: origin0, radiusKm: 25 } }),
-    staleTime: 60_000,
-  });
+  // Real digital shops from DB (nearby + live). Falls back to dummy when empty.
+  const [shops, setShops] = useState<DigitalShop[]>([]);
+  useEffect(() => {
+    let cancel = false;
+    getNearbyDigitalShops({ data: { origin: origin0, radiusKm: 25 } })
+      .then((res) => {
+        if (cancel) return;
+        if (res.ok) setShops(res.shops.filter((s) => s.is_online));
+      })
+      .catch(() => {});
+    return () => { cancel = true; };
+  }, [origin0?.lat, origin0?.lng]);
 
   const realVendors: Vendor[] = useMemo(() => {
-    const list = shopsQuery.data?.ok ? shopsQuery.data.shops : [];
-    return list.map((s: DigitalShop): Vendor => {
+    return shops.map((s: DigitalShop): Vendor => {
       const hero = s.cover_image_url || s.avatar_url || productCosmetics;
       const gallery = [hero];
       return {
@@ -261,7 +265,7 @@ function VendorsPage() {
         priceFrom: undefined,
       };
     });
-  }, [shopsQuery.data]);
+  }, [shops]);
 
   // Use real data when available; fallback to dummy demo data until vendors onboard.
   const sourceList: Vendor[] = realVendors.length > 0 ? realVendors : VENDORS;
