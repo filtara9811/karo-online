@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
+  X,
   Plus,
   Receipt,
   Star,
