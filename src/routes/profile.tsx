@@ -1165,23 +1165,8 @@ function ProfileDetailsSheet({
           <User className="h-7 w-7 text-amber-700" />
           <h3 className="font-display text-xl text-amber-700 font-bold">Profile | Details</h3>
         </div>
-        <button
-          onClick={() => (unlocked ? setUnlocked(false) : setOtpOpen(true))}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border transition active:scale-95 ${
-            unlocked
-              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-              : "bg-white border-amber-300 text-amber-700"
-          }`}
-        >
-          <Lock className="h-3.5 w-3.5" />
-          {unlocked ? "Editing" : "Edit"}
-        </button>
       </div>
-      {!unlocked && (
-        <p className="text-[11px] text-slate-500 mb-3 px-1">
-          Details locked. Edit ke liye OTP verify karein.
-        </p>
-      )}
+
 
 
       {/* Avatar uploader with crop */}
