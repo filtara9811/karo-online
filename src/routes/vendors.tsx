@@ -354,10 +354,16 @@ function VendorsPage() {
     [visible],
   );
 
+  const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
+  const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
+
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
-      {/* Real Google Map (same component as /quick) — pins follow filters */}
-      <section className="absolute inset-0">
+      {/* Real Google Map — locked to the top area. Sheet never covers it. */}
+      <section
+        className="absolute inset-x-0 top-0 z-0"
+        style={{ height: `${MAP_PCT}vh` }}
+      >
         <QuickServiceMap
           center={origin}
           vendors={mapVendors}
@@ -366,9 +372,14 @@ function VendorsPage() {
           geoStatus={geo.status}
           radiusKm={maxKm}
         />
+
+        {/* Top-right: shop on/off toggle — flipping ON jumps to vendor panel */}
+        <div className="absolute top-3 right-3 z-30">
+          <ShopLiveToggle redirectOnEnable />
+        </div>
       </section>
 
-      <DraggableSheet>
+      <DraggableSheet topPct={MAP_PCT}>
         <SheetBody
           query={query}
           setQuery={setQuery}
@@ -381,7 +392,10 @@ function VendorsPage() {
           category={category} setCategory={setCategory}
           cityOptions={cityOptions}
           areaOptions={areaOptions}
-          onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
+          onOpen={(id) => {
+            const v = visible.find((x) => x.id === id) ?? sourceList.find((x) => x.id === id);
+            if (v) setDetailVendor(v);
+          }}
           onInquiry={(v) => navigate({
             to: "/chat",
             search: {
@@ -394,6 +408,74 @@ function VendorsPage() {
           })}
         />
       </DraggableSheet>
+
+      {/* Product / shop detail sheet — opens smoothly with an X close in top-right */}
+      <Sheet open={!!detailVendor} onOpenChange={(o) => !o && setDetailVendor(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[88vh] overflow-y-auto">
+          {detailVendor && (
+            <div className="relative">
+              <button
+                onClick={() => setDetailVendor(null)}
+                aria-label="Close"
+                className="absolute top-3 right-3 z-20 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow-md active:scale-90"
+              >
+                <X className="h-4 w-4 text-[color:oklch(0.25_0.05_85)]" strokeWidth={2.6} />
+              </button>
+              <img
+                src={detailVendor.hero}
+                alt={detailVendor.title}
+                className="w-full h-64 object-cover"
+              />
+              <div className="p-5 space-y-3">
+                <div>
+                  <h2 className="font-display text-lg text-gold-gradient font-bold leading-tight">
+                    {detailVendor.title}
+                  </h2>
+                  <p className="text-xs text-[color:oklch(0.45_0.05_85)] mt-0.5">{detailVendor.tagline}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.45)] text-[11px] font-bold text-[color:oklch(0.40_0.10_82)]">
+                    <Star className="h-3 w-3 fill-[#d4af37] text-[#d4af37]" />
+                    {detailVendor.rating} ({detailVendor.reviews})
+                  </span>
+                  {detailVendor.verified && (
+                    <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-[11px] font-bold text-emerald-700">
+                      <BadgeCheck className="h-3 w-3 fill-emerald-600 text-white" />
+                      Trusted
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.4)] text-[11px] font-bold text-[color:oklch(0.30_0.05_85)]">
+                    <MapPin className="h-3 w-3" /> {detailVendor.address}
+                  </span>
+                </div>
+                {detailVendor.priceFrom !== undefined && (
+                  <p className="font-display text-base text-gold-gradient font-bold">From ₹{detailVendor.priceFrom}</p>
+                )}
+                <button
+                  onClick={() => {
+                    const v = detailVendor;
+                    setDetailVendor(null);
+                    navigate({
+                      to: "/chat",
+                      search: {
+                        productId: v.id,
+                        productName: v.title,
+                        productImage: v.hero,
+                        productPrice: v.priceFrom ?? 0,
+                        mode: "inquiry",
+                      } as never,
+                    });
+                  }}
+                  className="w-full h-12 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow font-display font-bold italic flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Send Inquiry
+                </button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
