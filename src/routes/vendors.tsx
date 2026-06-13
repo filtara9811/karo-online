@@ -5,9 +5,10 @@ import {
   Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
   FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
-  Package, SlidersHorizontal, Check,
+  Package, SlidersHorizontal, Check, X,
   type LucideIcon,
 } from "lucide-react";
+import { ShopLiveToggle } from "@/components/ShopLiveToggle";
 import goldPin from "@/assets/gold-pin.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
