@@ -1007,77 +1007,66 @@ function ShopCard3D({
   );
 }
 
-/* -------- Filter pill dropdown -------- */
+/* -------- Filter pill (opens a bottom-sheet picker on tap) -------- */
 function FilterPill({
-  label, value, options, onPick,
+  label, value, onTap,
 }: {
   label: string;
   value: string;
-  options: string[];
-  onPick: (v: string) => void;
+  onTap: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const active = value !== "All" && !value.startsWith("25 km");
+  const active = value !== "All" && value !== "25 km";
   return (
-    <div className="relative flex-shrink-0">
-      <button
-        onClick={() => setOpen((s) => !s)}
-        className={`h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
-          active
-            ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
-            : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
-        }`}
-      >
-        <span className="opacity-70">{label}:</span>
-        <span className="max-w-[90px] truncate">{value}</span>
-        <span className="text-[9px] opacity-60">▾</span>
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 mt-1 min-w-[140px] bg-white rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl overflow-hidden">
-            {options.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => { onPick(opt); setOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between ${
-                  opt === value ? "bg-[color:oklch(0.96_0.04_85)] text-[color:oklch(0.30_0.05_85)]" : "text-[color:oklch(0.35_0.05_85)] hover:bg-[#fffaf0]"
-                }`}
-              >
-                <span className="truncate">{opt}</span>
-                {opt === value && <Check className="h-3.5 w-3.5 text-[color:oklch(0.50_0.18_50)]" />}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    <button
+      onClick={onTap}
+      className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
+        active
+          ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
+          : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+      }`}
+    >
+      <span className="opacity-70">{label}:</span>
+      <span className="max-w-[90px] truncate">{value}</span>
+      <span className="text-[9px] opacity-60">▾</span>
+    </button>
   );
 }
 
-
-/* -------- Map background -------- */
-
-function MapBg() {
+/* -------- Generic bottom-sheet picker -------- */
+function PickerSheet({
+  open, title, options, value, onPick, onClose,
+}: {
+  open: boolean;
+  title: string;
+  options: string[];
+  value: string;
+  onPick: (v: string) => void;
+  onClose: () => void;
+}) {
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(160deg, #fff8e7 0%, #fdeec4 40%, #f8e1a0 100%)" }}
-      />
-      <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <path d="M 0 30 Q 25 25 50 35 T 100 33" stroke="rgba(255,255,255,0.85)" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <path d="M 0 70 Q 35 75 55 65 T 100 72" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M 25 0 Q 30 40 45 55 T 50 100" stroke="rgba(255,255,255,0.7)" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M 75 0 Q 70 35 80 55 T 78 100" stroke="rgba(255,255,255,0.6)" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M -5 48 Q 30 55 55 47 Q 75 42 105 50" stroke="oklch(0.78 0.14 82)" strokeWidth="6" fill="none" opacity="0.55" />
-        {[
-          [10, 15, 6, 5], [60, 12, 8, 6], [85, 30, 5, 5],
-          [12, 80, 7, 5], [45, 88, 6, 4], [88, 82, 5, 5],
-        ].map(([x, y, w, h], i) => (
-          <rect key={i} x={x} y={y} width={w} height={h} rx="0.5" fill="rgba(255,255,255,0.6)" />
-        ))}
-      </svg>
-    </div>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
+        <div className="pt-3 pb-2 grid gap-1">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => onPick(opt)}
+              className={`w-full px-3 py-3 rounded-xl text-left text-sm font-semibold flex items-center justify-between transition ${
+                opt === value
+                  ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.25_0.05_60)] border border-[color:oklch(0.78_0.14_82)]"
+                  : "text-[color:oklch(0.30_0.05_85)] hover:bg-[#fffaf0] border border-transparent"
+              }`}
+            >
+              <span className="truncate">{opt}</span>
+              {opt === value && <Check className="h-4 w-4 text-[color:oklch(0.50_0.18_50)]" />}
+            </button>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
+
