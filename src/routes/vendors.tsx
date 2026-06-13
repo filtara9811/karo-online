@@ -361,7 +361,7 @@ function VendorsPage() {
     <div className="relative min-h-dvh overflow-x-hidden bg-white isolate">
       {/* Real Google Map — locked to the top area. Sheet never covers it. */}
       <section
-        className="absolute inset-x-0 top-0 z-0"
+        className="relative z-0"
         style={{ height: `${MAP_PCT}vh` }}
       >
         <QuickServiceMap
@@ -379,7 +379,7 @@ function VendorsPage() {
         </div>
       </section>
 
-      <DraggableSheet topPct={MAP_PCT}>
+      <VendorsSheet>
         <SheetBody
           query={query}
           setQuery={setQuery}
@@ -407,7 +407,7 @@ function VendorsPage() {
             } as never,
           })}
         />
-      </DraggableSheet>
+      </VendorsSheet>
 
       {/* Product / shop detail sheet — opens smoothly with an X close in top-right */}
       <Sheet open={!!detailVendor} onOpenChange={(o) => !o && setDetailVendor(null)}>
@@ -481,30 +481,13 @@ function VendorsPage() {
 }
 
 
-/* -------- Draggable Sheet (peek / half / 90%) -------- */
+/* -------- Vendors Sheet -------- */
 
-function DraggableSheet({ children, topPct = 42 }: { children: React.ReactNode; topPct?: number }) {
-  const [vh, setVh] = useState(800);
-
-  useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // Sheet lives in the region BELOW the map. snap points are offsets
-  // measured from the TOP of that region (0 = expanded right under map).
-  const sheetTopPx = (vh * topPct) / 100;
-  const sheetH = vh - sheetTopPx;
-
+function VendorsSheet({ children }: { children: React.ReactNode }) {
   return (
-    <aside
-      style={{ marginTop: sheetTopPx, minHeight: sheetH }}
-      className="relative z-20"
-    >
+    <aside className="relative z-20 -mt-1 min-h-[58vh]">
       <div
-        className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
+        className="bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
       >
         {/* Drag handle */}
         <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
