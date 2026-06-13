@@ -976,6 +976,55 @@ function ShopCard3D({
   );
 }
 
+/* -------- Filter pill dropdown -------- */
+function FilterPill({
+  label, value, options, onPick,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onPick: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const active = value !== "All" && !value.startsWith("25 km");
+  return (
+    <div className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen((s) => !s)}
+        className={`h-8 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold border ${
+          active
+            ? "bg-gradient-to-r from-[#fff8dc] to-[#f5d97a] text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82)] shadow-sm"
+            : "bg-white text-[color:oklch(0.35_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+        }`}
+      >
+        <span className="opacity-70">{label}:</span>
+        <span className="max-w-[90px] truncate">{value}</span>
+        <span className="text-[9px] opacity-60">▾</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 mt-1 min-w-[140px] bg-white rounded-2xl border border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl overflow-hidden">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => { onPick(opt); setOpen(false); }}
+                className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between ${
+                  opt === value ? "bg-[color:oklch(0.96_0.04_85)] text-[color:oklch(0.30_0.05_85)]" : "text-[color:oklch(0.35_0.05_85)] hover:bg-[#fffaf0]"
+                }`}
+              >
+                <span className="truncate">{opt}</span>
+                {opt === value && <Check className="h-3.5 w-3.5 text-[color:oklch(0.50_0.18_50)]" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
 /* -------- Map background -------- */
 
 function MapBg() {
