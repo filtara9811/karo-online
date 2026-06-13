@@ -922,8 +922,8 @@ function ShopCard3D({
 
   return (
     <motion.article
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.985 }}
+      initial={false}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       onClick={() => onOpen(vendor.id)}
       className={`group relative rounded-3xl overflow-hidden cursor-pointer
         bg-gradient-to-b from-white via-white to-[#fffaf0]
