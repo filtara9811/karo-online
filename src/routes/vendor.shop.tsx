@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { PRODUCTS } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
-import { DashboardFlipCard } from "@/components/DashboardFlipCard";
+import { ShopMediaUploader } from "@/components/ShopMediaUploader";
+import { ShopStatsTicker } from "@/components/ShopStatsTicker";
 import { ShopSearchBar } from "@/components/ShopSearchBar";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { TopProductsMarquee } from "@/components/TopProductsMarquee";
