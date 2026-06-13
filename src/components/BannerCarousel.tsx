@@ -76,7 +76,7 @@ export function BannerCarousel() {
       <div className="relative">
         <div
           ref={scrollRef}
-          className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
+          className="flex gap-2 overflow-x-auto snap-x scrollbar-hide -mx-1 px-1 touch-pan-x overscroll-x-contain"
           onMouseDown={onPressStart}
           onMouseUp={onPressEnd}
           onMouseLeave={onPressEnd}

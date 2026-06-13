@@ -1,44 +1,70 @@
-# Digital Dukan polish — 4 fixes
+# Step 1 — Fix middle-of-screen touch / scroll block (priority)
 
-## 1. Lock the map (customer "All Digital Shops" page)
+## Problem (why it happens — in plain words)
 
-File: `src/routes/vendors.tsx` → `DraggableSheet`
+जब आप screen के बीच में उंगली रखकर ऊपर-नीचे scroll करते हैं, तो page नहीं चलता। सिर्फ far-right edge से चलता है। यही exact pattern home, `/vendors`, vendor dashboard, और marketing website पर भी मिल रहा है।
 
-The bottom sheet currently has a peek snap at ~55% so the sheet covers part of the map and (since it's a full-height container starting at top: 0) blocks finger-drag on the map area entirely.
+वजह दो हैं:
 
-- Convert `DraggableSheet` so the sheet only occupies the area BELOW the map. Sheet `top` snaps to the map bottom (e.g. `mapHeight = 42vh`), and `height = vh - mapHeight` instead of full `vh`. The sheet's transparent overlay no longer extends over the map, so the user can pan/zoom the map freely.
-- Keep the 3 snap points but constrain them to the sheet region (full / half / peek of `vh - mapHeight`).
-- The map (`QuickServiceMap`) stays fixed in the top 42% of the screen — never covered by the sheet container.
-- Remove the auto-pulse / fly-in that happens when the sheet first mounts (set initial `y` directly without `animate()` on mount).
+1. **Horizontal scrollers बीच की पूरी जगह को "अपने लिए" claim कर लेते हैं।**
+   Home / vendors / dashboard में कई rows हैं जो horizontally scroll होती हैं — Banner carousel, Recommended for you, Categories rail, vendor cards rail, dashboard product strip आदि। ये सब `overflow-x-auto snap-x snap-mandatory` के साथ बने हैं। `snap-mandatory` + default `touch-action` की वजह से जैसे ही उंगली इन rows पर पड़ती है, browser उस gesture को horizontal scroll मान लेता है और vertical scroll को page तक पहुँचने ही नहीं देता। चूँकि ये rows screen का ~95% width लेती हैं, सिर्फ बिल्कुल right edge पर ही page scroll मिलता है — exactly जैसा आप screenshot में दिखा रहे हैं।
 
-## 2. On/Off toggle redirects to vendor panel
+2. **कुछ हमेशा-mounted floating widgets अदृश्य रूप से बीच में बैठे हैं।** Specifically `FloatingInquiryWidget` `/quick` route पर बीच में 88vw चौड़ा fixed box बनाता है, और `FloatingInquiryWidget` का `constraintsRef` framer-motion drag के लिए full-screen overlay है। एक-दो जगह `pointer-events-none` ठीक से नहीं लगा है।
 
-File: `src/components/ShopLiveToggle.tsx`
+## Fix
 
-This toggle is used on both customer top-right (screenshot 1) and vendor shop (screenshot 2). Add an optional `redirectOnEnable` prop. When `true` and the user flips it ON, after the DB update succeeds, navigate to `/vendor/shop` (same behaviour as the Quick screen's on-button). On the customer `vendors.tsx` page, pass `redirectOnEnable`. On `vendor.shop.tsx`, leave default (no redirect — they're already there).
+A. **हर horizontal scroller पर `touch-action: pan-x` जोड़ें** — इससे browser को explicitly कहा जाता है "मैं सिर्फ horizontal handle करूँगा, vertical parent (page) को दे दो"। साथ ही `overscroll-behavior-x: contain` ताकि scroll-chaining साफ रहे।
 
-Also: today the toggle isn't actually rendered on `vendors.tsx` top-right of the map. Add it as a floating button at the map's top-right corner inside `<section className="absolute inset-0">`.
+   Files to patch (every `overflow-x-auto`):
+   - `src/components/BannerCarousel.tsx` (line 79)
+   - `src/components/CategorySections.tsx` (line 47)
+   - `src/routes/home.tsx` — recommended rail (line 282) और किसी और rail पर
+   - `src/routes/vendors.tsx` — chip strips और cards rail (lines 666, 792)
+   - `src/routes/vendor.shop.tsx` और `VendorDashboardCard.tsx` के अंदर का marquee/strip
+   - `src/components/TopProductsMarquee.tsx` और `ShopStatsTicker.tsx` अगर वैसा pattern है
 
-## 3. Vendor panel cover (screenshot 2)
+B. **`snap-mandatory` → `snap-proximity` बदलें** उन rows पर जहाँ snap की ज़रूरत है। Mandatory snap mobile में vertical scroll को सबसे ज़्यादा खाता है।
 
-File: `src/routes/vendor.shop.tsx` + `src/components/ShopMediaUploader.tsx`
+C. **Floating widget audit**:
+   - `FloatingInquiryWidget` के outer container पर `pointer-events: none` लगाएँ, सिर्फ अंदर के actual card पर `pointer-events: auto`। इससे card के chrome/halo area बीच की scroll को नहीं खाएगा।
+   - Confirm करें कि `AppShell` के decorative blur circles (lines 94-95) `pointer-events-none` हैं — already हैं ✓.
 
-- Move `ShopMediaUploader` (the cover video/image) out of the scrollable body and render it as a full-bleed header BEHIND the sticky top bar — width 100%, height ~220px, no rounded corners on top.
-- Overlay the vendor profile logo as a circular badge that "pokes out" below the cover: positioned absolute, half on the cover and half on the white sheet below, left-aligned with the existing avatar logic.
-- Top-right corner of the cover: add an **X close button** (white pill, `X` icon) that calls `navigate({ to: "/vendor/dashboard" })` — replaces the existing left-side `ArrowLeft` back button (keep the toggle and the Receipt button in place, just swap the back-arrow position to top-right X over the cover).
+D. **`AppShell` के `<main>` से `willChange: "transform, opacity"` हटाएँ** non-animation idle state में — यह GPU layer बनाता है जो कभी-कभी Android Chrome में input area को promoted layer में अटका देता है। Animation को pure CSS class से limit करेंगे (only for the 220ms fade), उसके बाद auto।
 
-## 4. Product / shop detail sheet (screenshot 3)
+E. **Marketing website (`/`, `/about`, …)**: यहाँ भी same `overflow-x-auto` sections होंगे sections.tsx में — same `touch-action: pan-x` लगाएँगे।
 
-The card `onOpen` currently navigates to `/home?vendor=…` which is the wrong target for the product preview shown. Two changes:
+## Verification
 
-- Add an **X close button** at the top-right corner of whatever sheet/overlay is opened from `ShopCard3D` → today that's a route navigation. Make it a slide-up bottom sheet (`Sheet side="bottom"`) instead, with the product photo at top and product info below — and an `X` in the top-right of the sheet that closes it (returns to the digital shops list).
-- Remove the "magic / flash" animation: in `ShopCard3D` strip the `whileHover y:-3`, the `whileTap scale:.985`, and the auto-sliding interval flash on tap (`setIdx` flash). Replace tap feedback with a tiny opacity transition only. The sheet opening uses Radix's default smooth slide — no extra Framer pulse.
+1. Preview खोलकर 360×682 viewport में home → middle finger drag से vertical scroll test करें।
+2. Same on `/vendors`, `/vendor/dashboard`, `/quick`, `/` (marketing)।
+3. Horizontal carousels अभी भी swipe होने चाहिए — कोई regression नहीं।
 
-## Files touched
+---
 
-- `src/routes/vendors.tsx` — lock sheet under map, render `ShopLiveToggle` on map, convert card open into a bottom-sheet detail with X, smooth card taps.
-- `src/components/ShopLiveToggle.tsx` — add `redirectOnEnable` prop.
-- `src/routes/vendor.shop.tsx` — full-bleed cover, profile logo overhang, top-right X close.
-- `src/components/ShopMediaUploader.tsx` — allow `variant="hero"` (no rounded top, full width, fixed height).
+# Step 2 — FCM sound delivery
 
-No backend/data changes. No new dependencies.
+जब आप scroll fix verify कर देंगे, तब hand-off:
+- `public/firebase-messaging-sw.js` में Android channel sound + `notification.sound` properly set करना।
+- `register_device_token` server payload में `sound: "alert.mp3"` या default को force करना।
+- iOS PWA limitation user को बताना।
+
+# Step 3 — Payment gateway
+
+- Cashfree और Razorpay client integration में pending issues को `src/lib/cashfree-client.ts`, `cashfree.functions.ts`, `payments.functions.ts`, `razorpay-client.ts` पर review और fix।
+- Test एक dummy order से।
+
+# Step 4 — Full bugs sweep
+
+Touch fix + payments verify होने के बाद, core flows (auth → home → cart → checkout → vendor request → accept → chat → rating) end-to-end run करके बचे bugs ठीक करेंगे।
+
+---
+
+## Technical summary (for the AI on next turn)
+
+- Add `style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}` (or Tailwind `touch-pan-x`) on every `overflow-x-auto` element listed in Fix A.
+- Change `snap-mandatory` → `snap-proximity` on vertical-region rails (banner, products, vendors cards).
+- In `FloatingInquiryWidget.tsx`: wrap outer `motion.div` with `pointer-events-none` container and apply `pointer-events-auto` only on the inner card div.
+- In `AppShell.tsx` `<main>`: remove `willChange` from inline style; rely on the keyed `lux-fade` animation alone.
+- Don't touch business logic, push, or payment files in this step.
+
+Approve to start with Step 1 only, या बताइए कि Step 2/3 भी same turn में attempt करूँ।
