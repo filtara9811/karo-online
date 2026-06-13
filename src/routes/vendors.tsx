@@ -686,16 +686,10 @@ function SheetBody({
 
         {/* Compact vendor cards — 3 visible per screen */}
         <div className="space-y-2">
-          {visible.map((v, i) => (
-            <motion.div
-              key={v.id}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: i * 0.04 }}
-            >
+          {visible.map((v) => (
+            <div key={v.id}>
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
-            </motion.div>
+            </div>
           ))}
           {visible.length === 0 && (
             <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
