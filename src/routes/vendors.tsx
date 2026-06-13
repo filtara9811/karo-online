@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
@@ -358,10 +358,10 @@ function VendorsPage() {
   const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
 
   return (
-    <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
+    <div className="relative min-h-dvh overflow-x-hidden bg-white isolate">
       {/* Real Google Map — locked to the top area. Sheet never covers it. */}
       <section
-        className="absolute inset-x-0 top-0 z-0"
+        className="relative z-0"
         style={{ height: `${MAP_PCT}vh` }}
       >
         <QuickServiceMap
@@ -379,7 +379,7 @@ function VendorsPage() {
         </div>
       </section>
 
-      <DraggableSheet topPct={MAP_PCT}>
+      <VendorsSheet>
         <SheetBody
           query={query}
           setQuery={setQuery}
@@ -407,7 +407,7 @@ function VendorsPage() {
             } as never,
           })}
         />
-      </DraggableSheet>
+      </VendorsSheet>
 
       {/* Product / shop detail sheet — opens smoothly with an X close in top-right */}
       <Sheet open={!!detailVendor} onOpenChange={(o) => !o && setDetailVendor(null)}>
@@ -481,76 +481,13 @@ function VendorsPage() {
 }
 
 
-/* -------- Draggable Sheet (peek / half / 90%) -------- */
+/* -------- Vendors Sheet -------- */
 
-function DraggableSheet({ children, topPct = 42 }: { children: React.ReactNode; topPct?: number }) {
-  const [vh, setVh] = useState(800);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // Sheet lives in the region BELOW the map. snap points are offsets
-  // measured from the TOP of that region (0 = expanded right under map).
-  const sheetTopPx = (vh * topPct) / 100;
-  const sheetH = vh - sheetTopPx;
-
-  const SNAPS = useMemo(() => {
-    const expanded = 0;                // sits flush against the map bottom
-    const half = Math.round(sheetH * 0.25);
-    const peek = Math.round(sheetH * 0.55);
-    return [expanded, half, peek];
-  }, [sheetH]);
-
-  // Initial position — start at "half" so map + a few shops are visible.
-  const y = useMotionValue(SNAPS[1]);
-
-  useEffect(() => {
-    // Snap directly without an animation pulse on first mount.
-    y.set(SNAPS[1]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAPS[1]]);
-
-  useEffect(() => {
-    const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
-    resetScroll();
-    const id = requestAnimationFrame(resetScroll);
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  const snapTo = (target: number) => {
-    animate(y, target, { type: "spring", stiffness: 320, damping: 32 });
-  };
-
-  const handleDragEnd = (_e: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-    const current = y.get();
-    const v = info.velocity.y;
-    const projected = current + v * 0.18;
-    let nearest = SNAPS[0];
-    let bestDist = Infinity;
-    for (const s of SNAPS) {
-      const d = Math.abs(s - projected);
-      if (d < bestDist) { bestDist = d; nearest = s; }
-    }
-    snapTo(nearest);
-  };
-
+function VendorsSheet({ children }: { children: React.ReactNode }) {
   return (
-    <motion.aside
-      drag="y"
-      dragConstraints={{ top: SNAPS[0], bottom: SNAPS[2] }}
-      dragElastic={0.04}
-      dragMomentum={false}
-      onDragEnd={handleDragEnd}
-      style={{ y, top: sheetTopPx, height: sheetH }}
-      className="absolute inset-x-0 z-20 will-change-transform"
-    >
+    <aside className="relative z-20 -mt-1 min-h-[58vh]">
       <div
-        className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
+        className="bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
       >
         {/* Drag handle */}
         <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
@@ -562,15 +499,13 @@ function DraggableSheet({ children, topPct = 42 }: { children: React.ReactNode; 
 
         {/* Scrollable content */}
         <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
-          onPointerDown={(e) => e.stopPropagation()}
+          className="flex-1"
+          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))", touchAction: "pan-y" }}
         >
           {children}
         </div>
       </div>
-    </motion.aside>
+    </aside>
   );
 }
 
@@ -631,9 +566,9 @@ function SheetBody({
     (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="block">
       {/* SCROLLABLE TOP — search + product cards */}
-      <div className="flex-1 overflow-y-auto px-4 pt-2" style={{ paddingBottom: "16px" }}>
+      <div className="px-4 pt-2" style={{ paddingBottom: "16px", touchAction: "pan-y" }}>
         {/* Search row: My Orders | Search | Profile */}
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -663,7 +598,7 @@ function SheetBody({
         </div>
 
         {/* Filter pills — each opens a bottom-sheet picker */}
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide touch-pan-x overscroll-x-contain">
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide overscroll-x-contain">
           <button
             onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
             disabled={activeFilterCount === 0}
@@ -774,7 +709,7 @@ function SheetBody({
 
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
-      <div className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
+      <div className="sticky bottom-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
         {/* Floating + button — Add | Neds */}
         <button
           onClick={() => setNeedsOpen(true)}
@@ -789,7 +724,7 @@ function SheetBody({
         </button>
 
         {/* Categories — same as Quick page */}
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide touch-pan-x overscroll-x-contain">
+        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide overscroll-x-contain">
           {CATS.map((c, i) => {
             const Icon = c.Icon;
             const isActive = categoryFilter === c.key;

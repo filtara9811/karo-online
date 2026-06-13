@@ -97,7 +97,7 @@ function HomePage() {
           <h3 className="font-display text-lg text-gold-gradient">Categories</h3>
           <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">Explore ›</span>
         </div>
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide touch-pan-x overscroll-x-contain">
+        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide overscroll-x-contain">
           {CATEGORIES.map((c) => {
             const Icon = c.icon;
             return (
@@ -279,7 +279,7 @@ const ProductRail = ({
         </h3>
         <span className="text-[10px] uppercase tracking-[0.22em] text-[color:oklch(0.55_0.10_82)]">See all ›</span>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x scrollbar-hide touch-pan-x overscroll-x-contain">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x scrollbar-hide overscroll-x-contain">
         {products.map((p) => {
           const inCart = items.find((i) => i.id === p.id);
           return (

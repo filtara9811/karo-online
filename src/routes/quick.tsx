@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Mic, Plus, Star, ShieldCheck, Package, ArrowRight,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
@@ -233,7 +233,6 @@ function QuickPage() {
   const navigate = useNavigate();
   const { profile, isAuthenticated, ready } = useAuth();
   const { requireAuth } = useAuthGate();
-  const contentRef = useRef<HTMLElement | null>(null);
   const geo = useGeolocation();
   const [activeTypeCode] = useActiveTypeId();
   const typeCode = activeTypeCode ?? "service";
@@ -473,16 +472,9 @@ function QuickPage() {
     });
   };
 
-  useEffect(() => {
-    const resetScroll = () => contentRef.current?.scrollTo({ top: 0, behavior: "auto" });
-    resetScroll();
-    const id = requestAnimationFrame(resetScroll);
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   return (
     <div
-      className="relative h-dvh bg-white flex flex-col overflow-hidden isolate overscroll-none"
+      className="relative min-h-dvh bg-white isolate overflow-x-hidden"
     >
       {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
@@ -546,24 +538,10 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* SCROLLABLE — only the service cards scroll */}
+      {/* SERVICE CARDS — native document scroll */}
       <section
-        ref={contentRef}
-        className="relative min-h-0 bg-white z-20 flex-1 overflow-y-auto overscroll-contain px-4"
-        onTouchStart={(e) => {
-          (e.currentTarget as HTMLElement).dataset.sx = String(e.touches[0].clientX);
-          (e.currentTarget as HTMLElement).dataset.sy = String(e.touches[0].clientY);
-        }}
-        onTouchEnd={(e) => {
-          const el = e.currentTarget as HTMLElement;
-          const sx = Number(el.dataset.sx ?? 0);
-          const sy = Number(el.dataset.sy ?? 0);
-          const dx = e.changedTouches[0].clientX - sx;
-          const dy = e.changedTouches[0].clientY - sy;
-          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4 && dx > 0) {
-            navigate({ to: "/vendors" });
-          }
-        }}
+        className="relative bg-white z-20 px-4"
+        style={{ touchAction: "pan-y" }}
       >
 
         {/* Service cards = sub-categories of the selected root */}
@@ -644,9 +622,8 @@ function QuickPage() {
       {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
       {!needsOpen && (
       <section
-        className="fixed left-0 right-0 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
+        className="sticky bottom-16 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
         style={{
-          bottom: "calc(64px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
         }}
       >
@@ -729,7 +706,7 @@ function QuickPage() {
           onClick={() => requireAuth(() => setNeedsOpen(true))}
           aria-label="Add need"
           className="btn-3d fixed z-40 right-5 grid place-items-center"
-          style={{ bottom: "calc(150px + env(safe-area-inset-bottom))" }}
+          style={{ bottom: "calc(150px + env(safe-area-inset-bottom))", touchAction: "manipulation" }}
         >
           <span className="relative h-16 w-16 rounded-full grid place-items-center bg-gradient-to-b from-[#e5e7eb] to-[#9ca3af] border-4 border-white shadow-[0_8px_22px_-4px_rgba(0,0,0,0.4)]">
             <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(220,38,38,0.4)" }} />
