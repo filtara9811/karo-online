@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Power } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -8,8 +9,12 @@ import { useAuth } from "@/hooks/use-auth";
  * On/Off switch shown at the top of the vendor's digital shop page.
  * Writes vendors.is_online — when ON, the shop appears in the customer-side
  * "All Digital Shops" list. When OFF, customers won't see it.
+ *
+ * When `redirectOnEnable` is true, flipping ON also navigates the user to
+ * the vendor panel (`/vendor/shop`) so they can manage products immediately.
  */
-export function ShopLiveToggle() {
+export function ShopLiveToggle({ redirectOnEnable = false }: { redirectOnEnable?: boolean } = {}) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [live, setLive] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -44,6 +49,9 @@ export function ShopLiveToggle() {
       return;
     }
     toast.success(next ? "Shop is LIVE — visible to customers" : "Shop is OFF — hidden from customers");
+    if (next && redirectOnEnable) {
+      setTimeout(() => navigate({ to: "/vendor/shop" }), 200);
+    }
   };
 
   return (

@@ -5,9 +5,10 @@ import {
   Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
   FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
-  Package, SlidersHorizontal, Check,
+  Package, SlidersHorizontal, Check, X,
   type LucideIcon,
 } from "lucide-react";
+import { ShopLiveToggle } from "@/components/ShopLiveToggle";
 import goldPin from "@/assets/gold-pin.png";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
 import { ProductServicePicker } from "@/components/ProductServicePicker";
@@ -353,10 +354,16 @@ function VendorsPage() {
     [visible],
   );
 
+  const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
+  const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
+
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
-      {/* Real Google Map (same component as /quick) — pins follow filters */}
-      <section className="absolute inset-0">
+      {/* Real Google Map — locked to the top area. Sheet never covers it. */}
+      <section
+        className="absolute inset-x-0 top-0 z-0"
+        style={{ height: `${MAP_PCT}vh` }}
+      >
         <QuickServiceMap
           center={origin}
           vendors={mapVendors}
@@ -365,9 +372,14 @@ function VendorsPage() {
           geoStatus={geo.status}
           radiusKm={maxKm}
         />
+
+        {/* Top-right: shop on/off toggle — flipping ON jumps to vendor panel */}
+        <div className="absolute top-3 right-3 z-30">
+          <ShopLiveToggle redirectOnEnable />
+        </div>
       </section>
 
-      <DraggableSheet>
+      <DraggableSheet topPct={MAP_PCT}>
         <SheetBody
           query={query}
           setQuery={setQuery}
@@ -380,7 +392,10 @@ function VendorsPage() {
           category={category} setCategory={setCategory}
           cityOptions={cityOptions}
           areaOptions={areaOptions}
-          onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
+          onOpen={(id) => {
+            const v = visible.find((x) => x.id === id) ?? sourceList.find((x) => x.id === id);
+            if (v) setDetailVendor(v);
+          }}
           onInquiry={(v) => navigate({
             to: "/chat",
             search: {
@@ -393,6 +408,74 @@ function VendorsPage() {
           })}
         />
       </DraggableSheet>
+
+      {/* Product / shop detail sheet — opens smoothly with an X close in top-right */}
+      <Sheet open={!!detailVendor} onOpenChange={(o) => !o && setDetailVendor(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[88vh] overflow-y-auto">
+          {detailVendor && (
+            <div className="relative">
+              <button
+                onClick={() => setDetailVendor(null)}
+                aria-label="Close"
+                className="absolute top-3 right-3 z-20 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow-md active:scale-90"
+              >
+                <X className="h-4 w-4 text-[color:oklch(0.25_0.05_85)]" strokeWidth={2.6} />
+              </button>
+              <img
+                src={detailVendor.hero}
+                alt={detailVendor.title}
+                className="w-full h-64 object-cover"
+              />
+              <div className="p-5 space-y-3">
+                <div>
+                  <h2 className="font-display text-lg text-gold-gradient font-bold leading-tight">
+                    {detailVendor.title}
+                  </h2>
+                  <p className="text-xs text-[color:oklch(0.45_0.05_85)] mt-0.5">{detailVendor.tagline}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.45)] text-[11px] font-bold text-[color:oklch(0.40_0.10_82)]">
+                    <Star className="h-3 w-3 fill-[#d4af37] text-[#d4af37]" />
+                    {detailVendor.rating} ({detailVendor.reviews})
+                  </span>
+                  {detailVendor.verified && (
+                    <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-[11px] font-bold text-emerald-700">
+                      <BadgeCheck className="h-3 w-3 fill-emerald-600 text-white" />
+                      Trusted
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.4)] text-[11px] font-bold text-[color:oklch(0.30_0.05_85)]">
+                    <MapPin className="h-3 w-3" /> {detailVendor.address}
+                  </span>
+                </div>
+                {detailVendor.priceFrom !== undefined && (
+                  <p className="font-display text-base text-gold-gradient font-bold">From ₹{detailVendor.priceFrom}</p>
+                )}
+                <button
+                  onClick={() => {
+                    const v = detailVendor;
+                    setDetailVendor(null);
+                    navigate({
+                      to: "/chat",
+                      search: {
+                        productId: v.id,
+                        productName: v.title,
+                        productImage: v.hero,
+                        productPrice: v.priceFrom ?? 0,
+                        mode: "inquiry",
+                      } as never,
+                    });
+                  }}
+                  className="w-full h-12 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow font-display font-bold italic flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Send Inquiry
+                </button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -400,7 +483,7 @@ function VendorsPage() {
 
 /* -------- Draggable Sheet (peek / half / 90%) -------- */
 
-function DraggableSheet({ children }: { children: React.ReactNode }) {
+function DraggableSheet({ children, topPct = 42 }: { children: React.ReactNode; topPct?: number }) {
   const [vh, setVh] = useState(800);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -411,20 +494,26 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Snap points expressed as `top` offsets from window top
-  const SNAPS = useMemo(() => {
-    const peek = vh * 0.55;   // sheet shows ~45% (map fully visible)
-    const half = vh * 0.30;   // sheet shows ~70%
-    const full = vh * 0.10;   // sheet shows ~90%
-    return [full, half, peek];
-  }, [vh]);
+  // Sheet lives in the region BELOW the map. snap points are offsets
+  // measured from the TOP of that region (0 = expanded right under map).
+  const sheetTopPx = (vh * topPct) / 100;
+  const sheetH = vh - sheetTopPx;
 
-  const y = useMotionValue(SNAPS[0]);
+  const SNAPS = useMemo(() => {
+    const expanded = 0;                // sits flush against the map bottom
+    const half = Math.round(sheetH * 0.25);
+    const peek = Math.round(sheetH * 0.55);
+    return [expanded, half, peek];
+  }, [sheetH]);
+
+  // Initial position — start at "half" so map + a few shops are visible.
+  const y = useMotionValue(SNAPS[1]);
 
   useEffect(() => {
-    animate(y, SNAPS[0], { type: "spring", stiffness: 300, damping: 30 });
+    // Snap directly without an animation pulse on first mount.
+    y.set(SNAPS[1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAPS[0]]);
+  }, [SNAPS[1]]);
 
   useEffect(() => {
     const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
@@ -440,7 +529,6 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
   const handleDragEnd = (_e: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
     const current = y.get();
     const v = info.velocity.y;
-    // pick nearest snap, biased by velocity
     const projected = current + v * 0.18;
     let nearest = SNAPS[0];
     let bestDist = Infinity;
@@ -452,14 +540,14 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
   };
 
   return (
-      <motion.aside
+    <motion.aside
       drag="y"
       dragConstraints={{ top: SNAPS[0], bottom: SNAPS[2] }}
       dragElastic={0.04}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
-      style={{ y, top: 0, height: vh }}
-        className="absolute inset-x-0 top-0 z-20 will-change-transform"
+      style={{ y, top: sheetTopPx, height: sheetH }}
+      className="absolute inset-x-0 z-20 will-change-transform"
     >
       <div
         className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
@@ -472,7 +560,7 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
           </span>
         </div>
 
-        {/* Scrollable content — only scrolls when sheet at full height */}
+        {/* Scrollable content */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto overscroll-contain"
@@ -598,16 +686,10 @@ function SheetBody({
 
         {/* Compact vendor cards — 3 visible per screen */}
         <div className="space-y-2">
-          {visible.map((v, i) => (
-            <motion.div
-              key={v.id}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: i * 0.04 }}
-            >
+          {visible.map((v) => (
+            <div key={v.id}>
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
-            </motion.div>
+            </div>
           ))}
           {visible.length === 0 && (
             <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
@@ -834,8 +916,8 @@ function ShopCard3D({
 
   return (
     <motion.article
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.985 }}
+      initial={false}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       onClick={() => onOpen(vendor.id)}
       className={`group relative rounded-3xl overflow-hidden cursor-pointer
         bg-gradient-to-b from-white via-white to-[#fffaf0]

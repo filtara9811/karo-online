@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
  * - Writes the URL to vendors.cover_video_url / cover_image_url.
  * - Live preview here; same media appears on the customer-facing digital shop.
  */
-export function ShopMediaUploader() {
+export function ShopMediaUploader({ variant = "card" }: { variant?: "card" | "hero" } = {}) {
   const { user } = useAuth();
   const [video, setVideo] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
@@ -67,15 +67,28 @@ export function ShopMediaUploader() {
 
   const hasMedia = !!video || !!image;
 
+  const isHero = variant === "hero";
+
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)]"
+      className={
+        isHero
+          ? "relative overflow-hidden border-b border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.35)]"
+          : "relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)]"
+      }
       style={{
         background:
           "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 55%, #a8acb3 100%)",
       }}
     >
-      <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]">
+      <div
+        className={
+          isHero
+            ? "relative w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]"
+            : "relative aspect-[16/9] w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]"
+        }
+        style={isHero ? { height: "220px" } : undefined}
+      >
         {video ? (
           <video
             key={video}
@@ -109,7 +122,13 @@ export function ShopMediaUploader() {
         )}
       </div>
 
-      <div className="px-3 py-2.5 flex items-center gap-2">
+      <div
+        className={
+          isHero
+            ? "absolute bottom-2 right-2 z-10 flex items-center gap-1.5"
+            : "px-3 py-2.5 flex items-center gap-2"
+        }
+      >
         <input
           ref={imgRef}
           type="file"
@@ -136,27 +155,37 @@ export function ShopMediaUploader() {
           type="button"
           onClick={() => vidRef.current?.click()}
           disabled={!!uploading}
-          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b8941f] border border-white/60 shadow-md text-xs font-bold text-white flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60"
+          className={
+            isHero
+              ? "h-8 w-8 rounded-full grid place-items-center bg-black/55 backdrop-blur text-white border border-white/30 shadow active:scale-90 disabled:opacity-60"
+              : "flex-1 h-10 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b8941f] border border-white/60 shadow-md text-xs font-bold text-white flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60"
+          }
+          aria-label={video ? "Change Video" : "Upload Video"}
         >
           {uploading === "video" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <VideoIcon className="h-3.5 w-3.5" />
           )}
-          {video ? "Change Video" : "Upload Video"}
+          {!isHero && (video ? "Change Video" : "Upload Video")}
         </button>
         <button
           type="button"
           onClick={() => imgRef.current?.click()}
           disabled={!!uploading}
-          className="flex-1 h-10 rounded-xl bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow text-xs font-bold text-[color:oklch(0.22_0.05_85)] flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60"
+          className={
+            isHero
+              ? "h-8 w-8 rounded-full grid place-items-center bg-black/55 backdrop-blur text-white border border-white/30 shadow active:scale-90 disabled:opacity-60"
+              : "flex-1 h-10 rounded-xl bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow text-xs font-bold text-[color:oklch(0.22_0.05_85)] flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60"
+          }
+          aria-label={image ? "Change Photo" : "Upload Photo"}
         >
           {uploading === "image" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <ImagePlus className="h-3.5 w-3.5" />
           )}
-          {image ? "Change Photo" : "Upload Photo"}
+          {!isHero && (image ? "Change Photo" : "Upload Photo")}
         </button>
       </div>
     </section>
