@@ -206,7 +206,7 @@ function VendorDashboard() {
     if (!user) return;
     let cancelled = false;
     const fields =
-      "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
+      "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km, cover_image_url, cover_video_url";
     const loadVendor = async () => {
       const readOwnVendor = () =>
         supabase.from("vendors").select(fields).eq("user_id", user.id).maybeSingle();
