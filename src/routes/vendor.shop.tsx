@@ -159,7 +159,7 @@ function VendorShop() {
 
   return (
     <div
-      className="relative min-h-dvh overflow-x-hidden overflow-y-auto pb-32 isolate"
+      className="relative min-h-dvh overflow-x-hidden pb-32 isolate"
       style={{
         background:
           "radial-gradient(ellipse at top, #f5f6f8 0%, transparent 55%), linear-gradient(160deg, #f5f6f8 0%, #f5f6f8 60%, #eef0f3 100%)",
