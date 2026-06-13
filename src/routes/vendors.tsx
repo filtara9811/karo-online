@@ -483,6 +483,11 @@ function SheetBody({
   const [defaultHome, setDefaultHome] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("ac");
   const [pulseKey, setPulseKey] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [city, setCity] = useState<string>("All");
+  const [area, setArea] = useState<string>("All");
+  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
+  const [maxKm, setMaxKm] = useState<number>(25);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -505,12 +510,57 @@ function SheetBody({
     setTimeout(() => navigate({ to: mode === "service" ? "/quick" : "/" }), 250);
   };
 
+  // Derive city/area options from current vendor pool (address last chunk = city)
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
+      if (c) set.add(c);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+  const areaOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 2) set.add(parts[0]);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+
+  // Apply filters on top of `filtered` (already query-filtered upstream)
+  const visible = useMemo(() => {
+    return filtered.filter((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      const vArea = parts[0] ?? "";
+      if (city !== "All" && vCity !== city) return false;
+      if (area !== "All" && vArea !== area) return false;
+      if (maxKm > 0 && v.km > maxKm) return false;
+      // Wholesaler/Retailer: dummy heuristic — priceFrom>=500 => Wholesaler
+      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
+      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
+      return true;
+    });
+  }, [filtered, city, area, maxKm, trader]);
+
+  const activeFilterCount =
+    (city !== "All" ? 1 : 0) + (area !== "All" ? 1 : 0) + (trader !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
+
   return (
     <div className="flex flex-col h-full">
       {/* SCROLLABLE TOP — search + product cards */}
       <div className="flex-1 overflow-y-auto px-4 pt-2" style={{ paddingBottom: "16px" }}>
-        {/* Search bar — same shape as Quick page */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* Search row: My Orders | Search | Profile */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={() => navigate({ to: "/orders" })}
+            className="h-11 w-11 rounded-full grid place-items-center bg-gradient-to-b from-[#fff5e6] to-[#fde0b8] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_3px_10px_-2px_rgba(212,175,55,0.45)] active:scale-95 flex-shrink-0 relative"
+            aria-label="My Orders"
+          >
+            <Package className="h-5 w-5 text-[color:oklch(0.50_0.18_50)]" strokeWidth={2.4} />
+            <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold grid place-items-center">•</span>
+          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex-1 flex items-center gap-2 rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.3)] px-4 py-2.5 active:scale-[0.98] transition-transform"
@@ -529,12 +579,54 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Compact uniform vendor cards — 3-4 visible */}
-        <div className="space-y-3">
-          {filtered.map((v, i) => (
+        {/* Filters row — city / area / trader / range */}
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+          <button
+            onClick={() => setFiltersOpen((s) => !s)}
+            className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
+              activeFilterCount > 0
+                ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
+                : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.5)]"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-0.5 h-4 w-4 rounded-full bg-white/30 text-[9px] grid place-items-center">{activeFilterCount}</span>
+            )}
+          </button>
+          <FilterPill label="City" value={city} options={cityOptions} onPick={setCity} />
+          <FilterPill label="Area" value={area} options={areaOptions} onPick={setArea} />
+          <FilterPill label="Trade" value={trader} options={["All", "Wholesaler", "Retailer"]} onPick={(v) => setTrader(v as typeof trader)} />
+          <FilterPill label="Range" value={`${maxKm} km`} options={["5 km", "10 km", "25 km", "50 km"]} onPick={(v) => setMaxKm(parseInt(v))} />
+        </div>
+
+        {filtersOpen && (
+          <div className="mb-3 p-3 rounded-2xl bg-gradient-to-b from-white to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-sm space-y-2">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-[color:oklch(0.55_0.10_82)]">Distance: within {maxKm} km</p>
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={maxKm}
+              onChange={(e) => setMaxKm(parseInt(e.target.value))}
+              className="w-full accent-[#d97706]"
+            />
+            <button
+              onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); }}
+              className="text-[11px] font-bold text-[color:oklch(0.50_0.18_50)] underline"
+            >
+              Reset all filters
+            </button>
+          </div>
+        )}
+
+        {/* Compact vendor cards — 3 visible per screen */}
+        <div className="space-y-2">
+          {visible.map((v, i) => (
             <motion.div
               key={v.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ delay: i * 0.04 }}
@@ -542,12 +634,18 @@ function SheetBody({
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
             </motion.div>
           ))}
+          {visible.length === 0 && (
+            <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
+              No shops match these filters. Try clearing them.
+            </div>
+          )}
         </div>
 
         <p className="text-center text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold mt-6 mb-2 italic">
           ✦ End of digital marketplace ✦
         </p>
       </div>
+
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
       <div className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
