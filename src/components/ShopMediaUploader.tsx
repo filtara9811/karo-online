@@ -67,15 +67,28 @@ export function ShopMediaUploader({ variant = "card" }: { variant?: "card" | "he
 
   const hasMedia = !!video || !!image;
 
+  const isHero = variant === "hero";
+
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)]"
+      className={
+        isHero
+          ? "relative overflow-hidden border-b border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.35)]"
+          : "relative overflow-hidden rounded-3xl border border-[color:oklch(0.72_0.01_260/0.55)] shadow-[0_18px_40px_-16px_rgba(212,175,55,0.55)]"
+      }
       style={{
         background:
           "linear-gradient(135deg, #f5f6f8 0%, #d8dde3 55%, #a8acb3 100%)",
       }}
     >
-      <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]">
+      <div
+        className={
+          isHero
+            ? "relative w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]"
+            : "relative aspect-[16/9] w-full bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]"
+        }
+        style={isHero ? { height: "220px" } : undefined}
+      >
         {video ? (
           <video
             key={video}
