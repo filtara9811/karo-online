@@ -15,6 +15,7 @@ import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 import { ShopMediaUploader } from "@/components/ShopMediaUploader";
 import { ShopStatsTicker } from "@/components/ShopStatsTicker";
 import { ShopSearchBar } from "@/components/ShopSearchBar";
+import { ShopLiveToggle } from "@/components/ShopLiveToggle";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { TopProductsMarquee } from "@/components/TopProductsMarquee";
 import { CategorySections } from "@/components/CategorySections";
@@ -169,24 +170,19 @@ function VendorShop() {
 
       {/* Top bar */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-[color:oklch(0.72_0.01_260/0.35)]">
-        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           <button
             onClick={() => navigate({ to: "/vendor/dashboard" })}
             aria-label="Back"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
+            className="h-9 w-9 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90 flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 text-[color:oklch(0.42_0.01_260)]" />
           </button>
-          <div className="flex-1 min-w-0 text-center">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
-            <h1 className="font-display text-lg text-silver-gradient leading-tight font-bold">
-              Ashhu's Digital Shop
-            </h1>
-          </div>
+          <ShopLiveToggle />
           <button
             onClick={() => setPosOpen(true)}
             aria-label="Create Invoice"
-            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90"
+            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90 flex-shrink-0"
             style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
           >
             <Receipt className="h-4 w-4" />
@@ -197,7 +193,14 @@ function VendorShop() {
             )}
           </button>
         </div>
+        <div className="max-w-md mx-auto px-4 pb-2 text-center">
+          <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
+          <h1 className="font-display text-base text-silver-gradient leading-tight font-bold">
+            Ashhu's Digital Shop
+          </h1>
+        </div>
       </header>
+
 
       <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
         {/* === Digital-shop cover uploader (video / image) === */}
