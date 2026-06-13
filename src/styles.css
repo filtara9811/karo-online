@@ -667,3 +667,17 @@ body.needs-sheet-open [data-bottom-action-bar] {
   to { transform: rotate(360deg); }
 }
 .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+
+/* ============================================================
+   Global touch-action fix for horizontal scrollers.
+   Without this, Android Chrome / WebView captures the entire
+   vertical scroll gesture when the user's finger lands on any
+   `overflow-x` container that is wider than the viewport.
+   Pan-x tells the browser: "I only handle horizontal swipes;
+   pass vertical scrolling up to the page."
+   ============================================================ */
+.overflow-x-auto,
+.overflow-x-scroll {
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
