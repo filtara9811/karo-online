@@ -34,6 +34,9 @@ import {
   Box,
   Filter as FilterIcon,
   Calendar as CalendarIcon,
+  ImagePlus,
+  Video as VideoIcon,
+  MapPin,
 } from "lucide-react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import avatarUser from "@/assets/avatar-user.png";
