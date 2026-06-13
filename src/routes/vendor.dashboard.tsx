@@ -886,54 +886,16 @@ function VendorDashboard() {
 
       <ActionAlertBanner role="vendor" />
 
-      {/* Map hero with vendor pin in center */}
-      <section className="relative touch-pan-y">
-        <div className="relative h-[240px] w-full overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 touch-pan-y">
-            <VendorMapHero
-              center={{ lat: vendorLat, lng: vendorLng }}
-              vendors={vendorMapCards}
-              businessName={vendor?.business_name ?? "My Shop"}
-              locationLabel={
-                liveGeo
-                  ? geo.label
-                  : vendor?.operation_mode === "dynamic"
-                    ? "Live GPS"
-                    : "Shop address"
-              }
-            />
-          </div>
-          <AcceptedLeadFloatingButton />
-          {/* Status + nearby customers chip */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
-              {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
-            </div>
-            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {onlineCustomerCount} online
-              <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-              {offlineCustomerCount} offline
-            </div>
-            <div className="px-2.5 py-1 rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] shadow text-[9px] font-bold text-[color:oklch(0.45_0.05_85)]">
-              10 km radius
-            </div>
-          </div>
-          <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-            <button
-              onClick={() => setActionsOpen(true)}
-              aria-label="Quick actions"
-              className="h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm active:scale-90 shrink-0"
-            >
-              <Store className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-            </button>
-            <VendorNotificationBell />
-          </div>
-        </div>
-        {/* Soft cream fade into content */}
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-12 bg-gradient-to-b from-transparent to-[#fdf8ec]" />
-      </section>
+      {/* Facebook-style cover: vendor uploads image or video for digital shop */}
+      <ShopCoverHero
+        vendor={vendor}
+        userId={user?.id}
+        onUpdated={(patch) => setVendor((p) => ({ ...(p ?? {}), ...patch } as any))}
+        onlineCustomerCount={onlineCustomerCount}
+        offlineCustomerCount={offlineCustomerCount}
+        onQuickActions={() => setActionsOpen(true)}
+      />
+
 
       <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
         {/* Coin-rate market ticker (dismissable) */}
