@@ -1577,11 +1577,28 @@ function ShopCoverHero({
         ) : (
           <div className="absolute inset-0 grid place-items-center">
             <div className="text-center px-6">
-              <div className="mx-auto h-14 w-14 rounded-2xl grid place-items-center bg-white/90 border border-[color:oklch(0.78_0.14_82/0.6)] shadow mb-2">
-                <ImagePlus className="h-6 w-6 text-[color:oklch(0.42_0.10_82)]" />
+              <p className="text-[11px] uppercase tracking-[0.25em] text-[color:oklch(0.45_0.10_82)] font-bold mb-3">Your Digital Shop</p>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => vidInputRef.current?.click()}
+                  disabled={!!uploading}
+                  className="h-11 px-4 rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8941f] border-2 border-white shadow-lg text-xs font-bold text-white flex items-center gap-1.5 active:scale-95 disabled:opacity-60"
+                >
+                  <VideoIcon className="h-4 w-4" />
+                  {uploading === "video" ? "Uploading…" : "Upload Video"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => imgInputRef.current?.click()}
+                  disabled={!!uploading}
+                  className="h-11 px-4 rounded-full bg-white/95 border-2 border-[color:oklch(0.78_0.14_82/0.6)] shadow-md text-xs font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5 active:scale-95 disabled:opacity-60"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  {uploading === "image" ? "…" : "Photo"}
+                </button>
               </div>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-[color:oklch(0.45_0.10_82)] font-bold">Your Digital Shop</p>
-              <p className="text-[10px] text-[color:oklch(0.45_0.05_85)] mt-0.5">Upload a shop photo or short video</p>
+              <p className="text-[10px] text-[color:oklch(0.45_0.05_85)] mt-2">MP4 / JPEG · auto-loops as your shop cover</p>
             </div>
           </div>
         )}
