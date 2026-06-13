@@ -677,7 +677,13 @@ body.needs-sheet-open [data-bottom-action-bar] {
    pass vertical scrolling up to the page."
    ============================================================ */
 .overflow-x-auto,
-.overflow-x-scroll {
-  touch-action: pan-x;
-  overscroll-behavior-x: contain;
+.overflow-x-scroll,
+.overflow-hidden {
+  touch-action: pan-x pan-y;
+}
+
+.overflow-y-auto,
+.overflow-y-scroll {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
