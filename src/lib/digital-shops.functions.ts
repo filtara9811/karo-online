@@ -84,8 +84,8 @@ export const getNearbyDigitalShops = createServerFn({ method: "POST" })
           service_radius_km: Number(v.service_radius_km ?? 10),
         };
       })
-      .filter((s) => !origin || s.km == null || radiusKm === 0 || s.km <= radiusKm)
-      .sort((a, b) => {
+      .filter((s: DigitalShop) => !origin || s.km == null || radiusKm === 0 || s.km <= radiusKm)
+      .sort((a: DigitalShop, b: DigitalShop) => {
         if (a.is_online !== b.is_online) return a.is_online ? -1 : 1;
         return (a.km ?? 9999) - (b.km ?? 9999);
       })
