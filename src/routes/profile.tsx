@@ -1230,7 +1230,7 @@ function ProfileDetailsSheet({
       <SheetActions
         onClose={onClose}
         onSave={save}
-        saveLabel={saving ? "Saving…" : unlocked ? "Update" : "Unlock to Edit"}
+        saveLabel={saving ? "Saving…" : "Update"}
       />
 
       <OtpModal
