@@ -226,8 +226,14 @@ const SECTION_RAILS: { id: string; title: string; icon: typeof Flame; vendors: V
 function VendorsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [activePin, setActivePin] = useState<string | null>(null);
   const geo = useGeolocation();
+
+  // Filter state (lifted up so map + sheet share the same visible set)
+  const [city, setCity] = useState<string>("All");
+  const [area, setArea] = useState<string>("All");
+  const [trader, setTrader] = useState<"All" | "Wholesaler" | "Retailer">("All");
+  const [maxKm, setMaxKm] = useState<number>(25);
+  const [category, setCategory] = useState<string>("All");
 
   // Live origin for both Google ETA and real-data nearby query
   const origin0 = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
@@ -270,7 +276,6 @@ function VendorsPage() {
     });
   }, [shops]);
 
-  // Use real data when available; fallback to dummy demo data until vendors onboard.
   const sourceList: Vendor[] = realVendors.length > 0 ? realVendors : VENDORS;
 
   const filtered = useMemo(() => {
@@ -279,88 +284,102 @@ function VendorsPage() {
     return sourceList.filter((v) => v.title.toLowerCase().includes(q));
   }, [query, sourceList]);
 
-  // Live driving distance + ETA from user's location to every vendor
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const c = v.address.split(",").map((s) => s.trim()).filter(Boolean).pop();
+      if (c) set.add(c);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered]);
+  const areaOptions = useMemo(() => {
+    const set = new Set<string>();
+    filtered.forEach((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      if (city !== "All" && vCity !== city) return;
+      if (parts.length >= 2) set.add(parts[0]);
+    });
+    return ["All", ...Array.from(set)];
+  }, [filtered, city]);
+
+  const visible = useMemo(() => {
+    const catLabel = CATS.find((c) => c.key === category)?.label.toLowerCase();
+    return filtered.filter((v) => {
+      const parts = v.address.split(",").map((s) => s.trim()).filter(Boolean);
+      const vCity = parts[parts.length - 1] ?? "";
+      const vArea = parts[0] ?? "";
+      if (city !== "All" && vCity !== city) return false;
+      if (area !== "All" && vArea !== area) return false;
+      if (maxKm > 0 && v.km > maxKm) return false;
+      if (trader === "Wholesaler" && !((v.priceFrom ?? 0) >= 500)) return false;
+      if (trader === "Retailer" && !((v.priceFrom ?? 0) < 500)) return false;
+      if (catLabel && category !== "All") {
+        const hay = `${v.title} ${v.tagline}`.toLowerCase();
+        if (!hay.includes(catLabel)) return false;
+      }
+      return true;
+    });
+  }, [filtered, city, area, maxKm, trader, category]);
+
   const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
-  const dests = useMemo(() => filtered.map((v) => ({ lat: v.lat, lng: v.lng })), [filtered]);
+  const dests = useMemo(() => visible.map((v) => ({ lat: v.lat, lng: v.lng })), [visible]);
   const etaList = useDistanceMatrix(origin, dests);
   const etas = useMemo(() => {
     const map: Record<string, { km: string; eta: string; live: boolean }> = {};
-    filtered.forEach((v, i) => {
+    visible.forEach((v, i) => {
       const e = etaList[i];
       if (e) map[v.id] = { km: e.kmText, eta: e.etaText, live: e.source === "google" };
     });
     return map;
-  }, [filtered, etaList]);
+  }, [visible, etaList]);
 
+  const mapVendors = useMemo(
+    () =>
+      visible
+        .filter((v) => v.lat && v.lng)
+        .map((v) => ({
+          id: v.id,
+          name: v.title,
+          avatar: v.avatar,
+          x: 50,
+          y: 50,
+          area: v.address,
+          km: v.km,
+          status: "Office" as const,
+          lat: v.lat,
+          lng: v.lng,
+        })),
+    [visible],
+  );
 
   return (
     <div className="relative h-dvh min-h-screen overflow-hidden bg-white isolate">
-      {/* MAP — fills entire screen, sheet sits on top */}
+      {/* Real Google Map (same component as /quick) — pins follow filters */}
       <section className="absolute inset-0">
-        <MapBg />
-
-        {/* Header removed (back, bulb, language) per user request */}
-
-        {/* Pins */}
-        <AnimatePresence>
-          {PINS.map((p, i) => (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, y: -16, scale: 0.6 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 320, damping: 22, delay: i * 0.06 }}
-              onClick={() => setActivePin(activePin === p.id ? null : p.id)}
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${p.x}%`, top: `${p.y}%` }}
-            >
-              <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl pl-1 pr-2 py-1 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-md">
-                <span className="relative h-7 w-7 rounded-full overflow-hidden border-2 border-white">
-                  <img src={p.avatar} alt="" className="h-full w-full object-cover" />
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
-                    <svg viewBox="0 0 12 16" className="h-3 w-2.5 text-[color:oklch(0.55_0.18_55)] drop-shadow"><path d="M6 0 C2 0 0 3 0 6 C0 11 6 16 6 16 C6 16 12 11 12 6 C12 3 10 0 6 0 Z" fill="currentColor" /></svg>
-                  </span>
-                </span>
-                <div className="leading-tight text-left">
-                  <p className="font-display text-[10px] font-bold text-[color:oklch(0.25_0.05_85)] whitespace-nowrap">{p.name}</p>
-                  <p className="text-[7px] text-[color:oklch(0.45_0.08_85)]">📍 {p.area}</p>
-                  <p className="text-[7px]">
-                    <span className="text-[color:oklch(0.45_0.08_85)]">{p.km} km. </span>
-                    <span className={`underline ${p.status === "Online" ? "text-emerald-600" : "text-[color:oklch(0.45_0.18_55)]"} font-semibold`}>{p.status}</span>
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-          ))}
-        </AnimatePresence>
-
-        {/* Center "My current location" */}
-        <div className="absolute left-1/2 top-[34%] -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center pointer-events-none">
-          <div className="relative">
-            <span className="absolute inset-0 rounded-full" style={{ animation: "ping-slow 2s ease-out infinite", background: "rgba(212,175,55,0.45)" }} />
-            <svg viewBox="0 0 32 40" className="relative h-14 w-11 drop-shadow-[0_4px_8px_rgba(212,175,55,0.5)]">
-              <path d="M16 0 C7 0 0 7 0 16 C0 28 16 40 16 40 C16 40 32 28 32 16 C32 7 25 0 16 0 Z" fill="oklch(0.55 0.18 82)" stroke="white" strokeWidth="1.5" />
-              <circle cx="16" cy="15" r="9" fill="white" />
-            </svg>
-            <span className="absolute top-[6px] left-1/2 -translate-x-1/2 h-[18px] w-[18px] rounded-full overflow-hidden">
-              <img src={avatarRaj} alt="" className="h-full w-full object-cover" />
-            </span>
-          </div>
-          <span
-            className="mt-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-display font-bold text-[color:oklch(0.25_0.05_85)] shadow whitespace-nowrap max-w-[200px] truncate"
-            title={geo.label}
-          >
-            📍 {geo.status === "loading" || geo.status === "idle" ? "Detecting your location…" : geo.label}
-          </span>
-        </div>
+        <QuickServiceMap
+          center={origin}
+          vendors={mapVendors}
+          userAvatar={avatarUser}
+          userLabel={geo.label}
+          geoStatus={geo.status}
+          radiusKm={maxKm}
+        />
       </section>
 
-      {/* DRAGGABLE BOTTOM SHEET */}
       <DraggableSheet>
         <SheetBody
           query={query}
           setQuery={setQuery}
-          filtered={filtered}
+          visible={visible}
           etas={etas}
+          city={city} setCity={setCity}
+          area={area} setArea={setArea}
+          trader={trader} setTrader={setTrader}
+          maxKm={maxKm} setMaxKm={setMaxKm}
+          category={category} setCategory={setCategory}
+          cityOptions={cityOptions}
+          areaOptions={areaOptions}
           onOpen={(id) => navigate({ to: "/home", search: { vendor: id } as never })}
           onInquiry={(v) => navigate({
             to: "/chat",
@@ -377,6 +396,7 @@ function VendorsPage() {
     </div>
   );
 }
+
 
 /* -------- Draggable Sheet (peek / half / 90%) -------- */
 
