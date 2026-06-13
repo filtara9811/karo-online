@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
  * - Writes the URL to vendors.cover_video_url / cover_image_url.
  * - Live preview here; same media appears on the customer-facing digital shop.
  */
-export function ShopMediaUploader() {
+export function ShopMediaUploader({ variant = "card" }: { variant?: "card" | "hero" } = {}) {
   const { user } = useAuth();
   const [video, setVideo] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
