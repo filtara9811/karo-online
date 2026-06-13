@@ -44,7 +44,7 @@ export function CategorySections({
               All <ChevronRight className="h-3 w-3" />
             </button>
           </div>
-          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 touch-pan-x overscroll-x-contain">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 overscroll-x-contain">
             <div className="flex gap-2.5 w-max pb-1">
               {list.map((p) => (
                 <CategoryTile

@@ -119,12 +119,12 @@ export function FloatingInquiryWidget() {
             rotate: { duration: 2.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" },
           }}
           onDragEnd={() => {}}
-          className="fixed z-[5] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm"
+          className="fixed z-[5] left-1/2 -translate-x-1/2 w-[88vw] max-w-sm pointer-events-none"
           style={{
             // Sandwich layout: widget sits BEHIND the search-bar header
             // (header has z-20). Only a small tab peeks up onto the map.
             top: widgetTop,
-            touchAction: "auto",
+            touchAction: "pan-y",
           }}
         >
           {/* Pulse halo (only on home) */}
@@ -144,7 +144,7 @@ export function FloatingInquiryWidget() {
               />
             </>
           )}
-          <div className={`relative rounded-2xl shadow-[0_10px_30px_-8px_rgba(15,23,42,0.4)] border overflow-hidden backdrop-blur ${
+          <div className={`pointer-events-auto relative rounded-2xl shadow-[0_10px_30px_-8px_rgba(15,23,42,0.4)] border overflow-hidden backdrop-blur ${
             isApproved
               ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-300"
               : "bg-gradient-to-br from-[#fff8dc] to-white border-[color:oklch(0.78_0.14_82/0.55)]"

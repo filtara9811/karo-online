@@ -32,6 +32,7 @@ export function TopProductsMarquee({
       </div>
       <div
         className="overflow-hidden -mx-4 px-4"
+        style={{ touchAction: "pan-y" }}
         onTouchStart={() => setPaused(true)}
         onTouchEnd={() => setPaused(false)}
       >
