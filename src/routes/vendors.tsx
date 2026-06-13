@@ -15,6 +15,8 @@ import goldRepair from "@/assets/gold-cat-repair.png";
 import goldBriefcase from "@/assets/gold-briefcase.png";
 import { NeedsSheet } from "@/components/NeedsSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
+import { useQuery } from "@tanstack/react-query";
+import { getNearbyDigitalShops, type DigitalShop } from "@/lib/digital-shops.functions";
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
