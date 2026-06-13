@@ -34,6 +34,8 @@ import {
   Box,
   Filter as FilterIcon,
   Calendar as CalendarIcon,
+  ImagePlus,
+  Video as VideoIcon,
 } from "lucide-react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import avatarUser from "@/assets/avatar-user.png";
@@ -206,7 +208,7 @@ function VendorDashboard() {
     if (!user) return;
     let cancelled = false;
     const fields =
-      "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km";
+      "business_name, owner_name, avatar_url, status, verified, auto_accept_leads, is_online, lat, lng, live_lat, live_lng, operation_mode, service_radius_km, cover_image_url, cover_video_url";
     const loadVendor = async () => {
       const readOwnVendor = () =>
         supabase.from("vendors").select(fields).eq("user_id", user.id).maybeSingle();
@@ -883,54 +885,16 @@ function VendorDashboard() {
 
       <ActionAlertBanner role="vendor" />
 
-      {/* Map hero with vendor pin in center */}
-      <section className="relative touch-pan-y">
-        <div className="relative h-[240px] w-full overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 touch-pan-y">
-            <VendorMapHero
-              center={{ lat: vendorLat, lng: vendorLng }}
-              vendors={vendorMapCards}
-              businessName={vendor?.business_name ?? "My Shop"}
-              locationLabel={
-                liveGeo
-                  ? geo.label
-                  : vendor?.operation_mode === "dynamic"
-                    ? "Live GPS"
-                    : "Shop address"
-              }
-            />
-          </div>
-          <AcceptedLeadFloatingButton />
-          {/* Status + nearby customers chip */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
-              {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
-            </div>
-            <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {onlineCustomerCount} online
-              <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-              {offlineCustomerCount} offline
-            </div>
-            <div className="px-2.5 py-1 rounded-full bg-white/90 border border-[color:oklch(0.78_0.14_82/0.4)] shadow text-[9px] font-bold text-[color:oklch(0.45_0.05_85)]">
-              10 km radius
-            </div>
-          </div>
-          <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-            <button
-              onClick={() => setActionsOpen(true)}
-              aria-label="Quick actions"
-              className="h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm active:scale-90 shrink-0"
-            >
-              <Store className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
-            </button>
-            <VendorNotificationBell />
-          </div>
-        </div>
-        {/* Soft cream fade into content */}
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-12 bg-gradient-to-b from-transparent to-[#fdf8ec]" />
-      </section>
+      {/* Facebook-style cover: vendor uploads image or video for digital shop */}
+      <ShopCoverHero
+        vendor={vendor}
+        userId={user?.id}
+        onUpdated={(patch) => setVendor((p) => ({ ...(p ?? {}), ...patch } as any))}
+        onlineCustomerCount={onlineCustomerCount}
+        offlineCustomerCount={offlineCustomerCount}
+        onQuickActions={() => setActionsOpen(true)}
+      />
+
 
       <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
         {/* Coin-rate market ticker (dismissable) */}
@@ -1530,6 +1494,200 @@ function VendorDashboard() {
     </div>
   );
 }
+
+type ShopCoverVendor = {
+  cover_image_url?: string | null;
+  cover_video_url?: string | null;
+  business_name?: string | null;
+  is_online?: boolean | null;
+  verified?: boolean | null;
+  avatar_url?: string | null;
+} | null;
+
+function ShopCoverHero({
+  vendor,
+  userId,
+  onUpdated,
+  onlineCustomerCount,
+  offlineCustomerCount,
+  onQuickActions,
+}: {
+  vendor: ShopCoverVendor;
+  userId?: string;
+  onUpdated: (patch: { cover_image_url?: string | null; cover_video_url?: string | null }) => void;
+  onlineCustomerCount: number;
+  offlineCustomerCount: number;
+  onQuickActions: () => void;
+}) {
+  const [uploading, setUploading] = useState<"image" | "video" | null>(null);
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const vidInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (file: File, kind: "image" | "video") => {
+    if (!userId || !file) return;
+    setUploading(kind);
+    try {
+      const ext = file.name.split(".").pop() || (kind === "image" ? "jpg" : "mp4");
+      const path = `${userId}/cover-${kind}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("business-cards")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) {
+        toast.error("Upload failed: " + error.message);
+        return;
+      }
+      const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+      const patch = kind === "image"
+        ? { cover_image_url: data.publicUrl }
+        : { cover_video_url: data.publicUrl };
+      const { error: upErr } = await supabase.from("vendors").update(patch).eq("user_id", userId);
+      if (upErr) {
+        toast.error("Save failed: " + upErr.message);
+        return;
+      }
+      onUpdated(patch);
+      toast.success(kind === "image" ? "Cover image updated" : "Cover video updated");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const hasVideo = !!vendor?.cover_video_url;
+  const hasImage = !!vendor?.cover_image_url;
+
+  return (
+    <section className="relative">
+      <div className="relative h-[260px] w-full overflow-hidden bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8]">
+        {hasVideo ? (
+          <video
+            key={vendor?.cover_video_url ?? "v"}
+            src={vendor?.cover_video_url ?? undefined}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : hasImage ? (
+          <img
+            src={vendor?.cover_image_url ?? undefined}
+            alt={vendor?.business_name ?? "Shop cover"}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="text-center px-6">
+              <div className="mx-auto h-14 w-14 rounded-2xl grid place-items-center bg-white/90 border border-[color:oklch(0.78_0.14_82/0.6)] shadow mb-2">
+                <ImagePlus className="h-6 w-6 text-[color:oklch(0.42_0.10_82)]" />
+              </div>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-[color:oklch(0.45_0.10_82)] font-bold">Your Digital Shop</p>
+              <p className="text-[10px] text-[color:oklch(0.45_0.05_85)] mt-0.5">Upload a shop photo or short video</p>
+            </div>
+          </div>
+        )}
+
+        {/* Dark overlay for legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 pointer-events-none" />
+
+        {/* Status chips top-left */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
+            {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+          </div>
+          <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {onlineCustomerCount} online
+            <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            {offlineCustomerCount} offline
+          </div>
+        </div>
+
+        {/* Quick actions top-right */}
+        <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+          <button
+            onClick={onQuickActions}
+            aria-label="Quick actions"
+            className="h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm active:scale-90"
+          >
+            <Store className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+          </button>
+          <VendorNotificationBell />
+        </div>
+
+        {/* Upload controls bottom-right */}
+        <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2">
+          <input
+            ref={imgInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleUpload(f, "image");
+              e.currentTarget.value = "";
+            }}
+          />
+          <input
+            ref={vidInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleUpload(f, "video");
+              e.currentTarget.value = "";
+            }}
+          />
+          <button
+            onClick={() => imgInputRef.current?.click()}
+            disabled={!!uploading}
+            className="h-9 px-3 rounded-full bg-white/95 border border-white/80 shadow-md text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5 active:scale-95 disabled:opacity-60"
+          >
+            <ImagePlus className="h-3.5 w-3.5" />
+            {uploading === "image" ? "…" : hasImage ? "Photo" : "Add Photo"}
+          </button>
+          <button
+            onClick={() => vidInputRef.current?.click()}
+            disabled={!!uploading}
+            className="h-9 px-3 rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8941f] border border-white/60 shadow-md text-[10px] font-bold text-white flex items-center gap-1.5 active:scale-95 disabled:opacity-60"
+          >
+            <VideoIcon className="h-3.5 w-3.5" />
+            {uploading === "video" ? "…" : hasVideo ? "Video" : "Add Video"}
+          </button>
+        </div>
+
+        {/* Shop name bottom-left, FB-style */}
+        <div className="absolute bottom-3 left-3 z-10 max-w-[60%]">
+          <div className="flex items-center gap-2">
+            <span className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 bg-white">
+              <img
+                src={vendor?.avatar_url || avatarUser}
+                alt=""
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
+                className="h-full w-full object-cover"
+              />
+              {vendor?.verified && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-sm font-bold text-white truncate drop-shadow-md">
+                {vendor?.business_name ?? "My Shop"}
+              </p>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/90 drop-shadow">
+                Digital Dukaan
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <AcceptedLeadFloatingButton />
+      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-8 bg-gradient-to-b from-transparent to-[#fdf8ec]" />
+    </section>
+  );
+}
+
 
 function VendorMapHero({
   center,
