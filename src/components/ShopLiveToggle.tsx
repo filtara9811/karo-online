@@ -49,6 +49,9 @@ export function ShopLiveToggle({ redirectOnEnable = false }: { redirectOnEnable?
       return;
     }
     toast.success(next ? "Shop is LIVE — visible to customers" : "Shop is OFF — hidden from customers");
+    if (next && redirectOnEnable) {
+      setTimeout(() => navigate({ to: "/vendor/shop" }), 200);
+    }
   };
 
   return (
