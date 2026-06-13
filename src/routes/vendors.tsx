@@ -583,9 +583,9 @@ function SheetBody({
     (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="block">
       {/* SCROLLABLE TOP — search + product cards */}
-      <div className="flex-1 overflow-y-auto px-4 pt-2" style={{ paddingBottom: "16px" }}>
+      <div className="px-4 pt-2" style={{ paddingBottom: "16px", touchAction: "pan-y" }}>
         {/* Search row: My Orders | Search | Profile */}
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -726,7 +726,7 @@ function SheetBody({
 
 
       {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
-      <div className="flex-shrink-0 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
+      <div className="sticky bottom-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
         {/* Floating + button — Add | Neds */}
         <button
           onClick={() => setNeedsOpen(true)}
