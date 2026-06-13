@@ -483,7 +483,7 @@ function VendorsPage() {
 
 /* -------- Draggable Sheet (peek / half / 90%) -------- */
 
-function DraggableSheet({ children }: { children: React.ReactNode }) {
+function DraggableSheet({ children, topPct = 42 }: { children: React.ReactNode; topPct?: number }) {
   const [vh, setVh] = useState(800);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -494,20 +494,26 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Snap points expressed as `top` offsets from window top
-  const SNAPS = useMemo(() => {
-    const peek = vh * 0.55;   // sheet shows ~45% (map fully visible)
-    const half = vh * 0.30;   // sheet shows ~70%
-    const full = vh * 0.10;   // sheet shows ~90%
-    return [full, half, peek];
-  }, [vh]);
+  // Sheet lives in the region BELOW the map. snap points are offsets
+  // measured from the TOP of that region (0 = expanded right under map).
+  const sheetTopPx = (vh * topPct) / 100;
+  const sheetH = vh - sheetTopPx;
 
-  const y = useMotionValue(SNAPS[0]);
+  const SNAPS = useMemo(() => {
+    const expanded = 0;                // sits flush against the map bottom
+    const half = Math.round(sheetH * 0.25);
+    const peek = Math.round(sheetH * 0.55);
+    return [expanded, half, peek];
+  }, [sheetH]);
+
+  // Initial position — start at "half" so map + a few shops are visible.
+  const y = useMotionValue(SNAPS[1]);
 
   useEffect(() => {
-    animate(y, SNAPS[0], { type: "spring", stiffness: 300, damping: 30 });
+    // Snap directly without an animation pulse on first mount.
+    y.set(SNAPS[1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SNAPS[0]]);
+  }, [SNAPS[1]]);
 
   useEffect(() => {
     const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
@@ -523,7 +529,6 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
   const handleDragEnd = (_e: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
     const current = y.get();
     const v = info.velocity.y;
-    // pick nearest snap, biased by velocity
     const projected = current + v * 0.18;
     let nearest = SNAPS[0];
     let bestDist = Infinity;
@@ -535,14 +540,14 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
   };
 
   return (
-      <motion.aside
+    <motion.aside
       drag="y"
       dragConstraints={{ top: SNAPS[0], bottom: SNAPS[2] }}
       dragElastic={0.04}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
-      style={{ y, top: 0, height: vh }}
-        className="absolute inset-x-0 top-0 z-20 will-change-transform"
+      style={{ y, top: sheetTopPx, height: sheetH }}
+      className="absolute inset-x-0 z-20 will-change-transform"
     >
       <div
         className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
@@ -555,7 +560,7 @@ function DraggableSheet({ children }: { children: React.ReactNode }) {
           </span>
         </div>
 
-        {/* Scrollable content — only scrolls when sheet at full height */}
+        {/* Scrollable content */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto overscroll-contain"
