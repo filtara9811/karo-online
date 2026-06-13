@@ -870,18 +870,15 @@ function VendorDashboard() {
 
   return (
     <div
-      className="fixed inset-0 z-0 h-dvh overflow-x-hidden overflow-y-auto touch-pan-y pb-[calc(10.5rem+env(safe-area-inset-bottom))]"
+      className="relative min-h-dvh w-full overflow-x-hidden pb-[calc(10.5rem+env(safe-area-inset-bottom))]"
       style={{
         background:
           "radial-gradient(ellipse at top, #fffaeb 0%, transparent 55%), linear-gradient(160deg, #fdf8ec 0%, #fdf3c8 60%, #f5e9b8 100%)",
-        touchAction: "pan-y",
-        WebkitOverflowScrolling: "touch",
-        overscrollBehaviorY: "contain",
       }}
     >
-      {/* Decorative orbs */}
-      <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.28),transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.35),transparent_70%)] blur-2xl" />
+      {/* Decorative orbs (lighter blur for scroll perf) */}
+      <div className="pointer-events-none absolute -top-32 -left-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.22),transparent_70%)]" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,oklch(0.94_0.08_92/0.28),transparent_70%)]" />
 
       <ActionAlertBanner role="vendor" />
 
