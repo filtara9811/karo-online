@@ -200,11 +200,14 @@ function VendorShop() {
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
-        {/* === Visiting-card flippable dashboard === */}
-        <DashboardFlipCard items={items} />
+        {/* === Digital-shop cover uploader (video / image) === */}
+        <ShopMediaUploader />
 
         {/* Search */}
         <ShopSearchBar value={search} onChange={setSearch} />
+
+        {/* Yesterday vs Today moving ticker */}
+        <ShopStatsTicker />
 
         {/* Banners */}
         <BannerCarousel />
