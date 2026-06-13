@@ -5,6 +5,7 @@ import {
   Mic, Star, ShieldCheck, Play, BadgeCheck, MessageCircle,
   MapPin, ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Volume2, VolumeX,
   FileText, Wrench, Building2, Building, Cloud, Zap, Truck, ChefHat, Hammer, Paintbrush2, Plus,
+  Package, SlidersHorizontal, Check,
   type LucideIcon,
 } from "lucide-react";
 import goldPin from "@/assets/gold-pin.png";
