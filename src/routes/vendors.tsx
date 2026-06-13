@@ -227,11 +227,50 @@ function VendorsPage() {
   const [activePin, setActivePin] = useState<string | null>(null);
   const geo = useGeolocation();
 
+  // Live origin for both Google ETA and real-data nearby query
+  const origin0 = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+
+  // Real digital shops from DB (nearby + approved). Falls back to dummy when empty.
+  const shopsQuery = useQuery({
+    queryKey: ["digital-shops-nearby", origin0?.lat ?? null, origin0?.lng ?? null],
+    queryFn: () => getNearbyDigitalShops({ data: { origin: origin0, radiusKm: 25 } }),
+    staleTime: 60_000,
+  });
+
+  const realVendors: Vendor[] = useMemo(() => {
+    const list = shopsQuery.data?.ok ? shopsQuery.data.shops : [];
+    return list.map((s: DigitalShop): Vendor => {
+      const hero = s.cover_image_url || s.avatar_url || productCosmetics;
+      const gallery = [hero];
+      return {
+        id: s.id,
+        title: s.business_name || s.owner_name || "Digital Shop",
+        tagline: s.deals_in || s.trade || "Verified digital store",
+        rating: 4.8,
+        reviews: 0,
+        km: s.km ?? 0,
+        lat: s.lat ?? 0,
+        lng: s.lng ?? 0,
+        address: s.trade || "Near you",
+        verified: s.verified,
+        avatar: s.avatar_url || avatarUser,
+        hero,
+        gallery,
+        category: "product",
+        kind: s.cover_video_url ? "video" : "carousel",
+        priceFrom: undefined,
+      };
+    });
+  }, [shopsQuery.data]);
+
+  // Use real data when available; fallback to dummy demo data until vendors onboard.
+  const sourceList: Vendor[] = realVendors.length > 0 ? realVendors : VENDORS;
+
   const filtered = useMemo(() => {
-    if (!query.trim()) return VENDORS;
+    if (!query.trim()) return sourceList;
     const q = query.toLowerCase();
-    return VENDORS.filter((v) => v.title.toLowerCase().includes(q));
-  }, [query]);
+    return sourceList.filter((v) => v.title.toLowerCase().includes(q));
+  }, [query, sourceList]);
 
   // Live driving distance + ETA from user's location to every vendor
   const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
