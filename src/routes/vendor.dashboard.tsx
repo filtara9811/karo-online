@@ -882,15 +882,43 @@ function VendorDashboard() {
 
       <ActionAlertBanner role="vendor" />
 
-      {/* Facebook-style cover: vendor uploads image or video for digital shop */}
-      <ShopCoverHero
-        vendor={vendor}
-        userId={user?.id}
-        onUpdated={(patch) => setVendor((p) => ({ ...(p ?? {}), ...patch } as any))}
-        onlineCustomerCount={onlineCustomerCount}
-        offlineCustomerCount={offlineCustomerCount}
-        onQuickActions={() => setActionsOpen(true)}
-      />
+      {/* TikTok-style map hero (restored). Upload UI lives in /vendor/shop backend. */}
+      <section className="relative h-[260px] w-full overflow-hidden">
+        <VendorMapHero
+          center={{ lat: vendorLat, lng: vendorLng }}
+          vendors={vendorMapCards}
+          businessName={vendor?.business_name ?? "My Shop"}
+          locationLabel={vendor?.business_name ?? ""}
+        />
+        {/* Status chips top-left */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-30 pointer-events-none">
+          <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)]">
+            {vendor?.is_online ? "● On Duty" : "○ Off Duty"}
+          </div>
+          <div className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow text-[10px] font-bold text-[color:oklch(0.22_0.05_85)] flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {onlineCustomerCount} online
+            <span className="text-[color:oklch(0.55_0.05_85)]">·</span>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            {offlineCustomerCount} offline
+          </div>
+        </div>
+        {/* Quick actions + bell top-right */}
+        <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+          <button
+            onClick={() => setActionsOpen(true)}
+            aria-label="Quick actions"
+            className="h-9 w-9 grid place-items-center rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] shadow-sm active:scale-90"
+          >
+            <Store className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" strokeWidth={2.4} />
+          </button>
+          <VendorNotificationBell />
+        </div>
+        <AcceptedLeadFloatingButton />
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-8 bg-gradient-to-b from-transparent to-[#fdf8ec]" />
+      </section>
+
+
 
 
       <div className="max-w-md mx-auto px-3 pt-3 space-y-3 relative">
