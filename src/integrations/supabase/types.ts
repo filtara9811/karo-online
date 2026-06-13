@@ -2488,6 +2488,8 @@ export type Database = {
           auto_accept_leads: boolean
           avatar_url: string | null
           business_name: string | null
+          cover_image_url: string | null
+          cover_video_url: string | null
           created_at: string
           current_team_count: number
           deals_in: string | null
@@ -2533,6 +2535,8 @@ export type Database = {
           auto_accept_leads?: boolean
           avatar_url?: string | null
           business_name?: string | null
+          cover_image_url?: string | null
+          cover_video_url?: string | null
           created_at?: string
           current_team_count?: number
           deals_in?: string | null
@@ -2578,6 +2582,8 @@ export type Database = {
           auto_accept_leads?: boolean
           avatar_url?: string | null
           business_name?: string | null
+          cover_image_url?: string | null
+          cover_video_url?: string | null
           created_at?: string
           current_team_count?: number
           deals_in?: string | null
@@ -3898,6 +3904,8 @@ export type Database = {
               auto_accept_leads: boolean
               avatar_url: string | null
               business_name: string | null
+              cover_image_url: string | null
+              cover_video_url: string | null
               created_at: string
               current_team_count: number
               deals_in: string | null
@@ -3972,6 +3980,8 @@ export type Database = {
               auto_accept_leads: boolean
               avatar_url: string | null
               business_name: string | null
+              cover_image_url: string | null
+              cover_video_url: string | null
               created_at: string
               current_team_count: number
               deals_in: string | null
