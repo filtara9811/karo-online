@@ -7,7 +7,11 @@ import { speakForKind, setAppBadge } from "@/lib/tts";
 import { playLeadAlert } from "@/lib/lead-sound";
 
 const SAVED_KEY = "ko-fcm-token-v1";
+const SAVED_AT_KEY = "ko-fcm-token-at-v1";
 const BADGE_KEY = "ko-badge-count-v1";
+// Re-register at least once every 6 hours so dead tokens get re-activated
+// in device_tokens (server flips is_active=false on FCM 404/400).
+const REREGISTER_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 function bumpBadge(delta = 1) {
   if (typeof window === "undefined") return;
@@ -35,7 +39,11 @@ export function useFcmToken() {
       const token = await requestFcmToken();
       if (cancelled || !token) return;
       const last = localStorage.getItem(SAVED_KEY);
-      if (last === token) return;
+      const lastAt = Number(localStorage.getItem(SAVED_AT_KEY) ?? "0") || 0;
+      const stale = Date.now() - lastAt > REREGISTER_INTERVAL_MS;
+      // Re-upsert if the token changed OR it's been a while — the RPC sets
+      // is_active=true, so a previously-deactivated row gets reactivated.
+      if (last === token && !stale) return;
       try {
         await (supabase as any).rpc("register_device_token", {
           _token: token,
@@ -43,6 +51,7 @@ export function useFcmToken() {
           _topics: [],
         });
         localStorage.setItem(SAVED_KEY, token);
+        localStorage.setItem(SAVED_AT_KEY, String(Date.now()));
       } catch (e) {
         console.warn("[fcm] token save failed", e);
       }
