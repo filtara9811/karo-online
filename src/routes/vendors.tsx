@@ -358,10 +358,10 @@ function VendorsPage() {
   const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-white isolate">
+    <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "pan-y" }}>
       {/* Real Google Map — locked to the top area. Sheet never covers it. */}
       <section
-        className="relative z-0"
+        className="relative z-0 flex-shrink-0"
         style={{ height: `${MAP_PCT}vh` }}
       >
         <QuickServiceMap
@@ -485,9 +485,9 @@ function VendorsPage() {
 
 function VendorsSheet({ children }: { children: React.ReactNode }) {
   return (
-    <aside className="relative z-20 -mt-1 min-h-[58vh]">
+    <aside className="relative z-20 -mt-1 flex-1 min-h-0">
       <div
-        className="bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
+        className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
       >
         {/* Drag handle */}
         <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
@@ -499,8 +499,8 @@ function VendorsSheet({ children }: { children: React.ReactNode }) {
 
         {/* Scrollable content */}
         <div
-          className="flex-1"
-          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))", touchAction: "pan-y" }}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
         >
           {children}
         </div>
