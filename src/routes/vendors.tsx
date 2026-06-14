@@ -355,7 +355,7 @@ function VendorsPage() {
   );
 
   const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
-  const MAP_PCT = 58; // % of viewport for the map area — sheet lives below
+  const MAP_PCT = 35; // % of viewport for the map area — sheet covers ~65%
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "auto" }}>
@@ -396,16 +396,7 @@ function VendorsPage() {
             const v = visible.find((x) => x.id === id) ?? sourceList.find((x) => x.id === id);
             if (v) setDetailVendor(v);
           }}
-          onInquiry={(v) => navigate({
-            to: "/chat",
-            search: {
-              productId: v.id,
-              productName: v.title,
-              productImage: v.hero,
-              productPrice: v.priceFrom ?? 0,
-              mode: "inquiry",
-            } as never,
-          })}
+          onInquiry={(v) => setDetailVendor(v)}
         />
       </VendorsSheet>
 

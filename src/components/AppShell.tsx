@@ -43,7 +43,7 @@ const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile"
 const MARKETING_EXACT = new Set(["/", "/about", "/features", "/pricing", "/for-vendors", "/for-customers", "/download", "/contact", "/blog"]);
 // Bottom service/product picker bar ONLY shows on these routes.
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
-const SHOW_BOTTOM_BAR_ON = ["/quick", "/home"];
+const SHOW_BOTTOM_BAR_ON = ["/quick"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
