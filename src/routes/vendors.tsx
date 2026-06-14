@@ -561,9 +561,12 @@ function SheetBody({
     (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
-    <div className="block">
+    <div className="flex-1 min-h-0 flex flex-col">
       {/* SCROLLABLE TOP — search + product cards */}
-      <div className="px-4 pt-2" style={{ paddingBottom: "16px", touchAction: "pan-y" }}>
+      <div
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2"
+        style={{ paddingBottom: "12px", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+      >
         {/* Search row: My Orders | Search | Profile */}
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -614,12 +617,18 @@ function SheetBody({
           <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
         </div>
 
-        {/* Compact vendor cards — 3 visible per screen */}
+        {/* Compact vendor cards — alternating left/right entrance, 3 visible per screen */}
         <div className="space-y-2">
-          {visible.map((v) => (
-            <div key={v.id}>
+          {visible.map((v, i) => (
+            <motion.div
+              key={v.id}
+              initial={{ opacity: 0, x: i % 2 === 0 ? -36 : 36 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1], delay: Math.min(i, 6) * 0.05 }}
+            >
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
-            </div>
+            </motion.div>
           ))}
           {visible.length === 0 && (
             <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
