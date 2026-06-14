@@ -116,12 +116,11 @@
   }
 
   html {
-    /* Mobile-native: no iOS auto-zoom on inputs, no horizontal scroll, no pull-to-zoom */
+    /* Allow native browser gestures — never lock touch-action at the root,
+       otherwise child horizontal/vertical scrollers get blocked. */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    touch-action: manipulation;
     overflow-x: hidden;
-    overscroll-behavior-y: none;
   }
 
   body {
@@ -134,10 +133,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     min-height: 100vh;
-    /* Lock layout — app feel, not web feel */
-    touch-action: manipulation;
     overflow-x: hidden;
-    overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -669,20 +665,15 @@ body.needs-sheet-open [data-bottom-action-bar] {
 .animate-spin-slow { animation: spin-slow 3s linear infinite; }
 
 /* ============================================================
-   Global touch-action fix for horizontal scrollers.
-   Without this, Android Chrome / WebView captures the entire
-   vertical scroll gesture when the user's finger lands on any
-   `overflow-x` container that is wider than the viewport.
-   Pan-x tells the browser: "I only handle horizontal swipes;
-   pass vertical scrolling up to the page."
+   Scroll containers — momentum scroll for iOS / WebView.
+   We intentionally do NOT set `touch-action` here. Setting it
+   globally on every `.overflow-*` element causes nested
+   carousels to block their parent's scroll direction.
+   Components that need a specific gesture set it inline.
    ============================================================ */
+.overflow-y-auto,
+.overflow-y-scroll,
 .overflow-x-auto,
 .overflow-x-scroll {
-  touch-action: pan-x pan-y;
-}
-
-.overflow-y-auto,
-.overflow-y-scroll {
-  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }

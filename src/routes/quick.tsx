@@ -475,7 +475,7 @@ function QuickPage() {
   return (
     <div
       className="fixed inset-0 bg-white isolate overflow-hidden flex flex-col"
-      style={{ touchAction: "pan-y" }}
+      style={{ touchAction: "auto" }}
     >
       {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
@@ -623,15 +623,15 @@ function QuickPage() {
       {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
       {!needsOpen && (
       <section
-        className="fixed inset-x-0 z-30 pt-2 pb-1 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
+        className="fixed inset-x-0 z-30 pt-5 pb-2 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
         style={{
           bottom: "calc(64px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
-          touchAction: "pan-x pan-y",
+          touchAction: "pan-x",
         }}
       >
         <div className="max-w-md mx-auto">
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide overscroll-x-contain">
+          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pt-2 pb-1 scrollbar-hide overscroll-x-contain" style={{ touchAction: "pan-x" }}>
             {rootCategories.map((c, i) => {
               const FallbackIcon = SLUG_ICON[c.slug] ?? Sparkles;
               const isActive = selectedRootId === c.id;
