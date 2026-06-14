@@ -892,26 +892,7 @@ function ShopCard3D({
         )}
       </div>
 
-      {/* Shop "chhatri" — striped awning canopy on top of the media */}
-      <div className="relative">
-        <div
-          aria-hidden
-          className="h-3.5 w-full rounded-t-2xl border-x border-t border-[color:oklch(0.78_0.14_82/0.4)]"
-          style={{
-            background:
-              "repeating-linear-gradient(135deg, #f97316 0 14px, #ffffff 14px 28px)",
-            boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.08)",
-          }}
-        />
-        <svg
-          aria-hidden
-          viewBox="0 0 120 8"
-          preserveAspectRatio="none"
-          className="-mt-px block h-2 w-full"
-        >
-          <path d="M0 0 L0 2 Q6 8 12 2 Q18 8 24 2 Q30 8 36 2 Q42 8 48 2 Q54 8 60 2 Q66 8 72 2 Q78 8 84 2 Q90 8 96 2 Q102 8 108 2 Q114 8 120 2 L120 0 Z" fill="#f97316" />
-        </svg>
-      </div>
+      {/* (Awning ribbon removed per design request) */}
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
       <div className={`relative ${featured ? "h-40" : "h-20"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
