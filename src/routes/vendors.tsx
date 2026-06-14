@@ -396,16 +396,7 @@ function VendorsPage() {
             const v = visible.find((x) => x.id === id) ?? sourceList.find((x) => x.id === id);
             if (v) setDetailVendor(v);
           }}
-          onInquiry={(v) => navigate({
-            to: "/chat",
-            search: {
-              productId: v.id,
-              productName: v.title,
-              productImage: v.hero,
-              productPrice: v.priceFrom ?? 0,
-              mode: "inquiry",
-            } as never,
-          })}
+          onInquiry={(v) => setDetailVendor(v)}
         />
       </VendorsSheet>
 
