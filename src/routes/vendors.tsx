@@ -490,20 +490,15 @@ function VendorsSheet({ children }: { children: React.ReactNode }) {
         className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
       >
         {/* Drag handle */}
-        <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
+        <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0">
           <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#e7c764] via-[#d4af37] to-[#e7c764]" />
           <span className="mt-1 text-[9px] uppercase tracking-[0.2em] text-[color:oklch(0.55_0.10_82)] font-bold">
             All Digital Shops
           </span>
         </div>
 
-        {/* Scrollable content */}
-        <div
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
-        >
-          {children}
-        </div>
+        {/* SheetBody manages its own scroll + fixed footer */}
+        {children}
       </div>
     </aside>
   );
