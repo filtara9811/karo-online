@@ -355,7 +355,7 @@ function VendorsPage() {
   );
 
   const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
-  const MAP_PCT = 58; // % of viewport for the map area — sheet lives below
+  const MAP_PCT = 35; // % of viewport for the map area — sheet covers ~65%
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "auto" }}>
