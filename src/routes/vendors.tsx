@@ -712,8 +712,11 @@ function SheetBody({
 
 
 
-      {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
-      <div className="sticky bottom-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
+      {/* FIXED BOTTOM (flex footer inside sheet) — categories chips + Sarvic|Products bar */}
+      <div
+        className="flex-shrink-0 relative z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]"
+        style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}
+      >
         {/* Floating + button — Add | Neds */}
         <button
           onClick={() => setNeedsOpen(true)}
