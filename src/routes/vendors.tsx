@@ -355,7 +355,7 @@ function VendorsPage() {
   );
 
   const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
-  const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
+  const MAP_PCT = 58; // % of viewport for the map area — sheet lives below
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "auto" }}>
@@ -490,20 +490,15 @@ function VendorsSheet({ children }: { children: React.ReactNode }) {
         className="h-full bg-gradient-to-b from-white via-white to-[#fffaf0] rounded-t-[28px] shadow-[0_-18px_40px_-12px_rgba(212,175,55,0.35),0_-2px_0_rgba(212,175,55,0.4)] border-t border-[color:oklch(0.78_0.14_82/0.5)] flex flex-col overflow-hidden"
       >
         {/* Drag handle */}
-        <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
+        <div className="flex flex-col items-center pt-2 pb-1 flex-shrink-0">
           <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#e7c764] via-[#d4af37] to-[#e7c764]" />
           <span className="mt-1 text-[9px] uppercase tracking-[0.2em] text-[color:oklch(0.55_0.10_82)] font-bold">
             All Digital Shops
           </span>
         </div>
 
-        {/* Scrollable content */}
-        <div
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
-        >
-          {children}
-        </div>
+        {/* SheetBody manages its own scroll + fixed footer */}
+        {children}
       </div>
     </aside>
   );
@@ -566,9 +561,12 @@ function SheetBody({
     (category !== "All" ? 1 : 0) + (maxKm !== 25 ? 1 : 0);
 
   return (
-    <div className="block">
+    <div className="flex-1 min-h-0 flex flex-col">
       {/* SCROLLABLE TOP — search + product cards */}
-      <div className="px-4 pt-2" style={{ paddingBottom: "16px", touchAction: "pan-y" }}>
+      <div
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2"
+        style={{ paddingBottom: "12px", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+      >
         {/* Search row: My Orders | Search | Profile */}
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -619,12 +617,18 @@ function SheetBody({
           <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
         </div>
 
-        {/* Compact vendor cards — 3 visible per screen */}
+        {/* Compact vendor cards — alternating left/right entrance, 3 visible per screen */}
         <div className="space-y-2">
-          {visible.map((v) => (
-            <div key={v.id}>
+          {visible.map((v, i) => (
+            <motion.div
+              key={v.id}
+              initial={{ opacity: 0, x: i % 2 === 0 ? -36 : 36 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1], delay: Math.min(i, 6) * 0.05 }}
+            >
               <ShopCard3D vendor={v} eta={etas[v.id]} onOpen={onOpen} onInquiry={onInquiry} />
-            </div>
+            </motion.div>
           ))}
           {visible.length === 0 && (
             <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
@@ -708,8 +712,11 @@ function SheetBody({
 
 
 
-      {/* STICKY BOTTOM (inside sheet) — categories chips + Sarvic|Products bar */}
-      <div className="sticky bottom-0 z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 pb-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] relative">
+      {/* FIXED BOTTOM (flex footer inside sheet) — categories chips + Sarvic|Products bar */}
+      <div
+        className="flex-shrink-0 relative z-30 bg-white border-t border-[color:oklch(0.78_0.14_82/0.3)] pt-2 px-4 shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)]"
+        style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}
+      >
         {/* Floating + button — Add | Neds */}
         <button
           onClick={() => setNeedsOpen(true)}
@@ -885,26 +892,7 @@ function ShopCard3D({
         )}
       </div>
 
-      {/* Shop "chhatri" — striped awning canopy on top of the media */}
-      <div className="relative">
-        <div
-          aria-hidden
-          className="h-3.5 w-full rounded-t-2xl border-x border-t border-[color:oklch(0.78_0.14_82/0.4)]"
-          style={{
-            background:
-              "repeating-linear-gradient(135deg, #f97316 0 14px, #ffffff 14px 28px)",
-            boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.08)",
-          }}
-        />
-        <svg
-          aria-hidden
-          viewBox="0 0 120 8"
-          preserveAspectRatio="none"
-          className="-mt-px block h-2 w-full"
-        >
-          <path d="M0 0 L0 2 Q6 8 12 2 Q18 8 24 2 Q30 8 36 2 Q42 8 48 2 Q54 8 60 2 Q66 8 72 2 Q78 8 84 2 Q90 8 96 2 Q102 8 108 2 Q114 8 120 2 L120 0 Z" fill="#f97316" />
-        </svg>
-      </div>
+      {/* (Awning ribbon removed per design request) */}
 
       {/* Media stage — calm, smooth, no metallic shimmer */}
       <div className={`relative ${featured ? "h-40" : "h-20"} rounded-2xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.4)] shadow-inner`}>
