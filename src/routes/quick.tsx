@@ -627,7 +627,7 @@ function QuickPage() {
         style={{
           bottom: "calc(64px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
-          touchAction: "pan-x",
+          touchAction: "pan-x pan-y",
         }}
       >
         <div className="max-w-md mx-auto">
