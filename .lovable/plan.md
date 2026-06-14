@@ -1,70 +1,64 @@
-# Step 1 — Fix middle-of-screen touch / scroll block (priority)
+Yes, this problem is solvable. I understand the actual issue as: the app is not just visually wrong; touch gestures are being blocked by parent layers, fixed wrappers, and horizontal rails, so users cannot reliably scroll up/down or left/right on many phones.
 
-## Problem (why it happens — in plain words)
+Root cause I found from the code:
+- Some full-screen pages use fixed wrappers with `overflow-hidden`, so only the exact inner list scrolls. If any overlay/header/bottom bar covers the area, touches get swallowed.
+- `/quick` and `/vendors` root wrappers currently set `touchAction: "pan-y"`. Because browsers intersect `touch-action` from the touched element and its ancestors, this can block horizontal scrolling inside child category rows.
+- Global `html/body` touch/overscroll rules are too aggressive for a mixed web + mobile WebView app.
+- The active category button is translated/lifted upward, but its rail has too little vertical padding, so the selected icon appears cut.
+- Similar patterns exist in vendor/admin screens: horizontal carousels, fixed bottom actions, drawers, and nested scroll areas need a consistent scroll contract.
 
-जब आप screen के बीच में उंगली रखकर ऊपर-नीचे scroll करते हैं, तो page नहीं चलता। सिर्फ far-right edge से चलता है। यही exact pattern home, `/vendors`, vendor dashboard, और marketing website पर भी मिल रहा है।
+Implementation plan:
 
-वजह दो हैं:
+1. Establish one safe global mobile touch policy
+   - Remove overly aggressive root gesture locking from `html`/`body`.
+   - Keep horizontal page overflow hidden, but allow native vertical scrolling and normal browser gesture handling.
+   - Add small reusable CSS utilities for:
+     - vertical scroll containers: `touch-action: pan-y`, momentum scroll
+     - horizontal rails/carousels: allow horizontal swipe without blocking vertical page scroll
+     - fixed app pages: no gesture restriction on the root wrapper
 
-1. **Horizontal scrollers बीच की पूरी जगह को "अपने लिए" claim कर लेते हैं।**
-   Home / vendors / dashboard में कई rows हैं जो horizontally scroll होती हैं — Banner carousel, Recommended for you, Categories rail, vendor cards rail, dashboard product strip आदि। ये सब `overflow-x-auto snap-x snap-mandatory` के साथ बने हैं। `snap-mandatory` + default `touch-action` की वजह से जैसे ही उंगली इन rows पर पड़ती है, browser उस gesture को horizontal scroll मान लेता है और vertical scroll को page तक पहुँचने ही नहीं देता। चूँकि ये rows screen का ~95% width लेती हैं, सिर्फ बिल्कुल right edge पर ही page scroll मिलता है — exactly जैसा आप screenshot में दिखा रहे हैं।
+2. Fix `/quick` exactly as requested
+   - Keep map fixed at top.
+   - Keep search row, My Orders, profile/menu area fixed.
+   - Keep bottom category circle row fixed.
+   - Keep bottom Digital Shop / Basic Service pill fixed.
+   - Only the service cards list scrolls vertically.
+   - Restore left/right scrolling on category circles.
+   - Add enough rail padding/height so the selected “Basic” circle is not cut.
+   - Adjust the floating plus button so it does not block category swipes or visually collide.
 
-2. **कुछ हमेशा-mounted floating widgets अदृश्य रूप से बीच में बैठे हैं।** Specifically `FloatingInquiryWidget` `/quick` route पर बीच में 88vw चौड़ा fixed box बनाता है, और `FloatingInquiryWidget` का `constraintsRef` framer-motion drag के लिए full-screen overlay है। एक-दो जगह `pointer-events-none` ठीक से नहीं लगा है।
+3. Fix `/vendors` / All Digital Shops
+   - Keep map fixed at top and vendor sheet below it.
+   - Only the vendor list area scrolls vertically.
+   - Make filter/category rails scroll left/right again.
+   - Prevent sticky bottom controls from covering or stealing touch from the list.
+   - Keep the existing UI style; no redesign.
 
-## Fix
+4. Fix the same touch pattern across vendor/admin/customer pages
+   - Audit the main vendor dashboard carousel and bottom action layers.
+   - Audit admin layout/mobile drawer/main content scroll.
+   - Replace page-level gesture locks with scroll-container-level rules only.
+   - Preserve existing screen structure and visuals.
 
-A. **हर horizontal scroller पर `touch-action: pan-x` जोड़ें** — इससे browser को explicitly कहा जाता है "मैं सिर्फ horizontal handle करूँगा, vertical parent (page) को दे दो"। साथ ही `overscroll-behavior-x: contain` ताकि scroll-chaining साफ रहे।
+5. Verify on mobile preview before marking done
+   - Test `/quick` on 360px mobile: vertical card scroll + horizontal category scroll.
+   - Test `/vendors`: map fixed + list scroll + filter/category horizontal swipe.
+   - Test `/home`, `/orders`, `/vendor/dashboard`, and one admin page for normal vertical scrolling.
+   - Check runtime console errors, including the current React hydration error, and fix if it is caused by our app code.
 
-   Files to patch (every `overflow-x-auto`):
-   - `src/components/BannerCarousel.tsx` (line 79)
-   - `src/components/CategorySections.tsx` (line 47)
-   - `src/routes/home.tsx` — recommended rail (line 282) और किसी और rail पर
-   - `src/routes/vendors.tsx` — chip strips और cards rail (lines 666, 792)
-   - `src/routes/vendor.shop.tsx` और `VendorDashboardCard.tsx` के अंदर का marquee/strip
-   - `src/components/TopProductsMarquee.tsx` और `ShopStatsTicker.tsx` अगर वैसा pattern है
+How to give prompts safely next time:
 
-B. **`snap-mandatory` → `snap-proximity` बदलें** उन rows पर जहाँ snap की ज़रूरत है। Mandatory snap mobile में vertical scroll को सबसे ज़्यादा खाता है।
+```text
+Route/screen: /quick
+Device: Android phone / Play Store app / Chrome
+Current problem: category row does not scroll left-right; page also does not scroll vertically when touching cards.
+Expected behavior:
+1. Map fixed
+2. Search fixed
+3. Bottom category row fixed and left-right scrollable
+4. Only service cards scroll up/down
+Do not change: colors, card design, map height, bottom bar design
+Screenshot attached: red circle shows broken area
+```
 
-C. **Floating widget audit**:
-   - `FloatingInquiryWidget` के outer container पर `pointer-events: none` लगाएँ, सिर्फ अंदर के actual card पर `pointer-events: auto`। इससे card के chrome/halo area बीच की scroll को नहीं खाएगा।
-   - Confirm करें कि `AppShell` के decorative blur circles (lines 94-95) `pointer-events-none` हैं — already हैं ✓.
-
-D. **`AppShell` के `<main>` से `willChange: "transform, opacity"` हटाएँ** non-animation idle state में — यह GPU layer बनाता है जो कभी-कभी Android Chrome में input area को promoted layer में अटका देता है। Animation को pure CSS class से limit करेंगे (only for the 220ms fade), उसके बाद auto।
-
-E. **Marketing website (`/`, `/about`, …)**: यहाँ भी same `overflow-x-auto` sections होंगे sections.tsx में — same `touch-action: pan-x` लगाएँगे।
-
-## Verification
-
-1. Preview खोलकर 360×682 viewport में home → middle finger drag से vertical scroll test करें।
-2. Same on `/vendors`, `/vendor/dashboard`, `/quick`, `/` (marketing)।
-3. Horizontal carousels अभी भी swipe होने चाहिए — कोई regression नहीं।
-
----
-
-# Step 2 — FCM sound delivery
-
-जब आप scroll fix verify कर देंगे, तब hand-off:
-- `public/firebase-messaging-sw.js` में Android channel sound + `notification.sound` properly set करना।
-- `register_device_token` server payload में `sound: "alert.mp3"` या default को force करना।
-- iOS PWA limitation user को बताना।
-
-# Step 3 — Payment gateway
-
-- Cashfree और Razorpay client integration में pending issues को `src/lib/cashfree-client.ts`, `cashfree.functions.ts`, `payments.functions.ts`, `razorpay-client.ts` पर review और fix।
-- Test एक dummy order से।
-
-# Step 4 — Full bugs sweep
-
-Touch fix + payments verify होने के बाद, core flows (auth → home → cart → checkout → vendor request → accept → chat → rating) end-to-end run करके बचे bugs ठीक करेंगे।
-
----
-
-## Technical summary (for the AI on next turn)
-
-- Add `style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}` (or Tailwind `touch-pan-x`) on every `overflow-x-auto` element listed in Fix A.
-- Change `snap-mandatory` → `snap-proximity` on vertical-region rails (banner, products, vendors cards).
-- In `FloatingInquiryWidget.tsx`: wrap outer `motion.div` with `pointer-events-none` container and apply `pointer-events-auto` only on the inner card div.
-- In `AppShell.tsx` `<main>`: remove `willChange` from inline style; rely on the keyed `lux-fade` animation alone.
-- Don't touch business logic, push, or payment files in this step.
-
-Approve to start with Step 1 only, या बताइए कि Step 2/3 भी same turn में attempt करूँ।
+This format prevents accidental redesign because it clearly separates: broken behavior, expected behavior, fixed areas, scrollable areas, and what must not change.

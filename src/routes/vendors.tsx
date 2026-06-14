@@ -358,7 +358,7 @@ function VendorsPage() {
   const MAP_PCT = 42; // % of viewport for the map area — sheet lives below
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "pan-y" }}>
+    <div className="fixed inset-0 overflow-hidden bg-white isolate flex flex-col" style={{ touchAction: "auto" }}>
       {/* Real Google Map — locked to the top area. Sheet never covers it. */}
       <section
         className="relative z-0 flex-shrink-0"
