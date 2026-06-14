@@ -199,13 +199,20 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
   useEffect(() => {
     load();
     let alive = true;
-    const ch = supabase
-      .channel(`my-orders-${Math.random()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => { if (alive) load(); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "lead_messages" }, () => { if (alive) load(); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "vendor_status_updates" }, () => { if (alive) load(); })
-      .subscribe();
-    return () => { alive = false; supabase.removeChannel(ch); };
+    let chRef: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid || !alive) return;
+      const ch = supabase
+        .channel(`my-orders-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => { if (alive) load(); })
+        .on("postgres_changes", { event: "*", schema: "public", table: "lead_messages" }, () => { if (alive) load(); })
+        .on("postgres_changes", { event: "*", schema: "public", table: "vendor_status_updates" }, () => { if (alive) load(); })
+        .subscribe();
+      chRef = ch;
+    })();
+    return () => { alive = false; if (chRef) supabase.removeChannel(chRef); };
   }, [load]);
 
   return { groups, loading, refresh: load, markOrderRead };
