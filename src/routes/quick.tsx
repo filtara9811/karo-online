@@ -503,7 +503,7 @@ function QuickPage() {
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => navigate({ to: "/orders" })}
+            onClick={() => setOrdersSheetOpen(true)}
             className="relative h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
             aria-label="My Orders"
             title="My Orders"
