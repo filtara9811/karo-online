@@ -975,7 +975,7 @@ function ShopCard3D({
             className="ml-auto flex items-center justify-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-[0_3px_10px_-3px_rgba(212,175,55,0.6)] active:scale-95"
           >
             <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.4} />
-            <span className="font-display text-[11px] font-bold italic tracking-tight">Inquiry</span>
+            <span className="font-display text-[11px] font-bold italic tracking-tight">{getVendorCtaLabel(vendor.id)}</span>
           </button>
         </div>
       </div>
