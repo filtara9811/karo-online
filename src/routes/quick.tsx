@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import { QuickOrdersSheet } from "@/components/QuickOrdersSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
@@ -449,6 +450,7 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
   // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
 
 
@@ -501,7 +503,7 @@ function QuickPage() {
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => navigate({ to: "/orders" })}
+            onClick={() => setOrdersSheetOpen(true)}
             className="relative h-11 w-11 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-sm active:scale-90 flex-shrink-0"
             aria-label="My Orders"
             title="My Orders"
@@ -890,6 +892,7 @@ function QuickPage() {
       />
 
       <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
+      <QuickOrdersSheet open={ordersSheetOpen} onOpenChange={setOrdersSheetOpen} />
     </div>
   );
 }
