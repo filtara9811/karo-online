@@ -8,8 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, ChevronDown, Bell, Star, HandHelping,
-  Hourglass, AlertCircle, CheckCircle2, MessageSquare, Wrench,
+  X, ChevronDown, Bell, HandHelping, Search,
+  Hourglass, AlertCircle, CheckCircle2, MessageSquare, Wrench, Loader2,
 } from "lucide-react";
 import { Drawer, DrawerContent, DrawerPortal, DrawerOverlay } from "@/components/ui/drawer";
 import { BannerCarousel } from "@/components/BannerCarousel";
@@ -97,6 +97,7 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
   const { lines, loading } = useLeadInvoice(order.id, open);
   const pill = pillOfStatus(order.status);
   const total = (lines ?? []).reduce((s, l) => s + (l.price ?? 0) * l.qty, 0);
+  const isPending = vendor.vendorId === "__pending__";
 
   return (
     <motion.div
@@ -107,11 +108,17 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
     >
       {/* Top strip — vendor / lead id / status */}
       <div className="flex items-center gap-3 p-3 bg-amber-50/80">
-        <span className="h-11 w-11 rounded-full overflow-hidden border-2 border-white shadow shrink-0">
-          <img src={vendor.avatar} alt={vendor.vendorName} className="h-full w-full object-cover" />
+        <span className="h-11 w-11 rounded-full overflow-hidden border-2 border-white shadow shrink-0 bg-amber-100 grid place-items-center">
+          {isPending ? (
+            <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+          ) : (
+            <img src={vendor.avatar} alt={vendor.vendorName} className="h-full w-full object-cover" />
+          )}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-slate-800 truncate">{vendor.vendorName}</p>
+          <p className="text-[13px] font-bold text-slate-800 truncate">
+            {isPending ? "Searching vendor…" : vendor.vendorName}
+          </p>
           <p className="text-[10px] text-slate-500 underline">Customer details</p>
           <p className="text-[10px] text-slate-400 mt-0.5">{order.lastAt}</p>
         </div>
@@ -130,15 +137,12 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
       <button onClick={() => setOpen((v) => !v)} className="relative w-full flex items-stretch gap-3 p-3 bg-slate-50 text-left active:bg-slate-100/70 transition">
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-display font-bold text-slate-800 truncate">{order.service}</p>
-          <p className="text-[11px] text-slate-500">Good and best service</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" /> 4.9
-            </span>
-            {total > 0 && (
+          <p className="text-[11px] text-slate-500 truncate">{order.lastMsg || "Tap to view details"}</p>
+          {total > 0 && (
+            <div className="mt-1.5">
               <span className="text-[12px] font-bold text-emerald-700">₹ {total.toLocaleString("en-IN")}</span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <div className="h-16 w-16 rounded-xl overflow-hidden border border-amber-200/60 bg-white grid place-items-center shrink-0">
           {order.productImage ? (
@@ -149,6 +153,7 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
         </div>
         <ChevronDown className={`absolute right-3 bottom-3 h-4 w-4 text-amber-600 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+
 
       {/* Expanded invoice */}
       <AnimatePresence initial={false}>
@@ -197,6 +202,7 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
     return (window.localStorage.getItem("ko-quick-orders-source") as SourceBucket) || "quick";
   });
   const [statusKind, setStatusKind] = useState<StatusKind>("all");
+  const [query, setQuery] = useState("");
 
   useEffect(() => { try { window.localStorage.setItem("ko-quick-orders-source", source); } catch {} }, [source]);
 
@@ -224,10 +230,20 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
   }, [filteredVendorOrders]);
 
   const visible = useMemo(() => {
-    if (statusKind === "all") return filteredVendorOrders;
-    if (statusKind === "enquiry") return filteredVendorOrders.filter(({ order }) => order.status === "placed");
-    return filteredVendorOrders.filter(({ order }) => bucketOfStatus(order.status) === statusKind);
-  }, [filteredVendorOrders, statusKind]);
+    let list = filteredVendorOrders;
+    if (statusKind === "enquiry") list = list.filter(({ order }) => order.status === "placed");
+    else if (statusKind !== "all") list = list.filter(({ order }) => bucketOfStatus(order.status) === statusKind);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(({ vendor, order }) =>
+        vendor.vendorName.toLowerCase().includes(q) ||
+        order.service.toLowerCase().includes(q) ||
+        order.id.toLowerCase().includes(q) ||
+        (order.shortCode ?? "").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [filteredVendorOrders, statusKind, query]);
 
   const openOrder = async (vendorId: string, orderId: string) => {
     await markOrderRead(orderId);
@@ -264,6 +280,27 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
               <BannerCarousel />
             </div>
 
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-600" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by vendor, service or lead id…"
+                className="w-full h-10 pl-9 pr-9 rounded-full bg-white border border-amber-200 text-[13px] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full grid place-items-center bg-amber-100 text-amber-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+
             {/* Source toggle: Quick Services / Digital Shops */}
             <div className="grid grid-cols-2 gap-2 p-1 bg-amber-50 border border-amber-200 rounded-full">
               {([
@@ -294,10 +331,14 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
                   <button
                     key={t.key}
                     onClick={() => setStatusKind(t.key)}
-                    className={`shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl bg-white border-2 ${t.border} ${active ? `ring-2 ${t.ring} shadow` : "opacity-80"} transition`}
+                    className={`shrink-0 flex flex-col items-center justify-center gap-0.5 min-w-[72px] px-3 py-2.5 rounded-2xl border-2 ${t.border} transition ${
+                      active
+                        ? `bg-gradient-to-b from-white to-amber-50 ring-2 ${t.ring} shadow-md scale-[1.03]`
+                        : "bg-white/70 opacity-75 hover:opacity-100"
+                    }`}
                   >
-                    <Icon className="h-4 w-4 text-slate-700" />
-                    <span className="text-[12px] font-bold text-slate-800 leading-none">{c}</span>
+                    <Icon className={`h-4 w-4 ${active ? "text-amber-700" : "text-slate-600"}`} />
+                    <span className="text-[13px] font-extrabold text-slate-800 leading-none">{c}</span>
                     <span className="text-[9px] text-slate-500 leading-tight whitespace-nowrap">{t.label}</span>
                   </button>
                 );
