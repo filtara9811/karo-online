@@ -60,6 +60,7 @@ export function ProductDetailSheet({
           {/* Fixed top-right controls */}
           <div className="absolute top-3 right-3 z-30 flex gap-2">
             <button
+              onClick={handleShare}
               aria-label="Share"
               className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.4)] shadow active:scale-90"
             >
