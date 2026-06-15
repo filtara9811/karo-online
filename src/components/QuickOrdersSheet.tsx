@@ -202,6 +202,7 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
     return (window.localStorage.getItem("ko-quick-orders-source") as SourceBucket) || "quick";
   });
   const [statusKind, setStatusKind] = useState<StatusKind>("all");
+  const [query, setQuery] = useState("");
 
   useEffect(() => { try { window.localStorage.setItem("ko-quick-orders-source", source); } catch {} }, [source]);
 
