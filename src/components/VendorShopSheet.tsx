@@ -264,6 +264,7 @@ export function VendorShopSheet({
 
       <ProductDetailSheet
         product={product}
+        vendorId={vendor?.id}
         open={!!product}
         onClose={() => setProduct(null)}
       />
