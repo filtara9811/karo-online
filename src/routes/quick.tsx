@@ -450,6 +450,7 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
   // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
 
 
