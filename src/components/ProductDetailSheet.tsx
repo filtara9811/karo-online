@@ -12,15 +12,29 @@ export function ProductDetailSheet({
   product,
   open,
   onClose,
+  vendorId,
   bookLabel = "Book now",
 }: {
   product: Product | null;
   open: boolean;
   onClose: () => void;
+  vendorId?: string;
   bookLabel?: "Book now" | "Buy now";
 }) {
   const navigate = useNavigate();
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0]);
+
+  const handleShare = async () => {
+    if (!product) return;
+    const url = buildShopDeepLink(vendorId ?? "shop", product.id);
+    const r = await shareLink({
+      title: product.name,
+      text: `${product.name} — ₹${product.price.toLocaleString()} on Karo Online`,
+      url,
+    });
+    if (r === "copied") toast.success("Product link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
 
   return (
     <Drawer.Root
