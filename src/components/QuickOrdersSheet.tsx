@@ -280,6 +280,27 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
               <BannerCarousel />
             </div>
 
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-600" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by vendor, service or lead id…"
+                className="w-full h-10 pl-9 pr-9 rounded-full bg-white border border-amber-200 text-[13px] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full grid place-items-center bg-amber-100 text-amber-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+
             {/* Source toggle: Quick Services / Digital Shops */}
             <div className="grid grid-cols-2 gap-2 p-1 bg-amber-50 border border-amber-200 rounded-full">
               {([
