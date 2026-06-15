@@ -65,6 +65,10 @@ import productPerfume from "@/assets/product-perfume.jpg";
 import productBags from "@/assets/product-bags.jpg";
 
 export const Route = createFileRoute("/vendors")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    shopId: typeof search.shopId === "string" ? search.shopId : undefined,
+    productId: typeof search.productId === "string" ? search.productId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "All Vendors — Karo Online" },
