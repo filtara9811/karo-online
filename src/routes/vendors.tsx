@@ -546,27 +546,8 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Filter pills — each opens a bottom-sheet picker */}
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide overscroll-x-contain">
-          <button
-            onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
-            disabled={activeFilterCount === 0}
-            className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
-              activeFilterCount > 0
-                ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
-                : "bg-white text-[color:oklch(0.55_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)] opacity-60"
-            }`}
-            aria-label="Reset filters"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            {activeFilterCount > 0 ? `Clear (${activeFilterCount})` : "Filters"}
-          </button>
-          <FilterPill label="City" value={city} onTap={() => setOpenPicker("city")} />
-          <FilterPill label="Area" value={area} onTap={() => setOpenPicker("area")} />
-          <FilterPill label="Category" value={categoryLabel} onTap={() => setOpenPicker("category")} />
-          <FilterPill label="Trade" value={trader} onTap={() => setOpenPicker("trader")} />
-          <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
-        </div>
+        {/* Filter pills moved to fixed footer below */}
+
 
         {/* Compact vendor cards — alternating left/right entrance, 3 visible per screen */}
         <div className="space-y-2">
@@ -681,67 +662,92 @@ function SheetBody({
           </span>
         </button>
 
-        {/* Categories — same as Quick page */}
-        <div className="flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide overscroll-x-contain">
-          {CATS.map((c, i) => {
-            const Icon = c.Icon;
-            const isActive = categoryFilter === c.key;
-            const isPulsing = pulseKey.startsWith(`${c.key}-`);
-            return (
-              <button
-                key={c.key}
-                onClick={() => { setCategoryFilter(c.key); setPulseKey(`${c.key}-${Date.now()}`); }}
-                className={`btn-3d relative flex-shrink-0 h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
-                  isActive
-                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
-                    : c.tone === "muted"
-                    ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
-                    : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
-                }`}
-                style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
-                aria-label={c.label}
-              >
-                {isPulsing && (
-                  <span
-                    key={pulseKey}
-                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
-                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
-                  />
-                )}
-                <Icon className={`relative h-5 w-5 ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`} strokeWidth={2.2} />
-              </button>
-            );
-          })}
+        {/* Filter pills — top row of the fixed footer */}
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide overscroll-x-contain">
+          <button
+            onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
+            disabled={activeFilterCount === 0}
+            className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
+              activeFilterCount > 0
+                ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
+                : "bg-white text-[color:oklch(0.55_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)] opacity-60"
+            }`}
+            aria-label="Reset filters"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {activeFilterCount > 0 ? `Clear (${activeFilterCount})` : "Filters"}
+          </button>
+          <FilterPill label="City" value={city} onTap={() => setOpenPicker("city")} />
+          <FilterPill label="Area" value={area} onTap={() => setOpenPicker("area")} />
+          <FilterPill label="Category" value={categoryLabel} onTap={() => setOpenPicker("category")} />
+          <FilterPill label="Trade" value={trader} onTap={() => setOpenPicker("trader")} />
+          <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
         </div>
 
-        {/* Sarvic|Products  /  Quick|Sarvic bar */}
-        <div className="mt-2 relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-4px_18px_-6px_rgba(212,175,55,0.35)] flex items-center justify-between px-2 py-2">
+        {/* Unified bar: [Sarvic|Products] · scrolling category icons · [Quick|Sarvic] */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/98 to-[oklch(0.97_0.02_88)] border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_-4px_18px_-6px_rgba(212,175,55,0.35)] flex items-center gap-1 px-1.5 py-1.5">
+          {/* LEFT: opens ProductServicePicker (Product / Service / Other) */}
           <button
             onClick={() => setPicker("browse")}
-            className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
+            className="btn-3d flex items-center gap-1 active:scale-95 px-1.5 py-1 rounded-2xl flex-shrink-0"
             aria-label="Sarvic Products"
           >
-            <span className="relative h-8 w-8 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
-              <img src={goldPin} alt="" className="h-4 w-4 object-contain" />
+            <span className="relative h-7 w-7 rounded-full grid place-items-center bg-gradient-to-br from-[#fff8dc] to-[#f5e9b8] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-gold-glow">
+              <img src={goldPin} alt="" className="h-3.5 w-3.5 object-contain" />
             </span>
-            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
-              Sarvic<span className="font-light"> | </span>Products
+            <span className="font-display text-[11px] text-gold-gradient font-bold italic tracking-tight">
+              Sarvic<span className="font-light"> | </span>
             </span>
-            <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
           </button>
 
+          {/* MIDDLE: scrolling category icons */}
+          <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto px-1 scrollbar-hide overscroll-x-contain">
+            {CATS.map((c, i) => {
+              const Icon = c.Icon;
+              const isActive = categoryFilter === c.key;
+              const isPulsing = pulseKey.startsWith(`${c.key}-`);
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => { setCategoryFilter(c.key); setPulseKey(`${c.key}-${Date.now()}`); }}
+                  className={`btn-3d relative flex-shrink-0 h-9 w-9 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_4px_14px_-2px_rgba(194,65,12,0.6)] scale-110"
+                      : c.tone === "muted"
+                      ? "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                      : "bg-white/60 border-[color:oklch(0.78_0.14_82/0.25)]"
+                  }`}
+                  style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                  aria-label={c.label}
+                >
+                  {isPulsing && (
+                    <span
+                      key={pulseKey}
+                      className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                      style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                    />
+                  )}
+                  <Icon className={`relative h-4 w-4 ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`} strokeWidth={2.2} />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* RIGHT: opens Reselling picker (Quick Service / Vendor / All) */}
           <button
             onClick={() => setPicker("reselling")}
-            className="btn-3d flex items-center gap-1.5 active:scale-95 px-2 py-1 rounded-2xl"
+            className="btn-3d flex items-center gap-1 active:scale-95 px-1.5 py-1 rounded-2xl flex-shrink-0"
             aria-label="Quick Sarvic"
           >
-            <span className="text-[color:oklch(0.55_0.18_60)] text-base">⚡</span>
-            <span className="font-display text-[13px] text-gold-gradient font-bold italic tracking-tight">
-              Quick<span className="font-light"> | </span>Sarvic
+            <span className="text-[color:oklch(0.55_0.18_60)] text-sm">⚡</span>
+            <span className="font-display text-[11px] text-gold-gradient font-bold italic tracking-tight">
+              Quick<span className="font-light"> | </span>
             </span>
-            <span className="text-[color:oklch(0.78_0.14_82)] text-xs">▾</span>
+            <span className="text-[color:oklch(0.78_0.14_82)] text-[10px]">▾</span>
           </button>
         </div>
+
       </div>
 
       <SearchOverlay
