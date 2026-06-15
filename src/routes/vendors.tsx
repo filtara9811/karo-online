@@ -20,6 +20,15 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import { getNearbyDigitalShops, type DigitalShop } from "@/lib/digital-shops.functions";
 import { QuickServiceMap } from "@/components/QuickServiceMap";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { VendorShopSheet, type ShopVendor } from "@/components/VendorShopSheet";
+
+/** Per-vendor customizable CTA label. Vendor can later toggle this from their dashboard. */
+function getVendorCtaLabel(vendorId: string): "Shop Visit" | "Shop Now" | "Inquiry" {
+  if (typeof window === "undefined") return "Shop Visit";
+  const v = window.localStorage.getItem(`karo:vendor-cta:${vendorId}`);
+  if (v === "Shop Now" || v === "Inquiry" || v === "Shop Visit") return v;
+  return "Shop Visit";
+}
 
 type Cat = { key: string; label: string; Icon: LucideIcon; tone: "active" | "muted" | "dim" };
 const CATS: Cat[] = [
