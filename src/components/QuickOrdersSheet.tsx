@@ -97,6 +97,7 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
   const { lines, loading } = useLeadInvoice(order.id, open);
   const pill = pillOfStatus(order.status);
   const total = (lines ?? []).reduce((s, l) => s + (l.price ?? 0) * l.qty, 0);
+  const isPending = vendor.vendorId === "__pending__";
 
   return (
     <motion.div
@@ -107,11 +108,17 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
     >
       {/* Top strip — vendor / lead id / status */}
       <div className="flex items-center gap-3 p-3 bg-amber-50/80">
-        <span className="h-11 w-11 rounded-full overflow-hidden border-2 border-white shadow shrink-0">
-          <img src={vendor.avatar} alt={vendor.vendorName} className="h-full w-full object-cover" />
+        <span className="h-11 w-11 rounded-full overflow-hidden border-2 border-white shadow shrink-0 bg-amber-100 grid place-items-center">
+          {isPending ? (
+            <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+          ) : (
+            <img src={vendor.avatar} alt={vendor.vendorName} className="h-full w-full object-cover" />
+          )}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-slate-800 truncate">{vendor.vendorName}</p>
+          <p className="text-[13px] font-bold text-slate-800 truncate">
+            {isPending ? "Searching vendor…" : vendor.vendorName}
+          </p>
           <p className="text-[10px] text-slate-500 underline">Customer details</p>
           <p className="text-[10px] text-slate-400 mt-0.5">{order.lastAt}</p>
         </div>
@@ -130,15 +137,12 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
       <button onClick={() => setOpen((v) => !v)} className="relative w-full flex items-stretch gap-3 p-3 bg-slate-50 text-left active:bg-slate-100/70 transition">
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-display font-bold text-slate-800 truncate">{order.service}</p>
-          <p className="text-[11px] text-slate-500">Good and best service</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" /> 4.9
-            </span>
-            {total > 0 && (
+          <p className="text-[11px] text-slate-500 truncate">{order.lastMsg || "Tap to view details"}</p>
+          {total > 0 && (
+            <div className="mt-1.5">
               <span className="text-[12px] font-bold text-emerald-700">₹ {total.toLocaleString("en-IN")}</span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <div className="h-16 w-16 rounded-xl overflow-hidden border border-amber-200/60 bg-white grid place-items-center shrink-0">
           {order.productImage ? (
@@ -149,6 +153,7 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
         </div>
         <ChevronDown className={`absolute right-3 bottom-3 h-4 w-4 text-amber-600 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+
 
       {/* Expanded invoice */}
       <AnimatePresence initial={false}>
