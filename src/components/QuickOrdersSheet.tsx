@@ -8,8 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, ChevronDown, Bell, Star, HandHelping,
-  Hourglass, AlertCircle, CheckCircle2, MessageSquare, Wrench,
+  X, ChevronDown, Bell, HandHelping, Search,
+  Hourglass, AlertCircle, CheckCircle2, MessageSquare, Wrench, Loader2,
 } from "lucide-react";
 import { Drawer, DrawerContent, DrawerPortal, DrawerOverlay } from "@/components/ui/drawer";
 import { BannerCarousel } from "@/components/BannerCarousel";
