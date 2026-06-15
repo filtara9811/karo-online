@@ -47,6 +47,20 @@ type FlyEffect = { id: number; src: string; from: DOMRect; to: DOMRect };
 
 function VendorShop() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleShareShop = async () => {
+    const id = user?.id ?? "shop";
+    const url = buildShopDeepLink(id);
+    const r = await shareLink({
+      title: "My Digital Dukan",
+      text: "Visit my digital dukan on Karo Online",
+      url,
+    });
+    if (r === "copied") toast.success("Shop link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
+
   const [items, setItems] = useState<VendorProduct[]>(
     PRODUCTS.map((p) => ({ ...p, theme: "classic" }))
   );
