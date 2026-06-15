@@ -48,7 +48,7 @@ export function VendorShopSheet({
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
         <SheetContent
           side="bottom"
-          className="rounded-t-[28px] p-0 h-[85vh] max-h-[85vh] overflow-hidden border-t border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-b from-white via-white to-[#fffaf0]"
+          className="rounded-t-[28px] p-0 h-[90vh] max-h-[90vh] overflow-hidden border-t border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-b from-white via-white to-[#fffaf0] shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.35)] animate-in slide-in-from-bottom duration-300"
         >
           {vendor && (
             <div className="relative h-full flex flex-col">
