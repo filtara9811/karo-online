@@ -92,14 +92,23 @@ export function VendorShopSheet({
               <div className="h-1.5 w-12 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]" />
             </div>
 
-            {/* Fixed X button */}
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute top-3 right-3 z-30 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
-            >
-              <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
-            </button>
+            {/* Fixed top-right controls: Share + Close */}
+            <div className="absolute top-3 right-3 z-30 flex gap-2">
+              <button
+                onClick={handleShare}
+                aria-label="Share shop"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.4)] shadow active:scale-90"
+              >
+                <Share2 className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
+              >
+                <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
+              </button>
+            </div>
 
             {vendor && (
               <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
