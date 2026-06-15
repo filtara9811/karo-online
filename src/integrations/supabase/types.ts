@@ -122,15 +122,20 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          external_url: string | null
           icon: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          is_featured_home: boolean
+          is_listed: boolean
+          is_recommended: boolean
           name: string
           price_max: number | null
           price_min: number | null
           slug: string
           sort_order: number
+          status: string
           updated_at: string
         }
         Insert: {
@@ -138,15 +143,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          external_url?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured_home?: boolean
+          is_listed?: boolean
+          is_recommended?: boolean
           name: string
           price_max?: number | null
           price_min?: number | null
           slug: string
           sort_order?: number
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -154,15 +164,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          external_url?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured_home?: boolean
+          is_listed?: boolean
+          is_recommended?: boolean
           name?: string
           price_max?: number | null
           price_min?: number | null
           slug?: string
           sort_order?: number
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -2517,6 +2532,9 @@ export type Database = {
           referral: string | null
           role: string | null
           service_radius_km: number
+          shop_banner_urls: string[]
+          shop_bio: string | null
+          shop_cta_label: string
           status: string
           tags: string[] | null
           trade: string | null
@@ -2564,6 +2582,9 @@ export type Database = {
           referral?: string | null
           role?: string | null
           service_radius_km?: number
+          shop_banner_urls?: string[]
+          shop_bio?: string | null
+          shop_cta_label?: string
           status?: string
           tags?: string[] | null
           trade?: string | null
@@ -2611,6 +2632,9 @@ export type Database = {
           referral?: string | null
           role?: string | null
           service_radius_km?: number
+          shop_banner_urls?: string[]
+          shop_bio?: string | null
+          shop_cta_label?: string
           status?: string
           tags?: string[] | null
           trade?: string | null
@@ -3933,6 +3957,9 @@ export type Database = {
               referral: string | null
               role: string | null
               service_radius_km: number
+              shop_banner_urls: string[]
+              shop_bio: string | null
+              shop_cta_label: string
               status: string
               tags: string[] | null
               trade: string | null
@@ -4009,6 +4036,9 @@ export type Database = {
               referral: string | null
               role: string | null
               service_radius_km: number
+              shop_banner_urls: string[]
+              shop_bio: string | null
+              shop_cta_label: string
               status: string
               tags: string[] | null
               trade: string | null
