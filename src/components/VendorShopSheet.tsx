@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
-import { X, Star, Search } from "lucide-react";
+import { X, Star, Search, Share2 } from "lucide-react";
 import { PRODUCTS, type Product } from "@/lib/products";
 import { ProductDetailSheet } from "./ProductDetailSheet";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 
 export type ShopVendor = {
   id: string;
