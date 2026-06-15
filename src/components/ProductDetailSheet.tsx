@@ -3,6 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Drawer } from "vaul";
 import { X, Star, MessageCircle, Zap, Heart, Share2, ShieldCheck } from "lucide-react";
 import type { Product } from "@/lib/products";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 
 const SNAP_POINTS = [0.78, 0.97] as const;
 
