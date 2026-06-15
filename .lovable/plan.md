@@ -1,68 +1,94 @@
+## 🟢 Customer Side — Layered Draggable Bottom Sheets
 
-## Goal
-Replace the current full-page My Orders experience (for the Quick screen entry) with a premium bottom sheet overlay matching screenshot #3, using real data, while keeping the existing gold/cream design language. Quick Services orders and Digital Shop orders stay in separate buckets.
+### 1. VendorShopSheet (all-digital-shops → vendor-digital-shop)
+- Replace current Radix `Sheet` with **Vaul drawer** (`bun add vaul`) — gives native draggable snap points.
+- Snap points: `0.75` (default, ~75% — shows ~10% home peeking) and `0.97` (full).
+- Fixed top bar: center drag handle (gold pill) + fixed **X button** top-right (always visible in both snaps).
+- Action button on shop card renamed from "Inquiry" → vendor-configurable label (**"Shop Visit"** or **"Shop Now"**), read from `vendors.shop_cta_label` (new column, default `"Shop Visit"`).
 
-## Scope
-- New component: `src/components/QuickOrdersSheet.tsx` — 95% height bottom sheet using vaul Drawer (consistent with existing sheets).
-- Wire it into `src/routes/quick.tsx` so the existing "My Orders" entry on the quick screen opens this sheet instead of navigating to `/orders`.
-- Keep `/orders` route untouched (used elsewhere, e.g. /home back-nav).
-- Reuse `useMyOrders()` hook for real data — no mocks.
+### 2. ProductDetailSheet (vendor-digital-shop → product-details)
+- Same Vaul drawer with same snap points (`0.75` / `0.97`), nested above VendorShopSheet so shop background peeks behind.
+- Same drag handle + fixed X.
+- **Book Now** → `/checkout?productId=...` (payment gateway, already wired to Cashfree/Razorpay).
+- **Inquiry** → `/chat?productId=...&mode=inquiry` (already implemented — keep).
 
-## Sheet structure (top → bottom)
+### Files
+- `src/components/VendorShopSheet.tsx` — swap Sheet for Vaul Drawer with snap points
+- `src/components/ProductDetailSheet.tsx` — same conversion
+- `src/routes/vendors.tsx` — render dynamic CTA label from vendor record
 
-1. **Header bar** (sticky)
-   - Left: "Quick My Order Leads" (display font, gold gradient — matches existing Ledger header).
-   - Right: round X button → closes sheet.
+---
 
-2. **Banner carousel**
-   - Reuse existing `BannerCarousel` component (already shown on home) with 5-dot pagination.
-   - Soft cream/gold placeholder background to match design.
+## 🔵 Vendor Side — Architectural Separation
 
-3. **Source toggle** (NEW — required by user's "khaas nirdesh")
-   - Two pills: **Quick Services** | **Digital Shops**.
-   - Filters orders by `OrderSource`: `quick`/`service`/`lead` vs `shop`.
-   - Persists last selection in localStorage.
+### 1. Dual-Mode Dashboard Landing
+New route `src/routes/vendor.dashboard.tsx` redesigned as **two large hero cards**:
+- 🟢 **Quick Service Dashboard** → existing leads/inbox flow (keep current `/vendor/dashboard` content under a `mode=quick` view)
+- 🛍️ **Digital Shop Manager** → new route `/vendor/shop` (already exists — upgrade it)
 
-4. **Status filter tabs** (horizontal scroll)
-   - All Leads · Pending · Under Review (Active) · Service Completed (Done) · Enquiry Received
-   - Each tab: icon + label + count badge; colored border per status (gray/yellow/red/green/light-green) matching screenshot.
+Strict visual separation: different accent colors, different headers, no shared toggle.
 
-5. **List header**: "All Leads Customer" (or selected filter label).
+### 2. Digital Shop Manager — Upgraded `vendor.shop.tsx`
+Tabs inside the manager:
+- **Catalog** (products list + add/edit)
+- **Thumbnails** (NEW dedicated section — shop logo, banner, hero carousel, category thumbnails)
+- **Storefront Preview** (live preview of customer view)
+- **Settings** (CTA label "Shop Visit" vs "Shop Now", shop bio, hours)
 
-6. **Lead cards** (one card per lead, expandable)
-   - **Top strip** (light yellow bg):
-     - Avatar (vendor or "searching" placeholder)
-     - Vendor Name + "Customer details" sub-line
-     - Date/time (created_at formatted)
-     - Right: Lead id `#XXXXXX` (last 6 of lead.id), status pill (Pending/Active/Cancel) with bell + unread count.
-   - **Bottom strip** (light gray bg):
-     - Service title (e.g. "AC | Service") + "Good and best service" tagline
-     - Rating (vendor rating if available, else 4.9) + price (₹ from accepted vendor mapping)
-     - Right: catalog item image (from `catalog_items.image_url`, already loaded by hook)
-     - Bottom-right: chevron down → expands
-   - **Expanded section**: shows full invoice/variations — list of `vendor_item_mappings` for this lead's accepted vendor (item name, qty, unit price, line total) + "More invoice" link → routes to existing chat/status.
+### 3. Product Editor — Advanced Controls
+Upgrade `src/components/ProductEditor.tsx`:
+- **Status toggle**: Draft / Active / Inactive (stored in `catalog_items.status`)
+- **Placement checkboxes**:
+  - Recommended Products (bestseller row)
+  - Shop Home Featured Grid
+  - Normal Listing
+  - Stored as columns: `is_recommended`, `is_featured_home`, `is_listed`
+- **External Link field** (NEW): `external_url` — if set, product card redirects to that URL instead of opening detail sheet
+- **Live Preview button** (eye icon) — opens `ProductDetailSheet` with current form data as a mock product
+- **POS Inventory integration** — keep existing POS link to add/edit inventory items into shop catalog
 
-7. **Empty / loading states** match existing cream styling.
+### 4. Thumbnails Section (NEW)
+Dedicated `src/components/ShopThumbnailsManager.tsx`:
+- Shop avatar / logo upload
+- Hero banner carousel (up to 5 images, reorderable)
+- Category thumbnail overrides
+- Featured collection cover
+Uses existing `ShopMediaUploader` + Supabase storage.
 
-## Data plan
-- Source bucketing uses existing `OrderItem.source` already mapped in `use-my-orders.tsx`.
-- Variations/invoice on expand: new lightweight query against `vendor_item_mappings` joined to `catalog_items` filtered by `lead_id` + `vendor_id`. Fetched lazily on first expand, cached per lead in component state.
-- All counts (Pending/Active/Done) derived client-side from the already-loaded groups.
+---
 
-## Spell fixes (in new sheet only)
-Quick My Order Leads · All Leads · All Leads Customer · Vendor Name · AC | Service · Customer.
+## 🗄️ Database Migration
 
-## Visual rules
-- Reuse existing tokens from `src/styles.css` (gold gradient, cream surfaces). No new color tokens.
-- Cards: rounded-2xl, soft gold border, subtle shadow — slightly larger than current MyOrdersList cards per user request.
-- Sans-serif body (existing Inter), display font for header only.
+```sql
+ALTER TABLE public.vendors
+  ADD COLUMN IF NOT EXISTS shop_cta_label text NOT NULL DEFAULT 'Shop Visit'
+    CHECK (shop_cta_label IN ('Shop Visit','Shop Now')),
+  ADD COLUMN IF NOT EXISTS shop_banner_urls text[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS shop_bio text;
 
-## Out of scope
-- No changes to `/orders` route, `MyOrdersList`, or vendor dashboard.
-- No backend schema changes; uses existing tables and RLS.
-- Digital Shop orders source mapping already exists (`source = "shop"`); no migration needed.
+ALTER TABLE public.catalog_items
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('draft','active','inactive')),
+  ADD COLUMN IF NOT EXISTS is_recommended boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_featured_home boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_listed boolean NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS external_url text;
+```
+Customer-side queries filter `status = 'active'`.
 
-## Files
-- create: `src/components/QuickOrdersSheet.tsx`
-- edit: `src/routes/quick.tsx` (swap navigation → open sheet)
-- (optional) small helper hook `src/hooks/use-lead-invoice.ts` for lazy invoice fetch.
+---
+
+## 📋 Build Order
+1. Migration (vendors + catalog_items columns)
+2. `bun add vaul`
+3. Rebuild `VendorShopSheet` + `ProductDetailSheet` with Vaul snap drawers
+4. Update `vendors.tsx` to use dynamic CTA label
+5. Redesign `/vendor/dashboard` as dual-mode landing
+6. Upgrade `/vendor/shop` with tabs (Catalog / Thumbnails / Preview / Settings)
+7. Upgrade `ProductEditor` (status, placement, external link, live preview)
+8. New `ShopThumbnailsManager` component
+
+---
+
+## ⚠️ Scope Note
+This is a large change touching ~10 files + DB migration. Estimated 2-3 build turns. I'll do migration + customer-side draggable sheets first (most visible), then vendor-side in the next turn — unless you want everything in one shot.
