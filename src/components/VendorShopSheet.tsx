@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { X, Star, ShieldCheck, ShoppingBasket, Search } from "lucide-react";
+import { Drawer } from "vaul";
+import { X, Star, Search } from "lucide-react";
 import { PRODUCTS, type Product } from "@/lib/products";
 import { ProductDetailSheet } from "./ProductDetailSheet";
 
@@ -23,6 +23,8 @@ const CATEGORIES = [
   { key: "jewellery", label: "Jewellery", emoji: "💎" },
 ];
 
+const SNAP_POINTS = [0.78, 0.97] as const;
+
 export function VendorShopSheet({
   vendor,
   open,
@@ -34,6 +36,7 @@ export function VendorShopSheet({
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [query, setQuery] = useState("");
+  const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0]);
 
   const list = query.trim()
     ? PRODUCTS.filter((p) =>
@@ -45,26 +48,39 @@ export function VendorShopSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-        <SheetContent
-          side="bottom"
-          className="rounded-t-[28px] p-0 h-[90vh] max-h-[90vh] overflow-hidden border-t border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-b from-white via-white to-[#fffaf0] shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.35)] animate-in slide-in-from-bottom duration-300"
-        >
-          {vendor && (
-            <div className="relative h-full flex flex-col">
-              {/* Top X */}
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="absolute top-3 right-3 z-30 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
-              >
-                <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
-              </button>
+      <Drawer.Root
+        open={open}
+        onOpenChange={(o) => !o && onClose()}
+        snapPoints={[...SNAP_POINTS]}
+        activeSnapPoint={snap}
+        setActiveSnapPoint={setSnap}
+      >
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
+          <Drawer.Content
+            aria-describedby={undefined}
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[97vh] max-w-md flex-col rounded-t-[28px] border-t border-[color:oklch(0.78_0.14_82/0.55)] bg-gradient-to-b from-white via-white to-[#fffaf0] shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.45)] outline-none"
+          >
+            <Drawer.Title className="sr-only">{vendor?.title ?? "Vendor shop"}</Drawer.Title>
 
-              {/* Scroll body */}
-              <div className="flex-1 overflow-y-auto pb-6">
+            {/* Drag handle */}
+            <div className="relative pt-2 pb-1 flex items-center justify-center">
+              <div className="h-1.5 w-12 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]" />
+            </div>
+
+            {/* Fixed X button */}
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute top-3 right-3 z-30 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
+            >
+              <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
+            </button>
+
+            {vendor && (
+              <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
                 {/* Header */}
-                <div className="px-5 pt-5 pb-3 flex items-center gap-3">
+                <div className="px-5 pt-3 pb-3 flex items-center gap-3">
                   <img
                     src={vendor.avatar}
                     alt={vendor.title}
@@ -96,7 +112,7 @@ export function VendorShopSheet({
                   </div>
                 </div>
 
-                {/* Stats row */}
+                {/* Stats */}
                 <div className="px-5 mt-3">
                   <div className="grid grid-cols-4 rounded-full bg-gradient-to-r from-[#fffaf0] via-[#fff8dc] to-[#fffaf0] border border-[color:oklch(0.78_0.14_82/0.4)] py-2 px-3">
                     <Stat label="Rating" value={vendor.rating.toFixed(1)} starred />
@@ -208,12 +224,11 @@ export function VendorShopSheet({
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+            )}
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
-      {/* Nested product detail sheet */}
       <ProductDetailSheet
         product={product}
         open={!!product}
