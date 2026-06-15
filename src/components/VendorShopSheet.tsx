@@ -31,14 +31,36 @@ export function VendorShopSheet({
   vendor,
   open,
   onClose,
+  initialProductId,
 }: {
   vendor: ShopVendor | null;
   open: boolean;
   onClose: () => void;
+  initialProductId?: string;
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [query, setQuery] = useState("");
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0]);
+
+  // Auto-open a product when a deep link supplies productId
+  useEffect(() => {
+    if (open && initialProductId) {
+      const p = PRODUCTS.find((x) => x.id === initialProductId);
+      if (p) setProduct(p);
+    }
+  }, [open, initialProductId]);
+
+  const handleShare = async () => {
+    if (!vendor) return;
+    const url = buildShopDeepLink(vendor.id);
+    const r = await shareLink({
+      title: vendor.title,
+      text: `Check out ${vendor.title} on Karo Online — ${vendor.tagline}`,
+      url,
+    });
+    if (r === "copied") toast.success("Shop link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
 
   const list = query.trim()
     ? PRODUCTS.filter((p) =>
