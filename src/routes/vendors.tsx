@@ -437,6 +437,7 @@ function VendorsPage() {
             : null
         }
         open={!!detailVendor}
+        initialProductId={deepShopId && detailVendor?.id === deepShopId ? deepProductId : undefined}
         onClose={() => setDetailVendor(null)}
       />
     </div>
