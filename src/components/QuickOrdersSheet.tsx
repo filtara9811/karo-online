@@ -230,10 +230,20 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
   }, [filteredVendorOrders]);
 
   const visible = useMemo(() => {
-    if (statusKind === "all") return filteredVendorOrders;
-    if (statusKind === "enquiry") return filteredVendorOrders.filter(({ order }) => order.status === "placed");
-    return filteredVendorOrders.filter(({ order }) => bucketOfStatus(order.status) === statusKind);
-  }, [filteredVendorOrders, statusKind]);
+    let list = filteredVendorOrders;
+    if (statusKind === "enquiry") list = list.filter(({ order }) => order.status === "placed");
+    else if (statusKind !== "all") list = list.filter(({ order }) => bucketOfStatus(order.status) === statusKind);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(({ vendor, order }) =>
+        vendor.vendorName.toLowerCase().includes(q) ||
+        order.service.toLowerCase().includes(q) ||
+        order.id.toLowerCase().includes(q) ||
+        (order.shortCode ?? "").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [filteredVendorOrders, statusKind, query]);
 
   const openOrder = async (vendorId: string, orderId: string) => {
     await markOrderRead(orderId);
