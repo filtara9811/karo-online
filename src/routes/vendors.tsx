@@ -546,27 +546,8 @@ function SheetBody({
           </button>
         </div>
 
-        {/* Filter pills — each opens a bottom-sheet picker */}
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide overscroll-x-contain">
-          <button
-            onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
-            disabled={activeFilterCount === 0}
-            className={`flex-shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all ${
-              activeFilterCount > 0
-                ? "bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white border-[#c2410c] shadow"
-                : "bg-white text-[color:oklch(0.55_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)] opacity-60"
-            }`}
-            aria-label="Reset filters"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            {activeFilterCount > 0 ? `Clear (${activeFilterCount})` : "Filters"}
-          </button>
-          <FilterPill label="City" value={city} onTap={() => setOpenPicker("city")} />
-          <FilterPill label="Area" value={area} onTap={() => setOpenPicker("area")} />
-          <FilterPill label="Category" value={categoryLabel} onTap={() => setOpenPicker("category")} />
-          <FilterPill label="Trade" value={trader} onTap={() => setOpenPicker("trader")} />
-          <FilterPill label="Range" value={`${maxKm} km`} onTap={() => setOpenPicker("range")} />
-        </div>
+        {/* Filter pills moved to fixed footer below */}
+
 
         {/* Compact vendor cards — alternating left/right entrance, 3 visible per screen */}
         <div className="space-y-2">
