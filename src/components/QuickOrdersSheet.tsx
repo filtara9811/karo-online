@@ -331,10 +331,14 @@ export function QuickOrdersSheet({ open, onOpenChange }: { open: boolean; onOpen
                   <button
                     key={t.key}
                     onClick={() => setStatusKind(t.key)}
-                    className={`shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl bg-white border-2 ${t.border} ${active ? `ring-2 ${t.ring} shadow` : "opacity-80"} transition`}
+                    className={`shrink-0 flex flex-col items-center justify-center gap-0.5 min-w-[72px] px-3 py-2.5 rounded-2xl border-2 ${t.border} transition ${
+                      active
+                        ? `bg-gradient-to-b from-white to-amber-50 ring-2 ${t.ring} shadow-md scale-[1.03]`
+                        : "bg-white/70 opacity-75 hover:opacity-100"
+                    }`}
                   >
-                    <Icon className="h-4 w-4 text-slate-700" />
-                    <span className="text-[12px] font-bold text-slate-800 leading-none">{c}</span>
+                    <Icon className={`h-4 w-4 ${active ? "text-amber-700" : "text-slate-600"}`} />
+                    <span className="text-[13px] font-extrabold text-slate-800 leading-none">{c}</span>
                     <span className="text-[9px] text-slate-500 leading-tight whitespace-nowrap">{t.label}</span>
                   </button>
                 );
