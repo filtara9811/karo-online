@@ -127,7 +127,7 @@ function LeadCard({ order, vendor, onOpen }: { order: OrderItem; vendor: VendorG
       </div>
 
       {/* Bottom strip — service summary */}
-      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-stretch gap-3 p-3 bg-slate-50 text-left active:bg-slate-100/70 transition">
+      <button onClick={() => setOpen((v) => !v)} className="relative w-full flex items-stretch gap-3 p-3 bg-slate-50 text-left active:bg-slate-100/70 transition">
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-display font-bold text-slate-800 truncate">{order.service}</p>
           <p className="text-[11px] text-slate-500">Good and best service</p>
