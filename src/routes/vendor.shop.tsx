@@ -9,7 +9,11 @@ import {
   ImagePlus,
   ShoppingBasket,
   ScanBarcode,
+  Share2,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 import { PRODUCTS } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 import { ShopMediaUploader } from "@/components/ShopMediaUploader";
