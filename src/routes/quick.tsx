@@ -892,6 +892,7 @@ function QuickPage() {
       />
 
       <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
+      <QuickOrdersSheet open={ordersSheetOpen} onOpenChange={setOrdersSheetOpen} />
     </div>
   );
 }
