@@ -3,6 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Drawer } from "vaul";
 import { X, Star, MessageCircle, Zap, Heart, Share2, ShieldCheck } from "lucide-react";
 import type { Product } from "@/lib/products";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 
 const SNAP_POINTS = [0.78, 0.97] as const;
 
@@ -10,15 +12,29 @@ export function ProductDetailSheet({
   product,
   open,
   onClose,
+  vendorId,
   bookLabel = "Book now",
 }: {
   product: Product | null;
   open: boolean;
   onClose: () => void;
+  vendorId?: string;
   bookLabel?: "Book now" | "Buy now";
 }) {
   const navigate = useNavigate();
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0]);
+
+  const handleShare = async () => {
+    if (!product) return;
+    const url = buildShopDeepLink(vendorId ?? "shop", product.id);
+    const r = await shareLink({
+      title: product.name,
+      text: `${product.name} — ₹${product.price.toLocaleString()} on Karo Online`,
+      url,
+    });
+    if (r === "copied") toast.success("Product link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
 
   return (
     <Drawer.Root
@@ -44,6 +60,7 @@ export function ProductDetailSheet({
           {/* Fixed top-right controls */}
           <div className="absolute top-3 right-3 z-30 flex gap-2">
             <button
+              onClick={handleShare}
               aria-label="Share"
               className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.4)] shadow active:scale-90"
             >

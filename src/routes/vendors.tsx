@@ -65,6 +65,10 @@ import productPerfume from "@/assets/product-perfume.jpg";
 import productBags from "@/assets/product-bags.jpg";
 
 export const Route = createFileRoute("/vendors")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    shopId: typeof search.shopId === "string" ? search.shopId : undefined,
+    productId: typeof search.productId === "string" ? search.productId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "All Vendors — Karo Online" },
@@ -364,6 +368,14 @@ function VendorsPage() {
   );
 
   const [detailVendor, setDetailVendor] = useState<Vendor | null>(null);
+  const { shopId: deepShopId, productId: deepProductId } = Route.useSearch();
+
+  // Deep-link: auto-open a vendor shop (and optionally a product) when arriving via shared URL
+  useEffect(() => {
+    if (!deepShopId) return;
+    const v = sourceList.find((x) => x.id === deepShopId);
+    if (v) setDetailVendor(v);
+  }, [deepShopId, sourceList]);
   const MAP_PCT = 35; // % of viewport for the map area — sheet covers ~65%
 
   return (
@@ -425,6 +437,7 @@ function VendorsPage() {
             : null
         }
         open={!!detailVendor}
+        initialProductId={deepShopId && detailVendor?.id === deepShopId ? deepProductId : undefined}
         onClose={() => setDetailVendor(null)}
       />
     </div>

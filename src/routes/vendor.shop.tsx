@@ -9,7 +9,11 @@ import {
   ImagePlus,
   ShoppingBasket,
   ScanBarcode,
+  Share2,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 import { PRODUCTS } from "@/lib/products";
 import { ProductEditor, type EditorProduct } from "@/components/ProductEditor";
 import { ShopMediaUploader } from "@/components/ShopMediaUploader";
@@ -43,6 +47,20 @@ type FlyEffect = { id: number; src: string; from: DOMRect; to: DOMRect };
 
 function VendorShop() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleShareShop = async () => {
+    const id = user?.id ?? "shop";
+    const url = buildShopDeepLink(id);
+    const r = await shareLink({
+      title: "My Digital Dukan",
+      text: "Visit my digital dukan on Karo Online",
+      url,
+    });
+    if (r === "copied") toast.success("Shop link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
+
   const [items, setItems] = useState<VendorProduct[]>(
     PRODUCTS.map((p) => ({ ...p, theme: "classic" }))
   );
@@ -177,8 +195,16 @@ function VendorShop() {
           <ShopLiveToggle />
         </div>
 
-        {/* Top-right: Invoice + Close (X) */}
+        {/* Top-right: Share + Invoice + Close (X) */}
         <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+          <button
+            onClick={handleShareShop}
+            aria-label="Share my shop"
+            className="h-9 px-3 grid grid-flow-col auto-cols-max items-center gap-1.5 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-md active:scale-95 text-[11px] font-display font-bold italic"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Share
+          </button>
           <button
             onClick={() => setPosOpen(true)}
             aria-label="Create Invoice"

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
-import { X, Star, Search } from "lucide-react";
+import { X, Star, Search, Share2 } from "lucide-react";
 import { PRODUCTS, type Product } from "@/lib/products";
 import { ProductDetailSheet } from "./ProductDetailSheet";
+import { buildShopDeepLink, shareLink } from "@/lib/share";
+import { toast } from "sonner";
 
 export type ShopVendor = {
   id: string;
@@ -29,14 +31,36 @@ export function VendorShopSheet({
   vendor,
   open,
   onClose,
+  initialProductId,
 }: {
   vendor: ShopVendor | null;
   open: boolean;
   onClose: () => void;
+  initialProductId?: string;
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [query, setQuery] = useState("");
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0]);
+
+  // Auto-open a product when a deep link supplies productId
+  useEffect(() => {
+    if (open && initialProductId) {
+      const p = PRODUCTS.find((x) => x.id === initialProductId);
+      if (p) setProduct(p);
+    }
+  }, [open, initialProductId]);
+
+  const handleShare = async () => {
+    if (!vendor) return;
+    const url = buildShopDeepLink(vendor.id);
+    const r = await shareLink({
+      title: vendor.title,
+      text: `Check out ${vendor.title} on Karo Online — ${vendor.tagline}`,
+      url,
+    });
+    if (r === "copied") toast.success("Shop link copied to clipboard");
+    if (r === "failed") toast.error("Could not share link");
+  };
 
   const list = query.trim()
     ? PRODUCTS.filter((p) =>
@@ -68,14 +92,23 @@ export function VendorShopSheet({
               <div className="h-1.5 w-12 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]" />
             </div>
 
-            {/* Fixed X button */}
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute top-3 right-3 z-30 h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
-            >
-              <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
-            </button>
+            {/* Fixed top-right controls: Share + Close */}
+            <div className="absolute top-3 right-3 z-30 flex gap-2">
+              <button
+                onClick={handleShare}
+                aria-label="Share shop"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.4)] shadow active:scale-90"
+              >
+                <Share2 className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow active:scale-90"
+              >
+                <X className="h-4 w-4 text-[color:oklch(0.25_0.05_60)]" strokeWidth={2.6} />
+              </button>
+            </div>
 
             {vendor && (
               <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
@@ -231,6 +264,7 @@ export function VendorShopSheet({
 
       <ProductDetailSheet
         product={product}
+        vendorId={vendor?.id}
         open={!!product}
         onClose={() => setProduct(null)}
       />
