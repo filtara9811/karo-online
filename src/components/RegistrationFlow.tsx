@@ -372,7 +372,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
             _gender: payload.gender,
             _phone: payload.phone,
             _email: payload.email || user.email || "",
-            _address: "",
+            _address: address || "",
           });
           if (error) {
             console.error("save_customer_profile error", error);
