@@ -559,12 +559,18 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                     lastName={lastName}
                     email={email}
                     gender={gender}
+                    dob={dob}
+                    address={address}
+                    agreedTerms={agreedTerms}
                     referral={referral}
                     referralLocked={referralLocked}
                     onFirstName={setFirstName}
                     onLastName={setLastName}
                     onEmail={setEmail}
                     onOpenGender={() => setGenderSheetOpen(true)}
+                    onOpenDob={() => setDobSheetOpen(true)}
+                    onOpenAddress={() => setAddressSheetOpen(true)}
+                    onToggleTerms={() => setAgreedTerms((v) => !v)}
                     onReferral={setReferral}
                     submitting={finalizing}
                     onSubmit={() => finalizeNow()}
