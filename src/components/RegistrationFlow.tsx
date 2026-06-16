@@ -844,57 +844,117 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
 // Step 3: Registered page (first/last name, email, gender sheet, referral)
 // ============================================================
 function ProfileStep({
-  firstName, lastName, email, gender, referral, referralLocked,
-  onFirstName, onLastName, onEmail, onOpenGender, onReferral,
-  submitting, onSubmit,
+  firstName, lastName, email, gender, dob, address, agreedTerms, referral, referralLocked,
+  onFirstName, onLastName, onEmail, onOpenGender, onOpenDob, onOpenAddress, onToggleTerms,
+  onReferral, submitting, onSubmit,
 }: {
   firstName: string;
   lastName: string;
   email: string;
   gender: string | null;
+  dob: string | null;
+  address: string;
+  agreedTerms: boolean;
   referral: string;
   referralLocked: boolean;
   onFirstName: (v: string) => void;
   onLastName: (v: string) => void;
   onEmail: (v: string) => void;
   onOpenGender: () => void;
+  onOpenDob: () => void;
+  onOpenAddress: () => void;
+  onToggleTerms: () => void;
   onReferral: (v: string) => void;
   submitting: boolean;
   onSubmit: () => void;
 }) {
   const fnameRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => { setTimeout(() => fnameRef.current?.focus(), 320); }, []);
+  // Auto-focus first name once gender is picked (gating step satisfied)
+  const prevGenderRef = useRef<string | null>(gender);
+  useEffect(() => {
+    if (!prevGenderRef.current && gender) {
+      setTimeout(() => fnameRef.current?.focus(), 220);
+    }
+    prevGenderRef.current = gender;
+  }, [gender]);
 
+  const namesDisabled = !gender;
   const emailValid = !email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const ready = !!firstName.trim() && !!lastName.trim() && !!gender && emailValid && !!email.trim();
+  const ready =
+    !!gender &&
+    !!firstName.trim() &&
+    !!lastName.trim() &&
+    !!dob &&
+    !!address.trim() &&
+    emailValid &&
+    !!email.trim() &&
+    agreedTerms;
+
+  const dobLabel = useMemo(() => {
+    if (!dob) return "";
+    const [y, m, d] = dob.split("-");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${d} ${months[Number(m) - 1]} ${y}`;
+  }, [dob]);
 
   return (
     <div>
       <StepHeader Icon={UserCircle2} title="Registered page" subtitle="Apni basic details bharein" />
 
-      {/* First + Last name side by side */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* GATING: Gender FIRST */}
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-[color:oklch(0.42_0.10_82)]">
+          Step 1 · Gender
+        </span>
+        {!gender && (
+          <span className="text-[10px] uppercase tracking-widest font-semibold text-red-600">
+            Required
+          </span>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onOpenGender}
+        className={`w-full rounded-2xl border-2 px-4 py-3.5 flex items-center gap-3 active:scale-[0.99] transition ${
+          gender
+            ? "border-[color:oklch(0.78_0.14_82/0.55)] bg-white/90"
+            : "border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)] animate-pulse"
+        }`}
+      >
+        <span className="h-9 w-9 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
+          <UserCircle2 className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+        </span>
+        <span className={`flex-1 min-w-0 text-left text-base font-bold ${gender ? "text-[color:oklch(0.24_0.06_85)]" : "text-[color:oklch(0.30_0.10_82)]"}`}>
+          {gender ? genderLabel(gender) : "Select your gender to begin"}
+        </span>
+        <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
+      </button>
+
+      {/* First + Last name — DISABLED until gender picked */}
+      <div className={`mt-3 grid grid-cols-2 gap-2 transition-opacity ${namesDisabled ? "opacity-45 pointer-events-none" : "opacity-100"}`}>
         <FieldShell>
           <input
             ref={fnameRef}
             value={firstName}
             onChange={(e) => onFirstName(e.target.value)}
+            disabled={namesDisabled}
             inputMode="text"
             autoCapitalize="words"
             autoComplete="given-name"
             placeholder="First name"
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
         </FieldShell>
         <FieldShell>
           <input
             value={lastName}
             onChange={(e) => onLastName(e.target.value)}
+            disabled={namesDisabled}
             inputMode="text"
             autoCapitalize="words"
             autoComplete="family-name"
             placeholder="Last name"
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
         </FieldShell>
       </div>
@@ -907,29 +967,46 @@ function ProfileStep({
             onChange={(e) => onEmail(e.target.value)}
             inputMode="email"
             autoComplete="email"
-            placeholder="Enter gmail account"
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
+            placeholder="Gmail address"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
         </FieldShell>
         {email.trim() && !emailValid && (
-          <p className="mt-1 text-[11px] text-red-600 pl-2">Valid email enter karein</p>
+          <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold">Valid email enter karein</p>
         )}
       </div>
 
-      {/* Gender trigger → opens bottom sheet */}
+      {/* DoB */}
       <div className="mt-2.5">
         <button
           type="button"
-          onClick={onOpenGender}
-          className="w-full rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.5)] bg-white/85 px-4 py-3.5 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] active:scale-[0.99] transition"
+          onClick={onOpenDob}
+          className="w-full rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.55)] bg-white/90 px-4 py-3.5 flex items-center gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] active:scale-[0.99] transition"
         >
           <span className="h-9 w-9 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
-            <UserCircle2 className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+            <Calendar className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
           </span>
-          <span className={`flex-1 min-w-0 text-left text-base font-semibold ${gender ? "text-[color:oklch(0.28_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
-            {gender ? genderLabel(gender) : "Select gender"}
+          <span className={`flex-1 min-w-0 text-left text-base font-bold ${dob ? "text-[color:oklch(0.22_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
+            {dob ? dobLabel : "Date of birth"}
           </span>
           <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
+        </button>
+      </div>
+
+      {/* Address */}
+      <div className="mt-2.5">
+        <button
+          type="button"
+          onClick={onOpenAddress}
+          className="w-full rounded-2xl border-2 border-[color:oklch(0.78_0.14_82/0.55)] bg-white/90 px-4 py-3.5 flex items-start gap-3 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] active:scale-[0.99] transition text-left"
+        >
+          <span className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: "linear-gradient(135deg,#fff8dc,#f5d97a)" }}>
+            <MapPin className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
+          </span>
+          <span className={`flex-1 min-w-0 text-base font-bold leading-snug ${address ? "text-[color:oklch(0.22_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
+            {address || "Add delivery address"}
+          </span>
+          <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] mt-1" />
         </button>
       </div>
 
@@ -941,8 +1018,8 @@ function ProfileStep({
               <Gift className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" />
             </span>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.10_82)] font-semibold">Referral applied</div>
-              <div className="font-display text-base font-bold text-[color:oklch(0.28_0.06_85)] truncate">{referral}</div>
+              <div className="text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.10_82)] font-bold">Referral applied</div>
+              <div className="font-display text-base font-bold text-[color:oklch(0.22_0.06_85)] truncate">{referral}</div>
             </div>
             <ShieldCheck className="h-5 w-5 text-emerald-700" />
           </div>
@@ -954,13 +1031,34 @@ function ProfileStep({
               inputMode="text"
               autoCapitalize="characters"
               placeholder="Referral code (optional)"
-              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-semibold text-[color:oklch(0.28_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
+              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
             />
           </FieldShell>
         )}
       </div>
 
-      <NextButton disabled={!ready || submitting} label={submitting ? "Registering…" : "Registered"} icon={false} onClick={onSubmit} />
+      {/* Terms */}
+      <label className="mt-4 flex items-start gap-3 cursor-pointer select-none">
+        <span
+          onClick={(e) => { e.preventDefault(); onToggleTerms(); }}
+          className={`mt-0.5 h-5 w-5 shrink-0 rounded-md border-2 grid place-items-center transition ${
+            agreedTerms
+              ? "bg-gradient-to-br from-[#d4af37] to-[#8b6508] border-[#8b6508]"
+              : "border-[color:oklch(0.78_0.14_82)] bg-white"
+          }`}
+        >
+          {agreedTerms && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+        </span>
+        <input type="checkbox" checked={agreedTerms} onChange={onToggleTerms} className="sr-only" />
+        <span className="text-[12px] text-[color:oklch(0.26_0.06_85)] font-semibold leading-snug">
+          I agree to the{" "}
+          <a href="/terms-and-conditions" target="_blank" rel="noreferrer" className="underline text-[color:oklch(0.40_0.12_82)]">terms</a>{" "}
+          &amp;{" "}
+          <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline text-[color:oklch(0.40_0.12_82)]">privacy policy</a>.
+        </span>
+      </label>
+
+      <NextButton disabled={!ready || submitting} label={submitting ? "Registering…" : "Submit & continue"} icon={false} onClick={onSubmit} />
     </div>
   );
 }
