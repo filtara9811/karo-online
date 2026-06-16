@@ -148,6 +148,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   const referralLocked = initialRef.locked && !!initialRef.code;
 
   const [genderSheetOpen, setGenderSheetOpen] = useState(false);
+  const [dobSheetOpen, setDobSheetOpen] = useState(false);
+  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
+  const [langSheetOpen, setLangSheetOpen] = useState(false);
+  const [lang, setLang] = useState<AppLang>(() => getStoredLang());
+
+  const [dob, setDob] = useState<string | null>(draft.dob ?? null);
+  const [address, setAddress] = useState<string>(draft.address ?? "");
+  const [agreedTerms, setAgreedTerms] = useState<boolean>(draft.agreedTerms ?? false);
 
   const [otp, setOtp] = useState("");
   const [otpSeconds, setOtpSeconds] = useState(45);
