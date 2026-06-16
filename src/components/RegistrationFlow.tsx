@@ -2,13 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X, Pencil,
-  Mail, ChevronDown, Volume2, VolumeX, Play, Check,
+  Mail, ChevronDown, Volume2, VolumeX, Play, Check, Languages, Calendar, MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
 import goldFemale from "@/assets/gold-female.png";
 import goldOther from "@/assets/gold-other.png";
 import { SuccessOverlay } from "@/components/SuccessOverlay";
+import { LanguageSheet, getStoredLang, type AppLang } from "@/components/LanguageSheet";
+import { DobWheelPicker } from "@/components/DobWheelPicker";
+import { AddressPicker, type AddressResult } from "@/components/AddressPicker";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
