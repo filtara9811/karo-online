@@ -82,20 +82,26 @@ export function SuccessOverlay({ open, name, ctaLabel = "Go to Home", autoClose 
           </svg>
         </div>
 
-        <p className="text-[10px] uppercase tracking-[0.45em] text-[color:oklch(0.45_0.08_85)] mb-2">
-          ✦ Sign Up Successful ✦
+        <p className="text-[10px] uppercase tracking-[0.4em] text-[color:oklch(0.42_0.08_85)] mb-2 font-semibold">
+          ✦ Registration Successful ✦
         </p>
         <h1
-          className="font-display font-bold text-[40px] leading-none text-gold-gradient"
-          style={{ animation: "fade-up 0.6s ease-out 0.3s both" }}
+          className="font-display font-bold text-[34px] leading-tight text-gold-gradient"
+          style={{ animation: "fade-up 0.6s ease-out 0.3s both", letterSpacing: "-0.01em" }}
         >
-          Thank You{name ? `, ${name.split(" ")[0]}` : ""}!
+          Thank you for joining us! 🎉
         </h1>
         <p
-          className="mt-3 text-sm text-[color:oklch(0.40_0.08_85)] italic max-w-xs"
-          style={{ animation: "fade-up 0.6s ease-out 0.45s both" }}
+          className="mt-3 text-base font-semibold text-[color:oklch(0.28_0.08_85)] max-w-sm"
+          style={{ animation: "fade-up 0.6s ease-out 0.42s both" }}
         >
-          Welcome to Karo · Online — your premium concierge experience begins now.
+          आपका बहुत-बहुत शुक्रिया{name ? `, ${name.split(" ")[0]}` : ""}।
+        </p>
+        <p
+          className="mt-2 text-[13px] text-[color:oklch(0.35_0.06_85)] max-w-sm leading-relaxed"
+          style={{ animation: "fade-up 0.6s ease-out 0.5s both" }}
+        >
+          You are now officially registered as a valued partner of <span className="font-semibold text-[color:oklch(0.30_0.10_82)]">Karo Online</span>.
         </p>
 
         <button
