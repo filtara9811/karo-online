@@ -38,6 +38,9 @@ type CustomerDraft = {
   email?: string;
   phone?: string;
   referral?: string;
+  dob?: string | null;
+  address?: string;
+  agreedTerms?: boolean;
 };
 
 const normalizeStep = (value: unknown): Step =>
