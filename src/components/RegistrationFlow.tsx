@@ -598,6 +598,29 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         )}
       </AnimatePresence>
 
+      {/* DoB wheel picker */}
+      <DobWheelPicker
+        open={dobSheetOpen}
+        value={dob}
+        onClose={() => setDobSheetOpen(false)}
+        onSelect={(iso) => { setDob(iso); setDobSheetOpen(false); }}
+      />
+
+      {/* Address picker */}
+      <AddressPicker
+        open={addressSheetOpen}
+        onClose={() => setAddressSheetOpen(false)}
+        onSelect={(a: AddressResult) => { setAddress(a.full); setAddressSheetOpen(false); }}
+      />
+
+      {/* Language switcher */}
+      <LanguageSheet
+        open={langSheetOpen}
+        value={lang}
+        onSelect={(l) => { setLang(l); setLangSheetOpen(false); }}
+        onClose={() => setLangSheetOpen(false)}
+      />
+
       <SuccessOverlay
         open={successOpen}
         name={`${firstName} ${lastName}`.trim() || "Friend"}
