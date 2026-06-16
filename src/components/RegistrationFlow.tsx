@@ -463,6 +463,34 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
             <span className="block h-1.5 w-14 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#d4af37]" />
           </div>
 
+          {/* Top bar: title (left) + language icon + close (right) */}
+          <div className="absolute top-3 left-4 right-4 flex items-center justify-between pointer-events-none">
+            <span className="pointer-events-auto text-[11px] uppercase tracking-[0.3em] font-bold text-[color:oklch(0.30_0.10_82)]">
+              Registered page
+            </span>
+            <div className="pointer-events-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLangSheetOpen(true)}
+                aria-label="Change language"
+                className="h-9 w-9 rounded-full grid place-items-center bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm active:scale-95"
+              >
+                <Languages className="h-4 w-4 text-[color:oklch(0.40_0.10_82)]" strokeWidth={2.2} />
+              </button>
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  aria-label="Close registration"
+                  className="h-9 w-9 rounded-full grid place-items-center bg-white/90 border border-[color:oklch(0.78_0.14_82/0.55)] shadow-sm active:scale-95"
+                >
+                  <X className="h-4 w-4 text-[color:oklch(0.40_0.10_82)]" strokeWidth={2.4} />
+                </button>
+              )}
+            </div>
+          </div>
+
+
           <div className="px-5 pt-1 flex items-center justify-center">
             <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4].map((n) => (
