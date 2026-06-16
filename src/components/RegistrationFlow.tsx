@@ -194,9 +194,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOMER_DRAFT_KEY, JSON.stringify({
-      step, gender, firstName, lastName, email, phone, referral,
+      step, gender, firstName, lastName, email, phone, referral, dob, address, agreedTerms,
     }));
-  }, [step, gender, firstName, lastName, email, phone, referral]);
+  }, [step, gender, firstName, lastName, email, phone, referral, dob, address, agreedTerms]);
 
   // OTP timer
   useEffect(() => {
