@@ -363,7 +363,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         gender: override?.gender ?? gender ?? "",
         phone,
         email: (override?.email ?? email ?? "").trim(),
-        address: "",
+        address: address || "",
       };
       try {
         if (user) {
