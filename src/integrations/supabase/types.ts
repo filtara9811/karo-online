@@ -1967,7 +1967,9 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          level: number
           notes: string | null
+          pct_applied: number | null
           referral_id: string
           released_at: string | null
           status: string
@@ -1980,7 +1982,9 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          level?: number
           notes?: string | null
+          pct_applied?: number | null
           referral_id: string
           released_at?: string | null
           status?: string
@@ -1993,7 +1997,9 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          level?: number
           notes?: string | null
+          pct_applied?: number | null
           referral_id?: string
           released_at?: string | null
           status?: string
@@ -2020,29 +2026,65 @@ export type Database = {
       }
       referral_settings: {
         Row: {
+          activation_fee: number
+          banner_image_url: string | null
+          banner_subtitle: string | null
+          banner_title: string | null
+          base_reward_amount: number
           default_customer_reward: number
           default_vendor_reward: number
           fraud_max_per_device: number
           fraud_max_per_ip: number
           id: number
+          level_1_pct: number
+          level_2_pct: number
+          max_split_pct: number
+          offer_active: boolean
+          offer_ends_at: string | null
+          offer_label: string | null
+          play_store_url: string
           terms_text: string | null
           updated_at: string
         }
         Insert: {
+          activation_fee?: number
+          banner_image_url?: string | null
+          banner_subtitle?: string | null
+          banner_title?: string | null
+          base_reward_amount?: number
           default_customer_reward?: number
           default_vendor_reward?: number
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          level_1_pct?: number
+          level_2_pct?: number
+          max_split_pct?: number
+          offer_active?: boolean
+          offer_ends_at?: string | null
+          offer_label?: string | null
+          play_store_url?: string
           terms_text?: string | null
           updated_at?: string
         }
         Update: {
+          activation_fee?: number
+          banner_image_url?: string | null
+          banner_subtitle?: string | null
+          banner_title?: string | null
+          base_reward_amount?: number
           default_customer_reward?: number
           default_vendor_reward?: number
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          level_1_pct?: number
+          level_2_pct?: number
+          max_split_pct?: number
+          offer_active?: boolean
+          offer_ends_at?: string | null
+          offer_label?: string | null
+          play_store_url?: string
           terms_text?: string | null
           updated_at?: string
         }
@@ -2055,6 +2097,7 @@ export type Database = {
           id: string
           ip_address: string | null
           kind: string
+          level_2_user_id: string | null
           referred_phone: string | null
           referred_user_id: string | null
           referrer_user_id: string
@@ -2068,6 +2111,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           kind?: string
+          level_2_user_id?: string | null
           referred_phone?: string | null
           referred_user_id?: string | null
           referrer_user_id: string
@@ -2081,6 +2125,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           kind?: string
+          level_2_user_id?: string | null
           referred_phone?: string | null
           referred_user_id?: string | null
           referrer_user_id?: string
@@ -3665,6 +3710,36 @@ export type Database = {
         Args: { _trigger_id: string; _user_id?: string }
         Returns: Json
       }
+      admin_update_referral_settings: {
+        Args: { _patch: Json }
+        Returns: {
+          activation_fee: number
+          banner_image_url: string | null
+          banner_subtitle: string | null
+          banner_title: string | null
+          base_reward_amount: number
+          default_customer_reward: number
+          default_vendor_reward: number
+          fraud_max_per_device: number
+          fraud_max_per_ip: number
+          id: number
+          level_1_pct: number
+          level_2_pct: number
+          max_split_pct: number
+          offer_active: boolean
+          offer_ends_at: string | null
+          offer_label: string | null
+          play_store_url: string
+          terms_text: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "referral_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_upsert_notification_trigger: {
         Args: {
           _action_url: string
@@ -3782,6 +3857,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ensure_my_referral_code_v2: {
+        Args: { _first_name: string; _kind?: string; _phone: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "referral_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       generate_referral_code: { Args: { _prefix?: string }; Returns: string }
       generate_support_code: { Args: never; Returns: string }
       get_active_maps_key: { Args: never; Returns: Json }
@@ -3829,6 +3920,7 @@ export type Database = {
         }[]
       }
       get_my_referral_overview: { Args: never; Returns: Json }
+      get_my_wallet_split: { Args: never; Returns: Json }
       get_notification_analytics: { Args: never; Returns: Json }
       get_pending_lead_brief: {
         Args: { p_lead_id: string }
@@ -3883,6 +3975,10 @@ export type Database = {
         Returns: Json
       }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
+      release_referral_reward: {
+        Args: { _referred_user_id: string }
+        Returns: Json
+      }
       save_customer_profile: {
         Args: {
           _address: string
