@@ -64,38 +64,104 @@ export const checkMobilePromoterBinding = createServerFn({ method: "POST" })
  */
 export const registerDeviceFingerprint = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: { fingerprint: string; phone: string; panel?: "customer" | "vendor" | "staff" | "admin" }) =>
+    (input: { fingerprint: string; phone: string; panel?: "customer" | "vendor" | "staff" | "admin"; user_agent?: string }) =>
       z
         .object({
           fingerprint: z.string().min(8),
           phone: z.string().min(10),
           panel: z.enum(["customer", "vendor", "staff", "admin"]).optional().default("customer"),
+          user_agent: z.string().max(500).optional(),
         })
         .parse(input),
   )
   .handler(async ({ data }) => {
-    // Bypass for staff/admin onboarding sessions.
     if (data.panel === "staff" || data.panel === "admin") {
       return { ok: true, conflict: false, bypassed: true as const };
     }
-    // TODO: upsert device_fingerprints { fingerprint UNIQUE, phone, panel }.
-    // Reject if fingerprint already mapped to a different active phone of the same panel.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Check for existing active binding on this fingerprint+panel
+    const { data: existing } = await supabaseAdmin
+      .from("device_fingerprints")
+      .select("id, phone")
+      .eq("fingerprint", data.fingerprint)
+      .eq("panel", data.panel)
+      .is("unlocked_at", null)
+      .maybeSingle();
+
+    if (existing && existing.phone !== data.phone) {
+      return { ok: false, conflict: true, bypassed: false as const, locked_to: existing.phone };
+    }
+
+    if (!existing) {
+      const { error } = await supabaseAdmin.from("device_fingerprints").insert({
+        fingerprint: data.fingerprint,
+        phone: data.phone,
+        panel: data.panel,
+        user_agent: data.user_agent ?? null,
+      });
+      if (error) return { ok: false, conflict: false, bypassed: false as const, error: error.message };
+    } else {
+      await supabaseAdmin
+        .from("device_fingerprints")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+
     return { ok: true, conflict: false, bypassed: false as const };
   });
 
 /**
  * Admin-only: clear a device fingerprint binding so a phone can re-register
- * on a different / same device. Caller must hold an admin role; enforced via
- * `requireSupabaseAuth` + `has_role()` once wired to the real table.
+ * on a different / same device. Caller must hold an admin role.
  */
 export const unlockDeviceFingerprint = createServerFn({ method: "POST" })
-  .inputValidator((input: { phone: string; reason?: string }) =>
-    z.object({ phone: z.string().min(10), reason: z.string().max(500).optional() }).parse(input),
+  .middleware([
+    // lazy import to keep client bundle clean
+    (await import("@/integrations/supabase/auth-middleware")).requireSupabaseAuth,
+  ])
+  .inputValidator((input: { phone: string; panel?: string; reason?: string }) =>
+    z.object({
+      phone: z.string().min(10),
+      panel: z.string().optional(),
+      reason: z.string().max(500).optional(),
+    }).parse(input),
   )
-  .handler(async (_ctx) => {
-    // TODO: require admin role via has_role(), then DELETE FROM device_fingerprints WHERE phone = $1
-    // and log to system_logs with the reason for audit.
-    return { ok: true, unlocked: 0 };
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verify admin
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isAdmin = (roles ?? []).some((r) => ["admin", "super_admin"].includes(String(r.role)));
+    if (!isAdmin) throw new Error("Forbidden: admin role required");
+
+    let q = supabaseAdmin
+      .from("device_fingerprints")
+      .update({
+        unlocked_at: new Date().toISOString(),
+        unlocked_by: context.userId,
+        unlock_reason: data.reason ?? null,
+      })
+      .eq("phone", data.phone)
+      .is("unlocked_at", null);
+    if (data.panel) q = q.eq("panel", data.panel);
+
+    const { data: updated, error } = await q.select("id, fingerprint, panel");
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("device_unlock_audit").insert({
+      phone: data.phone,
+      panel: data.panel ?? null,
+      fingerprint: updated?.[0]?.fingerprint ?? null,
+      unlocked_by: context.userId,
+      reason: data.reason ?? null,
+      rows_affected: updated?.length ?? 0,
+    });
+
+    return { ok: true, unlocked: updated?.length ?? 0 };
   });
 
 // ── 4. PAN + Bank account uniqueness (1:1 with promoter) ───────────────────
