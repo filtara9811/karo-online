@@ -328,7 +328,7 @@ function MiniStat({ label, value, tone }: { label: string; value: number | strin
 type ProgressKey = keyof ReferralRow["progress"];
 
 type MacroStep = {
-  key: "install" | "vendor" | "activation";
+  key: "install" | "request" | "vendor";
   label: string;
   desc: string;
   cta: string;
