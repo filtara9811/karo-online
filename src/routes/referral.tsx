@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, Share2, MessageCircle, Check, Gift, Wallet, Clock,
   ChevronLeft, Sparkles, Phone, Download, TrendingUp, AlertCircle,
-  Banknote, X, Users,
+  Banknote, X, Users, Repeat, PauseCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReferralOverview, ensureMyCode44, type ReferralRow } from "@/hooks/use-referral";
