@@ -541,6 +541,32 @@ function EngineTab() {
 
   return (
     <div className="space-y-4">
+      {/* MASTER TOGGLE — global Active / Paused for the whole referral program */}
+      <GoldCard className={`p-5 border-2 ${s.is_active ? "border-emerald-500/40" : "border-rose-500/50"}`}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-display font-bold text-[#fff8dc] text-lg">
+              Referral Program · {s.is_active ? <span className="text-emerald-300">ACTIVE</span> : <span className="text-rose-300">PAUSED</span>}
+            </h3>
+            <p className="text-[11px] text-[#f5d97a]/70 mt-0.5">
+              {s.is_active
+                ? "Codes generate, milestones track and rewards release in real time."
+                : "Code minting, milestone tracking and reward release are halted everywhere."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setS({ ...s, is_active: !s.is_active })}
+            className={`relative h-9 w-16 rounded-full border-2 transition-colors ${s.is_active ? "bg-emerald-500/80 border-emerald-300" : "bg-rose-500/30 border-rose-400/50"}`}
+            aria-label="Toggle referral program"
+          >
+            <span
+              className={`absolute top-0.5 h-7 w-7 rounded-full bg-[#fff8dc] shadow-md transition-all ${s.is_active ? "left-7" : "left-0.5"}`}
+            />
+          </button>
+        </div>
+      </GoldCard>
+
       <GoldCard className="p-5">
         <h3 className="font-display font-bold text-[#fff8dc] mb-1">Rewards Engine</h3>
         <p className="text-[11px] text-[#f5d97a]/60 mb-4">Live-controls the reward amount & 2-level payout split for every activation event.</p>
