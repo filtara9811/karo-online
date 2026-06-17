@@ -74,6 +74,7 @@ import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminFormsRouteImport } from './routes/admin.forms'
 import { Route as AdminFirebaseRouteImport } from './routes/admin.firebase'
 import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
+import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
@@ -422,6 +423,11 @@ const AdminFeedbackRoute = AdminFeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDevicesRoute = AdminDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -564,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/forms': typeof AdminFormsRoute
@@ -652,6 +659,7 @@ export interface FileRoutesByTo {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/forms': typeof AdminFormsRoute
@@ -742,6 +750,7 @@ export interface FileRoutesById {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/firebase': typeof AdminFirebaseRoute
   '/admin/forms': typeof AdminFormsRoute
@@ -833,6 +842,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/devices'
     | '/admin/feedback'
     | '/admin/firebase'
     | '/admin/forms'
@@ -921,6 +931,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/devices'
     | '/admin/feedback'
     | '/admin/firebase'
     | '/admin/forms'
@@ -1010,6 +1021,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/coins'
     | '/admin/customers'
+    | '/admin/devices'
     | '/admin/feedback'
     | '/admin/firebase'
     | '/admin/forms'
@@ -1573,6 +1585,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFeedbackRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/devices': {
+      id: '/admin/devices'
+      path: '/devices'
+      fullPath: '/admin/devices'
+      preLoaderRoute: typeof AdminDevicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/customers'
@@ -1736,6 +1755,7 @@ interface AdminRouteChildren {
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminDevicesRoute: typeof AdminDevicesRoute
   AdminFeedbackRoute: typeof AdminFeedbackRoute
   AdminFirebaseRoute: typeof AdminFirebaseRoute
   AdminFormsRoute: typeof AdminFormsRoute
@@ -1782,6 +1802,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminDevicesRoute: AdminDevicesRoute,
   AdminFeedbackRoute: AdminFeedbackRoute,
   AdminFirebaseRoute: AdminFirebaseRoute,
   AdminFormsRoute: AdminFormsRoute,
