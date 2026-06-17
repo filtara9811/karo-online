@@ -2036,6 +2036,7 @@ export type Database = {
           fraud_max_per_device: number
           fraud_max_per_ip: number
           id: number
+          is_active: boolean
           level_1_pct: number
           level_2_pct: number
           max_split_pct: number
@@ -2043,6 +2044,7 @@ export type Database = {
           offer_ends_at: string | null
           offer_label: string | null
           play_store_url: string
+          royalty_tiers: Json
           terms_text: string | null
           updated_at: string
         }
@@ -2057,6 +2059,7 @@ export type Database = {
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          is_active?: boolean
           level_1_pct?: number
           level_2_pct?: number
           max_split_pct?: number
@@ -2064,6 +2067,7 @@ export type Database = {
           offer_ends_at?: string | null
           offer_label?: string | null
           play_store_url?: string
+          royalty_tiers?: Json
           terms_text?: string | null
           updated_at?: string
         }
@@ -2078,6 +2082,7 @@ export type Database = {
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          is_active?: boolean
           level_1_pct?: number
           level_2_pct?: number
           max_split_pct?: number
@@ -2085,6 +2090,7 @@ export type Database = {
           offer_ends_at?: string | null
           offer_label?: string | null
           play_store_url?: string
+          royalty_tiers?: Json
           terms_text?: string | null
           updated_at?: string
         }
@@ -3723,6 +3729,7 @@ export type Database = {
           fraud_max_per_device: number
           fraud_max_per_ip: number
           id: number
+          is_active: boolean
           level_1_pct: number
           level_2_pct: number
           max_split_pct: number
@@ -3730,6 +3737,7 @@ export type Database = {
           offer_ends_at: string | null
           offer_label: string | null
           play_store_url: string
+          royalty_tiers: Json
           terms_text: string | null
           updated_at: string
         }
@@ -3977,7 +3985,7 @@ export type Database = {
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
       release_referral_reward: {
         Args: { _referred_user_id: string }
-        Returns: Json
+        Returns: undefined
       }
       save_customer_profile: {
         Args: {

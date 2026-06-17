@@ -49,7 +49,13 @@ export type ReferralWallet = {
   this_month: number;
 };
 
+export type ReferralRoyaltyTier = {
+  min_recruits: number;
+  bonus_pct: number;
+};
+
 export type ReferralBannerSettings = {
+  is_active: boolean;
   base_reward_amount: number;
   activation_fee: number;
   play_store_url: string;
@@ -59,6 +65,8 @@ export type ReferralBannerSettings = {
   offer_active: boolean;
   offer_ends_at: string | null;
   offer_label: string | null;
+  royalty_tiers: ReferralRoyaltyTier[];
+  direct_recruits: number;
 };
 
 export type ReferralOverview = {
