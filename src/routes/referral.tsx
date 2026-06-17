@@ -338,24 +338,24 @@ type MacroStep = {
 const STEPS: MacroStep[] = [
   {
     key: "install",
-    label: "App Install + First Request",
-    desc: "Friend installed the app & raised their first service request",
-    cta: "Help them place a request",
-    requires: ["registered", "first_order_placed"],
+    label: "App Download",
+    desc: "Friend installed the app and registered with your code",
+    cta: "Help them download the app",
+    requires: ["registered"],
+  },
+  {
+    key: "request",
+    label: "First Service Request",
+    desc: "They raised their first plumber / carpenter / electrician request",
+    cta: "Nudge them to raise their first request",
+    requires: ["first_order_placed"],
   },
   {
     key: "vendor",
     label: "Joined as Vendor",
-    desc: "Started vendor onboarding & reached the subscription gate",
-    cta: "Nudge to join as vendor",
-    requires: ["became_seller"],
-  },
-  {
-    key: "activation",
-    label: "KYC + Activation Paid",
-    desc: "Activation payment cleared — reward unlocked",
-    cta: "Remind to complete activation",
-    requires: ["payment_completed"],
+    desc: "Submitted business info & completed Razorpay activation payment",
+    cta: "Remind them to complete vendor payment",
+    requires: ["became_seller", "payment_completed"],
   },
 ];
 
@@ -363,18 +363,22 @@ function isStepDone(row: ReferralRow, step: MacroStep) {
   return step.requires.every((k) => row.progress[k]);
 }
 
-function FlipReferralCard({ row, onDetails, shareText }: { row: ReferralRow; onDetails: () => void; shareText: string }) {
+function FlipReferralCard({ row, onDetails, shareText, baseReward }: { row: ReferralRow; onDetails: () => void; shareText: string; baseReward: number }) {
   const [flipped, setFlipped] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
-  // Coin sound on reward release
+  // Coin sound + celebration on reward release
   const lastReleased = useRef<boolean>(row.progress.reward_released);
   useEffect(() => {
     if (!lastReleased.current && row.progress.reward_released) {
       playCoinDrop();
-      toast.success(`Reward added to your wallet — from ${row.name ?? "your friend"}!`, { duration: 4000 });
+      setCelebrate(true);
+      toast.success(`+₹${baseReward} added to your wallet — from ${row.name ?? "your friend"}! 🎉`, { duration: 4500 });
+      const t = setTimeout(() => setCelebrate(false), 2800);
+      return () => clearTimeout(t);
     }
     lastReleased.current = row.progress.reward_released;
-  }, [row.progress.reward_released, row.name]);
+  }, [row.progress.reward_released, row.name, baseReward]);
 
   return (
     <div className="relative" style={{ perspective: 1200 }}>
@@ -386,7 +390,7 @@ function FlipReferralCard({ row, onDetails, shareText }: { row: ReferralRow; onD
       >
         {/* FRONT */}
         <div style={{ backfaceVisibility: "hidden" }}>
-          <CardFront row={row} onFlip={() => setFlipped(true)} shareText={shareText} />
+          <CardFront row={row} onOpenSheet={onDetails} onFlip={() => setFlipped(true)} shareText={shareText} baseReward={baseReward} celebrate={celebrate} />
         </div>
         {/* BACK */}
         <div
@@ -400,10 +404,11 @@ function FlipReferralCard({ row, onDetails, shareText }: { row: ReferralRow; onD
   );
 }
 
-function CardFront({ row, onFlip, shareText }: { row: ReferralRow; onFlip: () => void; shareText: string }) {
+function CardFront({ row, onOpenSheet, onFlip, shareText, baseReward, celebrate }: { row: ReferralRow; onOpenSheet: () => void; onFlip: () => void; shareText: string; baseReward: number; celebrate: boolean }) {
   const initials = (row.name ?? "U").slice(0, 1).toUpperCase();
   const completed = STEPS.filter((s) => isStepDone(row, s)).length;
   const pct = Math.round((completed / STEPS.length) * 100);
+  const released = row.progress.reward_released;
   const statusColor =
     row.status === "approved" ? "bg-emerald-500"
       : row.status === "rejected" ? "bg-rose-500"
@@ -421,10 +426,39 @@ function CardFront({ row, onFlip, shareText }: { row: ReferralRow; onFlip: () =>
     const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
+  const handleFlip = (e: React.MouseEvent) => { e.stopPropagation(); onFlip(); };
 
   return (
-    <button onClick={onFlip} className="w-full text-left rounded-2xl bg-white border border-amber-200 p-3 shadow-sm active:scale-[0.99] transition">
-      <div className="flex items-center gap-3">
+    <button onClick={onOpenSheet} className="relative w-full text-left rounded-2xl bg-white border border-amber-200 p-3 shadow-sm active:scale-[0.99] transition overflow-hidden">
+      {/* Corner flip button */}
+      <button
+        onClick={handleFlip}
+        aria-label="Flip card"
+        className="absolute top-2 right-2 z-10 h-7 w-7 rounded-full bg-amber-50 border border-amber-200 grid place-items-center text-amber-700 active:scale-90"
+      >
+        <Repeat className="h-3.5 w-3.5" />
+      </button>
+
+      {/* Celebration burst when reward releases */}
+      <AnimatePresence>
+        {celebrate && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.4 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0 z-20 grid place-items-center bg-gradient-to-br from-emerald-500/95 to-amber-500/95 text-white pointer-events-none"
+          >
+            <div className="text-center">
+              <Sparkles className="h-10 w-10 mx-auto" />
+              <p className="font-display text-2xl font-extrabold mt-1">+₹{baseReward}</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold">Reward unlocked!</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center gap-3 pr-8">
         <div className="relative h-11 w-11 rounded-full overflow-hidden border border-amber-200 bg-amber-50 grid place-items-center text-amber-700 font-bold flex-shrink-0">
           {row.avatar_url ? <img src={row.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
           <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ${statusColor} border-2 border-white`} />
@@ -433,18 +467,21 @@ function CardFront({ row, onFlip, shareText }: { row: ReferralRow; onFlip: () =>
           <p className="font-semibold text-sm text-slate-800 truncate">{row.name ?? "New user"}</p>
           <p className="text-[11px] text-slate-500 truncate">{row.phone ?? "Phone hidden"}</p>
         </div>
-        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full ${
-          row.status === "approved" ? "bg-emerald-50 text-emerald-700"
-            : row.status === "rejected" ? "bg-rose-50 text-rose-700"
-            : row.status === "locked" ? "bg-amber-50 text-amber-700"
-            : "bg-slate-50 text-slate-600"
-        }`}>{row.status}</span>
+        {/* Big ₹ amount pill in place of "PENDING" tag */}
+        <div className={`text-right ${released ? "" : "opacity-90"}`}>
+          <p className={`text-[9px] uppercase tracking-wider font-bold ${released ? "text-emerald-700" : "text-amber-700"}`}>
+            {released ? "Earned" : "On unlock"}
+          </p>
+          <p className={`font-display text-xl font-extrabold leading-none mt-0.5 ${released ? "text-emerald-600" : "text-amber-600"}`}>
+            ₹{baseReward}
+          </p>
+        </div>
       </div>
 
       <div className="mt-4">
         <div className="flex items-center justify-between text-[10px] mb-2">
           <span className="text-slate-500 font-semibold">{completed}/3 milestones</span>
-          <span className="text-amber-700 font-bold">{pct}%</span>
+          <span className={`font-bold ${released ? "text-emerald-600" : "text-amber-700"}`}>{pct}%</span>
         </div>
         <div className="relative flex items-center justify-between">
           <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 rounded-full bg-amber-100 overflow-hidden">
@@ -464,20 +501,20 @@ function CardFront({ row, onFlip, shareText }: { row: ReferralRow; onFlip: () =>
                 initial={false}
                 animate={done ? { scale: [1, 1.25, 1] } : { scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className={`relative z-10 h-6 w-6 rounded-full grid place-items-center border-2 text-[10px] font-bold ${
+                className={`relative z-10 h-7 w-7 rounded-full grid place-items-center border-2 ${
                   done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-300"
-                    : next ? "bg-white border-amber-400 text-amber-700 animate-pulse"
-                    : "bg-white border-slate-200 text-slate-300"
+                    : next ? "bg-amber-50 border-amber-400 text-amber-700 animate-pulse"
+                    : "bg-white border-slate-200 text-slate-400"
                 }`}
               >
-                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                {done ? <Check className="h-4 w-4" /> : <Clock className="h-3.5 w-3.5" />}
               </motion.div>
             );
           })}
         </div>
         <div className="grid grid-cols-3 gap-1 mt-1.5">
           {STEPS.map((s) => (
-            <p key={s.key} className="text-[9px] text-center text-slate-500 font-semibold leading-tight">{s.label.split(" + ")[0]}</p>
+            <p key={s.key} className="text-[9px] text-center text-slate-500 font-semibold leading-tight">{s.label}</p>
           ))}
         </div>
       </div>
@@ -490,7 +527,7 @@ function CardFront({ row, onFlip, shareText }: { row: ReferralRow; onFlip: () =>
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
         </span>
       </div>
-      <p className="text-center mt-2 text-[10px] text-amber-700/70 font-semibold">Tap card to see their downline →</p>
+      <p className="text-center mt-2 text-[10px] text-amber-700/70 font-semibold">Tap card for full timeline · tap ↻ to see downline</p>
     </button>
   );
 }
