@@ -487,7 +487,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+type RoyaltyTier = { min_recruits: number; bonus_pct: number };
+
 type EngineSettings = {
+  is_active: boolean;
   base_reward_amount: number;
   level_1_pct: number;
   level_2_pct: number;
@@ -500,6 +503,7 @@ type EngineSettings = {
   offer_active: boolean;
   offer_ends_at: string | null;
   offer_label: string | null;
+  royalty_tiers: RoyaltyTier[];
 };
 
 function EngineTab() {
