@@ -85,9 +85,29 @@ export function ReferralPage() {
   };
 
   const banner = data?.settings;
+  const programPaused = data?.settings && data.settings.is_active === false;
+  const baseReward = data?.settings.base_reward_amount ?? 200;
+
+  if (!loading && programPaused) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 grid place-items-center px-6">
+        <div className="max-w-sm w-full rounded-3xl bg-white border border-amber-200 p-8 text-center shadow-xl">
+          <div className="h-16 w-16 rounded-full bg-amber-100 grid place-items-center mx-auto">
+            <PauseCircle className="h-8 w-8 text-amber-700" />
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-bold text-slate-800">Campaign Paused</h1>
+          <p className="mt-2 text-sm text-slate-600">The Refer &amp; Earn program is temporarily paused. New codes and rewards will resume once it goes live again.</p>
+          <button onClick={() => router.history.back()} className="mt-5 w-full rounded-xl bg-gradient-to-r from-[#b45309] to-[#f59e0b] text-white py-3 font-bold active:scale-95">
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 pb-24">
+
       <header className="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-amber-100">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.history.back()} className="h-9 w-9 rounded-full grid place-items-center bg-amber-50 border border-amber-200 active:scale-95">
