@@ -179,8 +179,10 @@ export function ReferralPage() {
         <section className="rounded-3xl bg-gradient-to-br from-[#1c1917] to-[#451a03] text-white p-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-wider opacity-70">Total wallet earnings</p>
-              <p className="font-display text-3xl font-bold mt-0.5">₹{(data?.wallet.total ?? 0).toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider text-amber-200/80 font-bold">Total wallet earnings</p>
+              <p className="font-display text-4xl font-extrabold mt-0.5 text-[#fff8dc] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
+                ₹{(data?.wallet.total ?? 0).toLocaleString()}
+              </p>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
               <TrendingUp className="h-6 w-6 text-amber-300" />
