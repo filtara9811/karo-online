@@ -609,6 +609,35 @@ function EngineTab() {
         </div>
       </GoldCard>
 
+      {/* ROYALTY TIERS — dynamic bonus brackets by direct recruit count */}
+      <GoldCard className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-display font-bold text-[#fff8dc]">Royalty Bonus Tiers</h3>
+            <p className="text-[11px] text-[#f5d97a]/60 mt-0.5">Extra % paid on top of base reward once a referrer crosses each direct-recruit count.</p>
+          </div>
+          <GoldButton size="sm" variant="outline" onClick={() => setS({ ...s, royalty_tiers: [...s.royalty_tiers, { min_recruits: 0, bonus_pct: 0 }] })}>
+            <Plus className="h-3 w-3 inline mr-1" /> Add tier
+          </GoldButton>
+        </div>
+        <div className="space-y-2">
+          {s.royalty_tiers.map((t, i) => (
+            <div key={i} className="flex items-center gap-2 rounded-lg border border-[#d4af37]/20 bg-black/30 p-2">
+              <span className="text-[10px] uppercase tracking-widest text-[#f5d97a]/60 font-bold w-12">≥</span>
+              <input type="number" min={0} className={inp + " max-w-[110px]"} value={t.min_recruits}
+                onChange={(e) => { const tiers = [...s.royalty_tiers]; tiers[i] = { ...tiers[i], min_recruits: Number(e.target.value) }; setS({ ...s, royalty_tiers: tiers }); }} />
+              <span className="text-xs text-[#f5d97a]/70">recruits →</span>
+              <input type="number" min={0} max={100} className={inp + " max-w-[100px]"} value={t.bonus_pct}
+                onChange={(e) => { const tiers = [...s.royalty_tiers]; tiers[i] = { ...tiers[i], bonus_pct: Number(e.target.value) }; setS({ ...s, royalty_tiers: tiers }); }} />
+              <span className="text-xs text-amber-300 font-bold">% bonus</span>
+              <button type="button" onClick={() => setS({ ...s, royalty_tiers: s.royalty_tiers.filter((_, j) => j !== i) })}
+                className="ml-auto text-rose-300 hover:text-rose-200 p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
+          ))}
+          {s.royalty_tiers.length === 0 && <p className="text-xs text-[#f5d97a]/50">No tiers — add brackets to enable bonus payouts.</p>}
+        </div>
+      </GoldCard>
+
       <GoldCard className="p-5">
         <h3 className="font-display font-bold text-[#fff8dc] mb-1">Refer & Earn Banner</h3>
         <p className="text-[11px] text-[#f5d97a]/60 mb-4">Shown at the top of the customer Refer & Earn screen.</p>
