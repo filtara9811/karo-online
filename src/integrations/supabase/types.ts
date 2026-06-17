@@ -553,6 +553,51 @@ export type Database = {
         }
         Relationships: []
       }
+      device_fingerprints: {
+        Row: {
+          created_at: string
+          fingerprint: string
+          id: string
+          last_seen_at: string
+          panel: string
+          phone: string
+          unlock_reason: string | null
+          unlocked_at: string | null
+          unlocked_by: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          fingerprint: string
+          id?: string
+          last_seen_at?: string
+          panel: string
+          phone: string
+          unlock_reason?: string | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          last_seen_at?: string
+          panel?: string
+          phone?: string
+          unlock_reason?: string | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       device_tokens: {
         Row: {
           created_at: string
@@ -586,6 +631,39 @@ export type Database = {
           topics?: string[]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      device_unlock_audit: {
+        Row: {
+          created_at: string
+          fingerprint: string | null
+          id: string
+          panel: string | null
+          phone: string
+          reason: string | null
+          rows_affected: number
+          unlocked_by: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          panel?: string | null
+          phone: string
+          reason?: string | null
+          rows_affected?: number
+          unlocked_by: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          panel?: string | null
+          phone?: string
+          reason?: string | null
+          rows_affected?: number
+          unlocked_by?: string
         }
         Relationships: []
       }
