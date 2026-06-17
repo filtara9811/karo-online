@@ -29,13 +29,20 @@ export function ReferralPage() {
   const [activeRow, setActiveRow] = useState<ReferralRow | null>(null);
   const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
 
+  // Share link points DIRECTLY to Play Store with install-referrer carrying
+  // the referral code. New users install the app from the Store (not the PWA),
+  // and Google Play Install Referrer API surfaces the code on first launch so
+  // we can auto-fill + lock it during registration.
   const shareUrl = useMemo(() => {
     if (!data?.code) return "";
-    return `https://karoonline.in/r/${data.code}`;
+    const referrer = encodeURIComponent(
+      `utm_source=referral&utm_medium=whatsapp&utm_campaign=refer_earn&code=${data.code}`,
+    );
+    return `https://play.google.com/store/apps/details?id=app.karoonline.twa&referrer=${referrer}`;
   }, [data?.code]);
 
   const shareText = data?.code
-    ? `🎁 Refer & Earn ₹200 on Karo Online!\n\nUse my code *${data.code}* to sign up and we both get rewarded.\n\nJoin here 👉 ${shareUrl}`
+    ? `🎁 Refer & Earn ₹200 on Karo Online!\n\nUse my code *${data.code}* to sign up and we both get rewarded.\n\n📲 Install the app 👉 ${shareUrl}`
     : "";
 
   const copyCode = async () => {

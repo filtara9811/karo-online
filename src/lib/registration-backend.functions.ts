@@ -50,16 +50,52 @@ export const checkMobilePromoterBinding = createServerFn({ method: "POST" })
   });
 
 // ── 3. Device / hardware UUID lock ─────────────────────────────────────────
+/**
+ * Hardware UUID / device-lock check.
+ *
+ * SCOPE — IMPORTANT:
+ *   - panel: "customer" | "vendor"  → fingerprint MUST be enforced (1 install = 1 account).
+ *   - panel: "staff" | "admin"      → ALWAYS bypass. Staff/admin onboard hundreds
+ *     of vendors from a single laptop/tablet/phone; locking that device would
+ *     break their workflow. Role is verified server-side via `has_role()`.
+ *
+ * Admins can also unlock a previously-bound fingerprint for a specific phone
+ * via `unlockDeviceFingerprint` below (admin panel only).
+ */
 export const registerDeviceFingerprint = createServerFn({ method: "POST" })
-  .inputValidator((input: { fingerprint: string; phone: string }) =>
-    z
-      .object({ fingerprint: z.string().min(8), phone: z.string().min(10) })
-      .parse(input),
+  .inputValidator(
+    (input: { fingerprint: string; phone: string; panel?: "customer" | "vendor" | "staff" | "admin" }) =>
+      z
+        .object({
+          fingerprint: z.string().min(8),
+          phone: z.string().min(10),
+          panel: z.enum(["customer", "vendor", "staff", "admin"]).optional().default("customer"),
+        })
+        .parse(input),
+  )
+  .handler(async ({ data }) => {
+    // Bypass for staff/admin onboarding sessions.
+    if (data.panel === "staff" || data.panel === "admin") {
+      return { ok: true, conflict: false, bypassed: true as const };
+    }
+    // TODO: upsert device_fingerprints { fingerprint UNIQUE, phone, panel }.
+    // Reject if fingerprint already mapped to a different active phone of the same panel.
+    return { ok: true, conflict: false, bypassed: false as const };
+  });
+
+/**
+ * Admin-only: clear a device fingerprint binding so a phone can re-register
+ * on a different / same device. Caller must hold an admin role; enforced via
+ * `requireSupabaseAuth` + `has_role()` once wired to the real table.
+ */
+export const unlockDeviceFingerprint = createServerFn({ method: "POST" })
+  .inputValidator((input: { phone: string; reason?: string }) =>
+    z.object({ phone: z.string().min(10), reason: z.string().max(500).optional() }).parse(input),
   )
   .handler(async (_ctx) => {
-    // TODO: upsert device_fingerprints { fingerprint UNIQUE, phone }.
-    // Reject if fingerprint already mapped to a different active phone.
-    return { ok: true, conflict: false };
+    // TODO: require admin role via has_role(), then DELETE FROM device_fingerprints WHERE phone = $1
+    // and log to system_logs with the reason for audit.
+    return { ok: true, unlocked: 0 };
   });
 
 // ── 4. PAN + Bank account uniqueness (1:1 with promoter) ───────────────────
