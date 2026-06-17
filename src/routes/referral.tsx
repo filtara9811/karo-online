@@ -240,6 +240,7 @@ export function ReferralPage() {
                 row={r}
                 onDetails={() => setActiveRow(r)}
                 shareText={shareText}
+                baseReward={baseReward}
               />
             ))}
           </div>
