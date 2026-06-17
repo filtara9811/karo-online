@@ -117,10 +117,7 @@ export const registerDeviceFingerprint = createServerFn({ method: "POST" })
  * on a different / same device. Caller must hold an admin role.
  */
 export const unlockDeviceFingerprint = createServerFn({ method: "POST" })
-  .middleware([
-    // lazy import to keep client bundle clean
-    (await import("@/integrations/supabase/auth-middleware")).requireSupabaseAuth,
-  ])
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { phone: string; panel?: string; reason?: string }) =>
     z.object({
       phone: z.string().min(10),
