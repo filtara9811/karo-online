@@ -49,7 +49,7 @@ type Banner = {
 };
 
 const TRIGGERS = ["registered", "otp_verified", "kyc_completed", "became_seller", "first_order_placed", "payment_completed"];
-const TABS = ["Overview", "Rewards Queue", "Campaigns", "Banners", "Top Referrers"] as const;
+const TABS = ["Overview", "Engine", "Rewards Queue", "Campaigns", "Banners", "Top Referrers"] as const;
 
 function AdminReferralsPage() {
   const [tab, setTab] = useState<typeof TABS[number]>("Overview");
@@ -111,6 +111,7 @@ function AdminReferralsPage() {
       {loading && <p className="text-sm text-[#f5d97a]/60">Loading…</p>}
 
       {!loading && tab === "Overview" && <OverviewTab data={data} />}
+      {!loading && tab === "Engine" && <EngineTab />}
       {!loading && tab === "Rewards Queue" && <RewardsTab data={data} onChange={refresh} />}
       {!loading && tab === "Campaigns" && <CampaignsTab />}
       {!loading && tab === "Banners" && <BannersTab />}
@@ -483,5 +484,154 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-[10px] uppercase tracking-[0.2em] text-[#f5d97a]/70 font-bold mb-1.5">{label}</span>
       {children}
     </label>
+  );
+}
+
+type EngineSettings = {
+  base_reward_amount: number;
+  level_1_pct: number;
+  level_2_pct: number;
+  max_split_pct: number;
+  activation_fee: number;
+  play_store_url: string;
+  banner_image_url: string | null;
+  banner_title: string | null;
+  banner_subtitle: string | null;
+  offer_active: boolean;
+  offer_ends_at: string | null;
+  offer_label: string | null;
+};
+
+function EngineTab() {
+  const [s, setS] = useState<EngineSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from("referral_settings").select("*").eq("id", 1).maybeSingle();
+    if (data) setS(data as any);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const sumPct = (s?.level_1_pct ?? 0) + (s?.level_2_pct ?? 0);
+  const pctValid = sumPct <= 100 && (s?.level_2_pct ?? 0) <= (s?.max_split_pct ?? 50);
+
+  const upload = async (file: File) => {
+    const path = `referral-banners/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("catalog").upload(path, file, { upsert: true });
+    if (error) { alert(error.message); return; }
+    const { data: pub } = supabase.storage.from("catalog").getPublicUrl(path);
+    if (s) setS({ ...s, banner_image_url: pub.publicUrl });
+  };
+
+  const save = async () => {
+    if (!s) return;
+    if (!pctValid) { alert("Level 1 + Level 2 must be ≤ 100% and Level 2 must be ≤ Max Split %."); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_update_referral_settings", { _patch: s as any });
+    setBusy(false);
+    if (error) alert(error.message);
+    else { alert("Saved"); load(); }
+  };
+
+  if (!s) return <p className="text-sm text-[#f5d97a]/60">Loading engine settings…</p>;
+
+  return (
+    <div className="space-y-4">
+      <GoldCard className="p-5">
+        <h3 className="font-display font-bold text-[#fff8dc] mb-1">Rewards Engine</h3>
+        <p className="text-[11px] text-[#f5d97a]/60 mb-4">Live-controls the reward amount & 2-level payout split for every activation event.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Base Reward Amount (₹)">
+            <input type="number" className={inp} value={s.base_reward_amount}
+              onChange={(e) => setS({ ...s, base_reward_amount: Number(e.target.value) })} />
+          </Field>
+          <Field label="Activation Fee (₹)">
+            <input type="number" className={inp} value={s.activation_fee}
+              onChange={(e) => setS({ ...s, activation_fee: Number(e.target.value) })} />
+          </Field>
+          <Field label="Level 1 % (Direct Referrer)">
+            <input type="number" min={0} max={100} className={inp} value={s.level_1_pct}
+              onChange={(e) => setS({ ...s, level_1_pct: Number(e.target.value) })} />
+          </Field>
+          <Field label="Level 2 % (Upline Override)">
+            <input type="number" min={0} max={100} className={inp} value={s.level_2_pct}
+              onChange={(e) => setS({ ...s, level_2_pct: Number(e.target.value) })} />
+          </Field>
+          <Field label="Max Split Ceiling % (for Level 2)">
+            <input type="number" min={0} max={100} className={inp} value={s.max_split_pct}
+              onChange={(e) => setS({ ...s, max_split_pct: Number(e.target.value) })} />
+          </Field>
+          <Field label="Play Store URL">
+            <input className={inp} value={s.play_store_url}
+              onChange={(e) => setS({ ...s, play_store_url: e.target.value })} />
+          </Field>
+        </div>
+        <div className={`mt-3 text-[11px] font-bold ${pctValid ? "text-emerald-300" : "text-rose-300"}`}>
+          Sum L1+L2 = {sumPct}% {pctValid ? "✓" : "— must be ≤ 100% and L2 ≤ Max Split"}
+        </div>
+        <div className="mt-3 rounded-lg bg-black/30 border border-[#d4af37]/15 p-3 text-[11px] text-[#f5d97a]/80">
+          <b className="text-[#fff8dc]">Preview</b><br/>
+          On every activation of ₹{s.activation_fee}, system credits:
+          <ul className="mt-1 list-disc list-inside">
+            <li>Direct referrer: <b className="text-emerald-300">₹{(s.base_reward_amount * s.level_1_pct / 100).toFixed(2)}</b></li>
+            <li>Upline (Level 2): <b className="text-amber-300">₹{(s.base_reward_amount * s.level_2_pct / 100).toFixed(2)}</b></li>
+          </ul>
+        </div>
+      </GoldCard>
+
+      <GoldCard className="p-5">
+        <h3 className="font-display font-bold text-[#fff8dc] mb-1">Refer & Earn Banner</h3>
+        <p className="text-[11px] text-[#f5d97a]/60 mb-4">Shown at the top of the customer Refer & Earn screen.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Banner Title">
+            <input className={inp} value={s.banner_title ?? ""}
+              onChange={(e) => setS({ ...s, banner_title: e.target.value })} />
+          </Field>
+          <Field label="Banner Subtitle">
+            <input className={inp} value={s.banner_subtitle ?? ""}
+              onChange={(e) => setS({ ...s, banner_subtitle: e.target.value })} />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Banner Image">
+              <input type="file" accept="image/*"
+                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+                className="text-xs text-[#f5d97a]" />
+              {s.banner_image_url && (
+                <img src={s.banner_image_url} alt="" className="w-full max-h-40 object-cover rounded-lg mt-2" />
+              )}
+            </Field>
+          </div>
+        </div>
+      </GoldCard>
+
+      <GoldCard className="p-5">
+        <h3 className="font-display font-bold text-[#fff8dc] mb-1">Limited-Time Offer Strip</h3>
+        <p className="text-[11px] text-[#f5d97a]/60 mb-4">Optional countdown badge over the banner.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Offer Active">
+            <label className="flex items-center gap-2 text-[#fff8dc] text-sm">
+              <input type="checkbox" checked={s.offer_active}
+                onChange={(e) => setS({ ...s, offer_active: e.target.checked })} /> Enabled
+            </label>
+          </Field>
+          <Field label="Offer Label">
+            <input className={inp} placeholder="e.g. ₹500 BONUS today only" value={s.offer_label ?? ""}
+              onChange={(e) => setS({ ...s, offer_label: e.target.value })} />
+          </Field>
+          <Field label="Ends At">
+            <input type="datetime-local" className={inp}
+              value={s.offer_ends_at ? s.offer_ends_at.slice(0, 16) : ""}
+              onChange={(e) => setS({ ...s, offer_ends_at: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+          </Field>
+        </div>
+      </GoldCard>
+
+      <div className="flex gap-2">
+        <GoldButton onClick={save} disabled={busy || !pctValid}>
+          <Save className="h-3 w-3 inline mr-1" /> {busy ? "Saving…" : "Save engine settings"}
+        </GoldButton>
+        <GoldButton variant="outline" onClick={load}>Reload</GoldButton>
+      </div>
+    </div>
   );
 }

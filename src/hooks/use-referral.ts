@@ -22,6 +22,12 @@ export type ReferralProgress = {
   reward_released: boolean;
 };
 
+export type DownlineMember = {
+  name: string | null;
+  phone: string | null;
+  status: string;
+};
+
 export type ReferralRow = {
   id: string;
   status: "pending" | "locked" | "approved" | "rejected";
@@ -30,11 +36,36 @@ export type ReferralRow = {
   phone: string | null;
   avatar_url: string | null;
   progress: ReferralProgress;
+  downline_count: number;
+  downline_earnings: number;
+  downline: DownlineMember[];
+};
+
+export type ReferralWallet = {
+  total: number;
+  personal: number;
+  team: number;
+  today: number;
+  this_month: number;
+};
+
+export type ReferralBannerSettings = {
+  base_reward_amount: number;
+  activation_fee: number;
+  play_store_url: string;
+  banner_image_url: string | null;
+  banner_title: string | null;
+  banner_subtitle: string | null;
+  offer_active: boolean;
+  offer_ends_at: string | null;
+  offer_label: string | null;
 };
 
 export type ReferralOverview = {
   code: string;
   kind: "customer" | "vendor";
+  wallet: ReferralWallet;
+  settings: ReferralBannerSettings;
   stats: {
     total_invited: number;
     successful: number;
@@ -82,6 +113,16 @@ export async function markCheckpoint(referredUserId: string, checkpoint: Referra
       _checkpoint: checkpoint,
     });
   } catch { /* ignore */ }
+}
+
+/** Generate / fetch the user's 4+4 referral code (e.g. ASHU9876). */
+export async function ensureMyCode44(firstName: string | null | undefined, phone: string | null | undefined, kind: "customer" | "vendor" = "customer") {
+  const { data } = await supabase.rpc("ensure_my_referral_code_v2", {
+    _first_name: firstName ?? "",
+    _phone: phone ?? "",
+    _kind: kind,
+  });
+  return data as { code?: string } | null;
 }
 
 export function useReferralOverview() {
