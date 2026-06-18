@@ -148,10 +148,9 @@ export function ReferralPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-3xl shadow-xl border border-amber-200"
         >
-          <img
-            src={banner?.banner_image_url || "/referral-share-banner.jpg"}
-            alt={banner?.banner_title || "Refer & Earn"}
-            className="w-full h-auto block"
+          <ReferralBannerCarousel
+            fallbackSrc={banner?.banner_image_url || "/referral-share-banner.jpg"}
+            fallbackAlt={banner?.banner_title || "Refer & Earn"}
           />
           {banner?.offer_active && banner?.offer_label && (
             <div className="absolute top-3 left-3 right-3 flex items-center gap-2">
