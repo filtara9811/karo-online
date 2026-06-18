@@ -20,12 +20,15 @@ export const Route = createFileRoute("/s/$code")({
   notFoundComponent: () => <Fallback message="This merchant page was not found." />,
 });
 
+type MediaItem = { type: "image" | "video" | "url"; src: string };
+
 type Landing = {
   ok: boolean;
   merchant?: { name?: string; shop_name?: string; avatar_url?: string; verified?: boolean; code?: string };
   links?: {
     poster_bg_url?: string;
     poster_bg_urls?: string[];
+    poster_media?: MediaItem[];
     play_store_enabled?: boolean;
     payment_enabled?: boolean;
     payment_provider?: string;
@@ -45,10 +48,23 @@ type Landing = {
     admob_bottom_slot?: string;
     announcement_text?: string;
     announcement_active?: boolean;
+    ios_app_url?: string;
   };
 };
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
+const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
+const isIOS = () => typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+function detectProvider(url: string): "youtube" | "instagram" | "video" {
+  if (/youtu\.?be/.test(url)) return "youtube";
+  if (/instagram\.com/.test(url)) return "instagram";
+  return "video";
+}
+function ytEmbed(url: string): string {
+  const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}` : url;
+}
 // Tiny session cache so repeat scans render instantly.
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
 
