@@ -160,6 +160,10 @@ export function VendorSideMenu({
               </Link>
             </div>
 
+            {/* Premium live referral strip */}
+            <ReferralStrip onNavigate={onClose} variant="dark" />
+
+
             {/* Rows */}
             <nav className="px-3 py-3 space-y-1.5">
               {ROWS.map((r) => {
