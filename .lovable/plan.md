@@ -1,84 +1,80 @@
 ## Goal
+Polish the merchant QR Poster + public landing flow per the annotated screenshots. Everything below is scoped to UI/UX + one small migration. No business-logic rewrites.
 
-Turn the QR module into a complete, ad-monetized "Smart Hub":
+## 1. Karo Online brand logo asset
+- Upload a clean gold "Karo Online" map-pin logo (square PNG) once via `lovable-assets` → `src/assets/karo-logo.png.asset.json`.
+- Replace the `/karo-logo.png` reference inside `QrPosterSheet.tsx` (both on-screen QR overlay + canvas export). Drop the "K" text fallback entirely; if the image fails, render a subtle gold dot instead.
 
-- **Poster sheet** redesigned pixel-close to screenshot #1 (shop photo background, QR over it, edit name, + center / share right / download left).
-- **Public landing page** `/s/$code` rendered when anyone scans the poster — fully admin-controlled, with AdMob placeholders, verified merchant header, and a bottom-sheet action picker (Play Store / Payment / Digital Shop).
-- **Merchant setup sheet** (the "+" on the poster) lets the shopkeeper toggle each channel on/off, paste their UPI / Shop URL, long-press to delete, and unlock extra links via a ₹599 Razorpay paywall.
-- Fix the broken **download-to-gallery** path on mobile.
+## 2. QR Poster Sheet — `src/components/QrPosterSheet.tsx`
+**Media frame (top photo area)**
+- Replace the plain `<img>` with a `PanZoomFrame` (new local component, ~80 LOC). Supports:
+  - 1-finger drag (pointer events) to shift the photo up/down/left/right inside the rounded container.
+  - Pinch-to-zoom (2-pointer distance) + double-tap to reset.
+  - Persists `{ scale, x, y }` per slot into `merchant_link_settings.poster_bg_transforms` (new jsonb).
+  - Same transform is replayed in the canvas export so the downloaded poster matches what the user framed.
 
----
+**Thumbnail slots → multi-media**
+- Each of the 3 slots accepts: image upload, short video upload (≤15 MB, mp4/webm), or a URL (YouTube / Instagram / mp4). Long-press slot → small action menu (Replace / Paste URL / Remove).
+- Store as `poster_media: [{ kind: 'image'|'video'|'url', src, thumb?, transform? }]`. Keep legacy `poster_bg_urls` populated with the image entries for back-compat.
+- Video slots show a play-glyph thumbnail; on the poster only the active slot renders (image directly, video poster frame for video/url).
 
-## 1. Database (one migration)
+**Name strip (matches screenshot #1)**
+- Add a circular merchant avatar to the LEFT of the name input (reads `profiles.avatar_url`; tap to upload → stored on profile). Bold the shop name with `font-display font-extrabold tracking-tight`. Keep the pencil edit affordance.
 
-New table `public.merchant_link_settings` (one row per user):
-- `play_store_enabled boolean default true`
-- `payment_enabled boolean`, `payment_provider text` (`upi` / `phonepe` / `paytm` / `gpay`), `payment_upi_id text`, `payment_label text`
-- `digital_shop_enabled boolean`, `digital_shop_url text`
-- `extra_links jsonb` (array of `{id,label,url,icon,enabled}`) — gated by paywall
-- `premium_unlocked boolean default false`, `premium_paid_at timestamptz`, `premium_payment_ref text`
-- `poster_bg_url text` (the shop photo behind the QR)
+**Split bottom action bar**
+- Replace current 3-button row with TWO pills matching the annotated layout:
+  - Left pill `📥 Download / Share` → opens `PosterExportSheet` (new bottom sheet, styled like the existing `QuickActionsSheet`).
+  - Right pill `🌐 Link Menu` → opens existing `MerchantLinksSetupSheet`.
+- Remove the floating center "+" button.
 
-New table `public.landing_page_settings` (admin singleton, id=1):
-- `top_banner_url`, `top_banner_link`, `bottom_banner_url`, `bottom_banner_link`
-- `admob_top_slot text`, `admob_bottom_slot text`, `admob_publisher_id text`
-- `announcement_text`, `announcement_active boolean`
-- `premium_link_fee_inr int default 599`
+**`PosterExportSheet` (new file)**
+- Two big rows (Quick Service look): "Download QR" and "Share | QR".
+- Download: circular determinate progress ring around the icon while rendering+saving, morphs into a green check + haptic on success. Uses the existing share-with-file → anchor fallback chain.
+- Share: directly calls `navigator.share({ files })`; on Android this surfaces WhatsApp as the top target. Desktop fallback = copy link toast.
 
-New RPCs:
-- `get_public_landing(_code text)` → merchant card (name, avatar, shop, verified flag) + enabled links + landing settings. **SECURITY DEFINER**, exposed to `anon`.
-- `upsert_merchant_link_settings(...)` — caller-scoped.
-- `mark_premium_links_unlocked(_payment_ref text)` — flips `premium_unlocked=true`.
-- Admin: `admin_update_landing_settings(...)`.
+## 3. Merchant Links Setup Sheet — `src/components/MerchantLinksSetupSheet.tsx`
+- Add `"Other"` option to the payment provider `<Select>`; when chosen, show a free-text "Custom label" input (saved into existing `payment_label`).
+- Add a scanner icon button inside the UPI/VPA input (right-aligned, as in screenshot #2). Tapping opens a new `VpaScannerSheet`.
 
-RLS:
-- `merchant_link_settings`: owner full CRUD via `auth.uid()=user_id`; admin via `is_admin_user()`.
-- `landing_page_settings`: SELECT to `anon` + `authenticated`; UPDATE admin-only.
-- Public landing reads use the SECURITY DEFINER RPC (no broad anon table grants).
+## 4. New `src/components/VpaScannerSheet.tsx`
+- Lightweight live camera viewfinder using `BarcodeDetector` when available, else lazy-load `qr-scanner` (already a transitive option — fallback bundle). Uses `getUserMedia({ video: { facingMode: 'environment' } })`.
+- On scan: parse `upi://pay?pa=...&pn=...` (and PhonePe/Paytm intent URLs), extract `pa` (VPA) + optional `pn` (label), write back to the parent input, close sheet, success toast.
+- Manual "Enter manually" fallback + permission-denied empty state.
 
-## 2. New / refactored files
+## 5. Public landing page — `src/routes/s.$code.tsx`
+**Speed (<1 s target)**
+- Preload critical fetch in route `loader` via the public Supabase client (anon, no auth) calling `get_public_landing(_code)`. Inline initial data so first paint has merchant card already.
+- Strip every shared chrome import (no `AppShell`, no header, no search). Route is intentionally a bare full-bleed page.
+- Aggressive `Cache-Control: public, max-age=60, s-maxage=300` via `setResponseHeaders` in the loader.
 
-**Refactored:**
-- `src/components/QrPosterSheet.tsx` — drop the painted canvas; new layout matches screenshot #1: shop-photo background fills the top, QR (with gold-bordered Karo logo) sits over it, editable shop name pill, then the three pill buttons (Download | + | Share). Fix download by using a real anchor + `URL.createObjectURL` for `<img>` element rendered to a 1080×1920 offscreen canvas, then `cnv.toBlob` → blob URL → `<a download>` (the current code path works on desktop but fails on Android WebView; switch to `<a target="_blank" rel="noopener">` fallback + share-with-file when blob download is blocked).
+**Mirrored media card**
+- Render the exact poster composition: framed shop photo (or auto-playing muted-inline video / YouTube embed for the active media), gold border, QR is NOT shown (the customer already scanned it).
+- Below the card: 3 vertical pill buttons in fixed order, gated by toggles:
+  1. **Make Trusted Payment** — opens UPI deep link based on `payment_provider` (`phonepe://`, `paytmmp://`, `tez://`, `upi://`).
+  2. **Visit Digital Shop** — opens `digital_shop_url` in new tab.
+  3. **Download Mobile App** — device-aware: iOS UA → App Store URL (admin-settable `ios_app_url`, fallback to Play if blank); else Play Store with `?referrer=code=<code>`. Always visible.
+- Add `ios_app_url` text column to `landing_page_settings` for the device-aware redirect.
 
-**New:**
-- `src/components/MerchantLinksSetupSheet.tsx` — opens from the "+" button. Play Store row (always on), Payment row (toggle + provider dropdown + UPI input), Digital Shop row (toggle + URL input). Long-press to delete extra rows. Bottom "+" tile: if `premium_unlocked` → open inline new-link editor, else trigger Razorpay ₹599 flow.
-- `src/routes/s.$code.tsx` — public landing page. Layout:
-  1. AdMob top slot (responsive 320×100 placeholder, swappable with real `<ins class="adsbygoogle">` once admin sets publisher ID)
-  2. Merchant profile card (avatar, name, shop, verified gold tick)
-  3. Admin announcement strip (if active)
-  4. Admin top banner (clickable)
-  5. Bottom sheet animated up on mount with the enabled action buttons
-  6. AdMob bottom slot
-- `src/lib/premium-links.functions.ts` — Razorpay order + verify for ₹599 unlock (mirrors influencer activation pattern).
-- `src/components/AdSlot.tsx` — renders Google AdSense `<ins>` when publisher+slot configured, otherwise a tasteful "Advertise here" skeleton.
+## 6. Razorpay ₹599 unlock fix — `src/lib/premium-links.functions.ts` + caller
+- Symptom: checkout hangs because the client-side `Razorpay` handler's `verify` is fired but UI never closes. Fix:
+  - In the caller component (inside `MerchantLinksSetupSheet`'s premium tile), wrap `rzp.on('payment.failed', …)` and ensure the `handler` callback awaits `verifyPremiumLinks({ data })` inside a `try/finally` that always closes the loading state.
+  - Switch `verifyPremiumLinks` HMAC import from `crypto` to `node:crypto` (Worker-safe) and return `{ ok, unlocked_at }` so the UI can refresh `premium_unlocked` immediately without a second round-trip.
+  - Add a small "Verifying…" toast + success confetti hook.
 
-**Edited:**
-- `src/routes/referral.tsx` — wire poster "+" → `MerchantLinksSetupSheet`; load merchant settings via new hook.
-- `src/routes/admin.referrals.tsx` — new "Landing Page" tab: top/bottom banner URLs, announcement, AdSense publisher ID + slot IDs, premium link fee.
-- `src/routeTree.gen.ts` — register `/s/$code`.
+## 7. Migration (single file)
+```sql
+ALTER TABLE public.merchant_link_settings
+  ADD COLUMN IF NOT EXISTS poster_media jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS poster_bg_transforms jsonb DEFAULT '[]'::jsonb;
 
-## 3. Payment routing (Button 2)
+ALTER TABLE public.landing_page_settings
+  ADD COLUMN IF NOT EXISTS ios_app_url text;
+```
+(No new tables → no new GRANT/RLS needed.)
 
-UPI deep link format used: `upi://pay?pa=<vpa>&pn=<merchant>&cu=INR`. This is what triggers the merchant Sound Box (PhonePe Smart Speaker, Paytm Soundbox) because the transaction lands on the merchant's VPA exactly the same way a static QR scan would. On desktop the same link falls back to a "Open in UPI app" prompt; we also expose `phonepe://`, `paytmmp://`, `tez://` provider-specific intents when the merchant picked a specific provider.
+## Files
+**New:** `src/components/PosterExportSheet.tsx`, `src/components/VpaScannerSheet.tsx`, `src/assets/karo-logo.png.asset.json`, one migration.
+**Edited:** `QrPosterSheet.tsx`, `MerchantLinksSetupSheet.tsx`, `routes/s.$code.tsx`, `lib/premium-links.functions.ts`, `routes/admin.referrals.tsx` (add iOS URL field), `integrations/supabase/types.ts` (after migration).
 
-## 4. Download fix
-
-Root cause of "gallery download not working": `cnv.toBlob` runs but on Android Chrome the synthetic `<a download>` click is blocked when the anchor isn't in the DOM long enough, and WebView blocks `blob:` downloads entirely. Fix:
-- Always append the `<a>` to `document.body`, wait one frame (`requestAnimationFrame`), then click and remove.
-- If `navigator.userAgent` indicates Android WebView, fall back to opening the blob URL in a new tab with a toast asking the user to long-press → "Save image".
-- Add `Web Share Level 2` files share as the primary "Save" path on mobile (most reliable route into the gallery).
-
-## 5. Verification
-
-- `psql` confirms new tables + RPC grants.
-- Build runs clean (`tsc --noEmit` step via the harness).
-- Manual: open `/s/<my-code>` in an incognito tab, toggle each channel off in the setup sheet, refresh — disabled buttons disappear.
-
-## 6. Hindi summary
-
-After implementation I will write a full Hindi recap of what shipped, what was deferred, and exactly how the download-fix behaves on Android.
-
----
-
-**Open question before I start:** the ₹599 unlock — should it be a **one-time payment** that permanently unlocks unlimited extra links (simpler, matches the influencer activation model), or a **per-link micro-charge** every time the merchant adds another link? My plan above assumes one-time. Confirm and I'll execute the whole batch.
+## Out of scope
+No changes to referral logic, withdraw gate, admin auth, or any other module. Build verified with `tsc --noEmit` only after all edits land.
