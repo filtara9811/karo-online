@@ -100,7 +100,6 @@ function ScanLandingPage() {
     return () => { cancelled = true; clearTimeout(t); };
   }, [code]);
 
-  if (data && !data.ok) return <Fallback message="This QR code is not active yet." />;
   if (!data) return <Fallback message="Loading merchant…" spinner />;
 
   const m = data.merchant ?? {};
