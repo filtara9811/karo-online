@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdSlot } from "@/components/AdSlot";
+import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
+const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
   head: ({ params }) => ({
