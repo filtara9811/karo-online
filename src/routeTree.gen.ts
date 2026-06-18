@@ -46,6 +46,7 @@ import { Route as VendorKycRouteImport } from './routes/vendor.kyc'
 import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
+import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
@@ -281,6 +282,11 @@ const VendorDashboardRoute = VendorDashboardRouteImport.update({
 const VendorChatRoute = VendorChatRouteImport.update({
   id: '/vendor/chat',
   path: '/vendor/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SCodeRoute = SCodeRouteImport.update({
+  id: '/s/$code',
+  path: '/s/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RCodeRoute = RCodeRouteImport.update({
@@ -599,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
+  '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -688,6 +695,7 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
+  '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -779,6 +787,7 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
   '/r/$code': typeof RCodeRoute
+  '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -871,6 +880,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
+    | '/s/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -960,6 +970,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
+    | '/s/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1050,6 +1061,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/product/$id'
     | '/r/$code'
+    | '/s/$code'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1112,6 +1124,7 @@ export interface RootRouteChildren {
   FSlugRoute: typeof FSlugRoute
   ProductIdRoute: typeof ProductIdRoute
   RCodeRoute: typeof RCodeRoute
+  SCodeRoute: typeof SCodeRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorInstallRoute: typeof VendorInstallRoute
@@ -1387,6 +1400,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/chat'
       fullPath: '/vendor/chat'
       preLoaderRoute: typeof VendorChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s/$code': {
+      id: '/s/$code'
+      path: '/s/$code'
+      fullPath: '/s/$code'
+      preLoaderRoute: typeof SCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/r/$code': {
@@ -1876,6 +1896,7 @@ const rootRouteChildren: RootRouteChildren = {
   FSlugRoute: FSlugRoute,
   ProductIdRoute: ProductIdRoute,
   RCodeRoute: RCodeRoute,
+  SCodeRoute: SCodeRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   VendorInstallRoute: VendorInstallRoute,
