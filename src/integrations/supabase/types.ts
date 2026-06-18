@@ -1526,6 +1526,7 @@ export type Database = {
           payment_upi_id: string | null
           play_store_enabled: boolean
           poster_bg_url: string | null
+          poster_bg_urls: Json
           premium_paid_at: string | null
           premium_payment_ref: string | null
           premium_unlocked: boolean
@@ -1543,6 +1544,7 @@ export type Database = {
           payment_upi_id?: string | null
           play_store_enabled?: boolean
           poster_bg_url?: string | null
+          poster_bg_urls?: Json
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
@@ -1560,6 +1562,7 @@ export type Database = {
           payment_upi_id?: string | null
           play_store_enabled?: boolean
           poster_bg_url?: string | null
+          poster_bg_urls?: Json
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
