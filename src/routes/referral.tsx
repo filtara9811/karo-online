@@ -13,6 +13,8 @@ import { playCoinDrop } from "@/lib/coin-sound";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
