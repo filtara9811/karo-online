@@ -6,18 +6,12 @@ import { toast } from "sonner";
 import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import karoLogoAsset from "@/assets/karo-logo.png.asset.json";
+import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 
-/**
- * Premium QR Poster — Canva-aligned layout:
- *   - Shop photo dominates the upper 60–65% of the canvas, never obscured.
- *   - QR card overlaps only the bottom edge of the photo (~25% overlap).
- *   - Center of QR shows the real Karo Online logo (not a plain "K").
- *   - "Karo Online" subtle gold watermark sits on the photo.
- *   - 2-3 rotating image slots — merchant taps a thumbnail to switch.
- *   - Bottom row: Download QR (offset, half-overlapping the poster) · "+" · Share.
- */
 const MAX_SLOTS = 3;
-const LOGO_URL = "/karo-logo.png";
+const LOGO_URL = karoLogoAsset.url;
+const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export function QrPosterSheet({
   open,
@@ -45,7 +39,7 @@ export function QrPosterSheet({
   const landingUrl = typeof window !== "undefined"
     ? `${window.location.origin}/s/${encodeURIComponent(code || "")}`
     : `https://karoonline.in/s/${code}`;
-  const activeBg = slots[activeIdx] ?? null;
+  const activeBg = slots[activeIdx] ?? DEFAULT_COVER_URL;
 
   useEffect(() => { if (open) setName(defaultName); }, [open, defaultName]);
 

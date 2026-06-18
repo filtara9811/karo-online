@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdSlot } from "@/components/AdSlot";
+import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
+const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
   head: ({ params }) => ({
@@ -139,18 +141,16 @@ function ScanLandingPage() {
         )}
       </header>
 
-      {/* Featured shop image */}
-      {(links.poster_bg_urls?.[0] || links.poster_bg_url) && (
-        <div className="px-4 mt-4">
-          <img
-            src={links.poster_bg_urls?.[0] || links.poster_bg_url}
-            alt={m.shop_name || "Shop"}
-            loading="eager"
-            decoding="async"
-            className="w-full rounded-2xl border border-[#d4af37]/50 object-cover max-h-72 shadow"
-          />
-        </div>
-      )}
+      {/* Featured shop image — falls back to Karo Online cover when none configured */}
+      <div className="px-4 mt-4">
+        <img
+          src={links.poster_bg_urls?.[0] || links.poster_bg_url || DEFAULT_COVER_URL}
+          alt={m.shop_name || "Shop"}
+          loading="eager"
+          decoding="async"
+          className="w-full rounded-2xl border border-[#d4af37]/50 object-cover max-h-72 shadow"
+        />
+      </div>
 
       <div className="h-[460px]" />
 
