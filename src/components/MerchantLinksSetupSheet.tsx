@@ -187,23 +187,34 @@ export function MerchantLinksSetupSheet({
               <Row
                 icon={<CreditCard className="h-5 w-5" />}
                 color="bg-amber-600"
-                title="Payment"
+                title="Payment (UPI · PhonePe · Paytm)"
                 enabled={settings.payment_enabled}
                 onToggle={(v) => update({ payment_enabled: v })}
               >
                 <select
                   value={settings.payment_provider}
-                  onChange={(e) => update({ payment_provider: e.target.value })}
+                  onChange={(e) => setSettings((s) => ({ ...s, payment_provider: e.target.value }))}
                   className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208]"
                 >
                   {PROVIDERS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
                 </select>
                 <input
                   value={settings.payment_upi_id}
-                  onChange={(e) => update({ payment_upi_id: e.target.value })}
+                  onChange={(e) => setSettings((s) => ({ ...s, payment_upi_id: e.target.value }))}
                   placeholder="merchant@upi"
+                  inputMode="email"
                   className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
                 />
+                <button
+                  onClick={() => save(settings)}
+                  disabled={saving}
+                  className="w-full mt-2 rounded-lg bg-amber-600 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
+                >
+                  {saving ? "Updating…" : "Update Payment Details"}
+                </button>
+                <p className="mt-1 text-[10px] text-[#8b6508]">
+                  Customers tap → opens {settings.payment_provider.toUpperCase()} → your Sound Box rings.
+                </p>
               </Row>
 
               {/* Digital Shop */}
@@ -216,10 +227,18 @@ export function MerchantLinksSetupSheet({
               >
                 <input
                   value={settings.digital_shop_url}
-                  onChange={(e) => update({ digital_shop_url: e.target.value })}
+                  onChange={(e) => setSettings((s) => ({ ...s, digital_shop_url: e.target.value }))}
                   placeholder="https://yourshop.com"
+                  inputMode="url"
                   className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
                 />
+                <button
+                  onClick={() => save(settings)}
+                  disabled={saving}
+                  className="w-full mt-2 rounded-lg bg-emerald-700 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
+                >
+                  {saving ? "Updating…" : "Update Shop Link"}
+                </button>
               </Row>
 
               {/* Extra links */}
