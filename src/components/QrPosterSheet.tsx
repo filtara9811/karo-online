@@ -193,7 +193,7 @@ export function QrPosterSheet({
   };
 
   const renderPosterBlob = async (): Promise<Blob | null> => {
-    const W = 1080, H = 1620;
+    const W = 1080, H = 1800;
     const cnv = document.createElement("canvas");
     cnv.width = W; cnv.height = H;
     const ctx = cnv.getContext("2d"); if (!ctx) return null;
@@ -202,7 +202,7 @@ export function QrPosterSheet({
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
     ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 14; ctx.strokeRect(28, 28, W - 56, H - 56);
 
-    const photoH = Math.round(H * 0.62);
+    const photoH = Math.round(H * 0.55);
     const photoX = 60, photoY = 60, photoW = W - 120;
     const bgSrc = activeBgSrc;
     if (bgSrc) {
@@ -219,9 +219,9 @@ export function QrPosterSheet({
     ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 8;
     roundRect(ctx, photoX, photoY, photoW, photoH, 36); ctx.stroke();
 
-    const qrSize = 620;
+    const qrSize = 560;
     const qrX = (W - qrSize) / 2;
-    const qrY = photoY + photoH - Math.round(qrSize * 0.30);
+    const qrY = photoY + photoH - Math.round(qrSize * 0.28);
     if (qrDataUrl) {
       const qrImg = await loadImage(qrDataUrl).catch(() => null);
       if (qrImg) {
@@ -233,48 +233,78 @@ export function QrPosterSheet({
       }
     }
 
-    const capY = qrY + qrSize + 60;
+    // Avatar + bold name strip with generous bottom safe-area
+    const stripH = 170;
+    const capY = Math.min(qrY + qrSize + 70, H - stripH - 80);
     ctx.fillStyle = "#fff8dc"; ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 5;
-    roundRect(ctx, 120, capY, W - 240, 140, 32); ctx.fill(); ctx.stroke();
+    roundRect(ctx, 90, capY, W - 180, stripH, 36); ctx.fill(); ctx.stroke();
+
+    if (avatarUrl) {
+      const av = await loadImage(avatarUrl).catch(() => null);
+      if (av) {
+        const ar = 56;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(150 + ar, capY + stripH / 2, ar, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(av, 150, capY + stripH / 2 - ar, ar * 2, ar * 2);
+        ctx.restore();
+        ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.arc(150 + ar, capY + stripH / 2, ar, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
     ctx.fillStyle = "#1a1208";
-    ctx.font = "800 64px 'Times New Roman', serif";
+    ctx.font = "800 60px 'Times New Roman', serif";
     ctx.textAlign = "center";
-    ctx.fillText((name || "Karo Online").slice(0, 30), W / 2, capY + 72);
+    ctx.fillText((name || "Karo Online").slice(0, 28), W / 2, capY + 78);
     ctx.font = "italic 26px 'Times New Roman', serif";
     ctx.fillStyle = "#8b6508";
-    ctx.fillText(`Karo Online · Code ${code}`, W / 2, capY + 112);
+    ctx.fillText(`Karo Online · Code ${code}`, W / 2, capY + 120);
 
     return await new Promise<Blob | null>((res) => cnv.toBlob((b) => res(b), "image/png", 0.95));
+  };
+
+  const buildShareCaption = () => {
+    const p = profile as { name?: string; phone?: string; address?: string; verified?: boolean } | null;
+    const shopLine = `*${(name || "Karo Online Merchant").toUpperCase()}*`;
+    const ownerLine = p?.name ? `👤 ${p.name}${p?.verified ? " ✅ Verified" : ""}` : "";
+    const phoneLine = p?.phone ? `📞 ${p.phone}` : "";
+    const cityLine = p?.address ? `📍 ${p.address}` : "";
+    return [
+      shopLine,
+      ownerLine,
+      phoneLine,
+      cityLine,
+      "",
+      "🛡️ Trusted Karo Online Merchant",
+      `🔗 ${landingUrl}`,
+    ].filter(Boolean).join("\n");
   };
 
   const sharePoster = async () => {
     const blob = await renderPosterBlob();
     if (!blob) throw new Error("Render failed");
     const file = new File([blob], `karo-${code}.png`, { type: "image/png" });
+    const caption = buildShareCaption();
     const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void>; canShare?: (d: ShareData) => boolean; };
     if (nav.share && nav.canShare?.({ files: [file] })) {
-      await nav.share({ files: [file], title: "Karo Online", text: `Scan · ${landingUrl}` });
+      await nav.share({ files: [file], title: name || "Karo Online", text: caption });
       return;
     }
-    if (nav.share) { await nav.share({ title: "Karo Online", text: `Scan · ${landingUrl}`, url: landingUrl }); return; }
-    await navigator.clipboard.writeText(landingUrl);
-    toast.success("Link copied");
+    if (nav.share) { await nav.share({ title: name || "Karo Online", text: caption, url: landingUrl }); return; }
+    await navigator.clipboard.writeText(caption);
+    toast.success("Caption copied");
   };
 
+  // Pure save-to-gallery: never opens the share sheet
   const downloadPoster = async () => {
     const blob = await renderPosterBlob();
     if (!blob) throw new Error("Render failed");
     const filename = `karo-online-qr-${code || "poster"}.png`;
-    const file = new File([blob], filename, { type: "image/png" });
-    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void>; canShare?: (d: ShareData) => boolean; };
-    if (nav.share && nav.canShare?.({ files: [file] })) {
-      try { await nav.share({ files: [file], title: "Karo Online QR" }); return; } catch { /* fall through */ }
-    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = filename; a.rel = "noopener";
     document.body.appendChild(a); a.click();
     setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+    toast.success("Poster saved to downloads");
   };
 
   return (
