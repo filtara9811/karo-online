@@ -1,98 +1,80 @@
-## Refer & Earn — Premium Architecture Upgrade
+# Premium Refer & Earn — Final Push
 
-Keep the current cream / dark-brown / matte-gold UI of `/referral` (the user explicitly approved the existing card progress design). Only the highlighted areas change. Same component shells, same animations — just new data, new code format, flip back-face, split earnings, and admin override layer.
+Scope is broad (8 feature areas, ~6 files touched, 1 SQL migration, 2 new components). To keep the build green I'll ship in 3 phases. Each phase ends with the app compile-clean and the previous phase still working.
 
-### 1. Database migration (single migration)
+## Phase 1 — Engine & Audio (foundation)
 
-**Extend `referral_settings`** with admin-controlled dynamic config:
-- `base_reward_amount numeric` (default 200) — replaces hard-coded ₹200
-- `level_1_pct numeric` (default 90) — direct referrer share
-- `level_2_pct numeric` (default 10) — upline override share
-- `max_split_pct numeric` (default 50) — ceiling guard
-- `activation_fee numeric` (default 1000) — plan unlock fee
-- `play_store_url text` (default `https://play.google.com/store/apps/details?id=app.karoonline.twa`)
-- `banner_image_url text`, `banner_title text`, `banner_subtitle text` — admin banner
-- `offer_active boolean`, `offer_ends_at timestamptz`, `offer_label text` — timer banner
+**SQL migration `referral_engine_v3.sql`**
+- Rewrite `release_referral_reward(_vendor_user_id)`:
+  - Resolve L1 referrer + L2 referrer (frozen lineage on `referrals`).
+  - Read `referral_settings`: `is_active`, `base_reward_amount`, `level_1_pct`, `level_2_pct`, `royalty_tiers` (JSONB), `freeze_new_only` flag.
+  - **Campaign paused rule**: If `is_active = false`, still release rewards for `referrals` rows created BEFORE `paused_at`; block only brand-new chains.
+  - **Royalty bonus**: Count referrer's `direct_recruits` (status in approved/locked). Find highest `min_recruits` tier ≤ that count. Add `base * bonus_pct / 100` to the L1 row only (write to `referral_rewards` with `level=1`, `pct_applied=level_1_pct + bonus_pct`).
+- Add `referral_settings.paused_at TIMESTAMPTZ`; auto-update via trigger on `is_active` flip.
+- Add `influencer_activation_fee NUMERIC DEFAULT 499`.
+- Add `vendors.partner_kind TEXT DEFAULT 'vendor'` (vendor | influencer) for the new track.
 
-**Extend `referrals`**:
-- `level_2_user_id uuid` (upline of the referrer at signup time — frozen lineage)
+**Audio upgrade — `src/lib/coin-sound.ts`**
+- Replace `playCoinDrop` body with synthesized **cash-register cha-ching**: bell ding (G6→C7→E7 chord stack) + drawer-slide noise burst + low ka-chunk thunk, all via Web Audio. No asset weight.
 
-**Extend `referral_rewards`**:
-- `level smallint` (1 or 2) — distinguishes direct vs override payout
-- `pct_applied numeric` — snapshot of split at payout time
+## Phase 2 — Sidebar Referral Strip (both panels)
 
-**Extend `referral_codes`**:
-- The 4+4 code is generated client/server-side at registration. Add a new RPC `ensure_my_referral_code_v2(_first_name text, _phone text, _kind text)` that builds `UPPER(LEFT(first_name,4)) || RIGHT(regexp_replace(phone,'\D','','g'), 4)` (e.g. `ASHU9876`), de-dupes by appending a digit if collision, and upserts into `referral_codes`.
+**New component `src/components/ReferralStrip.tsx`**
+- Horizontal pill: left = ivory `Rs, {wallet.total}` typography, right = glowing gold-bordered "[👥 Referral]" button with red notification dot when pending count > 0.
+- Whole strip is a `<Link to="/referral">` (vendors → `/referral` too; the route already detects kind).
+- Reads `useReferralOverview()` for live total.
 
-**New RPC `get_my_wallet_split()`** returns `{ total, personal, team, today, this_month }` by summing `referral_rewards` grouped by `level` for `auth.uid()`.
+**Mount points**
+- `src/components/ProfileSheet.tsx` — directly under the personal card.
+- `src/components/VendorSideMenu.tsx` — directly under the vendor business card.
 
-**New RPC `request_referral_withdrawal(_amount, _bank_account, _ifsc)`** — validates KYC approved + amount ≤ available wallet, inserts a `wallet_transactions` row of type `withdrawal_request`.
+## Phase 3 — Referral Dashboard Polish + QR Poster + Withdraw Gate
 
-**Update `apply_referral_code`** to also capture `level_2_user_id` (the referrer's own referrer at signup) so the 2-level tree is frozen.
+**`src/routes/referral.tsx`**
+- Header: keep admin-configured `BannerCarousel`-style auto-sliding hero (uses `referral_settings.banner_image_url` array — if only one image, no slide).
+- Dual share bar under the 4+4 code:
+  - Left: emerald-green pill `[🔲 Share QR]` → opens new `QrPosterSheet`.
+  - Right: existing matte-gold `[🔗 Share]` (native share / WhatsApp Play Store deep link, unchanged).
+- **Merge ProgressSheet + downline** into one scrolling sheet: top = referee header, then 3-task timeline, then "Team" downline list with status pills. Remove the separate back-face flip — both surfaces consolidated.
 
-**New RPC `release_referral_reward(_referred_user_id)`** — called when Milestone 3 (activation payment) completes. Reads `referral_settings`, splits `base_reward_amount` into L1/L2 using `level_1_pct`/`level_2_pct` (capped by `max_split_pct`), inserts two `referral_rewards` rows (level=1 and level=2 when upline exists), credits both wallets, flips `referrals.status='approved'`.
+**New component `src/components/QrPosterSheet.tsx`** (Drawer, client-only)
+- Top: editable name field (defaults to user's display name, dynamic in QR caption).
+- Image attach: `<input type="file" accept="image/*">` → cropped/centred logo overlaid on the QR center hole.
+- Mid: QR rendered via `qrcode` npm package onto an offscreen `<canvas>`, encoding the Play Store deep link with `?referrer=ASHU8380`.
+- Footer: `[📥 Download QR]` exports the entire poster canvas as 1200×1600 PNG via `canvas.toBlob()` + anchor download. `[💬 Share | QR]` uses `navigator.share({ files: [pngFile] })` with text fallback.
 
-**Update `get_my_referral_overview`** to also return for each row: `downline_count` (# of people that referred-user themselves referred), `downline_earnings` (sum of L2 rewards credited to me from this row's downline) — used on the flip back-face.
+**New `src/components/WithdrawGateSheet.tsx`** (replaces simple withdraw button on referral wallet)
+- Step 1 — KYC & Bank: PAN, account number, IFSC inputs → upserts `kyc_verifications` row.
+- Step 2 — Activation gate:
+  - If `vendors.payment_completed = true` (vendor) OR `vendors.partner_kind='influencer' AND payment_completed=true` → green tick, withdrawal unlocked.
+  - Otherwise: pending clock + two CTAs:
+    1. "Join as Professional Vendor" → `/vendor/register` (existing trade wizard + ₹1000 activation).
+    2. "Join as Digital Influencer / Part-Time Partner" → new lightweight Razorpay checkout for `influencer_activation_fee` (₹499). On success, upserts `vendors` row with `partner_kind='influencer'`, `payment_completed=true`.
 
-All new columns get GRANT + RLS preserved.
+**Admin (`src/routes/admin.referrals.tsx`)** — Engine tab
+- Add `influencer_activation_fee` numeric input.
+- Add banner multi-image manager (array of URLs).
+- Verify existing royalty tiers UI saves correctly to JSONB after schema change.
 
-### 2. Frontend — `src/routes/referral.tsx`
+## Files Created
+- `src/components/ReferralStrip.tsx`
+- `src/components/QrPosterSheet.tsx`
+- `src/components/WithdrawGateSheet.tsx`
+- `supabase/migrations/<ts>_referral_engine_v3.sql`
 
-**Header / banner**: render `banner_image_url` + `banner_title` + `banner_subtitle` + `offer_label` countdown chip from `referral_settings` (no hard-coded image/text). Keep existing card frame.
+## Files Edited
+- `src/components/ProfileSheet.tsx`, `src/components/VendorSideMenu.tsx` (mount strip)
+- `src/routes/referral.tsx` (header carousel, dual share bar, merged sheet, wire WithdrawGateSheet)
+- `src/routes/admin.referrals.tsx` (influencer fee + banner array)
+- `src/hooks/use-referral.ts` (extend types: `paused_at`, `influencer_activation_fee`, banner array)
+- `src/lib/coin-sound.ts` (cha-ching synth)
+- `package.json` (`qrcode` + `@types/qrcode`)
 
-**Code box**: switch from `REF-XXXXXX` to the new 4+4 code (e.g. `ASHU9876`). On mount call `ensure_my_referral_code_v2` with the logged-in user's first_name + phone. Keep the gold-dashed container and one-tap copy button unchanged.
+## Dependencies to install
+- `qrcode` (≈30 KB, pure JS, Worker-safe — client only here)
 
-**Share / WhatsApp buttons**: keep current Play Store deep-link generation; ensure `shareUrl` uses `play_store_url` from settings + `?referrer=utm_source=referral&code=<NEW_CODE>`. No PWA hop.
+## Verification
+- After each phase: `tsc --noEmit` runs via harness build.
+- Phase 3: Playwright on `/referral` to confirm sheet renders, QR downloads, withdraw gate steps advance.
 
-**Wallet card (replaces current black "Total Wallet Earnings" block)**:
-- Big number: **Total Wallet Earnings ₹X** (from `get_my_wallet_split.total`)
-- Two pill rows below: **Direct Earnings ₹A** · **Team Earnings ₹B**
-- Small row: **Today ₹C** · **This Month ₹D**
-- Replace "Statement" button with **"Withdraw to Bank"** → opens bottom sheet that collects bank account + IFSC and calls `request_referral_withdrawal`. If KYC not approved or bank empty, sheet shows a "Complete KYC first" CTA that routes to `/vendor.kyc`.
-- Keep "Share again" button.
-
-**Referral cards (KEEP existing design exactly)** — only changes:
-- Milestone labels updated to match the new flow: **1. App Install + First Request** · **2. Joined as Vendor** · **3. KYC + Activation Paid** (text only; the 3-dot progress UI stays identical).
-- Add `transform-style: preserve-3d` + `rotateY` Framer Motion flip on tap. Front face = existing card. Back face = downline summary:
-  - Avatar + name header
-  - "Their network: N people" (from `downline_count`)
-  - List up to 5 sub-referrals (name + status dot)
-  - Highlight strip: "From this downline: +₹{downline_earnings}"
-  - "Tap to flip back" footer
-- Clicking the card flips (no longer opens the bottom sheet by default). Add a small "Details" link inside the back face to open the existing `ProgressSheet` for the full milestone timeline + WhatsApp nudges (preserves all current functionality).
-
-### 3. Admin panel — `src/routes/admin.referrals.tsx`
-
-Extend existing referrals admin page with a new **"Rewards Engine & Banner"** section that reads/writes `referral_settings`:
-- Number inputs: Base reward amount, Activation fee, Level 1 %, Level 2 % (live validation: L1+L2 ≤ 100 and each ≤ `max_split_pct`), Max split ceiling
-- Text inputs: Play Store URL, banner title/subtitle, offer label
-- Image upload: banner image (reuses `admin/ImageUpload`)
-- Toggle + datetime: offer active + offer ends at
-- Save button calls a small `updateReferralSettings` server function (admin-gated via `requireSupabaseAuth` + `has_role('admin')`).
-
-### 4. Hook updates — `src/hooks/use-referral.ts`
-
-- Extend `ReferralOverview` types with `wallet: { total, personal, team, today, this_month }`, `settings: { banner_*, offer_* }`, and per-row `downline_count` + `downline_earnings`.
-- Add `useReferralSettings()` hook for admin form.
-- All other consumers (notifications etc.) unchanged.
-
-### 5. Activation payment hook
-
-In the existing vendor activation Razorpay success handler (Section 3 / Milestone 3), after marking `payment_completed` checkpoint, call new RPC `release_referral_reward(vendor_user_id)`. This is the single trigger that fans out L1+L2 payouts using the admin-controlled split.
-
-### Out of scope (already done in earlier turns)
-- Play Store deep linking on share buttons — already wired (kept).
-- Device fingerprint + admin unlock — already shipped.
-- Registration flow / DOB / Terms — already shipped.
-
-### Files touched
-
-- **New migration**: `supabase/migrations/<ts>_referral_engine_v2.sql`
-- **Edit**: `src/routes/referral.tsx` (wallet split, flip cards, dynamic banner)
-- **Edit**: `src/hooks/use-referral.ts` (types + new fields)
-- **New**: `src/lib/referral-admin.functions.ts` (`updateReferralSettings`, `requestWithdrawal`)
-- **Edit**: `src/routes/admin.referrals.tsx` (rewards engine + banner editor)
-- **Edit**: vendor activation payment success path → call `release_referral_reward`
-- **Edit**: `src/integrations/supabase/types.ts` regenerates after migration approval
-
-Once the migration is approved, I'll implement all frontend + admin changes in a single parallel push, then verify the build and the `/referral` route.
+Confirm and I'll execute Phase 1 (migration + audio) first, then Phase 2, then Phase 3 in sequence.
