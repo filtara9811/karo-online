@@ -161,6 +161,7 @@ export function MerchantLinksSetupSheet({
   };
 
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-gradient-to-b from-[#fdf6e3] via-[#f4e9c8] to-[#fdf6e3] border-t-2 border-[#d4af37] max-h-[92vh]">
         <DrawerHeader className="pb-2">
