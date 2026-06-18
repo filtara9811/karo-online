@@ -49,7 +49,7 @@ type Banner = {
 };
 
 const TRIGGERS = ["registered", "otp_verified", "kyc_completed", "became_seller", "first_order_placed", "payment_completed"];
-const TABS = ["Overview", "Engine", "Rewards Queue", "Campaigns", "Banners", "Top Referrers"] as const;
+const TABS = ["Overview", "Engine", "Rewards Queue", "Campaigns", "Banners", "Landing", "Top Referrers"] as const;
 
 function AdminReferralsPage() {
   const [tab, setTab] = useState<typeof TABS[number]>("Overview");
