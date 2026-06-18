@@ -55,6 +55,7 @@ export function MerchantLinksSetupSheet({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const createOrder = useServerFn(createPremiumLinksOrder);
   const verifyOrder = useServerFn(verifyPremiumLinks);
 
