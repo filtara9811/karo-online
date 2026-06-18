@@ -682,6 +682,60 @@ function ProgressSheet({ row, shareText }: { row: ReferralRow; shareText: string
         })}
       </ol>
 
+      {/* ── Team Network ───────────────────────────────────────── */}
+      <div className="mt-7">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] font-bold text-amber-700">
+            <Users className="h-3.5 w-3.5" /> Team Network
+          </div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3 flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-amber-100 grid place-items-center">
+            <Users className="h-5 w-5 text-amber-700" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-bold">Sub-referrals onboarded</p>
+            <p className="font-display text-lg font-bold text-slate-800">{row.downline_count} {row.downline_count === 1 ? "person" : "people"}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Tokens earned</p>
+            <p className="font-display text-lg font-bold text-emerald-600">+₹{Number(row.downline_earnings).toLocaleString()}</p>
+          </div>
+        </div>
+
+        {row.downline.length === 0 ? (
+          <p className="text-[11px] text-center text-slate-400 py-4 italic">No sub-referrals yet — they'll appear here once {row.name ?? "this friend"} starts inviting.</p>
+        ) : (
+          <ul className="space-y-2">
+            {row.downline.map((d, i) => {
+              const splitTone =
+                d.status === "approved" ? { dot: "bg-emerald-500", pill: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Released" }
+                : d.status === "rejected" ? { dot: "bg-rose-500", pill: "bg-rose-50 text-rose-700 border-rose-200", label: "Rejected" }
+                : { dot: "bg-amber-500", pill: "bg-amber-50 text-amber-700 border-amber-200", label: "Pending split" };
+              const dInit = (d.name ?? "U").slice(0, 1).toUpperCase();
+              return (
+                <li key={i} className="flex items-center gap-3 rounded-xl bg-white border border-slate-200 px-3 py-2.5 shadow-sm">
+                  <div className="relative h-9 w-9 rounded-full bg-amber-50 border border-amber-200 grid place-items-center text-amber-700 font-bold text-sm">
+                    {dInit}
+                    <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ${splitTone.dot} border-2 border-white`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{d.name ?? "User"}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{d.phone ?? "Phone hidden"}</p>
+                  </div>
+                  <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-1 rounded-full border ${splitTone.pill}`}>
+                    {splitTone.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
       {!row.progress.reward_released && (
         <div className="grid grid-cols-2 gap-2 mt-6">
           <button onClick={callCustomer} className="rounded-xl bg-emerald-500 text-white py-3 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
