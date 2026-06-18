@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { WithdrawGateSheet } from "@/components/WithdrawGateSheet";
+import { ReferralBannerCarousel } from "@/components/ReferralBannerCarousel";
 import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
