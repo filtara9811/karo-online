@@ -36,6 +36,7 @@ export function ReferralPage() {
   const [copied, setCopied] = useState(false);
   const [activeRow, setActiveRow] = useState<ReferralRow | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [qrPosterOpen, setQrPosterOpen] = useState(false);
   const [code44, setCode44] = useState<string | null>(null);
   const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
 
