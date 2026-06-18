@@ -1078,6 +1078,7 @@ export type Database = {
           bottom_banner_link: string | null
           bottom_banner_url: string | null
           id: number
+          ios_app_url: string | null
           premium_link_fee_inr: number
           top_banner_link: string | null
           top_banner_url: string | null
@@ -1092,6 +1093,7 @@ export type Database = {
           bottom_banner_link?: string | null
           bottom_banner_url?: string | null
           id?: number
+          ios_app_url?: string | null
           premium_link_fee_inr?: number
           top_banner_link?: string | null
           top_banner_url?: string | null
@@ -1106,6 +1108,7 @@ export type Database = {
           bottom_banner_link?: string | null
           bottom_banner_url?: string | null
           id?: number
+          ios_app_url?: string | null
           premium_link_fee_inr?: number
           top_banner_link?: string | null
           top_banner_url?: string | null
@@ -1525,8 +1528,10 @@ export type Database = {
           payment_provider: string
           payment_upi_id: string | null
           play_store_enabled: boolean
+          poster_bg_transforms: Json
           poster_bg_url: string | null
           poster_bg_urls: Json
+          poster_media: Json
           premium_paid_at: string | null
           premium_payment_ref: string | null
           premium_unlocked: boolean
@@ -1543,8 +1548,10 @@ export type Database = {
           payment_provider?: string
           payment_upi_id?: string | null
           play_store_enabled?: boolean
+          poster_bg_transforms?: Json
           poster_bg_url?: string | null
           poster_bg_urls?: Json
+          poster_media?: Json
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
@@ -1561,8 +1568,10 @@ export type Database = {
           payment_provider?: string
           payment_upi_id?: string | null
           play_store_enabled?: boolean
+          poster_bg_transforms?: Json
           poster_bg_url?: string | null
           poster_bg_urls?: Json
+          poster_media?: Json
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
