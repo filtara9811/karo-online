@@ -1068,6 +1068,51 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_settings: {
+        Row: {
+          admob_bottom_slot: string | null
+          admob_publisher_id: string | null
+          admob_top_slot: string | null
+          announcement_active: boolean
+          announcement_text: string | null
+          bottom_banner_link: string | null
+          bottom_banner_url: string | null
+          id: number
+          premium_link_fee_inr: number
+          top_banner_link: string | null
+          top_banner_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          admob_bottom_slot?: string | null
+          admob_publisher_id?: string | null
+          admob_top_slot?: string | null
+          announcement_active?: boolean
+          announcement_text?: string | null
+          bottom_banner_link?: string | null
+          bottom_banner_url?: string | null
+          id?: number
+          premium_link_fee_inr?: number
+          top_banner_link?: string | null
+          top_banner_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admob_bottom_slot?: string | null
+          admob_publisher_id?: string | null
+          admob_top_slot?: string | null
+          announcement_active?: boolean
+          announcement_text?: string | null
+          bottom_banner_link?: string | null
+          bottom_banner_url?: string | null
+          id?: number
+          premium_link_fee_inr?: number
+          top_banner_link?: string | null
+          top_banner_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_messages: {
         Row: {
           attachment: Json
@@ -1466,6 +1511,60 @@ export type Database = {
           provider?: string
           rest_key?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      merchant_link_settings: {
+        Row: {
+          created_at: string
+          digital_shop_enabled: boolean
+          digital_shop_url: string | null
+          extra_links: Json
+          payment_enabled: boolean
+          payment_label: string | null
+          payment_provider: string
+          payment_upi_id: string | null
+          play_store_enabled: boolean
+          poster_bg_url: string | null
+          premium_paid_at: string | null
+          premium_payment_ref: string | null
+          premium_unlocked: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          digital_shop_enabled?: boolean
+          digital_shop_url?: string | null
+          extra_links?: Json
+          payment_enabled?: boolean
+          payment_label?: string | null
+          payment_provider?: string
+          payment_upi_id?: string | null
+          play_store_enabled?: boolean
+          poster_bg_url?: string | null
+          premium_paid_at?: string | null
+          premium_payment_ref?: string | null
+          premium_unlocked?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          digital_shop_enabled?: boolean
+          digital_shop_url?: string | null
+          extra_links?: Json
+          payment_enabled?: boolean
+          payment_label?: string | null
+          payment_provider?: string
+          payment_upi_id?: string | null
+          play_store_enabled?: boolean
+          poster_bg_url?: string | null
+          premium_paid_at?: string | null
+          premium_payment_ref?: string | null
+          premium_unlocked?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3728,6 +3827,7 @@ export type Database = {
         Args: { _trigger_id: string; _user_id?: string }
         Returns: Json
       }
+      admin_update_landing_settings: { Args: { _payload: Json }; Returns: Json }
       admin_update_referral_settings: {
         Args: { _patch: Json }
         Returns: {
@@ -3961,6 +4061,7 @@ export type Database = {
           sub_category_name: string
         }[]
       }
+      get_public_landing: { Args: { _code: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3985,6 +4086,10 @@ export type Database = {
         }[]
       }
       mark_influencer_activation: {
+        Args: { _payment_ref: string }
+        Returns: Json
+      }
+      mark_premium_links_unlocked: {
         Args: { _payment_ref: string }
         Returns: Json
       }
@@ -4274,6 +4379,7 @@ export type Database = {
         Args: { _accuracy?: number; _lat: number; _lng: number }
         Returns: Json
       }
+      upsert_merchant_link_settings: { Args: { _payload: Json }; Returns: Json }
       vendor_claim_by_phone: {
         Args: { _phone: string }
         Returns: {
