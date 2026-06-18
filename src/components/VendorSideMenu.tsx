@@ -10,6 +10,7 @@ import avatarUser from "@/assets/avatar-user.png";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ReferralStrip } from "@/components/ReferralStrip";
 
 type Vendor = {
   business_name?: string | null;
