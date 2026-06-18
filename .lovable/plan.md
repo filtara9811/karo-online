@@ -1,80 +1,84 @@
-# Premium Refer & Earn — Final Push
+## Goal
 
-Scope is broad (8 feature areas, ~6 files touched, 1 SQL migration, 2 new components). To keep the build green I'll ship in 3 phases. Each phase ends with the app compile-clean and the previous phase still working.
+Turn the QR module into a complete, ad-monetized "Smart Hub":
 
-## Phase 1 — Engine & Audio (foundation)
+- **Poster sheet** redesigned pixel-close to screenshot #1 (shop photo background, QR over it, edit name, + center / share right / download left).
+- **Public landing page** `/s/$code` rendered when anyone scans the poster — fully admin-controlled, with AdMob placeholders, verified merchant header, and a bottom-sheet action picker (Play Store / Payment / Digital Shop).
+- **Merchant setup sheet** (the "+" on the poster) lets the shopkeeper toggle each channel on/off, paste their UPI / Shop URL, long-press to delete, and unlock extra links via a ₹599 Razorpay paywall.
+- Fix the broken **download-to-gallery** path on mobile.
 
-**SQL migration `referral_engine_v3.sql`**
-- Rewrite `release_referral_reward(_vendor_user_id)`:
-  - Resolve L1 referrer + L2 referrer (frozen lineage on `referrals`).
-  - Read `referral_settings`: `is_active`, `base_reward_amount`, `level_1_pct`, `level_2_pct`, `royalty_tiers` (JSONB), `freeze_new_only` flag.
-  - **Campaign paused rule**: If `is_active = false`, still release rewards for `referrals` rows created BEFORE `paused_at`; block only brand-new chains.
-  - **Royalty bonus**: Count referrer's `direct_recruits` (status in approved/locked). Find highest `min_recruits` tier ≤ that count. Add `base * bonus_pct / 100` to the L1 row only (write to `referral_rewards` with `level=1`, `pct_applied=level_1_pct + bonus_pct`).
-- Add `referral_settings.paused_at TIMESTAMPTZ`; auto-update via trigger on `is_active` flip.
-- Add `influencer_activation_fee NUMERIC DEFAULT 499`.
-- Add `vendors.partner_kind TEXT DEFAULT 'vendor'` (vendor | influencer) for the new track.
+---
 
-**Audio upgrade — `src/lib/coin-sound.ts`**
-- Replace `playCoinDrop` body with synthesized **cash-register cha-ching**: bell ding (G6→C7→E7 chord stack) + drawer-slide noise burst + low ka-chunk thunk, all via Web Audio. No asset weight.
+## 1. Database (one migration)
 
-## Phase 2 — Sidebar Referral Strip (both panels)
+New table `public.merchant_link_settings` (one row per user):
+- `play_store_enabled boolean default true`
+- `payment_enabled boolean`, `payment_provider text` (`upi` / `phonepe` / `paytm` / `gpay`), `payment_upi_id text`, `payment_label text`
+- `digital_shop_enabled boolean`, `digital_shop_url text`
+- `extra_links jsonb` (array of `{id,label,url,icon,enabled}`) — gated by paywall
+- `premium_unlocked boolean default false`, `premium_paid_at timestamptz`, `premium_payment_ref text`
+- `poster_bg_url text` (the shop photo behind the QR)
 
-**New component `src/components/ReferralStrip.tsx`**
-- Horizontal pill: left = ivory `Rs, {wallet.total}` typography, right = glowing gold-bordered "[👥 Referral]" button with red notification dot when pending count > 0.
-- Whole strip is a `<Link to="/referral">` (vendors → `/referral` too; the route already detects kind).
-- Reads `useReferralOverview()` for live total.
+New table `public.landing_page_settings` (admin singleton, id=1):
+- `top_banner_url`, `top_banner_link`, `bottom_banner_url`, `bottom_banner_link`
+- `admob_top_slot text`, `admob_bottom_slot text`, `admob_publisher_id text`
+- `announcement_text`, `announcement_active boolean`
+- `premium_link_fee_inr int default 599`
 
-**Mount points**
-- `src/components/ProfileSheet.tsx` — directly under the personal card.
-- `src/components/VendorSideMenu.tsx` — directly under the vendor business card.
+New RPCs:
+- `get_public_landing(_code text)` → merchant card (name, avatar, shop, verified flag) + enabled links + landing settings. **SECURITY DEFINER**, exposed to `anon`.
+- `upsert_merchant_link_settings(...)` — caller-scoped.
+- `mark_premium_links_unlocked(_payment_ref text)` — flips `premium_unlocked=true`.
+- Admin: `admin_update_landing_settings(...)`.
 
-## Phase 3 — Referral Dashboard Polish + QR Poster + Withdraw Gate
+RLS:
+- `merchant_link_settings`: owner full CRUD via `auth.uid()=user_id`; admin via `is_admin_user()`.
+- `landing_page_settings`: SELECT to `anon` + `authenticated`; UPDATE admin-only.
+- Public landing reads use the SECURITY DEFINER RPC (no broad anon table grants).
 
-**`src/routes/referral.tsx`**
-- Header: keep admin-configured `BannerCarousel`-style auto-sliding hero (uses `referral_settings.banner_image_url` array — if only one image, no slide).
-- Dual share bar under the 4+4 code:
-  - Left: emerald-green pill `[🔲 Share QR]` → opens new `QrPosterSheet`.
-  - Right: existing matte-gold `[🔗 Share]` (native share / WhatsApp Play Store deep link, unchanged).
-- **Merge ProgressSheet + downline** into one scrolling sheet: top = referee header, then 3-task timeline, then "Team" downline list with status pills. Remove the separate back-face flip — both surfaces consolidated.
+## 2. New / refactored files
 
-**New component `src/components/QrPosterSheet.tsx`** (Drawer, client-only)
-- Top: editable name field (defaults to user's display name, dynamic in QR caption).
-- Image attach: `<input type="file" accept="image/*">` → cropped/centred logo overlaid on the QR center hole.
-- Mid: QR rendered via `qrcode` npm package onto an offscreen `<canvas>`, encoding the Play Store deep link with `?referrer=ASHU8380`.
-- Footer: `[📥 Download QR]` exports the entire poster canvas as 1200×1600 PNG via `canvas.toBlob()` + anchor download. `[💬 Share | QR]` uses `navigator.share({ files: [pngFile] })` with text fallback.
+**Refactored:**
+- `src/components/QrPosterSheet.tsx` — drop the painted canvas; new layout matches screenshot #1: shop-photo background fills the top, QR (with gold-bordered Karo logo) sits over it, editable shop name pill, then the three pill buttons (Download | + | Share). Fix download by using a real anchor + `URL.createObjectURL` for `<img>` element rendered to a 1080×1920 offscreen canvas, then `cnv.toBlob` → blob URL → `<a download>` (the current code path works on desktop but fails on Android WebView; switch to `<a target="_blank" rel="noopener">` fallback + share-with-file when blob download is blocked).
 
-**New `src/components/WithdrawGateSheet.tsx`** (replaces simple withdraw button on referral wallet)
-- Step 1 — KYC & Bank: PAN, account number, IFSC inputs → upserts `kyc_verifications` row.
-- Step 2 — Activation gate:
-  - If `vendors.payment_completed = true` (vendor) OR `vendors.partner_kind='influencer' AND payment_completed=true` → green tick, withdrawal unlocked.
-  - Otherwise: pending clock + two CTAs:
-    1. "Join as Professional Vendor" → `/vendor/register` (existing trade wizard + ₹1000 activation).
-    2. "Join as Digital Influencer / Part-Time Partner" → new lightweight Razorpay checkout for `influencer_activation_fee` (₹499). On success, upserts `vendors` row with `partner_kind='influencer'`, `payment_completed=true`.
+**New:**
+- `src/components/MerchantLinksSetupSheet.tsx` — opens from the "+" button. Play Store row (always on), Payment row (toggle + provider dropdown + UPI input), Digital Shop row (toggle + URL input). Long-press to delete extra rows. Bottom "+" tile: if `premium_unlocked` → open inline new-link editor, else trigger Razorpay ₹599 flow.
+- `src/routes/s.$code.tsx` — public landing page. Layout:
+  1. AdMob top slot (responsive 320×100 placeholder, swappable with real `<ins class="adsbygoogle">` once admin sets publisher ID)
+  2. Merchant profile card (avatar, name, shop, verified gold tick)
+  3. Admin announcement strip (if active)
+  4. Admin top banner (clickable)
+  5. Bottom sheet animated up on mount with the enabled action buttons
+  6. AdMob bottom slot
+- `src/lib/premium-links.functions.ts` — Razorpay order + verify for ₹599 unlock (mirrors influencer activation pattern).
+- `src/components/AdSlot.tsx` — renders Google AdSense `<ins>` when publisher+slot configured, otherwise a tasteful "Advertise here" skeleton.
 
-**Admin (`src/routes/admin.referrals.tsx`)** — Engine tab
-- Add `influencer_activation_fee` numeric input.
-- Add banner multi-image manager (array of URLs).
-- Verify existing royalty tiers UI saves correctly to JSONB after schema change.
+**Edited:**
+- `src/routes/referral.tsx` — wire poster "+" → `MerchantLinksSetupSheet`; load merchant settings via new hook.
+- `src/routes/admin.referrals.tsx` — new "Landing Page" tab: top/bottom banner URLs, announcement, AdSense publisher ID + slot IDs, premium link fee.
+- `src/routeTree.gen.ts` — register `/s/$code`.
 
-## Files Created
-- `src/components/ReferralStrip.tsx`
-- `src/components/QrPosterSheet.tsx`
-- `src/components/WithdrawGateSheet.tsx`
-- `supabase/migrations/<ts>_referral_engine_v3.sql`
+## 3. Payment routing (Button 2)
 
-## Files Edited
-- `src/components/ProfileSheet.tsx`, `src/components/VendorSideMenu.tsx` (mount strip)
-- `src/routes/referral.tsx` (header carousel, dual share bar, merged sheet, wire WithdrawGateSheet)
-- `src/routes/admin.referrals.tsx` (influencer fee + banner array)
-- `src/hooks/use-referral.ts` (extend types: `paused_at`, `influencer_activation_fee`, banner array)
-- `src/lib/coin-sound.ts` (cha-ching synth)
-- `package.json` (`qrcode` + `@types/qrcode`)
+UPI deep link format used: `upi://pay?pa=<vpa>&pn=<merchant>&cu=INR`. This is what triggers the merchant Sound Box (PhonePe Smart Speaker, Paytm Soundbox) because the transaction lands on the merchant's VPA exactly the same way a static QR scan would. On desktop the same link falls back to a "Open in UPI app" prompt; we also expose `phonepe://`, `paytmmp://`, `tez://` provider-specific intents when the merchant picked a specific provider.
 
-## Dependencies to install
-- `qrcode` (≈30 KB, pure JS, Worker-safe — client only here)
+## 4. Download fix
 
-## Verification
-- After each phase: `tsc --noEmit` runs via harness build.
-- Phase 3: Playwright on `/referral` to confirm sheet renders, QR downloads, withdraw gate steps advance.
+Root cause of "gallery download not working": `cnv.toBlob` runs but on Android Chrome the synthetic `<a download>` click is blocked when the anchor isn't in the DOM long enough, and WebView blocks `blob:` downloads entirely. Fix:
+- Always append the `<a>` to `document.body`, wait one frame (`requestAnimationFrame`), then click and remove.
+- If `navigator.userAgent` indicates Android WebView, fall back to opening the blob URL in a new tab with a toast asking the user to long-press → "Save image".
+- Add `Web Share Level 2` files share as the primary "Save" path on mobile (most reliable route into the gallery).
 
-Confirm and I'll execute Phase 1 (migration + audio) first, then Phase 2, then Phase 3 in sequence.
+## 5. Verification
+
+- `psql` confirms new tables + RPC grants.
+- Build runs clean (`tsc --noEmit` step via the harness).
+- Manual: open `/s/<my-code>` in an incognito tab, toggle each channel off in the setup sheet, refresh — disabled buttons disappear.
+
+## 6. Hindi summary
+
+After implementation I will write a full Hindi recap of what shipped, what was deferred, and exactly how the download-fix behaves on Android.
+
+---
+
+**Open question before I start:** the ₹599 unlock — should it be a **one-time payment** that permanently unlocks unlimited extra links (simpler, matches the influencer activation model), or a **per-link micro-charge** every time the merchant adds another link? My plan above assumes one-time. Confirm and I'll execute the whole batch.
