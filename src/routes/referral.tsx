@@ -269,6 +269,14 @@ export function ReferralPage() {
         </SheetContent>
       </Sheet>
 
+      <QrPosterSheet
+        open={qrPosterOpen}
+        onOpenChange={setQrPosterOpen}
+        code={displayCode}
+        shareUrl={shareUrl}
+        defaultName={profile?.name || "Karo Online"}
+      />
+
       <Sheet open={withdrawOpen} onOpenChange={setWithdrawOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[85vh] overflow-y-auto">
           <WithdrawSheet
