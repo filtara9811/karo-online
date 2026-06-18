@@ -168,8 +168,8 @@ export function ReferralPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-3">
-              <button onClick={openWhatsApp} className="rounded-xl bg-emerald-500 text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
-                <MessageCircle className="h-4 w-4" /> WhatsApp
+              <button onClick={() => setQrPosterOpen(true)} className="rounded-xl bg-emerald-500 text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
+                <QrCode className="h-4 w-4" /> Share QR
               </button>
               <button onClick={nativeShare} className="rounded-xl bg-gradient-to-r from-[#b45309] to-[#f59e0b] text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
                 <Share2 className="h-4 w-4" /> Share
