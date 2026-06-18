@@ -40,6 +40,7 @@ const PROVIDERS = [
   { v: "phonepe", label: "PhonePe" },
   { v: "paytm", label: "Paytm" },
   { v: "gpay", label: "Google Pay" },
+  { v: "other", label: "Other (custom)" },
 ];
 
 export function MerchantLinksSetupSheet({
