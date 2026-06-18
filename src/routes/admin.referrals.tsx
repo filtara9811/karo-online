@@ -49,7 +49,7 @@ type Banner = {
 };
 
 const TRIGGERS = ["registered", "otp_verified", "kyc_completed", "became_seller", "first_order_placed", "payment_completed"];
-const TABS = ["Overview", "Engine", "Rewards Queue", "Campaigns", "Banners", "Top Referrers"] as const;
+const TABS = ["Overview", "Engine", "Rewards Queue", "Campaigns", "Banners", "Landing", "Top Referrers"] as const;
 
 function AdminReferralsPage() {
   const [tab, setTab] = useState<typeof TABS[number]>("Overview");
@@ -115,6 +115,7 @@ function AdminReferralsPage() {
       {!loading && tab === "Rewards Queue" && <RewardsTab data={data} onChange={refresh} />}
       {!loading && tab === "Campaigns" && <CampaignsTab />}
       {!loading && tab === "Banners" && <BannersTab />}
+      {!loading && tab === "Landing" && <LandingTab />}
       {!loading && tab === "Top Referrers" && <TopReferrersTab data={data} />}
     </AdminLayout>
   );
@@ -696,6 +697,75 @@ function EngineTab() {
         </GoldButton>
         <GoldButton variant="outline" onClick={load}>Reload</GoldButton>
       </div>
+    </div>
+  );
+}
+
+type LandingSettings = {
+  top_banner_url: string;
+  top_banner_link: string;
+  bottom_banner_url: string;
+  bottom_banner_link: string;
+  admob_publisher_id: string;
+  admob_top_slot: string;
+  admob_bottom_slot: string;
+  announcement_text: string;
+  announcement_active: boolean;
+  premium_link_fee_inr: number;
+};
+
+const LANDING_DEFAULTS: LandingSettings = {
+  top_banner_url: "", top_banner_link: "",
+  bottom_banner_url: "", bottom_banner_link: "",
+  admob_publisher_id: "", admob_top_slot: "", admob_bottom_slot: "",
+  announcement_text: "", announcement_active: false,
+  premium_link_fee_inr: 599,
+};
+
+function LandingTab() {
+  const [s, setS] = useState<LandingSettings>(LANDING_DEFAULTS);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from("landing_page_settings" as never).select("*").eq("id", 1).maybeSingle();
+    if (data) setS({ ...LANDING_DEFAULTS, ...(data as unknown as LandingSettings) });
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_update_landing_settings" as never, { _payload: s } as never);
+    setBusy(false);
+    if (error) alert("Save failed: " + error.message);
+    else alert("Saved");
+  };
+
+  return (
+    <div className="space-y-4">
+      <GoldCard>
+        <h3 className="font-display text-base mb-3 text-[#1a1208]">Scan Landing Page — Banners & AdSense</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Top Banner Image URL"><input className={inp} value={s.top_banner_url} onChange={(e) => setS({ ...s, top_banner_url: e.target.value })} /></Field>
+          <Field label="Top Banner Click Link"><input className={inp} value={s.top_banner_link} onChange={(e) => setS({ ...s, top_banner_link: e.target.value })} /></Field>
+          <Field label="Bottom Banner Image URL"><input className={inp} value={s.bottom_banner_url} onChange={(e) => setS({ ...s, bottom_banner_url: e.target.value })} /></Field>
+          <Field label="Bottom Banner Click Link"><input className={inp} value={s.bottom_banner_link} onChange={(e) => setS({ ...s, bottom_banner_link: e.target.value })} /></Field>
+          <Field label="AdSense Publisher ID (ca-pub-…)"><input className={inp} value={s.admob_publisher_id} onChange={(e) => setS({ ...s, admob_publisher_id: e.target.value })} /></Field>
+          <Field label="Top Ad Slot ID"><input className={inp} value={s.admob_top_slot} onChange={(e) => setS({ ...s, admob_top_slot: e.target.value })} /></Field>
+          <Field label="Bottom Ad Slot ID"><input className={inp} value={s.admob_bottom_slot} onChange={(e) => setS({ ...s, admob_bottom_slot: e.target.value })} /></Field>
+          <Field label="Premium Link Unlock Fee (₹)"><input type="number" min={1} max={50000} className={inp} value={s.premium_link_fee_inr} onChange={(e) => setS({ ...s, premium_link_fee_inr: Number(e.target.value) || 599 })} /></Field>
+          <Field label="Announcement Text"><input className={inp} value={s.announcement_text} onChange={(e) => setS({ ...s, announcement_text: e.target.value })} /></Field>
+          <Field label="Announcement Active">
+            <label className="inline-flex items-center gap-2 text-[#1a1208]">
+              <input type="checkbox" checked={s.announcement_active} onChange={(e) => setS({ ...s, announcement_active: e.target.checked })} />
+              <span className="text-sm">Show announcement strip</span>
+            </label>
+          </Field>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <GoldButton onClick={save} disabled={busy}><Save className="h-3 w-3 inline mr-1" />{busy ? "Saving…" : "Save landing settings"}</GoldButton>
+          <GoldButton variant="outline" onClick={load}>Reload</GoldButton>
+        </div>
+      </GoldCard>
     </div>
   );
 }
