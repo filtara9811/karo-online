@@ -2028,6 +2028,7 @@ export type Database = {
         Row: {
           activation_fee: number
           banner_image_url: string | null
+          banner_images: Json
           banner_subtitle: string | null
           banner_title: string | null
           base_reward_amount: number
@@ -2036,6 +2037,7 @@ export type Database = {
           fraud_max_per_device: number
           fraud_max_per_ip: number
           id: number
+          influencer_activation_fee: number
           is_active: boolean
           level_1_pct: number
           level_2_pct: number
@@ -2043,6 +2045,7 @@ export type Database = {
           offer_active: boolean
           offer_ends_at: string | null
           offer_label: string | null
+          paused_at: string | null
           play_store_url: string
           royalty_tiers: Json
           terms_text: string | null
@@ -2051,6 +2054,7 @@ export type Database = {
         Insert: {
           activation_fee?: number
           banner_image_url?: string | null
+          banner_images?: Json
           banner_subtitle?: string | null
           banner_title?: string | null
           base_reward_amount?: number
@@ -2059,6 +2063,7 @@ export type Database = {
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          influencer_activation_fee?: number
           is_active?: boolean
           level_1_pct?: number
           level_2_pct?: number
@@ -2066,6 +2071,7 @@ export type Database = {
           offer_active?: boolean
           offer_ends_at?: string | null
           offer_label?: string | null
+          paused_at?: string | null
           play_store_url?: string
           royalty_tiers?: Json
           terms_text?: string | null
@@ -2074,6 +2080,7 @@ export type Database = {
         Update: {
           activation_fee?: number
           banner_image_url?: string | null
+          banner_images?: Json
           banner_subtitle?: string | null
           banner_title?: string | null
           base_reward_amount?: number
@@ -2082,6 +2089,7 @@ export type Database = {
           fraud_max_per_device?: number
           fraud_max_per_ip?: number
           id?: number
+          influencer_activation_fee?: number
           is_active?: boolean
           level_1_pct?: number
           level_2_pct?: number
@@ -2089,6 +2097,7 @@ export type Database = {
           offer_active?: boolean
           offer_ends_at?: string | null
           offer_label?: string | null
+          paused_at?: string | null
           play_store_url?: string
           royalty_tiers?: Json
           terms_text?: string | null
@@ -2657,6 +2666,7 @@ export type Database = {
           operation_mode: string
           owner_name: string | null
           pan: string | null
+          partner_kind: string
           plan: string | null
           referral: string | null
           role: string | null
@@ -2707,6 +2717,7 @@ export type Database = {
           operation_mode?: string
           owner_name?: string | null
           pan?: string | null
+          partner_kind?: string
           plan?: string | null
           referral?: string | null
           role?: string | null
@@ -2757,6 +2768,7 @@ export type Database = {
           operation_mode?: string
           owner_name?: string | null
           pan?: string | null
+          partner_kind?: string
           plan?: string | null
           referral?: string | null
           role?: string | null
@@ -3721,6 +3733,7 @@ export type Database = {
         Returns: {
           activation_fee: number
           banner_image_url: string | null
+          banner_images: Json
           banner_subtitle: string | null
           banner_title: string | null
           base_reward_amount: number
@@ -3729,6 +3742,7 @@ export type Database = {
           fraud_max_per_device: number
           fraud_max_per_ip: number
           id: number
+          influencer_activation_fee: number
           is_active: boolean
           level_1_pct: number
           level_2_pct: number
@@ -3736,6 +3750,7 @@ export type Database = {
           offer_active: boolean
           offer_ends_at: string | null
           offer_label: string | null
+          paused_at: string | null
           play_store_url: string
           royalty_tiers: Json
           terms_text: string | null
@@ -3984,8 +3999,8 @@ export type Database = {
       }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
       release_referral_reward: {
-        Args: { _referred_user_id: string }
-        Returns: undefined
+        Args: { _vendor_user_id: string }
+        Returns: Json
       }
       save_customer_profile: {
         Args: {
@@ -4135,6 +4150,7 @@ export type Database = {
               operation_mode: string
               owner_name: string | null
               pan: string | null
+              partner_kind: string
               plan: string | null
               referral: string | null
               role: string | null
@@ -4214,6 +4230,7 @@ export type Database = {
               operation_mode: string
               owner_name: string | null
               pan: string | null
+              partner_kind: string
               plan: string | null
               referral: string | null
               role: string | null

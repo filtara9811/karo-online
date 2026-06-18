@@ -13,6 +13,8 @@ import { playCoinDrop } from "@/lib/coin-sound";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
@@ -34,6 +36,7 @@ export function ReferralPage() {
   const [copied, setCopied] = useState(false);
   const [activeRow, setActiveRow] = useState<ReferralRow | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [qrPosterOpen, setQrPosterOpen] = useState(false);
   const [code44, setCode44] = useState<string | null>(null);
   const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
 
@@ -165,8 +168,8 @@ export function ReferralPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-3">
-              <button onClick={openWhatsApp} className="rounded-xl bg-emerald-500 text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
-                <MessageCircle className="h-4 w-4" /> WhatsApp
+              <button onClick={() => setQrPosterOpen(true)} className="rounded-xl bg-emerald-500 text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
+                <QrCode className="h-4 w-4" /> Share QR
               </button>
               <button onClick={nativeShare} className="rounded-xl bg-gradient-to-r from-[#b45309] to-[#f59e0b] text-white px-3 py-2.5 font-semibold text-sm flex items-center justify-center gap-2 shadow active:scale-95">
                 <Share2 className="h-4 w-4" /> Share
@@ -265,6 +268,14 @@ export function ReferralPage() {
           {activeRow && <ProgressSheet row={activeRow} shareText={shareText} />}
         </SheetContent>
       </Sheet>
+
+      <QrPosterSheet
+        open={qrPosterOpen}
+        onOpenChange={setQrPosterOpen}
+        code={displayCode}
+        shareUrl={shareUrl}
+        defaultName={profile?.name || "Karo Online"}
+      />
 
       <Sheet open={withdrawOpen} onOpenChange={setWithdrawOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[85vh] overflow-y-auto">
