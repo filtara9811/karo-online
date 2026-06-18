@@ -115,6 +115,7 @@ function AdminReferralsPage() {
       {!loading && tab === "Rewards Queue" && <RewardsTab data={data} onChange={refresh} />}
       {!loading && tab === "Campaigns" && <CampaignsTab />}
       {!loading && tab === "Banners" && <BannersTab />}
+      {!loading && tab === "Landing" && <LandingTab />}
       {!loading && tab === "Top Referrers" && <TopReferrersTab data={data} />}
     </AdminLayout>
   );
