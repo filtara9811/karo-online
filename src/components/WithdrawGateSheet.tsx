@@ -1,0 +1,346 @@
+import { useMemo, useState } from "react";
+import { useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  Banknote, CheckCircle2, Clock, ShieldCheck, Store, Sparkles,
+  ChevronRight, Loader2, Download, X, Lock,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { useReferralOverview } from "@/hooks/use-referral";
+import { openRazorpayCheckout } from "@/lib/razorpay-client";
+import {
+  createInfluencerActivationOrder,
+  verifyInfluencerActivation,
+} from "@/lib/referral-activation.functions";
+
+/**
+ * Premium 2-step Withdraw Gate.
+ *
+ * Step 1 — KYC & Bank: collect PAN, account number, IFSC. Stays on screen
+ *   even after the user advances so they can come back and edit.
+ * Step 2 — Account Activation: requires the user to be a paid vendor OR a
+ *   paid influencer / part-time partner (vendors.payment_completed = true).
+ *   Two CTAs surface when pending: Vendor wizard (/vendor/register, ₹1000
+ *   activation) or Influencer Razorpay (₹{influencer_activation_fee}).
+ *
+ * Both steps green-tick → "Request Withdrawal" submits an admin_notifications
+ * row exactly like the legacy WithdrawSheet so admin payout flow is unchanged.
+ */
+export function WithdrawGateSheet({
+  open,
+  onOpenChange,
+  available,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  available: number;
+}) {
+  const router = useRouter();
+  const { profile } = useAuth();
+  const { data, refresh } = useReferralOverview();
+  const createOrder = useServerFn(createInfluencerActivationOrder);
+  const verifyOrder = useServerFn(verifyInfluencerActivation);
+
+  const [amount, setAmount] = useState<string>(() => String(Math.floor(available || 0)));
+  const [pan, setPan] = useState("");
+  const [account, setAccount] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [activating, setActivating] = useState(false);
+
+  const isActivated = !!data?.activation?.is_activated;
+  const partnerKind = data?.activation?.partner_kind ?? null;
+  const influencerFee = data?.settings.influencer_activation_fee ?? 499;
+  const vendorFee = data?.settings.activation_fee ?? 1000;
+
+  const kycValid = useMemo(() => {
+    const panOk = /^[A-Z]{5}\d{4}[A-Z]$/.test(pan.toUpperCase());
+    const accOk = /^\d{9,18}$/.test(account);
+    const ifscOk = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.toUpperCase());
+    return panOk && accOk && ifscOk;
+  }, [pan, account, ifsc]);
+
+  const canWithdraw = kycValid && isActivated;
+
+  const submit = async () => {
+    if (!canWithdraw) return;
+    const amt = Number(amount || 0);
+    if (!amt || amt <= 0) return toast.error("Enter a valid amount");
+    if (amt > available) return toast.error("Amount exceeds wallet balance");
+
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("admin_notifications").insert({
+        kind: "withdrawal_request",
+        title: "Referral wallet withdrawal request",
+        body: `₹${amt} → A/C ${account} · IFSC ${ifsc.toUpperCase()} · PAN ${pan.toUpperCase()}`,
+        meta: {
+          amount: amt,
+          account,
+          ifsc: ifsc.toUpperCase(),
+          pan: pan.toUpperCase(),
+          user_id: profile?.user_id,
+          partner_kind: partnerKind,
+        },
+      } as never);
+      if (error) throw error;
+      toast.success("Withdrawal requested. Credited within 24 hrs.");
+      onOpenChange(false);
+    } catch (e) {
+      toast.error((e as Error)?.message ?? "Could not submit");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const goVendorWizard = () => {
+    onOpenChange(false);
+    setTimeout(() => router.navigate({ to: "/vendor/register" }), 200);
+  };
+
+  const payInfluencer = async () => {
+    setActivating(true);
+    try {
+      const order = await createOrder({});
+      if (!order.ok) {
+        toast.error(order.error);
+        return;
+      }
+      const resp = await openRazorpayCheckout({
+        key_id: order.key_id,
+        order_id: order.order_id,
+        amount: order.amount,
+        name: "Karo Online · Influencer Partner",
+        description: `Activation · ₹${order.amount_inr}`,
+        prefill: {
+          name: profile?.name ?? undefined,
+          contact: profile?.phone ?? undefined,
+        },
+      });
+      const verify = await verifyOrder({
+        data: {
+          razorpay_order_id: resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature: resp.razorpay_signature,
+          amount_inr: order.amount_inr,
+        },
+      });
+      if (!verify.ok) {
+        toast.error(verify.error);
+        return;
+      }
+      toast.success("You're activated as a Digital Influencer! 🎉");
+      await refresh();
+    } catch (e) {
+      const msg = (e as Error)?.message ?? "";
+      if (msg.toLowerCase().includes("cancel")) return;
+      toast.error(msg || "Payment failed");
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="rounded-t-3xl p-0 max-h-[92vh] overflow-y-auto bg-gradient-to-b from-[#fdf6e3] via-[#f4e9c8] to-[#fdf6e3] border-t-2 border-[#d4af37]"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-[#fdf6e3]/95 backdrop-blur border-b border-[#d4af37]/30">
+          <div>
+            <h2 className="font-display text-lg font-bold text-[#1a1208]">Withdraw to Bank</h2>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#8b6508]">2-step secure payout</p>
+          </div>
+          <button onClick={() => onOpenChange(false)} aria-label="Close" className="h-9 w-9 grid place-items-center rounded-full bg-white/80 text-[#1a1208] border border-[#d4af37]/40">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-5 pt-4 pb-8 space-y-4">
+          {/* Available */}
+          <div className="rounded-2xl bg-gradient-to-br from-[#1a1208] via-[#2a1f10] to-[#3d2a14] border border-[#d4af37]/40 p-4 shadow-[0_10px_28px_-12px_rgba(212,175,55,0.55)]">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[#d4af37]/80 font-bold">Available to withdraw</p>
+            <p className="font-display text-3xl font-bold text-[#fff8dc] mt-1" style={{ textShadow: "0 1px 8px rgba(212,175,55,0.55)" }}>
+              ₹{available.toLocaleString()}
+            </p>
+          </div>
+
+          {/* STEP 1 — KYC + Bank */}
+          <StepCard
+            n={1}
+            title="KYC & Bank Details"
+            subtitle="PAN + Bank account verification"
+            done={kycValid}
+          >
+            <div className="space-y-3">
+              <BankField label="PAN Card Number" value={pan} onChange={(v) => setPan(v.toUpperCase().slice(0, 10))} mono placeholder="ABCDE1234F" />
+              <BankField label="Bank Account Number" value={account} onChange={(v) => setAccount(v.replace(/\D/g, ""))} mono placeholder="1234567890" />
+              <BankField label="IFSC Code" value={ifsc} onChange={(v) => setIfsc(v.toUpperCase().slice(0, 11))} mono placeholder="HDFC0001234" />
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#8b6508]">Amount (₹)</span>
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+                  inputMode="numeric"
+                  className="mt-1 w-full rounded-xl border-2 border-[#d4af37]/40 bg-white px-3 py-2.5 font-bold text-[#1a1208] focus:border-[#d4af37] focus:outline-none"
+                />
+              </label>
+            </div>
+          </StepCard>
+
+          {/* STEP 2 — Activation */}
+          <StepCard
+            n={2}
+            title="Account Activation"
+            subtitle="Vendor or Digital Influencer Partner"
+            done={isActivated}
+            locked={!kycValid}
+          >
+            {isActivated ? (
+              <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-3 flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div>
+                  <p className="text-sm font-bold text-emerald-800">Activated as {partnerKind === "influencer" ? "Digital Influencer" : "Professional Vendor"}</p>
+                  <p className="text-[11px] text-emerald-700">Payouts unlocked. You can withdraw any time.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="rounded-xl bg-amber-50 border border-amber-300 p-3 flex items-start gap-3">
+                  <Clock className="h-4 w-4 text-amber-700 mt-0.5" />
+                  <p className="text-[11px] text-amber-800">
+                    Pending. Pick one path below to activate your account &amp; unlock withdrawals.
+                  </p>
+                </div>
+
+                <ActivationCta
+                  Icon={Store}
+                  title="Join as Professional Vendor"
+                  price={`₹${vendorFee}`}
+                  tag="Full shop + lead inbox"
+                  onClick={goVendorWizard}
+                  tone="gold"
+                />
+
+                <ActivationCta
+                  Icon={Sparkles}
+                  title="Join as Digital Influencer / Part-Time Partner"
+                  price={`₹${influencerFee}`}
+                  tag="Light-weight · Referral payouts only"
+                  onClick={payInfluencer}
+                  tone="emerald"
+                  loading={activating}
+                />
+              </div>
+            )}
+          </StepCard>
+
+          {/* Submit */}
+          <button
+            onClick={submit}
+            disabled={!canWithdraw || busy}
+            className="w-full rounded-2xl bg-gradient-to-r from-[#d4af37] via-[#f5d97a] to-[#b45309] text-[#1a1208] py-3.5 font-bold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-amber-900/30 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : canWithdraw ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            {busy ? "Submitting…" : canWithdraw ? "Request Withdrawal" : "Complete both steps to unlock"}
+          </button>
+
+          <p className="text-[10px] text-center text-[#8b6508]/80 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="h-3 w-3" />
+            Withdrawals are reviewed by our team and credited within 24 hours.
+          </p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function StepCard({
+  n, title, subtitle, done, locked = false, children,
+}: {
+  n: number; title: string; subtitle: string; done: boolean; locked?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`rounded-2xl border-2 p-4 transition ${
+        done
+          ? "border-emerald-400/60 bg-white"
+          : locked
+            ? "border-[#d4af37]/20 bg-white/50 opacity-60"
+            : "border-[#d4af37]/50 bg-white"
+      }`}
+    >
+      <header className="flex items-center gap-3 mb-3">
+        <div
+          className={`h-8 w-8 rounded-full grid place-items-center font-bold text-sm ${
+            done ? "bg-emerald-500 text-white" : locked ? "bg-slate-200 text-slate-500" : "bg-gradient-to-br from-[#f5d97a] to-[#b45309] text-[#1a1208]"
+          }`}
+        >
+          {done ? <CheckCircle2 className="h-5 w-5" /> : locked ? <Lock className="h-4 w-4" /> : n}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display text-sm font-bold text-[#1a1208] leading-tight">{title}</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[#8b6508]">{subtitle}</p>
+        </div>
+        {done && <Banknote className="h-4 w-4 text-emerald-600" />}
+      </header>
+      {!locked && <div>{children}</div>}
+    </section>
+  );
+}
+
+function BankField({
+  label, value, onChange, placeholder, mono,
+}: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; mono?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#8b6508]">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`mt-1 w-full rounded-xl border-2 border-[#d4af37]/40 bg-white px-3 py-2.5 font-bold text-[#1a1208] uppercase focus:border-[#d4af37] focus:outline-none ${mono ? "font-mono tracking-wider" : ""}`}
+      />
+    </label>
+  );
+}
+
+function ActivationCta({
+  Icon, title, price, tag, onClick, tone, loading,
+}: {
+  Icon: typeof Store;
+  title: string;
+  price: string;
+  tag: string;
+  onClick: () => void;
+  tone: "gold" | "emerald";
+  loading?: boolean;
+}) {
+  const bg = tone === "gold"
+    ? "bg-gradient-to-r from-[#f5d97a] via-[#d4af37] to-[#b45309] text-[#1a1208]"
+    : "bg-gradient-to-r from-emerald-500 to-emerald-700 text-white";
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`w-full rounded-2xl px-4 py-3 flex items-center gap-3 shadow active:scale-[0.98] disabled:opacity-70 ${bg}`}
+    >
+      <div className="h-10 w-10 rounded-xl bg-black/15 grid place-items-center">
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+      </div>
+      <div className="flex-1 text-left min-w-0">
+        <p className="font-bold text-sm leading-tight truncate">{title}</p>
+        <p className="text-[10px] opacity-80 mt-0.5">{tag}</p>
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="font-display font-bold text-base">{price}</span>
+        <ChevronRight className="h-4 w-4 opacity-80" />
+      </div>
+    </button>
+  );
+}

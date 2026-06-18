@@ -12,6 +12,7 @@ import {
   Plus, Trash2, Image as ImageIcon, Palette,
 } from "lucide-react";
 import { MyOrdersList } from "@/components/MyOrdersList";
+import { ReferralStrip } from "@/components/ReferralStrip";
 import { useMyOrders } from "@/hooks/use-my-orders";
 import { Star } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
@@ -393,6 +394,11 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           </AnimatePresence>
         </div>
       </section>
+
+      {/* Premium referral strip — visual & functional parity with vendor side menu */}
+      <div className="px-1 -mt-1">
+        <ReferralStrip variant="light" />
+      </div>
 
       {/* Quick action tiles — labels hidden until tap (then color shifts + opens sheet) */}
       <QuickTiles onPick={(s) => setQuickSheet(s)} onOpenNotifications={() => setNotifOpen(true)} orderBadge={orderUnread} />

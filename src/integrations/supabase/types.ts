@@ -3984,6 +3984,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      mark_influencer_activation: {
+        Args: { _payment_ref: string }
+        Returns: Json
+      }
       mark_referral_checkpoint: {
         Args: { _checkpoint: string; _referred_user_id: string }
         Returns: Json
