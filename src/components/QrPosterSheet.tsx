@@ -39,7 +39,7 @@ export function QrPosterSheet({
   const landingUrl = typeof window !== "undefined"
     ? `${window.location.origin}/s/${encodeURIComponent(code || "")}`
     : `https://karoonline.in/s/${code}`;
-  const activeBg = slots[activeIdx] ?? null;
+  const activeBg = slots[activeIdx] ?? DEFAULT_COVER_URL;
 
   useEffect(() => { if (open) setName(defaultName); }, [open, defaultName]);
 
