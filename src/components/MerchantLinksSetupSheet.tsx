@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2 } from "lucide-react";
+import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
+import { VpaScannerSheet } from "@/components/VpaScannerSheet";
 
 type ExtraLink = { id: string; label: string; url: string; icon?: string | null; enabled: boolean };
 
