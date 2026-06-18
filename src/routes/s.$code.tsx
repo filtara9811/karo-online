@@ -20,12 +20,15 @@ export const Route = createFileRoute("/s/$code")({
   notFoundComponent: () => <Fallback message="This merchant page was not found." />,
 });
 
+type MediaItem = { type: "image" | "video" | "url"; src: string };
+
 type Landing = {
   ok: boolean;
   merchant?: { name?: string; shop_name?: string; avatar_url?: string; verified?: boolean; code?: string };
   links?: {
     poster_bg_url?: string;
     poster_bg_urls?: string[];
+    poster_media?: MediaItem[];
     play_store_enabled?: boolean;
     payment_enabled?: boolean;
     payment_provider?: string;
@@ -45,10 +48,23 @@ type Landing = {
     admob_bottom_slot?: string;
     announcement_text?: string;
     announcement_active?: boolean;
+    ios_app_url?: string;
   };
 };
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
+const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
+const isIOS = () => typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+function detectProvider(url: string): "youtube" | "instagram" | "video" {
+  if (/youtu\.?be/.test(url)) return "youtube";
+  if (/instagram\.com/.test(url)) return "instagram";
+  return "video";
+}
+function ytEmbed(url: string): string {
+  const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}` : url;
+}
 // Tiny session cache so repeat scans render instantly.
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
 
@@ -90,7 +106,15 @@ function ScanLandingPage() {
   const m = data.merchant ?? {};
   const links = data.links ?? {};
   const landing = data.landing ?? {};
-  const playUrl = `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
+  const playUrl = isIOS()
+    ? (landing.ios_app_url || APP_STORE_FALLBACK)
+    : `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
+
+  const mediaList: MediaItem[] = (links.poster_media && links.poster_media.length)
+    ? links.poster_media
+    : (links.poster_bg_urls?.length
+        ? links.poster_bg_urls.map((src) => ({ type: "image" as const, src }))
+        : (links.poster_bg_url ? [{ type: "image" as const, src: links.poster_bg_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }]));
 
   return (
     <div className="min-h-screen bg-[#0a0700] text-amber-50 selection:bg-[#d4af37] selection:text-black">
@@ -104,7 +128,7 @@ function ScanLandingPage() {
         <AdSlot publisherId={landing.admob_publisher_id} slot={landing.admob_top_slot} height={90} />
       </div>
 
-      {/* Merchant identity header */}
+      {/* Merchant identity header — bold name + avatar */}
       <header className="px-4 pt-4">
         <div className="rounded-2xl border border-[#d4af37]/60 bg-gradient-to-b from-[#1c1200]/80 to-[#0a0700]/80 backdrop-blur p-4 flex items-center gap-3 shadow-[0_8px_30px_rgba(212,175,55,0.18)]">
           <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-[#d4af37] bg-black grid place-items-center text-2xl font-display text-[#d4af37]">
@@ -114,7 +138,7 @@ function ScanLandingPage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 leading-tight">
-              <span className="truncate font-display text-xl text-[#fdf6e3]">
+              <span className="truncate font-display font-extrabold tracking-tight text-xl text-[#fdf6e3]">
                 {m.shop_name || m.name || "Karo Online Merchant"}
               </span>
               {m.verified && <BadgeCheck className="h-5 w-5 text-emerald-400 shrink-0" />}
@@ -141,15 +165,23 @@ function ScanLandingPage() {
         )}
       </header>
 
-      {/* Featured shop image — falls back to Karo Online cover when none configured */}
-      <div className="px-4 mt-4">
-        <img
-          src={links.poster_bg_urls?.[0] || links.poster_bg_url || DEFAULT_COVER_URL}
-          alt={m.shop_name || "Shop"}
-          loading="eager"
-          decoding="async"
-          className="w-full rounded-2xl border border-[#d4af37]/50 object-cover max-h-72 shadow"
-        />
+      {/* Mirrored multi-media — same poster_media the merchant uploaded */}
+      <div className="px-4 mt-4 space-y-2">
+        {mediaList.slice(0, 3).map((item, i) => (
+          <div key={i} className="rounded-2xl border border-[#d4af37]/50 overflow-hidden shadow bg-black/40" style={{ aspectRatio: "4 / 3" }}>
+            {item.type === "video" ? (
+              <video src={item.src} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+            ) : item.type === "url" ? (
+              detectProvider(item.src) === "youtube" ? (
+                <iframe src={ytEmbed(item.src)} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen />
+              ) : (
+                <iframe src={item.src} className="w-full h-full" allowFullScreen />
+              )
+            ) : (
+              <img src={item.src} alt={m.shop_name || "Shop"} loading={i === 0 ? "eager" : "lazy"} decoding="async" className="w-full h-full object-cover" />
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="h-[460px]" />
