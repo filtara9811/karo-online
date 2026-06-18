@@ -312,6 +312,16 @@ export function MerchantLinksSetupSheet({
         </div>
       </DrawerContent>
     </Drawer>
+    <VpaScannerSheet
+      open={scannerOpen}
+      onOpenChange={setScannerOpen}
+      onResult={(vpa) => {
+        const next = { ...settings, payment_upi_id: vpa };
+        setSettings(next);
+        void save(next, { silent: true });
+      }}
+    />
+    </>
   );
 }
 
