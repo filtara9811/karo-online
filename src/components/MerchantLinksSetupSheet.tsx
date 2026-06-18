@@ -201,13 +201,25 @@ export function MerchantLinksSetupSheet({
                 >
                   {PROVIDERS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
                 </select>
-                <input
-                  value={settings.payment_upi_id}
-                  onChange={(e) => setSettings((s) => ({ ...s, payment_upi_id: e.target.value }))}
-                  placeholder="merchant@upi"
-                  inputMode="email"
-                  className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
-                />
+                <div className="relative mt-2">
+                  <input
+                    value={settings.payment_upi_id}
+                    onChange={(e) => setSettings((s) => ({ ...s, payment_upi_id: e.target.value }))}
+                    placeholder={settings.payment_provider === "other" ? "Paste custom URL or payload" : "merchant@upi"}
+                    inputMode={settings.payment_provider === "other" ? "text" : "email"}
+                    className="w-full rounded-lg border border-[#d4af37]/40 bg-white/80 pl-2 pr-11 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                  />
+                  {settings.payment_provider !== "other" && (
+                    <button
+                      type="button"
+                      onClick={() => setScannerOpen(true)}
+                      aria-label="Scan counter QR"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-md bg-amber-600 text-white shadow active:scale-95"
+                    >
+                      <ScanLine className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={() => save(settings)}
                   disabled={saving}
