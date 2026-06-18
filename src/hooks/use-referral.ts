@@ -58,6 +58,7 @@ export type ReferralBannerSettings = {
   is_active: boolean;
   base_reward_amount: number;
   activation_fee: number;
+  influencer_activation_fee: number;
   play_store_url: string;
   banner_image_url: string | null;
   banner_title: string | null;
@@ -69,11 +70,17 @@ export type ReferralBannerSettings = {
   direct_recruits: number;
 };
 
+export type ReferralActivation = {
+  is_activated: boolean;
+  partner_kind: "vendor" | "influencer" | null;
+};
+
 export type ReferralOverview = {
   code: string;
   kind: "customer" | "vendor";
   wallet: ReferralWallet;
   settings: ReferralBannerSettings;
+  activation: ReferralActivation;
   stats: {
     total_invited: number;
     successful: number;

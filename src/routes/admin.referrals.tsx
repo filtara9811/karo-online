@@ -496,6 +496,7 @@ type EngineSettings = {
   level_2_pct: number;
   max_split_pct: number;
   activation_fee: number;
+  influencer_activation_fee: number;
   play_store_url: string;
   banner_image_url: string | null;
   banner_title: string | null;
@@ -575,9 +576,13 @@ function EngineTab() {
             <input type="number" className={inp} value={s.base_reward_amount}
               onChange={(e) => setS({ ...s, base_reward_amount: Number(e.target.value) })} />
           </Field>
-          <Field label="Activation Fee (₹)">
+          <Field label="Vendor Activation Fee (₹)">
             <input type="number" className={inp} value={s.activation_fee}
               onChange={(e) => setS({ ...s, activation_fee: Number(e.target.value) })} />
+          </Field>
+          <Field label="Influencer / Part-Time Partner Fee (₹)">
+            <input type="number" className={inp} value={s.influencer_activation_fee ?? 499}
+              onChange={(e) => setS({ ...s, influencer_activation_fee: Number(e.target.value) })} />
           </Field>
           <Field label="Level 1 % (Direct Referrer)">
             <input type="number" min={0} max={100} className={inp} value={s.level_1_pct}

@@ -14,6 +14,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { WithdrawGateSheet } from "@/components/WithdrawGateSheet";
 import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
@@ -277,14 +278,11 @@ export function ReferralPage() {
         defaultName={profile?.name || "Karo Online"}
       />
 
-      <Sheet open={withdrawOpen} onOpenChange={setWithdrawOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[85vh] overflow-y-auto">
-          <WithdrawSheet
-            available={data?.wallet.total ?? 0}
-            onClose={() => setWithdrawOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
+      <WithdrawGateSheet
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+        available={data?.wallet.total ?? 0}
+      />
     </div>
   );
 }
