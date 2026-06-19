@@ -238,18 +238,19 @@ function ActionSheet({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 30, stiffness: 240 }}
-          className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
-        >
-          <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
-          <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
-            <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
-              Continue with
-            </p>
+        <>
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 240 }}
+            className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
+          >
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
+            <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
+              <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
+                Continue with
+              </p>
 
             {links.payment_enabled && links.payment_upi_id && (
               <PillButton
@@ -297,6 +298,8 @@ function ActionSheet({
             </p>
           </div>
 
+          </motion.div>
+
           <UpiPaymentModal
             open={paymentOpen}
             onClose={() => setPaymentOpen(false)}
@@ -304,7 +307,7 @@ function ActionSheet({
             upiId={links.payment_upi_id ?? ""}
             defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
           />
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
