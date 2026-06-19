@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck } from "lucide-react";
+import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck, X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
@@ -33,6 +33,7 @@ type Landing = {
     payment_provider?: string;
     payment_upi_id?: string;
     payment_label?: string;
+    payment_amount_inr?: number | string | null;
     digital_shop_enabled?: boolean;
     digital_shop_url?: string;
     extra_links?: Array<{ id: string; label: string; url: string; enabled: boolean }>;
@@ -73,6 +74,22 @@ function readCache(code: string): Landing | null {
 }
 function writeCache(code: string, data: Landing) {
   try { sessionStorage.setItem(CACHE_KEY(code), JSON.stringify({ t: Date.now(), data })); } catch { /* noop */ }
+}
+
+function normalizeAmount(value: unknown): string {
+  const raw = String(value ?? "").replace(/[^0-9.]/g, "");
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n.toFixed(2).replace(/\.00$/, "") : "";
+}
+
+function buildUpiUri(vpa: string, merchantName: string, amount: string) {
+  const params = new URLSearchParams({
+    pa: vpa.trim(),
+    pn: merchantName.trim() || "Karo Merchant",
+    cu: "INR",
+  });
+  if (amount) params.set("am", amount);
+  return `upi://pay?${params.toString()}`;
 }
 
 function ScanLandingPage() {
@@ -215,39 +232,32 @@ function ActionSheet({
   links: NonNullable<Landing["links"]>;
   playUrl: string;
 }) {
-  const providerHref = useMemo(() => {
-    if (!links.payment_upi_id) return null;
-    const base = `pa=${encodeURIComponent(links.payment_upi_id)}&pn=${encodeURIComponent(merchant.shop_name || merchant.name || "Merchant")}&cu=INR`;
-    switch (links.payment_provider) {
-      case "phonepe": return `phonepe://pay?${base}`;
-      case "paytm":   return `paytmmp://pay?${base}`;
-      case "gpay":    return `tez://upi/pay?${base}`;
-      default:        return `upi://pay?${base}`;
-    }
-  }, [links.payment_upi_id, links.payment_provider, merchant]);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const merchantName = merchant.shop_name || merchant.name || "Karo Online Merchant";
 
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 30, stiffness: 240 }}
-          className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
-        >
-          <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
-          <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
-            <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
-              Continue with
-            </p>
+        <>
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 240 }}
+            className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
+          >
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
+            <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
+              <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
+                Continue with
+              </p>
 
-            {links.payment_enabled && providerHref && (
+            {links.payment_enabled && links.payment_upi_id && (
               <PillButton
-                href={providerHref}
+                onClick={() => setPaymentOpen(true)}
                 icon={<CreditCard className="h-5 w-5" />}
                 title="Make Trusted Payment"
-                subtitle={`${(links.payment_provider || "UPI").toUpperCase()} · ${links.payment_upi_id}`}
+                subtitle={`UPI App · ${links.payment_upi_id}`}
                 gradient="from-orange-500 via-orange-600 to-amber-700"
               />
             )}
@@ -287,30 +297,129 @@ function ActionSheet({
               Powered by <Link to="/" className="font-bold text-amber-700 underline">Karo Online</Link>
             </p>
           </div>
-        </motion.div>
+
+          </motion.div>
+
+          <UpiPaymentModal
+            open={paymentOpen}
+            onClose={() => setPaymentOpen(false)}
+            merchantName={merchantName}
+            upiId={links.payment_upi_id ?? ""}
+            defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
+          />
+        </>
       )}
     </AnimatePresence>
   );
 }
 
 function PillButton({
-  href, icon, title, subtitle, gradient,
+  href, onClick, icon, title, subtitle, gradient,
 }: {
-  href: string; icon: React.ReactNode; title: string; subtitle: string; gradient: string;
+  href?: string; onClick?: () => void; icon: React.ReactNode; title: string; subtitle: string; gradient: string;
 }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 shadow-md active:scale-[0.98] transition bg-gradient-to-r ${gradient} text-white`}
-    >
+  const className = `flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left shadow-md active:scale-[0.98] transition bg-gradient-to-r ${gradient} text-white`;
+  const inner = (
+    <>
       <div className="h-10 w-10 grid place-items-center rounded-full bg-white/20 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <div className="font-bold leading-tight text-sm">{title}</div>
         <div className="text-[11px] truncate opacity-90">{subtitle}</div>
       </div>
+    </>
+  );
+
+  if (!href) {
+    return <button type="button" onClick={onClick} className={className}>{inner}</button>;
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
+      {inner}
     </a>
+  );
+}
+
+function UpiPaymentModal({
+  open, onClose, merchantName, upiId, defaultAmount,
+}: {
+  open: boolean; onClose: () => void; merchantName: string; upiId: string; defaultAmount: string;
+}) {
+  const [amount, setAmount] = useState(defaultAmount);
+
+  useEffect(() => {
+    if (open) setAmount(defaultAmount);
+  }, [defaultAmount, open]);
+
+  const cleanAmount = normalizeAmount(amount);
+  const upiUri = useMemo(() => buildUpiUri(upiId, merchantName, cleanAmount), [upiId, merchantName, cleanAmount]);
+
+  if (!open) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 28, scale: 0.96, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 24, stiffness: 260 }}
+        className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-5 text-slate-900 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-700">Secure UPI</p>
+            <h2 className="mt-1 truncate font-display text-2xl font-bold text-slate-950">{merchantName}</h2>
+            <p className="mt-1 truncate text-xs text-slate-500">{upiId}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-700 active:scale-95">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <label className="mt-5 block text-xs font-semibold text-slate-600" htmlFor="upi-amount">Amount</label>
+        <div className="mt-2 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-amber-500">
+          <span className="text-2xl font-bold text-slate-950">₹</span>
+          <input
+            id="upi-amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="Enter amount"
+            className="ml-2 min-w-0 flex-1 bg-transparent text-2xl font-bold text-slate-950 outline-none placeholder:text-slate-400"
+          />
+        </div>
+
+        <a
+          href={cleanAmount ? upiUri : undefined}
+          aria-disabled={!cleanAmount}
+          onClick={(e) => {
+            if (!cleanAmount) {
+              e.preventDefault();
+              document.getElementById("upi-amount")?.focus();
+              return;
+            }
+            setTimeout(onClose, 600);
+          }}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-700 px-5 py-4 text-base font-extrabold text-white shadow-lg active:scale-[0.98] aria-disabled:opacity-55"
+        >
+          <Smartphone className="h-5 w-5" /> Pay via UPI App
+        </a>
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
+          Opens your phone's UPI app selector. No payment gateway, no copied ID.
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }
 

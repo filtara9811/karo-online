@@ -17,6 +17,7 @@ type Settings = {
   payment_provider: string;
   payment_upi_id: string;
   payment_label: string;
+  payment_amount_inr: string;
   digital_shop_enabled: boolean;
   digital_shop_url: string;
   extra_links: ExtraLink[];
@@ -29,6 +30,7 @@ const DEFAULTS: Settings = {
   payment_provider: "upi",
   payment_upi_id: "",
   payment_label: "",
+  payment_amount_inr: "",
   digital_shop_enabled: false,
   digital_shop_url: "",
   extra_links: [],
@@ -94,6 +96,7 @@ export function MerchantLinksSetupSheet({
         payment_provider: next.payment_provider,
         payment_upi_id: next.payment_upi_id,
         payment_label: next.payment_label,
+        payment_amount_inr: next.payment_amount_inr,
         digital_shop_enabled: next.digital_shop_enabled,
         digital_shop_url: next.digital_shop_url,
         extra_links: next.extra_links,
@@ -221,6 +224,13 @@ export function MerchantLinksSetupSheet({
                     </button>
                   )}
                 </div>
+                <input
+                  value={settings.payment_amount_inr}
+                  onChange={(e) => setSettings((s) => ({ ...s, payment_amount_inr: e.target.value.replace(/[^0-9.]/g, "") }))}
+                  placeholder="Default amount, e.g. 50"
+                  inputMode="decimal"
+                  className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                />
                 <button
                   onClick={() => save(settings)}
                   disabled={saving}

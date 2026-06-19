@@ -1523,6 +1523,7 @@ export type Database = {
           digital_shop_enabled: boolean
           digital_shop_url: string | null
           extra_links: Json
+          payment_amount_inr: number | null
           payment_enabled: boolean
           payment_label: string | null
           payment_provider: string
@@ -1543,6 +1544,7 @@ export type Database = {
           digital_shop_enabled?: boolean
           digital_shop_url?: string | null
           extra_links?: Json
+          payment_amount_inr?: number | null
           payment_enabled?: boolean
           payment_label?: string | null
           payment_provider?: string
@@ -1563,6 +1565,7 @@ export type Database = {
           digital_shop_enabled?: boolean
           digital_shop_url?: string | null
           extra_links?: Json
+          payment_amount_inr?: number | null
           payment_enabled?: boolean
           payment_label?: string | null
           payment_provider?: string
