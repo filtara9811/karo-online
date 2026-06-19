@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AdSlot } from "@/components/AdSlot";
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
@@ -12,7 +11,7 @@ export const Route = createFileRoute("/s/$code")({
     meta: [
       { title: `Visit ${params.code} — Karo Online` },
       { name: "description", content: "Trusted merchant scan page on Karo Online." },
-      { name: "theme-color", content: "#0a0700" },
+      { name: "theme-color", content: "#ffffff" },
     ],
   }),
   component: ScanLandingPage,
@@ -24,7 +23,7 @@ type MediaItem = { type: "image" | "video" | "url"; src: string };
 
 type Landing = {
   ok: boolean;
-  merchant?: { name?: string; shop_name?: string; avatar_url?: string; verified?: boolean; code?: string };
+  merchant?: { name?: string; shop_name?: string; avatar_url?: string; verified?: boolean; code?: string; cover_url?: string };
   links?: {
     poster_bg_url?: string;
     poster_bg_urls?: string[];
@@ -43,9 +42,6 @@ type Landing = {
     top_banner_link?: string;
     bottom_banner_url?: string;
     bottom_banner_link?: string;
-    admob_publisher_id?: string;
-    admob_top_slot?: string;
-    admob_bottom_slot?: string;
     announcement_text?: string;
     announcement_active?: boolean;
     ios_app_url?: string;
@@ -63,11 +59,9 @@ function detectProvider(url: string): "youtube" | "instagram" | "video" {
 }
 function ytEmbed(url: string): string {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}` : url;
+  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1` : url;
 }
-// Tiny session cache so repeat scans render instantly.
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
-
 function readCache(code: string): Landing | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY(code));
@@ -96,7 +90,7 @@ function ScanLandingPage() {
       setData(next);
       if (next.ok) writeCache(code, next);
     })();
-    const t = setTimeout(() => setSheetUp(true), 320);
+    const t = setTimeout(() => setSheetUp(true), 280);
     return () => { cancelled = true; clearTimeout(t); };
   }, [code]);
 
@@ -113,89 +107,101 @@ function ScanLandingPage() {
     ? links.poster_media
     : (links.poster_bg_urls?.length
         ? links.poster_bg_urls.map((src) => ({ type: "image" as const, src }))
-        : (links.poster_bg_url ? [{ type: "image" as const, src: links.poster_bg_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }]));
+        : (links.poster_bg_url
+            ? [{ type: "image" as const, src: links.poster_bg_url }]
+            : (m.cover_url ? [{ type: "image" as const, src: m.cover_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }])));
+
+  const hero = mediaList[0];
+  const heroIsVideo = hero.type === "video" || hero.type === "url";
 
   return (
-    <div className="min-h-screen bg-[#0a0700] text-amber-50 selection:bg-[#d4af37] selection:text-black">
-      {/* gradient backdrop */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-[#0a0700] via-[#120a00] to-black" />
-      <div className="fixed inset-0 -z-10 opacity-25 pointer-events-none"
-           style={{ backgroundImage: "radial-gradient(circle at 50% 0%, rgba(212,175,55,0.35), transparent 60%), radial-gradient(circle at 50% 100%, rgba(212,175,55,0.18), transparent 50%)" }} />
+    <div className="min-h-screen bg-white text-slate-900">
+      {/* Full-bleed hero media. Video/embeds fill the viewport so vendor reels feel cinematic. */}
+      <div className={`relative w-full ${heroIsVideo ? "h-[100svh]" : "aspect-[4/5]"} bg-black overflow-hidden`}>
+        {hero.type === "video" ? (
+          <video src={hero.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+        ) : hero.type === "url" ? (
+          detectProvider(hero.src) === "youtube" ? (
+            <iframe
+              src={ytEmbed(hero.src)}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ border: 0 }}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <iframe src={hero.src} className="absolute inset-0 w-full h-full" style={{ border: 0 }} allowFullScreen />
+          )
+        ) : (
+          <img src={hero.src} alt={m.shop_name || m.name || "Shop"} className="absolute inset-0 w-full h-full object-cover" loading="eager" decoding="async" />
+        )}
 
-      {/* AdMob top */}
-      <div className="px-3 pt-3">
-        <AdSlot publisherId={landing.admob_publisher_id} slot={landing.admob_top_slot} height={90} />
-      </div>
+        {/* Soft gradient at top + bottom so identity chip & announcements stay readable */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/55 to-transparent" />
 
-      {/* Merchant identity header — bold name + avatar */}
-      <header className="px-4 pt-4">
-        <div className="rounded-2xl border border-[#d4af37]/60 bg-gradient-to-b from-[#1c1200]/80 to-[#0a0700]/80 backdrop-blur p-4 flex items-center gap-3 shadow-[0_8px_30px_rgba(212,175,55,0.18)]">
-          <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-[#d4af37] bg-black grid place-items-center text-2xl font-display text-[#d4af37]">
+        {/* Floating identity chip */}
+        <div className="absolute left-3 right-3 top-3 flex items-center gap-2.5 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200 px-3 py-2 shadow-lg">
+          <div className="h-11 w-11 rounded-full overflow-hidden border border-slate-200 bg-slate-100 grid place-items-center text-base font-bold text-slate-700 flex-shrink-0">
             {m.avatar_url
-              ? <img src={m.avatar_url} alt={m.name || "Merchant"} className="h-full w-full object-cover" loading="eager" decoding="async" />
-              : (m.name?.[0] ?? "K").toUpperCase()}
+              ? <img src={m.avatar_url} alt={m.name || "Merchant"} className="h-full w-full object-cover" loading="eager" />
+              : (m.shop_name?.[0] ?? m.name?.[0] ?? "K").toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 leading-tight">
-              <span className="truncate font-display font-extrabold tracking-tight text-xl text-[#fdf6e3]">
+            <div className="flex items-center gap-1 leading-tight">
+              <span className="truncate font-display font-bold text-[15px] text-slate-900">
                 {m.shop_name || m.name || "Karo Online Merchant"}
               </span>
-              {m.verified && <BadgeCheck className="h-5 w-5 text-emerald-400 shrink-0" />}
+              {m.verified && <BadgeCheck className="h-4 w-4 text-emerald-600 shrink-0" />}
             </div>
-            {m.shop_name && m.name && (
-              <p className="text-xs text-amber-200/80 truncate">{m.name}</p>
-            )}
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d4af37]/90 mt-1 flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> Trusted Karo Online Merchant
+            <p className="text-[10px] uppercase tracking-[0.18em] text-amber-700 mt-0.5 flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3" /> Trusted Karo Merchant
             </p>
           </div>
         </div>
 
         {landing.announcement_active && landing.announcement_text && (
-          <div className="mt-3 rounded-xl border border-[#d4af37]/40 bg-[#1c1200]/70 px-3 py-2 text-sm text-amber-100">
+          <div className="absolute left-3 right-3 bottom-3 rounded-xl bg-white/90 backdrop-blur border border-amber-200 px-3 py-2 text-xs text-slate-800 shadow">
             📣 {landing.announcement_text}
           </div>
         )}
-
-        {landing.top_banner_url && (
-          <a href={landing.top_banner_link || "#"} className="block mt-3 rounded-2xl overflow-hidden border border-[#d4af37]/40 shadow">
-            <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
-          </a>
-        )}
-      </header>
-
-      {/* Mirrored multi-media — same poster_media the merchant uploaded */}
-      <div className="px-4 mt-4 space-y-2">
-        {mediaList.slice(0, 3).map((item, i) => (
-          <div key={i} className="rounded-2xl border border-[#d4af37]/50 overflow-hidden shadow bg-black/40" style={{ aspectRatio: "4 / 3" }}>
-            {item.type === "video" ? (
-              <video src={item.src} autoPlay muted loop playsInline className="w-full h-full object-cover" />
-            ) : item.type === "url" ? (
-              detectProvider(item.src) === "youtube" ? (
-                <iframe src={ytEmbed(item.src)} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen />
-              ) : (
-                <iframe src={item.src} className="w-full h-full" allowFullScreen />
-              )
-            ) : (
-              <img src={item.src} alt={m.shop_name || "Shop"} loading={i === 0 ? "eager" : "lazy"} decoding="async" className="w-full h-full object-cover" />
-            )}
-          </div>
-        ))}
       </div>
 
-      <div className="h-[460px]" />
+      {/* Admin-controlled top banner (renders only if configured) */}
+      {landing.top_banner_url && (
+        <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+          <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
+        </a>
+      )}
+
+      {/* Secondary media tiles (slots 2 & 3) shown as a thin gallery if vendor uploaded extras */}
+      {mediaList.length > 1 && (
+        <div className="px-3 mt-3 grid grid-cols-2 gap-2">
+          {mediaList.slice(1, 3).map((item, i) => (
+            <div key={i} className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 aspect-square">
+              {item.type === "video" ? (
+                <video src={item.src} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+              ) : item.type === "url" ? (
+                detectProvider(item.src) === "youtube"
+                  ? <iframe src={ytEmbed(item.src)} className="w-full h-full" style={{ border: 0 }} allow="autoplay; encrypted-media" />
+                  : <iframe src={item.src} className="w-full h-full" style={{ border: 0 }} />
+              ) : (
+                <img src={item.src} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom spacer so the bottom sheet doesn't cover content */}
+      <div className="h-[360px]" />
 
       {landing.bottom_banner_url && (
-        <a href={landing.bottom_banner_link || "#"} className="block mx-4 mb-3 rounded-2xl overflow-hidden border border-[#d4af37]/40 shadow">
+        <a href={landing.bottom_banner_link || "#"} className="fixed inset-x-3 bottom-[340px] z-30 block rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
           <img src={landing.bottom_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
-      <div className="px-3 pb-4">
-        <AdSlot publisherId={landing.admob_publisher_id} slot={landing.admob_bottom_slot} height={100} />
-      </div>
-
-      {/* Premium bottom sheet — 3 vertical pill buttons stacked */}
       <ActionSheet open={sheetUp} merchant={m} links={links} playUrl={playUrl} />
     </div>
   );
@@ -228,11 +234,11 @@ function ActionSheet({
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 30, stiffness: 240 }}
-          className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t-2 border-[#d4af37] bg-gradient-to-b from-[#120a00] via-[#0a0700] to-black shadow-[0_-20px_60px_rgba(212,175,55,0.25)]"
+          className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
         >
-          <div className="mx-auto h-1.5 w-14 rounded-full bg-[#d4af37]/60 mt-2.5" />
-          <div className="px-5 pt-3 pb-6 space-y-3 max-w-md mx-auto">
-            <p className="text-center text-[10px] uppercase tracking-[0.25em] text-[#d4af37]">
+          <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
+          <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
+            <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
               Continue with
             </p>
 
@@ -242,20 +248,30 @@ function ActionSheet({
                 icon={<CreditCard className="h-5 w-5" />}
                 title="Make Trusted Payment"
                 subtitle={`${(links.payment_provider || "UPI").toUpperCase()} · ${links.payment_upi_id}`}
-                gradient="from-[#d4af37] via-[#b8860b] to-[#7a5200]"
-                textDark
+                gradient="from-orange-500 via-orange-600 to-amber-700"
               />
             )}
 
             {links.digital_shop_enabled && links.digital_shop_url && (
               <PillButton
-                href={links.digital_shop_url}
+                href={/^https?:\/\//i.test(links.digital_shop_url) ? links.digital_shop_url : `https://${links.digital_shop_url}`}
                 icon={<Store className="h-5 w-5" />}
                 title="Visit Digital Shop"
-                subtitle="Browse the merchant's catalogue"
-                gradient="from-[#1f2937] via-[#111827] to-black"
+                subtitle={links.digital_shop_url}
+                gradient="from-emerald-500 via-emerald-600 to-emerald-800"
               />
             )}
+
+            {(links.extra_links ?? []).filter((l) => l.enabled && l.url).map((l) => (
+              <PillButton
+                key={l.id}
+                href={/^https?:\/\//i.test(l.url) ? l.url : `https://${l.url}`}
+                icon={<ExternalLink className="h-5 w-5" />}
+                title={l.label || "Link"}
+                subtitle={l.url}
+                gradient="from-indigo-500 via-indigo-600 to-purple-700"
+              />
+            ))}
 
             {(links.play_store_enabled ?? true) && (
               <PillButton
@@ -263,23 +279,12 @@ function ActionSheet({
                 icon={<Download className="h-5 w-5" />}
                 title="Download Mobile App"
                 subtitle="Install Karo Online · Free"
-                gradient="from-emerald-600 via-emerald-700 to-emerald-900"
+                gradient="from-slate-800 via-slate-900 to-black"
               />
             )}
 
-            {(links.extra_links ?? []).filter((l) => l.enabled && l.url).map((l) => (
-              <PillButton
-                key={l.id}
-                href={l.url}
-                icon={<ExternalLink className="h-5 w-5" />}
-                title={l.label || "Link"}
-                subtitle={l.url}
-                gradient="from-slate-700 to-slate-900"
-              />
-            ))}
-
-            <p className="text-center text-[10px] text-[#d4af37]/70 pt-2">
-              Powered by <Link to="/" className="font-bold text-[#d4af37] underline">Karo Online</Link>
+            <p className="text-center text-[10px] text-slate-500 pt-1">
+              Powered by <Link to="/" className="font-bold text-amber-700 underline">Karo Online</Link>
             </p>
           </div>
         </motion.div>
@@ -289,20 +294,21 @@ function ActionSheet({
 }
 
 function PillButton({
-  href, icon, title, subtitle, gradient, textDark,
+  href, icon, title, subtitle, gradient,
 }: {
-  href: string; icon: React.ReactNode; title: string; subtitle: string;
-  gradient: string; textDark?: boolean;
+  href: string; icon: React.ReactNode; title: string; subtitle: string; gradient: string;
 }) {
   return (
     <a
       href={href}
-      className={`flex items-center gap-3 rounded-full px-5 py-4 shadow-lg active:scale-[0.98] transition bg-gradient-to-r ${gradient} ${textDark ? "text-black" : "text-white"} border ${textDark ? "border-[#fdf6e3]" : "border-white/10"}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex items-center gap-3 rounded-2xl px-4 py-3 shadow-md active:scale-[0.98] transition bg-gradient-to-r ${gradient} text-white`}
     >
-      <div className={`h-11 w-11 grid place-items-center rounded-full ${textDark ? "bg-black/15" : "bg-white/15"} shrink-0`}>{icon}</div>
+      <div className="h-10 w-10 grid place-items-center rounded-full bg-white/20 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <div className="font-bold leading-tight">{title}</div>
-        <div className={`text-[11px] truncate ${textDark ? "opacity-80" : "opacity-90"}`}>{subtitle}</div>
+        <div className="font-bold leading-tight text-sm">{title}</div>
+        <div className="text-[11px] truncate opacity-90">{subtitle}</div>
       </div>
     </a>
   );
@@ -310,11 +316,11 @@ function PillButton({
 
 function Fallback({ message, spinner }: { message: string; spinner?: boolean }) {
   return (
-    <div className="min-h-screen grid place-items-center bg-gradient-to-b from-[#0a0700] to-black text-amber-50 p-6">
+    <div className="min-h-screen grid place-items-center bg-white text-slate-900 p-6">
       <div className="text-center max-w-sm">
-        {spinner && <div className="h-10 w-10 rounded-full border-4 border-[#d4af37] border-t-transparent animate-spin mx-auto mb-4" />}
-        <h1 className="font-display text-2xl mb-2 text-[#d4af37]">Karo Online</h1>
-        <p className="text-sm text-amber-200/80">{message}</p>
+        {spinner && <div className="h-10 w-10 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto mb-4" />}
+        <h1 className="font-display text-2xl mb-2 text-amber-700">Karo Online</h1>
+        <p className="text-sm text-slate-600">{message}</p>
       </div>
     </div>
   );
