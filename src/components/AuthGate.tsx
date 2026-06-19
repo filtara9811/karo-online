@@ -10,7 +10,7 @@ const PUBLIC_EXACT = new Set([
   "/download", "/contact", "/services", "/privacy-policy", "/terms-and-conditions",
   "/refund-policy", "/shipping-policy",
 ]);
-const PUBLIC_PREFIXES = ["/blog", "/f/", "/c/", "/r/"];
+const PUBLIC_PREFIXES = ["/blog", "/f/", "/c/", "/r/", "/s/"];
 
 type AuthGateCtx = {
   /** Run `cb` if profile complete; otherwise open the login bottom sheet and run `cb` after it completes. */
