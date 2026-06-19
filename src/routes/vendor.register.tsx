@@ -861,8 +861,8 @@ function Step1Business(p: Step1Props) {
         <Field
           Icon={Sparkles}
           label="What you do"
-          hint={p.trade ? `Trade · ${p.trade}` : "Tap → choose trade"}
-          value={p.trade ? tradeLabel(p.trade) : ""}
+          hint={p.tradeSummary ? `Trade · ${p.tradeSummary}` : p.trade ? `Trade · ${p.trade}` : "Tap → choose trade"}
+          value={p.tradeSummary || (p.trade ? tradeLabel(p.trade) : "")}
           filled={!!p.trade}
           readOnly
           onClick={p.onPickTrade}
