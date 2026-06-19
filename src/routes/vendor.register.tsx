@@ -98,6 +98,8 @@ function VendorRegister() {
   const [ownerName, setOwnerName] = useState("");
   const [entity, setEntity] = useState<string | null>(null);
   const [trade, setTrade] = useState<string | null>(null);
+  const [tradeLinePath, setTradeLinePath] = useState<TradeSelection | null>(null);
+  const [tradePickerOpen, setTradePickerOpen] = useState(false);
   const [dealsIn, setDealsIn] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
