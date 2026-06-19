@@ -436,7 +436,9 @@ function VendorRegister() {
     }
   };
 
-  const stepLabels = ["Business | Details"];
+  // 3-phase progress bar: Details → Payment → Product Mapping
+  const stepLabels = ["Details", "Payment", "Product Mapping"];
+  const phaseIdx = showJoined ? 2 : step === 0 ? 0 : 1;
 
   // Show OTP/Google sign-in gate first if user not authenticated
   if (ready && !isAuthenticated) {
