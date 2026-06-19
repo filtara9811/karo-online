@@ -708,6 +708,19 @@ function VendorRegister() {
         />
       )}
 
+      <TradeCascadePicker
+        open={tradePickerOpen}
+        onClose={() => setTradePickerOpen(false)}
+        initial={tradeLinePath}
+        onComplete={(sel) => {
+          setTradeLinePath(sel);
+          // Top-level value drives existing single-string `trade` field for backwards compat
+          const top = sel.path[0]?.value ?? null;
+          setTrade(top);
+          setTradePickerOpen(false);
+        }}
+      />
+
       {showJoined && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-md">
           <div
