@@ -2791,6 +2791,7 @@ export type Database = {
           status: string
           tags: string[] | null
           trade: string | null
+          trade_line_path: Json | null
           updated_at: string
           user_id: string
           van_count: number
@@ -2842,6 +2843,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           trade?: string | null
+          trade_line_path?: Json | null
           updated_at?: string
           user_id: string
           van_count?: number
@@ -2893,6 +2895,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           trade?: string | null
+          trade_line_path?: Json | null
           updated_at?: string
           user_id?: string
           van_count?: number
@@ -4285,6 +4288,7 @@ export type Database = {
               status: string
               tags: string[] | null
               trade: string | null
+              trade_line_path: Json | null
               updated_at: string
               user_id: string
               van_count: number
@@ -4365,6 +4369,7 @@ export type Database = {
               status: string
               tags: string[] | null
               trade: string | null
+              trade_line_path: Json | null
               updated_at: string
               user_id: string
               van_count: number

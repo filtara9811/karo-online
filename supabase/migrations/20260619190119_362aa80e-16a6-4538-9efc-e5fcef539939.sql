@@ -1,0 +1,1 @@
+ALTER TABLE public.vendors ADD COLUMN IF NOT EXISTS trade_line_path JSONB;
