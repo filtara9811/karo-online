@@ -639,7 +639,8 @@ function VendorRegister() {
                     referral={referral}
                     onPickRole={() => setPicker("role")}
                     onPickEntity={() => setPicker("entity")}
-                    onPickTrade={() => setPicker("trade")}
+                    onPickTrade={() => setTradePickerOpen(true)}
+                    tradeSummary={summarizeSelection(tradeLinePath) || undefined}
                     onPickDealsIn={() => setPicker("dealsIn")}
                     setOwnerName={setOwnerName}
                     setBusinessName={setBusinessName}
