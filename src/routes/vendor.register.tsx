@@ -392,6 +392,19 @@ function VendorRegister() {
       setSaving(false);
     }
 
+    // Persist the full nested trade-line path (jsonb) on the vendor row.
+    // RLS allows the vendor to update their own row.
+    if (tradeLinePath && tradeLinePath.path.length > 0) {
+      try {
+        await supabase
+          .from("vendors")
+          .update({ trade_line_path: tradeLinePath as any })
+          .eq("user_id", user.id);
+      } catch (e) {
+        console.warn("[vendors trade_line_path] save failed", e);
+      }
+    }
+
     // Mark vendor as onboarded so /vendor/register auto-skips next time
     try {
       localStorage.setItem(`vendor:registered:${user.id}`, "1");
