@@ -168,7 +168,7 @@ function VendorRegister() {
       }
       const { data } = await supabase
         .from("vendors")
-        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .select("business_name, owner_name, role, entity, trade, trade_line_path, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
