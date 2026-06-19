@@ -401,9 +401,17 @@ function UpiPaymentModal({
         </div>
 
         <a
-          href={upiUri}
-          onClick={() => setTimeout(onClose, 600)}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-700 px-5 py-4 text-base font-extrabold text-white shadow-lg active:scale-[0.98]"
+          href={cleanAmount ? upiUri : undefined}
+          aria-disabled={!cleanAmount}
+          onClick={(e) => {
+            if (!cleanAmount) {
+              e.preventDefault();
+              document.getElementById("upi-amount")?.focus();
+              return;
+            }
+            setTimeout(onClose, 600);
+          }}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-700 px-5 py-4 text-base font-extrabold text-white shadow-lg active:scale-[0.98] aria-disabled:opacity-55"
         >
           <Smartphone className="h-5 w-5" /> Pay via UPI App
         </a>
