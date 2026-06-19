@@ -178,6 +178,8 @@ function VendorRegister() {
         setOwnerName((data as any).owner_name ?? "");
         setEntity((data as any).entity ?? null);
         setTrade((data as any).trade ?? null);
+        const tlp = (data as any).trade_line_path;
+        if (tlp && Array.isArray(tlp.path)) setTradeLinePath(tlp as TradeSelection);
         setDealsIn((data as any).deals_in ?? null);
         setBusinessName((data as any).business_name ?? "");
         setWhatsapp((data as any).whatsapp ?? "");
