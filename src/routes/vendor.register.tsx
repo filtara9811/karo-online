@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { TradeCascadePicker } from "@/components/TradeCascadePicker";
+import { summarizeSelection, type TradeSelection } from "@/lib/trade-tree";
 import { RegistrationFlow } from "@/components/RegistrationFlow";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,6 +98,8 @@ function VendorRegister() {
   const [ownerName, setOwnerName] = useState("");
   const [entity, setEntity] = useState<string | null>(null);
   const [trade, setTrade] = useState<string | null>(null);
+  const [tradeLinePath, setTradeLinePath] = useState<TradeSelection | null>(null);
+  const [tradePickerOpen, setTradePickerOpen] = useState(false);
   const [dealsIn, setDealsIn] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -164,7 +168,7 @@ function VendorRegister() {
       }
       const { data } = await supabase
         .from("vendors")
-        .select("business_name, owner_name, role, entity, trade, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
+        .select("business_name, owner_name, role, entity, trade, trade_line_path, deals_in, whatsapp, manager_email, email, current_team_count, van_count, referral, instagram, facebook, website, google_place_id, aadhaar, pan, gst")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -174,6 +178,8 @@ function VendorRegister() {
         setOwnerName((data as any).owner_name ?? "");
         setEntity((data as any).entity ?? null);
         setTrade((data as any).trade ?? null);
+        const tlp = (data as any).trade_line_path;
+        if (tlp && Array.isArray(tlp.path)) setTradeLinePath(tlp as TradeSelection);
         setDealsIn((data as any).deals_in ?? null);
         setBusinessName((data as any).business_name ?? "");
         setWhatsapp((data as any).whatsapp ?? "");
@@ -386,6 +392,19 @@ function VendorRegister() {
       setSaving(false);
     }
 
+    // Persist the full nested trade-line path (jsonb) on the vendor row.
+    // RLS allows the vendor to update their own row.
+    if (tradeLinePath && tradeLinePath.path.length > 0) {
+      try {
+        await supabase
+          .from("vendors")
+          .update({ trade_line_path: tradeLinePath as any })
+          .eq("user_id", user.id);
+      } catch (e) {
+        console.warn("[vendors trade_line_path] save failed", e);
+      }
+    }
+
     // Mark vendor as onboarded so /vendor/register auto-skips next time
     try {
       localStorage.setItem(`vendor:registered:${user.id}`, "1");
@@ -432,7 +451,9 @@ function VendorRegister() {
     }
   };
 
-  const stepLabels = ["Business | Details"];
+  // 3-phase progress bar: Details → Payment → Product Mapping
+  const stepLabels = ["Details", "Payment", "Product Mapping"];
+  const phaseIdx = showJoined ? 2 : step === 0 ? 0 : 1;
 
   // Show OTP/Google sign-in gate first if user not authenticated
   if (ready && !isAuthenticated) {
@@ -615,7 +636,7 @@ function VendorRegister() {
             ) : step < 1 ? (
               <>
                 {/* Stepper (single step — Social & KYC moved to menu) */}
-                <Stepper current={step} labels={stepLabels} />
+                <Stepper current={phaseIdx} labels={stepLabels} />
 
                 {/* Step content */}
                 <div className="mt-5">
@@ -633,7 +654,8 @@ function VendorRegister() {
                     referral={referral}
                     onPickRole={() => setPicker("role")}
                     onPickEntity={() => setPicker("entity")}
-                    onPickTrade={() => setPicker("trade")}
+                    onPickTrade={() => setTradePickerOpen(true)}
+                    tradeSummary={summarizeSelection(tradeLinePath) || undefined}
                     onPickDealsIn={() => setPicker("dealsIn")}
                     setOwnerName={setOwnerName}
                     setBusinessName={setBusinessName}
@@ -700,6 +722,19 @@ function VendorRegister() {
           onClose={() => setPicker(null)}
         />
       )}
+
+      <TradeCascadePicker
+        open={tradePickerOpen}
+        onClose={() => setTradePickerOpen(false)}
+        initial={tradeLinePath}
+        onComplete={(sel) => {
+          setTradeLinePath(sel);
+          // Top-level value drives existing single-string `trade` field for backwards compat
+          const top = sel.path[0]?.value ?? null;
+          setTrade(top);
+          setTradePickerOpen(false);
+        }}
+      />
 
       {showJoined && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-md">
@@ -799,6 +834,7 @@ type Step1Props = {
   onPickRole: () => void;
   onPickEntity: () => void;
   onPickTrade: () => void;
+  tradeSummary?: string;
   onPickDealsIn: () => void;
   setOwnerName: (v: string) => void;
   setBusinessName: (v: string) => void;
@@ -853,8 +889,8 @@ function Step1Business(p: Step1Props) {
         <Field
           Icon={Sparkles}
           label="What you do"
-          hint={p.trade ? `Trade · ${p.trade}` : "Tap → choose trade"}
-          value={p.trade ? tradeLabel(p.trade) : ""}
+          hint={p.tradeSummary ? `Trade · ${p.tradeSummary}` : p.trade ? `Trade · ${p.trade}` : "Tap → choose trade"}
+          value={p.tradeSummary || (p.trade ? tradeLabel(p.trade) : "")}
           filled={!!p.trade}
           readOnly
           onClick={p.onPickTrade}
