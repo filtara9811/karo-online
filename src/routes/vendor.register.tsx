@@ -806,6 +806,7 @@ type Step1Props = {
   onPickRole: () => void;
   onPickEntity: () => void;
   onPickTrade: () => void;
+  tradeSummary?: string;
   onPickDealsIn: () => void;
   setOwnerName: (v: string) => void;
   setBusinessName: (v: string) => void;
