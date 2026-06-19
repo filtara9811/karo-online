@@ -621,7 +621,7 @@ function VendorRegister() {
             ) : step < 1 ? (
               <>
                 {/* Stepper (single step — Social & KYC moved to menu) */}
-                <Stepper current={step} labels={stepLabels} />
+                <Stepper current={phaseIdx} labels={stepLabels} />
 
                 {/* Step content */}
                 <div className="mt-5">
