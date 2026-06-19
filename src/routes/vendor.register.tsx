@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { LuxPicker, type PickerOption } from "@/components/LuxPicker";
+import { TradeCascadePicker } from "@/components/TradeCascadePicker";
+import { summarizeSelection, type TradeSelection } from "@/lib/trade-tree";
 import { RegistrationFlow } from "@/components/RegistrationFlow";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
