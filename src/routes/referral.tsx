@@ -42,7 +42,37 @@ export function ReferralPage() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [qrPosterOpen, setQrPosterOpen] = useState(false);
   const [code44, setCode44] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ReferralStatusFilter>("all");
+  const [segment, setSegment] = useState<"link" | "qr" | "card">("link");
+  const [traffic, setTraffic] = useState<{ link: number; qr: number; card: number; referrals: number }>({ link: 0, qr: 0, card: 0, referrals: 0 });
+  const [visitsSheet, setVisitsSheet] = useState<null | "qr" | "card" | "link">(null);
   const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
+
+  // Pull traffic counts (QR / Card / Link)
+  useEffect(() => {
+    supabase.rpc("get_referral_traffic_counts").then(({ data }) => {
+      if (data) setTraffic(data as any);
+    });
+  }, [data]);
+
+  // Withdraw click → check KYC; if not approved, go to KYC page
+  const onWithdrawClick = async () => {
+    if (!profile?.user_id) return setWithdrawOpen(true);
+    const { data: kyc } = await supabase
+      .from("kyc_verifications")
+      .select("status,check_type")
+      .eq("subject_user_id", profile.user_id);
+    const approved = (kyc ?? []).filter((k) => ["approved", "verified", "passed"].includes(String(k.status).toLowerCase()));
+    const needed = ["selfie", "aadhaar", "pan", "bank"];
+    const ok = needed.every((n) => approved.some((k) => k.check_type === n));
+    if (!ok) {
+      toast.info("Pehle KYC complete karein — Bank, PAN aur Aadhaar verify hone par hi withdrawal allowed hai.");
+      router.navigate({ to: "/vendor/kyc" });
+      return;
+    }
+    setWithdrawOpen(true);
+  };
 
   // Generate the 4+4 code (ASHU9876) once we have name + phone.
   useEffect(() => {
