@@ -59,8 +59,6 @@ export function ReferralPage() {
   }, [profile?.name, profile?.phone, data?.code]);
 
   const displayCode = code44 ?? data?.code ?? "";
-  const playStoreBase = data?.settings.play_store_url || DEFAULT_PLAY_STORE;
-
   const shareUrl = useMemo(() => {
     if (!displayCode) return "";
     const origin = typeof window !== "undefined" ? window.location.origin : "https://karoonline.in";
