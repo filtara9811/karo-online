@@ -467,7 +467,7 @@ function SelfieStep({
       </div>
 
       <button
-        onClick={submit} disabled={busy}
+        onClick={() => submit(false)} disabled={busy}
         className="mt-4 w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold shadow-lg active:scale-95 transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
