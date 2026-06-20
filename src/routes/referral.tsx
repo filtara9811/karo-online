@@ -63,15 +63,12 @@ export function ReferralPage() {
 
   const shareUrl = useMemo(() => {
     if (!displayCode) return "";
-    const referrer = encodeURIComponent(
-      `utm_source=referral&utm_medium=whatsapp&utm_campaign=refer_earn&code=${displayCode}`,
-    );
-    const sep = playStoreBase.includes("?") ? "&" : "?";
-    return `${playStoreBase}${sep}referrer=${referrer}`;
-  }, [displayCode, playStoreBase]);
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://karoonline.in";
+    return `${origin}/r/${encodeURIComponent(displayCode)}`;
+  }, [displayCode]);
 
   const shareText = displayCode
-    ? `🎁 Refer & Earn ₹${data?.settings.base_reward_amount ?? 200} on Karo Online!\n\nUse my code *${displayCode}* to sign up and we both get rewarded.\n\n📲 Install the app 👉 ${shareUrl}`
+    ? `🎁 Get ₹200 for you & ₹100 for your friend!\n\nUse my code *${displayCode}* on Karo Online.\n\n📲 Tap here 👉 ${shareUrl}`
     : "";
 
   const copyCode = async () => {
@@ -185,7 +182,7 @@ export function ReferralPage() {
             <div>
               <p className="text-[10px] uppercase tracking-wider text-amber-200/80 font-bold">Total wallet earnings</p>
               <p className="font-display text-4xl font-extrabold mt-0.5 text-[#fff8dc] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
-                ₹{(data?.wallet.total ?? 0).toLocaleString()}
+                ₹{(data?.wallet.grand_total ?? data?.wallet.total ?? 0).toLocaleString()}
               </p>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
@@ -193,8 +190,8 @@ export function ReferralPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            <SplitStat icon={Users} label="Direct earnings" value={`₹${(data?.wallet.personal ?? 0).toLocaleString()}`} tone="text-emerald-300" />
-            <SplitStat icon={Sparkles} label="Team earnings" value={`₹${(data?.wallet.team ?? 0).toLocaleString()}`} tone="text-amber-300" />
+            <SplitStat icon={Users} label="Available Balance" value={`₹${(data?.wallet.available ?? data?.wallet.total ?? 0).toLocaleString()}`} tone="text-emerald-300" />
+            <SplitStat icon={Sparkles} label="Locked Bonus" value={`₹${(data?.wallet.locked ?? 0).toLocaleString()}`} tone="text-amber-300" />
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             <SplitStat icon={Clock} label="Today" value={`₹${(data?.wallet.today ?? 0).toLocaleString()}`} tone="text-sky-300" />

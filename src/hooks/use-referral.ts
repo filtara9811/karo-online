@@ -43,8 +43,13 @@ export type ReferralRow = {
 
 export type ReferralWallet = {
   total: number;
+  available?: number;
+  locked?: number;
+  grand_total?: number;
   personal: number;
   team: number;
+  personal_locked?: number;
+  team_locked?: number;
   today: number;
   this_month: number;
 };

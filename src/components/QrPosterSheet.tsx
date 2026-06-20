@@ -31,6 +31,7 @@ export function QrPosterSheet({
   open,
   onOpenChange,
   code,
+  shareUrl,
   defaultName,
 }: {
   open: boolean;
@@ -57,8 +58,8 @@ export function QrPosterSheet({
   const replaceKind = useRef<"image" | "video">("image");
 
   const landingUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/s/${encodeURIComponent(code || "")}`
-    : `https://karoonline.in/s/${code}`;
+    ? (shareUrl || `${window.location.origin}/s/${encodeURIComponent(code || "")}`)
+    : (shareUrl || `https://karoonline.in/s/${code}`);
   const active = media[activeIdx];
   const activeBgSrc = active?.type === "image" ? active.src : (media[0]?.type === "image" ? media[0].src : DEFAULT_COVER_URL);
   const activeTransform = useMemo(() => transforms[activeIdx] ?? { x: 0, y: 0, scale: 1 }, [transforms, activeIdx]);
@@ -276,6 +277,7 @@ export function QrPosterSheet({
       "",
       "🛡️ Trusted Karo Online Merchant",
       `🔗 ${landingUrl}`,
+      "✨ Benefits: verified vendors, quick service requests, referral rewards, and secure wallet tracking.",
     ].filter(Boolean).join("\n");
   };
 
