@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
+import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
 import { Sparkles, Gift, Wallet, Users, ShieldCheck, Download } from "lucide-react";
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
@@ -45,6 +47,14 @@ function RefAttribution() {
     try {
       window.localStorage.setItem(REFERRAL_PENDING_KEY, code);
       document.cookie = `ko_ref=${encodeURIComponent(code)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      // Fire-and-forget visit log (de-duped 24h by device fingerprint)
+      supabase.rpc("log_referral_visit", {
+        _code: code,
+        _source: "link",
+        _fp_hash: getVisitFp(),
+        _ip_hash: undefined,
+        _user_agent: navigator.userAgent || undefined,
+      });
     } catch { /* ignore */ }
     const ua = navigator.userAgent || "";
     const isAndroid = /Android/i.test(ua);

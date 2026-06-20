@@ -455,23 +455,67 @@ function BannersTab() {
 }
 
 function TopReferrersTab({ data }: { data: Overview | null }) {
+  const [activeMap, setActiveMap] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ids = (data?.top_referrers ?? []).map((u) => u.user_id);
+    if (ids.length === 0) return;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("customers")
+        .select("user_id, referral_active")
+        .in("user_id", ids);
+      const m: Record<string, boolean> = {};
+      (rows ?? []).forEach((r: any) => { m[r.user_id] = r.referral_active !== false; });
+      ids.forEach((id) => { if (m[id] === undefined) m[id] = true; });
+      setActiveMap(m);
+    })();
+  }, [data?.top_referrers]);
+
+  const toggle = async (userId: string) => {
+    const next = !(activeMap[userId] ?? true);
+    setBusy(userId);
+    const { error } = await supabase.rpc("admin_toggle_referral_active", { _user_id: userId, _active: next });
+    setBusy(null);
+    if (error) { alert(error.message); return; }
+    setActiveMap((m) => ({ ...m, [userId]: next }));
+  };
+
   return (
     <GoldCard className="p-5">
-      <h3 className="font-display font-bold text-[#fff8dc] mb-4 flex items-center gap-2"><Crown className="h-4 w-4 text-[#d4af37]" /> Leaderboard</h3>
+      <h3 className="font-display font-bold text-[#fff8dc] mb-4 flex items-center gap-2">
+        <Crown className="h-4 w-4 text-[#d4af37]" /> Leaderboard
+        <span className="ml-auto text-[10px] uppercase tracking-widest text-[#f5d97a]/60 font-normal">Toggle = pause/resume earnings</span>
+      </h3>
       <div className="space-y-2">
-        {(data?.top_referrers ?? []).map((u, i) => (
-          <div key={u.user_id} className="flex items-center gap-3 p-3 rounded-lg border border-[#d4af37]/15 bg-black/20">
-            <div className="h-9 w-9 rounded-full grid place-items-center text-[#1a1208] text-sm font-bold"
-                 style={{ background: i < 3 ? "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)" : "rgba(212,175,55,0.2)", color: i < 3 ? "#1a1208" : "#fff8dc" }}>
-              {i + 1}
+        {(data?.top_referrers ?? []).map((u, i) => {
+          const active = activeMap[u.user_id] ?? true;
+          return (
+            <div key={u.user_id} className="flex items-center gap-3 p-3 rounded-lg border border-[#d4af37]/15 bg-black/20">
+              <div className="h-9 w-9 rounded-full grid place-items-center text-sm font-bold"
+                   style={{ background: i < 3 ? "linear-gradient(180deg, #fff8dc 0%, #d4af37 100%)" : "rgba(212,175,55,0.2)", color: i < 3 ? "#1a1208" : "#fff8dc" }}>
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-[#fff8dc] font-bold truncate">{u.name || u.phone || u.user_id.slice(0, 8)}</p>
+                <p className="text-[10px] text-[#f5d97a]/60">{u.successful} successful · {u.total} invites</p>
+              </div>
+              <p className="text-sm font-bold text-emerald-300">₹{Number(u.earnings).toLocaleString()}</p>
+              <button
+                onClick={() => toggle(u.user_id)}
+                disabled={busy === u.user_id}
+                className={`relative h-6 w-11 rounded-full transition ${active ? "bg-emerald-500" : "bg-slate-500"} disabled:opacity-50`}
+                aria-label={active ? "Pause referrer" : "Resume referrer"}
+              >
+                <span className={`absolute top-0.5 ${active ? "left-[22px]" : "left-0.5"} h-5 w-5 rounded-full bg-white shadow transition-all`} />
+              </button>
+              <span className={`text-[9px] uppercase tracking-widest font-bold ${active ? "text-emerald-300" : "text-rose-300"}`}>
+                {active ? "Active" : "Paused"}
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-[#fff8dc] font-bold truncate">{u.name || u.phone || u.user_id.slice(0, 8)}</p>
-              <p className="text-[10px] text-[#f5d97a]/60">{u.successful} successful · {u.total} invites</p>
-            </div>
-            <p className="text-sm font-bold text-emerald-300">₹{Number(u.earnings).toLocaleString()}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </GoldCard>
   );

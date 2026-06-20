@@ -121,6 +121,16 @@ function ScanLandingPage() {
       setData(next);
       if (next.ok) writeCache(code, next);
     })();
+    // Log visit (QR scans land here)
+    import("@/lib/visit-fp").then(({ getVisitFp }) => {
+      supabase.rpc("log_referral_visit", {
+        _code: code,
+        _source: "qr",
+        _fp_hash: getVisitFp(),
+        _ip_hash: undefined,
+        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      });
+    });
     const t = setTimeout(() => setSheetUp(true), 280);
     return () => { cancelled = true; clearTimeout(t); };
   }, [code]);

@@ -1,80 +1,89 @@
-# QR Hub – Final Refinements Plan
+# Plan: KYC Flow + Referral Dashboard + Admin Control
 
-Scope: complete the QR Hub poster creator, setup sheet, public landing page, and Razorpay premium flow. Match the annotated screenshots exactly. No new business logic outside what is listed.
+## 1. KYC Flow Fixes (`src/components/KycStepFlow.tsx`)
 
----
+**Selfie auto-advance**
+- After successful upload + save of selfie URL, auto-jump to Aadhaar step (no manual "Next").
+- Show ✓ green tick overlay on the captured selfie for 600ms before sliding.
 
-## 1. Poster Creator (`src/components/QrPosterSheet.tsx`)
+**Form stability (PAN + Bank)**
+- Replace controlled inputs that re-render entire flow on every keystroke with locally-memoised `useRef`-backed input state, or move PAN/Bank inputs into separate sub-components with their own `useState` so parent re-renders don't blur the field.
+- Stop calling `supabase` save on every change — only persist on field blur or on "Save & Continue".
 
-### 1a. Pan/Zoom shop image
-- Add a `PanZoomFrame` wrapper around the main hero image with:
-  - 1-finger drag (pointer events) to shift X/Y
-  - 2-finger pinch (touch events) to scale 1×–4×
-  - Mouse-wheel + drag fallback for desktop testing
-  - Bounds clamp so the image always covers the frame
-- Persist `{ x, y, scale }` per slot to `merchant_link_settings.poster_bg_transforms` (jsonb keyed by slot index). Migration already exists.
+**Stepper tick indicators**
+- Top stepper (Selfie | Aadhaar | PAN | Bank): show ✅ for each completed step, ⏳ for current, ⚪ for upcoming.
+- Step header badge: "Pending" → "Completed ✓" once data saved.
 
-### 1b. Multi-media thumbnail slots
-- Each of the 3 slots accepts: image upload, short video upload (mp4/webm ≤ 15 MB), OR a pasted URL (YouTube/Instagram/direct video).
-- Tap slot when empty → small chooser popover: "Photo · Video · Paste URL".
-- Persist as `poster_media: [{ type:'image'|'video'|'url', src, provider? }]` (column already in migration).
-- Active slot renders correctly in preview: `<img>` for image, `<video autoplay muted loop playsinline>` for video, embedded `<iframe>` for YouTube/Insta URL.
+## 2. Referral Dashboard Overhaul (`src/routes/referral.tsx`)
 
-### 1c. QR center logo
-- Use `karoLogoAsset.url` (gold map-pin) drawn cleanly onto QR canvas. Remove the "K" text fallback path – on error just leave the gold ring blank rather than showing a stray letter.
-- Increase center clear-area + EC level `H` (already set) so scanning is reliable.
+**Header (keep current dark wallet card)**
+- "Total Wallet Earnings" + Available / Locked Bonus boxes — unchanged.
+- Add **funnel filter icon** in top-right of the wallet header.
 
-### 1d. Bold name strip + avatar
-- Left: circular avatar (40px) showing merchant `avatar_url` (from profiles) with `Camera` overlay to upload/replace.
-- Center: shop name in **bold display font** (`font-display font-extrabold tracking-tight`).
-- Right: pencil edit icon as today.
+**Filter sheet (bottom sheet)**
+- Status: All / Pending / Successful
+- Traffic source: All / QR Code Visitors / Business Card / Direct Referral Link
+- Filters apply to "Your referrals" list below.
 
-### 1e. Split bottom action bar – matches Quick Service bottom sheet style
-- Replace the current 3-button row with a single pill bar (rounded-full, white, gold border) split in half:
-  - Left half: `Download` icon + label
-  - Vertical divider
-  - Right half: `Link Menu` (globe icon) + label
-- Left half → opens **DownloadShareSheet** (new bottom Drawer) with two large action tiles:
-  - **Download QR** → renders blob, shows circular spinner → green check tick animation on success → save/share to gallery.
-  - **Share | QR** → native `navigator.share` with file (WhatsApp first-class).
-- Right half → opens existing `MerchantLinksSetupSheet` (Setup Scan Actions).
-- Remove the centre "+" FAB.
+**Segment strip (under wallet card, above list)** — matches your red-circled area
+- 3 pill chips: `↗ Referral join` | `QR visitor` | `Business card`
+- Tapping a chip switches the list source (referrals table / qr_visits / vcard_visits) and updates counters.
 
----
+**Referral card redesign** (per screenshot 1)
+- Replace phone `9810758733` with **`Joined: 20 Jun 2026`** (use `referrals.created_at`).
+- Keep avatar + name + ON UNLOCK ₹200 + milestones strip.
+- Remove Call/WhatsApp big buttons → move to overflow.
+- Add **team earnings strip** below milestones: avatar stack + `₹243` + `12 Team` + chevron → opens bottom sheet listing downline users with their individual earnings contribution.
 
-## 2. Setup Scan Actions (`src/components/MerchantLinksSetupSheet.tsx`)
+**New bottom sheets**
+- `TeamEarningsSheet` — lists level-2 referrals of this user with per-person ₹ earned (uses existing `get_my_referral_overview` extended or new RPC `get_referral_downline(_referral_id)`).
+- `QrVisitorsSheet` / `BusinessCardVisitorsSheet` — list of visits with timestamp + WhatsApp icon on right; long-press multi-select → bulk WhatsApp share with promo template.
 
-- Provider dropdown gains an **"Other"** option → reveals a free-text "Custom payload" field that is stored as-is into the UPI/VPA value.
-- UPI/VPA input row: add a small `ScanLine`/`Camera` icon button on the right end. Click opens new `VpaScannerSheet` (already drafted) – live camera, `BarcodeDetector` (with `jsQR` wasm fallback if unavailable), parses `upi://pay?pa=...&pn=...` and writes `pa` back into the input.
-- "Update Payment Details" button persists via existing RPC.
+## 3. Withdraw → KYC Gate
 
----
+- `WithdrawGateSheet` (or wherever the "Withdraw to Bank" button lives in `referral.tsx`):
+  - On click: check `kyc_verifications.status` for current user.
+  - If not `approved` → router.navigate to `/vendor/kyc` (or open KycStepFlow sheet) directly, with toast "KYC pending — complete to withdraw".
+  - If approved → open payout request modal as today.
 
-## 3. Public Landing Page (`src/routes/s.$code.tsx`)
+## 4. Backend additions
 
-- Strip all marketplace chrome: no search bar, no global header, no profile menu. Render as a standalone single-screen page.
-- Layout mirrors the poster:
-  1. Media card at top: shows the same active poster media (image / video / URL embed) using the same `poster_media` payload.
-  2. Bold shop name + avatar strip.
-  3. Three vertical CTA buttons stacked, large, full-width:
-     - **Make Trusted Payment** – `upi://pay?pa=<vpa>&pn=<name>` deep link; hidden if Payment toggle OFF.
-     - **Visit Digital Shop** – merchant `digital_shop_url`; hidden if toggle OFF.
-     - **Download Mobile App** – device-aware: iOS → `ios_app_url` (App Store), else → Play Store URL with `?referrer=karo_<code>`. Always visible.
-- Loader prefetches the merchant row server-side via existing `get_public_merchant_by_code` RPC → first paint ≈ 1 s. No client `useEffect` waterfalls.
+**New table** `referral_link_visits`
+- columns: `id`, `referrer_user_id`, `source` (`qr` | `vcard` | `link`), `code`, `visitor_ip_hash`, `user_agent`, `created_at`
+- GRANT + RLS: owner can SELECT own; service_role full; anon INSERT via public route.
+- Update `/r/$code`, `/c/$code`, QR scan route to log a row.
 
----
+**New RPC** `get_referral_traffic_counts(_user_id uuid)`
+- Returns `{ qr_visits, vcard_visits, link_visits, total_referrals, pending, successful }`.
 
-## 4. Razorpay Premium Fix (`src/lib/premium-links.functions.ts` + `src/lib/razorpay-client.ts`)
+**New RPC** `get_referral_downline(_referral_id uuid)`
+- Returns each downline user + their lifetime earnings contribution.
 
-- Ensure `Razorpay` script is loaded once and the `handler` callback invokes `verify_premium_payment` server fn with `{ order_id, payment_id, signature }`.
-- Fix hanging: wrap script-load in a promise with 8 s timeout + toast on failure; ensure `modal.ondismiss` resolves so the calling component re-enables the CTA.
-- On verify success: optimistic update `is_premium=true` in the parent query cache, close modal, toast success.
+**Admin toggle** — `vendors.active` / `customers.referral_active` boolean (add column if missing):
+- New RPC `admin_toggle_referral_active(_user_id, _active)` — admin-only via `is_admin_user()`.
+- Database trigger on `referral_rewards` INSERT: if `referrer.referral_active = false`, block reward creation.
+- `src/routes/admin.referrals.tsx`: add per-row toggle switch that calls the RPC.
 
----
+## 5. Referral flow explainer (Hindi summary in chat reply)
 
-## 5. Technical details
+After implementation, I'll explain in Hindi:
+- Sign-up → `apply_referral_code` inserts 3 locked rewards (₹200 referrer + ₹100 new user + ₹100 L1 upline)
+- 1st service request → trigger releases that user's reward
+- Vendor onboarding complete → trigger releases vendor reward
+- Admin toggle off → future rewards blocked, existing locked stay locked
 
-- Files to create: `src/components/PanZoomFrame.tsx`, `src/components/DownloadShareSheet.tsx`, `src/components/VpaScannerSheet.tsx` (finalize), `src/components/MediaSlotChooser.tsx`.
-- Files to edit: `QrPosterSheet.tsx`, `MerchantLinksSetupSheet.tsx`, `s.$code.tsx`, `premium-links.functions.ts`, `razorpay-client.ts`.
-- DB: no new migrations — `poster_media`, `poster_bg_transforms`, `ios_app_url` already added in earlier migrations.
-- Verification: rely on the harness build/typecheck; spot-check with Playwright by opening the QR poster sheet and the landing page at `/s/<test-code>`.
+## Files to touch
+- `src/components/KycStepFlow.tsx` — auto-advance, stable inputs, step ticks
+- `src/routes/referral.tsx` — header filter, segment strip, redesigned cards, withdraw gate
+- `src/components/WithdrawGateSheet.tsx` — KYC gate logic
+- `src/components/TeamEarningsSheet.tsx` *(new)*
+- `src/components/TrafficVisitorsSheet.tsx` *(new — QR + vcard visitors)*
+- `src/components/ReferralFilterSheet.tsx` *(new)*
+- `src/routes/admin.referrals.tsx` — active/inactive toggle
+- `src/routes/r.$code.tsx`, `src/routes/c.$code.tsx`, QR scan route — log visits
+- 1 migration: `referral_link_visits` table, traffic-count RPC, downline RPC, `referral_active` column + trigger, admin toggle RPC
+
+## Open questions before I build
+1. **Visit dedupe** — should repeat visits from the same IP/device within 24h count as 1 visit or N visits?
+2. **WhatsApp bulk send** — browser cannot send to multiple numbers in one tap; the best UX is one `wa.me/<num>?text=...` per contact opened sequentially OR copy-all-numbers + message to clipboard. Which do you prefer?
+3. **Admin toggle scope** — pausing a referrer should block (a) only future rewards, or (b) also hide their existing locked rewards from their wallet?

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, Share2, MessageCircle, Check, Gift, Wallet, Clock,
   ChevronLeft, Sparkles, Phone, Download, TrendingUp, AlertCircle,
-  Banknote, X, Users, Repeat, PauseCircle,
+  Banknote, X, Users, Repeat, PauseCircle, Filter, Eye,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReferralOverview, ensureMyCode44, type ReferralRow } from "@/hooks/use-referral";
@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { WithdrawGateSheet } from "@/components/WithdrawGateSheet";
 import { ReferralBannerCarousel } from "@/components/ReferralBannerCarousel";
+import { ReferralFilterSheet, type ReferralStatusFilter } from "@/components/ReferralFilterSheet";
+import { TrafficVisitorsSheet } from "@/components/TrafficVisitorsSheet";
 import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
@@ -40,7 +42,37 @@ export function ReferralPage() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [qrPosterOpen, setQrPosterOpen] = useState(false);
   const [code44, setCode44] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ReferralStatusFilter>("all");
+  const [segment, setSegment] = useState<"link" | "qr" | "card">("link");
+  const [traffic, setTraffic] = useState<{ link: number; qr: number; card: number; referrals: number }>({ link: 0, qr: 0, card: 0, referrals: 0 });
+  const [visitsSheet, setVisitsSheet] = useState<null | "qr" | "card" | "link">(null);
   const referralUnreadItems = items.filter((item) => item.bucket === "referral" && !item.read);
+
+  // Pull traffic counts (QR / Card / Link)
+  useEffect(() => {
+    supabase.rpc("get_referral_traffic_counts").then(({ data }) => {
+      if (data) setTraffic(data as any);
+    });
+  }, [data]);
+
+  // Withdraw click → check KYC; if not approved, go to KYC page
+  const onWithdrawClick = async () => {
+    if (!profile?.user_id) return setWithdrawOpen(true);
+    const { data: kyc } = await supabase
+      .from("kyc_verifications")
+      .select("status,check_type")
+      .eq("subject_user_id", profile.user_id);
+    const approved = (kyc ?? []).filter((k) => ["approved", "verified", "passed"].includes(String(k.status).toLowerCase()));
+    const needed = ["selfie", "aadhaar", "pan", "bank"];
+    const ok = needed.every((n) => approved.some((k) => k.check_type === n));
+    if (!ok) {
+      toast.info("Pehle KYC complete karein — Bank, PAN aur Aadhaar verify hone par hi withdrawal allowed hai.");
+      router.navigate({ to: "/vendor/kyc" });
+      return;
+    }
+    setWithdrawOpen(true);
+  };
 
   // Generate the 4+4 code (ASHU9876) once we have name + phone.
   useEffect(() => {
@@ -87,6 +119,14 @@ export function ReferralPage() {
   const banner = data?.settings;
   const programPaused = data?.settings && data.settings.is_active === false;
   const baseReward = data?.settings.base_reward_amount ?? 200;
+
+  const filteredReferrals = useMemo(() => {
+    const rows = data?.referrals ?? [];
+    if (statusFilter === "pending") return rows.filter((r) => !r.progress.reward_released);
+    if (statusFilter === "successful") return rows.filter((r) => r.progress.reward_released);
+    return rows;
+  }, [data?.referrals, statusFilter]);
+
 
   if (!loading && programPaused) {
     return (
@@ -183,8 +223,17 @@ export function ReferralPage() {
                 ₹{(data?.wallet.grand_total ?? data?.wallet.total ?? 0).toLocaleString()}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
-              <TrendingUp className="h-6 w-6 text-amber-300" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFilterOpen(true)}
+                aria-label="Filter referrals"
+                className="h-10 w-10 rounded-2xl bg-white/10 grid place-items-center active:scale-95 border border-white/15"
+              >
+                <Filter className="h-4 w-4 text-amber-200" />
+              </button>
+              <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
+                <TrendingUp className="h-6 w-6 text-amber-300" />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4">
@@ -204,46 +253,70 @@ export function ReferralPage() {
             <button onClick={openWhatsApp} className="rounded-xl bg-white/10 backdrop-blur border border-white/15 px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2 active:scale-95">
               <Share2 className="h-3.5 w-3.5" /> Share again
             </button>
-            <button onClick={() => setWithdrawOpen(true)} className="rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b45309] text-[#1a1208] px-3 py-2 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-amber-900/50">
+            <button onClick={onWithdrawClick} className="rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b45309] text-[#1a1208] px-3 py-2 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-amber-900/50">
               <Banknote className="h-3.5 w-3.5" /> Withdraw to Bank
             </button>
           </div>
         </section>
 
-        {/* Referral list */}
-        <section>
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
-              Your referrals
-              {counts.referral > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
-                  {counts.referral > 99 ? "99+" : counts.referral}
-                </span>
-              )}
-            </h3>
-            <span className="text-[11px] text-slate-500">{data?.referrals.length ?? 0} total</span>
-          </div>
-
-          {loading && <p className="text-center text-xs text-slate-400 py-8">Loading…</p>}
-          {!loading && (data?.referrals.length ?? 0) === 0 && (
-            <div className="rounded-2xl bg-white border border-amber-200 p-6 text-center">
-              <Gift className="h-8 w-8 text-amber-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-600 font-semibold">No referrals yet</p>
-              <p className="text-xs text-slate-400 mt-1">Share your code to start earning</p>
-            </div>
-          )}
-          <div className="space-y-3">
-            {data?.referrals.map((r) => (
-              <FlipReferralCard
-                key={r.id}
-                row={r}
-                onDetails={() => setActiveRow(r)}
-                shareText={shareText}
-                baseReward={baseReward}
-              />
-            ))}
-          </div>
+        {/* Traffic segment chips — switch list source */}
+        <section className="grid grid-cols-3 gap-2">
+          <SegmentChip
+            active={segment === "link"}
+            onClick={() => setSegment("link")}
+            onLongPress={() => setVisitsSheet("link")}
+            icon={Share2} label="Referral join" count={traffic.referrals}
+          />
+          <SegmentChip
+            active={segment === "qr"}
+            onClick={() => { setSegment("qr"); setVisitsSheet("qr"); }}
+            onLongPress={() => setVisitsSheet("qr")}
+            icon={QrCode} label="QR visitor" count={traffic.qr}
+          />
+          <SegmentChip
+            active={segment === "card"}
+            onClick={() => { setSegment("card"); setVisitsSheet("card"); }}
+            onLongPress={() => setVisitsSheet("card")}
+            icon={Eye} label="Business card" count={traffic.card}
+          />
         </section>
+
+        {/* Referral list — only shown when segment = link (Referral join) */}
+        {segment === "link" && (
+          <section>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
+                Your referrals
+                {counts.referral > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                    {counts.referral > 99 ? "99+" : counts.referral}
+                  </span>
+                )}
+              </h3>
+              <span className="text-[11px] text-slate-500">{filterLabel(statusFilter)} · {(filteredReferrals.length)} of {data?.referrals.length ?? 0}</span>
+            </div>
+
+            {loading && <p className="text-center text-xs text-slate-400 py-8">Loading…</p>}
+            {!loading && filteredReferrals.length === 0 && (
+              <div className="rounded-2xl bg-white border border-amber-200 p-6 text-center">
+                <Gift className="h-8 w-8 text-amber-400 mx-auto mb-2" />
+                <p className="text-sm text-slate-600 font-semibold">No referrals match this filter</p>
+                <p className="text-xs text-slate-400 mt-1">Share your code to start earning</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              {filteredReferrals.map((r) => (
+                <FlipReferralCard
+                  key={r.id}
+                  row={r}
+                  onDetails={() => setActiveRow(r)}
+                  shareText={shareText}
+                  baseReward={baseReward}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Rules */}
         <section className="rounded-2xl bg-white border border-amber-200 p-4">
@@ -278,7 +351,62 @@ export function ReferralPage() {
         onOpenChange={setWithdrawOpen}
         available={data?.wallet.total ?? 0}
       />
+
+      <ReferralFilterSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        value={statusFilter}
+        onChange={setStatusFilter}
+      />
+
+      <TrafficVisitorsSheet
+        open={!!visitsSheet}
+        onOpenChange={(o) => !o && setVisitsSheet(null)}
+        source={(visitsSheet ?? "qr") as "qr" | "card" | "link"}
+        shareText={shareText}
+      />
     </div>
+  );
+}
+
+function filterLabel(v: ReferralStatusFilter) {
+  return v === "all" ? "All" : v === "pending" ? "Pending" : "Successful";
+}
+
+function SegmentChip({
+  active, onClick, onLongPress, icon: Icon, label, count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  onLongPress: () => void;
+  icon: any;
+  label: string;
+  count: number;
+}) {
+  const timer = useRef<number | null>(null);
+  const press = () => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => onLongPress(), 450);
+  };
+  const release = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null; } };
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={press}
+      onPointerUp={release}
+      onPointerLeave={release}
+      className={`relative rounded-2xl border-2 px-2 py-2 flex flex-col items-center gap-1 active:scale-95 transition ${
+        active ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className={`h-8 w-8 rounded-xl grid place-items-center ${active ? "bg-amber-100 text-amber-700" : "bg-slate-50 text-slate-500"}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className={`text-[10px] font-bold leading-tight ${active ? "text-amber-700" : "text-slate-600"}`}>{label}</p>
+      <span className={`absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full text-[10px] font-bold ${
+        count > 0 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
+      }`}>{count}</span>
+    </button>
   );
 }
 
@@ -469,7 +597,7 @@ function CardFront({ row, onOpenSheet, onFlip, shareText, baseReward, celebrate 
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-slate-800 truncate">{row.name ?? "New user"}</p>
-          <p className="text-[11px] text-slate-500 truncate">{row.phone ?? "Phone hidden"}</p>
+          <p className="text-[11px] text-slate-500 truncate">Joined: {new Date(row.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
         </div>
         {/* Big ₹ amount pill in place of "PENDING" tag */}
         <div className={`text-right ${released ? "" : "opacity-90"}`}>
