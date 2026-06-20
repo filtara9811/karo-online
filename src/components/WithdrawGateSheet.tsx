@@ -62,7 +62,7 @@ export function WithdrawGateSheet({
 
   const loadKyc = useCallback(async () => {
     const { data: res } = await supabase.rpc("get_my_kyc_status" as never);
-    setKyc((res as KycStatus) ?? null);
+    setKyc((res as unknown as KycStatus) ?? null);
   }, []);
 
   useEffect(() => { if (open) loadKyc(); }, [open, loadKyc]);
