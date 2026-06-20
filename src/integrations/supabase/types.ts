@@ -2781,6 +2781,8 @@ export type Database = {
           owner_name: string | null
           pan: string | null
           partner_kind: string
+          payment_completed: boolean
+          payment_completed_at: string | null
           plan: string | null
           referral: string | null
           role: string | null
@@ -2833,6 +2835,8 @@ export type Database = {
           owner_name?: string | null
           pan?: string | null
           partner_kind?: string
+          payment_completed?: boolean
+          payment_completed_at?: string | null
           plan?: string | null
           referral?: string | null
           role?: string | null
@@ -2885,6 +2889,8 @@ export type Database = {
           owner_name?: string | null
           pan?: string | null
           partner_kind?: string
+          payment_completed?: boolean
+          payment_completed_at?: string | null
           plan?: string | null
           referral?: string | null
           role?: string | null
@@ -4088,6 +4094,10 @@ export type Database = {
         }[]
       }
       get_public_landing: { Args: { _code: string }; Returns: Json }
+      get_public_share_preview: {
+        Args: { _code: string; _kind: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4293,6 +4303,8 @@ export type Database = {
               owner_name: string | null
               pan: string | null
               partner_kind: string
+              payment_completed: boolean
+              payment_completed_at: string | null
               plan: string | null
               referral: string | null
               role: string | null
@@ -4374,6 +4386,8 @@ export type Database = {
               owner_name: string | null
               pan: string | null
               partner_kind: string
+              payment_completed: boolean
+              payment_completed_at: string | null
               plan: string | null
               referral: string | null
               role: string | null
