@@ -3,12 +3,27 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/c/$code")({
-  head: () => ({
-    meta: [
-      { title: "Business Card — Karo Online" },
-      { name: "description", content: "Visit business card link." },
-    ],
-  }),
+  head: ({ params }) => {
+    const code = params.code;
+    const url = `https://karoonline.in/c/${encodeURIComponent(code)}`;
+    const image = `https://karoonline.in/api/public/share-image/card/${encodeURIComponent(code)}`;
+    return {
+      meta: [
+        { title: "Digital Business Card — Karo Online" },
+        { name: "description", content: "Open this trusted Karo Online digital business card and save the contact." },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: "Digital Business Card — Karo Online" },
+        { property: "og:description", content: "Tap to open this verified business card on Karo Online." },
+        { property: "og:url", content: url },
+        { property: "og:image", content: image },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/svg+xml" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: CardRedirectPage,
 });
 
