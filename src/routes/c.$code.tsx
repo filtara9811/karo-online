@@ -41,6 +41,13 @@ function CardRedirectPage() {
       try {
         // Bump view count (fire & forget)
         supabase.rpc("bump_card_view", { _code: code });
+        supabase.rpc("log_referral_visit", {
+          _code: code,
+          _source: "card",
+          _fp_hash: getVisitFp(),
+          _ip_hash: undefined,
+          _user_agent: navigator.userAgent || undefined,
+        });
         const { data } = await supabase.rpc("get_card_link", { _code: code });
         if (cancelled) return;
         const ua = navigator.userAgent || "";
