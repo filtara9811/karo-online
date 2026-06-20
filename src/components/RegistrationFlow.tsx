@@ -556,6 +556,7 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
                 )}
                 {step === 3 && (
                   <ProfileStep
+                    phone={phone}
                     firstName={firstName}
                     lastName={lastName}
                     email={email}
