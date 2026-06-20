@@ -4163,6 +4163,10 @@ export type Database = {
           unlinked_count: number
         }[]
       }
+      admin_referral_dry_run: {
+        Args: { _referred_user_id: string }
+        Returns: Json
+      }
       admin_reject_referral_reward: {
         Args: { _notes?: string; _reward_id: string }
         Returns: Json
@@ -4380,6 +4384,7 @@ export type Database = {
         }[]
       }
       get_leadx_market_stats: { Args: never; Returns: Json }
+      get_my_kyc_status: { Args: never; Returns: Json }
       get_my_pending_lead_briefs: {
         Args: never
         Returns: {
