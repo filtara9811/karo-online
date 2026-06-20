@@ -415,6 +415,42 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_identities: {
+        Row: {
+          created_at: string
+          device_fps: string[]
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          mobile: string
+          name: string | null
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_fps?: string[]
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          mobile: string
+          name?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_fps?: string[]
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          mobile?: string
+          name?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       customer_profile_audit: {
         Row: {
           changed_by: string | null
@@ -1889,6 +1925,155 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_assets: {
+        Row: {
+          batch_id: string
+          code: string
+          created_at: string
+          id: string
+          linked_at: string | null
+          linked_by: string | null
+          linked_vendor_id: string | null
+          serial: number
+          status: string
+        }
+        Insert: {
+          batch_id: string
+          code: string
+          created_at?: string
+          id?: string
+          linked_at?: string | null
+          linked_by?: string | null
+          linked_vendor_id?: string | null
+          serial: number
+          status?: string
+        }
+        Update: {
+          batch_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          linked_at?: string | null
+          linked_by?: string | null
+          linked_vendor_id?: string | null
+          serial?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_assets_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "qr_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_assets_linked_vendor_id_fkey"
+            columns: ["linked_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_assets_linked_vendor_id_fkey"
+            columns: ["linked_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_batches: {
+        Row: {
+          assigned_to_user_id: string | null
+          batch_code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          quantity: number
+          size_preset: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          batch_code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          quantity: number
+          size_preset: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          batch_code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          quantity?: number
+          size_preset?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      qr_scans: {
+        Row: {
+          customer_identity_id: string | null
+          device_fp: string | null
+          id: string
+          ip: string | null
+          qr_code: string
+          scanned_at: string
+          user_agent: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          customer_identity_id?: string | null
+          device_fp?: string | null
+          id?: string
+          ip?: string | null
+          qr_code: string
+          scanned_at?: string
+          user_agent?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          customer_identity_id?: string | null
+          device_fp?: string | null
+          id?: string
+          ip?: string | null
+          qr_code?: string
+          scanned_at?: string
+          user_agent?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_scans_customer_identity_id_fkey"
+            columns: ["customer_identity_id"]
+            isOneToOne: false
+            referencedRelation: "customer_identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referral_banners: {
         Row: {
           created_at: string
@@ -2611,6 +2796,67 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_customer_visits: {
+        Row: {
+          created_at: string
+          customer_identity_id: string
+          first_visit_at: string
+          id: string
+          last_visit_at: string
+          source_kind: string
+          source_qr_code: string | null
+          updated_at: string
+          vendor_id: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          customer_identity_id: string
+          first_visit_at?: string
+          id?: string
+          last_visit_at?: string
+          source_kind?: string
+          source_qr_code?: string | null
+          updated_at?: string
+          vendor_id: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          customer_identity_id?: string
+          first_visit_at?: string
+          id?: string
+          last_visit_at?: string
+          source_kind?: string
+          source_qr_code?: string | null
+          updated_at?: string
+          vendor_id?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_customer_visits_customer_identity_id_fkey"
+            columns: ["customer_identity_id"]
+            isOneToOne: false
+            referencedRelation: "customer_identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_customer_visits_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_customer_visits_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_item_mappings: {
         Row: {
@@ -3881,7 +4127,42 @@ export type Database = {
         Args: { _reward_id: string }
         Returns: Json
       }
+      admin_create_qr_batch: {
+        Args: {
+          p_assigned_to?: string
+          p_batch_code: string
+          p_notes?: string
+          p_quantity: number
+          p_size_preset: string
+        }
+        Returns: string
+      }
       admin_get_referral_overview: { Args: never; Returns: Json }
+      admin_list_batch_codes: {
+        Args: { p_batch_id: string }
+        Returns: {
+          code: string
+          linked_at: string
+          linked_vendor_id: string
+          serial: number
+          status: string
+        }[]
+      }
+      admin_list_qr_batches: {
+        Args: never
+        Returns: {
+          assigned_to_name: string
+          assigned_to_user_id: string
+          batch_code: string
+          created_at: string
+          id: string
+          linked_count: number
+          notes: string
+          quantity: number
+          size_preset: string
+          unlinked_count: number
+        }[]
+      }
       admin_reject_referral_reward: {
         Args: { _notes?: string; _reward_id: string }
         Returns: Json
@@ -4164,6 +4445,10 @@ export type Database = {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
       }
+      link_qr_to_vendor: {
+        Args: { p_code: string; p_vendor_id: string }
+        Returns: Json
+      }
       log_referral_visit: {
         Args: {
           _code: string
@@ -4209,6 +4494,17 @@ export type Database = {
       normalize_email: { Args: { _email: string }; Returns: string }
       normalize_phone10: { Args: { _phone: string }; Returns: string }
       realtime_topic_authorized: { Args: { _topic: string }; Returns: boolean }
+      recognize_customer_by_fp: { Args: { p_device_fp: string }; Returns: Json }
+      record_customer_visit: {
+        Args: {
+          p_code: string
+          p_device_fp: string
+          p_mobile: string
+          p_name: string
+          p_source_kind?: string
+        }
+        Returns: Json
+      }
       register_device_token: {
         Args: { _platform?: string; _token: string; _topics?: string[] }
         Returns: Json
@@ -4218,6 +4514,7 @@ export type Database = {
         Args: { _vendor_user_id: string }
         Returns: Json
       }
+      resolve_qr: { Args: { p_code: string }; Returns: Json }
       save_customer_profile: {
         Args: {
           _address: string
@@ -4505,6 +4802,27 @@ export type Database = {
           status: string
           user_id: string
           whatsapp: string
+        }[]
+      }
+      vendor_get_visitors: {
+        Args: { p_limit?: number; p_sort?: string; p_source?: string }
+        Returns: {
+          first_visit_at: string
+          identity_id: string
+          last_visit_at: string
+          mobile: string
+          name: string
+          source_kind: string
+          source_qr_code: string
+          visit_count: number
+        }[]
+      }
+      vendor_my_qr_codes: {
+        Args: never
+        Returns: {
+          code: string
+          linked_at: string
+          scan_count: number
         }[]
       }
       wipe_all_test_data: { Args: never; Returns: Json }
