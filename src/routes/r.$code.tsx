@@ -47,6 +47,14 @@ function RefAttribution() {
     try {
       window.localStorage.setItem(REFERRAL_PENDING_KEY, code);
       document.cookie = `ko_ref=${encodeURIComponent(code)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      // Fire-and-forget visit log (de-duped 24h by device fingerprint)
+      supabase.rpc("log_referral_visit", {
+        _code: code,
+        _source: "link",
+        _fp_hash: getVisitFp(),
+        _ip_hash: null,
+        _user_agent: navigator.userAgent || null,
+      });
     } catch { /* ignore */ }
     const ua = navigator.userAgent || "";
     const isAndroid = /Android/i.test(ua);
