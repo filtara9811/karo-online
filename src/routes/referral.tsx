@@ -215,8 +215,17 @@ export function ReferralPage() {
                 ₹{(data?.wallet.grand_total ?? data?.wallet.total ?? 0).toLocaleString()}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
-              <TrendingUp className="h-6 w-6 text-amber-300" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFilterOpen(true)}
+                aria-label="Filter referrals"
+                className="h-10 w-10 rounded-2xl bg-white/10 grid place-items-center active:scale-95 border border-white/15"
+              >
+                <Filter className="h-4 w-4 text-amber-200" />
+              </button>
+              <div className="h-12 w-12 rounded-2xl bg-white/10 grid place-items-center">
+                <TrendingUp className="h-6 w-6 text-amber-300" />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4">
@@ -236,46 +245,70 @@ export function ReferralPage() {
             <button onClick={openWhatsApp} className="rounded-xl bg-white/10 backdrop-blur border border-white/15 px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2 active:scale-95">
               <Share2 className="h-3.5 w-3.5" /> Share again
             </button>
-            <button onClick={() => setWithdrawOpen(true)} className="rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b45309] text-[#1a1208] px-3 py-2 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-amber-900/50">
+            <button onClick={onWithdrawClick} className="rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b45309] text-[#1a1208] px-3 py-2 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-amber-900/50">
               <Banknote className="h-3.5 w-3.5" /> Withdraw to Bank
             </button>
           </div>
         </section>
 
-        {/* Referral list */}
-        <section>
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
-              Your referrals
-              {counts.referral > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
-                  {counts.referral > 99 ? "99+" : counts.referral}
-                </span>
-              )}
-            </h3>
-            <span className="text-[11px] text-slate-500">{data?.referrals.length ?? 0} total</span>
-          </div>
-
-          {loading && <p className="text-center text-xs text-slate-400 py-8">Loading…</p>}
-          {!loading && (data?.referrals.length ?? 0) === 0 && (
-            <div className="rounded-2xl bg-white border border-amber-200 p-6 text-center">
-              <Gift className="h-8 w-8 text-amber-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-600 font-semibold">No referrals yet</p>
-              <p className="text-xs text-slate-400 mt-1">Share your code to start earning</p>
-            </div>
-          )}
-          <div className="space-y-3">
-            {data?.referrals.map((r) => (
-              <FlipReferralCard
-                key={r.id}
-                row={r}
-                onDetails={() => setActiveRow(r)}
-                shareText={shareText}
-                baseReward={baseReward}
-              />
-            ))}
-          </div>
+        {/* Traffic segment chips — switch list source */}
+        <section className="grid grid-cols-3 gap-2">
+          <SegmentChip
+            active={segment === "link"}
+            onClick={() => setSegment("link")}
+            onLongPress={() => setVisitsSheet("link")}
+            icon={Share2} label="Referral join" count={traffic.referrals}
+          />
+          <SegmentChip
+            active={segment === "qr"}
+            onClick={() => { setSegment("qr"); setVisitsSheet("qr"); }}
+            onLongPress={() => setVisitsSheet("qr")}
+            icon={QrCode} label="QR visitor" count={traffic.qr}
+          />
+          <SegmentChip
+            active={segment === "card"}
+            onClick={() => { setSegment("card"); setVisitsSheet("card"); }}
+            onLongPress={() => setVisitsSheet("card")}
+            icon={Eye} label="Business card" count={traffic.card}
+          />
         </section>
+
+        {/* Referral list — only shown when segment = link (Referral join) */}
+        {segment === "link" && (
+          <section>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
+                Your referrals
+                {counts.referral > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                    {counts.referral > 99 ? "99+" : counts.referral}
+                  </span>
+                )}
+              </h3>
+              <span className="text-[11px] text-slate-500">{filterLabel(statusFilter)} · {(filteredReferrals.length)} of {data?.referrals.length ?? 0}</span>
+            </div>
+
+            {loading && <p className="text-center text-xs text-slate-400 py-8">Loading…</p>}
+            {!loading && filteredReferrals.length === 0 && (
+              <div className="rounded-2xl bg-white border border-amber-200 p-6 text-center">
+                <Gift className="h-8 w-8 text-amber-400 mx-auto mb-2" />
+                <p className="text-sm text-slate-600 font-semibold">No referrals match this filter</p>
+                <p className="text-xs text-slate-400 mt-1">Share your code to start earning</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              {filteredReferrals.map((r) => (
+                <FlipReferralCard
+                  key={r.id}
+                  row={r}
+                  onDetails={() => setActiveRow(r)}
+                  shareText={shareText}
+                  baseReward={baseReward}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Rules */}
         <section className="rounded-2xl bg-white border border-amber-200 p-4">
