@@ -37,6 +37,7 @@ type NavItem = { to: string; label: string; icon: typeof Crown };
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/qr-assets", label: "🖨️ QR Management", icon: QrCode },
   { to: "/admin/lookup", label: "🔍 User Lookup (360)", icon: Users },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/vendors", label: "Vendors", icon: Store },
@@ -57,7 +58,6 @@ const NAV: NavItem[] = [
   { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
   { to: "/admin/coins", label: "LeadX Market", icon: Coins },
   { to: "/admin/referrals", label: "Referral Program", icon: Gift },
-  { to: "/admin/qr-assets", label: "QR Assets & Printing", icon: QrCode },
   { to: "/admin/forms", label: "Form Builder", icon: ClipboardList },
   { to: "/admin/branding", label: "Branding Studio", icon: Palette },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
