@@ -642,9 +642,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
           const shareUrl = typeof window !== "undefined" && refCode
             ? (profile?.card_link_url?.trim() || `${window.location.origin}/c/${refCode}`)
             : "";
-          const qrSrc = shareUrl
-            ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(shareUrl)}`
-            : undefined;
+          const qrSrc = refCode ? `/api/public/share-image/card/${encodeURIComponent(refCode)}` : undefined;
           return (
             <ShareCardSheet
               shareUrl={shareUrl || (typeof window !== "undefined" ? window.location.origin : "")}
