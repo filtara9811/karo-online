@@ -314,6 +314,15 @@ export const verifyCashfreeOrder = createServerFn({ method: "POST" })
             })
             .eq("id", pending.id);
         }
+        await (supabaseAdmin as any)
+          .from("vendors")
+          .update({
+            payment_completed: true,
+            payment_completed_at: new Date().toISOString(),
+            status: "active",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
         await logSys("success", `Coins credited ${coins}`, { order: data.order_id });
         return { ok: true as const, credited_coins: coins };
       }

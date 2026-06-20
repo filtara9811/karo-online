@@ -117,15 +117,15 @@ function readReferralFromContext(): { code: string; locked: boolean } {
   if (typeof window === "undefined") return { code: "", locked: false };
   const u = new URLSearchParams(window.location.search);
   const fromUrl = u.get("ref") || u.get("referral");
-  if (fromUrl) return { code: fromUrl.toUpperCase(), locked: true };
+  if (fromUrl) return { code: fromUrl.toUpperCase(), locked: false };
   try {
     const fromStorage = window.localStorage.getItem("ko-pending-referral-code");
-    if (fromStorage) return { code: fromStorage.toUpperCase(), locked: true };
+    if (fromStorage) return { code: fromStorage.toUpperCase(), locked: false };
   } catch { /* ignore */ }
   const m = document.cookie.match(/(?:^|;\s*)ko_ref=([^;]+)/);
   if (m) {
-    try { return { code: decodeURIComponent(m[1]).toUpperCase(), locked: true }; }
-    catch { return { code: m[1].toUpperCase(), locked: true }; }
+    try { return { code: decodeURIComponent(m[1]).toUpperCase(), locked: false }; }
+    catch { return { code: m[1].toUpperCase(), locked: false }; }
   }
   return { code: "", locked: false };
 }
@@ -1150,6 +1150,16 @@ function ProfileStep({
                 placeholder="Referral code (optional)"
                 className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
               />
+              {referral.trim() && (
+                <button
+                  type="button"
+                  onClick={() => onReferral("")}
+                  aria-label="Clear referral code"
+                  className="h-7 w-7 rounded-full bg-[color:oklch(0.92_0.06_82)] grid place-items-center text-[color:oklch(0.38_0.10_82)] active:scale-95 shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2.4} />
+                </button>
+              )}
               {referral.trim() && referralCheck.status === "checking" && (
                 <Loader2 className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] animate-spin shrink-0" />
               )}
@@ -1161,7 +1171,7 @@ function ProfileStep({
               )}
             </FieldShell>
             {referral.trim() && referralCheck.status === "valid" && referralCheck.referrerName && (
-              <p className="mt-1 text-[11px] text-emerald-700 pl-2 font-semibold">Referred by: {referralCheck.referrerName}</p>
+              <p className="mt-1 text-[11px] text-emerald-700 pl-2 font-semibold">Referral code applied! Valid for {referralCheck.referrerName}.</p>
             )}
             {referral.trim() && referralCheck.status === "invalid" && (
               <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold">Referral code not found</p>
