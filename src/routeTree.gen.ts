@@ -25,6 +25,7 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ForVendorsRouteImport } from './routes/for-vendors'
 import { Route as ForCustomersRouteImport } from './routes/for-customers'
+import { Route as FieldRouteImport } from './routes/field'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -181,6 +182,11 @@ const ForVendorsRoute = ForVendorsRouteImport.update({
 const ForCustomersRoute = ForCustomersRouteImport.update({
   id: '/for-customers',
   path: '/for-customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeaturesRoute = FeaturesRouteImport.update({
@@ -580,6 +586,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
+  '/field': typeof FieldRoute
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
@@ -674,6 +681,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
+  '/field': typeof FieldRoute
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
@@ -770,6 +778,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
+  '/field': typeof FieldRoute
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
@@ -867,6 +876,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/download'
     | '/features'
+    | '/field'
     | '/for-customers'
     | '/for-vendors'
     | '/home'
@@ -961,6 +971,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/download'
     | '/features'
+    | '/field'
     | '/for-customers'
     | '/for-vendors'
     | '/home'
@@ -1056,6 +1067,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/download'
     | '/features'
+    | '/field'
     | '/for-customers'
     | '/for-vendors'
     | '/home'
@@ -1152,6 +1164,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DownloadRoute: typeof DownloadRoute
   FeaturesRoute: typeof FeaturesRoute
+  FieldRoute: typeof FieldRoute
   ForCustomersRoute: typeof ForCustomersRoute
   ForVendorsRoute: typeof ForVendorsRoute
   HomeRoute: typeof HomeRoute
@@ -1305,6 +1318,13 @@ declare module '@tanstack/react-router' {
       path: '/for-customers'
       fullPath: '/for-customers'
       preLoaderRoute: typeof ForCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/features': {
@@ -1957,6 +1977,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DownloadRoute: DownloadRoute,
   FeaturesRoute: FeaturesRoute,
+  FieldRoute: FieldRoute,
   ForCustomersRoute: ForCustomersRoute,
   ForVendorsRoute: ForVendorsRoute,
   HomeRoute: HomeRoute,
@@ -2000,13 +2021,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
