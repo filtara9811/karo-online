@@ -52,8 +52,8 @@ function RefAttribution() {
         _code: code,
         _source: "link",
         _fp_hash: getVisitFp(),
-        _ip_hash: null,
-        _user_agent: navigator.userAgent || null,
+        _ip_hash: undefined,
+        _user_agent: navigator.userAgent || undefined,
       });
     } catch { /* ignore */ }
     const ua = navigator.userAgent || "";
