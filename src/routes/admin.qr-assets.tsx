@@ -283,16 +283,17 @@ function QrStudioModal({
       toast.error(error.message);
       return;
     }
-    // Fetch generated serial codes and render PDF with chosen design
-    const { data: codeRows, error: listErr } = await supabase.rpc(
-      "admin_list_batch_codes_by_code",
-      { p_batch_code: code } as any,
-    );
+    // Fetch generated batches → find ours → load codes
     let codes: string[] = [];
-    if (!listErr && Array.isArray(codeRows)) {
-      codes = (codeRows as { code: string }[]).map((r) => r.code);
-    } else {
-      // Fallback: synthesize serial preview codes
+    const { data: batchList } = await supabase.rpc("admin_list_qr_batches");
+    const created = (batchList as Batch[] | null)?.find((b) => b.batch_code === code);
+    if (created) {
+      const { data: codeRows } = await supabase.rpc("admin_list_batch_codes", {
+        p_batch_id: created.id,
+      });
+      codes = ((codeRows as { code: string }[] | null) ?? []).map((r) => r.code);
+    }
+    if (codes.length === 0) {
       codes = Array.from({ length: quantity }, (_, i) => `${code}-${String(i + 1).padStart(4, "0")}`);
     }
     try {
