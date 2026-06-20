@@ -3971,6 +3971,14 @@ export type Database = {
             Returns: Json
           }
       bump_card_view: { Args: { _code: string }; Returns: undefined }
+      check_customer_email_available: {
+        Args: { _email: string; _phone?: string }
+        Returns: {
+          available: boolean
+          owner_name: string
+          owner_phone_last4: string
+        }[]
+      }
       count_unread_lead_messages: {
         Args: { _lead_ids: string[] }
         Returns: {
@@ -4101,6 +4109,13 @@ export type Database = {
           gender: string
           name: string
           user_id: string
+        }[]
+      }
+      lookup_referrer_by_code: {
+        Args: { _code: string }
+        Returns: {
+          referrer_name: string
+          valid: boolean
         }[]
       }
       mark_influencer_activation: {
