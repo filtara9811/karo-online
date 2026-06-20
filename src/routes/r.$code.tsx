@@ -3,12 +3,17 @@ import { useEffect } from "react";
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
 import { Sparkles, Gift, Wallet, Users, ShieldCheck, Download } from "lucide-react";
 
+const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
+const APP_STORE = "https://apps.apple.com/app/karo-online/id0000000000";
+const buildPlayStoreReferrer = (code: string) => `${PLAY_STORE}&referrer=${encodeURIComponent(`utm_source=referral&utm_medium=share&utm_campaign=refer_earn&ref=${code}`)}`;
+
 export const Route = createFileRoute("/r/$code")({
   head: ({ params }) => {
     const code = params.code;
-    const title = `Join Karo Online with code ${code} — Earn ₹200`;
-    const desc = `Use my code ${code} to sign up on Karo Online. Get instant rewards in your wallet.`;
+    const title = `Get ₹200 for you & ₹100 for your friend`;
+    const desc = `Use my code ${code} on Karo Online. Referral bonus is tracked automatically in the wallet.`;
     const image = "https://karoonline.in/referral-share-banner.jpg";
+    const url = `https://karoonline.in/r/${encodeURIComponent(code)}`;
     return {
       meta: [
         { title },
@@ -16,14 +21,18 @@ export const Route = createFileRoute("/r/$code")({
         { property: "og:type", content: "website" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
+        { property: "og:url", content: url },
         { property: "og:image", content: image },
+        { property: "og:image:secure_url", content: image },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/jpeg" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
         { name: "twitter:image", content: image },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   component: RefAttribution,
@@ -37,6 +46,12 @@ function RefAttribution() {
       window.localStorage.setItem(REFERRAL_PENDING_KEY, code);
       document.cookie = `ko_ref=${encodeURIComponent(code)}; path=/; max-age=${60 * 60 * 24 * 30}`;
     } catch { /* ignore */ }
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const target = isAndroid ? buildPlayStoreReferrer(code) : isIOS ? APP_STORE : `/register?ref=${encodeURIComponent(code)}`;
+    const timer = window.setTimeout(() => { window.location.href = target; }, 1400);
+    return () => window.clearTimeout(timer);
   }, [code]);
 
   return (
@@ -54,7 +69,7 @@ function RefAttribution() {
             <p className="text-[10px] uppercase tracking-[0.25em] font-bold">You're invited</p>
           </div>
           <h1 className="mt-2 font-display text-2xl font-bold text-slate-900 leading-tight">
-            Join Karo Online & unlock rewards
+            Get ₹200 for you & ₹100 for your friend
           </h1>
             <p className="mt-2 text-sm text-slate-600">
             Your friend invited you with code{" "}
@@ -74,6 +89,12 @@ function RefAttribution() {
           >
             <Download className="h-5 w-5" /> Join Karo Online
           </Link>
+          <a
+            href={buildPlayStoreReferrer(code)}
+            className="mt-2 w-full rounded-2xl bg-slate-900 text-white font-bold py-3 flex items-center justify-center gap-2 active:scale-[0.98] transition"
+          >
+            <Download className="h-5 w-5" /> Download Android App
+          </a>
           <p className="mt-2 text-center text-[11px] text-slate-400">Referral code will be applied automatically.</p>
         </div>
 

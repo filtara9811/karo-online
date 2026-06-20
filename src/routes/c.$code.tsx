@@ -2,13 +2,31 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
+const APP_STORE = "https://apps.apple.com/app/karo-online/id0000000000";
+
 export const Route = createFileRoute("/c/$code")({
-  head: () => ({
-    meta: [
-      { title: "Business Card — Karo Online" },
-      { name: "description", content: "Visit business card link." },
-    ],
-  }),
+  head: ({ params }) => {
+    const code = params.code;
+    const url = `https://karoonline.in/c/${encodeURIComponent(code)}`;
+    const image = `https://karoonline.in/api/public/share-image/card/${encodeURIComponent(code)}`;
+    return {
+      meta: [
+        { title: "Digital Business Card — Karo Online" },
+        { name: "description", content: "Open this trusted Karo Online digital business card and save the contact." },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: "Digital Business Card — Karo Online" },
+        { property: "og:description", content: "Tap to open this verified business card on Karo Online." },
+        { property: "og:url", content: url },
+        { property: "og:image", content: image },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/svg+xml" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: CardRedirectPage,
 });
 
@@ -24,7 +42,12 @@ function CardRedirectPage() {
         supabase.rpc("bump_card_view", { _code: code });
         const { data } = await supabase.rpc("get_card_link", { _code: code });
         if (cancelled) return;
-        const targetUrl = `${window.location.origin}/home`;
+        const ua = navigator.userAgent || "";
+        const targetUrl = /Android/i.test(ua)
+          ? `${PLAY_STORE}&referrer=${encodeURIComponent(`utm_source=business_card&utm_medium=share&code=${code}`)}`
+          : /iPhone|iPad|iPod/i.test(ua)
+          ? APP_STORE
+          : `${window.location.origin}/home`;
         if (targetUrl) {
           // Business-card links always open the app's digital dukaan.
           const target = targetUrl.startsWith("/")

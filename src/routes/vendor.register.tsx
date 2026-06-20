@@ -440,6 +440,10 @@ function VendorRegister() {
         setPlanChosen(null);
         return;
       }
+      await supabase
+        .from("vendors")
+        .update({ payment_completed: true, payment_completed_at: new Date().toISOString(), status: "active" } as never)
+        .eq("user_id", user.id);
       toast.success(`Plan activated · +${totalCoins} LeadX added`);
       setShowJoined(true);
       setTimeout(() => navigate({ to: "/vendor/dashboard" }), 1800);

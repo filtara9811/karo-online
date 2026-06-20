@@ -7,13 +7,27 @@ import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Visit ${params.code} — Karo Online` },
-      { name: "description", content: "Trusted merchant scan page on Karo Online." },
-      { name: "theme-color", content: "#ffffff" },
-    ],
-  }),
+  head: ({ params }) => {
+    const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
+    const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
+    return {
+      meta: [
+        { title: `Visit ${params.code} — Karo Online` },
+        { name: "description", content: "Trusted merchant scan page on Karo Online." },
+        { name: "theme-color", content: "#ffffff" },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: "Scan & Join Karo Online" },
+        { property: "og:description", content: "Open the smart QR link for app download, vendor info, benefits and wallet rewards." },
+        { property: "og:url", content: url },
+        { property: "og:image", content: image },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/svg+xml" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: ScanLandingPage,
   errorComponent: () => <Fallback message="Something went wrong loading this page." />,
   notFoundComponent: () => <Fallback message="This merchant page was not found." />,
