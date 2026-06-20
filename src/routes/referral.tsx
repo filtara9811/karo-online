@@ -120,6 +120,14 @@ export function ReferralPage() {
   const programPaused = data?.settings && data.settings.is_active === false;
   const baseReward = data?.settings.base_reward_amount ?? 200;
 
+  const filteredReferrals = useMemo(() => {
+    const rows = data?.referrals ?? [];
+    if (statusFilter === "pending") return rows.filter((r) => !r.progress.reward_released);
+    if (statusFilter === "successful") return rows.filter((r) => r.progress.reward_released);
+    return rows;
+  }, [data?.referrals, statusFilter]);
+
+
   if (!loading && programPaused) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 grid place-items-center px-6">
