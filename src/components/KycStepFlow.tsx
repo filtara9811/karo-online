@@ -359,6 +359,7 @@ function SelfieStep({
   const [showCropper, setShowCropper] = useState(false);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const autoFiredRef = useRef(false);
 
   const onPick = (f: File | null) => {
     if (!f) return;
@@ -366,15 +367,15 @@ function SelfieStep({
     setShowCropper(true);
   };
 
-  const submit = async () => {
+  const submit = async (silent = false) => {
     if (isVendor) {
-      if (!shopName.trim()) return toast.error("Shop name required");
-      if (!ceo.trim()) return toast.error("CEO / Owner name required");
+      if (!shopName.trim()) return silent ? null : toast.error("Shop name required");
+      if (!ceo.trim()) return silent ? null : toast.error("CEO / Owner name required");
     } else {
-      if (!first.trim() || !last.trim()) return toast.error("Name required");
+      if (!first.trim() || !last.trim()) return silent ? null : toast.error("Name required");
     }
-    if (!croppedFile && !record?.document_urls?.length) return toast.error("Photo required");
-    if (!user?.id) return toast.error("Please sign in first");
+    if (!croppedFile && !record?.document_urls?.length) return silent ? null : toast.error("Photo required");
+    if (!user?.id) return silent ? null : toast.error("Please sign in first");
     setBusy(true);
     try {
       let urls: string[] = record?.document_urls ?? [];
@@ -389,6 +390,19 @@ function SelfieStep({
       toast.error(e?.message ?? "Upload failed");
     } finally { setBusy(false); }
   };
+
+  // Auto-submit as soon as the photo is cropped AND the name fields are filled.
+  // This removes the manual "Save & Continue" tap the user complained about.
+  useEffect(() => {
+    if (!croppedFile || autoFiredRef.current || busy) return;
+    const namesOk = isVendor
+      ? shopName.trim() && ceo.trim()
+      : first.trim() && last.trim();
+    if (!namesOk) return;
+    autoFiredRef.current = true;
+    submit(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [croppedFile, first, last, shopName, ceo]);
 
   return (
     <div>
