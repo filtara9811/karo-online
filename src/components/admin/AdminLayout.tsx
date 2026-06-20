@@ -27,6 +27,7 @@ import {
   Menu,
   X,
   Loader2,
+  QrCode,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
@@ -56,6 +57,7 @@ const NAV: NavItem[] = [
   { to: "/admin/logistics", label: "Delivery Gateways", icon: Truck },
   { to: "/admin/coins", label: "LeadX Market", icon: Coins },
   { to: "/admin/referrals", label: "Referral Program", icon: Gift },
+  { to: "/admin/qr-assets", label: "QR Assets & Printing", icon: QrCode },
   { to: "/admin/forms", label: "Form Builder", icon: ClipboardList },
   { to: "/admin/branding", label: "Branding Studio", icon: Palette },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
