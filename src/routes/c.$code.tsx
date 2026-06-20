@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
 const APP_STORE = "https://apps.apple.com/app/karo-online/id0000000000";
