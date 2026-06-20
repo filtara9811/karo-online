@@ -1,89 +1,55 @@
-# Plan: KYC Flow + Referral Dashboard + Admin Control
+# QR Asset System + Customer Recognition + Audit — Plan
 
-## 1. KYC Flow Fixes (`src/components/KycStepFlow.tsx`)
+## Phase 1 — Backend foundation (1 migration)
+- Add `field_executive` to `app_role` enum.
+- Tables:
+  - `qr_batches` (id, code prefix `B<n>`, label, size_preset enum a4/a5/sticker, count, created_by, assigned_to, created_at)
+  - `qr_assets` (id, batch_id, serial int, code text unique `B12-0457`, vendor_id nullable, locked_at, scan_count, kind enum shop/mobile/wall, created_at)
+  - `qr_scans` (id, qr_code, customer_id, ip_hash, device_fp, scanned_at)
+  - `customer_identities` (user_id PK, name, phone unique, phone_verified, device_fps text[], first_seen, last_seen) — central cross-shop identity
+  - `vendor_customer_visits` (vendor_id, customer_id, qr_code, visited_at, visit_no) for per-shop history
+- RPCs:
+  - `admin_create_qr_batch(label, count, size)` → returns batch + assets
+  - `link_qr_to_vendor(code, vendor_id, kind)` → enforces 3-per-vendor + lock-once
+  - `record_qr_scan(code, name?, phone?, otp?, device_fp)` → upsert identity, record visit, return vendor info + "is_returning"
+  - `vendor_get_visitors(filter, sort)` → list w/ visit count, last visit, day
+  - `admin_toggle_referral_active(user_id, active)` — already exists, verify
+- Triggers: lock qr_asset on first vendor link; block re-link.
+- GRANTs + RLS.
 
-**Selfie auto-advance**
-- After successful upload + save of selfie URL, auto-jump to Aadhaar step (no manual "Next").
-- Show ✓ green tick overlay on the captured selfie for 600ms before sliding.
+## Phase 2 — Admin QR Assets page
+- `/admin/qr-assets` route: create batch form, list batches, "Print PDF" buttons per size preset.
+- PDF generation via server route `/api/admin/qr-batch-pdf/:batchId?size=a4|a5|sticker` using `pdf-lib` + `qrcode` (both worker-safe). Bulk QR rendering on PDF pages.
+- Field-exec assignment dropdown per batch.
 
-**Form stability (PAN + Bank)**
-- Replace controlled inputs that re-render entire flow on every keystroke with locally-memoised `useRef`-backed input state, or move PAN/Bank inputs into separate sub-components with their own `useState` so parent re-renders don't blur the field.
-- Stop calling `supabase` save on every change — only persist on field blur or on "Save & Continue".
+## Phase 3 — QR landing route `/q/:code`
+- Resolves QR code, checks if vendor-linked:
+  - If NOT linked → if scanner is a vendor → "Link to your shop?" UI calling `link_qr_to_vendor`. Otherwise show "Pending activation".
+  - If linked → customer flow: check identity (device_fp + cookie). If new → Name + Mobile + OTP sheet. If recognized → record visit silently, show vendor card.
+- Push to vendor dashboard via realtime broadcast on `vendor:{id}:visits`.
 
-**Stepper tick indicators**
-- Top stepper (Selfie | Aadhaar | PAN | Bank): show ✅ for each completed step, ⏳ for current, ⚪ for upcoming.
-- Step header badge: "Pending" → "Completed ✓" once data saved.
+## Phase 4 — Vendor dashboard "Visitors"
+- New tab on vendor dashboard: list w/ name, mobile, visit count, last visit timestamp + day, source QR kind.
+- Per-row actions: WhatsApp (wa.me), Call (tel:), IVR placeholder.
+- Welcome toast via realtime when new visit arrives.
+- Sort by frequency / last visit.
 
-## 2. Referral Dashboard Overhaul (`src/routes/referral.tsx`)
+## Phase 5 — Field-exec login
+- `/field` route gated by `field_executive` role.
+- Shows assigned batches + vendors they linked (via `created_by`/`installed_by` column on vendors).
 
-**Header (keep current dark wallet card)**
-- "Total Wallet Earnings" + Available / Locked Bonus boxes — unchanged.
-- Add **funnel filter icon** in top-right of the wallet header.
+## Phase 6 — KYC + Withdraw audit (small fixes)
+- Verify PAN/Bank inputs are stable (already done last turn, recheck).
+- Verify Withdraw → KYC gate (already done, recheck).
+- Verify admin referral toggle blocks rewards (trigger already added, recheck).
 
-**Filter sheet (bottom sheet)**
-- Status: All / Pending / Successful
-- Traffic source: All / QR Code Visitors / Business Card / Direct Referral Link
-- Filters apply to "Your referrals" list below.
+## Phase 7 — Dry-run audit
+- Create 3 test accounts via supabase admin API in a script.
+- Simulate: signup w/ ref → 1st service request → vendor payment.
+- Print wallet state at each step.
 
-**Segment strip (under wallet card, above list)** — matches your red-circled area
-- 3 pill chips: `↗ Referral join` | `QR visitor` | `Business card`
-- Tapping a chip switches the list source (referrals table / qr_visits / vcard_visits) and updates counters.
-
-**Referral card redesign** (per screenshot 1)
-- Replace phone `9810758733` with **`Joined: 20 Jun 2026`** (use `referrals.created_at`).
-- Keep avatar + name + ON UNLOCK ₹200 + milestones strip.
-- Remove Call/WhatsApp big buttons → move to overflow.
-- Add **team earnings strip** below milestones: avatar stack + `₹243` + `12 Team` + chevron → opens bottom sheet listing downline users with their individual earnings contribution.
-
-**New bottom sheets**
-- `TeamEarningsSheet` — lists level-2 referrals of this user with per-person ₹ earned (uses existing `get_my_referral_overview` extended or new RPC `get_referral_downline(_referral_id)`).
-- `QrVisitorsSheet` / `BusinessCardVisitorsSheet` — list of visits with timestamp + WhatsApp icon on right; long-press multi-select → bulk WhatsApp share with promo template.
-
-## 3. Withdraw → KYC Gate
-
-- `WithdrawGateSheet` (or wherever the "Withdraw to Bank" button lives in `referral.tsx`):
-  - On click: check `kyc_verifications.status` for current user.
-  - If not `approved` → router.navigate to `/vendor/kyc` (or open KycStepFlow sheet) directly, with toast "KYC pending — complete to withdraw".
-  - If approved → open payout request modal as today.
-
-## 4. Backend additions
-
-**New table** `referral_link_visits`
-- columns: `id`, `referrer_user_id`, `source` (`qr` | `vcard` | `link`), `code`, `visitor_ip_hash`, `user_agent`, `created_at`
-- GRANT + RLS: owner can SELECT own; service_role full; anon INSERT via public route.
-- Update `/r/$code`, `/c/$code`, QR scan route to log a row.
-
-**New RPC** `get_referral_traffic_counts(_user_id uuid)`
-- Returns `{ qr_visits, vcard_visits, link_visits, total_referrals, pending, successful }`.
-
-**New RPC** `get_referral_downline(_referral_id uuid)`
-- Returns each downline user + their lifetime earnings contribution.
-
-**Admin toggle** — `vendors.active` / `customers.referral_active` boolean (add column if missing):
-- New RPC `admin_toggle_referral_active(_user_id, _active)` — admin-only via `is_admin_user()`.
-- Database trigger on `referral_rewards` INSERT: if `referrer.referral_active = false`, block reward creation.
-- `src/routes/admin.referrals.tsx`: add per-row toggle switch that calls the RPC.
-
-## 5. Referral flow explainer (Hindi summary in chat reply)
-
-After implementation, I'll explain in Hindi:
-- Sign-up → `apply_referral_code` inserts 3 locked rewards (₹200 referrer + ₹100 new user + ₹100 L1 upline)
-- 1st service request → trigger releases that user's reward
-- Vendor onboarding complete → trigger releases vendor reward
-- Admin toggle off → future rewards blocked, existing locked stay locked
-
-## Files to touch
-- `src/components/KycStepFlow.tsx` — auto-advance, stable inputs, step ticks
-- `src/routes/referral.tsx` — header filter, segment strip, redesigned cards, withdraw gate
-- `src/components/WithdrawGateSheet.tsx` — KYC gate logic
-- `src/components/TeamEarningsSheet.tsx` *(new)*
-- `src/components/TrafficVisitorsSheet.tsx` *(new — QR + vcard visitors)*
-- `src/components/ReferralFilterSheet.tsx` *(new)*
-- `src/routes/admin.referrals.tsx` — active/inactive toggle
-- `src/routes/r.$code.tsx`, `src/routes/c.$code.tsx`, QR scan route — log visits
-- 1 migration: `referral_link_visits` table, traffic-count RPC, downline RPC, `referral_active` column + trigger, admin toggle RPC
-
-## Open questions before I build
-1. **Visit dedupe** — should repeat visits from the same IP/device within 24h count as 1 visit or N visits?
-2. **WhatsApp bulk send** — browser cannot send to multiple numbers in one tap; the best UX is one `wa.me/<num>?text=...` per contact opened sequentially OR copy-all-numbers + message to clipboard. Which do you prefer?
-3. **Admin toggle scope** — pausing a referrer should block (a) only future rewards, or (b) also hide their existing locked rewards from their wallet?
+## Open questions answered
+- ID format: `B<batch>-<serial>` ✓
+- Role: create `field_executive` ✓
+- Customer recognition: Name+Mobile+OTP first time, silent recognition after ✓
+- Audit: live execution ✓
