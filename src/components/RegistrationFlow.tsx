@@ -922,7 +922,7 @@ function ProfileStep({
       try {
         const { data, error } = await supabase.rpc("check_customer_email_available", {
           _email: emailTrim,
-          _phone: phone || null,
+          _phone: phone || undefined,
         });
         if (cancelled) return;
         if (error) { setEmailCheck({ status: "error" }); return; }
