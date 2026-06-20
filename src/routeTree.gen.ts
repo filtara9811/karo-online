@@ -98,6 +98,7 @@ import { Route as AdminWebBlogRouteImport } from './routes/admin.web.blog'
 import { Route as AdminWebApkRouteImport } from './routes/admin.web.apk'
 import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
 import { Route as ApiPublicVcardCodeRouteImport } from './routes/api.public.vcard.$code'
+import { Route as ApiPublicShareImageKindCodeRouteImport } from './routes/api.public.share-image.$kind.$code'
 
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
@@ -544,6 +545,12 @@ const ApiPublicVcardCodeRoute = ApiPublicVcardCodeRouteImport.update({
   path: '/api/public/vcard/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicShareImageKindCodeRoute =
+  ApiPublicShareImageKindCodeRouteImport.update({
+    id: '/api/public/share-image/$kind/$code',
+    path: '/api/public/share-image/$kind/$code',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -635,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
+  '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -725,6 +733,7 @@ export interface FileRoutesByTo {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
+  '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -817,6 +826,7 @@ export interface FileRoutesById {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
+  '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -910,6 +920,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/vcard/$code'
+    | '/api/public/share-image/$kind/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1000,6 +1011,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web'
     | '/api/public/vcard/$code'
+    | '/api/public/share-image/$kind/$code'
   id:
     | '__root__'
     | '/'
@@ -1091,6 +1103,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/vcard/$code'
+    | '/api/public/share-image/$kind/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1139,6 +1152,7 @@ export interface RootRouteChildren {
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
   ApiPublicVcardCodeRoute: typeof ApiPublicVcardCodeRoute
+  ApiPublicShareImageKindCodeRoute: typeof ApiPublicShareImageKindCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1766,6 +1780,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicVcardCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/share-image/$kind/$code': {
+      id: '/api/public/share-image/$kind/$code'
+      path: '/api/public/share-image/$kind/$code'
+      fullPath: '/api/public/share-image/$kind/$code'
+      preLoaderRoute: typeof ApiPublicShareImageKindCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1911,6 +1932,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
   ApiPublicVcardCodeRoute: ApiPublicVcardCodeRoute,
+  ApiPublicShareImageKindCodeRoute: ApiPublicShareImageKindCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
