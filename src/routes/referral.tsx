@@ -597,7 +597,7 @@ function CardFront({ row, onOpenSheet, onFlip, shareText, baseReward, celebrate 
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-slate-800 truncate">{row.name ?? "New user"}</p>
-          <p className="text-[11px] text-slate-500 truncate">{row.phone ?? "Phone hidden"}</p>
+          <p className="text-[11px] text-slate-500 truncate">Joined: {new Date(row.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
         </div>
         {/* Big ₹ amount pill in place of "PENDING" tag */}
         <div className={`text-right ${released ? "" : "opacity-90"}`}>
