@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
+import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
 import { Sparkles, Gift, Wallet, Users, ShieldCheck, Download } from "lucide-react";
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
