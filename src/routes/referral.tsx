@@ -351,7 +351,62 @@ export function ReferralPage() {
         onOpenChange={setWithdrawOpen}
         available={data?.wallet.total ?? 0}
       />
+
+      <ReferralFilterSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        value={statusFilter}
+        onChange={setStatusFilter}
+      />
+
+      <TrafficVisitorsSheet
+        open={!!visitsSheet}
+        onOpenChange={(o) => !o && setVisitsSheet(null)}
+        source={(visitsSheet ?? "qr") as "qr" | "card" | "link"}
+        shareText={shareText}
+      />
     </div>
+  );
+}
+
+function filterLabel(v: ReferralStatusFilter) {
+  return v === "all" ? "All" : v === "pending" ? "Pending" : "Successful";
+}
+
+function SegmentChip({
+  active, onClick, onLongPress, icon: Icon, label, count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  onLongPress: () => void;
+  icon: any;
+  label: string;
+  count: number;
+}) {
+  const timer = useRef<number | null>(null);
+  const press = () => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => onLongPress(), 450);
+  };
+  const release = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null; } };
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={press}
+      onPointerUp={release}
+      onPointerLeave={release}
+      className={`relative rounded-2xl border-2 px-2 py-2 flex flex-col items-center gap-1 active:scale-95 transition ${
+        active ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className={`h-8 w-8 rounded-xl grid place-items-center ${active ? "bg-amber-100 text-amber-700" : "bg-slate-50 text-slate-500"}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className={`text-[10px] font-bold leading-tight ${active ? "text-amber-700" : "text-slate-600"}`}>{label}</p>
+      <span className={`absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full text-[10px] font-bold ${
+        count > 0 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
+      }`}>{count}</span>
+    </button>
   );
 }
 
