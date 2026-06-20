@@ -474,6 +474,7 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          referral_active: boolean
           referral_code: string | null
           shop_logo_url: string | null
           shop_name: string | null
@@ -506,6 +507,7 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          referral_active?: boolean
           referral_code?: string | null
           shop_logo_url?: string | null
           shop_name?: string | null
@@ -538,6 +540,7 @@ export type Database = {
           is_blocked?: boolean
           name?: string | null
           phone?: string | null
+          referral_active?: boolean
           referral_code?: string | null
           shop_logo_url?: string | null
           shop_name?: string | null
@@ -1994,6 +1997,39 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_link_visits: {
+        Row: {
+          code: string
+          created_at: string
+          fp_hash: string | null
+          id: string
+          ip_hash: string | null
+          referrer_user_id: string | null
+          source: string
+          user_agent: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          fp_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          referrer_user_id?: string | null
+          source: string
+          user_agent?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          fp_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          referrer_user_id?: string | null
+          source?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       referral_progress: {
         Row: {
           became_seller: boolean
@@ -2785,6 +2821,7 @@ export type Database = {
           payment_completed_at: string | null
           plan: string | null
           referral: string | null
+          referral_active: boolean
           role: string | null
           service_radius_km: number
           shop_banner_urls: string[]
@@ -2839,6 +2876,7 @@ export type Database = {
           payment_completed_at?: string | null
           plan?: string | null
           referral?: string | null
+          referral_active?: boolean
           role?: string | null
           service_radius_km?: number
           shop_banner_urls?: string[]
@@ -2893,6 +2931,7 @@ export type Database = {
           payment_completed_at?: string | null
           plan?: string | null
           referral?: string | null
+          referral_active?: boolean
           role?: string | null
           service_radius_km?: number
           shop_banner_urls?: string[]
@@ -3851,6 +3890,10 @@ export type Database = {
         Args: { _trigger_id: string; _user_id?: string }
         Returns: Json
       }
+      admin_toggle_referral_active: {
+        Args: { _active: boolean; _user_id: string }
+        Returns: Json
+      }
       admin_update_landing_settings: { Args: { _payload: Json }; Returns: Json }
       admin_update_referral_settings: {
         Args: { _patch: Json }
@@ -4098,6 +4141,17 @@ export type Database = {
         Args: { _code: string; _kind: string }
         Returns: Json
       }
+      get_referral_traffic_counts: { Args: never; Returns: Json }
+      get_referral_visits: {
+        Args: { _limit?: number; _source: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          source: string
+          user_agent: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4109,6 +4163,16 @@ export type Database = {
       is_lead_owner: {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
+      }
+      log_referral_visit: {
+        Args: {
+          _code: string
+          _fp_hash?: string
+          _ip_hash?: string
+          _source: string
+          _user_agent?: string
+        }
+        Returns: undefined
       }
       lookup_customer_by_phone: {
         Args: { _phone: string }
@@ -4181,6 +4245,7 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          referral_active: boolean
           referral_code: string | null
           shop_logo_url: string | null
           shop_name: string | null
@@ -4229,6 +4294,7 @@ export type Database = {
           is_blocked: boolean
           name: string | null
           phone: string | null
+          referral_active: boolean
           referral_code: string | null
           shop_logo_url: string | null
           shop_name: string | null
@@ -4307,6 +4373,7 @@ export type Database = {
               payment_completed_at: string | null
               plan: string | null
               referral: string | null
+              referral_active: boolean
               role: string | null
               service_radius_km: number
               shop_banner_urls: string[]
@@ -4390,6 +4457,7 @@ export type Database = {
               payment_completed_at: string | null
               plan: string | null
               referral: string | null
+              referral_active: boolean
               role: string | null
               service_radius_km: number
               shop_banner_urls: string[]
