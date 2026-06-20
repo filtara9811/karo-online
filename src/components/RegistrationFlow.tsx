@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Phone, Gift, ArrowRight, ShieldCheck, KeyRound, UserCircle2, X, Pencil,
   Mail, ChevronDown, Volume2, VolumeX, Play, Check, Languages, Calendar, MapPin,
+  CheckCircle2, AlertCircle, Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import goldMale from "@/assets/gold-male.png";
