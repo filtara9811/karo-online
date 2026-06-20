@@ -4510,7 +4510,12 @@ export type Database = {
       wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {
-      app_role: "super_admin" | "admin" | "moderator" | "support"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "moderator"
+        | "support"
+        | "field_executive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4638,7 +4643,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "admin", "moderator", "support"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "moderator",
+        "support",
+        "field_executive",
+      ],
     },
   },
 } as const
