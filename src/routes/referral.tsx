@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, Share2, MessageCircle, Check, Gift, Wallet, Clock,
   ChevronLeft, Sparkles, Phone, Download, TrendingUp, AlertCircle,
-  Banknote, X, Users, Repeat, PauseCircle,
+  Banknote, X, Users, Repeat, PauseCircle, Filter, Eye,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReferralOverview, ensureMyCode44, type ReferralRow } from "@/hooks/use-referral";
@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { WithdrawGateSheet } from "@/components/WithdrawGateSheet";
 import { ReferralBannerCarousel } from "@/components/ReferralBannerCarousel";
+import { ReferralFilterSheet, type ReferralStatusFilter } from "@/components/ReferralFilterSheet";
+import { TrafficVisitorsSheet } from "@/components/TrafficVisitorsSheet";
 import { QrCode } from "lucide-react";
 
 export const Route = createFileRoute("/referral")({
