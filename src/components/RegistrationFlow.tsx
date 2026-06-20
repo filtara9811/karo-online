@@ -869,10 +869,12 @@ function OtpStep({ phone, otp, isTestNumber, onOtp, seconds, onResend, onPaste, 
 // Step 3: Registered page (first/last name, email, gender sheet, referral)
 // ============================================================
 function ProfileStep({
+  phone,
   firstName, lastName, email, gender, dob, address, agreedTerms, referral, referralLocked,
   onFirstName, onLastName, onEmail, onOpenGender, onOpenDob, onOpenAddress, onToggleTerms,
   onReferral, submitting, onSubmit,
 }: {
+  phone: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -904,15 +906,76 @@ function ProfileStep({
   }, [gender]);
 
   const namesDisabled = !gender;
-  const emailValid = !email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailTrim = email.trim();
+  const emailFormatValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim);
+
+  // ── Email uniqueness check (debounced) ─────────────────────────────
+  const [emailCheck, setEmailCheck] = useState<{
+    status: "idle" | "checking" | "available" | "taken" | "error";
+    ownerName?: string;
+  }>({ status: "idle" });
+  useEffect(() => {
+    if (!emailFormatValid) { setEmailCheck({ status: "idle" }); return; }
+    setEmailCheck({ status: "checking" });
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc("check_customer_email_available", {
+          _email: emailTrim,
+          _phone: phone || null,
+        });
+        if (cancelled) return;
+        if (error) { setEmailCheck({ status: "error" }); return; }
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.available) setEmailCheck({ status: "available" });
+        else setEmailCheck({ status: "taken", ownerName: row?.owner_name || undefined });
+      } catch {
+        if (!cancelled) setEmailCheck({ status: "error" });
+      }
+    }, 500);
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [emailTrim, emailFormatValid, phone]);
+
+  // ── Referral lookup (debounced) ────────────────────────────────────
+  const [referralCheck, setReferralCheck] = useState<{
+    status: "idle" | "checking" | "valid" | "invalid";
+    referrerName?: string;
+  }>({ status: "idle" });
+  useEffect(() => {
+    const code = referral.trim().toUpperCase();
+    if (!code) { setReferralCheck({ status: "idle" }); return; }
+    if (code.length < 3) { setReferralCheck({ status: "invalid" }); return; }
+    setReferralCheck({ status: "checking" });
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc("lookup_referrer_by_code", { _code: code });
+        if (cancelled) return;
+        if (error) { setReferralCheck({ status: "invalid" }); return; }
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.valid) setReferralCheck({ status: "valid", referrerName: row?.referrer_name || undefined });
+        else setReferralCheck({ status: "invalid" });
+      } catch {
+        if (!cancelled) setReferralCheck({ status: "invalid" });
+      }
+    }, 450);
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [referral]);
+
+  const firstNameValid = firstName.trim().length >= 2;
+  const lastNameValid = lastName.trim().length >= 1;
+
+  const emailReady = emailFormatValid && emailCheck.status === "available";
+  const referralReady = !referral.trim() || referralLocked || referralCheck.status === "valid";
+
   const ready =
     !!gender &&
-    !!firstName.trim() &&
-    !!lastName.trim() &&
+    firstNameValid &&
+    lastNameValid &&
     !!dob &&
     !!address.trim() &&
-    emailValid &&
-    !!email.trim() &&
+    emailReady &&
+    referralReady &&
     agreedTerms;
 
   const dobLabel = useMemo(() => {
@@ -952,6 +1015,7 @@ function ProfileStep({
         <span className={`flex-1 min-w-0 text-left text-base font-bold ${gender ? "text-[color:oklch(0.24_0.06_85)]" : "text-[color:oklch(0.30_0.10_82)]"}`}>
           {gender ? genderLabel(gender) : "Select your gender to begin"}
         </span>
+        {gender && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
         <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
       </button>
 
@@ -969,6 +1033,7 @@ function ProfileStep({
             placeholder="First name"
             className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
+          {firstNameValid && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
         </FieldShell>
         <FieldShell>
           <input
@@ -981,10 +1046,11 @@ function ProfileStep({
             placeholder="Last name"
             className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
+          {lastNameValid && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
         </FieldShell>
       </div>
 
-      {/* Email */}
+      {/* Email with live uniqueness + format validation */}
       <div className="mt-2.5">
         <FieldShell Icon={Mail}>
           <input
@@ -995,9 +1061,29 @@ function ProfileStep({
             placeholder="Gmail address"
             className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.6)] placeholder:font-normal"
           />
+          {emailTrim && !emailFormatValid && (
+            <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+          )}
+          {emailFormatValid && emailCheck.status === "checking" && (
+            <Loader2 className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] animate-spin shrink-0" />
+          )}
+          {emailFormatValid && emailCheck.status === "available" && (
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          )}
+          {emailFormatValid && emailCheck.status === "taken" && (
+            <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+          )}
         </FieldShell>
-        {email.trim() && !emailValid && (
-          <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold">Valid email enter karein</p>
+        {emailTrim && !emailFormatValid && (
+          <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold">Please enter a valid email address</p>
+        )}
+        {emailFormatValid && emailCheck.status === "taken" && (
+          <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold leading-snug">
+            Email already registered{emailCheck.ownerName ? ` to ${emailCheck.ownerName}` : ""}. Please use a different email address.
+          </p>
+        )}
+        {emailFormatValid && emailCheck.status === "available" && (
+          <p className="mt-1 text-[11px] text-emerald-700 pl-2 font-semibold">Email available ✓</p>
         )}
       </div>
 
@@ -1014,6 +1100,7 @@ function ProfileStep({
           <span className={`flex-1 min-w-0 text-left text-base font-bold ${dob ? "text-[color:oklch(0.22_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
             {dob ? dobLabel : "Date of birth"}
           </span>
+          {dob && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
           <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)]" />
         </button>
       </div>
@@ -1031,11 +1118,12 @@ function ProfileStep({
           <span className={`flex-1 min-w-0 text-base font-bold leading-snug ${address ? "text-[color:oklch(0.22_0.06_85)]" : "text-[color:oklch(0.55_0.08_85/0.6)] font-normal"}`}>
             {address || "Add delivery address"}
           </span>
+          {address && <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-1 shrink-0" />}
           <ChevronDown className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] mt-1" />
         </button>
       </div>
 
-      {/* Referral */}
+      {/* Referral with live lookup */}
       <div className="mt-2.5">
         {referralLocked ? (
           <div className="rounded-2xl border-2 border-[color:oklch(0.78_0.14_82)] bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] px-4 py-3 flex items-center gap-3 shadow-[0_4px_14px_-4px_rgba(212,175,55,0.55)]">
@@ -1045,20 +1133,40 @@ function ProfileStep({
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-widest text-[color:oklch(0.45_0.10_82)] font-bold">Referral applied</div>
               <div className="font-display text-base font-bold text-[color:oklch(0.22_0.06_85)] truncate">{referral}</div>
+              {referralCheck.status === "valid" && referralCheck.referrerName && (
+                <div className="text-[11px] font-semibold text-emerald-700 truncate">Referred by: {referralCheck.referrerName}</div>
+              )}
             </div>
             <ShieldCheck className="h-5 w-5 text-emerald-700" />
           </div>
         ) : (
-          <FieldShell Icon={Gift}>
-            <input
-              value={referral}
-              onChange={(e) => onReferral(e.target.value.toUpperCase())}
-              inputMode="text"
-              autoCapitalize="characters"
-              placeholder="Referral code (optional)"
-              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
-            />
-          </FieldShell>
+          <>
+            <FieldShell Icon={Gift}>
+              <input
+                value={referral}
+                onChange={(e) => onReferral(e.target.value.toUpperCase())}
+                inputMode="text"
+                autoCapitalize="characters"
+                placeholder="Referral code (optional)"
+                className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-bold text-[color:oklch(0.22_0.06_85)] placeholder:text-[color:oklch(0.55_0.08_85/0.5)] placeholder:font-normal uppercase tracking-wider"
+              />
+              {referral.trim() && referralCheck.status === "checking" && (
+                <Loader2 className="h-4 w-4 text-[color:oklch(0.55_0.10_82)] animate-spin shrink-0" />
+              )}
+              {referral.trim() && referralCheck.status === "valid" && (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              )}
+              {referral.trim() && referralCheck.status === "invalid" && (
+                <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+              )}
+            </FieldShell>
+            {referral.trim() && referralCheck.status === "valid" && referralCheck.referrerName && (
+              <p className="mt-1 text-[11px] text-emerald-700 pl-2 font-semibold">Referred by: {referralCheck.referrerName}</p>
+            )}
+            {referral.trim() && referralCheck.status === "invalid" && (
+              <p className="mt-1 text-[11px] text-red-600 pl-2 font-semibold">Referral code not found</p>
+            )}
+          </>
         )}
       </div>
 
@@ -1087,6 +1195,7 @@ function ProfileStep({
     </div>
   );
 }
+
 
 // ============================================================
 // Step 4: Welcome video + privacy + Thank you
