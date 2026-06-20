@@ -37,6 +37,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
+import { Route as VendorVisitorsRouteImport } from './routes/vendor.visitors'
 import { Route as VendorStatusRouteImport } from './routes/vendor.status'
 import { Route as VendorSocialRouteImport } from './routes/vendor.social'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
@@ -48,6 +49,7 @@ import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
 import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as QCodeRouteImport } from './routes/q.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as CCodeRouteImport } from './routes/c.$code'
@@ -61,6 +63,7 @@ import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
+import { Route as AdminQrAssetsRouteImport } from './routes/admin.qr-assets'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOnboardingRouteImport } from './routes/admin.onboarding'
@@ -240,6 +243,11 @@ const VendorWalletRoute = VendorWalletRouteImport.update({
   path: '/vendor/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorVisitorsRoute = VendorVisitorsRouteImport.update({
+  id: '/vendor/visitors',
+  path: '/vendor/visitors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorStatusRoute = VendorStatusRouteImport.update({
   id: '/vendor/status',
   path: '/vendor/status',
@@ -293,6 +301,11 @@ const SCodeRoute = SCodeRouteImport.update({
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QCodeRoute = QCodeRouteImport.update({
+  id: '/q/$code',
+  path: '/q/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -358,6 +371,11 @@ const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
 const AdminReferralsRoute = AdminReferralsRouteImport.update({
   id: '/referrals',
   path: '/referrals',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminQrAssetsRoute = AdminQrAssetsRouteImport.update({
+  id: '/qr-assets',
+  path: '/qr-assets',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
@@ -598,6 +616,7 @@ export interface FileRoutesByFullPath {
   '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -611,6 +630,7 @@ export interface FileRoutesByFullPath {
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -622,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/visitors': typeof VendorVisitorsRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -689,6 +710,7 @@ export interface FileRoutesByTo {
   '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -702,6 +724,7 @@ export interface FileRoutesByTo {
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -713,6 +736,7 @@ export interface FileRoutesByTo {
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/visitors': typeof VendorVisitorsRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
@@ -782,6 +806,7 @@ export interface FileRoutesById {
   '/admin/onboarding': typeof AdminOnboardingRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -795,6 +820,7 @@ export interface FileRoutesById {
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/vendor/chat': typeof VendorChatRoute
@@ -806,6 +832,7 @@ export interface FileRoutesById {
   '/vendor/shop': typeof VendorShopRoute
   '/vendor/social': typeof VendorSocialRoute
   '/vendor/status': typeof VendorStatusRoute
+  '/vendor/visitors': typeof VendorVisitorsRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -876,6 +903,7 @@ export interface FileRouteTypes {
     | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
@@ -889,6 +917,7 @@ export interface FileRouteTypes {
     | '/c/$code'
     | '/f/$slug'
     | '/product/$id'
+    | '/q/$code'
     | '/r/$code'
     | '/s/$code'
     | '/vendor/chat'
@@ -900,6 +929,7 @@ export interface FileRouteTypes {
     | '/vendor/shop'
     | '/vendor/social'
     | '/vendor/status'
+    | '/vendor/visitors'
     | '/vendor/wallet'
     | '/admin/'
     | '/blog/'
@@ -967,6 +997,7 @@ export interface FileRouteTypes {
     | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
@@ -980,6 +1011,7 @@ export interface FileRouteTypes {
     | '/c/$code'
     | '/f/$slug'
     | '/product/$id'
+    | '/q/$code'
     | '/r/$code'
     | '/s/$code'
     | '/vendor/chat'
@@ -991,6 +1023,7 @@ export interface FileRouteTypes {
     | '/vendor/shop'
     | '/vendor/social'
     | '/vendor/status'
+    | '/vendor/visitors'
     | '/vendor/wallet'
     | '/admin'
     | '/blog'
@@ -1059,6 +1092,7 @@ export interface FileRouteTypes {
     | '/admin/onboarding'
     | '/admin/payments'
     | '/admin/profile'
+    | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
     | '/admin/settings'
@@ -1072,6 +1106,7 @@ export interface FileRouteTypes {
     | '/c/$code'
     | '/f/$slug'
     | '/product/$id'
+    | '/q/$code'
     | '/r/$code'
     | '/s/$code'
     | '/vendor/chat'
@@ -1083,6 +1118,7 @@ export interface FileRouteTypes {
     | '/vendor/shop'
     | '/vendor/social'
     | '/vendor/status'
+    | '/vendor/visitors'
     | '/vendor/wallet'
     | '/admin/'
     | '/blog/'
@@ -1136,6 +1172,7 @@ export interface RootRouteChildren {
   CCodeRoute: typeof CCodeRoute
   FSlugRoute: typeof FSlugRoute
   ProductIdRoute: typeof ProductIdRoute
+  QCodeRoute: typeof QCodeRoute
   RCodeRoute: typeof RCodeRoute
   SCodeRoute: typeof SCodeRoute
   VendorChatRoute: typeof VendorChatRoute
@@ -1147,6 +1184,7 @@ export interface RootRouteChildren {
   VendorShopRoute: typeof VendorShopRoute
   VendorSocialRoute: typeof VendorSocialRoute
   VendorStatusRoute: typeof VendorStatusRoute
+  VendorVisitorsRoute: typeof VendorVisitorsRoute
   VendorWalletRoute: typeof VendorWalletRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
@@ -1353,6 +1391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorWalletRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/visitors': {
+      id: '/vendor/visitors'
+      path: '/vendor/visitors'
+      fullPath: '/vendor/visitors'
+      preLoaderRoute: typeof VendorVisitorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/status': {
       id: '/vendor/status'
       path: '/vendor/status'
@@ -1428,6 +1473,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$code'
       fullPath: '/r/$code'
       preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/q/$code': {
+      id: '/q/$code'
+      path: '/q/$code'
+      fullPath: '/q/$code'
+      preLoaderRoute: typeof QCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -1519,6 +1571,13 @@ declare module '@tanstack/react-router' {
       path: '/referrals'
       fullPath: '/admin/referrals'
       preLoaderRoute: typeof AdminReferralsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/qr-assets': {
+      id: '/admin/qr-assets'
+      path: '/qr-assets'
+      fullPath: '/admin/qr-assets'
+      preLoaderRoute: typeof AdminQrAssetsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/profile': {
@@ -1811,6 +1870,7 @@ interface AdminRouteChildren {
   AdminOnboardingRoute: typeof AdminOnboardingRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminQrAssetsRoute: typeof AdminQrAssetsRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
   AdminResetPasswordRoute: typeof AdminResetPasswordRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -1858,6 +1918,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOnboardingRoute: AdminOnboardingRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminQrAssetsRoute: AdminQrAssetsRoute,
   AdminReferralsRoute: AdminReferralsRoute,
   AdminResetPasswordRoute: AdminResetPasswordRoute,
   AdminSettingsRoute: AdminSettingsRoute,
@@ -1916,6 +1977,7 @@ const rootRouteChildren: RootRouteChildren = {
   CCodeRoute: CCodeRoute,
   FSlugRoute: FSlugRoute,
   ProductIdRoute: ProductIdRoute,
+  QCodeRoute: QCodeRoute,
   RCodeRoute: RCodeRoute,
   SCodeRoute: SCodeRoute,
   VendorChatRoute: VendorChatRoute,
@@ -1927,6 +1989,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorShopRoute: VendorShopRoute,
   VendorSocialRoute: VendorSocialRoute,
   VendorStatusRoute: VendorStatusRoute,
+  VendorVisitorsRoute: VendorVisitorsRoute,
   VendorWalletRoute: VendorWalletRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,

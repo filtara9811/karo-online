@@ -209,8 +209,8 @@ function CreateBatchModal({
       p_batch_code: code,
       p_quantity: quantity,
       p_size_preset: sizePreset,
-      p_assigned_to: assignedTo || null,
-      p_notes: notes.trim() || null,
+      p_assigned_to: assignedTo || undefined,
+      p_notes: notes.trim() || undefined,
     });
     setBusy(false);
     if (error) {

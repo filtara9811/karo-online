@@ -58,7 +58,7 @@ function Inner() {
     setLoading(true);
     const { data, error } = await supabase.rpc("vendor_get_visitors", {
       p_sort: sort,
-      p_source: sourceFilter || null,
+      p_source: sourceFilter || undefined,
       p_limit: 200,
     });
     if (error) toast.error(error.message);

@@ -64,7 +64,7 @@ function QrLandingPage() {
           p_device_fp: fp,
         });
         const recObj = rec as { found: boolean; name?: string; mobile?: string };
-        if (recObj?.found) {
+        if (recObj?.found && recObj.mobile) {
           setIdentity({ name: recObj.name, mobile: recObj.mobile });
           // Silent visit record
           const { data: visit } = await supabase.rpc("record_customer_visit", {
