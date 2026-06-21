@@ -269,100 +269,12 @@ export function QuickServiceMap({
     mapRef.current.setOptions({ styles: mapType === "roadmap" ? KARO_MAP_STYLE : [] });
   }, [mapType]);
 
-  // user overlay (custom HTML pin with avatar teardrop + ripple + address chip)
-  useEffect(() => {
-    if (status !== "ready" || !mapRef.current) return;
-    const g = (window as any).google;
-    const pos = center ?? DEFAULT_CENTER;
-
-    if (!showUserPin) {
-      if (userOverlayRef.current) {
-        userOverlayRef.current.setMap(null);
-        userOverlayRef.current = null;
-      }
-      return;
-    }
-
-    if (userOverlayRef.current) {
-      userOverlayRef.current.setMap(null);
-      userOverlayRef.current = null;
-    }
-
-    class AvatarPinOverlay extends g.maps.OverlayView {
-      position: any;
-      div: HTMLDivElement | null = null;
-      avatar: string;
-      label: string;
-      constructor(position: any, avatar: string, label: string) {
-        super();
-        this.position = position;
-        this.avatar = avatar;
-        this.label = label;
-      }
-      onAdd() {
-        const div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.transform = "translate(-50%, -100%)";
-        div.style.pointerEvents = "none";
-        div.innerHTML = buildUserPinHTML(this.avatar, this.label, !!onLocationTap);
-        if (onLocationTap) {
-          div.querySelectorAll<HTMLElement>('[data-ko-tap="1"]').forEach((el) => {
-            el.addEventListener("click", (e) => {
-              e.stopPropagation();
-              onLocationTap();
-            });
-          });
-        }
-        this.div = div;
-        const panes = this.getPanes();
-        panes?.floatPane.appendChild(div);
-      }
-      draw() {
-        if (!this.div) return;
-        const projection = this.getProjection();
-        if (!projection) return;
-        const point = projection.fromLatLngToDivPixel(
-          new g.maps.LatLng(this.position.lat, this.position.lng),
-        );
-        if (point) {
-          this.div.style.left = `${point.x}px`;
-          // Anchor the teardrop tip on the actual lat/lng (translateY: -100%)
-          this.div.style.top = `${point.y}px`;
-        }
-      }
-      onRemove() {
-        if (this.div?.parentNode) this.div.parentNode.removeChild(this.div);
-        this.div = null;
-      }
-      updatePosition(p: { lat: number; lng: number }) {
-        this.position = p;
-        this.draw();
-      }
-      updateLabel(label: string) {
-        this.label = label;
-        if (this.div) {
-          const el = this.div.querySelector(".ko-addr-text");
-          if (el) el.textContent = label;
-        }
-      }
-    }
-
-    const overlay = new AvatarPinOverlay(pos, userAvatar, userLabel || "Detecting your location…");
-    overlay.setMap(mapRef.current);
-    userOverlayRef.current = overlay;
-  }, [status, userAvatar, showUserPin]);
-
-  // move overlay when center changes (avoid re-creating)
-  useEffect(() => {
-    if (!userOverlayRef.current || !center) return;
-    userOverlayRef.current.updatePosition(center);
-  }, [center?.lat, center?.lng]);
-
-  // update label without re-creating
-  useEffect(() => {
-    if (!userOverlayRef.current) return;
-    userOverlayRef.current.updateLabel(userLabel || "Detecting your location…");
-  }, [userLabel]);
+  // NOTE: the user/center pin is rendered as a SCREEN-FIXED overlay (see JSX
+  // below) — it stays locked at the dead-center of the map viewport at all
+  // times. The map drags under it (Uber/Ola style), and the `idle` listener
+  // bubbles the new center up via onCenterChange so the parent can refetch
+  // nearby vendors. We deliberately do NOT use a google.maps.OverlayView for
+  // the user pin anymore.
 
   // Geofence circle around the user (e.g. 10 km service radius)
   useEffect(() => {
