@@ -236,6 +236,7 @@ export function QuickServiceMap({
     };
 
     const cinematic = () => {
+      programmaticRef.current += 6; // initial setZoom + 5 staggered idles
       mapRef.current!.setZoom(10);
       const steps = [12, 14, 15, 16, 17];
       steps.forEach((z, i) => {
@@ -249,12 +250,14 @@ export function QuickServiceMap({
 
     if (!didInitialCenterRef.current) {
       didInitialCenterRef.current = true;
+      programmaticRef.current += 1;
       mapRef.current.setCenter(center);
       cinematic();
     } else if (prev && haversineKm(prev, center) > 2) {
       // Large jump — fly to the new area cinematically.
       cinematic();
-    } else {
+    } else if (prev && haversineKm(prev, center) > 0.01) {
+      programmaticRef.current += 1;
       mapRef.current.panTo(center);
     }
   }, [center?.lat, center?.lng]);
