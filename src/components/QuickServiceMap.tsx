@@ -535,6 +535,58 @@ export function QuickServiceMap({
         .ko-vcard.ko-online .ko-vcard-meta u { color: #059669; }
         .ko-vcard.ko-offline { opacity: .85; box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 0 0 1.5px rgba(245,158,11,.45); }
         .ko-vcard.ko-offline .ko-vcard-meta u, .ko-vcard.ko-office .ko-vcard-meta u { color: #d97706; }
+
+        /* --- FLOATING VENDOR PIN (category icon head + tail + tiny card below) --- */
+        .ko-vpin {
+          position: relative; display: flex; flex-direction: column; align-items: center;
+          gap: 1px; pointer-events: auto;
+          animation: ko-vcard-in .3s ease-out both;
+        }
+        .ko-vpin-head {
+          width: 24px; height: 24px; border-radius: 9999px;
+          background: #1f2937; padding: 3px;
+          display: grid; place-items: center;
+          box-shadow: 0 3px 8px rgba(0,0,0,.28);
+          border: 1.5px solid #fff;
+        }
+        .ko-vpin.ko-online .ko-vpin-head { background: #059669; }
+        .ko-vpin.ko-offline .ko-vpin-head { background: #d97706; }
+        .ko-vpin-head img {
+          width: 100%; height: 100%; border-radius: 9999px; object-fit: cover;
+          filter: brightness(0) invert(1);
+        }
+        .ko-vpin.ko-online .ko-vpin-head img,
+        .ko-vpin.ko-office .ko-vpin-head img,
+        .ko-vpin.ko-offline .ko-vpin-head img { filter: brightness(0) invert(1); }
+        .ko-vpin-tail {
+          width: 0; height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 7px solid #1f2937;
+          margin-top: -1px;
+        }
+        .ko-vpin.ko-online .ko-vpin-tail { border-top-color: #059669; }
+        .ko-vpin.ko-offline .ko-vpin-tail { border-top-color: #d97706; }
+        .ko-vpin .ko-vcard {
+          margin-top: 2px;
+          animation: none;
+          transform: none;
+        }
+        @keyframes ko-vcard-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- SCREEN-FIXED CENTER PIN (Uber-style) --- */
+        .ko-center-pin {
+          position: absolute; left: 50%; top: 50%;
+          transform: translate(-50%, -100%);
+          z-index: 25; pointer-events: none;
+          width: 64px;
+        }
+        .ko-center-pin .ko-teardrop-head {
+          animation: ko-heartbeat 1.6s ease-in-out infinite;
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
