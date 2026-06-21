@@ -52,12 +52,23 @@ export function LocationPickerSheet({ open, onClose, onPick, bias, currentLabel,
     if (open) {
       setRecents(loadRecents());
       setValue("");
+      if (typeof document !== "undefined") {
+        document.body.dataset.locationPickerOpen = "true";
+      }
     } else {
       try {
         recogRef.current?.stop?.();
       } catch { /* noop */ }
       setListening(false);
+      if (typeof document !== "undefined") {
+        delete document.body.dataset.locationPickerOpen;
+      }
     }
+    return () => {
+      if (typeof document !== "undefined") {
+        delete document.body.dataset.locationPickerOpen;
+      }
+    };
   }, [open]);
 
   const startVoice = () => {
