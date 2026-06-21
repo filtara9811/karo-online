@@ -31,12 +31,12 @@ async function fetchVendorPhones(vendorIds: string[]): Promise<{ vendor_id: stri
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("vendors")
-    .select("user_id,owner_name,business_name,whatsapp,phone")
+    .select("user_id,owner_name,business_name,whatsapp")
     .in("user_id", vendorIds);
   if (error || !data) return [];
   const out: { vendor_id: string; phone: string; name: string | null }[] = [];
   for (const v of data as any[]) {
-    const phone = digitsOnly(v.whatsapp) ?? digitsOnly(v.phone);
+    const phone = digitsOnly(v.whatsapp);
     if (phone) out.push({ vendor_id: v.user_id, phone, name: v.business_name || v.owner_name || null });
   }
   return out;
