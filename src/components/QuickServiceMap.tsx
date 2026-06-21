@@ -185,6 +185,13 @@ export function QuickServiceMap({
         styles: KARO_MAP_STYLE,
         backgroundColor: "#f5f1e8",
       });
+      // Idle = drag/zoom settled → bubble new center up so parent can refetch.
+      mapRef.current.addListener("idle", () => {
+        if (!onCenterChange || !mapRef.current) return;
+        const cc = mapRef.current.getCenter();
+        if (!cc) return;
+        onCenterChange({ lat: cc.lat(), lng: cc.lng() });
+      });
       setStatus("ready");
       window.setTimeout(() => {
         if (cancel || !ref.current) return;
