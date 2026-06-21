@@ -599,6 +599,19 @@ export function QuickServiceMap({
         </div>
       )}
 
+      {/* SCREEN-FIXED center pin — never moves, map drags under it. */}
+      {showUserPin && status === "ready" && (
+        <div className="ko-center-pin">
+          <div
+            dangerouslySetInnerHTML={{
+              __html: buildUserPinHTML(userAvatar, userLabel || "Detecting your location…", !!onLocationTap),
+            }}
+            style={{ pointerEvents: onLocationTap ? "auto" : "none" }}
+            onClick={onLocationTap}
+          />
+        </div>
+      )}
+
       {/* Right-side floating controls — light & translucent so map stays clean */}
       {showControls && <div className="absolute top-3 right-2 z-30 flex flex-col gap-1.5 items-end">
         <button
