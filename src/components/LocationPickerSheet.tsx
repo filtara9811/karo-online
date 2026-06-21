@@ -183,13 +183,13 @@ export function LocationPickerSheet({
 
   if (!open) return null;
 
-  // Heights: collapsed = quarter; expanded = ~55vh half-sheet (map remains
-  // visible on the top half of the screen at all times).
-  const sheetMaxH = collapsed ? "28vh" : "58vh";
+  // Heights: collapsed = quarter; expanded = ~78vh tall sheet (Ola/Uber-style)
+  // so the search list stays visible while typing and above the keyboard.
+  const sheetMaxH = collapsed ? "30vh" : "78vh";
 
   return (
     <div className="fixed inset-0 z-[130] flex flex-col justify-end pointer-events-none" aria-modal="true" role="dialog">
-      {/* Top half is *transparent and pass-through* so the map remains visible
+      {/* Top portion is *transparent and pass-through* so the map remains visible
           and interactive. Tap the small "Close" pill or the X to dismiss. */}
       <div className="flex-1 pointer-events-none" />
 
@@ -198,9 +198,10 @@ export function LocationPickerSheet({
         className="relative w-full bg-white rounded-t-3xl shadow-[0_-14px_40px_-10px_rgba(0,0,0,0.35)] flex flex-col pointer-events-auto animate-in slide-in-from-bottom duration-300"
         style={{
           maxHeight: sheetMaxH,
-          minHeight: collapsed ? "180px" : "320px",
+          height: sheetMaxH,
+          minHeight: collapsed ? "180px" : "60vh",
           paddingBottom: "env(safe-area-inset-bottom)",
-          transition: "max-height 280ms cubic-bezier(.22,1,.36,1), min-height 280ms cubic-bezier(.22,1,.36,1)",
+          transition: "max-height 280ms cubic-bezier(.22,1,.36,1), min-height 280ms cubic-bezier(.22,1,.36,1), height 280ms cubic-bezier(.22,1,.36,1)",
         }}
       >
         {/* Grab handle (drag to collapse/expand) */}

@@ -71,23 +71,33 @@ function buildUserPinHTML(avatar: string, label: string, tappable = false) {
     </div>`;
 }
 
-function buildVendorCardHTML(v: QuickMapVendor) {
+function buildVendorPinHTML(v: QuickMapVendor, categoryIcon?: string) {
   const safeAvatar = v.avatar.replace(/"/g, "&quot;");
   const safeName = v.name.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const safeArea = (v.area || "Nearby").replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const km = typeof v.km === "number" ? `${v.km.toFixed(1)} km.` : "";
   const status = v.status || "Office";
   const statusClass = status === "Online" ? "ko-online" : status === "Offline" ? "ko-offline" : "ko-office";
+  const iconImg = categoryIcon
+    ? `<img src="${categoryIcon.replace(/"/g, "&quot;")}" alt="" />`
+    : `<img src="${safeAvatar}" alt="" />`;
   return `
-    <div class="ko-vcard ${statusClass}" data-vid="${v.id}">
-      <div class="ko-vcard-avatar"><img src="${safeAvatar}" alt="" /></div>
-      <div class="ko-vcard-body">
-        <div class="ko-vcard-name">${safeName}</div>
-        <div class="ko-vcard-area"><span>📍</span>${safeArea}</div>
-        <div class="ko-vcard-meta">${km} <u>${status}</u></div>
+    <div class="ko-vpin ${statusClass}" data-vid="${v.id}">
+      <div class="ko-vpin-head">${iconImg}</div>
+      <div class="ko-vpin-tail"></div>
+      <div class="ko-vcard ${statusClass}">
+        <div class="ko-vcard-avatar"><img src="${safeAvatar}" alt="" /></div>
+        <div class="ko-vcard-body">
+          <div class="ko-vcard-name">${safeName}</div>
+          <div class="ko-vcard-area"><span>📍</span>${safeArea}</div>
+          <div class="ko-vcard-meta">${km} <u>${status}</u></div>
+        </div>
       </div>
     </div>`;
 }
+
+// Legacy alias used by the SSR-safe MapFallback below.
+const buildVendorCardHTML = (v: QuickMapVendor) => buildVendorPinHTML(v);
 
 export function QuickServiceMap({
   center,
@@ -101,6 +111,8 @@ export function QuickServiceMap({
   countLabel,
   radiusKm,
   onLocationTap,
+  onCenterChange,
+  categoryIcon,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -113,6 +125,11 @@ export function QuickServiceMap({
   countLabel?: string;
   radiusKm?: number;
   onLocationTap?: () => void;
+  /** Fires when user drags/zooms and the map settles, so the parent can refetch
+   *  vendors around the new center (Uber-style drag-to-search). */
+  onCenterChange?: (c: { lat: number; lng: number }) => void;
+  /** Service-specific icon (e.g. hammer for Carpenter) used as the floating pin head. */
+  categoryIcon?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -120,6 +137,12 @@ export function QuickServiceMap({
   const vendorOverlaysRef = useRef<any[]>([]);
   const circleRef = useRef<any>(null);
   const didInitialCenterRef = useRef(false);
+  const onCenterChangeRef = useRef(onCenterChange);
+  useEffect(() => { onCenterChangeRef.current = onCenterChange; }, [onCenterChange]);
+  /** Suppresses the idle→onCenterChange callback while we're programmatically
+   *  panning (initial fix, city fly-to, recenter button). Only real user
+   *  drag/zoom should re-route the search center. */
+  const programmaticRef = useRef(0);
   // Always start in "loading" for SSR-safe hydration; switch to "error" in effect when running on a preview host.
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -168,6 +191,19 @@ export function QuickServiceMap({
         styles: KARO_MAP_STYLE,
         backgroundColor: "#f5f1e8",
       });
+      // Idle = drag/zoom settled → bubble new center up so parent can refetch.
+      mapRef.current.addListener("idle", () => {
+        if (!mapRef.current) return;
+        if (programmaticRef.current > 0) {
+          programmaticRef.current -= 1;
+          return;
+        }
+        const cb = onCenterChangeRef.current;
+        if (!cb) return;
+        const cc = mapRef.current.getCenter();
+        if (!cc) return;
+        cb({ lat: cc.lat(), lng: cc.lng() });
+      });
       setStatus("ready");
       window.setTimeout(() => {
         if (cancel || !ref.current) return;
@@ -200,6 +236,7 @@ export function QuickServiceMap({
     };
 
     const cinematic = () => {
+      programmaticRef.current += 6; // initial setZoom + 5 staggered idles
       mapRef.current!.setZoom(10);
       const steps = [12, 14, 15, 16, 17];
       steps.forEach((z, i) => {
@@ -213,12 +250,14 @@ export function QuickServiceMap({
 
     if (!didInitialCenterRef.current) {
       didInitialCenterRef.current = true;
+      programmaticRef.current += 1;
       mapRef.current.setCenter(center);
       cinematic();
     } else if (prev && haversineKm(prev, center) > 2) {
       // Large jump — fly to the new area cinematically.
       cinematic();
-    } else {
+    } else if (prev && haversineKm(prev, center) > 0.01) {
+      programmaticRef.current += 1;
       mapRef.current.panTo(center);
     }
   }, [center?.lat, center?.lng]);
@@ -230,100 +269,12 @@ export function QuickServiceMap({
     mapRef.current.setOptions({ styles: mapType === "roadmap" ? KARO_MAP_STYLE : [] });
   }, [mapType]);
 
-  // user overlay (custom HTML pin with avatar teardrop + ripple + address chip)
-  useEffect(() => {
-    if (status !== "ready" || !mapRef.current) return;
-    const g = (window as any).google;
-    const pos = center ?? DEFAULT_CENTER;
-
-    if (!showUserPin) {
-      if (userOverlayRef.current) {
-        userOverlayRef.current.setMap(null);
-        userOverlayRef.current = null;
-      }
-      return;
-    }
-
-    if (userOverlayRef.current) {
-      userOverlayRef.current.setMap(null);
-      userOverlayRef.current = null;
-    }
-
-    class AvatarPinOverlay extends g.maps.OverlayView {
-      position: any;
-      div: HTMLDivElement | null = null;
-      avatar: string;
-      label: string;
-      constructor(position: any, avatar: string, label: string) {
-        super();
-        this.position = position;
-        this.avatar = avatar;
-        this.label = label;
-      }
-      onAdd() {
-        const div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.transform = "translate(-50%, -100%)";
-        div.style.pointerEvents = "none";
-        div.innerHTML = buildUserPinHTML(this.avatar, this.label, !!onLocationTap);
-        if (onLocationTap) {
-          div.querySelectorAll<HTMLElement>('[data-ko-tap="1"]').forEach((el) => {
-            el.addEventListener("click", (e) => {
-              e.stopPropagation();
-              onLocationTap();
-            });
-          });
-        }
-        this.div = div;
-        const panes = this.getPanes();
-        panes?.floatPane.appendChild(div);
-      }
-      draw() {
-        if (!this.div) return;
-        const projection = this.getProjection();
-        if (!projection) return;
-        const point = projection.fromLatLngToDivPixel(
-          new g.maps.LatLng(this.position.lat, this.position.lng),
-        );
-        if (point) {
-          this.div.style.left = `${point.x}px`;
-          // Anchor the teardrop tip on the actual lat/lng (translateY: -100%)
-          this.div.style.top = `${point.y}px`;
-        }
-      }
-      onRemove() {
-        if (this.div?.parentNode) this.div.parentNode.removeChild(this.div);
-        this.div = null;
-      }
-      updatePosition(p: { lat: number; lng: number }) {
-        this.position = p;
-        this.draw();
-      }
-      updateLabel(label: string) {
-        this.label = label;
-        if (this.div) {
-          const el = this.div.querySelector(".ko-addr-text");
-          if (el) el.textContent = label;
-        }
-      }
-    }
-
-    const overlay = new AvatarPinOverlay(pos, userAvatar, userLabel || "Detecting your location…");
-    overlay.setMap(mapRef.current);
-    userOverlayRef.current = overlay;
-  }, [status, userAvatar, showUserPin]);
-
-  // move overlay when center changes (avoid re-creating)
-  useEffect(() => {
-    if (!userOverlayRef.current || !center) return;
-    userOverlayRef.current.updatePosition(center);
-  }, [center?.lat, center?.lng]);
-
-  // update label without re-creating
-  useEffect(() => {
-    if (!userOverlayRef.current) return;
-    userOverlayRef.current.updateLabel(userLabel || "Detecting your location…");
-  }, [userLabel]);
+  // NOTE: the user/center pin is rendered as a SCREEN-FIXED overlay (see JSX
+  // below) — it stays locked at the dead-center of the map viewport at all
+  // times. The map drags under it (Uber/Ola style), and the `idle` listener
+  // bubbles the new center up via onCenterChange so the parent can refetch
+  // nearby vendors. We deliberately do NOT use a google.maps.OverlayView for
+  // the user pin anymore.
 
   // Geofence circle around the user (e.g. 10 km service radius)
   useEffect(() => {
@@ -377,7 +328,7 @@ export function QuickServiceMap({
         div.style.transform = "translate(-50%, -100%)";
         div.style.pointerEvents = "auto";
         div.style.cursor = this.v.onClick ? "pointer" : "default";
-        div.innerHTML = buildVendorCardHTML(this.v);
+        div.innerHTML = buildVendorPinHTML(this.v, categoryIcon);
         if (this.v.onClick) div.addEventListener("click", this.v.onClick);
         this.div = div;
         this.getPanes()?.overlayMouseTarget.appendChild(div);
@@ -410,12 +361,13 @@ export function QuickServiceMap({
       overlay.setMap(mapRef.current);
       vendorOverlaysRef.current.push(overlay);
     });
-  }, [vendors, status, center?.lat, center?.lng]);
+  }, [vendors, status, center?.lat, center?.lng, categoryIcon]);
 
   const recenter = () => {
     if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
     if (!mapRef.current) return;
     const pos = center ?? DEFAULT_CENTER;
+    programmaticRef.current += 2;
     mapRef.current.panTo(pos);
     mapRef.current.setZoom(16);
   };
@@ -583,6 +535,58 @@ export function QuickServiceMap({
         .ko-vcard.ko-online .ko-vcard-meta u { color: #059669; }
         .ko-vcard.ko-offline { opacity: .85; box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 0 0 1.5px rgba(245,158,11,.45); }
         .ko-vcard.ko-offline .ko-vcard-meta u, .ko-vcard.ko-office .ko-vcard-meta u { color: #d97706; }
+
+        /* --- FLOATING VENDOR PIN (category icon head + tail + tiny card below) --- */
+        .ko-vpin {
+          position: relative; display: flex; flex-direction: column; align-items: center;
+          gap: 1px; pointer-events: auto;
+          animation: ko-vcard-in .3s ease-out both;
+        }
+        .ko-vpin-head {
+          width: 24px; height: 24px; border-radius: 9999px;
+          background: #1f2937; padding: 3px;
+          display: grid; place-items: center;
+          box-shadow: 0 3px 8px rgba(0,0,0,.28);
+          border: 1.5px solid #fff;
+        }
+        .ko-vpin.ko-online .ko-vpin-head { background: #059669; }
+        .ko-vpin.ko-offline .ko-vpin-head { background: #d97706; }
+        .ko-vpin-head img {
+          width: 100%; height: 100%; border-radius: 9999px; object-fit: cover;
+          filter: brightness(0) invert(1);
+        }
+        .ko-vpin.ko-online .ko-vpin-head img,
+        .ko-vpin.ko-office .ko-vpin-head img,
+        .ko-vpin.ko-offline .ko-vpin-head img { filter: brightness(0) invert(1); }
+        .ko-vpin-tail {
+          width: 0; height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 7px solid #1f2937;
+          margin-top: -1px;
+        }
+        .ko-vpin.ko-online .ko-vpin-tail { border-top-color: #059669; }
+        .ko-vpin.ko-offline .ko-vpin-tail { border-top-color: #d97706; }
+        .ko-vpin .ko-vcard {
+          margin-top: 2px;
+          animation: none;
+          transform: none;
+        }
+        @keyframes ko-vcard-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- SCREEN-FIXED CENTER PIN (Uber-style) --- */
+        .ko-center-pin {
+          position: absolute; left: 50%; top: 50%;
+          transform: translate(-50%, -100%);
+          z-index: 25; pointer-events: none;
+          width: 64px;
+        }
+        .ko-center-pin .ko-teardrop-head {
+          animation: ko-heartbeat 1.6s ease-in-out infinite;
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -592,6 +596,19 @@ export function QuickServiceMap({
       {status === "loading" && (
         <div className="absolute inset-0 grid place-items-center bg-[#f5f1e8]">
           <Loader2 className="h-5 w-5 animate-spin text-amber-700" />
+        </div>
+      )}
+
+      {/* SCREEN-FIXED center pin — never moves, map drags under it. */}
+      {showUserPin && status === "ready" && (
+        <div className="ko-center-pin">
+          <div
+            dangerouslySetInnerHTML={{
+              __html: buildUserPinHTML(userAvatar, userLabel || "Detecting your location…", !!onLocationTap),
+            }}
+            style={{ pointerEvents: onLocationTap ? "auto" : "none" }}
+            onClick={onLocationTap}
+          />
         </div>
       )}
 
