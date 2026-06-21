@@ -246,7 +246,15 @@ export function QuickServiceMap({
         div.style.position = "absolute";
         div.style.transform = "translate(-50%, -100%)";
         div.style.pointerEvents = "none";
-        div.innerHTML = buildUserPinHTML(this.avatar, this.label);
+        div.innerHTML = buildUserPinHTML(this.avatar, this.label, !!onLocationTap);
+        if (onLocationTap) {
+          div.querySelectorAll<HTMLElement>('[data-ko-tap="1"]').forEach((el) => {
+            el.addEventListener("click", (e) => {
+              e.stopPropagation();
+              onLocationTap();
+            });
+          });
+        }
         this.div = div;
         const panes = this.getPanes();
         panes?.floatPane.appendChild(div);
