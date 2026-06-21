@@ -137,6 +137,12 @@ export function QuickServiceMap({
   const vendorOverlaysRef = useRef<any[]>([]);
   const circleRef = useRef<any>(null);
   const didInitialCenterRef = useRef(false);
+  const onCenterChangeRef = useRef(onCenterChange);
+  useEffect(() => { onCenterChangeRef.current = onCenterChange; }, [onCenterChange]);
+  /** Suppresses the idle→onCenterChange callback while we're programmatically
+   *  panning (initial fix, city fly-to, recenter button). Only real user
+   *  drag/zoom should re-route the search center. */
+  const programmaticRef = useRef(0);
   // Always start in "loading" for SSR-safe hydration; switch to "error" in effect when running on a preview host.
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
