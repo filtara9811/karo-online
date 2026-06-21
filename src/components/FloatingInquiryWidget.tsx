@@ -230,20 +230,44 @@ export function FloatingInquiryWidget() {
             )}
           </div>
 
-          {/* Cancel confirm */}
-          <AnimatePresence>
-            {confirmCancel && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white border border-slate-200 shadow-2xl p-3">
-                <p className="text-[12px] font-semibold text-slate-800">Cancel this inquiry?</p>
-                <div className="mt-2 flex gap-1.5">
-                  <button onClick={() => setConfirmCancel(null)} className="flex-1 h-7 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold active:scale-95">Keep</button>
-                  <button onClick={() => cancelInquiry(confirmCancel)} className="flex-1 h-7 rounded-md bg-red-500 text-white text-[11px] font-bold active:scale-95">Yes, cancel</button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
+      </AnimatePresence>
+
+      {/* Cancel confirm — rendered at top level so pointer-events work above map/header/FAB */}
+      <AnimatePresence>
+        {confirmCancel && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-6"
+            onClick={() => setConfirmCancel(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 10 }}
+              transition={{ type: "spring", damping: 22, stiffness: 280 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-xs rounded-2xl bg-white border border-slate-200 shadow-2xl p-4"
+            >
+              <p className="text-sm font-bold text-slate-900 text-center">Cancel this inquiry?</p>
+              <p className="text-[11px] text-slate-500 text-center mt-1">Vendors will be notified.</p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmCancel(null)}
+                  className="flex-1 h-10 rounded-lg bg-slate-100 text-slate-700 text-sm font-bold active:scale-95"
+                >
+                  Keep
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cancelInquiry(confirmCancel)}
+                  className="flex-1 h-10 rounded-lg bg-red-500 text-white text-sm font-bold active:scale-95"
+                >
+                  Yes, cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Picker sheet — multi-inquiry */}

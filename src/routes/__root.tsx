@@ -6,6 +6,8 @@ import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { registerPwaServiceWorker } from "@/lib/register-sw";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { startAutoSync } from "@/lib/offline/sync";
 
 import appCss from "../styles.css?url";
 
@@ -156,11 +158,14 @@ function RootComponent() {
       }
     } catch { /* noop */ }
     registerPwaServiceWorker();
+    const stop = startAutoSync();
+    return () => { stop?.(); };
   }, []);
   return (
     <AppPrefsProvider>
       <AuthProvider>
         <CartProvider>
+          <OfflineBanner />
           <AppShell />
           <Toaster position="top-center" richColors closeButton />
         </CartProvider>
