@@ -46,6 +46,7 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [insufficient, setInsufficient] = useState<{ leadId: string; reason: string } | null>(null);
   const [minimizedIds, setMinimizedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -69,11 +70,13 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
     setBusy(null);
     stopLeadAlert();
     if (!res.ok) {
+      if (res.reason === "insufficient_coins" || res.reason === "insufficient_balance") {
+        setInsufficient({ leadId, reason: res.reason });
+        return;
+      }
       const map: Record<string, string> = {
         already_taken: "Sorry — slots already filled.",
         sold_out: "Sold Out! Lead taken.",
-        insufficient_balance: "Low wallet balance.",
-        insufficient_coins: "Not enough LeadX coins.",
         not_notified: "This lead is not for you.",
         auth_required: "Please login again.",
       };
