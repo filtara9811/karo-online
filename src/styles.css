@@ -677,3 +677,10 @@ body.needs-sheet-open [data-bottom-action-bar] {
 .overflow-x-scroll {
   -webkit-overflow-scrolling: touch;
 }
+
+/* Hide bottom action pill while the LocationPickerSheet (or any sheet that
+   sets this body attribute) is open — it overlaps the sheet's controls. */
+body[data-location-picker-open="true"] [data-bottom-action-bar] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
