@@ -88,10 +88,15 @@ function playSynthBell() {
   } catch {}
 }
 
-/** Start the alert: looped sound up to 30 s + repeating vibration. */
-export function playLeadAlert(source: AlertSource = "default", opts?: { loop?: boolean; durationMs?: number }) {
+/** Start the alert: looped sound + repeating vibration. If `continuous` is true,
+ *  it plays forever until `stopLeadAlert()` is called (e.g. on Accept/Reject). */
+export function playLeadAlert(
+  source: AlertSource = "default",
+  opts?: { loop?: boolean; durationMs?: number; continuous?: boolean },
+) {
   if (typeof window === "undefined") return;
-  const loop = opts?.loop !== false;
+  const continuous = opts?.continuous === true;
+  const loop = continuous || opts?.loop !== false;
   const dur = opts?.durationMs ?? MAX_DURATION_MS;
 
   stopLeadAlert();
@@ -103,7 +108,7 @@ export function playLeadAlert(source: AlertSource = "default", opts?: { loop?: b
     let vc = 0;
     vibrateTimer = setInterval(() => {
       vc += 1;
-      if (vc > 14) { if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; } return; }
+      if (!continuous && vc > 14) { if (vibrateTimer) { clearInterval(vibrateTimer); vibrateTimer = null; } return; }
       try { navigator.vibrate?.([300, 120, 300, 120, 500]); } catch {}
     }, 2000);
   }
@@ -132,8 +137,10 @@ export function playLeadAlert(source: AlertSource = "default", opts?: { loop?: b
     if (!mp3Started && (currentAudio?.paused ?? true)) playSynthBell();
   }, 600);
 
-  if (stopTimer) clearTimeout(stopTimer);
-  stopTimer = setTimeout(() => stopLeadAlert(), dur);
+  if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
+  if (!continuous) {
+    stopTimer = setTimeout(() => stopLeadAlert(), dur);
+  }
 }
 
 /** Play a quick non-looping ping for new chat messages / small events. */
