@@ -1155,6 +1155,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_broadcast_schedule: {
+        Row: {
+          batch_no: number
+          batch_offset: number
+          batch_size: number
+          created_at: string
+          fire_at: string
+          id: string
+          lead_id: string
+          processed_at: string | null
+          result: Json | null
+        }
+        Insert: {
+          batch_no: number
+          batch_offset?: number
+          batch_size: number
+          created_at?: string
+          fire_at: string
+          id?: string
+          lead_id: string
+          processed_at?: string | null
+          result?: Json | null
+        }
+        Update: {
+          batch_no?: number
+          batch_offset?: number
+          batch_size?: number
+          created_at?: string
+          fire_at?: string
+          id?: string
+          lead_id?: string
+          processed_at?: string | null
+          result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_broadcast_schedule_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_messages: {
         Row: {
           attachment: Json
@@ -4112,6 +4156,7 @@ export type Database = {
       }
     }
     Functions: {
+      _lead_whatsapp_webhook_url: { Args: never; Returns: string }
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
       admin_adjust_wallet: {
         Args: {
@@ -4498,6 +4543,7 @@ export type Database = {
       match_lead_vendors: { Args: { _lead_id: string }; Returns: Json }
       normalize_email: { Args: { _email: string }; Returns: string }
       normalize_phone10: { Args: { _phone: string }; Returns: string }
+      process_lead_broadcast_schedule: { Args: never; Returns: number }
       realtime_topic_authorized: { Args: { _topic: string }; Returns: boolean }
       recognize_customer_by_fp: { Args: { p_device_fp: string }; Returns: Json }
       record_customer_visit: {
