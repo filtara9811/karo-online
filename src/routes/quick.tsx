@@ -406,6 +406,7 @@ function QuickPage() {
   // vendor-load effect can route fetches to the user-selected city.
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+  const [searchRadiusKm, setSearchRadiusKm] = useState<number>(10);
 
 
   useEffect(() => {
@@ -446,7 +447,7 @@ function QuickPage() {
       }
       setRealVendorsLoading(true);
       try {
-        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10, subCategoryId, itemIds: selectedItemIds } });
+        const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: searchRadiusKm, subCategoryId, itemIds: selectedItemIds } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
         setRealVendors(toMapped(realRows));
@@ -474,7 +475,7 @@ function QuickPage() {
       window.removeEventListener("online", onOnline);
       supabase.removeChannel(ch);
     };
-  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline, pickedLocation]);
+  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline, pickedLocation, searchRadiusKm]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
@@ -536,7 +537,7 @@ function QuickPage() {
           userAvatar={profile?.avatar_url || avatarUser}
           userLabel={effectiveLabel}
           geoStatus={geo.status}
-          radiusKm={10}
+          radiusKm={searchRadiusKm}
           onLocationTap={() => setLocationSheetOpen(true)}
         />
         {/* Top-right: Join Business / Vendor on-off toggle */}
@@ -976,12 +977,18 @@ function QuickPage() {
       <LocationPickerSheet
         open={locationSheetOpen}
         onClose={() => setLocationSheetOpen(false)}
+        onPreview={(loc) => {
+          // Live-sync the map while the user is still browsing the sheet.
+          setPickedLocation(loc);
+        }}
         onPick={(loc) => {
           setPickedLocation(loc);
-          toast.success(`Searching vendors in ${loc.address.split(",")[0]}`);
+          toast.success(`Searching vendors in ${loc.address.split(",")[0]} · ${searchRadiusKm} km`);
         }}
         bias={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : undefined}
         currentLabel={geo.label}
+        radiusKm={searchRadiusKm}
+        onRadiusChange={setSearchRadiusKm}
         onUseCurrent={() => {
           setPickedLocation(null);
           if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));

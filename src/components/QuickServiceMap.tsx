@@ -553,36 +553,39 @@ export function QuickServiceMap({
           100% { transform: scale(2.6); opacity: 0; }
         }
 
-        /* --- VENDOR INFO CARDS --- */
+        /* --- VENDOR INFO CARDS — tiny (5x smaller than user pin) --- */
         .ko-vcard {
-          display: flex; align-items: center; gap: 7px;
-          background: #fff; border-radius: 14px;
-          padding: 5px 10px 5px 5px;
-          box-shadow: 0 6px 16px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.04);
-          min-width: 142px; max-width: 170px;
+          display: flex; align-items: center; gap: 4px;
+          background: #fff; border-radius: 9px;
+          padding: 2px 6px 2px 2px;
+          box-shadow: 0 3px 8px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.04);
+          min-width: 76px; max-width: 110px;
           font-family: inherit;
           animation: ko-vcard-in .3s ease-out both;
         }
         @keyframes ko-vcard-in {
-          from { opacity: 0; transform: translate(-50%, -100%) translateY(6px); }
+          from { opacity: 0; transform: translate(-50%, -100%) translateY(4px); }
           to   { opacity: 1; transform: translate(-50%, -100%) translateY(0); }
         }
         .ko-vcard-avatar {
-          width: 32px; height: 32px; border-radius: 9999px; overflow: hidden;
-          background: #f3f4f6; flex-shrink: 0; border: 1.5px solid #fff;
-          box-shadow: 0 1px 3px rgba(0,0,0,.15);
+          width: 16px; height: 16px; border-radius: 9999px; overflow: hidden;
+          background: #f3f4f6; flex-shrink: 0; border: 1px solid #fff;
+          box-shadow: 0 1px 2px rgba(0,0,0,.18);
         }
         .ko-vcard-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .ko-vcard-body { flex: 1; min-width: 0; line-height: 1.15; }
-        .ko-vcard-name { font-size: 11.5px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ko-vcard-area { font-size: 9.5px; color: #4b5563; display: flex; align-items: center; gap: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ko-vcard-area span { font-size: 8px; }
-        .ko-vcard-meta { font-size: 9.5px; color: #4b5563; margin-top: 1px; }
-        .ko-vcard-meta u { color: #b45309; font-weight: 600; }
-        .ko-vcard.ko-online { box-shadow: 0 6px 16px rgba(0,0,0,.16), 0 0 0 2px rgba(16,185,129,.45); }
+        .ko-vcard-body { flex: 1; min-width: 0; line-height: 1.1; }
+        .ko-vcard-name { font-size: 8.5px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ko-vcard-area { font-size: 7px; color: #6b7280; display: flex; align-items: center; gap: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ko-vcard-area span { font-size: 6px; }
+        .ko-vcard-meta { font-size: 7px; color: #4b5563; }
+        .ko-vcard-meta u { color: #b45309; font-weight: 600; text-decoration: none; }
+        .ko-vcard.ko-online { box-shadow: 0 3px 8px rgba(0,0,0,.14), 0 0 0 1.5px rgba(16,185,129,.55); }
         .ko-vcard.ko-online .ko-vcard-meta u { color: #059669; }
-        .ko-vcard.ko-offline { opacity: .86; box-shadow: 0 6px 16px rgba(0,0,0,.14), 0 0 0 2px rgba(245,158,11,.42); }
+        .ko-vcard.ko-offline { opacity: .85; box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 0 0 1.5px rgba(245,158,11,.45); }
         .ko-vcard.ko-offline .ko-vcard-meta u, .ko-vcard.ko-office .ko-vcard-meta u { color: #d97706; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
       `}</style>
       <div ref={ref} className="absolute inset-0" />
       {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} showUserPin={showUserPin} />}
