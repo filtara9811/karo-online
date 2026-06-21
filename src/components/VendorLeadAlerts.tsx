@@ -22,13 +22,14 @@ export function VendorLeadAlerts() {
     };
   }, []);
 
-  // Ring + speak ONLY for genuinely new notificationIds (i.e. when a lead arrives)
+  // Ring CONTINUOUSLY until the vendor accepts/rejects (alerts drains to 0).
   const newestId = alerts[0]?.notificationId;
   useEffect(() => {
     if (!newestId) return;
     if (spokenIds.current.has(newestId)) return;
     spokenIds.current.add(newestId);
-    playLeadAlert("default");
+    // continuous: true → loops forever, no 30s cutoff
+    playLeadAlert("default", { continuous: true });
     setTimeout(() => {
       speakHindi("Aapko ek nayi lead request receive hui hai. Please lead accept karein.", { dedupKey: `lead:${newestId}`, ignoreMute: true });
     }, 450);

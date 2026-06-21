@@ -71,7 +71,8 @@ export function useFcmToken() {
       const body = n.body || d.body || "";
 
       if (kind === "lead_alert" || kind === "new_lead") {
-        playLeadAlert("quick", { loop: true, durationMs: 30_000 });
+        // Continuous ring until vendor accepts/rejects from the alert stack
+        playLeadAlert("quick", { continuous: true });
       }
 
       // 1) Speak in Hindi based on type
