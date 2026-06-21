@@ -112,6 +112,7 @@ export function QuickServiceMap({
   radiusKm,
   onLocationTap,
   onCenterChange,
+  onMyGps,
   categoryIcon,
 }: {
   center: { lat: number; lng: number } | null;
@@ -128,6 +129,9 @@ export function QuickServiceMap({
   /** Fires when user drags/zooms and the map settles, so the parent can refetch
    *  vendors around the new center (Uber-style drag-to-search). */
   onCenterChange?: (c: { lat: number; lng: number }) => void;
+  /** Tap on the floating "My GPS" pill — parent should clear any picked
+   *  override so the map re-centers on the device location. */
+  onMyGps?: () => void;
   /** Service-specific icon (e.g. hammer for Carpenter) used as the floating pin head. */
   categoryIcon?: string;
 }) {
