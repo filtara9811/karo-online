@@ -402,6 +402,12 @@ function QuickPage() {
 
   const isOnline = useOnlineStatus();
 
+  // Manual location override (Uber-style picker) — declared early so the
+  // vendor-load effect can route fetches to the user-selected city.
+  const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+
+
   useEffect(() => {
     const isUuid = (value: string | null | undefined) =>
       !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
