@@ -399,6 +399,8 @@ function QuickPage() {
   const [realVendorsLoading, setRealVendorsLoading] = useState(false);
   const getNearbyOnlineVendorsFn = useServerFn(getNearbyOnlineVendors);
 
+  const isOnline = useOnlineStatus();
+
   useEffect(() => {
     const isUuid = (value: string | null | undefined) =>
       !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -406,26 +408,43 @@ function QuickPage() {
     const subCategoryId = isUuid(selectedSub?.id) ? selectedSub!.id : null;
     const selectedItemIds = subItems.map((it) => it.id).filter(isUuid);
 
+    // Cache key: rounded geo (~1km grid) + sub-category, scoped to 10km local ring.
+    const gridLat = origin ? Math.round(origin.lat * 100) / 100 : "nogeo";
+    const gridLng = origin ? Math.round(origin.lng * 100) / 100 : "nogeo";
+    const cacheKey = `nearby-10km:${gridLat}:${gridLng}:${subCategoryId ?? "all"}`;
+
+    const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42], [60, 18], [35, 50], [85, 70], [12, 75]];
+    const toMapped = (realRows: any[]): Vendor[] =>
+      realRows.slice(0, 20).map((v: any, i: number) => {
+        const [x, y] = positions[i % positions.length];
+        const distance = v.km != null ? `${v.km} km away` : null;
+        const area = [v.area, distance].filter(Boolean).join(", ") || "Nearby";
+        return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area, km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
+      });
+
     let cancelled = false;
+
+    // 1) Paint cached vendors INSTANTLY (offline-first).
+    void cachePeek<any[]>(cacheKey).then((cached) => {
+      if (!cancelled && cached && cached.length) setRealVendors(toMapped(cached));
+    });
+
     const loadRealVendors = async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        // Offline: keep showing cached list, skip network.
+        setRealVendorsLoading(false);
+        return;
+      }
       setRealVendorsLoading(true);
       try {
-        // Customer map shows vendors mapped to the selected service/category.
-        // Online/active vendors become green; offline/inactive vendors stay visible in amber.
         const res = await getNearbyOnlineVendorsFn({ data: { origin, radiusKm: 10, subCategoryId, itemIds: selectedItemIds } });
         if (cancelled) return;
         const realRows = res.ok ? res.vendors : [];
-        const mapped: Vendor[] = realRows.slice(0, 20).map((v: any, i: number) => {
-          const positions = [[28, 28], [72, 30], [22, 60], [70, 65], [50, 78], [40, 22], [80, 48], [18, 42], [60, 18], [35, 50], [85, 70], [12, 75]];
-          const [x, y] = positions[i % positions.length];
-          const distance = v.km != null ? `${v.km} km away` : null;
-          const area = [v.area, distance].filter(Boolean).join(", ") || "Nearby";
-          return { id: v.id, name: v.business_name || v.owner_name || "Vendor", area, km: v.km ?? 0, status: v.is_online ? "Online" : "Offline", avatar: v.avatar_url || avatarUser, x, y, lat: v.lat, lng: v.lng, cat: selectedSub?.slug ?? "all" };
-        });
-        setRealVendors(mapped);
+        setRealVendors(toMapped(realRows));
+        // Persist fresh 10km list for offline re-entry (12h TTL).
+        void cacheSet(cacheKey, realRows, 1000 * 60 * 60 * 12);
       } catch (e) {
         console.warn("quick map vendors failed", e);
-        if (!cancelled) setRealVendors([]);
       } finally {
         if (!cancelled) setRealVendorsLoading(false);
       }
@@ -436,10 +455,17 @@ function QuickPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "vendors" }, () => loadRealVendors())
       .on("postgres_changes", { event: "*", schema: "public", table: "vendor_item_mappings" }, () => loadRealVendors())
       .subscribe();
-    // Auto-refresh every 60s so freshly-online vendors appear without a manual reload.
     const interval = window.setInterval(loadRealVendors, 60_000);
-    return () => { cancelled = true; window.clearInterval(interval); supabase.removeChannel(ch); };
-  }, [selectedSub, subItems, geo.lat, geo.lng]);
+    // Reconnect → silently refresh & inject into cache.
+    const onOnline = () => loadRealVendors();
+    window.addEventListener("online", onOnline);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("online", onOnline);
+      supabase.removeChannel(ch);
+    };
+  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
