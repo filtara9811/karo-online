@@ -973,6 +973,20 @@ function QuickPage() {
 
       <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
       <QuickOrdersSheet open={ordersSheetOpen} onOpenChange={setOrdersSheetOpen} />
+      <LocationPickerSheet
+        open={locationSheetOpen}
+        onClose={() => setLocationSheetOpen(false)}
+        onPick={(loc) => {
+          setPickedLocation(loc);
+          toast.success(`Searching vendors in ${loc.address.split(",")[0]}`);
+        }}
+        bias={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : undefined}
+        currentLabel={geo.label}
+        onUseCurrent={() => {
+          setPickedLocation(null);
+          if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+        }}
+      />
     </div>
   );
 }
