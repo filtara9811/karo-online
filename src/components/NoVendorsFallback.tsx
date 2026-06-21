@@ -26,6 +26,12 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   async function submitExpansion() {
+    // Expansion beyond the cached 10km local ring requires internet — we don't
+    // cache the whole city (per Hybrid-Search policy).
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("Please connect to the internet to search outside your 10 km local area.");
+      return;
+    }
     setSubmitting(true);
     try {
       const patch: { search_radius_km?: number; note?: string } = {};
