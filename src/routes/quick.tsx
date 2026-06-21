@@ -539,6 +539,22 @@ function QuickPage() {
           geoStatus={geo.status}
           radiusKm={searchRadiusKm}
           onLocationTap={() => setLocationSheetOpen(true)}
+          categoryIcon={selectedSub?.image_url || (selectedSub ? SLUG_IMAGE[selectedSub.slug] : undefined) || undefined}
+          onCenterChange={(c) => {
+            // User dragged the map → re-route the search center to the new
+            // coordinates so the floating vendor pins refresh around the
+            // pinned center (Uber-style drag-to-search).
+            setPickedLocation((prev) => {
+              if (prev && Math.abs(prev.lat - c.lat) < 1e-4 && Math.abs(prev.lng - c.lng) < 1e-4) return prev;
+              return {
+                lat: c.lat,
+                lng: c.lng,
+                address: prev?.address && Math.abs(prev.lat - c.lat) < 0.02 && Math.abs(prev.lng - c.lng) < 0.02
+                  ? prev.address
+                  : `Pinned · ${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}`,
+              };
+            });
+          }}
         />
         {/* Top-right: Join Business / Vendor on-off toggle */}
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
