@@ -546,14 +546,36 @@ function QuickPage() {
             // pinned center (Uber-style drag-to-search).
             setPickedLocation((prev) => {
               if (prev && Math.abs(prev.lat - c.lat) < 1e-4 && Math.abs(prev.lng - c.lng) < 1e-4) return prev;
+              const keepLabel =
+                prev?.address &&
+                !prev.address.startsWith("Pinned ·") &&
+                Math.abs(prev.lat - c.lat) < 0.02 &&
+                Math.abs(prev.lng - c.lng) < 0.02;
               return {
                 lat: c.lat,
                 lng: c.lng,
-                address: prev?.address && Math.abs(prev.lat - c.lat) < 0.02 && Math.abs(prev.lng - c.lng) < 0.02
-                  ? prev.address
-                  : `Pinned · ${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}`,
+                address: keepLabel ? prev!.address : "Locating address…",
               };
             });
+            // Fire-and-forget reverse-geocode to replace lat/lng with a
+            // human-readable street/area label.
+            void (async () => {
+              try {
+                const { reverseGeocode } = await import("@/lib/google-maps");
+                const label = await reverseGeocode(c.lat, c.lng);
+                if (!label) return;
+                setPickedLocation((cur) => {
+                  if (!cur || Math.abs(cur.lat - c.lat) > 1e-4 || Math.abs(cur.lng - c.lng) > 1e-4) return cur;
+                  return { ...cur, address: label };
+                });
+              } catch { /* ignore */ }
+            })();
+          }}
+          onMyGps={() => {
+            if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+            // Clear picked-location so the effective center falls back to the
+            // live geolocation fix from `useGeolocation`.
+            setPickedLocation(null);
           }}
         />
         {/* Top-right: Join Business / Vendor on-off toggle */}

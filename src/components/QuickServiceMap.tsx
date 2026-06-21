@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GOOGLE_MAPS_AUTH_FAILURE_EVENT, loadMapsSdk } from "@/lib/google-maps";
-import { Layers, Share2, Loader2, LocateFixed, MapPin } from "lucide-react";
+import { Layers, Share2, Loader2, LocateFixed, MapPin, Navigation2 } from "lucide-react";
 import { toast } from "sonner";
 
 const MAP_TYPES = ["roadmap", "satellite", "hybrid", "terrain"] as const;
@@ -112,6 +112,7 @@ export function QuickServiceMap({
   radiusKm,
   onLocationTap,
   onCenterChange,
+  onMyGps,
   categoryIcon,
 }: {
   center: { lat: number; lng: number } | null;
@@ -128,6 +129,9 @@ export function QuickServiceMap({
   /** Fires when user drags/zooms and the map settles, so the parent can refetch
    *  vendors around the new center (Uber-style drag-to-search). */
   onCenterChange?: (c: { lat: number; lng: number }) => void;
+  /** Tap on the floating "My GPS" pill — parent should clear any picked
+   *  override so the map re-centers on the device location. */
+  onMyGps?: () => void;
   /** Service-specific icon (e.g. hammer for Carpenter) used as the floating pin head. */
   categoryIcon?: string;
 }) {
@@ -689,6 +693,23 @@ export function QuickServiceMap({
           <MapPin className="h-3.5 w-3.5 text-red-500" />
         </button>
       )}
+
+      {/* FLOATING "My GPS" pill — bottom-left of map, above the search bar.
+          Re-prompts a fresh high-accuracy fix AND tells the parent to clear
+          any picked-location override so the map snaps back to the device. */}
+      <button
+        onClick={() => {
+          onMyGps?.();
+          requestLocation();
+        }}
+        aria-label="Use my current location"
+        className="absolute bottom-3 left-3 z-30 inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 bg-white/95 border border-emerald-300 shadow-md text-emerald-700 text-[11px] font-bold active:scale-95"
+      >
+        <span className="h-5 w-5 rounded-full bg-emerald-500 grid place-items-center shadow-sm">
+          <Navigation2 className="h-3 w-3 text-white" strokeWidth={3} />
+        </span>
+        My GPS
+      </button>
     </div>
   );
 }

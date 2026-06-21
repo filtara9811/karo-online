@@ -36,7 +36,7 @@ export function PlacesAutocomplete({
 
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (!value || value.trim().length < 2) {
+    if (!value || value.trim().length < 1) {
       setPreds([]);
       return;
     }

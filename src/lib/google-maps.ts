@@ -167,7 +167,7 @@ export async function placesAutocomplete(
   opts: { sessionToken?: string; bias?: LatLng } = {},
 ): Promise<PlacePrediction[]> {
   const trimmed = input.trim();
-  if (trimmed.length < 2) return [];
+  if (trimmed.length < 1) return [];
   const k = `ac:${trimmed.toLowerCase()}|${opts.bias ? round(opts.bias.lat, 2) + "," + round(opts.bias.lng, 2) : ""}`;
   const cached = cacheGet<PlacePrediction[]>(k, TTL.autocomplete);
   if (cached) return cached;
