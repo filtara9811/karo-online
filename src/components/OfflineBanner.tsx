@@ -1,12 +1,15 @@
+import { useEffect, useState } from "react";
 import { CloudOff, RefreshCw } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useQueueCount } from "@/hooks/useQueueCount";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function OfflineBanner() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const online = useOnlineStatus();
   const pending = useQueueCount();
-  const show = !online || pending > 0;
+  const show = mounted && (!online || pending > 0);
   return (
     <AnimatePresence>
       {show && (
