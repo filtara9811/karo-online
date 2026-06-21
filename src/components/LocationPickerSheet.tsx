@@ -52,12 +52,23 @@ export function LocationPickerSheet({ open, onClose, onPick, bias, currentLabel,
     if (open) {
       setRecents(loadRecents());
       setValue("");
+      if (typeof document !== "undefined") {
+        document.body.dataset.locationPickerOpen = "true";
+      }
     } else {
       try {
         recogRef.current?.stop?.();
       } catch { /* noop */ }
       setListening(false);
+      if (typeof document !== "undefined") {
+        delete document.body.dataset.locationPickerOpen;
+      }
     }
+    return () => {
+      if (typeof document !== "undefined") {
+        delete document.body.dataset.locationPickerOpen;
+      }
+    };
   }, [open]);
 
   const startVoice = () => {
@@ -126,7 +137,7 @@ export function LocationPickerSheet({ open, onClose, onPick, bias, currentLabel,
           <div>
             <h2 className="text-base font-bold text-slate-900">Choose Location</h2>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Search any city — Mathura, Jaipur, Mumbai…
+              Search any city — Delhi, Mumbai, Hyderabad, Bangalore, Jaipur…
             </p>
           </div>
           <button

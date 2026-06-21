@@ -278,7 +278,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
     <>
       <div
         data-bottom-action-bar
-        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 z-30 pb-[env(safe-area-inset-bottom)] transition-opacity duration-150"
         style={{ bottom: 0 }}
       >
         <div className="max-w-md mx-auto px-4 pb-2 pt-0 flex flex-col items-stretch">
