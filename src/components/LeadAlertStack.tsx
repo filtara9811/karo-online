@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Bell, Clock, MapPin, Phone } from "lucide-react";
+import { X, Check, Bell, Clock, MapPin, Phone, Coins, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { IncomingLead } from "@/hooks/use-vendor-leads";
