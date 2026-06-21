@@ -328,7 +328,7 @@ export function QuickServiceMap({
         div.style.transform = "translate(-50%, -100%)";
         div.style.pointerEvents = "auto";
         div.style.cursor = this.v.onClick ? "pointer" : "default";
-        div.innerHTML = buildVendorCardHTML(this.v);
+        div.innerHTML = buildVendorPinHTML(this.v, categoryIcon);
         if (this.v.onClick) div.addEventListener("click", this.v.onClick);
         this.div = div;
         this.getPanes()?.overlayMouseTarget.appendChild(div);
