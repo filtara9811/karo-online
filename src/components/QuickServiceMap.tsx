@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GOOGLE_MAPS_AUTH_FAILURE_EVENT, loadMapsSdk } from "@/lib/google-maps";
-import { Layers, Share2, Loader2, LocateFixed, MapPin } from "lucide-react";
+import { Layers, Share2, Loader2, LocateFixed, MapPin, Navigation2 } from "lucide-react";
 import { toast } from "sonner";
 
 const MAP_TYPES = ["roadmap", "satellite", "hybrid", "terrain"] as const;
