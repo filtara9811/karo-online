@@ -29,6 +29,7 @@ import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
 import { cachePeek, cacheSet } from "@/lib/offline/cache";
 import { enqueue } from "@/lib/offline/queue";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
