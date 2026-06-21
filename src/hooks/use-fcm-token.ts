@@ -71,8 +71,8 @@ export function useFcmToken() {
       const body = n.body || d.body || "";
 
       if (kind === "lead_alert" || kind === "new_lead") {
-        // Continuous ring until vendor accepts/rejects from the alert stack
-        playLeadAlert("quick", { continuous: true });
+        // One-time attention chime — TTS (speakForKind) below speaks the Hindi line once.
+        playLeadAlert("quick", { loop: false, durationMs: 1500 });
       }
 
       // 1) Speak in Hindi based on type
