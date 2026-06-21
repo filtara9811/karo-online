@@ -71,23 +71,33 @@ function buildUserPinHTML(avatar: string, label: string, tappable = false) {
     </div>`;
 }
 
-function buildVendorCardHTML(v: QuickMapVendor) {
+function buildVendorPinHTML(v: QuickMapVendor, categoryIcon?: string) {
   const safeAvatar = v.avatar.replace(/"/g, "&quot;");
   const safeName = v.name.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const safeArea = (v.area || "Nearby").replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const km = typeof v.km === "number" ? `${v.km.toFixed(1)} km.` : "";
   const status = v.status || "Office";
   const statusClass = status === "Online" ? "ko-online" : status === "Offline" ? "ko-offline" : "ko-office";
+  const iconImg = categoryIcon
+    ? `<img src="${categoryIcon.replace(/"/g, "&quot;")}" alt="" />`
+    : `<img src="${safeAvatar}" alt="" />`;
   return `
-    <div class="ko-vcard ${statusClass}" data-vid="${v.id}">
-      <div class="ko-vcard-avatar"><img src="${safeAvatar}" alt="" /></div>
-      <div class="ko-vcard-body">
-        <div class="ko-vcard-name">${safeName}</div>
-        <div class="ko-vcard-area"><span>📍</span>${safeArea}</div>
-        <div class="ko-vcard-meta">${km} <u>${status}</u></div>
+    <div class="ko-vpin ${statusClass}" data-vid="${v.id}">
+      <div class="ko-vpin-head">${iconImg}</div>
+      <div class="ko-vpin-tail"></div>
+      <div class="ko-vcard ${statusClass}">
+        <div class="ko-vcard-avatar"><img src="${safeAvatar}" alt="" /></div>
+        <div class="ko-vcard-body">
+          <div class="ko-vcard-name">${safeName}</div>
+          <div class="ko-vcard-area"><span>📍</span>${safeArea}</div>
+          <div class="ko-vcard-meta">${km} <u>${status}</u></div>
+        </div>
       </div>
     </div>`;
 }
+
+// Legacy alias used by the SSR-safe MapFallback below.
+const buildVendorCardHTML = (v: QuickMapVendor) => buildVendorPinHTML(v);
 
 export function QuickServiceMap({
   center,
