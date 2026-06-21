@@ -280,14 +280,7 @@ export function LocationPickerSheet({
           >
             <Ruler className="h-3.5 w-3.5" /> {radiusKm} km <ChevronDown className="h-3 w-3" />
           </button>
-          {onUseCurrent && (
-            <button
-              onClick={() => { onUseCurrent(); onClose(); }}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold active:scale-95"
-            >
-              <Navigation2 className="h-3.5 w-3.5" /> My GPS
-            </button>
-          )}
+          {/* My GPS chip removed — it lives as a floating pill on the map now. */}
         </div>
 
         {/* Body — recents (hidden when collapsed for breathing room) */}
