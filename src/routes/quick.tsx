@@ -521,15 +521,16 @@ function QuickPage() {
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
         <QuickServiceMap
-          center={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null}
+          center={effectiveCenter}
           vendors={filteredVendors.map((v) => ({
             id: v.id, name: v.name, avatar: v.avatar, x: v.x, y: v.y,
             area: v.area, km: v.km, status: v.status, lat: v.lat, lng: v.lng,
           }))}
           userAvatar={profile?.avatar_url || avatarUser}
-          userLabel={geo.label}
+          userLabel={effectiveLabel}
           geoStatus={geo.status}
           radiusKm={10}
+          onLocationTap={() => setLocationSheetOpen(true)}
         />
         {/* Top-right: Join Business / Vendor on-off toggle */}
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
