@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Bell, Clock, MapPin, Phone } from "lucide-react";
+import { X, Check, Bell, Clock, MapPin, Phone, Coins, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { IncomingLead } from "@/hooks/use-vendor-leads";
@@ -46,6 +46,7 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [insufficient, setInsufficient] = useState<{ leadId: string; reason: string } | null>(null);
   const [minimizedIds, setMinimizedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -69,11 +70,13 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
     setBusy(null);
     stopLeadAlert();
     if (!res.ok) {
+      if (res.reason === "insufficient_coins" || res.reason === "insufficient_balance") {
+        setInsufficient({ leadId, reason: res.reason });
+        return;
+      }
       const map: Record<string, string> = {
         already_taken: "Sorry — slots already filled.",
         sold_out: "Sold Out! Lead taken.",
-        insufficient_balance: "Low wallet balance.",
-        insufficient_coins: "Not enough LeadX coins.",
         not_notified: "This lead is not for you.",
         auth_required: "Please login again.",
       };
@@ -143,6 +146,56 @@ export function LeadAlertStack({ alerts, onAccept, onReject, onDismiss }: Props)
           </AnimatePresence>
         </div>
       )}
+
+      {/* Insufficient LeadX coins modal */}
+      <AnimatePresence>
+        {insufficient && (
+          <motion.div
+            key="insf"
+            className="fixed inset-0 z-[140] grid place-items-center px-5"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" onClick={() => setInsufficient(null)} />
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              className="relative w-full max-w-xs rounded-3xl bg-white shadow-2xl overflow-hidden"
+            >
+              <div className="bg-gradient-to-br from-amber-400 to-amber-600 px-5 py-5 text-center">
+                <div className="mx-auto h-14 w-14 rounded-full bg-white/95 grid place-items-center shadow-lg">
+                  <Coins className="h-7 w-7 text-amber-600" strokeWidth={2.4} />
+                </div>
+                <h3 className="mt-3 font-bold text-white text-lg">Insufficient Lead-X balance</h3>
+              </div>
+              <div className="px-5 py-4 text-center">
+                <p className="text-[13px] text-slate-600 leading-snug">
+                  Please recharge your wallet to accept this lead.
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      setInsufficient(null);
+                      navigate({ to: "/vendor/wallet" });
+                    }}
+                    className="w-full rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white font-bold py-3 active:scale-[0.98] transition shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={3} />
+                    Add Coins
+                  </button>
+                  <button
+                    onClick={() => setInsufficient(null)}
+                    className="w-full rounded-xl bg-slate-100 text-slate-700 font-semibold py-2.5 active:scale-[0.98] transition"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

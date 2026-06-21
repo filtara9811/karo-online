@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useVendorLeadAlerts } from "@/hooks/use-vendor-leads";
 import { LeadAlertStack } from "@/components/LeadAlertStack";
-import { requestNotificationPermission, playLeadAlert, unlockLeadAlertAudio } from "@/lib/lead-sound";
+import { requestNotificationPermission, unlockLeadAlertAudio, playLeadAlert, stopLeadAlert } from "@/lib/lead-sound";
 import { speakHindi, primeVoices, unlockTTS } from "@/lib/tts";
 
 export function VendorLeadAlerts() {
@@ -22,17 +22,23 @@ export function VendorLeadAlerts() {
     };
   }, []);
 
-  // Ring CONTINUOUSLY until the vendor accepts/rejects (alerts drains to 0).
+  // ONE-TIME voice alert (Hindi TTS) — no continuous ringing.
+  // A short attention "ding" plays once, then the Hindi line is spoken.
   const newestId = alerts[0]?.notificationId;
   useEffect(() => {
     if (!newestId) return;
     if (spokenIds.current.has(newestId)) return;
     spokenIds.current.add(newestId);
-    // continuous: true → loops forever, no 30s cutoff
-    playLeadAlert("default", { continuous: true });
+    // single attention chime (no loop, no continuous)
+    playLeadAlert("default", { loop: false, durationMs: 1500 });
     setTimeout(() => {
-      speakHindi("Aapko ek nayi lead request receive hui hai. Please lead accept karein.", { dedupKey: `lead:${newestId}`, ignoreMute: true });
-    }, 450);
+      speakHindi(
+        "Aashu bhai, aapko ek lead receive hui hai. Kripya jaldi dekhein.",
+        { dedupKey: `lead:${newestId}`, ignoreMute: true },
+      );
+      // stop any residual loop just in case
+      setTimeout(() => stopLeadAlert(), 100);
+    }, 600);
   }, [newestId]);
 
   if (!hydrated) return null;

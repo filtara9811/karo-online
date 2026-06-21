@@ -102,6 +102,7 @@ import { Route as AdminWebBlogRouteImport } from './routes/admin.web.blog'
 import { Route as AdminWebApkRouteImport } from './routes/admin.web.apk'
 import { Route as AdminViewUserIdRouteImport } from './routes/admin.view.$userId'
 import { Route as ApiPublicVcardCodeRouteImport } from './routes/api.public.vcard.$code'
+import { Route as ApiPublicHooksLeadWhatsappRouteImport } from './routes/api/public/hooks.lead-whatsapp'
 import { Route as ApiPublicShareImageKindCodeRouteImport } from './routes/api.public.share-image.$kind.$code'
 
 const VendorsRoute = VendorsRouteImport.update({
@@ -569,6 +570,12 @@ const ApiPublicVcardCodeRoute = ApiPublicVcardCodeRouteImport.update({
   path: '/api/public/vcard/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksLeadWhatsappRoute =
+  ApiPublicHooksLeadWhatsappRouteImport.update({
+    id: '/api/public/hooks/lead-whatsapp',
+    path: '/api/public/hooks/lead-whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicShareImageKindCodeRoute =
   ApiPublicShareImageKindCodeRouteImport.update({
     id: '/api/public/share-image/$kind/$code',
@@ -669,6 +676,7 @@ export interface FileRoutesByFullPath {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
+  '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
@@ -764,6 +772,7 @@ export interface FileRoutesByTo {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
+  '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
@@ -861,6 +870,7 @@ export interface FileRoutesById {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
+  '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
@@ -959,6 +969,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
+    | '/api/public/hooks/lead-whatsapp'
     | '/api/public/vcard/$code'
     | '/api/public/share-image/$kind/$code'
   fileRoutesByTo: FileRoutesByTo
@@ -1054,6 +1065,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web'
+    | '/api/public/hooks/lead-whatsapp'
     | '/api/public/vcard/$code'
     | '/api/public/share-image/$kind/$code'
   id:
@@ -1150,6 +1162,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/vendor/lead/$id'
     | '/admin/web/'
+    | '/api/public/hooks/lead-whatsapp'
     | '/api/public/vcard/$code'
     | '/api/public/share-image/$kind/$code'
   fileRoutesById: FileRoutesById
@@ -1202,6 +1215,7 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
+  ApiPublicHooksLeadWhatsappRoute: typeof ApiPublicHooksLeadWhatsappRoute
   ApiPublicVcardCodeRoute: typeof ApiPublicVcardCodeRoute
   ApiPublicShareImageKindCodeRoute: typeof ApiPublicShareImageKindCodeRoute
 }
@@ -1859,6 +1873,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicVcardCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/lead-whatsapp': {
+      id: '/api/public/hooks/lead-whatsapp'
+      path: '/api/public/hooks/lead-whatsapp'
+      fullPath: '/api/public/hooks/lead-whatsapp'
+      preLoaderRoute: typeof ApiPublicHooksLeadWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/share-image/$kind/$code': {
       id: '/api/public/share-image/$kind/$code'
       path: '/api/public/share-image/$kind/$code'
@@ -2015,6 +2036,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
+  ApiPublicHooksLeadWhatsappRoute: ApiPublicHooksLeadWhatsappRoute,
   ApiPublicVcardCodeRoute: ApiPublicVcardCodeRoute,
   ApiPublicShareImageKindCodeRoute: ApiPublicShareImageKindCodeRoute,
 }
