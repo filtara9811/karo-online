@@ -411,7 +411,9 @@ function QuickPage() {
   useEffect(() => {
     const isUuid = (value: string | null | undefined) =>
       !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-    const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+    const origin = pickedLocation
+      ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
+      : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
     const subCategoryId = isUuid(selectedSub?.id) ? selectedSub!.id : null;
     const selectedItemIds = subItems.map((it) => it.id).filter(isUuid);
 
