@@ -184,21 +184,40 @@ export function QuickServiceMap({
   }, []);
 
   // recenter when geo updates — animated zoom-in on first fix (Uber/Ola feel)
+  // Also cinematic fly-to when the center jumps far (e.g. user picked a different city).
+  const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     if (!mapRef.current || !center) return;
-    if (!didInitialCenterRef.current) {
-      didInitialCenterRef.current = true;
-      mapRef.current.setCenter(center);
-      mapRef.current.setZoom(13); // start wide
-      // smooth zoom-in steps for cinematic effect
-      const steps = [14, 15, 16, 17];
+    const prev = prevCenterRef.current;
+    prevCenterRef.current = { lat: center.lat, lng: center.lng };
+
+    const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+      return 2 * 6371 * Math.asin(Math.sqrt(s));
+    };
+
+    const cinematic = () => {
+      mapRef.current!.setZoom(10);
+      const steps = [12, 14, 15, 16, 17];
       steps.forEach((z, i) => {
         window.setTimeout(() => {
           if (!mapRef.current) return;
           mapRef.current.panTo(center);
           mapRef.current.setZoom(z);
-        }, 250 + i * 220);
+        }, 200 + i * 220);
       });
+    };
+
+    if (!didInitialCenterRef.current) {
+      didInitialCenterRef.current = true;
+      mapRef.current.setCenter(center);
+      cinematic();
+    } else if (prev && haversineKm(prev, center) > 2) {
+      // Large jump — fly to the new area cinematically.
+      cinematic();
     } else {
       mapRef.current.panTo(center);
     }
