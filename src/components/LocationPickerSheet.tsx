@@ -137,7 +137,7 @@ export function LocationPickerSheet({ open, onClose, onPick, bias, currentLabel,
           <div>
             <h2 className="text-base font-bold text-slate-900">Choose Location</h2>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Search any city — Mathura, Jaipur, Mumbai…
+              Search any city — Delhi, Mumbai, Hyderabad, Bangalore, Jaipur…
             </p>
           </div>
           <button
