@@ -779,6 +779,40 @@ function QuickPage() {
               setTimeout(() => setFindingOpen(true), 200);
               return;
             }
+
+            // ===== OFFLINE BRANCH — queue lead.create, auto-sync on reconnect =====
+            if (typeof navigator !== "undefined" && !navigator.onLine) {
+              const cartIds = payload.cart;
+              const cartItems = subItems.filter((it) => cartIds.includes(it.id));
+              const itemNames = cartItems.map((it) => it.name);
+              const vendorTypes = payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"];
+              const isRemote = Boolean((payload as any).remote);
+              const noteWithFilter = [
+                payload.note?.trim() || "",
+                `Vendor types: ${vendorTypes.join(", ")}`,
+                isRemote ? "Mode: Remote/Online" : null,
+              ].filter(Boolean).join(" • ");
+              await enqueue("lead.create", {
+                customer_id: user.id,
+                type_id: selectedRoot?.type_id ?? null,
+                root_category_id: selectedRoot?.id ?? null,
+                sub_category_id: selectedSub.id,
+                sub_category_name: selectedSub.name,
+                item_ids: cartIds,
+                item_names: itemNames,
+                note: noteWithFilter || null,
+                images: payload.images ?? [],
+                address: geo.label ?? null,
+                lat: geo.lat,
+                lng: geo.lng,
+                search_radius_km: 10,
+                vendor_types: vendorTypes,
+                is_remote: isRemote,
+              });
+              toast.success("Request saved — internet aate hi vendors ko bhej denge.");
+              return;
+            }
+
             const cartIds = payload.cart;
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
