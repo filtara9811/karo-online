@@ -100,6 +100,7 @@ export function QuickServiceMap({
   showUserPin = true,
   countLabel,
   radiusKm,
+  onLocationTap,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -111,6 +112,7 @@ export function QuickServiceMap({
   showUserPin?: boolean;
   countLabel?: string;
   radiusKm?: number;
+  onLocationTap?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
