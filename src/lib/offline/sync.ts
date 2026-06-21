@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getPending, markDone, markFailed, markSyncing, type QueuedAction } from "./queue";
-// re-export type for handlers
-type _A = QueuedAction;
+import { getPending, markDone, markFailed, markSyncing } from "./queue";
+import type { QueuedAction } from "./db";
 
 let running = false;
 

@@ -32,6 +32,7 @@ export async function registerServiceWorker() {
   }
 
   try {
+    // @ts-expect-error - virtual module provided by vite-plugin-pwa at build time
     const { registerSW } = await import("virtual:pwa-register");
     registerSW({ immediate: true });
   } catch { /* plugin not loaded; ignore */ }
