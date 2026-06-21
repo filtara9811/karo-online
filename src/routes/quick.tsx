@@ -481,7 +481,15 @@ function QuickPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
+  // ---- Manual location override (Uber-style picker) ----
+  const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+  const effectiveCenter = pickedLocation
+    ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
+    : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
+  const effectiveLabel = pickedLocation?.address ?? geo.label;
   // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
+
 
 
   // Tap a root category circle → switch the service-card list
