@@ -361,12 +361,13 @@ export function QuickServiceMap({
       overlay.setMap(mapRef.current);
       vendorOverlaysRef.current.push(overlay);
     });
-  }, [vendors, status, center?.lat, center?.lng]);
+  }, [vendors, status, center?.lat, center?.lng, categoryIcon]);
 
   const recenter = () => {
     if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
     if (!mapRef.current) return;
     const pos = center ?? DEFAULT_CENTER;
+    programmaticRef.current += 2;
     mapRef.current.panTo(pos);
     mapRef.current.setZoom(16);
   };
