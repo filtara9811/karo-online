@@ -29,6 +29,7 @@ import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
 import { cachePeek, cacheSet } from "@/lib/offline/cache";
 import { enqueue } from "@/lib/offline/queue";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarAryan from "@/assets/avatar-aryan.png";
 import avatarRani from "@/assets/avatar-rani.png";
@@ -401,10 +402,18 @@ function QuickPage() {
 
   const isOnline = useOnlineStatus();
 
+  // Manual location override (Uber-style picker) — declared early so the
+  // vendor-load effect can route fetches to the user-selected city.
+  const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+
+
   useEffect(() => {
     const isUuid = (value: string | null | undefined) =>
       !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-    const origin = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+    const origin = pickedLocation
+      ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
+      : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
     const subCategoryId = isUuid(selectedSub?.id) ? selectedSub!.id : null;
     const selectedItemIds = subItems.map((it) => it.id).filter(isUuid);
 
@@ -465,7 +474,7 @@ function QuickPage() {
       window.removeEventListener("online", onOnline);
       supabase.removeChannel(ch);
     };
-  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline]);
+  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline, pickedLocation]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
@@ -480,7 +489,14 @@ function QuickPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
+  // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
+  const effectiveCenter = pickedLocation
+    ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
+    : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
+  const effectiveLabel = pickedLocation?.address ?? geo.label;
   // search radius now defaults to 10km; the "Try again" fallback sheet lets users expand it.
+
+
 
 
   // Tap a root category circle → switch the service-card list
@@ -512,15 +528,16 @@ function QuickPage() {
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
         <QuickServiceMap
-          center={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null}
+          center={effectiveCenter}
           vendors={filteredVendors.map((v) => ({
             id: v.id, name: v.name, avatar: v.avatar, x: v.x, y: v.y,
             area: v.area, km: v.km, status: v.status, lat: v.lat, lng: v.lng,
           }))}
           userAvatar={profile?.avatar_url || avatarUser}
-          userLabel={geo.label}
+          userLabel={effectiveLabel}
           geoStatus={geo.status}
           radiusKm={10}
+          onLocationTap={() => setLocationSheetOpen(true)}
         />
         {/* Top-right: Join Business / Vendor on-off toggle */}
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
@@ -802,9 +819,9 @@ function QuickPage() {
                 item_names: itemNames,
                 note: noteWithFilter || null,
                 images: payload.images ?? [],
-                address: geo.label ?? null,
-                lat: geo.lat,
-                lng: geo.lng,
+                address: effectiveLabel ?? null,
+                lat: effectiveCenter?.lat ?? geo.lat,
+                lng: effectiveCenter?.lng ?? geo.lng,
                 search_radius_km: 10,
                 vendor_types: vendorTypes,
                 is_remote: isRemote,
@@ -851,9 +868,9 @@ function QuickPage() {
                 item_names: itemNames,
                 note: noteWithFilter || null,
                 images: payload.images ?? [],
-                address: (profile as any)?.address ?? geo.label ?? null,
-                lat: geo.lat,
-                lng: geo.lng,
+                address: pickedLocation?.address ?? (profile as any)?.address ?? geo.label ?? null,
+                lat: effectiveCenter?.lat ?? geo.lat,
+                lng: effectiveCenter?.lng ?? geo.lng,
                 max_slots: maxSlots,
                 lead_price_inr: price,
                 search_radius_km: 10,
@@ -956,6 +973,20 @@ function QuickPage() {
 
       <ProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} />
       <QuickOrdersSheet open={ordersSheetOpen} onOpenChange={setOrdersSheetOpen} />
+      <LocationPickerSheet
+        open={locationSheetOpen}
+        onClose={() => setLocationSheetOpen(false)}
+        onPick={(loc) => {
+          setPickedLocation(loc);
+          toast.success(`Searching vendors in ${loc.address.split(",")[0]}`);
+        }}
+        bias={geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : undefined}
+        currentLabel={geo.label}
+        onUseCurrent={() => {
+          setPickedLocation(null);
+          if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+        }}
+      />
     </div>
   );
 }

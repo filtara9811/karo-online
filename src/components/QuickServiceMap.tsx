@@ -47,22 +47,24 @@ const KARO_MAP_STYLE: any[] = [
   { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#5a8794" }] },
 ];
 
-function buildUserPinHTML(avatar: string, label: string) {
+function buildUserPinHTML(avatar: string, label: string, tappable = false) {
   const safeAvatar = avatar.replace(/"/g, "&quot;");
   const safeLabel = (label || "Detecting your location…")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const chipStyle = tappable ? 'style="pointer-events:auto;cursor:pointer"' : '';
+  const headStyle = tappable ? 'style="pointer-events:auto;cursor:pointer"' : '';
   return `
     <div class="ko-userpin">
       <span class="ko-ripple ko-ripple-1"></span>
       <span class="ko-ripple ko-ripple-2"></span>
       <span class="ko-ripple ko-ripple-3"></span>
       <div class="ko-teardrop">
-        <div class="ko-teardrop-head">
+        <div class="ko-teardrop-head" ${headStyle} data-ko-tap="1">
           <img src="${safeAvatar}" alt="" />
         </div>
         <div class="ko-teardrop-tail"></div>
       </div>
-      <div class="ko-addr-chip">
+      <div class="ko-addr-chip" ${chipStyle} data-ko-tap="1">
         <span class="ko-addr-pin">📍</span>
         <span class="ko-addr-text">${safeLabel}</span>
       </div>
@@ -98,6 +100,7 @@ export function QuickServiceMap({
   showUserPin = true,
   countLabel,
   radiusKm,
+  onLocationTap,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -109,6 +112,7 @@ export function QuickServiceMap({
   showUserPin?: boolean;
   countLabel?: string;
   radiusKm?: number;
+  onLocationTap?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -242,7 +246,15 @@ export function QuickServiceMap({
         div.style.position = "absolute";
         div.style.transform = "translate(-50%, -100%)";
         div.style.pointerEvents = "none";
-        div.innerHTML = buildUserPinHTML(this.avatar, this.label);
+        div.innerHTML = buildUserPinHTML(this.avatar, this.label, !!onLocationTap);
+        if (onLocationTap) {
+          div.querySelectorAll<HTMLElement>('[data-ko-tap="1"]').forEach((el) => {
+            el.addEventListener("click", (e) => {
+              e.stopPropagation();
+              onLocationTap();
+            });
+          });
+        }
         this.div = div;
         const panes = this.getPanes();
         panes?.floatPane.appendChild(div);
