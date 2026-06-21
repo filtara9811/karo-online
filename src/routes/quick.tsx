@@ -474,7 +474,7 @@ function QuickPage() {
       window.removeEventListener("online", onOnline);
       supabase.removeChannel(ch);
     };
-  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline]);
+  }, [selectedSub, subItems, geo.lat, geo.lng, isOnline, pickedLocation]);
 
   const filteredVendors = useMemo(() => realVendors, [realVendors]);
 
