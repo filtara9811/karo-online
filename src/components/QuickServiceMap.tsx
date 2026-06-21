@@ -193,10 +193,16 @@ export function QuickServiceMap({
       });
       // Idle = drag/zoom settled → bubble new center up so parent can refetch.
       mapRef.current.addListener("idle", () => {
-        if (!onCenterChange || !mapRef.current) return;
+        if (!mapRef.current) return;
+        if (programmaticRef.current > 0) {
+          programmaticRef.current -= 1;
+          return;
+        }
+        const cb = onCenterChangeRef.current;
+        if (!cb) return;
         const cc = mapRef.current.getCenter();
         if (!cc) return;
-        onCenterChange({ lat: cc.lat(), lng: cc.lng() });
+        cb({ lat: cc.lat(), lng: cc.lng() });
       });
       setStatus("ready");
       window.setTimeout(() => {
