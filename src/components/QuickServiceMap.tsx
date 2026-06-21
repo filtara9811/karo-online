@@ -111,6 +111,8 @@ export function QuickServiceMap({
   countLabel,
   radiusKm,
   onLocationTap,
+  onCenterChange,
+  categoryIcon,
 }: {
   center: { lat: number; lng: number } | null;
   vendors: QuickMapVendor[];
@@ -123,6 +125,11 @@ export function QuickServiceMap({
   countLabel?: string;
   radiusKm?: number;
   onLocationTap?: () => void;
+  /** Fires when user drags/zooms and the map settles, so the parent can refetch
+   *  vendors around the new center (Uber-style drag-to-search). */
+  onCenterChange?: (c: { lat: number; lng: number }) => void;
+  /** Service-specific icon (e.g. hammer for Carpenter) used as the floating pin head. */
+  categoryIcon?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
