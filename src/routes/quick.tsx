@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Mic, Plus, Star, ShieldCheck, Package, ArrowRight,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
-  LocateFixed, MapPinned, Target, X,
+  LocateFixed, MapPinned, Target, X, LayoutGrid, List as ListIcon,
   type LucideIcon,
 } from "lucide-react";
 import { RadiusSlider } from "@/components/RadiusSlider";
@@ -491,6 +491,15 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [isGridView, setIsGridView] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.sessionStorage.getItem("karo:isGridView") === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("karo:isGridView", isGridView ? "1" : "0");
+    }
+  }, [isGridView]);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
   const [radiusOpen, setRadiusOpen] = useState(false);
   // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
@@ -685,9 +694,44 @@ function QuickPage() {
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[color:oklch(0.45_0.08_85)]">
             {activeType?.name ?? "Service"} {selectedRoot ? `· ${selectedRoot.name}` : ""}
           </span>
-          <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
-            Quick | sarvic
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Grid / List toggle — session-persistent */}
+            <div
+              role="group"
+              aria-label="Layout toggle"
+              className="inline-flex items-center rounded-full bg-[#f5f5f5] border border-[color:oklch(0.78_0.14_82/0.35)] p-0.5"
+            >
+              <button
+                type="button"
+                onClick={() => setIsGridView(false)}
+                aria-pressed={!isGridView}
+                aria-label="List view"
+                className={`h-6 w-6 grid place-items-center rounded-full transition-all ${
+                  !isGridView
+                    ? "bg-gradient-to-br from-[#e08820] to-[#d4af37] text-white shadow-sm"
+                    : "text-[color:oklch(0.45_0.08_85)]"
+                }`}
+              >
+                <ListIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsGridView(true)}
+                aria-pressed={isGridView}
+                aria-label="Grid view"
+                className={`h-6 w-6 grid place-items-center rounded-full transition-all ${
+                  isGridView
+                    ? "bg-gradient-to-br from-[#e08820] to-[#d4af37] text-white shadow-sm"
+                    : "text-[color:oklch(0.45_0.08_85)]"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </button>
+            </div>
+            <span className="font-display text-sm italic underline underline-offset-4 decoration-[color:oklch(0.78_0.14_82)] text-gold-gradient font-bold">
+              Quick | sarvic
+            </span>
+          </div>
         </div>
       </section>
 
@@ -697,15 +741,21 @@ function QuickPage() {
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
       >
 
-        {/* Service cards — dense 2-column grid (3–4 visible per screen) */}
-        <div className="grid grid-cols-2 gap-2 pb-[190px]">
+        {/* Service cards — Grid (2-col dense) OR List (full-width rows) */}
+        <motion.div
+          key={isGridView ? "grid" : "list"}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className={isGridView ? "grid grid-cols-2 gap-2 pb-[190px]" : "flex flex-col gap-2.5 pb-[190px]"}
+        >
           {loading && subCategories.length === 0 && (
-            <div className="col-span-2 text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
+            <div className={`${isGridView ? "col-span-2" : ""} text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]`}>
               Opening services…
             </div>
           )}
           {!loading && subCategories.length === 0 && (
-            <div className="col-span-2 rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center">
+            <div className={`${isGridView ? "col-span-2" : ""} rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center`}>
               <p className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
                 {selectedRoot ? `No sub-categories under ${selectedRoot.name} yet.` : "No categories yet."}
               </p>
@@ -718,12 +768,61 @@ function QuickPage() {
             const img = SLUG_IMAGE[s.slug] || s.image_url || svcAc;
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
-            // Live online count only for the active card (vendors are fetched
-            // per selected sub-category). Other cards show a neutral dash so
-            // we never lie about availability.
             const onlineCount = isSelected
               ? filteredVendors.filter((v) => v.status === "Online").length
               : null;
+
+            if (isGridView) {
+              // ---- GRID VIEW (compact, 2 per row) ----
+              return (
+                <div
+                  key={s.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleServiceCardTap(s.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleServiceCardTap(s.id); }}
+                  className={`relative rounded-2xl bg-white border-2 p-2 flex flex-col gap-1.5 transition-all active:scale-[0.98] cursor-pointer min-w-0 ${
+                    isSelected
+                      ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
+                      : "border-[color:oklch(0.78_0.14_82/0.25)]"
+                  }`}
+                  style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+                >
+                  <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
+                    <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
+                  </div>
+                  <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
+                    {s.name}
+                  </h3>
+                  <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-tight">
+                    {itemCount > 0 ? `${itemCount} options` : "Tap to open"}
+                  </p>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 w-fit">
+                    <Star className="h-2.5 w-2.5 text-amber-500" fill="currentColor" />
+                    <span className="text-[9px] font-bold text-emerald-700">4.4</span>
+                    <span className="text-[9px] text-emerald-600">
+                      {onlineCount != null ? `· ${onlineCount} online` : "· tap"}
+                    </span>
+                    <ShieldCheck className="h-2.5 w-2.5 text-emerald-600" />
+                  </div>
+                  {isSelected && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        requireAuth(() => setVariationOpen(true));
+                      }}
+                      aria-label="Find Vendor"
+                      className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[9px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition"
+                    >
+                      Find
+                      <ArrowRight className="h-2.5 w-2.5" strokeWidth={3} />
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
+            // ---- LIST VIEW (full-width rich row, default) ----
             return (
               <div
                 key={s.id}
@@ -731,49 +830,53 @@ function QuickPage() {
                 tabIndex={0}
                 onClick={() => handleServiceCardTap(s.id)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleServiceCardTap(s.id); }}
-                className={`relative rounded-2xl bg-white border-2 p-2 flex flex-col gap-1.5 transition-all active:scale-[0.98] cursor-pointer min-w-0 ${
+                className={`relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer min-w-0 ${
                   isSelected
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.25)]"
                 }`}
-                style={{ animation: `fade-up 0.45s ease-out ${i * 0.04}s both` }}
+                style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
               >
-                <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
+                <div className="h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
                   <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
                 </div>
-                <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
-                  {s.name}
-                </h3>
-                <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-tight">
-                  {itemCount > 0 ? `${itemCount} options` : "Tap to open"}
-                </p>
-                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 w-fit">
-                  <Star className="h-2.5 w-2.5 text-amber-500" fill="currentColor" />
-                  <span className="text-[9px] font-bold text-emerald-700">4.4</span>
-                  <span className="text-[9px] text-emerald-600">
-                    {onlineCount != null ? `· ${onlineCount} online` : "· tap"}
-                  </span>
-                  <ShieldCheck className="h-2.5 w-2.5 text-emerald-600" />
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-display text-[15px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
+                      {s.name}
+                    </h3>
+                    {isSelected && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          requireAuth(() => setVariationOpen(true));
+                        }}
+                        aria-label="Find Vendor"
+                        className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[10px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition"
+                      >
+                        Find Vendor
+                        <ArrowRight className="h-3 w-3" strokeWidth={3} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[color:oklch(0.45_0.08_85)] leading-tight">
+                    {itemCount > 0 ? `${itemCount} options · tap again for variations` : "Tap to open"}
+                  </p>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 w-fit">
+                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                    <span className="text-[10px] font-bold text-emerald-700">4.4</span>
+                    <span className="text-[10px] text-emerald-600">
+                      {onlineCount != null ? `· ${onlineCount} online` : `· ${itemCount > 0 ? itemCount : 0} vendor`}
+                    </span>
+                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  </div>
                 </div>
-                {/* Find Vendor pill — only on the selected card */}
-                {isSelected && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      requireAuth(() => setVariationOpen(true));
-                    }}
-                    aria-label="Find Vendor"
-                    className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[9px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition"
-                  >
-                    Find
-                    <ArrowRight className="h-2.5 w-2.5" strokeWidth={3} />
-                  </button>
-                )}
               </div>
             );
           })}
-        </div>
+        </motion.div>
       </section>
+
 
       {/* LEFT RAIL — root categories (Uber-style vertical sidebar) */}
       {!needsOpen && (
