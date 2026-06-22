@@ -585,6 +585,66 @@ function QuickPage() {
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <VendorModeToggle mode="customer" />
         </div>
+
+        {/* FLOATING FILTER BAR — semi-transparent, sits over the MAP */}
+        <div
+          className="absolute left-3 right-3 z-20"
+          style={{ bottom: 10 }}
+        >
+          <div className="relative">
+            <div
+              className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/55 backdrop-blur-md border border-white/60 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.25)] overflow-x-auto scrollbar-hide"
+              style={{ touchAction: "pan-x" }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+                  setPickedLocation(null);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Use my current location"
+              >
+                <LocateFixed className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span className="truncate max-w-[110px]">
+                  {pickedLocation ? "Current location" : (geo.label?.split(",")[0] || "Current location")}
+                </span>
+              </button>
+              <span className="text-white/70 text-xs">|</span>
+              <button
+                type="button"
+                onClick={() => setLocationSheetOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Search by city"
+              >
+                <MapPinned className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span>City search</span>
+              </button>
+              <span className="text-white/70 text-xs">|</span>
+              <button
+                type="button"
+                onClick={() => setRadiusOpen((v) => !v)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Change search radius"
+                aria-expanded={radiusOpen}
+              >
+                <Target className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span>{searchRadiusKm === 0 ? "Any km" : `${searchRadiusKm} km`}</span>
+              </button>
+            </div>
+            {radiusOpen && (
+              <div className="absolute right-2 bottom-[calc(100%+6px)] z-30 w-64 rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl p-3 animate-in fade-in slide-in-from-bottom-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-display font-bold uppercase tracking-wider text-[color:oklch(0.30_0.05_85)]">Search radius</span>
+                  <button onClick={() => setRadiusOpen(false)} aria-label="Close" className="h-6 w-6 grid place-items-center rounded-full hover:bg-black/5">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <RadiusSlider value={searchRadiusKm} onChange={setSearchRadiusKm} label="Distance" />
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
