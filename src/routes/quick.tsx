@@ -491,6 +491,15 @@ function QuickPage() {
   const [matchInfo, setMatchInfo] = useState<{ notified: number; requestedAt: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [isGridView, setIsGridView] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.sessionStorage.getItem("karo:isGridView") === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("karo:isGridView", isGridView ? "1" : "0");
+    }
+  }, [isGridView]);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
   const [radiusOpen, setRadiusOpen] = useState(false);
   // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
