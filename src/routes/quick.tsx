@@ -685,7 +685,7 @@ function QuickPage() {
 
       {/* SERVICE CARDS — only this inner list scrolls */}
       <section
-        className="relative bg-white z-20 px-4 flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        className="relative bg-white z-20 pl-[68px] pr-4 flex-1 min-h-0 overflow-y-auto overscroll-contain"
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
       >
 
