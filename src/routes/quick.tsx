@@ -764,83 +764,77 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
+      {/* LEFT RAIL — root categories (Uber-style vertical sidebar) */}
       {!needsOpen && (
       <section
-        className="fixed inset-x-0 z-30 pt-5 pb-2 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
+        className="fixed left-0 z-30 w-[60px] flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide rounded-r-3xl border-r border-y border-[color:oklch(0.78_0.14_82/0.35)] shadow-[6px_0_18px_-6px_rgba(0,0,0,0.15)] backdrop-blur-md"
         style={{
+          top: "calc(34vh + env(safe-area-inset-top) + 96px)",
           bottom: "calc(64px + env(safe-area-inset-bottom))",
-          background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
-          touchAction: "pan-x",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,250,235,0.85) 100%)",
+          touchAction: "pan-y",
         }}
+        aria-label="Service categories"
       >
-        <div className="max-w-md mx-auto">
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pt-2 pb-1 scrollbar-hide overscroll-x-contain" style={{ touchAction: "pan-x" }}>
-            {rootCategories.map((c, i) => {
-              const FallbackIcon = SLUG_ICON[c.slug] ?? Sparkles;
-              const isActive = selectedRootId === c.id;
-              const isPulsing = pulseKey.startsWith(`${c.slug}-`);
-              const hasEmoji = !!(c.icon && /\p{Emoji}/u.test(c.icon));
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => handleRootTap(c.id)}
-                  className="group flex-shrink-0 flex flex-col items-center gap-1 w-14"
-                  style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
-                  aria-label={c.name}
-                >
+        {rootCategories.map((c, i) => {
+          const FallbackIcon = SLUG_ICON[c.slug] ?? Sparkles;
+          const isActive = selectedRootId === c.id;
+          const isPulsing = pulseKey.startsWith(`${c.slug}-`);
+          const hasEmoji = !!(c.icon && /\p{Emoji}/u.test(c.icon));
+          return (
+            <button
+              key={c.id}
+              onClick={() => handleRootTap(c.id)}
+              className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1"
+              style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+              aria-label={c.name}
+              aria-pressed={isActive}
+            >
+              <span
+                key={isPulsing ? pulseKey : c.id}
+                className={`btn-3d relative h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                  isActive
+                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_6px_16px_-2px_rgba(194,65,12,0.55)]"
+                    : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                }`}
+                style={{
+                  animation: isPulsing ? "cat-lift 0.45s cubic-bezier(0.22,1,0.36,1)" : undefined,
+                  transform: isActive && !isPulsing ? "scale(1.08)" : undefined,
+                }}
+              >
+                {isPulsing && (
                   <span
-                    key={isPulsing ? pulseKey : c.id}
-                    className={`btn-3d relative h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
-                      isActive
-                        ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_6px_16px_-2px_rgba(194,65,12,0.55)]"
-                        : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
-                    }`}
-                    style={{
-                      animation: isPulsing ? "cat-lift 0.45s cubic-bezier(0.22,1,0.36,1)" : undefined,
-                      transform: isActive && !isPulsing ? "translateY(-3px) scale(1.08)" : undefined,
-                    }}
-                  >
-                    {isPulsing && (
-                      <span
-                        className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
-                        style={{ animation: "ping-slow 0.7s ease-out 1" }}
-                      />
-                    )}
-                    {hasEmoji ? (
-                      <span className={`relative text-lg ${isActive ? "scale-110" : ""}`}>{c.icon}</span>
-                    ) : (
-                      <FallbackIcon
-                        className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
-                        strokeWidth={2.2}
-                      />
-                    )}
-                    {isActive && (
-                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                    )}
-                  </span>
-                  <span
-                    className={`text-[9px] font-display font-semibold tracking-tight leading-none truncate w-full text-center ${
-                      isActive ? "text-[color:oklch(0.35_0.15_45)]" : "text-[color:oklch(0.45_0.08_85)]"
-                    }`}
-                  >
-                    {c.name.replace(/ Services?$/i, "")}
-                  </span>
-                </button>
-              );
-            })}
-            {loading && rootCategories.length > 0 && (
-              <span className="text-[10px] text-[color:oklch(0.45_0.08_85)] py-3 px-2 whitespace-nowrap">
-                Updating…
+                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                  />
+                )}
+                {hasEmoji ? (
+                  <span className={`relative text-lg ${isActive ? "scale-110" : ""}`}>{c.icon}</span>
+                ) : (
+                  <FallbackIcon
+                    className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                    strokeWidth={2.2}
+                  />
+                )}
+                {isActive && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                )}
               </span>
-            )}
-            {!loading && rootCategories.length === 0 && (
-              <span className="text-xs text-[color:oklch(0.45_0.08_85)] py-3 px-2">
-                No categories — add some from Admin → Catalog.
+              <span
+                className={`text-[8.5px] font-display font-semibold tracking-tight leading-tight truncate w-full text-center ${
+                  isActive ? "text-[color:oklch(0.35_0.15_45)]" : "text-[color:oklch(0.45_0.08_85)]"
+                }`}
+              >
+                {c.name.replace(/ Services?$/i, "")}
               </span>
-            )}
-          </div>
-        </div>
+            </button>
+          );
+        })}
+        {!loading && rootCategories.length === 0 && (
+          <span className="text-[9px] text-[color:oklch(0.45_0.08_85)] py-3 px-1 text-center">
+            No categories
+          </span>
+        )}
       </section>
       )}
 
