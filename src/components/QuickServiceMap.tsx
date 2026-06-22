@@ -694,10 +694,7 @@ export function QuickServiceMap({
         </button>
       )}
 
-      {/* "My GPS" pill removed — geolocation auto-detects on app launch
-          (useGeolocation runs on mount and the recenter icon stays in the
-          map's right-edge controls if the user needs a manual re-center). */}
-      {false && onMyGps && requestLocation && <Navigation2 />}
+      {/* "My GPS" pill removed — geolocation auto-detects on app launch. */}
     </div>
   );
 }
