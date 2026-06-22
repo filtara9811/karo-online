@@ -4338,6 +4338,7 @@ export type Database = {
         Returns: Json
       }
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
+      assert_realtime_publication_columns: { Args: never; Returns: undefined }
       auto_accept_expired_lead_notifications: { Args: never; Returns: Json }
       broadcast_next_lead_batch:
         | { Args: { _batch_size?: number; _lead_id: string }; Returns: Json }
@@ -4556,6 +4557,7 @@ export type Database = {
         }
         Returns: Json
       }
+      referral_code_owner: { Args: { _code: string }; Returns: string }
       register_device_token: {
         Args: { _platform?: string; _token: string; _topics?: string[] }
         Returns: Json
