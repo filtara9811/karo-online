@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Mic, Plus, Star, ShieldCheck, Package, ArrowRight,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
-  LocateFixed, MapPinned, Target, X,
+  LocateFixed, MapPinned, Target, X, LayoutGrid, List as ListIcon,
   type LucideIcon,
 } from "lucide-react";
 import { RadiusSlider } from "@/components/RadiusSlider";
