@@ -694,22 +694,10 @@ export function QuickServiceMap({
         </button>
       )}
 
-      {/* FLOATING "My GPS" pill — bottom-left of map, above the search bar.
-          Re-prompts a fresh high-accuracy fix AND tells the parent to clear
-          any picked-location override so the map snaps back to the device. */}
-      <button
-        onClick={() => {
-          onMyGps?.();
-          requestLocation();
-        }}
-        aria-label="Use my current location"
-        className="absolute bottom-3 left-3 z-30 inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 bg-white/95 border border-emerald-300 shadow-md text-emerald-700 text-[11px] font-bold active:scale-95"
-      >
-        <span className="h-5 w-5 rounded-full bg-emerald-500 grid place-items-center shadow-sm">
-          <Navigation2 className="h-3 w-3 text-white" strokeWidth={3} />
-        </span>
-        My GPS
-      </button>
+      {/* "My GPS" pill removed — geolocation auto-detects on app launch
+          (useGeolocation runs on mount and the recenter icon stays in the
+          map's right-edge controls if the user needs a manual re-center). */}
+      {false && onMyGps && requestLocation && <Navigation2 />}
     </div>
   );
 }
