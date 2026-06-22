@@ -492,6 +492,7 @@ function QuickPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
+  const [radiusOpen, setRadiusOpen] = useState(false);
   // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
   const effectiveCenter = pickedLocation
     ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
