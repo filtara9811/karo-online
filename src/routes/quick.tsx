@@ -780,7 +780,7 @@ function QuickPage() {
       <section
         className="fixed left-0 z-30 w-[60px] flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide rounded-r-3xl border-r border-y border-[color:oklch(0.78_0.14_82/0.35)] shadow-[6px_0_18px_-6px_rgba(0,0,0,0.15)] backdrop-blur-md"
         style={{
-          top: "calc(34vh + env(safe-area-inset-top) + 96px)",
+          top: "calc(34vh + env(safe-area-inset-top) + 56px)",
           bottom: "calc(64px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,250,235,0.85) 100%)",
           touchAction: "pan-y",
