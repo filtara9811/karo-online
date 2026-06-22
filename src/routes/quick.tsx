@@ -697,15 +697,15 @@ function QuickPage() {
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
       >
 
-        {/* Service cards = sub-categories of the selected root */}
-        <div className="space-y-2.5 pb-[190px]">
+        {/* Service cards — dense 2-column grid (3–4 visible per screen) */}
+        <div className="grid grid-cols-2 gap-2 pb-[190px]">
           {loading && subCategories.length === 0 && (
-            <div className="text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
+            <div className="col-span-2 text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
               Opening services…
             </div>
           )}
           {!loading && subCategories.length === 0 && (
-            <div className="rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center">
+            <div className="col-span-2 rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center">
               <p className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
                 {selectedRoot ? `No sub-categories under ${selectedRoot.name} yet.` : "No categories yet."}
               </p>
@@ -718,6 +718,12 @@ function QuickPage() {
             const img = SLUG_IMAGE[s.slug] || s.image_url || svcAc;
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
+            // Live online count only for the active card (vendors are fetched
+            // per selected sub-category). Other cards show a neutral dash so
+            // we never lie about availability.
+            const onlineCount = isSelected
+              ? filteredVendors.filter((v) => v.status === "Online").length
+              : null;
             return (
               <div
                 key={s.id}
@@ -725,31 +731,29 @@ function QuickPage() {
                 tabIndex={0}
                 onClick={() => handleServiceCardTap(s.id)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleServiceCardTap(s.id); }}
-                className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer ${
+                className={`relative rounded-2xl bg-white border-2 p-2 flex flex-col gap-1.5 transition-all active:scale-[0.98] cursor-pointer min-w-0 ${
                   isSelected
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.25)]"
                 }`}
-                style={{ animation: `fade-up 0.5s ease-out ${i * 0.06}s both` }}
+                style={{ animation: `fade-up 0.45s ease-out ${i * 0.04}s both` }}
               >
-                <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center flex-shrink-0 overflow-hidden">
+                <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
                   <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-lg text-[color:oklch(0.25_0.05_85)] font-bold leading-tight">
-                    {s.name} | Service
-                  </h3>
-                  <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-0.5">Basic Details</p>
-                  <p className="text-xs text-[color:oklch(0.45_0.08_85)]">
-                    {itemCount > 0 ? `${itemCount} options · tap again for variations` : "tap again for variations"}
-                  </p>
-                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-emerald-700">4.4</span>
-                    <span className="text-[10px] text-emerald-600">({filteredVendors.length} vendor)</span>
-                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
-                  </div>
+                <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
+                  {s.name}
+                </h3>
+                <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-tight">
+                  {itemCount > 0 ? `${itemCount} options` : "Tap to open"}
+                </p>
+                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 w-fit">
+                  <Star className="h-2.5 w-2.5 text-amber-500" fill="currentColor" />
+                  <span className="text-[9px] font-bold text-emerald-700">4.4</span>
+                  <span className="text-[9px] text-emerald-600">
+                    {onlineCount != null ? `· ${onlineCount} online` : "· tap"}
+                  </span>
+                  <ShieldCheck className="h-2.5 w-2.5 text-emerald-600" />
                 </div>
                 {/* Find Vendor pill — only on the selected card */}
                 {isSelected && (
@@ -759,11 +763,10 @@ function QuickPage() {
                       requireAuth(() => setVariationOpen(true));
                     }}
                     aria-label="Find Vendor"
-                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[10px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition animate-pulse"
-                    style={{ animation: "fade-up 0.3s ease-out both" }}
+                    className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[9px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition"
                   >
-                    Find Vendor
-                    <ArrowRight className="h-3 w-3" strokeWidth={3} />
+                    Find
+                    <ArrowRight className="h-2.5 w-2.5" strokeWidth={3} />
                   </button>
                 )}
               </div>
