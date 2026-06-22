@@ -1,2 +1,0 @@
-COMMENT ON TABLE public.qr_scans IS 'Writes are service-role only (server-side scan recording via edge functions / server fns). No client INSERT policy by design; client roles can only SELECT per existing RLS.';
-COMMENT ON TABLE public.vendor_customer_visits IS 'Writes (INSERT/UPDATE/upsert) are service-role only via server-side functions handling QR scan visit recording. No client write policies by design; client roles can only SELECT per existing RLS.';
