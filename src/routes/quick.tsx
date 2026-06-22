@@ -585,64 +585,72 @@ function QuickPage() {
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <VendorModeToggle mode="customer" />
         </div>
+
+        {/* FLOATING FILTER BAR — semi-transparent, sits over the MAP */}
+        <div
+          className="absolute left-3 right-3 z-20"
+          style={{ bottom: 10 }}
+        >
+          <div className="relative">
+            <div
+              className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/55 backdrop-blur-md border border-white/60 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.25)] overflow-x-auto scrollbar-hide"
+              style={{ touchAction: "pan-x" }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+                  setPickedLocation(null);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Use my current location"
+              >
+                <LocateFixed className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span className="truncate max-w-[110px]">
+                  {pickedLocation ? "Current location" : (geo.label?.split(",")[0] || "Current location")}
+                </span>
+              </button>
+              <span className="text-white/70 text-xs">|</span>
+              <button
+                type="button"
+                onClick={() => setLocationSheetOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Search by city"
+              >
+                <MapPinned className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span>City search</span>
+              </button>
+              <span className="text-white/70 text-xs">|</span>
+              <button
+                type="button"
+                onClick={() => setRadiusOpen((v) => !v)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.25_0.05_85)] active:scale-95 transition shrink-0"
+                aria-label="Change search radius"
+                aria-expanded={radiusOpen}
+              >
+                <Target className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+                <span>{searchRadiusKm === 0 ? "Any km" : `${searchRadiusKm} km`}</span>
+              </button>
+            </div>
+            {radiusOpen && (
+              <div className="absolute right-2 bottom-[calc(100%+6px)] z-30 w-64 rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl p-3 animate-in fade-in slide-in-from-bottom-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-display font-bold uppercase tracking-wider text-[color:oklch(0.30_0.05_85)]">Search radius</span>
+                  <button onClick={() => setRadiusOpen(false)} aria-label="Close" className="h-6 w-6 grid place-items-center rounded-full hover:bg-black/5">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <RadiusSlider value={searchRadiusKm} onChange={setSearchRadiusKm} label="Distance" />
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
-        {/* TOP FILTER BAR — Current Location | City Search | Radius */}
-        <div className="relative mb-2">
-          <div
-            className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.45)] shadow-sm overflow-x-auto scrollbar-hide"
-            style={{ touchAction: "pan-x" }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
-                setPickedLocation(null);
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
-              aria-label="Use my current location"
-            >
-              <LocateFixed className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
-              <span className="truncate max-w-[110px]">
-                {pickedLocation ? "Current location" : (geo.label?.split(",")[0] || "Current location")}
-              </span>
-            </button>
-            <span className="text-[color:oklch(0.78_0.14_82/0.6)] text-xs">|</span>
-            <button
-              type="button"
-              onClick={() => setLocationSheetOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
-              aria-label="Search by city"
-            >
-              <MapPinned className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
-              <span>City search</span>
-            </button>
-            <span className="text-[color:oklch(0.78_0.14_82/0.6)] text-xs">|</span>
-            <button
-              type="button"
-              onClick={() => setRadiusOpen((v) => !v)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
-              aria-label="Change search radius"
-              aria-expanded={radiusOpen}
-            >
-              <Target className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
-              <span>{searchRadiusKm === 0 ? "Any km" : `${searchRadiusKm} km`}</span>
-            </button>
-          </div>
-          {radiusOpen && (
-            <div className="absolute right-2 top-[calc(100%+6px)] z-30 w-64 rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl p-3 animate-in fade-in slide-in-from-top-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-[color:oklch(0.30_0.05_85)]">Search radius</span>
-                <button onClick={() => setRadiusOpen(false)} aria-label="Close" className="h-6 w-6 grid place-items-center rounded-full hover:bg-black/5">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <RadiusSlider value={searchRadiusKm} onChange={setSearchRadiusKm} label="Distance" />
-            </div>
-          )}
-        </div>
+        {/* Filter bar moved above — it now floats over the map as a
+            semi-transparent overlay, giving the white sheet a cleaner top. */}
         <div className="flex items-center gap-2 mb-2">
           <button
             onClick={() => setOrdersSheetOpen(true)}
@@ -689,15 +697,15 @@ function QuickPage() {
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
       >
 
-        {/* Service cards = sub-categories of the selected root */}
-        <div className="space-y-2.5 pb-[190px]">
+        {/* Service cards — dense 2-column grid (3–4 visible per screen) */}
+        <div className="grid grid-cols-2 gap-2 pb-[190px]">
           {loading && subCategories.length === 0 && (
-            <div className="text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
+            <div className="col-span-2 text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]">
               Opening services…
             </div>
           )}
           {!loading && subCategories.length === 0 && (
-            <div className="rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center">
+            <div className="col-span-2 rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center">
               <p className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
                 {selectedRoot ? `No sub-categories under ${selectedRoot.name} yet.` : "No categories yet."}
               </p>
@@ -710,6 +718,12 @@ function QuickPage() {
             const img = SLUG_IMAGE[s.slug] || s.image_url || svcAc;
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
+            // Live online count only for the active card (vendors are fetched
+            // per selected sub-category). Other cards show a neutral dash so
+            // we never lie about availability.
+            const onlineCount = isSelected
+              ? filteredVendors.filter((v) => v.status === "Online").length
+              : null;
             return (
               <div
                 key={s.id}
@@ -717,31 +731,29 @@ function QuickPage() {
                 tabIndex={0}
                 onClick={() => handleServiceCardTap(s.id)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleServiceCardTap(s.id); }}
-                className={`w-full text-left relative rounded-2xl bg-white border-2 p-2.5 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer ${
+                className={`relative rounded-2xl bg-white border-2 p-2 flex flex-col gap-1.5 transition-all active:scale-[0.98] cursor-pointer min-w-0 ${
                   isSelected
                     ? "border-[color:oklch(0.78_0.14_82)] shadow-gold-glow"
                     : "border-[color:oklch(0.78_0.14_82/0.25)]"
                 }`}
-                style={{ animation: `fade-up 0.5s ease-out ${i * 0.06}s both` }}
+                style={{ animation: `fade-up 0.45s ease-out ${i * 0.04}s both` }}
               >
-                <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center flex-shrink-0 overflow-hidden">
+                <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
                   <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-lg text-[color:oklch(0.25_0.05_85)] font-bold leading-tight">
-                    {s.name} | Service
-                  </h3>
-                  <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-0.5">Basic Details</p>
-                  <p className="text-xs text-[color:oklch(0.45_0.08_85)]">
-                    {itemCount > 0 ? `${itemCount} options · tap again for variations` : "tap again for variations"}
-                  </p>
-                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
-                    <span className="text-[10px] font-bold text-emerald-700">4.4</span>
-                    <span className="text-[10px] text-emerald-600">({filteredVendors.length} vendor)</span>
-                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
-                  </div>
+                <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
+                  {s.name}
+                </h3>
+                <p className="text-[10px] text-[color:oklch(0.45_0.08_85)] leading-tight">
+                  {itemCount > 0 ? `${itemCount} options` : "Tap to open"}
+                </p>
+                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 w-fit">
+                  <Star className="h-2.5 w-2.5 text-amber-500" fill="currentColor" />
+                  <span className="text-[9px] font-bold text-emerald-700">4.4</span>
+                  <span className="text-[9px] text-emerald-600">
+                    {onlineCount != null ? `· ${onlineCount} online` : "· tap"}
+                  </span>
+                  <ShieldCheck className="h-2.5 w-2.5 text-emerald-600" />
                 </div>
                 {/* Find Vendor pill — only on the selected card */}
                 {isSelected && (
@@ -751,11 +763,10 @@ function QuickPage() {
                       requireAuth(() => setVariationOpen(true));
                     }}
                     aria-label="Find Vendor"
-                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[10px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition animate-pulse"
-                    style={{ animation: "fade-up 0.3s ease-out both" }}
+                    className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#e08820] to-[#d4af37] text-white text-[9px] font-display font-bold uppercase tracking-wider shadow-[0_4px_12px_-2px_rgba(212,175,55,0.6)] active:scale-95 transition"
                   >
-                    Find Vendor
-                    <ArrowRight className="h-3 w-3" strokeWidth={3} />
+                    Find
+                    <ArrowRight className="h-2.5 w-2.5" strokeWidth={3} />
                   </button>
                 )}
               </div>
@@ -769,7 +780,7 @@ function QuickPage() {
       <section
         className="fixed left-0 z-30 w-[60px] flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide rounded-r-3xl border-r border-y border-[color:oklch(0.78_0.14_82/0.35)] shadow-[6px_0_18px_-6px_rgba(0,0,0,0.15)] backdrop-blur-md"
         style={{
-          top: "calc(34vh + env(safe-area-inset-top) + 96px)",
+          top: "calc(34vh + env(safe-area-inset-top) + 56px)",
           bottom: "calc(64px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,250,235,0.85) 100%)",
           touchAction: "pan-y",
