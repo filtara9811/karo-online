@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Mic, Plus, Star, ShieldCheck, Package, ArrowRight,
   FileText, Wrench, Building2, Building, Cloud, Sparkles, Zap, Truck, ChefHat, Hammer, Paintbrush2,
+  LocateFixed, MapPinned, Target, X,
   type LucideIcon,
 } from "lucide-react";
+import { RadiusSlider } from "@/components/RadiusSlider";
 import { VendorModeToggle } from "@/components/VendorModeToggle";
 import { AnimatePresence, motion } from "framer-motion";
 import { MyNeedsSheet } from "@/components/MyNeedsSheet";
@@ -490,6 +492,7 @@ function QuickPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
+  const [radiusOpen, setRadiusOpen] = useState(false);
   // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
   const effectiveCenter = pickedLocation
     ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
@@ -586,6 +589,60 @@ function QuickPage() {
 
       {/* FIXED HEADER — search bar + avatar + label (does NOT scroll) */}
       <section className="relative bg-white rounded-t-3xl -mt-6 z-20 pt-3 px-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.15)] flex-shrink-0">
+        {/* TOP FILTER BAR — Current Location | City Search | Radius */}
+        <div className="relative mb-2">
+          <div
+            className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-[color:oklch(0.78_0.14_82/0.45)] shadow-sm overflow-x-auto scrollbar-hide"
+            style={{ touchAction: "pan-x" }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") window.dispatchEvent(new Event("ko-geo-refresh"));
+                setPickedLocation(null);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
+              aria-label="Use my current location"
+            >
+              <LocateFixed className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+              <span className="truncate max-w-[110px]">
+                {pickedLocation ? "Current location" : (geo.label?.split(",")[0] || "Current location")}
+              </span>
+            </button>
+            <span className="text-[color:oklch(0.78_0.14_82/0.6)] text-xs">|</span>
+            <button
+              type="button"
+              onClick={() => setLocationSheetOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
+              aria-label="Search by city"
+            >
+              <MapPinned className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+              <span>City search</span>
+            </button>
+            <span className="text-[color:oklch(0.78_0.14_82/0.6)] text-xs">|</span>
+            <button
+              type="button"
+              onClick={() => setRadiusOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)] active:scale-95 transition shrink-0"
+              aria-label="Change search radius"
+              aria-expanded={radiusOpen}
+            >
+              <Target className="h-3.5 w-3.5 text-[color:oklch(0.55_0.16_45)]" strokeWidth={2.4} />
+              <span>{searchRadiusKm === 0 ? "Any km" : `${searchRadiusKm} km`}</span>
+            </button>
+          </div>
+          {radiusOpen && (
+            <div className="absolute right-2 top-[calc(100%+6px)] z-30 w-64 rounded-2xl bg-white border-2 border-[color:oklch(0.78_0.14_82/0.5)] shadow-xl p-3 animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-[color:oklch(0.30_0.05_85)]">Search radius</span>
+                <button onClick={() => setRadiusOpen(false)} aria-label="Close" className="h-6 w-6 grid place-items-center rounded-full hover:bg-black/5">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <RadiusSlider value={searchRadiusKm} onChange={setSearchRadiusKm} label="Distance" />
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2 mb-2">
           <button
             onClick={() => setOrdersSheetOpen(true)}
@@ -628,7 +685,7 @@ function QuickPage() {
 
       {/* SERVICE CARDS — only this inner list scrolls */}
       <section
-        className="relative bg-white z-20 px-4 flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        className="relative bg-white z-20 pl-[68px] pr-4 flex-1 min-h-0 overflow-y-auto overscroll-contain"
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
       >
 
@@ -707,83 +764,77 @@ function QuickPage() {
         </div>
       </section>
 
-      {/* BOTTOM — root categories circle row (Legal / Finance / Basic / More) */}
+      {/* LEFT RAIL — root categories (Uber-style vertical sidebar) */}
       {!needsOpen && (
       <section
-        className="fixed inset-x-0 z-30 pt-5 pb-2 px-4 border-t border-[color:oklch(0.78_0.14_82/0.3)] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.12)] backdrop-blur-md"
+        className="fixed left-0 z-30 w-[60px] flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide rounded-r-3xl border-r border-y border-[color:oklch(0.78_0.14_82/0.35)] shadow-[6px_0_18px_-6px_rgba(0,0,0,0.15)] backdrop-blur-md"
         style={{
+          top: "calc(34vh + env(safe-area-inset-top) + 96px)",
           bottom: "calc(64px + env(safe-area-inset-bottom))",
-          background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,250,235,0.78) 100%)",
-          touchAction: "pan-x",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,250,235,0.85) 100%)",
+          touchAction: "pan-y",
         }}
+        aria-label="Service categories"
       >
-        <div className="max-w-md mx-auto">
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pt-2 pb-1 scrollbar-hide overscroll-x-contain" style={{ touchAction: "pan-x" }}>
-            {rootCategories.map((c, i) => {
-              const FallbackIcon = SLUG_ICON[c.slug] ?? Sparkles;
-              const isActive = selectedRootId === c.id;
-              const isPulsing = pulseKey.startsWith(`${c.slug}-`);
-              const hasEmoji = !!(c.icon && /\p{Emoji}/u.test(c.icon));
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => handleRootTap(c.id)}
-                  className="group flex-shrink-0 flex flex-col items-center gap-1 w-14"
-                  style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
-                  aria-label={c.name}
-                >
+        {rootCategories.map((c, i) => {
+          const FallbackIcon = SLUG_ICON[c.slug] ?? Sparkles;
+          const isActive = selectedRootId === c.id;
+          const isPulsing = pulseKey.startsWith(`${c.slug}-`);
+          const hasEmoji = !!(c.icon && /\p{Emoji}/u.test(c.icon));
+          return (
+            <button
+              key={c.id}
+              onClick={() => handleRootTap(c.id)}
+              className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1"
+              style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
+              aria-label={c.name}
+              aria-pressed={isActive}
+            >
+              <span
+                key={isPulsing ? pulseKey : c.id}
+                className={`btn-3d relative h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
+                  isActive
+                    ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_6px_16px_-2px_rgba(194,65,12,0.55)]"
+                    : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
+                }`}
+                style={{
+                  animation: isPulsing ? "cat-lift 0.45s cubic-bezier(0.22,1,0.36,1)" : undefined,
+                  transform: isActive && !isPulsing ? "scale(1.08)" : undefined,
+                }}
+              >
+                {isPulsing && (
                   <span
-                    key={isPulsing ? pulseKey : c.id}
-                    className={`btn-3d relative h-11 w-11 rounded-full grid place-items-center border-2 transition-all duration-300 ${
-                      isActive
-                        ? "bg-gradient-to-br from-[#d97706] to-[#c2410c] border-[#c2410c] shadow-[0_6px_16px_-2px_rgba(194,65,12,0.55)]"
-                        : "bg-white border-[color:oklch(0.78_0.14_82/0.5)] shadow-sm"
-                    }`}
-                    style={{
-                      animation: isPulsing ? "cat-lift 0.45s cubic-bezier(0.22,1,0.36,1)" : undefined,
-                      transform: isActive && !isPulsing ? "translateY(-3px) scale(1.08)" : undefined,
-                    }}
-                  >
-                    {isPulsing && (
-                      <span
-                        className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
-                        style={{ animation: "ping-slow 0.7s ease-out 1" }}
-                      />
-                    )}
-                    {hasEmoji ? (
-                      <span className={`relative text-lg ${isActive ? "scale-110" : ""}`}>{c.icon}</span>
-                    ) : (
-                      <FallbackIcon
-                        className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
-                        strokeWidth={2.2}
-                      />
-                    )}
-                    {isActive && (
-                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                    )}
-                  </span>
-                  <span
-                    className={`text-[9px] font-display font-semibold tracking-tight leading-none truncate w-full text-center ${
-                      isActive ? "text-[color:oklch(0.35_0.15_45)]" : "text-[color:oklch(0.45_0.08_85)]"
-                    }`}
-                  >
-                    {c.name.replace(/ Services?$/i, "")}
-                  </span>
-                </button>
-              );
-            })}
-            {loading && rootCategories.length > 0 && (
-              <span className="text-[10px] text-[color:oklch(0.45_0.08_85)] py-3 px-2 whitespace-nowrap">
-                Updating…
+                    className="absolute inset-0 rounded-full bg-[color:oklch(0.78_0.14_82/0.55)]"
+                    style={{ animation: "ping-slow 0.7s ease-out 1" }}
+                  />
+                )}
+                {hasEmoji ? (
+                  <span className={`relative text-lg ${isActive ? "scale-110" : ""}`}>{c.icon}</span>
+                ) : (
+                  <FallbackIcon
+                    className={`relative h-5 w-5 transition-transform ${isActive ? "text-white scale-110" : "text-[color:oklch(0.45_0.08_85)]"}`}
+                    strokeWidth={2.2}
+                  />
+                )}
+                {isActive && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                )}
               </span>
-            )}
-            {!loading && rootCategories.length === 0 && (
-              <span className="text-xs text-[color:oklch(0.45_0.08_85)] py-3 px-2">
-                No categories — add some from Admin → Catalog.
+              <span
+                className={`text-[8.5px] font-display font-semibold tracking-tight leading-tight truncate w-full text-center ${
+                  isActive ? "text-[color:oklch(0.35_0.15_45)]" : "text-[color:oklch(0.45_0.08_85)]"
+                }`}
+              >
+                {c.name.replace(/ Services?$/i, "")}
               </span>
-            )}
-          </div>
-        </div>
+            </button>
+          );
+        })}
+        {!loading && rootCategories.length === 0 && (
+          <span className="text-[9px] text-[color:oklch(0.45_0.08_85)] py-3 px-1 text-center">
+            No categories
+          </span>
+        )}
       </section>
       )}
 

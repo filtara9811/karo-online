@@ -1,85 +1,86 @@
 
-# Offline-First Architecture + Cancel Button Fix + System Audit
+# Karo Online — Production Readiness Plan
 
-## A. Fix Cancel Inquiry Dialog (🔴 Red marked issue)
-The "Keep" / "Yes, cancel" buttons on the "Cancel this inquiry?" popup are not responding to taps. I will:
-- Locate the active inquiry/finding dialog component on `/` (home)
-- Wire `onClick` handlers properly (Keep → close dialog, Yes,cancel → call `cancelInquiry` RPC + close + toast)
-- Ensure dialog z-index is above the map/FAB so taps register
-- Add disabled-state during async call
+Splitting your request into two phases. Phase 1 ships now (visible UI work). Phase 2 is a backend audit that needs a few specifics from you before I touch live data.
 
-## B. Offline-First Architecture (PWA)
+---
 
-### 1. App Shell (Zero-Internet Boot)
-- Add `vite-plugin-pwa` with `generateSW`, `registerType: autoUpdate`
-- Cache app shell (HTML, JS, CSS, fonts, icons) using Workbox
-- `NetworkFirst` for navigations, `CacheFirst` for hashed assets
-- Guarded registration wrapper (skip in Lovable preview/iframe/dev)
-- Manifest with standalone display, theme colors, icons
-- Custom offline fallback page (no browser dino)
+## Phase 1 — UI/UX Redesign (ship this turn)
 
-### 2. IndexedDB Cache Layer (`src/lib/offline/`)
-Using `idb` package:
-- `cache.ts` — get/set with TTL for: `vendors_nearby` (10km list), `leads`, `visits`, `vendor_profile`, `customer_profile`, `categories`
-- `queue.ts` — append-only action queue: `{id, type, payload, createdAt, attempts, status}`
-- `sync.ts` — flush queue on `online` event + on app focus; exponential backoff
+Target file: `src/routes/quick.tsx` (+ `QuickServiceMap.tsx` for pin tap → vendor card).
 
-### 3. Customer Offline Logic
-- Wrap nearby-vendor fetch with `cacheFirst-then-network` helper
-- Show "You are offline" banner (top, dismissible) when `!navigator.onLine`
-- Service-request submit: if offline → push to queue, toast "Request saved. Will sync when online", show pending badge
-- Auto-sync on reconnect
+### 1. Filter Bar (above search bar)
+A single horizontal pill row directly above the main search input:
 
-### 4. Vendor Offline Logic
-- Cache `/vendor/leads`, `/vendor/visitors`, `/vendor/profile` data
-- Status toggle (Online/Offline shop) → queue when offline, optimistic UI
-- Lead updates → queue when offline
+```
+[ 📍 Current Location ] | [ 🏙 City Search ] | [ 🎯 10 km ▾ ]
+```
 
-### 5. Optimistic UI
-- New `<PendingSyncBadge />` (small clock icon) attached to queued items
-- `useOfflineMutation` hook: applies optimistic update → enqueues → on sync removes badge
+- **Current Location** — taps re-runs GPS, recenters map, refreshes "near me" address chip.
+- **City Search** — opens existing `LocationPickerSheet` in city-drill mode (State → City → Area).
+- **Radius** — opens a compact popover with the existing `RadiusSlider` (1–25 km). Selected value shows in the chip.
 
-### 6. Global UI
-- `<OfflineBanner />` mounted in `__root.tsx`
-- `<SyncStatus />` in header showing queued count
+Styling: glass pill, `bg-background/80 backdrop-blur`, single-line, horizontally scrollable on small widths, `shrink-0` on each chip, divider `|` between.
 
-## C. System Audit (deliverable as markdown report)
-I'll generate `AUDIT_REPORT.md` color-coded:
-- 🟢 Green — working: Auth, QR, KYC gate, withdraw, wallet, admin panels, field exec, vendor register
-- 🟡 Yellow — needs attention: missing offline, cancel button bug, geo radius edge cases
-- 🔴 Red — broken: any runtime issues found via Playwright smoke
+### 2. Auto-Detect Location on Open
+- On `QuickPage` mount, immediately call `useGeolocation()` with `{ enableHighAccuracy: true }` and recenter map without waiting for any user action.
+- If permission is denied, fall back to last-known cached center (already in `cachePeek`) and show a soft toast "Tap 📍 to enable location".
 
-Then run a Playwright smoke across `/`, `/vendor`, `/admin`, `/field`, `/q/:code` with screenshots.
+### 3. Left Category Rail
+Move the current bottom/inline category chips into a fixed **vertical rail on the left edge of the screen**, overlapping the map:
 
-## Files to create/edit
-**New**
-- `src/lib/offline/db.ts` (IndexedDB setup via `idb`)
-- `src/lib/offline/cache.ts`
-- `src/lib/offline/queue.ts`
-- `src/lib/offline/sync.ts`
-- `src/hooks/useOnlineStatus.ts`
-- `src/hooks/useOfflineMutation.ts`
-- `src/components/OfflineBanner.tsx`
-- `src/components/PendingSyncBadge.tsx`
-- `src/lib/pwa/register.ts` (guarded registrar)
-- `public/manifest.webmanifest`
-- `public/offline.html`
-- `AUDIT_REPORT.md`
+- 56 px wide, rounded right edge, frosted background
+- Each icon = one category (AC / Carpenter / Plumber / Painter / Movers / Chef / Legal / Finance …)
+- Active category has an orange ring + green dot (matches your screenshot)
+- Vertically scrollable when overflow
 
-**Edit**
-- `vite.config.ts` — add `vite-plugin-pwa`
-- `src/routes/__root.tsx` — mount OfflineBanner, register SW
-- `src/routes/index.tsx` (or wherever the Cancel dialog lives) — fix button handlers
-- Customer vendor-list hook → wrap with cache
-- Vendor leads/visits hooks → wrap with cache
-- Service-request submit → enqueue when offline
+This is the Uber-style sidebar you sketched. The right side of the screen frees up for the map.
 
-## Scope note
-This is a large change (~12 new files, ~6 edited). I'll implement in this order to keep each commit working:
-1. Fix Cancel button (quick win)
-2. IndexedDB + queue + hooks
-3. PWA shell + manifest
-4. Wire offline into customer + vendor flows
-5. Audit report + Playwright smoke
+### 4. Dynamic Map Pins per Category
+- `QuickServiceMap` already renders pins. Change the pin's inner `<img>` to use `SLUG_IMAGE[activeSlug]` so when **Plumber** is selected, every visible pin uses the plumber icon (and only plumber vendors render). Carpenter → carpenter icon, etc.
+- Filter the vendor list passed into the map by `vendor.cat === activeVendorKey` before rendering.
 
-Approve and I'll start with step 1 immediately.
+### 5. Vendor Detail Pop-up on Pin Tap
+- Add `onClick` to each pin in `QuickServiceMap`.
+- Tap opens a bottom sheet (`VendorListSheet` already exists — reuse with a single-item filter) showing: avatar, name, area, km, rating, "Call" + "Send Request" actions.
+
+### Out of scope for Phase 1
+I will not redesign the lower service-card list, the bottom tabs, or the top "Join Business" badge — those weren't called out and stay as-is.
+
+---
+
+## Phase 2 — Lead Broadcast Audit (next turn, needs your input)
+
+The broadcast pipeline today:
+
+```
+Customer raises lead
+   → INSERT public.leads
+   → DB trigger lead_broadcast_after_insert
+   → SELECT vendors WHERE category match AND ST_DWithin(geog, lead_geog, radius)
+   → INSERT public.lead_broadcasts (one row per vendor)
+   → Realtime publication → vendor app subscribes to lead_broadcasts WHERE vendor_id = me
+   → Vendor app shows alert + (optional) WhatsApp webhook
+```
+
+Failure points I want to inspect, in order of likelihood:
+
+1. **Trigger silently filtered everything out** — vendor `serviceable_zone` / `categories` JSON empty after the recent onboarding refactor, so `WHERE` matches 0 rows. (Most likely cause.)
+2. **Realtime publication missing column** — after the recent security migration that hardened `supabase_realtime` publication, the vendor app's subscribe filter may reference a stripped column and silently never fire.
+3. **Vendor app channel scope** — listener subscribes before `auth.uid()` is known, so RLS denies every row.
+4. **WhatsApp webhook** — `_lead_whatsapp_webhook_url()` returns `NULL` if the secret is missing; trigger swallows the error.
+
+### What I need from you before running the audit
+1. A real `lead_id` from the last 24h that "should have" broadcast but didn't.
+2. The vendor_id of one vendor in range who didn't receive it.
+3. Confirm I can read `lead_broadcasts`, `vendors`, `leads` rows (read-only, no writes).
+
+Once you reply with those, I'll run the SQL probes and post a written audit (root cause + fix migration) — no schema changes until you approve.
+
+---
+
+## Order of execution
+1. Approve this plan.
+2. I implement Phase 1 (one turn, ~3 files touched).
+3. You verify UI on device, send the 2 IDs above.
+4. I run Phase 2 audit and post findings.
