@@ -56,6 +56,8 @@ type Category = {
   lead_price_inr?: number | null;
   lead_cost_coins?: number | null;
   max_vendors_per_lead?: number | null;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 type Item = {
   id: string;
@@ -69,6 +71,8 @@ type Item = {
   price_max: number | null;
   sort_order: number;
   is_active: boolean;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 type Variation = {
   id: string;
@@ -80,6 +84,8 @@ type Variation = {
   price_max: number | null;
   sort_order: number;
   is_active: boolean;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 
 type Crumb =
