@@ -49,6 +49,7 @@ function VendorServicesPage() {
   const [types, setTypes] = useState<Type[]>([]);
   const [cats, setCats] = useState<Cat[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [mappings, setMappings] = useState<Map<string, Mapping>>(new Map());
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -56,7 +57,6 @@ function VendorServicesPage() {
   const [catId, setCatId] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("All");
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
