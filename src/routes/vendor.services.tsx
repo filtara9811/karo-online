@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal } from "lucide-react";
+import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
 import { ItemPricingSheet, type PricingValues } from "@/components/ItemPricingSheet";
 import { toast } from "sonner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
+import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
@@ -59,6 +60,14 @@ function VendorServicesPage() {
 
   // Pricing sheet
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
+
+  // Category suggestion sheet
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestDefaults, setSuggestDefaults] = useState<CategorySuggestionDefaults>({});
+  const openSuggest = (defaults: CategorySuggestionDefaults = {}) => {
+    setSuggestDefaults(defaults);
+    setSuggestOpen(true);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -292,25 +301,39 @@ function VendorServicesPage() {
         )}
       </main>
 
-      {/* ── BOTTOM BAR 2: category | sub-category ── */}
+      {/* ── BOTTOM BAR 2: category | sub-category | + suggest ── */}
       <div
         className="fixed inset-x-0 z-30 px-3"
         style={{ bottom: 56 + 8, paddingBottom: 0 }}
       >
-        <div className="max-w-3xl mx-auto grid grid-cols-2 gap-2 rounded-2xl border border-[#d4af37]/25 bg-black/55 backdrop-blur-xl p-1.5">
-          <PickerButton
-            label={currentCat?.name ?? "Category"}
-            disabled={rootCats.length === 0}
-            onClick={() => setOpenPicker("cat")}
-          />
-          <PickerButton
-            label={currentSub?.name ?? "Sub-category"}
-            withImage
-            disabled={subCats.length === 0}
-            onClick={() => setOpenPicker("sub")}
-          />
+        <div className="max-w-3xl mx-auto flex items-stretch gap-2 rounded-2xl border border-[#d4af37]/25 bg-black/55 backdrop-blur-xl p-1.5">
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            <PickerButton
+              label={currentCat?.name ?? "Category"}
+              disabled={rootCats.length === 0}
+              onClick={() => setOpenPicker("cat")}
+            />
+            <PickerButton
+              label={currentSub?.name ?? "Sub-category"}
+              withImage
+              disabled={subCats.length === 0}
+              onClick={() => setOpenPicker("sub")}
+            />
+          </div>
+          <button
+            onClick={() => openSuggest({
+              category_name: currentCat?.name ?? "",
+              subcategory_name: currentSub?.name ?? "",
+            })}
+            aria-label="Suggest a new category"
+            className="click-feedback h-11 w-11 grid place-items-center rounded-xl border border-[#d4af37]/50 text-[#1a1208] flex-shrink-0"
+            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37)" }}
+          >
+            <Plus className="h-5 w-5" strokeWidth={2.5} />
+          </button>
         </div>
       </div>
+
 
       {/* ── BOTTOM BAR 1: type pills ── */}
       <div className="fixed inset-x-0 bottom-0 z-30 bg-black/70 backdrop-blur-xl border-t border-[#d4af37]/20 pb-[max(env(safe-area-inset-bottom),6px)]">
@@ -378,6 +401,12 @@ function VendorServicesPage() {
         busy={savingKey === pricingItem?.id}
         onClose={() => setPricingItem(null)}
         onSave={savePricing}
+      />
+
+      <CategorySuggestionSheet
+        open={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        defaults={suggestDefaults}
       />
     </div>
   );
