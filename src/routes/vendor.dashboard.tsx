@@ -1169,6 +1169,29 @@ function VendorDashboard() {
               <span className="font-display">Total: {stats.total.toLocaleString()}</span>
             </div>
 
+            {/* Lead Marketplace CTA — missed/under-capacity leads */}
+            <div className="px-3 pb-3">
+              <Link
+                to="/vendor/marketplace"
+                className="flex items-center justify-between gap-2 w-full rounded-2xl px-3 py-2.5 bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-300 shadow-sm active:scale-[0.98] transition"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-8 w-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow">
+                    🛒
+                  </span>
+                  <div className="text-left">
+                    <p className="font-display text-[13px] font-bold text-amber-900 leading-tight">
+                      लीड बाज़ार (Lead Marketplace)
+                    </p>
+                    <p className="text-[10px] text-amber-700/80 leading-tight">
+                      Missed leads · पहले आओ पहले पाओ
+                    </p>
+                  </div>
+                </div>
+                <span className="text-amber-800 font-bold text-lg">→</span>
+              </Link>
+            </div>
+
             {/* My Leads / Potential tabs */}
             <div className="px-3 pb-3">
               <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
