@@ -138,7 +138,7 @@ function VendorServicesPage() {
     () => allGroups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
     [allGroups, subId]
   );
-  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
+  
 
   // Parent-variation tabs — only from admin-managed catalog_groups (read-only for vendors)
   const groupTabs = useMemo<string[]>(() => subGroups.map((g) => g.name), [subGroups]);
