@@ -817,7 +817,8 @@ function QuickPage() {
             </div>
           )}
           {subCategories.map((s, i) => {
-            const img = SLUG_IMAGE[s.slug] || s.image_url || svcAc;
+            // Prefer admin-uploaded image, then slug fallback, then default
+            const img = s.image_url || SLUG_IMAGE[s.slug] || svcAc;
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
             const onlineCount = isSelected
