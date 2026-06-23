@@ -223,7 +223,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
           </div>
 
           {/* Grouped tabs — Women / Men / Kids / Unisex / Other (only when groups exist) */}
-          {groupTabs.length > 1 && (
+          {groupTabs.length > 0 && (
             <div
               className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
               style={{ animation: "fade-up 0.4s ease-out 0.05s both" }}
