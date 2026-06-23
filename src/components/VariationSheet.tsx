@@ -9,7 +9,10 @@ export type VariationItem = {
   price: string;
   img: string;
   tone?: "gold" | "green";
+  /** Optional grouping tag — e.g. "Women", "Men", "Kids", "Unisex". Drives the tab strip. */
+  group?: string;
 };
+
 
 export type VendorTypeKey = "wholesaler" | "retailer" | "manufacturer";
 
