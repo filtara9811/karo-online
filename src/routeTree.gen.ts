@@ -44,6 +44,7 @@ import { Route as VendorSocialRouteImport } from './routes/vendor.social'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
+import { Route as VendorMarketplaceRouteImport } from './routes/vendor.marketplace'
 import { Route as VendorKycRouteImport } from './routes/vendor.kyc'
 import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
@@ -74,6 +75,7 @@ import { Route as AdminLookupRouteImport } from './routes/admin.lookup'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
 import { Route as AdminKycReviewRouteImport } from './routes/admin.kyc-review'
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminFormsRouteImport } from './routes/admin.forms'
@@ -280,6 +282,11 @@ const VendorRegisterRoute = VendorRegisterRouteImport.update({
   path: '/vendor/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorMarketplaceRoute = VendorMarketplaceRouteImport.update({
+  id: '/vendor/marketplace',
+  path: '/vendor/marketplace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorKycRoute = VendorKycRouteImport.update({
   id: '/vendor/kyc',
   path: '/vendor/kyc',
@@ -428,6 +435,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminLegalRoute = AdminLegalRouteImport.update({
   id: '/legal',
   path: '/legal',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLeadsRoute = AdminLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminKycReviewRoute = AdminKycReviewRouteImport.update({
@@ -621,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -651,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -717,6 +731,7 @@ export interface FileRoutesByTo {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -747,6 +762,7 @@ export interface FileRoutesByTo {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -815,6 +831,7 @@ export interface FileRoutesById {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -845,6 +862,7 @@ export interface FileRoutesById {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -914,6 +932,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -944,6 +963,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1010,6 +1030,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -1040,6 +1061,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1107,6 +1129,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -1137,6 +1160,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1205,6 +1229,7 @@ export interface RootRouteChildren {
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorInstallRoute: typeof VendorInstallRoute
   VendorKycRoute: typeof VendorKycRoute
+  VendorMarketplaceRoute: typeof VendorMarketplaceRoute
   VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
@@ -1467,6 +1492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorRegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/marketplace': {
+      id: '/vendor/marketplace'
+      path: '/vendor/marketplace'
+      fullPath: '/vendor/marketplace'
+      preLoaderRoute: typeof VendorMarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/kyc': {
       id: '/vendor/kyc'
       path: '/vendor/kyc'
@@ -1675,6 +1707,13 @@ declare module '@tanstack/react-router' {
       path: '/legal'
       fullPath: '/admin/legal'
       preLoaderRoute: typeof AdminLegalRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/leads': {
+      id: '/admin/leads'
+      path: '/leads'
+      fullPath: '/admin/leads'
+      preLoaderRoute: typeof AdminLeadsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/kyc-review': {
@@ -1902,6 +1941,7 @@ interface AdminRouteChildren {
   AdminFormsRoute: typeof AdminFormsRoute
   AdminKycRoute: typeof AdminKycRoute
   AdminKycReviewRoute: typeof AdminKycReviewRoute
+  AdminLeadsRoute: typeof AdminLeadsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
@@ -1950,6 +1990,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFormsRoute: AdminFormsRoute,
   AdminKycRoute: AdminKycRoute,
   AdminKycReviewRoute: AdminKycReviewRoute,
+  AdminLeadsRoute: AdminLeadsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
@@ -2026,6 +2067,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorDashboardRoute: VendorDashboardRoute,
   VendorInstallRoute: VendorInstallRoute,
   VendorKycRoute: VendorKycRoute,
+  VendorMarketplaceRoute: VendorMarketplaceRoute,
   VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,

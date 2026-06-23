@@ -1455,6 +1455,7 @@ export type Database = {
           group_name: string | null
           id: string
           images: string[]
+          is_marketplace: boolean
           is_remote: boolean
           item_ids: string[]
           item_names: string[]
@@ -1463,6 +1464,8 @@ export type Database = {
           lead_rating: number | null
           lead_review: string | null
           lng: number | null
+          marketplace_at: string | null
+          marketplace_reason: string | null
           max_slots: number
           note: string | null
           root_category_id: string | null
@@ -1489,6 +1492,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           images?: string[]
+          is_marketplace?: boolean
           is_remote?: boolean
           item_ids?: string[]
           item_names?: string[]
@@ -1497,6 +1501,8 @@ export type Database = {
           lead_rating?: number | null
           lead_review?: string | null
           lng?: number | null
+          marketplace_at?: string | null
+          marketplace_reason?: string | null
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
@@ -1523,6 +1529,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           images?: string[]
+          is_marketplace?: boolean
           is_remote?: boolean
           item_ids?: string[]
           item_names?: string[]
@@ -1531,6 +1538,8 @@ export type Database = {
           lead_rating?: number | null
           lead_review?: string | null
           lng?: number | null
+          marketplace_at?: string | null
+          marketplace_reason?: string | null
           max_slots?: number
           note?: string | null
           root_category_id?: string | null
@@ -4303,6 +4312,10 @@ export type Database = {
           status: string
         }[]
       }
+      admin_list_leads_dashboard: {
+        Args: { _bucket?: string; _limit?: number }
+        Returns: Json
+      }
       admin_list_qr_batches: {
         Args: never
         Returns: {
@@ -4318,6 +4331,7 @@ export type Database = {
           unlinked_count: number
         }[]
       }
+      admin_rebroadcast_lead: { Args: { _lead_id: string }; Returns: Json }
       admin_referral_dry_run: {
         Args: { _referred_user_id: string }
         Returns: Json
@@ -4469,6 +4483,7 @@ export type Database = {
           owner_phone_last4: string
         }[]
       }
+      claim_marketplace_lead: { Args: { _lead_id: string }; Returns: Json }
       count_unread_lead_messages: {
         Args: { _lead_ids: string[] }
         Returns: {
@@ -4512,6 +4527,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      finalize_lead_marketplace: { Args: { _lead_id: string }; Returns: Json }
       generate_referral_code: { Args: { _prefix?: string }; Returns: string }
       generate_support_code: { Args: never; Returns: string }
       get_active_maps_key: { Args: never; Returns: Json }
@@ -4609,6 +4625,27 @@ export type Database = {
       link_qr_to_vendor: {
         Args: { p_code: string; p_vendor_id: string }
         Returns: Json
+      }
+      list_marketplace_leads_for_vendor: {
+        Args: never
+        Returns: {
+          accepted_count: number
+          address: string
+          created_at: string
+          distance_km: number
+          group_name: string
+          id: string
+          images: string[]
+          item_names: string[]
+          lat: number
+          lead_price_inr: number
+          lng: number
+          marketplace_at: string
+          marketplace_reason: string
+          max_slots: number
+          note: string
+          sub_category_name: string
+        }[]
       }
       log_referral_visit: {
         Args: {
