@@ -863,7 +863,7 @@ function CatalogPage() {
 
       {/* ===== Editor modal ===== */}
       {editor && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => !saving && setEditor(null)}
@@ -916,7 +916,7 @@ function CatalogPage() {
 
       {/* ===== Group editor (parent-variation card) bottom sheet ===== */}
       {groupEditor && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => !savingGroup && setGroupEditor(null)}
