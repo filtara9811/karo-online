@@ -1157,7 +1157,18 @@ function QuickPage() {
                 search_radius_km: 10,
                 vendor_types: vendorTypes,
                 is_remote: isRemote,
+                group_name: (() => {
+                  const m = new Map<string, number>();
+                  cartItems.forEach((it) => {
+                    const g = (it.group_tag ?? "").trim();
+                    if (g) m.set(g, (m.get(g) ?? 0) + 1);
+                  });
+                  let best: string | null = null; let n = 0;
+                  m.forEach((c, g) => { if (c > n) { n = c; best = g; } });
+                  return best;
+                })(),
               });
+
               toast.success("Request saved — internet aate hi vendors ko bhej denge.");
               return;
             }
