@@ -421,7 +421,11 @@ function QuickPage() {
   const variationItems = useMemo<VariationItem[]>(() => {
     if (!selectedSub) return [];
     const inferGroup = (it: DBItem): string | undefined => {
-      const hay = `${it.name} ${it.description ?? ""} ${it.slug}`.toLowerCase();
+      // 1. Admin-tagged group wins
+      if (it.group_tag && it.group_tag.trim()) return it.group_tag.trim();
+      // 2. Keyword match
+      const kw = (it.keywords ?? []).join(" ").toLowerCase();
+      const hay = `${it.name} ${it.description ?? ""} ${it.slug} ${kw}`.toLowerCase();
       if (/\b(women|woman|female|ladies|girl)\b/.test(hay)) return "Women";
       if (/\b(men|man|male|gents|boy)\b/.test(hay)) return "Men";
       if (/\b(kid|child|baby|infant)\b/.test(hay)) return "Kids";
