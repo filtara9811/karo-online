@@ -257,7 +257,7 @@ function VendorServicesPage() {
               return (
                 <button
                   key={g}
-                  onClick={() => setActiveGroup(g)}
+                  onClick={() => setActiveGroup(active ? "" : g)}
                   className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                     active
                       ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
