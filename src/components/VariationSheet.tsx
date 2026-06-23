@@ -116,8 +116,10 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
       setFilters({});
       setFilterSheetOpen(false);
       setRemote(false);
+      setActiveGroup("All");
     }
   }, [open, items]);
+
 
   const toggleCart = (id: string) =>
     setCart((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
