@@ -141,22 +141,12 @@ function VendorServicesPage() {
   const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
 
   // Parent-variation tabs — only from admin-managed catalog_groups (read-only for vendors)
-  const groupTabs = useMemo<string[]>(() => {
-    const hasOther = subItems.some((it) => {
-      const tag = (it.group_tag ?? "").trim();
-      return !tag || !knownGroupNames.has(tag);
-    });
-    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || subItems.length === 0 ? ["Other"] : [])];
-  }, [subGroups, subItems, knownGroupNames]);
+  const groupTabs = useMemo<string[]>(() => subGroups.map((g) => g.name), [subGroups]);
 
   const visibleItems = useMemo(() => {
-    if (activeGroup === "All") return subItems;
-    if (activeGroup === "Other") return subItems.filter((it) => {
-      const tag = (it.group_tag ?? "").trim();
-      return !tag || !knownGroupNames.has(tag);
-    });
+    if (!activeGroup) return subItems;
     return subItems.filter((it) => (it.group_tag ?? "").trim() === activeGroup);
-  }, [subItems, activeGroup, knownGroupNames]);
+  }, [subItems, activeGroup]);
 
   const currentCat = cats.find((c) => c.id === catId) ?? null;
   const currentSub = cats.find((c) => c.id === subId) ?? null;
