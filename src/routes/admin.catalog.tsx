@@ -828,6 +828,38 @@ function EditorForm({
         </Field>
       )}
 
+      {(editor.kind === "category" ||
+        editor.kind === "subcategory" ||
+        editor.kind === "item" ||
+        editor.kind === "variation") && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Group tab (e.g. Women / Men / Kids / Other)">
+            <input
+              list="group-tag-presets"
+              value={d.group_tag ?? ""}
+              onChange={(e) => update({ group_tag: e.target.value })}
+              className={inputCls}
+              placeholder="Other"
+            />
+            <datalist id="group-tag-presets">
+              <option value="Women" />
+              <option value="Men" />
+              <option value="Kids" />
+              <option value="Unisex" />
+              <option value="Other" />
+            </datalist>
+          </Field>
+          <Field label="Keywords (comma-separated, any language)">
+            <input
+              value={Array.isArray(d.keywords) ? d.keywords.join(", ") : (d.keywords ?? "")}
+              onChange={(e) => update({ keywords: e.target.value })}
+              className={inputCls}
+              placeholder="tailor, darzi, सिलाई, boutique"
+            />
+          </Field>
+        </div>
+      )}
+
       {editor.kind === "subcategory" && (
         <div className="grid grid-cols-3 gap-3">
           <Field label="Lead cost (coins)">
