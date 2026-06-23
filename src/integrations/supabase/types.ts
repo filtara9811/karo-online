@@ -295,6 +295,51 @@ export type Database = {
           },
         ]
       }
+      category_suggestions: {
+        Row: {
+          category_name: string
+          child_category_name: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          subcategory_name: string | null
+          suggested_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          child_category_name?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          subcategory_name?: string | null
+          suggested_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          child_category_name?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          subcategory_name?: string | null
+          suggested_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coin_packs: {
         Row: {
           bonus_coins: number
