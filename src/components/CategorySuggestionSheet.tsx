@@ -132,7 +132,7 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
               <div className="mx-auto h-1 w-10 rounded-full bg-[color:oklch(0.78_0.14_82/0.4)] mb-3" />
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
-                  Suggest a category
+                  Other / Custom Request
                 </h2>
                 <button
                   onClick={onClose}
@@ -143,7 +143,7 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
                 </button>
               </div>
               <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-1">
-                Tell admin which service you need — they'll add it for everyone.
+                Don't see your service? Tell us what you need — we'll find a vendor or add it for everyone.
               </p>
             </div>
 
