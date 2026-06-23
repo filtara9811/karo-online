@@ -37,6 +37,7 @@ type NavItem = { to: string; label: string; icon: typeof Crown };
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/leads", label: "📡 All Leads (Control)", icon: ClipboardList },
   { to: "/admin/qr-assets", label: "🖨️ QR Management", icon: QrCode },
   { to: "/admin/lookup", label: "🔍 User Lookup (360)", icon: Users },
   { to: "/admin/customers", label: "Customers", icon: Users },
