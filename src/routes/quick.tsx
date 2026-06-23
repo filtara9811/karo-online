@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { QuickOrdersSheet } from "@/components/QuickOrdersSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
+import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
 import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
@@ -505,6 +506,12 @@ function QuickPage() {
 
   // ---- UI state ----
   const [needsOpen, setNeedsOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestDefaults, setSuggestDefaults] = useState<CategorySuggestionDefaults>({});
+  const openSuggest = (defaults: CategorySuggestionDefaults = {}) => {
+    setSuggestDefaults(defaults);
+    setSuggestOpen(true);
+  };
   const [variationOpen, setVariationOpen] = useState(false);
   const [pulseKey, setPulseKey] = useState<string>("");
   const [findingOpen, setFindingOpen] = useState(false);
@@ -896,8 +903,29 @@ function QuickPage() {
               </div>
             );
           })}
+
+          {/* Suggest a category card (bottom of sub-category list) */}
+          {!loading && (
+            <button
+              type="button"
+              onClick={() => requireAuth(() => openSuggest({ category_name: selectedRoot?.name ?? "" }))}
+              className={`${isGridView ? "col-span-2" : ""} group w-full rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] bg-[color:oklch(0.99_0.01_85)] hover:bg-[color:oklch(0.97_0.03_85)] transition-colors p-4 flex flex-col items-center justify-center gap-1.5`}
+              aria-label="Suggest a new category"
+            >
+              <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#fdf3c8] to-[#fff8dc] border-2 border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center">
+                <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
+              </span>
+              <span className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
+                Suggest a category
+              </span>
+              <span className="text-[11px] text-[color:oklch(0.45_0.08_85)] text-center leading-tight">
+                Don't see what you need? Tell admin.
+              </span>
+            </button>
+          )}
         </motion.div>
       </section>
+
 
 
       {/* LEFT RAIL — root categories (Uber-style vertical sidebar) */}
@@ -971,8 +999,23 @@ function QuickPage() {
             No categories
           </span>
         )}
+        {/* Suggest-a-category tile (end of left rail) */}
+        <button
+          type="button"
+          onClick={() => requireAuth(() => openSuggest())}
+          aria-label="Suggest a new category"
+          className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1 pt-1"
+        >
+          <span className="relative h-11 w-11 rounded-full grid place-items-center border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] bg-white/70">
+            <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
+          </span>
+          <span className="text-[8.5px] font-display font-semibold tracking-tight leading-tight w-full text-center text-[color:oklch(0.45_0.08_85)]">
+            Suggest
+          </span>
+        </button>
       </section>
       )}
+
 
       {/* (Search-radius slider removed — now shown only in the NoVendorsFallback "Try again" sheet) */}
 
@@ -1005,6 +1048,13 @@ function QuickPage() {
         defaultRootId={selectedRootId}
         defaultSubId={selectedSubId}
       />
+
+      <CategorySuggestionSheet
+        open={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        defaults={suggestDefaults}
+      />
+
 
       <VariationSheet
         open={variationOpen}
