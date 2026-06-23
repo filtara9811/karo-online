@@ -288,8 +288,8 @@ function QuickPage() {
         }
         const [t, c, i] = await withTimeout(Promise.all([
           supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
+          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
         ]));
         if (cancelled) return;
         const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
