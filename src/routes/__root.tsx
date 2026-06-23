@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { registerPwaServiceWorker } from "@/lib/register-sw";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { startAutoSync } from "@/lib/offline/sync";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 import appCss from "../styles.css?url";
 
@@ -167,6 +168,7 @@ function RootComponent() {
         <CartProvider>
           <OfflineBanner />
           <AppShell />
+          <InstallPrompt />
           <Toaster position="top-center" richColors closeButton />
         </CartProvider>
       </AuthProvider>
