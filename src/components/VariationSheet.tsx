@@ -217,9 +217,41 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
             </div>
           </div>
 
+          {/* Grouped tabs — Women / Men / Kids / Unisex / Other (only when groups exist) */}
+          {groupTabs.length > 1 && (
+            <div
+              className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
+              style={{ animation: "fade-up 0.4s ease-out 0.05s both" }}
+            >
+              <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                {groupTabs.map((g) => {
+                  const active = activeGroup === g;
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => setActiveGroup(g)}
+                      className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                        active
+                          ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[color:oklch(0.55_0.18_60)] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
+                          : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Items */}
           <div className="px-4 mt-3 space-y-2.5 pb-4">
-            {items.map((item, i) => {
+            {visibleItems.length === 0 && (
+              <p className="text-center text-[12px] font-display italic text-[color:oklch(0.50_0.05_85)] py-6">
+                No options in this tab yet.
+              </p>
+            )}
+            {visibleItems.map((item, i) => {
               const inCart = cart.includes(item.id);
               return (
                 <article
@@ -257,6 +289,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
             })}
           </div>
         </div>
+
 
         {/* Footer — vendor type filter chips + notes line + send */}
         <div
