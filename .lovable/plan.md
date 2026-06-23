@@ -1,86 +1,28 @@
+## Finding
 
-# Karo Online — Production Readiness Plan
+`vendors_realtime_pii_columns` — scanner warns the `vendors` table is published to `supabase_realtime` without a column allowlist, leaking PII (aadhaar, pan, gst, email, whatsapp, manager_email, admin_notes…).
 
-Splitting your request into two phases. Phase 1 ships now (visible UI work). Phase 2 is a backend audit that needs a few specifics from you before I touch live data.
+## Reality in the DB
 
----
+`pg_publication_tables` for `vendors` already publishes only a 29-column safe allowlist:
 
-## Phase 1 — UI/UX Redesign (ship this turn)
-
-Target file: `src/routes/quick.tsx` (+ `QuickServiceMap.tsx` for pin tap → vendor card).
-
-### 1. Filter Bar (above search bar)
-A single horizontal pill row directly above the main search input:
-
-```
-[ 📍 Current Location ] | [ 🏙 City Search ] | [ 🎯 10 km ▾ ]
-```
-
-- **Current Location** — taps re-runs GPS, recenters map, refreshes "near me" address chip.
-- **City Search** — opens existing `LocationPickerSheet` in city-drill mode (State → City → Area).
-- **Radius** — opens a compact popover with the existing `RadiusSlider` (1–25 km). Selected value shows in the chip.
-
-Styling: glass pill, `bg-background/80 backdrop-blur`, single-line, horizontally scrollable on small widths, `shrink-0` on each chip, divider `|` between.
-
-### 2. Auto-Detect Location on Open
-- On `QuickPage` mount, immediately call `useGeolocation()` with `{ enableHighAccuracy: true }` and recenter map without waiting for any user action.
-- If permission is denied, fall back to last-known cached center (already in `cachePeek`) and show a soft toast "Tap 📍 to enable location".
-
-### 3. Left Category Rail
-Move the current bottom/inline category chips into a fixed **vertical rail on the left edge of the screen**, overlapping the map:
-
-- 56 px wide, rounded right edge, frosted background
-- Each icon = one category (AC / Carpenter / Plumber / Painter / Movers / Chef / Legal / Finance …)
-- Active category has an orange ring + green dot (matches your screenshot)
-- Vertically scrollable when overflow
-
-This is the Uber-style sidebar you sketched. The right side of the screen frees up for the map.
-
-### 4. Dynamic Map Pins per Category
-- `QuickServiceMap` already renders pins. Change the pin's inner `<img>` to use `SLUG_IMAGE[activeSlug]` so when **Plumber** is selected, every visible pin uses the plumber icon (and only plumber vendors render). Carpenter → carpenter icon, etc.
-- Filter the vendor list passed into the map by `vendor.cat === activeVendorKey` before rendering.
-
-### 5. Vendor Detail Pop-up on Pin Tap
-- Add `onClick` to each pin in `QuickServiceMap`.
-- Tap opens a bottom sheet (`VendorListSheet` already exists — reuse with a single-item filter) showing: avatar, name, area, km, rating, "Call" + "Send Request" actions.
-
-### Out of scope for Phase 1
-I will not redesign the lower service-card list, the bottom tabs, or the top "Join Business" badge — those weren't called out and stay as-is.
-
----
-
-## Phase 2 — Lead Broadcast Audit (next turn, needs your input)
-
-The broadcast pipeline today:
-
-```
-Customer raises lead
-   → INSERT public.leads
-   → DB trigger lead_broadcast_after_insert
-   → SELECT vendors WHERE category match AND ST_DWithin(geog, lead_geog, radius)
-   → INSERT public.lead_broadcasts (one row per vendor)
-   → Realtime publication → vendor app subscribes to lead_broadcasts WHERE vendor_id = me
-   → Vendor app shows alert + (optional) WhatsApp webhook
+```text
+id, user_id, role, owner_name, entity, trade, deals_in, business_name,
+website, plan, is_blocked, status, avatar_url, created_at, updated_at,
+verified, google_place_id, auto_accept_leads, service_radius_km,
+current_team_count, van_count, is_online, location_updated_at,
+operation_mode, is_premium, vendor_type, is_remote_capable,
+cover_image_url, cover_video_url
 ```
 
-Failure points I want to inspect, in order of likelihood:
+None of `aadhaar, pan, gst, email, whatsapp, manager_email, admin_notes, phone, lat, lng, live_lat, live_lng` are in the publication. The earlier migration also installed `public.assert_realtime_publication_columns()` as a drift guard for exactly this set.
 
-1. **Trigger silently filtered everything out** — vendor `serviceable_zone` / `categories` JSON empty after the recent onboarding refactor, so `WHERE` matches 0 rows. (Most likely cause.)
-2. **Realtime publication missing column** — after the recent security migration that hardened `supabase_realtime` publication, the vendor app's subscribe filter may reference a stripped column and silently never fire.
-3. **Vendor app channel scope** — listener subscribes before `auth.uid()` is known, so RLS denies every row.
-4. **WhatsApp webhook** — `_lead_whatsapp_webhook_url()` returns `NULL` if the secret is missing; trigger swallows the error.
+So the PII is **not** being broadcast — the scanner can't introspect the column allowlist on the publication and is flagging the table-level membership only.
 
-### What I need from you before running the audit
-1. A real `lead_id` from the last 24h that "should have" broadcast but didn't.
-2. The vendor_id of one vendor in range who didn't receive it.
-3. Confirm I can read `lead_broadcasts`, `vendors`, `leads` rows (read-only, no writes).
+## Plan
 
-Once you reply with those, I'll run the SQL probes and post a written audit (root cause + fix migration) — no schema changes until you approve.
+1. Add a one-migration hardening step: explicitly re-set the column allowlist with `ALTER PUBLICATION supabase_realtime SET TABLE public.vendors (…safe cols…)` so the intent is recorded in migration history (idempotent, no behavior change), and run `SELECT public.assert_realtime_publication_columns()` at the end to fail loudly if anything drifts.
+2. Mark the finding fixed via `security--manage_security_finding` with an explanation pointing at the allowlist + drift guard.
+3. Update `mem://security-memory.md` with a short note: "vendors realtime publication is column-filtered; PII columns must never be added — drift guard enforces it."
 
----
-
-## Order of execution
-1. Approve this plan.
-2. I implement Phase 1 (one turn, ~3 files touched).
-3. You verify UI on device, send the 2 IDs above.
-4. I run Phase 2 audit and post findings.
+No application code changes; this is purely a database invariant restatement plus scanner bookkeeping.
