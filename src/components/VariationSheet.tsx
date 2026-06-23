@@ -75,31 +75,22 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [remote, setRemote] = useState(false);
-  const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [activeGroup, setActiveGroup] = useState<string>("");
 
   // Group tabs — prefer admin-managed groups (with images), fall back to inferred from items.
   const groupMeta = useMemo<VariationGroup[]>(() => groups ?? [], [groups]);
-  const knownGroupNames = useMemo(() => new Set(groupMeta.map((g) => g.name)), [groupMeta]);
 
   const groupTabs = useMemo<string[]>(() => {
-    if (groupMeta.length > 0) {
-      const hasOther = items.some((it) => !it.group || !knownGroupNames.has(it.group));
-      return ["All", ...groupMeta.map((g) => g.name), ...(hasOther ? ["Other"] : [])];
-    }
+    if (groupMeta.length > 0) return groupMeta.map((g) => g.name);
     const set = new Set<string>();
-    let hasUntagged = false;
-    items.forEach((it) => { it.group ? set.add(it.group) : (hasUntagged = true); });
-    if (set.size === 0) return [];
-    const list = Array.from(set);
-    if (hasUntagged) list.push("Other");
-    return ["All", ...list];
-  }, [items, groupMeta, knownGroupNames]);
+    items.forEach((it) => { if (it.group) set.add(it.group); });
+    return Array.from(set);
+  }, [items, groupMeta]);
 
   const visibleItems = useMemo(() => {
-    if (groupTabs.length === 0 || activeGroup === "All") return items;
-    if (activeGroup === "Other") return items.filter((it) => !it.group || !knownGroupNames.has(it.group));
+    if (!activeGroup) return items;
     return items.filter((it) => it.group === activeGroup);
-  }, [items, activeGroup, groupTabs.length, knownGroupNames]);
+  }, [items, activeGroup]);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
