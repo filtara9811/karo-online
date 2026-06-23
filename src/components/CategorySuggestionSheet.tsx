@@ -148,32 +148,32 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
             </div>
 
             <div className="px-5 py-4 space-y-3">
-              <Field label="Category" required>
+              <Field label="What do you need?" required>
                 <input
                   value={cat} onChange={(e) => setCat(e.target.value)} maxLength={120}
-                  placeholder="e.g. Pet grooming"
+                  placeholder="e.g. Pet grooming at home"
                   className="input-base"
                 />
               </Field>
-              <Field label="Sub-category (optional)">
+              <Field label="Type / Sub-service (optional)">
                 <input
                   value={sub} onChange={(e) => setSub(e.target.value)} maxLength={120}
                   placeholder="e.g. Dog grooming"
                   className="input-base"
                 />
               </Field>
-              <Field label="Child category (optional)">
+              <Field label="More detail (optional)">
                 <input
                   value={child} onChange={(e) => setChild(e.target.value)} maxLength={120}
-                  placeholder="e.g. Bath & nail trim"
+                  placeholder="e.g. Bath & nail trim for medium dog"
                   className="input-base"
                 />
               </Field>
-              <Field label="Note (optional)">
+              <Field label="Describe your request (optional)">
                 <textarea
                   value={note} onChange={(e) => setNote(e.target.value)} maxLength={600}
                   rows={3}
-                  placeholder="Anything that helps admin understand…"
+                  placeholder="When, where, budget, brand preference — anything that helps us match the right vendor."
                   className="input-base resize-none"
                 />
                 <div className="text-[10px] text-right text-[color:oklch(0.55_0.05_85)] mt-1">
