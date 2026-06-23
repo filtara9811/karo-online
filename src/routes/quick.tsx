@@ -506,6 +506,12 @@ function QuickPage() {
 
   // ---- UI state ----
   const [needsOpen, setNeedsOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestDefaults, setSuggestDefaults] = useState<CategorySuggestionDefaults>({});
+  const openSuggest = (defaults: CategorySuggestionDefaults = {}) => {
+    setSuggestDefaults(defaults);
+    setSuggestOpen(true);
+  };
   const [variationOpen, setVariationOpen] = useState(false);
   const [pulseKey, setPulseKey] = useState<string>("");
   const [findingOpen, setFindingOpen] = useState(false);
