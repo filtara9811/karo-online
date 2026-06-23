@@ -90,7 +90,9 @@ const NearbyOnlineSchema = z.object({
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
+    try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     const itemIds = Array.from(new Set(data.itemIds ?? [])).slice(0, 50);
     let mappedVendorIds: string[] | null = null;
 
