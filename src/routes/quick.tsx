@@ -1049,6 +1049,13 @@ function QuickPage() {
         defaultSubId={selectedSubId}
       />
 
+      <CategorySuggestionSheet
+        open={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        defaults={suggestDefaults}
+      />
+
+
       <VariationSheet
         open={variationOpen}
         category={selectedSub?.name ?? "Service"}
