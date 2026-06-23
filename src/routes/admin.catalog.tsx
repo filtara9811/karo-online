@@ -142,10 +142,12 @@ function CatalogPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [variations, setVariations] = useState<Variation[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [activeGroup, setActiveGroup] = useState<string>("All");
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
+  const [groupEditor, setGroupEditor] = useState<null | Partial<Group>>(null);
+  const [savingGroup, setSavingGroup] = useState(false);
 
   const [editor, setEditor] = useState<
     | null
@@ -159,22 +161,25 @@ function CatalogPage() {
 
   const reloadAll = async () => {
     setLoading(true);
-    const [t, c, i, v] = await Promise.all([
+    const [t, c, i, v, g] = await Promise.all([
       supabase.from("catalog_types").select("*").order("sort_order"),
       supabase.from("categories").select("*").order("sort_order").order("name"),
       supabase.from("catalog_items").select("*").order("sort_order").order("name"),
       supabase.from("item_variations").select("*").order("sort_order").order("name"),
+      (supabase.from as any)("catalog_groups").select("*").order("sort_order").order("name"),
     ]);
     setTypes((t.data ?? []) as CatalogType[]);
     setCategories((c.data ?? []) as Category[]);
     setItems((i.data ?? []) as Item[]);
     setVariations((v.data ?? []) as Variation[]);
+    setGroups((g.data ?? []) as Group[]);
     setLoading(false);
   };
 
   useEffect(() => {
     reloadAll();
   }, []);
+
 
   // Derive current view from crumbs
   const view = useMemo(() => {
