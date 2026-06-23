@@ -238,6 +238,8 @@ function CatalogPage() {
           sort_order: d.sort_order ?? 0,
           type_id: d.type_id ?? null,
           parent_id: d.parent_id ?? null,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (editor.kind === "subcategory") {
           payload.lead_price_inr = d.lead_price_inr == null || (d.lead_price_inr as any) === "" ? null : Number(d.lead_price_inr);
@@ -259,6 +261,8 @@ function CatalogPage() {
           price_max: d.price_max ?? null,
           sort_order: d.sort_order ?? 0,
           is_active: d.is_active ?? true,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (d.id) await supabase.from("catalog_items").update(payload).eq("id", d.id);
         else await supabase.from("catalog_items").insert(payload);
@@ -273,6 +277,8 @@ function CatalogPage() {
           price_max: d.price_max ?? null,
           sort_order: d.sort_order ?? 0,
           is_active: d.is_active ?? true,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (d.id) await supabase.from("item_variations").update(payload).eq("id", d.id);
         else await supabase.from("item_variations").insert(payload);
