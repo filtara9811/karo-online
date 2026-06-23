@@ -236,7 +236,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
                   return (
                     <button
                       key={g}
-                      onClick={() => setActiveGroup(g)}
+                      onClick={() => setActiveGroup(active ? "" : g)}
                       className={`snap-start shrink-0 flex flex-col items-center justify-center w-[76px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                         active
                           ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[color:oklch(0.55_0.18_60)] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
