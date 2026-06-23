@@ -240,17 +240,38 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
               <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                 {groupTabs.map((g) => {
                   const active = activeGroup === g;
+                  const meta = groupMeta.find((m) => m.name === g);
+                  const showImage = !!meta && (meta.image_url || meta.icon);
                   return (
                     <button
                       key={g}
                       onClick={() => setActiveGroup(g)}
-                      className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                      className={`snap-start shrink-0 flex flex-col items-center justify-center w-[76px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                         active
                           ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[color:oklch(0.55_0.18_60)] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
                           : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
                       }`}
                     >
-                      {g}
+                      {showImage && meta!.image_url ? (
+                        <img
+                          src={meta!.image_url!}
+                          alt={g}
+                          className="h-[38px] w-[38px] rounded-xl object-cover bg-[#fff8dc]"
+                        />
+                      ) : showImage && meta!.icon ? (
+                        <div className="h-[38px] w-[38px] rounded-xl grid place-items-center text-xl bg-[#fff8dc]">
+                          {meta!.icon}
+                        </div>
+                      ) : (
+                        <div className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
+                          active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
+                        }`}>
+                          {g === "All" ? "★" : g === "Other" ? "•••" : g.slice(0, 1)}
+                        </div>
+                      )}
+                      <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
+                        {g}
+                      </span>
                     </button>
                   );
                 })}
