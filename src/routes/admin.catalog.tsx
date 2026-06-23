@@ -574,8 +574,8 @@ function CatalogPage() {
       />
       <Header />
 
-      {(view.level === "items" || view.level === "variations") && groupTabs.length > 1 && (
-        <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
+      {(view.level === "items" || view.level === "variations") && (
+        <div className="mb-3 -mx-1 flex items-center gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
           {groupTabs.map((g) => {
             const active = activeGroup === g;
             return (
@@ -602,6 +602,26 @@ function CatalogPage() {
               </button>
             );
           })}
+          <button
+            onClick={() => {
+              const name = window.prompt("New variation group name (e.g. Women, Gents, Commercial)")?.trim();
+              if (!name) return;
+              if (name.toLowerCase() === "all") return;
+              if (!customGroups.includes(name) && !groupTabs.includes(name)) {
+                setCustomGroups((prev) => [...prev, name]);
+              }
+              setActiveGroup(name);
+            }}
+            className="snap-start shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-dashed transition"
+            style={{
+              background: "rgba(212,175,55,0.08)",
+              color: "#f5d97a",
+              borderColor: "rgba(212,175,55,0.5)",
+            }}
+            title="Add new variation group"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add Group
+          </button>
         </div>
       )}
 
