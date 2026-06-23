@@ -68,12 +68,31 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [remote, setRemote] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string>("All");
+
+  // Unique group tabs derived from incoming items (e.g. Women / Men / Kids / Other).
+  const groupTabs = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    let hasUntagged = false;
+    items.forEach((it) => { it.group ? set.add(it.group) : (hasUntagged = true); });
+    if (set.size === 0) return [];
+    const list = Array.from(set);
+    if (hasUntagged) list.push("Other");
+    return ["All", ...list];
+  }, [items]);
+
+  const visibleItems = useMemo(() => {
+    if (groupTabs.length === 0 || activeGroup === "All") return items;
+    if (activeGroup === "Other") return items.filter((it) => !it.group);
+    return items.filter((it) => it.group === activeGroup);
+  }, [items, activeGroup, groupTabs.length]);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
   const activeFilterCount =
     Object.values(filters).reduce((n, arr) => n + arr.length, 0) +
     (vendorTypes.length < 3 ? 1 : 0);
+
 
   useEffect(() => {
     if (!open) return;
