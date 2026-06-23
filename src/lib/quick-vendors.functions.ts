@@ -90,7 +90,9 @@ const NearbyOnlineSchema = z.object({
 export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
   .inputValidator((d) => NearbyOnlineSchema.parse(d))
   .handler(async ({ data }) => {
+    try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     const itemIds = Array.from(new Set(data.itemIds ?? [])).slice(0, 50);
     let mappedVendorIds: string[] | null = null;
 
@@ -161,4 +163,8 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
     const onlineCount = publicVendors.filter((v: any) => v.is_online).length;
     const offlineCount = publicVendors.length - onlineCount;
     return { ok: true as const, vendors: publicVendors, onlineCount, offlineCount };
+    } catch (e: any) {
+      console.error("[getNearbyOnlineVendors] failure:", e?.message ?? e, e?.stack);
+      return { ok: false as const, error: String(e?.message ?? e), vendors: [], onlineCount: 0, offlineCount: 0 };
+    }
   });
