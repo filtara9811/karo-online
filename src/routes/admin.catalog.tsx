@@ -87,6 +87,15 @@ type Variation = {
   group_tag?: string | null;
   keywords?: string[] | null;
 };
+type Group = {
+  id: string;
+  category_id: string;
+  name: string;
+  icon: string | null;
+  image_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 type Crumb =
   | { level: "type"; node: CatalogType }
