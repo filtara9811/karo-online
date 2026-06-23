@@ -123,6 +123,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           external_url: string | null
+          group_tag: string | null
           icon: string | null
           id: string
           image_url: string | null
@@ -130,6 +131,7 @@ export type Database = {
           is_featured_home: boolean
           is_listed: boolean
           is_recommended: boolean
+          keywords: string[]
           name: string
           price_max: number | null
           price_min: number | null
@@ -144,6 +146,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           external_url?: string | null
+          group_tag?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
@@ -151,6 +154,7 @@ export type Database = {
           is_featured_home?: boolean
           is_listed?: boolean
           is_recommended?: boolean
+          keywords?: string[]
           name: string
           price_max?: number | null
           price_min?: number | null
@@ -165,6 +169,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           external_url?: string | null
+          group_tag?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
@@ -172,6 +177,7 @@ export type Database = {
           is_featured_home?: boolean
           is_listed?: boolean
           is_recommended?: boolean
+          keywords?: string[]
           name?: string
           price_max?: number | null
           price_min?: number | null
@@ -228,10 +234,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          group_tag: string | null
           icon: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          keywords: string[]
           lead_cost_coins: number
           lead_price_inr: number | null
           max_vendors_per_lead: number | null
@@ -246,10 +254,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          group_tag?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          keywords?: string[]
           lead_cost_coins?: number
           lead_price_inr?: number | null
           max_vendors_per_lead?: number | null
@@ -264,10 +274,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          group_tag?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          keywords?: string[]
           lead_cost_coins?: number
           lead_price_inr?: number | null
           max_vendors_per_lead?: number | null
@@ -995,10 +1007,12 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          group_tag: string | null
           id: string
           image_url: string | null
           is_active: boolean
           item_id: string
+          keywords: string[]
           name: string
           price_max: number | null
           price_min: number | null
@@ -1008,10 +1022,12 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          group_tag?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           item_id: string
+          keywords?: string[]
           name: string
           price_max?: number | null
           price_min?: number | null
@@ -1021,10 +1037,12 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          group_tag?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           item_id?: string
+          keywords?: string[]
           name?: string
           price_max?: number | null
           price_min?: number | null
