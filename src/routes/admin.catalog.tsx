@@ -136,6 +136,7 @@ function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
   const [editor, setEditor] = useState<
     | null
