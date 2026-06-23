@@ -135,6 +135,7 @@ function CatalogPage() {
   const [variations, setVariations] = useState<Variation[]>([]);
   const [loading, setLoading] = useState(true);
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
+  const [activeGroup, setActiveGroup] = useState<string>("All");
 
   const [editor, setEditor] = useState<
     | null
