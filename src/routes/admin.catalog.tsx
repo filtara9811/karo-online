@@ -627,91 +627,94 @@ function CatalogPage() {
       <PageHeader
         title="Catalog Manager"
         subtitle={subtitle()}
-        action={addButton()}
+        action={view.level === "items" || view.level === "variations" ? null : addButton()}
       />
       <Header />
 
       {(view.level === "items" || view.level === "variations") && subId && (
-        <div className="mb-3 -mx-1 flex items-stretch gap-2.5 overflow-x-auto snap-x snap-mandatory px-1 pb-2 scrollbar-thin">
-          {groupTabs.map((g) => {
-            const active = activeGroup === g;
-            const meta = subGroups.find((x) => x.name === g);
-            const isUtility = g === "All" || g === "Other";
-            return (
-              <div key={g} className="snap-start shrink-0 relative">
-                <button
-                  onClick={() => setActiveGroup(g)}
-                  className="flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 px-1.5 py-2 transition gap-1"
-                  style={
-                    active
-                      ? {
-                          background: "linear-gradient(180deg, #f5d97a, #d4af37)",
-                          color: "#1a1208",
-                          borderColor: "#fff8dc",
-                          boxShadow: "0 6px 20px -6px rgba(212,175,55,0.7)",
-                        }
-                      : {
-                          background: "rgba(255,253,245,0.04)",
-                          color: "#f5d97a",
-                          borderColor: "rgba(212,175,55,0.35)",
-                        }
-                  }
-                >
-                  {meta ? (
-                    <IconImage url={meta.image_url} icon={meta.icon} size={42} />
-                  ) : (
-                    <div
-                      className="h-[42px] w-[42px] rounded-xl grid place-items-center text-[18px] font-black"
-                      style={{ background: active ? "rgba(26,18,8,0.12)" : "rgba(212,175,55,0.12)" }}
-                    >
-                      {g === "All" ? "★" : "•••"}
-                    </div>
-                  )}
-                  <span className="text-[10px] font-bold uppercase tracking-wider truncate w-full text-center">
-                    {g}
-                  </span>
-                </button>
-                {meta && !isUtility && (
+        <>
+          <div className="mb-3 -mx-1 flex items-stretch gap-2.5 overflow-x-auto snap-x snap-mandatory px-1 pb-2 scrollbar-thin">
+            {groupTabs.map((g) => {
+              const active = activeGroup === g;
+              const meta = subGroups.find((x) => x.name === g);
+              return (
+                <div key={g} className="snap-start shrink-0 relative">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setGroupEditor(meta);
-                    }}
-                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full grid place-items-center border-2 border-[#1a1208] bg-[#d4af37] text-[#1a1208] shadow"
-                    title="Edit group"
+                    onClick={() => setActiveGroup(active ? "" : g)}
+                    className="flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 px-1.5 py-2 transition gap-1"
+                    style={
+                      active
+                        ? {
+                            background: "linear-gradient(180deg, #f5d97a, #d4af37)",
+                            color: "#1a1208",
+                            borderColor: "#fff8dc",
+                            boxShadow: "0 6px 20px -6px rgba(212,175,55,0.7)",
+                          }
+                        : {
+                            background: "rgba(255,253,245,0.04)",
+                            color: "#f5d97a",
+                            borderColor: "rgba(212,175,55,0.35)",
+                          }
+                    }
                   >
-                    <Edit3 className="h-3 w-3" />
+                    {meta ? (
+                      <IconImage url={meta.image_url} icon={meta.icon} size={42} />
+                    ) : (
+                      <div
+                        className="h-[42px] w-[42px] rounded-xl grid place-items-center text-[18px] font-black"
+                        style={{ background: active ? "rgba(26,18,8,0.12)" : "rgba(212,175,55,0.12)" }}
+                      >
+                        {g.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-wider truncate w-full text-center">
+                      {g}
+                    </span>
                   </button>
-                )}
+                  {meta && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setGroupEditor(meta);
+                      }}
+                      className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full grid place-items-center border-2 border-[#1a1208] bg-[#d4af37] text-[#1a1208] shadow"
+                      title="Edit group"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              onClick={() =>
+                setGroupEditor({
+                  category_id: subId,
+                  name: "",
+                  icon: "",
+                  image_url: "",
+                  sort_order: subGroups.length,
+                  is_active: true,
+                })
+              }
+              className="snap-start shrink-0 flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 border-dashed gap-1"
+              style={{
+                background: "rgba(212,175,55,0.08)",
+                color: "#f5d97a",
+                borderColor: "rgba(212,175,55,0.5)",
+              }}
+              title="Create new group"
+            >
+              <div className="h-[42px] w-[42px] rounded-xl grid place-items-center bg-[#d4af37]/15">
+                <Plus className="h-5 w-5" />
               </div>
-            );
-          })}
-          <button
-            onClick={() =>
-              setGroupEditor({
-                category_id: subId,
-                name: "",
-                icon: "",
-                image_url: "",
-                sort_order: subGroups.length,
-                is_active: true,
-              })
-            }
-            className="snap-start shrink-0 flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 border-dashed gap-1"
-            style={{
-              background: "rgba(212,175,55,0.08)",
-              color: "#f5d97a",
-              borderColor: "rgba(212,175,55,0.5)",
-            }}
-            title="Create new group"
-          >
-            <div className="h-[42px] w-[42px] rounded-xl grid place-items-center bg-[#d4af37]/15">
-              <Plus className="h-5 w-5" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Add Group</span>
-          </button>
-        </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider">Add Group</span>
+            </button>
+          </div>
+          <div className="mb-3">{addButton()}</div>
+        </>
       )}
+
 
 
       <GoldCard className="p-3 sm:p-4">
