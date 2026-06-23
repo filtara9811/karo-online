@@ -389,7 +389,7 @@ function CatalogPage() {
     if (!confirm(`Group "${groupEditor.name}" delete kar dein? Items unmapped ho jayenge.`)) return;
     await (supabase.from as any)("catalog_groups").delete().eq("id", groupEditor.id);
     setGroupEditor(null);
-    setActiveGroup("All");
+    setActiveGroup("");
     await reloadAll();
   };
 
