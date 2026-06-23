@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal } from "lucide-react";
+import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
 import { ItemPricingSheet, type PricingValues } from "@/components/ItemPricingSheet";
 import { toast } from "sonner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
+import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
