@@ -9,7 +9,10 @@ export type VariationItem = {
   price: string;
   img: string;
   tone?: "gold" | "green";
+  /** Optional grouping tag — e.g. "Women", "Men", "Kids", "Unisex". Drives the tab strip. */
+  group?: string;
 };
+
 
 export type VendorTypeKey = "wholesaler" | "retailer" | "manufacturer";
 
@@ -65,12 +68,31 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [remote, setRemote] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string>("All");
+
+  // Unique group tabs derived from incoming items (e.g. Women / Men / Kids / Other).
+  const groupTabs = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    let hasUntagged = false;
+    items.forEach((it) => { it.group ? set.add(it.group) : (hasUntagged = true); });
+    if (set.size === 0) return [];
+    const list = Array.from(set);
+    if (hasUntagged) list.push("Other");
+    return ["All", ...list];
+  }, [items]);
+
+  const visibleItems = useMemo(() => {
+    if (groupTabs.length === 0 || activeGroup === "All") return items;
+    if (activeGroup === "Other") return items.filter((it) => !it.group);
+    return items.filter((it) => it.group === activeGroup);
+  }, [items, activeGroup, groupTabs.length]);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
   const activeFilterCount =
     Object.values(filters).reduce((n, arr) => n + arr.length, 0) +
     (vendorTypes.length < 3 ? 1 : 0);
+
 
   useEffect(() => {
     if (!open) return;
@@ -94,8 +116,10 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
       setFilters({});
       setFilterSheetOpen(false);
       setRemote(false);
+      setActiveGroup("All");
     }
   }, [open, items]);
+
 
   const toggleCart = (id: string) =>
     setCart((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -193,9 +217,41 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
             </div>
           </div>
 
+          {/* Grouped tabs — Women / Men / Kids / Unisex / Other (only when groups exist) */}
+          {groupTabs.length > 1 && (
+            <div
+              className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
+              style={{ animation: "fade-up 0.4s ease-out 0.05s both" }}
+            >
+              <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                {groupTabs.map((g) => {
+                  const active = activeGroup === g;
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => setActiveGroup(g)}
+                      className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                        active
+                          ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[color:oklch(0.55_0.18_60)] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
+                          : "bg-white text-[color:oklch(0.30_0.05_85)] border-[color:oklch(0.78_0.14_82/0.4)]"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Items */}
           <div className="px-4 mt-3 space-y-2.5 pb-4">
-            {items.map((item, i) => {
+            {visibleItems.length === 0 && (
+              <p className="text-center text-[12px] font-display italic text-[color:oklch(0.50_0.05_85)] py-6">
+                No options in this tab yet.
+              </p>
+            )}
+            {visibleItems.map((item, i) => {
               const inCart = cart.includes(item.id);
               return (
                 <article
@@ -233,6 +289,7 @@ export function VariationSheet({ open, category, vendorLabel, items, selectedVen
             })}
           </div>
         </div>
+
 
         {/* Footer — vendor type filter chips + notes line + send */}
         <div
