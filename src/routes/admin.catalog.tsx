@@ -911,9 +911,117 @@ function CatalogPage() {
           </div>
         </div>
       )}
+
+      {/* ===== Group editor (parent-variation card) bottom sheet ===== */}
+      {groupEditor && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !savingGroup && setGroupEditor(null)}
+          />
+          <div
+            className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border p-6"
+            style={{
+              background:
+                "linear-gradient(180deg, oklch(0.16 0.03 80) 0%, oklch(0.10 0.02 80) 100%)",
+              borderColor: "rgba(212,175,55,0.4)",
+              boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className="font-display text-lg font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #fff8dc, #d4af37)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {groupEditor.id ? "Edit" : "New"} Variation Group
+              </h3>
+              <button
+                onClick={() => !savingGroup && setGroupEditor(null)}
+                className="p-1.5 rounded-lg text-[#f5d97a] hover:bg-[#d4af37]/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <Field label="Name (e.g. Women Tailor, Men Tailor, Commercial)">
+                <input
+                  value={groupEditor.name ?? ""}
+                  onChange={(e) => setGroupEditor({ ...groupEditor, name: e.target.value })}
+                  className={inputCls}
+                  placeholder="Women Tailor"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Icon (emoji)">
+                <input
+                  value={groupEditor.icon ?? ""}
+                  onChange={(e) => setGroupEditor({ ...groupEditor, icon: e.target.value })}
+                  className={inputCls}
+                  placeholder="👗"
+                  maxLength={4}
+                />
+              </Field>
+              <ImageUpload
+                value={groupEditor.image_url ?? null}
+                onChange={(url) => setGroupEditor({ ...groupEditor, image_url: url })}
+                label="Image / Icon upload"
+                folder="catalog-groups"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Sort order">
+                  <input
+                    type="number"
+                    value={groupEditor.sort_order ?? 0}
+                    onChange={(e) =>
+                      setGroupEditor({ ...groupEditor, sort_order: parseInt(e.target.value) || 0 })
+                    }
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Status">
+                  <select
+                    value={groupEditor.is_active === false ? "0" : "1"}
+                    onChange={(e) =>
+                      setGroupEditor({ ...groupEditor, is_active: e.target.value === "1" })
+                    }
+                    className={inputCls}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </Field>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              {groupEditor.id && (
+                <button
+                  onClick={removeGroup}
+                  disabled={savingGroup}
+                  className="px-4 py-2.5 rounded-xl border border-red-500/50 text-red-400 hover:bg-red-500/10 text-sm font-bold"
+                >
+                  <Trash2 className="h-4 w-4 inline mr-1" /> Delete
+                </button>
+              )}
+              <GoldButton variant="outline" onClick={() => setGroupEditor(null)} className="flex-1">
+                Cancel
+              </GoldButton>
+              <GoldButton onClick={saveGroup} disabled={savingGroup} className="flex-1">
+                {savingGroup ? "Saving..." : "Save"}
+              </GoldButton>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
+
 
 function EditorForm({
   editor,
