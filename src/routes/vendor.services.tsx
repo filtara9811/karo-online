@@ -125,7 +125,7 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup("All"); }, [subId]);
+  useEffect(() => { setActiveGroup("All"); setCustomGroups([]); }, [subId]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
