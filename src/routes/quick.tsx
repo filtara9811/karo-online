@@ -1048,23 +1048,26 @@ function QuickPage() {
             </button>
           );
         })}
+        {loading && rootCategories.length === 0 && (
+          <RootCategoryRailSkeleton count={6} />
+        )}
         {!loading && rootCategories.length === 0 && (
           <span className="text-[9px] text-[color:oklch(0.45_0.08_85)] py-3 px-1 text-center">
             No categories
           </span>
         )}
-        {/* Suggest-a-category tile (end of left rail) */}
+        {/* Other / Custom Request tile (end of left rail) */}
         <button
           type="button"
           onClick={() => requireAuth(() => openSuggest())}
-          aria-label="Suggest a new category"
+          aria-label="Other / Custom Request"
           className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1 pt-1"
         >
           <span className="relative h-11 w-11 rounded-full grid place-items-center border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] bg-white/70">
             <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
           </span>
           <span className="text-[8.5px] font-display font-semibold tracking-tight leading-tight w-full text-center text-[color:oklch(0.45_0.08_85)]">
-            Suggest
+            Other
           </span>
         </button>
       </section>
