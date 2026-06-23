@@ -56,7 +56,7 @@ function VendorServicesPage() {
   const [typeId, setTypeId] = useState<string | null>(null);
   const [catId, setCatId] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
-  const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [activeGroup, setActiveGroup] = useState<string>("");
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
