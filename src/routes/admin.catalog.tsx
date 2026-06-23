@@ -513,6 +513,7 @@ function CatalogPage() {
           <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Sub-category
         </GoldButton>
       );
+    const groupTag = activeGroup !== "All" && activeGroup !== "Other" ? activeGroup : null;
     if (view.level === "items")
       return (
         <GoldButton
@@ -525,11 +526,12 @@ function CatalogPage() {
                 is_active: true,
                 sort_order: 0,
                 category_id: view.subcategory.id,
+                group_tag: groupTag,
               },
             })
           }
         >
-          <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Item
+          <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Item{groupTag ? ` to ${groupTag}` : ""}
         </GoldButton>
       );
     return (
@@ -542,11 +544,12 @@ function CatalogPage() {
               is_active: true,
               sort_order: 0,
               item_id: view.item.id,
+              group_tag: groupTag,
             },
           })
         }
       >
-        <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Variation
+        <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Variation{groupTag ? ` to ${groupTag}` : ""}
       </GoldButton>
     );
   };
