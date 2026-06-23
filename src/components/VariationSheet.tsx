@@ -121,7 +121,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
       setFilters({});
       setFilterSheetOpen(false);
       setRemote(false);
-      setActiveGroup("All");
+      setActiveGroup("");
     }
   }, [open, items]);
 
