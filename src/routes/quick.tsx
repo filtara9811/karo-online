@@ -1157,7 +1157,18 @@ function QuickPage() {
                 search_radius_km: 10,
                 vendor_types: vendorTypes,
                 is_remote: isRemote,
+                group_name: (() => {
+                  const m = new Map<string, number>();
+                  cartItems.forEach((it) => {
+                    const g = (it.group_tag ?? "").trim();
+                    if (g) m.set(g, (m.get(g) ?? 0) + 1);
+                  });
+                  let best: string | null = null; let n = 0;
+                  m.forEach((c, g) => { if (c > n) { n = c; best = g; } });
+                  return best;
+                })(),
               });
+
               toast.success("Request saved — internet aate hi vendors ko bhej denge.");
               return;
             }
@@ -1165,9 +1176,20 @@ function QuickPage() {
             const cartIds = payload.cart;
             const cartItems = subItems.filter((it) => cartIds.includes(it.id));
             const itemNames = cartItems.map((it) => it.name);
+            // Derive selected parent group (e.g. "Women Tailor") from cart items' group_tag.
+            // Most-common non-empty tag wins; null when items carry no group.
+            const groupCounts = new Map<string, number>();
+            cartItems.forEach((it) => {
+              const g = (it.group_tag ?? "").trim();
+              if (g) groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
+            });
+            let groupName: string | null = null;
+            let groupBest = 0;
+            groupCounts.forEach((c, g) => { if (c > groupBest) { groupBest = c; groupName = g; } });
             const vendorTypes = payload.vendorTypes ?? ["wholesaler", "retailer", "manufacturer"];
             const isRemote = Boolean((payload as any).remote);
             const filterParts = Object.entries(payload.filters ?? {})
+
               .filter(([, v]) => Array.isArray(v) && v.length > 0)
               .map(([k, v]) => `${k}: ${(v as string[]).join("/")}`);
             const noteWithFilter = [
@@ -1208,6 +1230,8 @@ function QuickPage() {
                 search_radius_km: 10,
                 vendor_types: vendorTypes,
                 is_remote: isRemote,
+                group_name: groupName,
+
               })
               .select("id")
               .single();

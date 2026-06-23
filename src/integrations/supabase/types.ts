@@ -1452,6 +1452,7 @@ export type Database = {
           customer_id: string
           customer_name: string | null
           customer_phone: string | null
+          group_name: string | null
           id: string
           images: string[]
           is_remote: boolean
@@ -1485,6 +1486,7 @@ export type Database = {
           customer_id: string
           customer_name?: string | null
           customer_phone?: string | null
+          group_name?: string | null
           id?: string
           images?: string[]
           is_remote?: boolean
@@ -1518,6 +1520,7 @@ export type Database = {
           customer_id?: string
           customer_name?: string | null
           customer_phone?: string | null
+          group_name?: string | null
           id?: string
           images?: string[]
           is_remote?: boolean
