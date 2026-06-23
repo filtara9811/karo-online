@@ -314,7 +314,7 @@ function QuickPage() {
     let scheduled: ReturnType<typeof setTimeout> | null = null;
     const bump = () => {
       if (scheduled) return;
-      scheduled = setTimeout(() => { scheduled = null; setCatalogReloadTick((n) => n + 1); }, 400);
+      scheduled = setTimeout(() => { scheduled = null; setCatalogReloadTick((n) => n + 1); }, 250);
     };
     const channel = supabase
       .channel("catalog-live")
@@ -323,11 +323,24 @@ function QuickPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, bump)
       .on("postgres_changes", { event: "*", schema: "public", table: "item_variations" }, bump)
       .subscribe();
+
+    // Belt + suspenders: refresh on tab focus / network return so admin edits made
+    // while the customer app was backgrounded show up immediately on return.
+    const onFocus = () => bump();
+    const onVisible = () => { if (document.visibilityState === "visible") bump(); };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       if (scheduled) clearTimeout(scheduled);
       supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
+
 
 
   const activeType = useMemo(
