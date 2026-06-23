@@ -136,6 +136,7 @@ function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
   const [editor, setEditor] = useState<
     | null
@@ -217,22 +218,25 @@ function CatalogPage() {
     return variations.filter((v) => v.item_id === view.item.id);
   }, [view, variations]);
 
-  // Parent-variation tabs — derived from group_tag of current list
+  // Parent-variation tabs — derived from group_tag of current list + admin-added custom groups
   const groupTabs = useMemo(() => {
     const src = view.level === "items" ? rawItems : view.level === "variations" ? rawVariations : [];
-    if (src.length === 0) return [] as string[];
     const tags = new Set<string>();
-    let hasOther = false;
+    let hasOther = src.length === 0;
     src.forEach((x: any) => {
       const g = (x.group_tag ?? "").trim();
       if (g) tags.add(g); else hasOther = true;
     });
+    customGroups.forEach((g) => tags.add(g));
     const arr = Array.from(tags);
-    if (hasOther || arr.length === 0) arr.push("Other");
+    if (hasOther) arr.push("Other");
     return ["All", ...arr];
-  }, [view, rawItems, rawVariations]);
+  }, [view, rawItems, rawVariations, customGroups]);
 
-  useEffect(() => { setActiveGroup("All"); }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
+  useEffect(() => {
+    setActiveGroup("All");
+    setCustomGroups([]);
+  }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
 
   const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
     if (activeGroup === "All") return arr;
@@ -509,6 +513,7 @@ function CatalogPage() {
           <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Sub-category
         </GoldButton>
       );
+    const groupTag = activeGroup !== "All" && activeGroup !== "Other" ? activeGroup : null;
     if (view.level === "items")
       return (
         <GoldButton
@@ -521,11 +526,12 @@ function CatalogPage() {
                 is_active: true,
                 sort_order: 0,
                 category_id: view.subcategory.id,
+                group_tag: groupTag,
               },
             })
           }
         >
-          <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Item
+          <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Item{groupTag ? ` to ${groupTag}` : ""}
         </GoldButton>
       );
     return (
@@ -538,11 +544,12 @@ function CatalogPage() {
               is_active: true,
               sort_order: 0,
               item_id: view.item.id,
+              group_tag: groupTag,
             },
           })
         }
       >
-        <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Variation
+        <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Variation{groupTag ? ` to ${groupTag}` : ""}
       </GoldButton>
     );
   };
@@ -567,8 +574,8 @@ function CatalogPage() {
       />
       <Header />
 
-      {(view.level === "items" || view.level === "variations") && groupTabs.length > 1 && (
-        <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
+      {(view.level === "items" || view.level === "variations") && (
+        <div className="mb-3 -mx-1 flex items-center gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
           {groupTabs.map((g) => {
             const active = activeGroup === g;
             return (
@@ -595,6 +602,26 @@ function CatalogPage() {
               </button>
             );
           })}
+          <button
+            onClick={() => {
+              const name = window.prompt("New variation group name (e.g. Women, Gents, Commercial)")?.trim();
+              if (!name) return;
+              if (name.toLowerCase() === "all") return;
+              if (!customGroups.includes(name) && !groupTabs.includes(name)) {
+                setCustomGroups((prev) => [...prev, name]);
+              }
+              setActiveGroup(name);
+            }}
+            className="snap-start shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-dashed transition"
+            style={{
+              background: "rgba(212,175,55,0.08)",
+              color: "#f5d97a",
+              borderColor: "rgba(212,175,55,0.5)",
+            }}
+            title="Add new variation group"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add Group
+          </button>
         </div>
       )}
 
