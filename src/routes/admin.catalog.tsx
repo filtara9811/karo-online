@@ -207,15 +207,41 @@ function CatalogPage() {
     return categories.filter((c) => c.parent_id === view.category.id);
   }, [view, categories]);
 
-  const visibleItems = useMemo(() => {
+  const rawItems = useMemo(() => {
     if (view.level !== "items") return [];
     return items.filter((it) => it.category_id === view.subcategory.id);
   }, [view, items]);
 
-  const visibleVariations = useMemo(() => {
+  const rawVariations = useMemo(() => {
     if (view.level !== "variations") return [];
     return variations.filter((v) => v.item_id === view.item.id);
   }, [view, variations]);
+
+  // Parent-variation tabs — derived from group_tag of current list
+  const groupTabs = useMemo(() => {
+    const src = view.level === "items" ? rawItems : view.level === "variations" ? rawVariations : [];
+    if (src.length === 0) return [] as string[];
+    const tags = new Set<string>();
+    let hasOther = false;
+    src.forEach((x: any) => {
+      const g = (x.group_tag ?? "").trim();
+      if (g) tags.add(g); else hasOther = true;
+    });
+    const arr = Array.from(tags);
+    if (hasOther || arr.length === 0) arr.push("Other");
+    return ["All", ...arr];
+  }, [view, rawItems, rawVariations]);
+
+  useEffect(() => { setActiveGroup("All"); }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
+
+  const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
+    if (activeGroup === "All") return arr;
+    if (activeGroup === "Other") return arr.filter((x) => !((x.group_tag ?? "").trim()));
+    return arr.filter((x) => (x.group_tag ?? "").trim() === activeGroup);
+  };
+
+  const visibleItems = useMemo(() => filterByGroup(rawItems), [rawItems, activeGroup]);
+  const visibleVariations = useMemo(() => filterByGroup(rawVariations), [rawVariations, activeGroup]);
 
   // ------ Save & Delete ------
   const save = async () => {
