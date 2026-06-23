@@ -402,6 +402,12 @@ function VendorServicesPage() {
         onClose={() => setPricingItem(null)}
         onSave={savePricing}
       />
+
+      <CategorySuggestionSheet
+        open={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        defaults={suggestDefaults}
+      />
     </div>
   );
 }
