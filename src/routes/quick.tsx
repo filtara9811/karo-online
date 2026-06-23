@@ -420,6 +420,14 @@ function QuickPage() {
   // Items become "variations" inside the variation sheet
   const variationItems = useMemo<VariationItem[]>(() => {
     if (!selectedSub) return [];
+    const inferGroup = (it: DBItem): string | undefined => {
+      const hay = `${it.name} ${it.description ?? ""} ${it.slug}`.toLowerCase();
+      if (/\b(women|woman|female|ladies|girl)\b/.test(hay)) return "Women";
+      if (/\b(men|man|male|gents|boy)\b/.test(hay)) return "Men";
+      if (/\b(kid|child|baby|infant)\b/.test(hay)) return "Kids";
+      if (/\b(unisex|all)\b/.test(hay)) return "Unisex";
+      return undefined;
+    };
     return subItems.map((it, idx) => ({
       id: it.id,
       title: it.name,
@@ -430,8 +438,10 @@ function QuickPage() {
           : "—",
       img: it.image_url || SLUG_IMAGE[selectedSub.slug] || svcAc,
       tone: idx === 1 ? "green" as const : undefined,
+      group: inferGroup(it),
     }));
   }, [subItems, selectedSub]);
+
 
   // ---- Real vendors mapped to current sub-category ----
   const [realVendors, setRealVendors] = useState<Vendor[]>([]);
