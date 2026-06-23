@@ -263,7 +263,10 @@ function CatalogPage() {
 
   const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
     if (activeGroup === "All") return arr;
-    if (activeGroup === "Other") return arr.filter((x) => !((x.group_tag ?? "").trim()));
+    if (activeGroup === "Other") return arr.filter((x) => {
+      const tag = (x.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
+    });
     return arr.filter((x) => (x.group_tag ?? "").trim() === activeGroup);
   };
 
