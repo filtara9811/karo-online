@@ -272,7 +272,7 @@ function VendorServicesPage() {
                         active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
                       }`}
                     >
-                      {g === "All" ? "★" : "•••"}
+                      {g.slice(0, 1).toUpperCase()}
                     </div>
                   )}
                   <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
