@@ -22,6 +22,7 @@ export const Route = createFileRoute("/vendor/services")({
 type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean; group_tag?: string | null };
 type Item = { id: string; category_id: string; name: string; image_url: string | null; icon: string | null; price_min: number | null; price_max: number | null; is_active: boolean; group_tag?: string | null };
 type Type = { id: string; name: string; icon: string | null; is_active: boolean };
+type Group = { id: string; category_id: string; name: string; icon: string | null; image_url: string | null; sort_order: number; is_active: boolean };
 type Mapping = {
   item_id: string;
   price_min: number | null;
