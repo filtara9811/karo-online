@@ -94,6 +94,12 @@ type Crumb =
   | { level: "subcategory"; node: Category }
   | { level: "item"; node: Item };
 
+function normalizeKeywords(input: unknown): string[] {
+  if (Array.isArray(input)) return input.map((s) => String(s).trim()).filter(Boolean);
+  if (typeof input === "string") return input.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
 function slugify(s: string) {
   return s
     .toLowerCase()
