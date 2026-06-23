@@ -55,6 +55,7 @@ function VendorServicesPage() {
   const [catId, setCatId] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
@@ -124,13 +125,13 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup("All"); }, [subId]);
+  useEffect(() => { setActiveGroup("All"); setCustomGroups([]); }, [subId]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
   const subItems = useMemo(() => items.filter((it) => it.category_id === subId), [items, subId]);
 
-  // Parent-variation tabs — derived from item.group_tag across this sub-category
+  // Parent-variation tabs — derived from item.group_tag + vendor-added custom groups
   const groupTabs = useMemo<string[]>(() => {
     const set = new Set<string>();
     let hasUntagged = false;
@@ -138,11 +139,11 @@ function VendorServicesPage() {
       const g = (it.group_tag ?? "").trim();
       if (g) set.add(g); else hasUntagged = true;
     });
-    if (set.size === 0) return [];
+    customGroups.forEach((g) => set.add(g));
     const list = Array.from(set);
-    if (hasUntagged) list.push("Other");
+    if (hasUntagged || subItems.length === 0) list.push("Other");
     return ["All", ...list];
-  }, [subItems]);
+  }, [subItems, customGroups]);
 
   const visibleItems = useMemo(() => {
     if (groupTabs.length === 0 || activeGroup === "All") return subItems;
@@ -251,28 +252,39 @@ function VendorServicesPage() {
         </div>
 
         {/* Parent-variation tabs (e.g. Commercial / Basic / Ladies / Gents / Other) */}
-        {groupTabs.length > 1 && (
-          <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-              {groupTabs.map((g) => {
-                const active = activeGroup === g;
-                return (
-                  <button
-                    key={g}
-                    onClick={() => setActiveGroup(g)}
-                    className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
-                      active
-                        ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
-                        : "bg-white text-[#3a2c10] border-[#d4af37]/40"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+            {groupTabs.map((g) => {
+              const active = activeGroup === g;
+              return (
+                <button
+                  key={g}
+                  onClick={() => setActiveGroup(g)}
+                  className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                    active
+                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
+                      : "bg-white text-[#3a2c10] border-[#d4af37]/40"
+                  }`}
+                >
+                  {g}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => {
+                const name = window.prompt("New group name (e.g. Women, Men, Commercial)")?.trim();
+                if (!name || name.toLowerCase() === "all") return;
+                if (!groupTabs.includes(name)) setCustomGroups((p) => [...p, name]);
+                setActiveGroup(name);
+              }}
+              className="snap-start shrink-0 px-3 py-2 rounded-xl text-[12px] font-display font-bold border-2 border-dashed border-[#d4af37]/60 text-[#b8860b] bg-white inline-flex items-center gap-1 active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add Group
+            </button>
           </div>
-        )}
+        </div>
+
+
 
         {visibleItems.length === 0 ? (
           <div className="text-center py-16">
