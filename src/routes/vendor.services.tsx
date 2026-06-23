@@ -61,6 +61,14 @@ function VendorServicesPage() {
   // Pricing sheet
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
 
+  // Category suggestion sheet
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestDefaults, setSuggestDefaults] = useState<CategorySuggestionDefaults>({});
+  const openSuggest = (defaults: CategorySuggestionDefaults = {}) => {
+    setSuggestDefaults(defaults);
+    setSuggestOpen(true);
+  };
+
   const load = async () => {
     setLoading(true);
     const { data: sess } = await supabase.auth.getSession();
