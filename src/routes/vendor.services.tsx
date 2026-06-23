@@ -131,7 +131,7 @@ function VendorServicesPage() {
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
   const subItems = useMemo(() => items.filter((it) => it.category_id === subId), [items, subId]);
 
-  // Parent-variation tabs — derived from item.group_tag across this sub-category
+  // Parent-variation tabs — derived from item.group_tag + vendor-added custom groups
   const groupTabs = useMemo<string[]>(() => {
     const set = new Set<string>();
     let hasUntagged = false;
@@ -139,11 +139,11 @@ function VendorServicesPage() {
       const g = (it.group_tag ?? "").trim();
       if (g) set.add(g); else hasUntagged = true;
     });
-    if (set.size === 0) return [];
+    customGroups.forEach((g) => set.add(g));
     const list = Array.from(set);
-    if (hasUntagged) list.push("Other");
+    if (hasUntagged || subItems.length === 0) list.push("Other");
     return ["All", ...list];
-  }, [subItems]);
+  }, [subItems, customGroups]);
 
   const visibleItems = useMemo(() => {
     if (groupTabs.length === 0 || activeGroup === "All") return subItems;
