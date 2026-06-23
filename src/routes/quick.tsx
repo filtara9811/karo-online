@@ -1219,6 +1219,8 @@ function QuickPage() {
                 search_radius_km: 10,
                 vendor_types: vendorTypes,
                 is_remote: isRemote,
+                group_name: groupName,
+
               })
               .select("id")
               .single();
