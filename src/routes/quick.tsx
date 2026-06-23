@@ -842,7 +842,7 @@ function QuickPage() {
                   style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
                 >
                   <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
-                    <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
+                    <img src={img} alt={s.name} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).src = svcAc; }} className="h-full w-full object-contain" />
                   </div>
                   <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
                     {s.name}
