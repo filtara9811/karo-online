@@ -215,7 +215,7 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
                 className="btn-3d w-full h-12 rounded-2xl bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white font-bold tracking-wide shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {submitting ? "Sending…" : "Send to admin"}
+                {submitting ? "Sending…" : "Send Request"}
               </button>
             </div>
           </motion.div>
