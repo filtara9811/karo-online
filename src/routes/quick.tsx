@@ -908,7 +908,7 @@ function QuickPage() {
           {!loading && (
             <button
               type="button"
-              onClick={() => requireAuth(() => setSuggestOpen(true))}
+              onClick={() => requireAuth(() => openSuggest({ category_name: selectedRoot?.name ?? "" }))}
               className={`${isGridView ? "col-span-2" : ""} group w-full rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] bg-[color:oklch(0.99_0.01_85)] hover:bg-[color:oklch(0.97_0.03_85)] transition-colors p-4 flex flex-col items-center justify-center gap-1.5`}
               aria-label="Suggest a new category"
             >
