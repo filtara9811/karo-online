@@ -364,6 +364,48 @@ function CatalogPage() {
     await reloadAll();
   };
 
+  const saveGroup = async () => {
+    if (!groupEditor || !groupEditor.name?.trim() || !groupEditor.category_id) {
+      alert("Group ka naam zaroori hai");
+      return;
+    }
+    setSavingGroup(true);
+    try {
+      const payload = {
+        category_id: groupEditor.category_id,
+        name: groupEditor.name.trim(),
+        icon: groupEditor.icon || null,
+        image_url: groupEditor.image_url || null,
+        sort_order: groupEditor.sort_order ?? 0,
+        is_active: groupEditor.is_active ?? true,
+      };
+      const tbl: any = supabase.from("catalog_groups" as any);
+      const res = groupEditor.id
+        ? await tbl.update(payload).eq("id", groupEditor.id)
+        : await tbl.insert(payload);
+      if ((res as any).error) throw (res as any).error;
+      const savedName = payload.name;
+      setGroupEditor(null);
+      await reloadAll();
+      setActiveGroup(savedName);
+    } catch (e: any) {
+      alert("Save failed: " + (e?.message || e));
+    } finally {
+      setSavingGroup(false);
+    }
+  };
+
+  const removeGroup = async () => {
+    if (!groupEditor?.id) return;
+    if (!confirm(`Group "${groupEditor.name}" delete kar dein? Items unmapped ho jayenge.`)) return;
+    await (supabase.from as any)("catalog_groups").delete().eq("id", groupEditor.id);
+    setGroupEditor(null);
+    setActiveGroup("All");
+    await reloadAll();
+  };
+
+
+
   // ------ Renderers ------
   const Header = () => (
     <div className="flex items-center gap-2 flex-wrap mb-4">
