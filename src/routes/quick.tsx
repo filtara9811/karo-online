@@ -58,8 +58,8 @@ export const Route = createFileRoute("/quick")({
 
 // ---------- DB Types ----------
 type DBType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
-type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number };
-type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number };
+type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number; group_tag?: string | null; keywords?: string[] | null };
+type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number; group_tag?: string | null; keywords?: string[] | null };
 type CatalogData = { types: DBType[]; categories: DBCategory[]; items: DBItem[] };
 
 type Vendor = {
@@ -288,8 +288,8 @@ function QuickPage() {
         }
         const [t, c, i] = await withTimeout(Promise.all([
           supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
+          supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
         ]));
         if (cancelled) return;
         const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
@@ -421,7 +421,11 @@ function QuickPage() {
   const variationItems = useMemo<VariationItem[]>(() => {
     if (!selectedSub) return [];
     const inferGroup = (it: DBItem): string | undefined => {
-      const hay = `${it.name} ${it.description ?? ""} ${it.slug}`.toLowerCase();
+      // 1. Admin-tagged group wins
+      if (it.group_tag && it.group_tag.trim()) return it.group_tag.trim();
+      // 2. Keyword match
+      const kw = (it.keywords ?? []).join(" ").toLowerCase();
+      const hay = `${it.name} ${it.description ?? ""} ${it.slug} ${kw}`.toLowerCase();
       if (/\b(women|woman|female|ladies|girl)\b/.test(hay)) return "Women";
       if (/\b(men|man|male|gents|boy)\b/.test(hay)) return "Men";
       if (/\b(kid|child|baby|infant)\b/.test(hay)) return "Kids";
@@ -817,7 +821,8 @@ function QuickPage() {
             </div>
           )}
           {subCategories.map((s, i) => {
-            const img = SLUG_IMAGE[s.slug] || s.image_url || svcAc;
+            // Prefer admin-uploaded image, then slug fallback, then default
+            const img = s.image_url || SLUG_IMAGE[s.slug] || svcAc;
             const isSelected = selectedSubId === s.id;
             const itemCount = items.filter((it) => it.category_id === s.id).length;
             const onlineCount = isSelected
@@ -841,7 +846,7 @@ function QuickPage() {
                   style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
                 >
                   <div className="h-16 w-full rounded-lg bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
-                    <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
+                    <img src={img} alt={s.name} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).src = svcAc; }} className="h-full w-full object-contain" />
                   </div>
                   <h3 className="font-display text-[13px] text-[color:oklch(0.25_0.05_85)] font-bold leading-tight truncate">
                     {s.name}
@@ -890,7 +895,7 @@ function QuickPage() {
                 style={{ animation: `fade-up 0.4s ease-out ${i * 0.03}s both` }}
               >
                 <div className="h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] grid place-items-center overflow-hidden">
-                  <img src={img} alt={s.name} loading="lazy" className="h-full w-full object-contain" />
+                  <img src={img} alt={s.name} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).src = svcAc; }} className="h-full w-full object-contain" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <div className="flex items-start justify-between gap-2">

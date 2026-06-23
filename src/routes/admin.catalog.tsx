@@ -56,6 +56,8 @@ type Category = {
   lead_price_inr?: number | null;
   lead_cost_coins?: number | null;
   max_vendors_per_lead?: number | null;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 type Item = {
   id: string;
@@ -69,6 +71,8 @@ type Item = {
   price_max: number | null;
   sort_order: number;
   is_active: boolean;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 type Variation = {
   id: string;
@@ -80,6 +84,8 @@ type Variation = {
   price_max: number | null;
   sort_order: number;
   is_active: boolean;
+  group_tag?: string | null;
+  keywords?: string[] | null;
 };
 
 type Crumb =
@@ -87,6 +93,12 @@ type Crumb =
   | { level: "category"; node: Category }
   | { level: "subcategory"; node: Category }
   | { level: "item"; node: Item };
+
+function normalizeKeywords(input: unknown): string[] {
+  if (Array.isArray(input)) return input.map((s) => String(s).trim()).filter(Boolean);
+  if (typeof input === "string") return input.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
 
 function slugify(s: string) {
   return s
@@ -232,6 +244,8 @@ function CatalogPage() {
           sort_order: d.sort_order ?? 0,
           type_id: d.type_id ?? null,
           parent_id: d.parent_id ?? null,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (editor.kind === "subcategory") {
           payload.lead_price_inr = d.lead_price_inr == null || (d.lead_price_inr as any) === "" ? null : Number(d.lead_price_inr);
@@ -253,6 +267,8 @@ function CatalogPage() {
           price_max: d.price_max ?? null,
           sort_order: d.sort_order ?? 0,
           is_active: d.is_active ?? true,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (d.id) await supabase.from("catalog_items").update(payload).eq("id", d.id);
         else await supabase.from("catalog_items").insert(payload);
@@ -267,6 +283,8 @@ function CatalogPage() {
           price_max: d.price_max ?? null,
           sort_order: d.sort_order ?? 0,
           is_active: d.is_active ?? true,
+          group_tag: d.group_tag?.trim() || null,
+          keywords: normalizeKeywords(d.keywords),
         };
         if (d.id) await supabase.from("item_variations").update(payload).eq("id", d.id);
         else await supabase.from("item_variations").insert(payload);
@@ -808,6 +826,38 @@ function EditorForm({
             className={`${inputCls} min-h-16 resize-y`}
           />
         </Field>
+      )}
+
+      {(editor.kind === "category" ||
+        editor.kind === "subcategory" ||
+        editor.kind === "item" ||
+        editor.kind === "variation") && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Group tab (e.g. Women / Men / Kids / Other)">
+            <input
+              list="group-tag-presets"
+              value={d.group_tag ?? ""}
+              onChange={(e) => update({ group_tag: e.target.value })}
+              className={inputCls}
+              placeholder="Other"
+            />
+            <datalist id="group-tag-presets">
+              <option value="Women" />
+              <option value="Men" />
+              <option value="Kids" />
+              <option value="Unisex" />
+              <option value="Other" />
+            </datalist>
+          </Field>
+          <Field label="Keywords (comma-separated, any language)">
+            <input
+              value={Array.isArray(d.keywords) ? d.keywords.join(", ") : (d.keywords ?? "")}
+              onChange={(e) => update({ keywords: e.target.value })}
+              className={inputCls}
+              placeholder="tailor, darzi, सिलाई, boutique"
+            />
+          </Field>
+        </div>
       )}
 
       {editor.kind === "subcategory" && (

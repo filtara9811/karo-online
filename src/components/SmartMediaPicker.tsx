@@ -53,14 +53,48 @@ export function SmartMediaPicker({
     return () => { cancel = true; };
   }, []);
 
-  const upload = async (file: File) => {
+  /**
+   * Compress + downscale before upload so the customer app stays smooth.
+   * Target: max 1200×1200, ~500 KB JPEG/WebP. Non-images pass through.
+   */
+  const compressImage = async (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/") || file.type === "image/svg+xml" || file.type === "image/gif") {
+      return file;
+    }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * scale);
+      const h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.82));
+      if (!blob) return file;
+      // If our output isn't smaller, keep original
+      if (blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+    } catch {
+      return file;
+    }
+  };
+
+  const upload = async (rawFile: File) => {
     setBusy(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      if (rawFile.size > 10 * 1024 * 1024) {
+        throw new Error("File too big (max 10 MB)");
+      }
+      const file = await compressImage(rawFile);
+      const ext = (file.type === "image/jpeg" ? "jpg" : file.name.split(".").pop()) || "jpg";
       const path = `${folder}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from("catalog")
-        .upload(path, file, { upsert: false, contentType: file.type });
+        .upload(path, file, { upsert: false, contentType: file.type, cacheControl: "31536000" });
       if (error) throw error;
       const { data } = supabase.storage.from("catalog").getPublicUrl(path);
       onChange(data.publicUrl);
@@ -251,7 +285,8 @@ export function SmartMediaPicker({
           )}
 
           <p className="text-[9px] text-[#f5d97a]/40 mt-1.5 leading-snug">
-            One field — auto-detects images, Lottie .json, or emoji. Lazy-loaded for speed.
+            Recommended: square image, ~1200×1200, under 500&nbsp;KB. Large photos are auto-compressed to JPEG.
+            Auto-detects images, Lottie&nbsp;.json, or emoji. Lazy-loaded for speed.
           </p>
         </div>
       </div>
