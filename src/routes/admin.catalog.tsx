@@ -117,6 +117,10 @@ function slugify(s: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function assertSave(result: { error?: any } | any) {
+  if (result?.error) throw result.error;
+}
+
 const inputCls =
   "w-full px-3 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-[#fff8dc] placeholder:text-[#f5d97a]/30 outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/20 text-sm";
 
@@ -276,13 +280,19 @@ function CatalogPage() {
           sort_order: d.sort_order ?? 0,
           is_active: d.is_active ?? true,
         };
-        if (d.id) await supabase.from("catalog_types").update(payload).eq("id", d.id);
-        else await supabase.from("catalog_types").insert(payload);
+        if (d.id) assertSave(await supabase.from("catalog_types").update(payload).eq("id", d.id));
+        else assertSave(await supabase.from("catalog_types").insert(payload));
       } else if (editor.kind === "category" || editor.kind === "subcategory") {
         const d = editor.data;
+        const baseSlug = slugify(d.slug?.trim() || d.name || "category") || `category-${Date.now()}`;
+        let finalSlug = baseSlug;
+        let counter = 2;
+        while (categories.some((c) => c.id !== d.id && c.slug === finalSlug)) {
+          finalSlug = `${baseSlug}-${counter++}`;
+        }
         const payload: any = {
           name: d.name!.trim(),
-          slug: d.slug?.trim() || slugify(d.name || ""),
+          slug: finalSlug,
           description: d.description ?? null,
           icon: d.icon ?? null,
           image_url: d.image_url ?? null,
@@ -298,8 +308,8 @@ function CatalogPage() {
           payload.lead_cost_coins = d.lead_cost_coins == null || (d.lead_cost_coins as any) === "" ? 0 : Number(d.lead_cost_coins);
           payload.max_vendors_per_lead = d.max_vendors_per_lead == null || (d.max_vendors_per_lead as any) === "" ? null : Number(d.max_vendors_per_lead);
         }
-        if (d.id) await supabase.from("categories").update(payload).eq("id", d.id);
-        else await supabase.from("categories").insert(payload);
+        if (d.id) assertSave(await supabase.from("categories").update(payload).eq("id", d.id));
+        else assertSave(await supabase.from("categories").insert(payload));
       } else if (editor.kind === "item") {
         const d = editor.data;
         const payload = {
@@ -316,8 +326,8 @@ function CatalogPage() {
           group_tag: d.group_tag?.trim() || null,
           keywords: normalizeKeywords(d.keywords),
         };
-        if (d.id) await supabase.from("catalog_items").update(payload).eq("id", d.id);
-        else await supabase.from("catalog_items").insert(payload);
+        if (d.id) assertSave(await supabase.from("catalog_items").update(payload).eq("id", d.id));
+        else assertSave(await supabase.from("catalog_items").insert(payload));
       } else if (editor.kind === "variation") {
         const d = editor.data;
         const payload = {
@@ -332,8 +342,8 @@ function CatalogPage() {
           group_tag: d.group_tag?.trim() || null,
           keywords: normalizeKeywords(d.keywords),
         };
-        if (d.id) await supabase.from("item_variations").update(payload).eq("id", d.id);
-        else await supabase.from("item_variations").insert(payload);
+        if (d.id) assertSave(await supabase.from("item_variations").update(payload).eq("id", d.id));
+        else assertSave(await supabase.from("item_variations").insert(payload));
       }
       setEditor(null);
       await reloadAll();
@@ -349,7 +359,7 @@ function CatalogPage() {
     id: string,
   ) => {
     if (!confirm("Delete kar dein? Iske andar ki sabhi entries bhi delete ho jayengi.")) return;
-    await supabase.from(table).delete().eq("id", id);
+    assertSave(await supabase.from(table).delete().eq("id", id));
     await reloadAll();
   };
 
@@ -859,7 +869,7 @@ function CatalogPage() {
             onClick={() => !saving && setEditor(null)}
           />
           <div
-            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border p-6"
+            className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl border p-6 pb-[calc(24px+env(safe-area-inset-bottom))]"
             style={{
               background:
                 "linear-gradient(180deg, oklch(0.16 0.03 80) 0%, oklch(0.10 0.02 80) 100%)",
@@ -867,7 +877,7 @@ function CatalogPage() {
               boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7)",
             }}
           >
-            <div className="flex items-center justify-between mb-4 sticky top-0">
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between border-b border-[#d4af37]/20 bg-[oklch(0.13_0.025_80)] px-6 py-4">
               <h3
                 className="font-display text-lg font-bold capitalize"
                 style={{
@@ -912,7 +922,7 @@ function CatalogPage() {
             onClick={() => !savingGroup && setGroupEditor(null)}
           />
           <div
-            className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border p-6"
+            className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl border p-6 pb-[calc(24px+env(safe-area-inset-bottom))]"
             style={{
               background:
                 "linear-gradient(180deg, oklch(0.16 0.03 80) 0%, oklch(0.10 0.02 80) 100%)",
@@ -920,7 +930,7 @@ function CatalogPage() {
               boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7)",
             }}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between border-b border-[#d4af37]/20 bg-[oklch(0.13_0.025_80)] px-6 py-4">
               <h3
                 className="font-display text-lg font-bold"
                 style={{
