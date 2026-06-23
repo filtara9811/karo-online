@@ -44,6 +44,7 @@ import { Route as VendorSocialRouteImport } from './routes/vendor.social'
 import { Route as VendorShopRouteImport } from './routes/vendor.shop'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorRegisterRouteImport } from './routes/vendor.register'
+import { Route as VendorMarketplaceRouteImport } from './routes/vendor.marketplace'
 import { Route as VendorKycRouteImport } from './routes/vendor.kyc'
 import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
@@ -279,6 +280,11 @@ const VendorServicesRoute = VendorServicesRouteImport.update({
 const VendorRegisterRoute = VendorRegisterRouteImport.update({
   id: '/vendor/register',
   path: '/vendor/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorMarketplaceRoute = VendorMarketplaceRouteImport.update({
+  id: '/vendor/marketplace',
+  path: '/vendor/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorKycRoute = VendorKycRouteImport.update({
@@ -658,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -755,6 +762,7 @@ export interface FileRoutesByTo {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -854,6 +862,7 @@ export interface FileRoutesById {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
   '/vendor/kyc': typeof VendorKycRoute
+  '/vendor/marketplace': typeof VendorMarketplaceRoute
   '/vendor/register': typeof VendorRegisterRoute
   '/vendor/services': typeof VendorServicesRoute
   '/vendor/shop': typeof VendorShopRoute
@@ -954,6 +963,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1051,6 +1061,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1149,6 +1160,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/vendor/install'
     | '/vendor/kyc'
+    | '/vendor/marketplace'
     | '/vendor/register'
     | '/vendor/services'
     | '/vendor/shop'
@@ -1217,6 +1229,7 @@ export interface RootRouteChildren {
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorInstallRoute: typeof VendorInstallRoute
   VendorKycRoute: typeof VendorKycRoute
+  VendorMarketplaceRoute: typeof VendorMarketplaceRoute
   VendorRegisterRoute: typeof VendorRegisterRoute
   VendorServicesRoute: typeof VendorServicesRoute
   VendorShopRoute: typeof VendorShopRoute
@@ -1477,6 +1490,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/register'
       fullPath: '/vendor/register'
       preLoaderRoute: typeof VendorRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/marketplace': {
+      id: '/vendor/marketplace'
+      path: '/vendor/marketplace'
+      fullPath: '/vendor/marketplace'
+      preLoaderRoute: typeof VendorMarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/kyc': {
@@ -2047,6 +2067,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorDashboardRoute: VendorDashboardRoute,
   VendorInstallRoute: VendorInstallRoute,
   VendorKycRoute: VendorKycRoute,
+  VendorMarketplaceRoute: VendorMarketplaceRoute,
   VendorRegisterRoute: VendorRegisterRoute,
   VendorServicesRoute: VendorServicesRoute,
   VendorShopRoute: VendorShopRoute,

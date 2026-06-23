@@ -83,10 +83,15 @@ export function NoVendorsFallback({ leadId, category, onRetry }: Props) {
         </div>
       </div>
 
-      <p className="mt-3 text-center text-[12px] text-[color:oklch(0.40_0.05_85)] leading-snug px-2">
-        Aapke {category ?? "service"} ke liye 10 km mein abhi koi vendor available nahi hai.<br />
-        Search expand karein ya kisi friend ko refer karein.
-      </p>
+      <div className="mt-3 mx-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+        <p className="text-[12px] font-bold text-emerald-800 leading-snug">
+          ✓ Aapki request safely log ho gayi hai
+        </p>
+        <p className="text-[11px] text-emerald-700/90 leading-snug mt-0.5">
+          Abhi aapke {category ?? "service"} ke liye 10 km mein koi vendor available nahi hai.
+          Hum aapko jaldi hi contact karenge. Search expand karein ya kisi friend ko refer karein.
+        </p>
+      </div>
 
       <div className="flex-1" />
 
