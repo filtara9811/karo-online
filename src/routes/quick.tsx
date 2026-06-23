@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { QuickOrdersSheet } from "@/components/QuickOrdersSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
+import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
 import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
