@@ -242,31 +242,20 @@ function CatalogPage() {
     [groups, subId]
   );
 
-  // Tabs: All + each managed group + Other (for items/variations without a matching group)
+  // Tabs: managed groups only (no All / no Other)
   const groupTabs = useMemo<string[]>(() => {
     if (view.level !== "items" && view.level !== "variations") return [];
-    const known = new Set(subGroups.map((g) => g.name));
-    const src = view.level === "items" ? rawItems : rawVariations;
-    const hasOther = src.some((x: any) => {
-      const tag = (x.group_tag ?? "").trim();
-      return !tag || !known.has(tag);
-    });
-    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || src.length === 0 ? ["Other"] : [])];
-  }, [view, subGroups, rawItems, rawVariations]);
+    return subGroups.map((g) => g.name);
+  }, [view, subGroups]);
 
   useEffect(() => {
-    setActiveGroup("All");
+    setActiveGroup("");
   }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
 
   const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
 
-
   const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
-    if (activeGroup === "All") return arr;
-    if (activeGroup === "Other") return arr.filter((x) => {
-      const tag = (x.group_tag ?? "").trim();
-      return !tag || !knownGroupNames.has(tag);
-    });
+    if (!activeGroup) return arr;
     return arr.filter((x) => (x.group_tag ?? "").trim() === activeGroup);
   };
 
