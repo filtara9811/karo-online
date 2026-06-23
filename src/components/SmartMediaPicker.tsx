@@ -285,7 +285,8 @@ export function SmartMediaPicker({
           )}
 
           <p className="text-[9px] text-[#f5d97a]/40 mt-1.5 leading-snug">
-            One field — auto-detects images, Lottie .json, or emoji. Lazy-loaded for speed.
+            Recommended: square image, ~1200×1200, under 500&nbsp;KB. Large photos are auto-compressed to JPEG.
+            Auto-detects images, Lottie&nbsp;.json, or emoji. Lazy-loaded for speed.
           </p>
         </div>
       </div>
