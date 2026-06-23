@@ -273,6 +273,7 @@ function QuickPage() {
   const [items, setItems] = useState<DBItem[]>(initialCatalog.items);
   const [loading, setLoading] = useState(false);
 
+  const [catalogReloadTick, setCatalogReloadTick] = useState(0);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -305,7 +306,28 @@ function QuickPage() {
       }
     })();
     return () => { cancelled = true; };
+  }, [catalogReloadTick]);
+
+  // Realtime: when Admin updates catalog (types/categories/items), refresh instantly.
+  useEffect(() => {
+    let scheduled: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (scheduled) return;
+      scheduled = setTimeout(() => { scheduled = null; setCatalogReloadTick((n) => n + 1); }, 400);
+    };
+    const channel = supabase
+      .channel("catalog-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_types" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "item_variations" }, bump)
+      .subscribe();
+    return () => {
+      if (scheduled) clearTimeout(scheduled);
+      supabase.removeChannel(channel);
+    };
   }, []);
+
 
   const activeType = useMemo(
     () => types.find((t) => t.code === typeCode) ?? types[0] ?? null,

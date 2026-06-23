@@ -90,6 +90,26 @@ function VendorServicesPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Realtime: instantly reflect Admin catalog edits (new categories / items / variations) in vendor mapping flow.
+  useEffect(() => {
+    let scheduled: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (scheduled) return;
+      scheduled = setTimeout(() => { scheduled = null; load(); }, 400);
+    };
+    const channel = supabase
+      .channel("vendor-services-catalog-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_types" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "item_variations" }, bump)
+      .subscribe();
+    return () => {
+      if (scheduled) clearTimeout(scheduled);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Reset child selection on parent change
   useEffect(() => {
     const rootCats = cats.filter((c) => c.type_id === typeId && !c.parent_id);
