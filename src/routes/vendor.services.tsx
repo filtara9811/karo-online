@@ -257,38 +257,42 @@ function VendorServicesPage() {
           </p>
         </div>
 
-        {/* Parent-variation tabs (e.g. Commercial / Basic / Ladies / Gents / Other) */}
+        {/* Parent-variation tabs — admin-managed (read-only here, vendor only picks) */}
         <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
           <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
             {groupTabs.map((g) => {
               const active = activeGroup === g;
+              const meta = subGroups.find((x) => x.name === g);
               return (
                 <button
                   key={g}
                   onClick={() => setActiveGroup(g)}
-                  className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                  className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                     active
-                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
+                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
                       : "bg-white text-[#3a2c10] border-[#d4af37]/40"
                   }`}
                 >
-                  {g}
+                  {meta ? (
+                    <IconImage url={meta.image_url} icon={meta.icon} size={38} />
+                  ) : (
+                    <div
+                      className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
+                        active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
+                      }`}
+                    >
+                      {g === "All" ? "★" : "•••"}
+                    </div>
+                  )}
+                  <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
+                    {g}
+                  </span>
                 </button>
               );
             })}
-            <button
-              onClick={() => {
-                const name = window.prompt("New group name (e.g. Women, Men, Commercial)")?.trim();
-                if (!name || name.toLowerCase() === "all") return;
-                if (!groupTabs.includes(name)) setCustomGroups((p) => [...p, name]);
-                setActiveGroup(name);
-              }}
-              className="snap-start shrink-0 px-3 py-2 rounded-xl text-[12px] font-display font-bold border-2 border-dashed border-[#d4af37]/60 text-[#b8860b] bg-white inline-flex items-center gap-1 active:scale-95"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Group
-            </button>
           </div>
         </div>
+
 
 
 
