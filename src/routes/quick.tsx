@@ -446,6 +446,33 @@ function QuickPage() {
     }));
   }, [subItems, selectedSub]);
 
+  // Admin-managed parent-variation groups for the selected sub-category (with icon/image)
+  const [groupsBySub, setGroupsBySub] = useState<Record<string, { name: string; icon: string | null; image_url: string | null }[]>>({});
+  useEffect(() => {
+    const subId = selectedSub?.id;
+    if (!subId) return;
+    if (groupsBySub[subId]) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await (supabase.from as any)("catalog_groups")
+        .select("name,icon,image_url,sort_order")
+        .eq("category_id", subId)
+        .eq("is_active", true)
+        .order("sort_order");
+      if (cancelled || res.error) return;
+      const rows = (res.data ?? []) as { name: string; icon: string | null; image_url: string | null }[];
+      setGroupsBySub((prev) => ({ ...prev, [subId]: rows }));
+    })();
+    return () => { cancelled = true; };
+  }, [selectedSub?.id, groupsBySub]);
+
+  const variationGroups = useMemo(
+    () => (selectedSub ? groupsBySub[selectedSub.id] ?? [] : []),
+    [groupsBySub, selectedSub]
+  );
+
+
+
 
   // ---- Real vendors mapped to current sub-category ----
   const [realVendors, setRealVendors] = useState<Vendor[]>([]);
@@ -1089,6 +1116,7 @@ function QuickPage() {
         category={selectedSub?.name ?? "Service"}
         vendorLabel="Filter | wholesaler"
         items={variationItems}
+        groups={variationGroups}
         onClose={() => setVariationOpen(false)}
         onSubmit={async (payload) => {
           setVariationOpen(false);

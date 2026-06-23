@@ -22,6 +22,7 @@ export const Route = createFileRoute("/vendor/services")({
 type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean; group_tag?: string | null };
 type Item = { id: string; category_id: string; name: string; image_url: string | null; icon: string | null; price_min: number | null; price_max: number | null; is_active: boolean; group_tag?: string | null };
 type Type = { id: string; name: string; icon: string | null; is_active: boolean };
+type Group = { id: string; category_id: string; name: string; icon: string | null; image_url: string | null; sort_order: number; is_active: boolean };
 type Mapping = {
   item_id: string;
   price_min: number | null;
@@ -48,6 +49,7 @@ function VendorServicesPage() {
   const [types, setTypes] = useState<Type[]>([]);
   const [cats, setCats] = useState<Cat[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [mappings, setMappings] = useState<Map<string, Mapping>>(new Map());
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -55,7 +57,6 @@ function VendorServicesPage() {
   const [catId, setCatId] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("All");
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
@@ -74,11 +75,12 @@ function VendorServicesPage() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
 
-    const [t, c, i, mi] = await Promise.all([
+    const [t, c, i, mi, gr] = await Promise.all([
       supabase.from("catalog_types").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("catalog_items").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("vendor_item_mappings").select("item_id, price_min, price_max, notes, variations").eq("vendor_id", uid),
+      (supabase.from as any)("catalog_groups").select("*").eq("is_active", true).order("sort_order"),
     ]);
     const typesData = (t.data ?? []) as Type[];
     const catsData = (c.data ?? []) as Cat[];
@@ -86,6 +88,7 @@ function VendorServicesPage() {
     setTypes(typesData);
     setCats(catsData);
     setItems(itemsData);
+    setAllGroups((gr.data ?? []) as Group[]);
     const m = new Map<string, Mapping>();
     ((mi.data ?? []) as Mapping[]).forEach((row) => m.set(row.item_id, row));
     setMappings(m);
@@ -108,6 +111,7 @@ function VendorServicesPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, bump)
       .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, bump)
       .on("postgres_changes", { event: "*", schema: "public", table: "item_variations" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_groups" }, bump)
       .subscribe();
     return () => {
       if (scheduled) clearTimeout(scheduled);
@@ -125,31 +129,34 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup("All"); setCustomGroups([]); }, [subId]);
+  useEffect(() => { setActiveGroup("All"); }, [subId]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
   const subItems = useMemo(() => items.filter((it) => it.category_id === subId), [items, subId]);
+  const subGroups = useMemo(
+    () => allGroups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
+    [allGroups, subId]
+  );
+  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
 
-  // Parent-variation tabs — derived from item.group_tag + vendor-added custom groups
+  // Parent-variation tabs — only from admin-managed catalog_groups (read-only for vendors)
   const groupTabs = useMemo<string[]>(() => {
-    const set = new Set<string>();
-    let hasUntagged = false;
-    subItems.forEach((it) => {
-      const g = (it.group_tag ?? "").trim();
-      if (g) set.add(g); else hasUntagged = true;
+    const hasOther = subItems.some((it) => {
+      const tag = (it.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
     });
-    customGroups.forEach((g) => set.add(g));
-    const list = Array.from(set);
-    if (hasUntagged || subItems.length === 0) list.push("Other");
-    return ["All", ...list];
-  }, [subItems, customGroups]);
+    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || subItems.length === 0 ? ["Other"] : [])];
+  }, [subGroups, subItems, knownGroupNames]);
 
   const visibleItems = useMemo(() => {
-    if (groupTabs.length === 0 || activeGroup === "All") return subItems;
-    if (activeGroup === "Other") return subItems.filter((it) => !((it.group_tag ?? "").trim()));
+    if (activeGroup === "All") return subItems;
+    if (activeGroup === "Other") return subItems.filter((it) => {
+      const tag = (it.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
+    });
     return subItems.filter((it) => (it.group_tag ?? "").trim() === activeGroup);
-  }, [subItems, groupTabs.length, activeGroup]);
+  }, [subItems, activeGroup, knownGroupNames]);
 
   const currentCat = cats.find((c) => c.id === catId) ?? null;
   const currentSub = cats.find((c) => c.id === subId) ?? null;
@@ -251,38 +258,42 @@ function VendorServicesPage() {
           </p>
         </div>
 
-        {/* Parent-variation tabs (e.g. Commercial / Basic / Ladies / Gents / Other) */}
+        {/* Parent-variation tabs — admin-managed (read-only here, vendor only picks) */}
         <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
           <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
             {groupTabs.map((g) => {
               const active = activeGroup === g;
+              const meta = subGroups.find((x) => x.name === g);
               return (
                 <button
                   key={g}
                   onClick={() => setActiveGroup(g)}
-                  className={`snap-start shrink-0 px-4 py-2 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 border-2 ${
+                  className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                     active
-                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
+                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
                       : "bg-white text-[#3a2c10] border-[#d4af37]/40"
                   }`}
                 >
-                  {g}
+                  {meta ? (
+                    <IconImage url={meta.image_url} icon={meta.icon} size={38} />
+                  ) : (
+                    <div
+                      className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
+                        active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
+                      }`}
+                    >
+                      {g === "All" ? "★" : "•••"}
+                    </div>
+                  )}
+                  <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
+                    {g}
+                  </span>
                 </button>
               );
             })}
-            <button
-              onClick={() => {
-                const name = window.prompt("New group name (e.g. Women, Men, Commercial)")?.trim();
-                if (!name || name.toLowerCase() === "all") return;
-                if (!groupTabs.includes(name)) setCustomGroups((p) => [...p, name]);
-                setActiveGroup(name);
-              }}
-              className="snap-start shrink-0 px-3 py-2 rounded-xl text-[12px] font-display font-bold border-2 border-dashed border-[#d4af37]/60 text-[#b8860b] bg-white inline-flex items-center gap-1 active:scale-95"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Group
-            </button>
           </div>
         </div>
+
 
 
 

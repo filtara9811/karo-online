@@ -87,6 +87,15 @@ type Variation = {
   group_tag?: string | null;
   keywords?: string[] | null;
 };
+type Group = {
+  id: string;
+  category_id: string;
+  name: string;
+  icon: string | null;
+  image_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 type Crumb =
   | { level: "type"; node: CatalogType }
@@ -133,10 +142,12 @@ function CatalogPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [variations, setVariations] = useState<Variation[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [activeGroup, setActiveGroup] = useState<string>("All");
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
+  const [groupEditor, setGroupEditor] = useState<null | Partial<Group>>(null);
+  const [savingGroup, setSavingGroup] = useState(false);
 
   const [editor, setEditor] = useState<
     | null
@@ -150,22 +161,25 @@ function CatalogPage() {
 
   const reloadAll = async () => {
     setLoading(true);
-    const [t, c, i, v] = await Promise.all([
+    const [t, c, i, v, g] = await Promise.all([
       supabase.from("catalog_types").select("*").order("sort_order"),
       supabase.from("categories").select("*").order("sort_order").order("name"),
       supabase.from("catalog_items").select("*").order("sort_order").order("name"),
       supabase.from("item_variations").select("*").order("sort_order").order("name"),
+      (supabase.from as any)("catalog_groups").select("*").order("sort_order").order("name"),
     ]);
     setTypes((t.data ?? []) as CatalogType[]);
     setCategories((c.data ?? []) as Category[]);
     setItems((i.data ?? []) as Item[]);
     setVariations((v.data ?? []) as Variation[]);
+    setGroups((g.data ?? []) as Group[]);
     setLoading(false);
   };
 
   useEffect(() => {
     reloadAll();
   }, []);
+
 
   // Derive current view from crumbs
   const view = useMemo(() => {
@@ -218,29 +232,41 @@ function CatalogPage() {
     return variations.filter((v) => v.item_id === view.item.id);
   }, [view, variations]);
 
-  // Parent-variation tabs — derived from group_tag of current list + admin-added custom groups
-  const groupTabs = useMemo(() => {
-    const src = view.level === "items" ? rawItems : view.level === "variations" ? rawVariations : [];
-    const tags = new Set<string>();
-    let hasOther = src.length === 0;
-    src.forEach((x: any) => {
-      const g = (x.group_tag ?? "").trim();
-      if (g) tags.add(g); else hasOther = true;
+  // Groups scoped to current sub-category (the parent "container" for variations)
+  const subId: string | null =
+    view.level === "items" ? view.subcategory.id :
+    view.level === "variations" ? view.subcategory.id : null;
+
+  const subGroups = useMemo(
+    () => groups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
+    [groups, subId]
+  );
+
+  // Tabs: All + each managed group + Other (for items/variations without a matching group)
+  const groupTabs = useMemo<string[]>(() => {
+    if (view.level !== "items" && view.level !== "variations") return [];
+    const known = new Set(subGroups.map((g) => g.name));
+    const src = view.level === "items" ? rawItems : rawVariations;
+    const hasOther = src.some((x: any) => {
+      const tag = (x.group_tag ?? "").trim();
+      return !tag || !known.has(tag);
     });
-    customGroups.forEach((g) => tags.add(g));
-    const arr = Array.from(tags);
-    if (hasOther) arr.push("Other");
-    return ["All", ...arr];
-  }, [view, rawItems, rawVariations, customGroups]);
+    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || src.length === 0 ? ["Other"] : [])];
+  }, [view, subGroups, rawItems, rawVariations]);
 
   useEffect(() => {
     setActiveGroup("All");
-    setCustomGroups([]);
   }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
+
+  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
+
 
   const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
     if (activeGroup === "All") return arr;
-    if (activeGroup === "Other") return arr.filter((x) => !((x.group_tag ?? "").trim()));
+    if (activeGroup === "Other") return arr.filter((x) => {
+      const tag = (x.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
+    });
     return arr.filter((x) => (x.group_tag ?? "").trim() === activeGroup);
   };
 
@@ -337,6 +363,48 @@ function CatalogPage() {
     await supabase.from(table).delete().eq("id", id);
     await reloadAll();
   };
+
+  const saveGroup = async () => {
+    if (!groupEditor || !groupEditor.name?.trim() || !groupEditor.category_id) {
+      alert("Group ka naam zaroori hai");
+      return;
+    }
+    setSavingGroup(true);
+    try {
+      const payload = {
+        category_id: groupEditor.category_id,
+        name: groupEditor.name.trim(),
+        icon: groupEditor.icon || null,
+        image_url: groupEditor.image_url || null,
+        sort_order: groupEditor.sort_order ?? 0,
+        is_active: groupEditor.is_active ?? true,
+      };
+      const tbl: any = supabase.from("catalog_groups" as any);
+      const res = groupEditor.id
+        ? await tbl.update(payload).eq("id", groupEditor.id)
+        : await tbl.insert(payload);
+      if ((res as any).error) throw (res as any).error;
+      const savedName = payload.name;
+      setGroupEditor(null);
+      await reloadAll();
+      setActiveGroup(savedName);
+    } catch (e: any) {
+      alert("Save failed: " + (e?.message || e));
+    } finally {
+      setSavingGroup(false);
+    }
+  };
+
+  const removeGroup = async () => {
+    if (!groupEditor?.id) return;
+    if (!confirm(`Group "${groupEditor.name}" delete kar dein? Items unmapped ho jayenge.`)) return;
+    await (supabase.from as any)("catalog_groups").delete().eq("id", groupEditor.id);
+    setGroupEditor(null);
+    setActiveGroup("All");
+    await reloadAll();
+  };
+
+
 
   // ------ Renderers ------
   const Header = () => (
@@ -574,56 +642,88 @@ function CatalogPage() {
       />
       <Header />
 
-      {(view.level === "items" || view.level === "variations") && (
-        <div className="mb-3 -mx-1 flex items-center gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
+      {(view.level === "items" || view.level === "variations") && subId && (
+        <div className="mb-3 -mx-1 flex items-stretch gap-2.5 overflow-x-auto snap-x snap-mandatory px-1 pb-2 scrollbar-thin">
           {groupTabs.map((g) => {
             const active = activeGroup === g;
+            const meta = subGroups.find((x) => x.name === g);
+            const isUtility = g === "All" || g === "Other";
             return (
-              <button
-                key={g}
-                onClick={() => setActiveGroup(g)}
-                className="snap-start shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition"
-                style={
-                  active
-                    ? {
-                        background: "linear-gradient(180deg, #f5d97a, #d4af37)",
-                        color: "#1a1208",
-                        borderColor: "#d4af37",
-                        boxShadow: "0 4px 16px -6px rgba(212,175,55,0.6)",
-                      }
-                    : {
-                        background: "rgba(255,253,245,0.04)",
-                        color: "#f5d97a",
-                        borderColor: "rgba(212,175,55,0.3)",
-                      }
-                }
-              >
-                {g}
-              </button>
+              <div key={g} className="snap-start shrink-0 relative">
+                <button
+                  onClick={() => setActiveGroup(g)}
+                  className="flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 px-1.5 py-2 transition gap-1"
+                  style={
+                    active
+                      ? {
+                          background: "linear-gradient(180deg, #f5d97a, #d4af37)",
+                          color: "#1a1208",
+                          borderColor: "#fff8dc",
+                          boxShadow: "0 6px 20px -6px rgba(212,175,55,0.7)",
+                        }
+                      : {
+                          background: "rgba(255,253,245,0.04)",
+                          color: "#f5d97a",
+                          borderColor: "rgba(212,175,55,0.35)",
+                        }
+                  }
+                >
+                  {meta ? (
+                    <IconImage url={meta.image_url} icon={meta.icon} size={42} />
+                  ) : (
+                    <div
+                      className="h-[42px] w-[42px] rounded-xl grid place-items-center text-[18px] font-black"
+                      style={{ background: active ? "rgba(26,18,8,0.12)" : "rgba(212,175,55,0.12)" }}
+                    >
+                      {g === "All" ? "★" : "•••"}
+                    </div>
+                  )}
+                  <span className="text-[10px] font-bold uppercase tracking-wider truncate w-full text-center">
+                    {g}
+                  </span>
+                </button>
+                {meta && !isUtility && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGroupEditor(meta);
+                    }}
+                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full grid place-items-center border-2 border-[#1a1208] bg-[#d4af37] text-[#1a1208] shadow"
+                    title="Edit group"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             );
           })}
           <button
-            onClick={() => {
-              const name = window.prompt("New variation group name (e.g. Women, Gents, Commercial)")?.trim();
-              if (!name) return;
-              if (name.toLowerCase() === "all") return;
-              if (!customGroups.includes(name) && !groupTabs.includes(name)) {
-                setCustomGroups((prev) => [...prev, name]);
-              }
-              setActiveGroup(name);
-            }}
-            className="snap-start shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-dashed transition"
+            onClick={() =>
+              setGroupEditor({
+                category_id: subId,
+                name: "",
+                icon: "",
+                image_url: "",
+                sort_order: subGroups.length,
+                is_active: true,
+              })
+            }
+            className="snap-start shrink-0 flex flex-col items-center justify-center w-[88px] h-[96px] rounded-2xl border-2 border-dashed gap-1"
             style={{
               background: "rgba(212,175,55,0.08)",
               color: "#f5d97a",
               borderColor: "rgba(212,175,55,0.5)",
             }}
-            title="Add new variation group"
+            title="Create new group"
           >
-            <Plus className="h-3.5 w-3.5" /> Add Group
+            <div className="h-[42px] w-[42px] rounded-xl grid place-items-center bg-[#d4af37]/15">
+              <Plus className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Add Group</span>
           </button>
         </div>
       )}
+
 
       <GoldCard className="p-3 sm:p-4">
 
@@ -811,9 +911,117 @@ function CatalogPage() {
           </div>
         </div>
       )}
+
+      {/* ===== Group editor (parent-variation card) bottom sheet ===== */}
+      {groupEditor && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !savingGroup && setGroupEditor(null)}
+          />
+          <div
+            className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border p-6"
+            style={{
+              background:
+                "linear-gradient(180deg, oklch(0.16 0.03 80) 0%, oklch(0.10 0.02 80) 100%)",
+              borderColor: "rgba(212,175,55,0.4)",
+              boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className="font-display text-lg font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #fff8dc, #d4af37)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {groupEditor.id ? "Edit" : "New"} Variation Group
+              </h3>
+              <button
+                onClick={() => !savingGroup && setGroupEditor(null)}
+                className="p-1.5 rounded-lg text-[#f5d97a] hover:bg-[#d4af37]/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <Field label="Name (e.g. Women Tailor, Men Tailor, Commercial)">
+                <input
+                  value={groupEditor.name ?? ""}
+                  onChange={(e) => setGroupEditor({ ...groupEditor, name: e.target.value })}
+                  className={inputCls}
+                  placeholder="Women Tailor"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Icon (emoji)">
+                <input
+                  value={groupEditor.icon ?? ""}
+                  onChange={(e) => setGroupEditor({ ...groupEditor, icon: e.target.value })}
+                  className={inputCls}
+                  placeholder="👗"
+                  maxLength={4}
+                />
+              </Field>
+              <ImageUpload
+                value={groupEditor.image_url ?? null}
+                onChange={(url) => setGroupEditor({ ...groupEditor, image_url: url })}
+                label="Image / Icon upload"
+                folder="catalog-groups"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Sort order">
+                  <input
+                    type="number"
+                    value={groupEditor.sort_order ?? 0}
+                    onChange={(e) =>
+                      setGroupEditor({ ...groupEditor, sort_order: parseInt(e.target.value) || 0 })
+                    }
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Status">
+                  <select
+                    value={groupEditor.is_active === false ? "0" : "1"}
+                    onChange={(e) =>
+                      setGroupEditor({ ...groupEditor, is_active: e.target.value === "1" })
+                    }
+                    className={inputCls}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </Field>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              {groupEditor.id && (
+                <button
+                  onClick={removeGroup}
+                  disabled={savingGroup}
+                  className="px-4 py-2.5 rounded-xl border border-red-500/50 text-red-400 hover:bg-red-500/10 text-sm font-bold"
+                >
+                  <Trash2 className="h-4 w-4 inline mr-1" /> Delete
+                </button>
+              )}
+              <GoldButton variant="outline" onClick={() => setGroupEditor(null)} className="flex-1">
+                Cancel
+              </GoldButton>
+              <GoldButton onClick={saveGroup} disabled={savingGroup} className="flex-1">
+                {savingGroup ? "Saving..." : "Save"}
+              </GoldButton>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
+
 
 function EditorForm({
   editor,
