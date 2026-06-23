@@ -834,9 +834,7 @@ function QuickPage() {
           className={isGridView ? "grid grid-cols-2 gap-2 pb-[190px]" : "flex flex-col gap-2.5 pb-[190px]"}
         >
           {loading && subCategories.length === 0 && (
-            <div className={`${isGridView ? "col-span-2" : ""} text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]`}>
-              Opening services…
-            </div>
+            <SubCategoryListSkeleton isGrid={isGridView} count={6} />
           )}
           {!loading && subCategories.length === 0 && (
             <div className={`${isGridView ? "col-span-2" : ""} rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center`}>
