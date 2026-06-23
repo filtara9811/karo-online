@@ -570,7 +570,7 @@ function CatalogPage() {
           <Plus className="h-3.5 w-3.5 inline mr-1" /> Add Sub-category
         </GoldButton>
       );
-    const groupTag = activeGroup !== "All" && activeGroup !== "Other" ? activeGroup : null;
+    const groupTag = activeGroup || null;
     if (view.level === "items")
       return (
         <GoldButton
