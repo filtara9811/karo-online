@@ -42,6 +42,7 @@ export function SmartMediaPicker({
   const [tab, setTab] = useState<Tab>("library");
   const [draft, setDraft] = useState(value ?? "");
   const [library, setLibrary] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let cancel = false;
@@ -99,6 +100,7 @@ export function SmartMediaPicker({
       const { data } = supabase.storage.from("catalog").getPublicUrl(path);
       onChange(data.publicUrl);
       setDraft(data.publicUrl);
+      setOpen(false);
     } catch (e: any) {
       alert("Upload failed: " + (e?.message || e));
     } finally {
@@ -113,6 +115,12 @@ export function SmartMediaPicker({
     { id: "lottie", label: "Lottie", icon: Sparkles },
     { id: "emoji", label: "Emoji", icon: Smile },
   ];
+
+  const choose = (next: string | null) => {
+    onChange(next);
+    setDraft(next ?? "");
+    setOpen(false);
+  };
 
   return (
     <div>
@@ -139,23 +147,70 @@ export function SmartMediaPicker({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex gap-1 mb-2">
-            {tabs.map((t) => (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-[#d4af37]/40 text-[#f5d97a] hover:bg-[#d4af37]/5 text-xs font-bold uppercase tracking-wider"
+          >
+            <Upload className="h-4 w-4" />
+            {value ? "Change image / icon" : "Upload image / choose icon"}
+          </button>
+          <p className="text-[9px] text-[#f5d97a]/40 mt-1.5 leading-snug">
+            Square image best rahegi. Large photos auto-compress ho jayengi.
+          </p>
+        </div>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center p-0">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
+          <div
+            className="relative w-full max-h-[88vh] overflow-y-auto rounded-t-3xl border border-[#d4af37]/40 p-5 pb-[calc(20px+env(safe-area-inset-bottom))]"
+            style={{
+              background: "linear-gradient(180deg, oklch(0.16 0.03 80) 0%, oklch(0.10 0.02 80) 100%)",
+              boxShadow: "0 -24px 70px -28px rgba(212,175,55,0.5)",
+            }}
+          >
+            <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex items-center justify-between border-b border-[#d4af37]/20 bg-[oklch(0.13_0.025_80)] px-5 py-4">
+              <div>
+                <h3 className="font-display text-lg font-bold text-[#fff8dc]">Image / Icon</h3>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5d97a]/55">{label}</p>
+              </div>
               <button
-                key={t.id}
                 type="button"
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border transition ${
-                  tab === t.id
-                    ? "bg-[#d4af37]/20 border-[#d4af37]/60 text-[#f5d97a]"
-                    : "border-[#d4af37]/20 text-[#f5d97a]/60 hover:bg-[#d4af37]/5"
-                }`}
+                onClick={() => !busy && setOpen(false)}
+                className="h-9 w-9 rounded-full border border-[#d4af37]/40 bg-black/35 grid place-items-center text-[#f5d97a]"
+                aria-label="Close media picker"
               >
-                <t.icon className="h-3 w-3" />
-                {t.label}
+                <X className="h-4 w-4" />
               </button>
-            ))}
-          </div>
+            </div>
+
+            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-[#d4af37]/20 bg-black/25 p-3">
+              <SmartMedia src={value} size={64} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-[#fff8dc]">Current media</p>
+                <p className="truncate text-[11px] text-[#f5d97a]/55">{value || "No image/icon selected"}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition ${
+                    tab === t.id
+                      ? "bg-[#d4af37]/25 border-[#d4af37]/70 text-[#fff8dc]"
+                      : "border-[#d4af37]/20 text-[#f5d97a]/65 hover:bg-[#d4af37]/5"
+                  }`}
+                >
+                  <t.icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
           {tab === "library" && (
             <div className="max-h-44 overflow-y-auto pr-1">
@@ -167,7 +222,7 @@ export function SmartMediaPicker({
                       <button
                         key={"L:" + v}
                         type="button"
-                        onClick={() => { onChange(v); setDraft(v); }}
+                        onClick={() => choose(v)}
                         className="aspect-square rounded-md border border-[#d4af37]/30 bg-black/40 grid place-items-center overflow-hidden hover:border-[#d4af37] text-base"
                         title={v}
                       >
@@ -187,7 +242,7 @@ export function SmartMediaPicker({
                   <button
                     key={"B:" + e}
                     type="button"
-                    onClick={() => { onChange(e); setDraft(e); }}
+                    onClick={() => choose(e)}
                     className="aspect-square rounded-md border border-[#d4af37]/15 bg-black/30 grid place-items-center hover:bg-[#d4af37]/10 text-base"
                   >
                     {e}
@@ -240,7 +295,7 @@ export function SmartMediaPicker({
               />
               <button
                 type="button"
-                onClick={() => onChange(draft.trim() || null)}
+                onClick={() => choose(draft.trim() || null)}
                 className="px-3 py-2 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#f5d97a] text-[10px] font-bold uppercase tracking-wider hover:bg-[#d4af37]/30"
               >
                 Set
@@ -255,10 +310,7 @@ export function SmartMediaPicker({
                   <button
                     key={e}
                     type="button"
-                    onClick={() => {
-                      onChange(e);
-                      setDraft(e);
-                    }}
+                    onClick={() => choose(e)}
                     className="h-8 w-8 grid place-items-center rounded-lg border border-[#d4af37]/20 bg-black/40 hover:bg-[#d4af37]/10 text-base"
                   >
                     {e}
@@ -275,7 +327,7 @@ export function SmartMediaPicker({
                 />
                 <button
                   type="button"
-                  onClick={() => onChange(draft.trim() || null)}
+                  onClick={() => choose(draft.trim() || null)}
                   className="px-3 py-2 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#f5d97a] text-[10px] font-bold uppercase tracking-wider hover:bg-[#d4af37]/30"
                 >
                   Set
@@ -288,8 +340,9 @@ export function SmartMediaPicker({
             Recommended: square image, ~1200×1200, under 500&nbsp;KB. Large photos are auto-compressed to JPEG.
             Auto-detects images, Lottie&nbsp;.json, or emoji. Lazy-loaded for speed.
           </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
