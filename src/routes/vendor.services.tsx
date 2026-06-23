@@ -75,11 +75,12 @@ function VendorServicesPage() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
 
-    const [t, c, i, mi] = await Promise.all([
+    const [t, c, i, mi, gr] = await Promise.all([
       supabase.from("catalog_types").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("catalog_items").select("*").eq("is_active", true).order("sort_order").order("name"),
       supabase.from("vendor_item_mappings").select("item_id, price_min, price_max, notes, variations").eq("vendor_id", uid),
+      (supabase.from as any)("catalog_groups").select("*").eq("is_active", true).order("sort_order"),
     ]);
     const typesData = (t.data ?? []) as Type[];
     const catsData = (c.data ?? []) as Cat[];
@@ -87,6 +88,7 @@ function VendorServicesPage() {
     setTypes(typesData);
     setCats(catsData);
     setItems(itemsData);
+    setAllGroups((gr.data ?? []) as Group[]);
     const m = new Map<string, Mapping>();
     ((mi.data ?? []) as Mapping[]).forEach((row) => m.set(row.item_id, row));
     setMappings(m);
