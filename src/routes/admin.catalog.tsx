@@ -232,25 +232,34 @@ function CatalogPage() {
     return variations.filter((v) => v.item_id === view.item.id);
   }, [view, variations]);
 
-  // Parent-variation tabs — derived from group_tag of current list + admin-added custom groups
-  const groupTabs = useMemo(() => {
-    const src = view.level === "items" ? rawItems : view.level === "variations" ? rawVariations : [];
-    const tags = new Set<string>();
-    let hasOther = src.length === 0;
-    src.forEach((x: any) => {
-      const g = (x.group_tag ?? "").trim();
-      if (g) tags.add(g); else hasOther = true;
+  // Groups scoped to current sub-category (the parent "container" for variations)
+  const subId: string | null =
+    view.level === "items" ? view.subcategory.id :
+    view.level === "variations" ? view.subcategory.id : null;
+
+  const subGroups = useMemo(
+    () => groups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
+    [groups, subId]
+  );
+
+  // Tabs: All + each managed group + Other (for items/variations without a matching group)
+  const groupTabs = useMemo<string[]>(() => {
+    if (view.level !== "items" && view.level !== "variations") return [];
+    const known = new Set(subGroups.map((g) => g.name));
+    const src = view.level === "items" ? rawItems : rawVariations;
+    const hasOther = src.some((x: any) => {
+      const tag = (x.group_tag ?? "").trim();
+      return !tag || !known.has(tag);
     });
-    customGroups.forEach((g) => tags.add(g));
-    const arr = Array.from(tags);
-    if (hasOther) arr.push("Other");
-    return ["All", ...arr];
-  }, [view, rawItems, rawVariations, customGroups]);
+    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || src.length === 0 ? ["Other"] : [])];
+  }, [view, subGroups, rawItems, rawVariations]);
 
   useEffect(() => {
     setActiveGroup("All");
-    setCustomGroups([]);
   }, [view.level, (view as any).subcategory?.id, (view as any).item?.id]);
+
+  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
+
 
   const filterByGroup = <T extends { group_tag?: string | null }>(arr: T[]): T[] => {
     if (activeGroup === "All") return arr;
