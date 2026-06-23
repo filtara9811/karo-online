@@ -567,7 +567,39 @@ function CatalogPage() {
       />
       <Header />
 
+      {(view.level === "items" || view.level === "variations") && groupTabs.length > 1 && (
+        <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto snap-x snap-mandatory px-1 pb-1 scrollbar-thin">
+          {groupTabs.map((g) => {
+            const active = activeGroup === g;
+            return (
+              <button
+                key={g}
+                onClick={() => setActiveGroup(g)}
+                className="snap-start shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition"
+                style={
+                  active
+                    ? {
+                        background: "linear-gradient(180deg, #f5d97a, #d4af37)",
+                        color: "#1a1208",
+                        borderColor: "#d4af37",
+                        boxShadow: "0 4px 16px -6px rgba(212,175,55,0.6)",
+                      }
+                    : {
+                        background: "rgba(255,253,245,0.04)",
+                        color: "#f5d97a",
+                        borderColor: "rgba(212,175,55,0.3)",
+                      }
+                }
+              >
+                {g}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <GoldCard className="p-3 sm:p-4">
+
         {loading ? (
           <div className="grid place-items-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-[#d4af37]" />
