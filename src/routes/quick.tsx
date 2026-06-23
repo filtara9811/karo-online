@@ -26,6 +26,7 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { QuickOrdersSheet } from "@/components/QuickOrdersSheet";
 import { OnboardingCarousel } from "@/components/OnboardingCarousel";
 import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
+import { SubCategoryListSkeleton, RootCategoryRailSkeleton } from "@/components/SubCategorySkeleton";
 import { useAuthGate } from "@/components/AuthGate";
 import { useServerFn } from "@tanstack/react-start";
 import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
@@ -833,9 +834,7 @@ function QuickPage() {
           className={isGridView ? "grid grid-cols-2 gap-2 pb-[190px]" : "flex flex-col gap-2.5 pb-[190px]"}
         >
           {loading && subCategories.length === 0 && (
-            <div className={`${isGridView ? "col-span-2" : ""} text-center py-10 text-sm text-[color:oklch(0.45_0.08_85)]`}>
-              Opening services…
-            </div>
+            <SubCategoryListSkeleton isGrid={isGridView} count={6} />
           )}
           {!loading && subCategories.length === 0 && (
             <div className={`${isGridView ? "col-span-2" : ""} rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.4)] p-6 text-center`}>
@@ -965,16 +964,16 @@ function QuickPage() {
               type="button"
               onClick={() => requireAuth(() => openSuggest({ category_name: selectedRoot?.name ?? "" }))}
               className={`${isGridView ? "col-span-2" : ""} group w-full rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] bg-[color:oklch(0.99_0.01_85)] hover:bg-[color:oklch(0.97_0.03_85)] transition-colors p-4 flex flex-col items-center justify-center gap-1.5`}
-              aria-label="Suggest a new category"
+              aria-label="Other / Custom Request"
             >
               <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#fdf3c8] to-[#fff8dc] border-2 border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center">
                 <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
               </span>
               <span className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
-                Suggest a category
+                Other / Custom Request
               </span>
               <span className="text-[11px] text-[color:oklch(0.45_0.08_85)] text-center leading-tight">
-                Don't see what you need? Tell admin.
+                Don't see what you need? Describe it — we'll match a vendor.
               </span>
             </button>
           )}
@@ -1049,23 +1048,26 @@ function QuickPage() {
             </button>
           );
         })}
+        {loading && rootCategories.length === 0 && (
+          <RootCategoryRailSkeleton count={6} />
+        )}
         {!loading && rootCategories.length === 0 && (
           <span className="text-[9px] text-[color:oklch(0.45_0.08_85)] py-3 px-1 text-center">
             No categories
           </span>
         )}
-        {/* Suggest-a-category tile (end of left rail) */}
+        {/* Other / Custom Request tile (end of left rail) */}
         <button
           type="button"
           onClick={() => requireAuth(() => openSuggest())}
-          aria-label="Suggest a new category"
+          aria-label="Other / Custom Request"
           className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1 pt-1"
         >
           <span className="relative h-11 w-11 rounded-full grid place-items-center border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] bg-white/70">
             <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
           </span>
           <span className="text-[8.5px] font-display font-semibold tracking-tight leading-tight w-full text-center text-[color:oklch(0.45_0.08_85)]">
-            Suggest
+            Other
           </span>
         </button>
       </section>

@@ -132,7 +132,7 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
               <div className="mx-auto h-1 w-10 rounded-full bg-[color:oklch(0.78_0.14_82/0.4)] mb-3" />
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-lg font-bold text-[color:oklch(0.25_0.05_85)]">
-                  Suggest a category
+                  Other / Custom Request
                 </h2>
                 <button
                   onClick={onClose}
@@ -143,37 +143,37 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
                 </button>
               </div>
               <p className="text-xs text-[color:oklch(0.45_0.08_85)] mt-1">
-                Tell admin which service you need — they'll add it for everyone.
+                Don't see your service? Tell us what you need — we'll find a vendor or add it for everyone.
               </p>
             </div>
 
             <div className="px-5 py-4 space-y-3">
-              <Field label="Category" required>
+              <Field label="What do you need?" required>
                 <input
                   value={cat} onChange={(e) => setCat(e.target.value)} maxLength={120}
-                  placeholder="e.g. Pet grooming"
+                  placeholder="e.g. Pet grooming at home"
                   className="input-base"
                 />
               </Field>
-              <Field label="Sub-category (optional)">
+              <Field label="Type / Sub-service (optional)">
                 <input
                   value={sub} onChange={(e) => setSub(e.target.value)} maxLength={120}
                   placeholder="e.g. Dog grooming"
                   className="input-base"
                 />
               </Field>
-              <Field label="Child category (optional)">
+              <Field label="More detail (optional)">
                 <input
                   value={child} onChange={(e) => setChild(e.target.value)} maxLength={120}
-                  placeholder="e.g. Bath & nail trim"
+                  placeholder="e.g. Bath & nail trim for medium dog"
                   className="input-base"
                 />
               </Field>
-              <Field label="Note (optional)">
+              <Field label="Describe your request (optional)">
                 <textarea
                   value={note} onChange={(e) => setNote(e.target.value)} maxLength={600}
                   rows={3}
-                  placeholder="Anything that helps admin understand…"
+                  placeholder="When, where, budget, brand preference — anything that helps us match the right vendor."
                   className="input-base resize-none"
                 />
                 <div className="text-[10px] text-right text-[color:oklch(0.55_0.05_85)] mt-1">
@@ -215,7 +215,7 @@ export function CategorySuggestionSheet({ open, onClose, defaults }: Props) {
                 className="btn-3d w-full h-12 rounded-2xl bg-gradient-to-r from-[#d97706] to-[#c2410c] text-white font-bold tracking-wide shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {submitting ? "Sending…" : "Send to admin"}
+                {submitting ? "Sending…" : "Send Request"}
               </button>
             </div>
           </motion.div>
