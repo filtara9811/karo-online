@@ -128,31 +128,34 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup("All"); setCustomGroups([]); }, [subId]);
+  useEffect(() => { setActiveGroup("All"); }, [subId]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
   const subItems = useMemo(() => items.filter((it) => it.category_id === subId), [items, subId]);
+  const subGroups = useMemo(
+    () => allGroups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
+    [allGroups, subId]
+  );
+  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
 
-  // Parent-variation tabs — derived from item.group_tag + vendor-added custom groups
+  // Parent-variation tabs — only from admin-managed catalog_groups (read-only for vendors)
   const groupTabs = useMemo<string[]>(() => {
-    const set = new Set<string>();
-    let hasUntagged = false;
-    subItems.forEach((it) => {
-      const g = (it.group_tag ?? "").trim();
-      if (g) set.add(g); else hasUntagged = true;
+    const hasOther = subItems.some((it) => {
+      const tag = (it.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
     });
-    customGroups.forEach((g) => set.add(g));
-    const list = Array.from(set);
-    if (hasUntagged || subItems.length === 0) list.push("Other");
-    return ["All", ...list];
-  }, [subItems, customGroups]);
+    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || subItems.length === 0 ? ["Other"] : [])];
+  }, [subGroups, subItems, knownGroupNames]);
 
   const visibleItems = useMemo(() => {
-    if (groupTabs.length === 0 || activeGroup === "All") return subItems;
-    if (activeGroup === "Other") return subItems.filter((it) => !((it.group_tag ?? "").trim()));
+    if (activeGroup === "All") return subItems;
+    if (activeGroup === "Other") return subItems.filter((it) => {
+      const tag = (it.group_tag ?? "").trim();
+      return !tag || !knownGroupNames.has(tag);
+    });
     return subItems.filter((it) => (it.group_tag ?? "").trim() === activeGroup);
-  }, [subItems, groupTabs.length, activeGroup]);
+  }, [subItems, activeGroup, knownGroupNames]);
 
   const currentCat = cats.find((c) => c.id === catId) ?? null;
   const currentSub = cats.find((c) => c.id === subId) ?? null;
