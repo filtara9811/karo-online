@@ -74,6 +74,7 @@ import { Route as AdminLookupRouteImport } from './routes/admin.lookup'
 import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
 import { Route as AdminKycReviewRouteImport } from './routes/admin.kyc-review'
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminFormsRouteImport } from './routes/admin.forms'
@@ -430,6 +431,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLeadsRoute = AdminLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminKycReviewRoute = AdminKycReviewRouteImport.update({
   id: '/kyc-review',
   path: '/kyc-review',
@@ -621,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -717,6 +724,7 @@ export interface FileRoutesByTo {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -815,6 +823,7 @@ export interface FileRoutesById {
   '/admin/forms': typeof AdminFormsRoute
   '/admin/kyc': typeof AdminKycRoute
   '/admin/kyc-review': typeof AdminKycReviewRoute
+  '/admin/leads': typeof AdminLeadsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/logistics': typeof AdminLogisticsRoute
@@ -914,6 +923,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -1010,6 +1020,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -1107,6 +1118,7 @@ export interface FileRouteTypes {
     | '/admin/forms'
     | '/admin/kyc'
     | '/admin/kyc-review'
+    | '/admin/leads'
     | '/admin/legal'
     | '/admin/login'
     | '/admin/logistics'
@@ -1677,6 +1689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLegalRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/leads': {
+      id: '/admin/leads'
+      path: '/leads'
+      fullPath: '/admin/leads'
+      preLoaderRoute: typeof AdminLeadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/kyc-review': {
       id: '/admin/kyc-review'
       path: '/kyc-review'
@@ -1902,6 +1921,7 @@ interface AdminRouteChildren {
   AdminFormsRoute: typeof AdminFormsRoute
   AdminKycRoute: typeof AdminKycRoute
   AdminKycReviewRoute: typeof AdminKycReviewRoute
+  AdminLeadsRoute: typeof AdminLeadsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminLogisticsRoute: typeof AdminLogisticsRoute
@@ -1950,6 +1970,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFormsRoute: AdminFormsRoute,
   AdminKycRoute: AdminKycRoute,
   AdminKycReviewRoute: AdminKycReviewRoute,
+  AdminLeadsRoute: AdminLeadsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminLogisticsRoute: AdminLogisticsRoute,
