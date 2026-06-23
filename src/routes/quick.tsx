@@ -964,16 +964,16 @@ function QuickPage() {
               type="button"
               onClick={() => requireAuth(() => openSuggest({ category_name: selectedRoot?.name ?? "" }))}
               className={`${isGridView ? "col-span-2" : ""} group w-full rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] bg-[color:oklch(0.99_0.01_85)] hover:bg-[color:oklch(0.97_0.03_85)] transition-colors p-4 flex flex-col items-center justify-center gap-1.5`}
-              aria-label="Suggest a new category"
+              aria-label="Other / Custom Request"
             >
               <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#fdf3c8] to-[#fff8dc] border-2 border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center">
                 <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
               </span>
               <span className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
-                Suggest a category
+                Other / Custom Request
               </span>
               <span className="text-[11px] text-[color:oklch(0.45_0.08_85)] text-center leading-tight">
-                Don't see what you need? Tell admin.
+                Don't see what you need? Describe it — we'll match a vendor.
               </span>
             </button>
           )}
