@@ -257,7 +257,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
                         <div className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
                           active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
                         }`}>
-                          {g === "All" ? "★" : g === "Other" ? "•••" : g.slice(0, 1)}
+                          {g.slice(0, 1).toUpperCase()}
                         </div>
                       )}
                       <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
