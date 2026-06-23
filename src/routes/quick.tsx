@@ -58,8 +58,8 @@ export const Route = createFileRoute("/quick")({
 
 // ---------- DB Types ----------
 type DBType = { id: string; code: string; name: string; icon: string | null; sort_order: number };
-type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number };
-type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number };
+type DBCategory = { id: string; type_id: string | null; parent_id: string | null; name: string; slug: string; icon: string | null; image_url: string | null; sort_order: number; group_tag?: string | null; keywords?: string[] | null };
+type DBItem = { id: string; category_id: string; name: string; slug: string; description: string | null; icon: string | null; image_url: string | null; price_min: number | null; price_max: number | null; sort_order: number; group_tag?: string | null; keywords?: string[] | null };
 type CatalogData = { types: DBType[]; categories: DBCategory[]; items: DBItem[] };
 
 type Vendor = {
