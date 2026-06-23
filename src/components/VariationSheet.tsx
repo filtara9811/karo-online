@@ -13,6 +13,12 @@ export type VariationItem = {
   group?: string;
 };
 
+export type VariationGroup = {
+  name: string;
+  icon?: string | null;
+  image_url?: string | null;
+};
+
 
 export type VendorTypeKey = "wholesaler" | "retailer" | "manufacturer";
 
@@ -21,6 +27,7 @@ type Props = {
   category: string | null;
   vendorLabel?: string;
   items: VariationItem[];
+  groups?: VariationGroup[];
   selectedVendors?: { id: string; name: string; avatar?: string | null }[];
   onClose: () => void;
   onSubmit: (payload: {
