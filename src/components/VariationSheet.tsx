@@ -75,31 +75,22 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [remote, setRemote] = useState(false);
-  const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [activeGroup, setActiveGroup] = useState<string>("");
 
   // Group tabs — prefer admin-managed groups (with images), fall back to inferred from items.
   const groupMeta = useMemo<VariationGroup[]>(() => groups ?? [], [groups]);
-  const knownGroupNames = useMemo(() => new Set(groupMeta.map((g) => g.name)), [groupMeta]);
 
   const groupTabs = useMemo<string[]>(() => {
-    if (groupMeta.length > 0) {
-      const hasOther = items.some((it) => !it.group || !knownGroupNames.has(it.group));
-      return ["All", ...groupMeta.map((g) => g.name), ...(hasOther ? ["Other"] : [])];
-    }
+    if (groupMeta.length > 0) return groupMeta.map((g) => g.name);
     const set = new Set<string>();
-    let hasUntagged = false;
-    items.forEach((it) => { it.group ? set.add(it.group) : (hasUntagged = true); });
-    if (set.size === 0) return [];
-    const list = Array.from(set);
-    if (hasUntagged) list.push("Other");
-    return ["All", ...list];
-  }, [items, groupMeta, knownGroupNames]);
+    items.forEach((it) => { if (it.group) set.add(it.group); });
+    return Array.from(set);
+  }, [items, groupMeta]);
 
   const visibleItems = useMemo(() => {
-    if (groupTabs.length === 0 || activeGroup === "All") return items;
-    if (activeGroup === "Other") return items.filter((it) => !it.group || !knownGroupNames.has(it.group));
+    if (!activeGroup) return items;
     return items.filter((it) => it.group === activeGroup);
-  }, [items, activeGroup, groupTabs.length, knownGroupNames]);
+  }, [items, activeGroup]);
 
   const isService = useMemo(() => isServiceCategory(category), [category]);
   const filterGroups = isService ? SERVICE_FILTERS : PRODUCT_FILTERS;
@@ -130,7 +121,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
       setFilters({});
       setFilterSheetOpen(false);
       setRemote(false);
-      setActiveGroup("All");
+      setActiveGroup("");
     }
   }, [open, items]);
 
@@ -232,7 +223,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
           </div>
 
           {/* Grouped tabs — Women / Men / Kids / Unisex / Other (only when groups exist) */}
-          {groupTabs.length > 1 && (
+          {groupTabs.length > 0 && (
             <div
               className="mx-4 mt-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.4)] p-2"
               style={{ animation: "fade-up 0.4s ease-out 0.05s both" }}
@@ -245,7 +236,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
                   return (
                     <button
                       key={g}
-                      onClick={() => setActiveGroup(g)}
+                      onClick={() => setActiveGroup(active ? "" : g)}
                       className={`snap-start shrink-0 flex flex-col items-center justify-center w-[76px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                         active
                           ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[color:oklch(0.55_0.18_60)] shadow-[0_3px_10px_-2px_rgba(217,119,6,0.45)]"
@@ -266,7 +257,7 @@ export function VariationSheet({ open, category, vendorLabel, items, groups, sel
                         <div className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
                           active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
                         }`}>
-                          {g === "All" ? "★" : g === "Other" ? "•••" : g.slice(0, 1)}
+                          {g.slice(0, 1).toUpperCase()}
                         </div>
                       )}
                       <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">

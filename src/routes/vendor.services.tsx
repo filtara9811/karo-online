@@ -56,7 +56,7 @@ function VendorServicesPage() {
   const [typeId, setTypeId] = useState<string | null>(null);
   const [catId, setCatId] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
-  const [activeGroup, setActiveGroup] = useState<string>("All");
+  const [activeGroup, setActiveGroup] = useState<string>("");
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
@@ -129,7 +129,7 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup("All"); }, [subId]);
+  useEffect(() => { setActiveGroup(""); }, [subId]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
@@ -138,25 +138,15 @@ function VendorServicesPage() {
     () => allGroups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order),
     [allGroups, subId]
   );
-  const knownGroupNames = useMemo(() => new Set(subGroups.map((g) => g.name)), [subGroups]);
+  
 
   // Parent-variation tabs — only from admin-managed catalog_groups (read-only for vendors)
-  const groupTabs = useMemo<string[]>(() => {
-    const hasOther = subItems.some((it) => {
-      const tag = (it.group_tag ?? "").trim();
-      return !tag || !knownGroupNames.has(tag);
-    });
-    return ["All", ...subGroups.map((g) => g.name), ...(hasOther || subItems.length === 0 ? ["Other"] : [])];
-  }, [subGroups, subItems, knownGroupNames]);
+  const groupTabs = useMemo<string[]>(() => subGroups.map((g) => g.name), [subGroups]);
 
   const visibleItems = useMemo(() => {
-    if (activeGroup === "All") return subItems;
-    if (activeGroup === "Other") return subItems.filter((it) => {
-      const tag = (it.group_tag ?? "").trim();
-      return !tag || !knownGroupNames.has(tag);
-    });
+    if (!activeGroup) return subItems;
     return subItems.filter((it) => (it.group_tag ?? "").trim() === activeGroup);
-  }, [subItems, activeGroup, knownGroupNames]);
+  }, [subItems, activeGroup]);
 
   const currentCat = cats.find((c) => c.id === catId) ?? null;
   const currentSub = cats.find((c) => c.id === subId) ?? null;
@@ -267,7 +257,7 @@ function VendorServicesPage() {
               return (
                 <button
                   key={g}
-                  onClick={() => setActiveGroup(g)}
+                  onClick={() => setActiveGroup(active ? "" : g)}
                   className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
                     active
                       ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
@@ -282,7 +272,7 @@ function VendorServicesPage() {
                         active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
                       }`}
                     >
-                      {g === "All" ? "★" : "•••"}
+                      {g.slice(0, 1).toUpperCase()}
                     </div>
                   )}
                   <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
