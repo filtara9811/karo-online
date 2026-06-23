@@ -1116,6 +1116,7 @@ function QuickPage() {
         category={selectedSub?.name ?? "Service"}
         vendorLabel="Filter | wholesaler"
         items={variationItems}
+        groups={variationGroups}
         onClose={() => setVariationOpen(false)}
         onSubmit={async (payload) => {
           setVariationOpen(false);
