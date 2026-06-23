@@ -111,6 +111,7 @@ function VendorServicesPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, bump)
       .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, bump)
       .on("postgres_changes", { event: "*", schema: "public", table: "item_variations" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "catalog_groups" }, bump)
       .subscribe();
     return () => {
       if (scheduled) clearTimeout(scheduled);
