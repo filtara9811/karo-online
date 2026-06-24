@@ -183,6 +183,27 @@ function WhatsAppPage() {
         </p>
       </GoldCard>
 
+      <GoldCard className="p-4 mb-4">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-[#f5d97a]/80 font-bold mb-2">
+          📡 Meta Webhook URL — Developer Portal mein paste karein
+        </p>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30">
+          <code className="text-[11px] text-[#fff8dc] font-mono break-all flex-1">{webhookUrl}</code>
+          <button
+            type="button"
+            onClick={() => copy(webhookUrl, "Webhook URL")}
+            className="h-8 w-8 grid place-items-center rounded-lg bg-[#d4af37]/15 border border-[#d4af37]/35 text-[#f5d97a] shrink-0"
+            aria-label="Copy webhook URL"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <p className="text-[10px] text-[#d4af37]/60 mt-2 leading-relaxed">
+          Verify Token niche provider card mein "Webhook Verify Token" field se copy karein. Meta → App → WhatsApp → Configuration → Webhooks → Edit.
+          Subscribe to <b className="text-[#fff8dc]">messages</b> field.
+        </p>
+      </GoldCard>
+
       {loading ? (
         <GoldCard className="p-16 grid place-items-center">
           <Loader2 className="h-6 w-6 animate-spin text-[#d4af37]" />
