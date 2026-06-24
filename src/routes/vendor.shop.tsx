@@ -10,7 +10,10 @@ import {
   ShoppingBasket,
   ScanBarcode,
   Share2,
+  Menu,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
 import { useAuth } from "@/hooks/use-auth";
 import { buildShopDeepLink, shareLink } from "@/lib/share";
 import { toast } from "sonner";
