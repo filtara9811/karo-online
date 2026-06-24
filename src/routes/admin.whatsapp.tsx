@@ -59,6 +59,42 @@ function WhatsAppPage() {
   const [providers, setProviders] = useState<WhatsAppProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testPhone, setTestPhone] = useState<Record<string, string>>({});
+  const sendTest = useServerFn(sendTestWhatsAppMessage);
+
+  const webhookUrl =
+    (typeof window !== "undefined" ? window.location.origin : "") +
+    "/api/public/whatsapp/webhook";
+
+  const copy = (v: string, label: string) => {
+    navigator.clipboard?.writeText(v).then(
+      () => toast.success(`${label} copied`),
+      () => toast.error("Copy failed"),
+    );
+  };
+
+  const runTest = async (p: WhatsAppProvider) => {
+    const phone = (testPhone[p.id] || "").trim();
+    if (phone.replace(/\D/g, "").length < 10) {
+      toast.error("Enter a valid 10-digit WhatsApp number");
+      return;
+    }
+    setTestingId(p.id);
+    try {
+      const res = await sendTest({ data: { provider_id: p.id, to_phone: phone } });
+      if (res.ok) {
+        toast.success(`✅ Test sent! Message ID: ${res.message_id ?? "—"}. Provider marked Active.`);
+        load();
+      } else {
+        toast.error(`❌ ${res.error}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Test failed");
+    } finally {
+      setTestingId(null);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
