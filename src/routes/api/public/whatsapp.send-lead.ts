@@ -31,6 +31,7 @@ function digitsOnly(s: string | null | undefined): string | null {
 
 type MetaProvider = {
   id: string;
+  provider: string;
   api_base_url: string | null;
   phone_number_id: string | null;
   access_token: string | null;
@@ -43,9 +44,10 @@ async function loadActiveMetaProvider(): Promise<MetaProvider | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("whatsapp_providers" as any)
-    .select("id,api_base_url,phone_number_id,access_token,default_template,is_active,is_test_mode")
-    .eq("provider", "meta_cloud")
+    .select("id,provider,api_base_url,phone_number_id,access_token,default_template,is_active,is_test_mode,priority")
+    .in("provider", ["fast2sms_meta", "meta_cloud"])
     .eq("is_active", true)
+    .order("priority", { ascending: true })
     .limit(1);
   const row = (data ?? [])[0];
   if (!row) return null;
@@ -67,9 +69,23 @@ async function fetchVendors(vendorIds: string[]) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("vendors")
-    .select("user_id,owner_name,business_name,whatsapp,phone")
+    .select("user_id,owner_name,business_name,whatsapp")
     .in("user_id", vendorIds);
   return (data ?? []) as any[];
+}
+
+function buildProviderUrl(provider: MetaProvider) {
+  const base = (provider.api_base_url || "https://graph.facebook.com/v20.0").replace(/\/$/, "");
+  if (provider.provider === "fast2sms_meta") {
+    const versioned = /\/v\d+\.\d+$/i.test(base) ? base : `${base}/v24.0`;
+    return `${versioned}/${provider.phone_number_id}/messages`;
+  }
+  return `${base}/${provider.phone_number_id}/messages`;
+}
+
+function buildAuthHeader(provider: MetaProvider) {
+  if (provider.provider === "fast2sms_meta") return provider.access_token || "";
+  return `Bearer ${provider.access_token}`;
 }
 
 async function sendInteractive(args: {
@@ -82,8 +98,7 @@ async function sendInteractive(args: {
   vendorName: string | null;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const { provider, toPhone, leadId, templateName, language, lead, vendorName } = args;
-  const base = (provider.api_base_url || "https://graph.facebook.com/v20.0").replace(/\/$/, "");
-  const url = `${base}/${provider.phone_number_id}/messages`;
+  const url = buildProviderUrl(provider);
 
   const components: any[] = [];
   if (lead?.image_url) {
@@ -130,8 +145,9 @@ async function sendInteractive(args: {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${provider.access_token}`,
+        Authorization: buildAuthHeader(provider),
         "Content-Type": "application/json",
+        accept: "application/json",
       },
       body: JSON.stringify(body),
     });
@@ -177,7 +193,7 @@ export const Route = createFileRoute("/api/public/whatsapp/send-lead")({
         const errors: string[] = [];
 
         for (const v of vendors) {
-          const phone = digitsOnly(v.whatsapp || v.phone);
+          const phone = digitsOnly(v.whatsapp);
           if (!phone) continue;
           const result = await sendInteractive({
             provider,
