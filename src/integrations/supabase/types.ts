@@ -1405,6 +1405,7 @@ export type Database = {
           id: string
           lead_id: string
           quoted_price: number | null
+          rejection_reason: string | null
           responded_at: string | null
           status: string
           sub_category_name: string
@@ -1418,6 +1419,7 @@ export type Database = {
           id?: string
           lead_id: string
           quoted_price?: number | null
+          rejection_reason?: string | null
           responded_at?: string | null
           status?: string
           sub_category_name: string
@@ -1431,6 +1433,7 @@ export type Database = {
           id?: string
           lead_id?: string
           quoted_price?: number | null
+          rejection_reason?: string | null
           responded_at?: string | null
           status?: string
           sub_category_name?: string
@@ -4532,6 +4535,10 @@ export type Database = {
     Functions: {
       _lead_whatsapp_webhook_url: { Args: never; Returns: string }
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
+      accept_lead_for_vendor: {
+        Args: { _lead_id: string; _vendor_id: string }
+        Returns: Json
+      }
       admin_adjust_wallet: {
         Args: {
           _amount: number
@@ -4965,6 +4972,10 @@ export type Database = {
         Returns: Json
       }
       reject_lead: { Args: { _lead_id: string }; Returns: undefined }
+      reject_lead_for_vendor: {
+        Args: { _lead_id: string; _reason: string; _vendor_id: string }
+        Returns: Json
+      }
       release_referral_reward: {
         Args: { _vendor_user_id: string }
         Returns: Json
