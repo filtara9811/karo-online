@@ -10,7 +10,10 @@ import {
   ShoppingBasket,
   ScanBarcode,
   Share2,
+  Menu,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
 import { useAuth } from "@/hooks/use-auth";
 import { buildShopDeepLink, shareLink } from "@/lib/share";
 import { toast } from "sonner";
@@ -186,72 +189,85 @@ function VendorShop() {
     >
       <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,oklch(0.84_0.15_85/0.18),transparent_70%)] blur-2xl" />
 
-      {/* Full-bleed cover hero with floating top controls */}
-      <section className="relative">
-        <ShopMediaUploader variant="hero" />
+      {/* Compact top bar — menu + close. All hero/share/live/invoice moved into menu. */}
+      <div className="max-w-md mx-auto px-4 pt-3 flex items-center justify-between">
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              aria-label="Open menu"
+              className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
+            >
+              <Menu className="h-5 w-5 text-[color:oklch(0.30_0.01_260)]" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[300px] sm:w-[340px] p-0 flex flex-col">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle className="text-left">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full grid place-items-center bg-black border-2 border-white shadow">
+                    <span className="text-white text-xl">🏬</span>
+                  </div>
+                  <div className="leading-tight">
+                    <p className="text-[9px] uppercase tracking-[0.25em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
+                    <p className="font-display text-base font-bold">Ashhu's Digital Shop</p>
+                  </div>
+                </div>
+              </SheetTitle>
+            </SheetHeader>
+            <div className="p-4 space-y-3 overflow-y-auto">
+              <ShopLiveToggle />
+              <div className="rounded-xl overflow-hidden border">
+                <ShopMediaUploader variant="hero" />
+              </div>
+              <button
+                onClick={handleShareShop}
+                className="w-full h-11 px-4 flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-md active:scale-95 text-sm font-display font-bold italic"
+              >
+                <Share2 className="h-4 w-4" />
+                Share My Shop
+              </button>
+              <button
+                onClick={() => setPosOpen(true)}
+                className="w-full h-11 px-4 flex items-center justify-center gap-2 rounded-full border border-[color:oklch(0.72_0.01_260/0.5)] bg-white text-sm font-bold active:scale-95"
+              >
+                <Receipt className="h-4 w-4" />
+                Create Invoice
+                {cartCount > 0 && (
+                  <span className="h-5 min-w-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate({ to: "/vendor/dashboard" })}
+                className="w-full h-11 px-4 flex items-center justify-center gap-2 rounded-full border border-[color:oklch(0.72_0.01_260/0.5)] bg-white text-sm font-bold active:scale-95"
+              >
+                <X className="h-4 w-4" />
+                Close Shop
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
 
-        {/* Top-left: Live toggle */}
-        <div className="absolute top-3 left-3 z-30">
-          <ShopLiveToggle />
-        </div>
+        <button
+          onClick={() => navigate({ to: "/vendor/dashboard" })}
+          aria-label="Close"
+          className="h-10 w-10 grid place-items-center rounded-full bg-white border border-[color:oklch(0.72_0.01_260/0.5)] shadow-sm active:scale-90"
+        >
+          <X className="h-4 w-4 text-[color:oklch(0.30_0.01_260)]" strokeWidth={2.6} />
+        </button>
+      </div>
 
-        {/* Top-right: Share + Invoice + Close (X) */}
-        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
-          <button
-            onClick={handleShareShop}
-            aria-label="Share my shop"
-            className="h-9 px-3 grid grid-flow-col auto-cols-max items-center gap-1.5 rounded-full bg-gradient-to-b from-[#fff8dc] via-[#f5d97a] to-[#d4af37] border border-[color:oklch(0.78_0.14_82/0.7)] text-[color:oklch(0.20_0.05_60)] shadow-md active:scale-95 text-[11px] font-display font-bold italic"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share
-          </button>
-          <button
-            onClick={() => setPosOpen(true)}
-            aria-label="Create Invoice"
-            className="relative h-9 w-9 grid place-items-center rounded-full text-[color:oklch(0.20_0.01_260)] shadow-md active:scale-90"
-            style={{ background: "linear-gradient(180deg, #eef0f3, #d8dde3, #a8acb3)" }}
-          >
-            <Receipt className="h-4 w-4" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center">
-                {cartCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => navigate({ to: "/vendor/dashboard" })}
-            aria-label="Close"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/95 border border-[color:oklch(0.72_0.01_260/0.5)] shadow-md active:scale-90"
-          >
-            <X className="h-4 w-4 text-[color:oklch(0.30_0.01_260)]" strokeWidth={2.6} />
-          </button>
-        </div>
-
-        {/* Profile logo overhang — pokes below the cover */}
-        <div className="absolute -bottom-7 left-4 z-30">
-          <div className="h-14 w-14 rounded-full grid place-items-center bg-black border-4 border-white shadow-lg">
-            <span className="text-white text-2xl">🏬</span>
-          </div>
-        </div>
-      </section>
-
-      <div className="max-w-md mx-auto px-4 pt-10 space-y-4">
-        {/* Shop title — moved out of the old header */}
-        <div className="text-center">
-          <p className="text-[9px] uppercase tracking-[0.3em] text-[color:oklch(0.55_0.10_82)]">✦ My Dukan ✦</p>
-          <h1 className="font-display text-base text-silver-gradient leading-tight font-bold">
-            Ashhu's Digital Shop
-          </h1>
-        </div>
+      <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        {/* Yesterday vs Today moving ticker — moved ABOVE search as in the old layout */}
+        <ShopStatsTicker />
 
         {/* Search */}
         <ShopSearchBar value={search} onChange={setSearch} />
 
-        {/* Yesterday vs Today moving ticker */}
-        <ShopStatsTicker />
-
         {/* Banners */}
         <BannerCarousel />
+
 
         {/* Pricing mode toggle */}
         <div className="flex items-center justify-between rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
