@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, MessageCircle, Plus, Save, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Loader2, MessageCircle, Plus, Save, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTestWhatsAppMessage } from "@/lib/whatsapp-admin.functions";
 import { AdminLayout, GoldButton, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 
 export const Route = createFileRoute("/admin/whatsapp")({
