@@ -83,6 +83,7 @@ import { Route as AdminFirebaseRouteImport } from './routes/admin.firebase'
 import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
 import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminCommunicationRouteImport } from './routes/admin.communication'
 import { Route as AdminCoinsRouteImport } from './routes/admin.coins'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
@@ -477,6 +478,11 @@ const AdminCustomersRoute = AdminCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCommunicationRoute = AdminCommunicationRouteImport.update({
+  id: '/communication',
+  path: '/communication',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCoinsRoute = AdminCoinsRouteImport.update({
   id: '/coins',
   path: '/coins',
@@ -626,6 +632,7 @@ export interface FileRoutesByFullPath {
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
+  '/admin/communication': typeof AdminCommunicationRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -724,6 +731,7 @@ export interface FileRoutesByTo {
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
+  '/admin/communication': typeof AdminCommunicationRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -824,6 +832,7 @@ export interface FileRoutesById {
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/coins': typeof AdminCoinsRoute
+  '/admin/communication': typeof AdminCommunicationRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -925,6 +934,7 @@ export interface FileRouteTypes {
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
+    | '/admin/communication'
     | '/admin/customers'
     | '/admin/devices'
     | '/admin/feedback'
@@ -1023,6 +1033,7 @@ export interface FileRouteTypes {
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
+    | '/admin/communication'
     | '/admin/customers'
     | '/admin/devices'
     | '/admin/feedback'
@@ -1122,6 +1133,7 @@ export interface FileRouteTypes {
     | '/admin/cashfree'
     | '/admin/catalog'
     | '/admin/coins'
+    | '/admin/communication'
     | '/admin/customers'
     | '/admin/devices'
     | '/admin/feedback'
@@ -1765,6 +1777,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/communication': {
+      id: '/admin/communication'
+      path: '/communication'
+      fullPath: '/admin/communication'
+      preLoaderRoute: typeof AdminCommunicationRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/coins': {
       id: '/admin/coins'
       path: '/coins'
@@ -1934,6 +1953,7 @@ interface AdminRouteChildren {
   AdminCashfreeRoute: typeof AdminCashfreeRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCoinsRoute: typeof AdminCoinsRoute
+  AdminCommunicationRoute: typeof AdminCommunicationRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDevicesRoute: typeof AdminDevicesRoute
   AdminFeedbackRoute: typeof AdminFeedbackRoute
@@ -1983,6 +2003,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCashfreeRoute: AdminCashfreeRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCoinsRoute: AdminCoinsRoute,
+  AdminCommunicationRoute: AdminCommunicationRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDevicesRoute: AdminDevicesRoute,
   AdminFeedbackRoute: AdminFeedbackRoute,
@@ -2085,13 +2106,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -963,6 +963,47 @@ export type Database = {
         }
         Relationships: []
       }
+      group_communication_settings: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          push_enabled: boolean
+          updated_at: string
+          voice_agent_enabled: boolean
+          voice_script_override: string | null
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          push_enabled?: boolean
+          updated_at?: string
+          voice_agent_enabled?: boolean
+          voice_script_override?: string | null
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          push_enabled?: boolean
+          updated_at?: string
+          voice_agent_enabled?: boolean
+          voice_script_override?: string | null
+          whatsapp_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_communication_settings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "catalog_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_modules: {
         Row: {
           category: string
@@ -3360,6 +3401,143 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_call_logs: {
+        Row: {
+          created_at: string
+          duration_sec: number | null
+          ended_at: string | null
+          error_payload: Json | null
+          external_call_id: string | null
+          id: string
+          lead_id: string | null
+          outcome: string | null
+          provider_id: string | null
+          rejection_reason: string | null
+          started_at: string | null
+          status: string
+          to_phone: string | null
+          transcript: Json | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_sec?: number | null
+          ended_at?: string | null
+          error_payload?: Json | null
+          external_call_id?: string | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          provider_id?: string | null
+          rejection_reason?: string | null
+          started_at?: string | null
+          status?: string
+          to_phone?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_sec?: number | null
+          ended_at?: string | null
+          error_payload?: Json | null
+          external_call_id?: string | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          provider_id?: string | null
+          rejection_reason?: string | null
+          started_at?: string | null
+          status?: string
+          to_phone?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "voice_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_providers: {
+        Row: {
+          agent_id: string | null
+          api_base_url: string | null
+          api_key: string | null
+          caller_id: string | null
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          is_test_mode: boolean
+          priority: number
+          provider: string
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          api_base_url?: string | null
+          api_key?: string | null
+          caller_id?: string | null
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider?: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          api_base_url?: string | null
+          api_key?: string | null
+          caller_id?: string | null
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_test_mode?: boolean
+          priority?: number
+          provider?: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       wallet_recharge_packs: {
         Row: {
           amount_inr: number
@@ -4123,6 +4301,83 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      whatsapp_message_logs: {
+        Row: {
+          button_clicked: string | null
+          clicked_at: string | null
+          created_at: string
+          error_payload: Json | null
+          id: string
+          lead_id: string | null
+          provider_id: string | null
+          status: string
+          template_name: string | null
+          to_phone: string | null
+          updated_at: string
+          vendor_id: string | null
+          wa_message_id: string | null
+        }
+        Insert: {
+          button_clicked?: string | null
+          clicked_at?: string | null
+          created_at?: string
+          error_payload?: Json | null
+          id?: string
+          lead_id?: string | null
+          provider_id?: string | null
+          status?: string
+          template_name?: string | null
+          to_phone?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          wa_message_id?: string | null
+        }
+        Update: {
+          button_clicked?: string | null
+          clicked_at?: string | null
+          created_at?: string
+          error_payload?: Json | null
+          id?: string
+          lead_id?: string | null
+          provider_id?: string | null
+          status?: string
+          template_name?: string | null
+          to_phone?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_message_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_message_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_message_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_providers: {
         Row: {
