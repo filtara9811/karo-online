@@ -90,6 +90,8 @@ import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminWebIndexRouteImport } from './routes/admin.web.index'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
+import { Route as LeadRejectIdRouteImport } from './routes/lead.reject.$id'
+import { Route as LeadAcceptIdRouteImport } from './routes/lead.accept.$id'
 import { Route as ApiPublicVendorLocationRouteImport } from './routes/api.public.vendor-location'
 import { Route as AdminWebTestimonialsRouteImport } from './routes/admin.web.testimonials'
 import { Route as AdminWebSeoRouteImport } from './routes/admin.web.seo'
@@ -515,6 +517,16 @@ const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   path: '/vendor/lead/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeadRejectIdRoute = LeadRejectIdRouteImport.update({
+  id: '/lead/reject/$id',
+  path: '/lead/reject/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadAcceptIdRoute = LeadAcceptIdRouteImport.update({
+  id: '/lead/accept/$id',
+  path: '/lead/accept/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicVendorLocationRoute = ApiPublicVendorLocationRouteImport.update({
   id: '/api/public/vendor-location',
   path: '/api/public/vendor-location',
@@ -709,6 +721,8 @@ export interface FileRoutesByFullPath {
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
+  '/lead/accept/$id': typeof LeadAcceptIdRoute
+  '/lead/reject/$id': typeof LeadRejectIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -810,6 +824,8 @@ export interface FileRoutesByTo {
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
+  '/lead/accept/$id': typeof LeadAcceptIdRoute
+  '/lead/reject/$id': typeof LeadRejectIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -913,6 +929,8 @@ export interface FileRoutesById {
   '/admin/web/seo': typeof AdminWebSeoRoute
   '/admin/web/testimonials': typeof AdminWebTestimonialsRoute
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
+  '/lead/accept/$id': typeof LeadAcceptIdRoute
+  '/lead/reject/$id': typeof LeadRejectIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -1017,6 +1035,8 @@ export interface FileRouteTypes {
     | '/admin/web/seo'
     | '/admin/web/testimonials'
     | '/api/public/vendor-location'
+    | '/lead/accept/$id'
+    | '/lead/reject/$id'
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
@@ -1118,6 +1138,8 @@ export interface FileRouteTypes {
     | '/admin/web/seo'
     | '/admin/web/testimonials'
     | '/api/public/vendor-location'
+    | '/lead/accept/$id'
+    | '/lead/reject/$id'
     | '/vendor/lead/$id'
     | '/admin/web'
     | '/api/public/hooks/lead-whatsapp'
@@ -1220,6 +1242,8 @@ export interface FileRouteTypes {
     | '/admin/web/seo'
     | '/admin/web/testimonials'
     | '/api/public/vendor-location'
+    | '/lead/accept/$id'
+    | '/lead/reject/$id'
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
@@ -1277,6 +1301,8 @@ export interface RootRouteChildren {
   VendorWalletRoute: typeof VendorWalletRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
+  LeadAcceptIdRoute: typeof LeadAcceptIdRoute
+  LeadRejectIdRoute: typeof LeadRejectIdRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
   ApiPublicHooksLeadWhatsappRoute: typeof ApiPublicHooksLeadWhatsappRoute
   ApiPublicVcardCodeRoute: typeof ApiPublicVcardCodeRoute
@@ -1854,6 +1880,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorLeadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lead/reject/$id': {
+      id: '/lead/reject/$id'
+      path: '/lead/reject/$id'
+      fullPath: '/lead/reject/$id'
+      preLoaderRoute: typeof LeadRejectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lead/accept/$id': {
+      id: '/lead/accept/$id'
+      path: '/lead/accept/$id'
+      fullPath: '/lead/accept/$id'
+      preLoaderRoute: typeof LeadAcceptIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/vendor-location': {
       id: '/api/public/vendor-location'
       path: '/api/public/vendor-location'
@@ -2140,6 +2180,8 @@ const rootRouteChildren: RootRouteChildren = {
   VendorWalletRoute: VendorWalletRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
+  LeadAcceptIdRoute: LeadAcceptIdRoute,
+  LeadRejectIdRoute: LeadRejectIdRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
   ApiPublicHooksLeadWhatsappRoute: ApiPublicHooksLeadWhatsappRoute,
   ApiPublicVcardCodeRoute: ApiPublicVcardCodeRoute,
@@ -2150,13 +2192,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
