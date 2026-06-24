@@ -53,6 +53,7 @@ import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as QCodeRouteImport } from './routes/q.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as LeadsInboxRouteImport } from './routes/leads.inbox'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
@@ -330,6 +331,11 @@ const QCodeRoute = QCodeRouteImport.update({
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadsInboxRoute = LeadsInboxRouteImport.update({
+  id: '/leads/inbox',
+  path: '/leads/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
@@ -689,6 +695,7 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
+  '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
@@ -792,6 +799,7 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
+  '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
@@ -897,6 +905,7 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
   '/f/$slug': typeof FSlugRoute
+  '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
@@ -1003,6 +1012,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/c/$code'
     | '/f/$slug'
+    | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
@@ -1106,6 +1116,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/c/$code'
     | '/f/$slug'
+    | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
@@ -1210,6 +1221,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/c/$code'
     | '/f/$slug'
+    | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
@@ -1283,6 +1295,7 @@ export interface RootRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   CCodeRoute: typeof CCodeRoute
   FSlugRoute: typeof FSlugRoute
+  LeadsInboxRoute: typeof LeadsInboxRoute
   ProductIdRoute: typeof ProductIdRoute
   QCodeRoute: typeof QCodeRoute
   RCodeRoute: typeof RCodeRoute
@@ -1619,6 +1632,13 @@ declare module '@tanstack/react-router' {
       path: '/product/$id'
       fullPath: '/product/$id'
       preLoaderRoute: typeof ProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leads/inbox': {
+      id: '/leads/inbox'
+      path: '/leads/inbox'
+      fullPath: '/leads/inbox'
+      preLoaderRoute: typeof LeadsInboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$slug': {
@@ -2162,6 +2182,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   CCodeRoute: CCodeRoute,
   FSlugRoute: FSlugRoute,
+  LeadsInboxRoute: LeadsInboxRoute,
   ProductIdRoute: ProductIdRoute,
   QCodeRoute: QCodeRoute,
   RCodeRoute: RCodeRoute,
