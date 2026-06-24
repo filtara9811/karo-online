@@ -50,6 +50,7 @@ const NAV: NavItem[] = [
   { to: "/admin/kyc-review", label: "🔍 KYC Submissions", icon: ClipboardList },
   { to: "/admin/sms", label: "SMS Gateways", icon: MessageSquare },
   { to: "/admin/whatsapp", label: "WhatsApp API", icon: MessageCircle },
+  { to: "/admin/communication", label: "🎙️ Voice + Comm Hub", icon: MessageCircle },
   { to: "/admin/firebase", label: "Firebase Services", icon: Flame },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/maps", label: "Maps Providers", icon: MapIcon },
