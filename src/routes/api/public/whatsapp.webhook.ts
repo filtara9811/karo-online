@@ -25,7 +25,7 @@ async function loadProviders(): Promise<ProviderRow[]> {
     .from("whatsapp_providers" as any)
     .select("id,provider,webhook_verify_token,app_secret")
     .in("provider", ["meta_cloud", "fast2sms_meta"]);
-  return (data ?? []) as ProviderRow[];
+  return ((data ?? []) as unknown) as ProviderRow[];
 }
 
 function verifySignature(rawBody: string, header: string | null, appSecret: string): boolean {
