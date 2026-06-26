@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Karo Online</title>
+    <style>
+      html,body{margin:0;padding:0;height:100%;background:#0a0606;color:#fff;font-family:system-ui,sans-serif;}
+      .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+      .ring{width:46px;height:46px;border:3px solid rgba(255,255,255,.15);border-top-color:#f5b301;border-radius:50%;animation:spin 1s linear infinite;}
+      @keyframes spin{to{transform:rotate(360deg);}}
+      small{opacity:.6;font-size:12px;}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="ring"></div>
+      <small>Karo Online</small>
+    </div>
+    <script>
+      // Native shell — load live SPA
+      location.replace("https://karoonline.in/");
+    </script>
+  </body>
+</html>
