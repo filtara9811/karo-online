@@ -5,10 +5,8 @@ import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
-import { registerPwaServiceWorker } from "@/lib/register-sw";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { startAutoSync } from "@/lib/offline/sync";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { bootstrapNative, isNative } from "@/lib/native";
 
 import appCss from "../styles.css?url";
@@ -160,8 +158,18 @@ function RootComponent() {
         document.documentElement.style.fontSize = "13px";
       }
     } catch { /* noop */ }
-    // Skip web SW on native — Capacitor uses its own asset loader.
-    if (!isNative()) registerPwaServiceWorker();
+    // Native-first launch: remove old app-shell PWA workers so stale HTML/UI
+    // cannot keep phones on old catalog/inventory screens. Firebase messaging
+    // worker remains separate and is registered only by FCM code when needed.
+    if (!isNative() && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => regs.forEach((r) => {
+          if (r.active?.scriptURL?.endsWith("/sw.js") || r.installing?.scriptURL?.endsWith("/sw.js") || r.waiting?.scriptURL?.endsWith("/sw.js")) {
+            r.unregister().catch(() => undefined);
+          }
+        }))
+        .catch(() => undefined);
+    }
     const stop = startAutoSync();
     bootstrapNative().catch((e) => console.warn("[native bootstrap]", e));
     return () => { stop?.(); };
@@ -172,7 +180,6 @@ function RootComponent() {
         <CartProvider>
           <OfflineBanner />
           <AppShell />
-          <InstallPrompt />
           <Toaster position="top-center" richColors closeButton />
         </CartProvider>
       </AuthProvider>

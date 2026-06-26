@@ -249,6 +249,7 @@ export const sendDirectTest = createServerFn({ method: "POST" })
       body: data.body,
       imageUrl: data.image_url ?? null,
       actionUrl: data.action_url ?? null,
+      highPriority: true,
       extraData: { kind: "direct_test" },
     });
     return { ok: !!r?.ok, target_user_id: userId, ...r };

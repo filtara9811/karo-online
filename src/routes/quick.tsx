@@ -281,7 +281,8 @@ function QuickPage() {
     (async () => {
       setLoading(true);
       try {
-        const cached = loadCachedCatalog();
+        const canUseCachedCatalog = typeof navigator === "undefined" || !navigator.onLine;
+        const cached = canUseCachedCatalog ? loadCachedCatalog() : null;
         if (cached && !cancelled) {
           setTypes(cached.types);
           setCategories(cached.categories);
@@ -291,7 +292,7 @@ function QuickPage() {
           supabase.from("catalog_types").select("id,code,name,icon,sort_order").eq("is_active", true).order("sort_order"),
           supabase.from("categories").select("id,type_id,parent_id,name,slug,icon,image_url,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
           supabase.from("catalog_items").select("id,category_id,name,slug,description,icon,image_url,price_min,price_max,sort_order,group_tag,keywords").eq("is_active", true).order("sort_order"),
-        ]));
+        ]), 6000);
         if (cancelled) return;
         const nextTypes = ((t.data ?? []) as DBType[]).length ? (t.data ?? []) as DBType[] : STATIC_TYPES;
         const fb = fallbackCatalog(nextTypes);
@@ -315,7 +316,12 @@ function QuickPage() {
     let scheduled: ReturnType<typeof setTimeout> | null = null;
     const bump = () => {
       if (scheduled) return;
-      scheduled = setTimeout(() => { scheduled = null; setCatalogReloadTick((n) => n + 1); }, 250);
+      scheduled = setTimeout(() => {
+        scheduled = null;
+        try { window.localStorage.removeItem(CATALOG_CACHE_KEY); } catch {}
+        setGroupsBySub({});
+        setCatalogReloadTick((n) => n + 1);
+      }, 250);
     };
     const channel = supabase
       .channel("catalog-live")

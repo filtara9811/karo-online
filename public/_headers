@@ -2,7 +2,19 @@
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, HEAD, OPTIONS
   Access-Control-Allow-Headers: Content-Type, Accept, Origin, User-Agent
-  Cache-Control: public, max-age=300, must-revalidate
+  Cache-Control: no-cache, must-revalidate
+
+/sw.js
+  Cache-Control: no-store, must-revalidate
+
+/firebase-messaging-sw.js
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate
+
+/quick
+  Cache-Control: no-cache, must-revalidate
 
 /icon-192.png
   Access-Control-Allow-Origin: *

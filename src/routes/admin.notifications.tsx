@@ -366,7 +366,11 @@ function DirectSendCard() {
     setBusy(true);
     try {
       const r: any = await fn({ data: { target: target.trim(), title, body, action_url: actionUrl || null } });
-      if (r?.ok) toast.success(`Delivered to ${r.sent ?? 0} device(s)`);
+      if (r?.ok) {
+        const counts = r.platformCounts ?? {};
+        const nativeCount = (counts.android ?? 0) + (counts.ios ?? 0);
+        toast.success(`Delivered to ${r.sent ?? 0} device(s)${nativeCount ? ` • native ${nativeCount}` : " • web token only"}`);
+      }
       else toast.error(r?.error ?? r?.reason ?? "Send failed");
     } catch (e: any) { toast.error(e?.message ?? "Send failed"); }
     setBusy(false);
