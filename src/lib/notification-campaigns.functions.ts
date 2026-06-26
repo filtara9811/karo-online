@@ -151,9 +151,14 @@ export const sendCampaignNow = createServerFn({ method: "POST" })
     const { data: c } = await supabaseAdmin.from("notification_campaigns" as any).select("*").eq("id", data.id).maybeSingle();
     if (!c) return { ok: false as const, error: "campaign_not_found" };
 
-    const { data: users, error: userErr } = await supabaseAdmin.rpc("admin_resolve_campaign_users", { _campaign_id: data.id });
-    if (userErr) return { ok: false as const, error: userErr.message };
-    const ids = ((users ?? []) as Array<{ user_id: string }>).map((u) => u.user_id).filter(Boolean);
+    const filter = (c as any).audience_filter ?? { role: "all", kyc_status: "any", active: "any" };
+    const { data: segRows, error: segErr } = await supabaseAdmin.rpc("admin_segment_audience", { _filter: filter });
+    if (segErr) return { ok: false as const, error: segErr.message };
+    const merged = new Set<string>(((segRows ?? []) as any[]).map((u) => u.user_id).filter(Boolean));
+    const manual = Array.isArray((c as any).manual_targets) ? (c as any).manual_targets as string[] : [];
+    const manualIds = await resolveManualTargets(supabaseAdmin, manual);
+    for (const id of manualIds) merged.add(id);
+    const ids = Array.from(merged);
     if (ids.length === 0) return { ok: false as const, error: "no_recipients" };
 
     await supabaseAdmin.from("notification_campaigns" as any).update({ status: "sending" }).eq("id", data.id);
