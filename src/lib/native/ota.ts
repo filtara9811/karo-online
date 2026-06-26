@@ -21,7 +21,7 @@ export async function initOta(): Promise<void> {
   if (!isNative() || installed) return;
   installed = true;
   try {
-    const { CapacitorUpdater } = await import("@capgo/capacitor-updater");
+    const { CapacitorUpdater } = await import(/* @vite-ignore */ ("@capgo/capacitor-updater" as string));
     // Mark current bundle as good — prevents rollback.
     await CapacitorUpdater.notifyAppReady();
 
@@ -48,7 +48,7 @@ export async function initOta(): Promise<void> {
 export async function forceCheckOta(): Promise<{ updated: boolean; version?: string }> {
   if (!isNative()) return { updated: false };
   try {
-    const { CapacitorUpdater } = await import("@capgo/capacitor-updater");
+    const { CapacitorUpdater } = await import(/* @vite-ignore */ ("@capgo/capacitor-updater" as string));
     const latest = await CapacitorUpdater.getLatest();
     if (!latest?.url) return { updated: false };
     const current = await CapacitorUpdater.current();
