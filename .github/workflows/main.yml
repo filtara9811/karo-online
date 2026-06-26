@@ -88,7 +88,7 @@ jobs:
 
       - name: Build signed APK and AAB
         working-directory: android
-        run: ./gradlew assembleRelease bundleRelease --stacktrace
+        run: ./gradlew assembleRelease bundleRelease --stacktrace --warning-mode all --info
 
       - name: Verify and collect AAB
         run: |
