@@ -424,11 +424,13 @@ function CampaignEditor({
       .map((s: string) => s.trim())
       .filter(Boolean);
 
+  const [previewBreak, setPreviewBreak] = useState<{ filter: number; manual: number; unmatched: number } | null>(null);
   const preview = async () => {
     setPreviewing(true);
     try {
-      const r: any = await fnPreview({ data: { filter: cleanFilter(c.audience_filter) } });
+      const r: any = await fnPreview({ data: { filter: cleanFilter(c.audience_filter), manual_targets: parseManual() } });
       setPreviewCount(r?.total ?? 0);
+      setPreviewBreak({ filter: r?.filter_count ?? 0, manual: r?.manual_count ?? 0, unmatched: r?.manual_unmatched ?? 0 });
     } catch (e: any) { toast.error(e?.message ?? "Preview failed"); }
     setPreviewing(false);
   };
