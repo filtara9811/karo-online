@@ -311,13 +311,39 @@ export function KycStepFlow({
 /* ---------------- Helpers ---------------- */
 
 async function uploadFile(userId: string, checkType: StepKey, file: File): Promise<string> {
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const safeFile = await prepareKycImage(file);
+  const ext = safeFile.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${userId}/${checkType}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-  const { error } = await supabase.storage.from("kyc-documents").upload(path, file, {
-    upsert: true, contentType: file.type || "image/jpeg",
+  const uploadPromise = supabase.storage.from("kyc-documents").upload(path, safeFile, {
+    upsert: true, contentType: safeFile.type || "image/jpeg",
   });
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    window.setTimeout(() => reject(new Error("Upload timeout — internet slow hai, image compress karke dobara try karein.")), 45_000);
+  });
+  const { error } = await Promise.race([uploadPromise, timeoutPromise]);
   if (error) throw error;
   return path;
+}
+
+async function prepareKycImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  if (typeof createImageBitmap === "undefined") return file;
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) return file;
+  const maxSide = 1600;
+  const ratio = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * ratio));
+  const h = Math.max(1, Math.round(bitmap.height * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  if (!blob) return file;
+  if (blob.size >= file.size && file.size < 1_500_000) return file;
+  return new File([blob], `kyc-${Date.now()}.jpg`, { type: "image/jpeg" });
 }
 
 function StatusPill({ status }: { status: StepStatus }) {
@@ -460,9 +486,8 @@ function SelfieStep({
           </div>
         )}
         <input
-          ref={inputRef} type="file" accept="image/*"
-          {...(isVendor ? {} : { capture: "user" as any })}
-          className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*"
+          className="hidden" onChange={(e) => { onPick(e.target.files?.[0] ?? null); e.currentTarget.value = ""; }}
         />
       </div>
 
@@ -622,8 +647,8 @@ function UploadTile({
           </div>
         )}
         <input
-          ref={ref} type="file" accept="image/*" capture="environment"
-          className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          ref={ref} type="file" accept="image/jpeg,image/png,image/webp,image/*"
+          className="hidden" onChange={(e) => { onPick(e.target.files?.[0] ?? null); e.currentTarget.value = ""; }}
         />
       </div>
     </div>

@@ -13,6 +13,8 @@ const MUTE_KEY = "ko-tts-muted";
  * Slide 2: full Karo Online splash with logo + store badges (2.0s)
  * Plays single Hindi greeting once (mute toggle in top-right).
  * Then calls onDone() — caller routes to /register or /quick.
+ * Safety: never block app launch forever; a visible CTA + auto-finish fallback
+ * prevents the "stuck on loading/location image" issue on slow devices.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useState(0);
@@ -65,6 +67,13 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
     }
   }, [idx]);
 
+  useEffect(() => {
+    // Hard fail-safe: even if an image/animation/audio API misbehaves, launch.
+    const t = setTimeout(() => finish(), 6200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const finish = () => {
     try { sessionStorage.setItem(SPLASH_SESSION_KEY, "1"); } catch { /* */ }
     try { window.speechSynthesis?.cancel(); } catch { /* */ }
@@ -92,6 +101,13 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
         {muted
           ? <VolumeX className="h-5 w-5 text-[#8b6508]" />
           : <Volume2 className="h-5 w-5 text-[#8b6508]" />}
+      </button>
+
+      <button
+        onClick={finish}
+        className="absolute top-4 left-4 z-20 rounded-full bg-white/85 border border-[#d4af37]/40 px-3 py-2 text-[11px] font-bold text-[#8b6508] shadow-md active:scale-95"
+      >
+        Skip
       </button>
 
       {/* Responsive stage: phone-shaped frame on tablet/laptop so the full
@@ -129,36 +145,24 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* CTA on slide 2 — invisible overlay on top of the in-image button
-            on mobile (where image is object-cover and CTA sits at bottom-20),
-            PLUS a visible fallback button so it always works on laptop/tablet. */}
+        {/* CTA on slide 2 — always visible. Earlier mobile used an invisible
+            overlay, which made users think the app was still loading. */}
         <AnimatePresence>
           {idx === 1 && (
-            <>
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.2, duration: 0.25 }}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.25, duration: 0.3 }}
+              className="absolute bottom-10 left-0 right-0 z-20 flex justify-center px-6"
+            >
+              <button
                 onClick={finish}
-                aria-label="Karo Online — Continue"
-                className="sm:hidden absolute bottom-20 left-7 right-7 h-16 rounded-full bg-transparent text-transparent outline-none"
-              />
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.25, duration: 0.3 }}
-                className="hidden sm:flex absolute bottom-10 left-0 right-0 justify-center px-6"
+                className="h-14 w-full max-w-xs rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-white font-bold text-base shadow-xl hover:scale-[1.02] active:scale-95 transition"
               >
-                <button
-                  onClick={finish}
-                  className="h-14 px-10 rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-white font-bold text-base shadow-xl hover:scale-[1.02] active:scale-95 transition"
-                >
-                  Karo Online — Continue
-                </button>
-              </motion.div>
-            </>
+                Karo Online — Continue
+              </button>
+            </motion.div>
           )}
         </AnimatePresence>
 

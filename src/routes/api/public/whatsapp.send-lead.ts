@@ -173,9 +173,23 @@ export const Route = createFileRoute("/api/public/whatsapp/send-lead")({
           return Response.json({ ok: false, error: "invalid_body" }, { status: 400 });
         }
 
+        // Server-side FCM fallback: the DB trigger already calls this WhatsApp
+        // hook after every broadcast batch. Send push from here too so vendor
+        // bells do not depend on the customer's browser staying open.
+        let pushSent = 0;
+        try {
+          const { sendLeadPushToVendorInternal } = await import("@/lib/push.functions");
+          for (const vendorId of body.vendor_ids) {
+            const r = await sendLeadPushToVendorInternal({ vendor_id: vendorId, lead_id: body.lead_id });
+            if ((r as any)?.ok) pushSent += 1;
+          }
+        } catch (e) {
+          console.warn("[lead-push] server fallback failed", e);
+        }
+
         const provider = await loadActiveMetaProvider();
         if (!provider || !provider.access_token || !provider.phone_number_id) {
-          return Response.json({ ok: true, skipped: "meta_not_configured" });
+          return Response.json({ ok: true, pushSent, skipped: "meta_not_configured" });
         }
 
         const templateName =
@@ -220,6 +234,7 @@ export const Route = createFileRoute("/api/public/whatsapp/send-lead")({
 
         return Response.json({
           ok: true,
+          pushSent,
           sent,
           total: vendors.length,
           template: templateName,
