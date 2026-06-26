@@ -249,6 +249,7 @@ export async function pushToUser(opts: {
       device_token: tk,
       provider: "fcm",
       channel: "push",
+      campaign_id: opts.campaignId ?? null,
       status: r.ok ? "delivered" : "failed",
       error: r.ok ? null : (r.error ?? `http_${r.status}`).slice(0, 500),
       payload: {
