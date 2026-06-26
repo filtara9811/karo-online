@@ -43,27 +43,67 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.BUBBLEWRAP_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.BUBBLEWRAP_KEY_PASSWORD }}
+          BUBBLEWRAP_KEYSTORE_BASE64: ${{ secrets.BUBBLEWRAP_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          BUBBLEWRAP_KEY_ALIAS: ${{ secrets.BUBBLEWRAP_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.BUBBLEWRAP_KEY_PASSWORD }}
         run: |
           set -euo pipefail
+
+          decode_base64_secret() {
+            local value="$1"
+            local output="$2"
+            local label="$3"
+
+            if printf '%s' "$value" | base64 --decode > "$output" 2>/tmp/${label}-base64.err; then
+              return 0
+            fi
+
+            if printf '%s' "$value" | tr -d '\r\n\t ' | base64 --decode > "$output" 2>/tmp/${label}-base64-stripped.err; then
+              return 0
+            fi
+
+            rm -f "$output"
+            echo "::error::${label} is present but could not be base64-decoded. Please recreate it from the original file with: base64 -w 0 <file>"
+            exit 1
+          }
 
           if [ -z "${GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
             echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret missing. Firebase Console से Android app app.karoonline.twa का google-services.json base64 करके add करें."
             exit 1
           fi
-          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
+          mkdir -p android/app
+          decode_base64_secret "$GOOGLE_SERVICES_JSON_BASE64" android/app/google-services.json google-services-json
           echo "✅ google-services.json ready"
 
-          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
-            echo "::error::ANDROID_KEYSTORE_BASE64 secret missing. Play Store upload keystore/JKS का base64 add करें."
+          KEYSTORE_BASE64="${ANDROID_KEYSTORE_BASE64:-}"
+          KEYSTORE_SOURCE="ANDROID_KEYSTORE_BASE64"
+          if [ -z "$KEYSTORE_BASE64" ] && [ -n "${BUBBLEWRAP_KEYSTORE_BASE64:-}" ]; then
+            KEYSTORE_BASE64="$BUBBLEWRAP_KEYSTORE_BASE64"
+            KEYSTORE_SOURCE="BUBBLEWRAP_KEYSTORE_BASE64"
+          fi
+
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Keystore base64 secret missing. Add ANDROID_KEYSTORE_BASE64 (preferred) or BUBBLEWRAP_KEYSTORE_BASE64. It must be the base64 of your .jks/.keystore file."
             exit 1
           fi
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+
+          decode_base64_secret "$KEYSTORE_BASE64" android/upload-keystore.jks upload-keystore-jks
+          if [ ! -s android/upload-keystore.jks ]; then
+            echo "::error::Decoded keystore is empty at android/upload-keystore.jks. Please re-upload the keystore base64 secret."
+            exit 1
+          fi
+          echo "✅ upload keystore decoded from $KEYSTORE_SOURCE to android/upload-keystore.jks"
+
+          ANDROID_KEYSTORE_PASSWORD="${ANDROID_KEYSTORE_PASSWORD:-${BUBBLEWRAP_KEYSTORE_PASSWORD:-}}"
+          ANDROID_KEY_ALIAS="${ANDROID_KEY_ALIAS:-${BUBBLEWRAP_KEY_ALIAS:-}}"
+          ANDROID_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${BUBBLEWRAP_KEY_PASSWORD:-}}"
 
           if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
-            echo "::error::ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD secrets required."
+            echo "::error::Signing secrets required. Add ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (or matching BUBBLEWRAP_* fallback names)."
             exit 1
           fi
 
