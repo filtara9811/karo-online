@@ -508,8 +508,14 @@ function CampaignEditor({
                 {previewing ? "Counting..." : "Preview Count"}
               </button>
               {previewCount !== null && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 font-bold">
-                  <Users className="h-3.5 w-3.5" /> {previewCount} users match
+                <div className="flex flex-col items-end text-[11px] text-emerald-300 font-bold">
+                  <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {previewCount} users total</div>
+                  {previewBreak && (
+                    <div className="text-[9px] text-[#f5d97a]/70 font-normal mt-0.5">
+                      filter: {previewBreak.filter} · manual: {previewBreak.manual}
+                      {previewBreak.unmatched > 0 ? ` · unmatched: ${previewBreak.unmatched}` : ""}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
