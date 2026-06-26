@@ -372,10 +372,12 @@ android {`);
   gradle = gradle.replace(/versionName\s+"[^"]*"/g, `versionName "${versionName}"`);
   console.log(`📦 Android versionCode=${versionCode} versionName=${versionName}`);
 
-  if (!gradle.includes("signingConfig signingConfigs.release")) {
-    gradle = gradle.replace(/release\s*\{/, `release {
+  // Inject signingConfig ONLY into buildTypes.release (not signingConfigs.release).
+  if (!/buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?signingConfig\s+signingConfigs\.release/.test(gradle)) {
+    gradle = gradle.replace(/(buildTypes\s*\{\s*release\s*\{)/, `$1
             signingConfig signingConfigs.release`);
   }
+
   write(buildGradlePath, gradle);
 }
 
