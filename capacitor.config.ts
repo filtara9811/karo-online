@@ -3,7 +3,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "app.karoonline.twa",
   appName: "Karo Online",
-  webDir: "dist",
+  webDir: ".output/public",
   // Bundle assets; for live-reload during dev, set CAP_SERVER_URL env and run cap sync.
   server: process.env.CAP_SERVER_URL
     ? { url: process.env.CAP_SERVER_URL, cleartext: true, androidScheme: "https" }
