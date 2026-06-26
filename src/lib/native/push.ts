@@ -53,7 +53,7 @@ export async function initNativePush(): Promise<void> {
 
     PushNotifications.addListener("pushNotificationReceived", (notification) => {
       const data: any = notification.data ?? {};
-      if (data.kind === "lead_alert" || data.kind === "new_lead") {
+      if (data.kind === "lead_alert" || data.kind === "new_lead" || data.kind === "direct_test") {
         playLeadAlert("quick", { continuous: true });
         speakHindi("Aashu bhai, aapko ek lead receive hui hai. Kripya jaldi dekhein.", {
           dedupKey: `native-lead:${data.lead_id ?? Date.now()}`,
