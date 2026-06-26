@@ -424,11 +424,13 @@ function CampaignEditor({
       .map((s: string) => s.trim())
       .filter(Boolean);
 
+  const [previewBreak, setPreviewBreak] = useState<{ filter: number; manual: number; unmatched: number } | null>(null);
   const preview = async () => {
     setPreviewing(true);
     try {
-      const r: any = await fnPreview({ data: { filter: cleanFilter(c.audience_filter) } });
+      const r: any = await fnPreview({ data: { filter: cleanFilter(c.audience_filter), manual_targets: parseManual() } });
       setPreviewCount(r?.total ?? 0);
+      setPreviewBreak({ filter: r?.filter_count ?? 0, manual: r?.manual_count ?? 0, unmatched: r?.manual_unmatched ?? 0 });
     } catch (e: any) { toast.error(e?.message ?? "Preview failed"); }
     setPreviewing(false);
   };
@@ -506,8 +508,14 @@ function CampaignEditor({
                 {previewing ? "Counting..." : "Preview Count"}
               </button>
               {previewCount !== null && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 font-bold">
-                  <Users className="h-3.5 w-3.5" /> {previewCount} users match
+                <div className="flex flex-col items-end text-[11px] text-emerald-300 font-bold">
+                  <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {previewCount} users total</div>
+                  {previewBreak && (
+                    <div className="text-[9px] text-[#f5d97a]/70 font-normal mt-0.5">
+                      filter: {previewBreak.filter} · manual: {previewBreak.manual}
+                      {previewBreak.unmatched > 0 ? ` · unmatched: ${previewBreak.unmatched}` : ""}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

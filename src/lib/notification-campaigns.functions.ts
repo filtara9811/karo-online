@@ -14,17 +14,52 @@ async function assertAdmin(ctx: any) {
   if (!ok) throw new Response("forbidden", { status: 403 });
 }
 
-/** Preview the audience size + sample list for a filter. */
+/** Resolve manual targets (UUIDs or 10-digit phones) → user_ids. */
+async function resolveManualTargets(supabaseAdmin: any, raw: string[]): Promise<string[]> {
+  const ids = new Set<string>();
+  const phones: string[] = [];
+  for (const t of raw) {
+    const s = String(t || "").trim();
+    if (!s) continue;
+    if (/^[0-9a-fA-F-]{36}$/.test(s)) { ids.add(s); continue; }
+    const digits = s.replace(/\D/g, "").slice(-10);
+    if (digits.length === 10) phones.push(digits);
+  }
+  if (phones.length) {
+    const [{ data: cs }, { data: vs }] = await Promise.all([
+      supabaseAdmin.from("customers").select("user_id").in("phone", phones),
+      supabaseAdmin.from("vendors").select("user_id").in("whatsapp", phones),
+    ]);
+    for (const r of (cs ?? []) as any[]) if (r.user_id) ids.add(r.user_id);
+    for (const r of (vs ?? []) as any[]) if (r.user_id) ids.add(r.user_id);
+  }
+  return Array.from(ids);
+}
+
+/** Preview the audience size + sample list for a filter + manual targets. */
 export const previewAudience = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ filter: FilterSchema }).parse(d))
+  .inputValidator((d: unknown) => z.object({
+    filter: FilterSchema,
+    manual_targets: z.array(z.string()).default([]),
+  }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin.rpc("admin_segment_audience", { _filter: data.filter as any });
     if (error) return { ok: false as const, error: error.message };
     const list = (rows ?? []) as Array<{ user_id: string; display_name: string; phone: string | null; role: string }>;
-    return { ok: true as const, total: list.length, sample: list.slice(0, 20) };
+    const manualIds = await resolveManualTargets(supabaseAdmin, data.manual_targets ?? []);
+    const merged = new Set<string>(list.map((u) => u.user_id));
+    for (const id of manualIds) merged.add(id);
+    return {
+      ok: true as const,
+      total: merged.size,
+      filter_count: list.length,
+      manual_count: manualIds.length,
+      manual_unmatched: (data.manual_targets ?? []).length - manualIds.length,
+      sample: list.slice(0, 20),
+    };
   });
 
 /** List campaigns (most recent first). */
@@ -116,9 +151,14 @@ export const sendCampaignNow = createServerFn({ method: "POST" })
     const { data: c } = await supabaseAdmin.from("notification_campaigns" as any).select("*").eq("id", data.id).maybeSingle();
     if (!c) return { ok: false as const, error: "campaign_not_found" };
 
-    const { data: users, error: userErr } = await supabaseAdmin.rpc("admin_resolve_campaign_users", { _campaign_id: data.id });
-    if (userErr) return { ok: false as const, error: userErr.message };
-    const ids = ((users ?? []) as Array<{ user_id: string }>).map((u) => u.user_id).filter(Boolean);
+    const filter = (c as any).audience_filter ?? { role: "all", kyc_status: "any", active: "any" };
+    const { data: segRows, error: segErr } = await supabaseAdmin.rpc("admin_segment_audience", { _filter: filter });
+    if (segErr) return { ok: false as const, error: segErr.message };
+    const merged = new Set<string>(((segRows ?? []) as any[]).map((u) => u.user_id).filter(Boolean));
+    const manual = Array.isArray((c as any).manual_targets) ? (c as any).manual_targets as string[] : [];
+    const manualIds = await resolveManualTargets(supabaseAdmin, manual);
+    for (const id of manualIds) merged.add(id);
+    const ids = Array.from(merged);
     if (ids.length === 0) return { ok: false as const, error: "no_recipients" };
 
     await supabaseAdmin.from("notification_campaigns" as any).update({ status: "sending" }).eq("id", data.id);
