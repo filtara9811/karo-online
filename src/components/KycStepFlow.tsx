@@ -327,6 +327,7 @@ async function uploadFile(userId: string, checkType: StepKey, file: File): Promi
 
 async function prepareKycImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
+  if (typeof createImageBitmap === "undefined") return file;
   const bitmap = await createImageBitmap(file).catch(() => null);
   if (!bitmap) return file;
   const maxSide = 1600;
