@@ -54,14 +54,10 @@ async function sendOne(opts: {
   const isHigh = !!opts.highPriority;
   const message: any = {
     token: opts.token,
-    notification: {
-      title: opts.title,
-      body: opts.body,
-      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
-    },
     android: {
       priority: isHigh ? "HIGH" : "NORMAL",
-      notification: {
+      ttl: isHigh ? "60s" : "3600s",
+      ...(isHigh ? {} : { notification: {
         channel_id: isHigh ? "lead_alerts_v2" : "default",
         sound: isHigh ? "lead_ring" : "default",
         notification_priority: isHigh ? "PRIORITY_MAX" : "PRIORITY_DEFAULT",
@@ -69,7 +65,7 @@ async function sendOne(opts: {
         default_light_settings: true,
         visibility: "PUBLIC",
         ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
-      },
+      } }),
     },
     apns: {
       headers: { "apns-priority": isHigh ? "10" : "5" },
@@ -88,6 +84,8 @@ async function sendOne(opts: {
       headers: { Urgency: isHigh ? "high" : "normal", TTL: isHigh ? "60" : "3600" },
       fcm_options: { link: opts.actionUrl || "/" },
       notification: {
+        title: opts.title,
+        body: opts.body,
         requireInteraction: isHigh,
         renotify: true,
         silent: false,
@@ -97,12 +95,21 @@ async function sendOne(opts: {
       },
     },
     data: {
+      title: opts.title,
+      body: opts.body,
       ...(opts.actionUrl ? { action_url: opts.actionUrl } : {}),
       ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
       ...(opts.iconUrl ? { icon: opts.iconUrl } : {}),
       ...(opts.extraData ?? {}),
     },
   };
+  if (!isHigh) {
+    message.notification = {
+      title: opts.title,
+      body: opts.body,
+      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+    };
+  }
   const r = await fetch(
     `https://fcm.googleapis.com/v1/projects/${opts.projectId}/messages:send`,
     {
@@ -136,14 +143,14 @@ export const sendTestPush = createServerFn({ method: "POST" })
     const [{ data: trig }, { data: fcm }, { data: tokens }] = await Promise.all([
       supabaseAdmin.from("notification_triggers").select("*").eq("id", data.trigger_id).maybeSingle(),
       supabaseAdmin.from("firebase_services").select("project_id, service_account_json").eq("service_key", "fcm").maybeSingle(),
-      supabaseAdmin.from("device_tokens").select("token").eq("user_id", targetUser).eq("is_active", true),
+      supabaseAdmin.from("device_tokens").select("token, platform").eq("user_id", targetUser).eq("is_active", true),
     ]);
 
     if (!trig) return { ok: false, reason: "trigger_not_found" as const };
     if (!fcm?.project_id || !fcm?.service_account_json) {
       return { ok: false, reason: "fcm_not_configured" as const };
     }
-    const list = (tokens ?? []).map((t: any) => t.token).filter(Boolean);
+    const list = (tokens ?? []).map((t: any) => ({ token: t.token as string, platform: String(t.platform ?? "unknown") })).filter((t) => t.token);
     if (list.length === 0) return { ok: false, reason: "no_device_tokens" as const, hint: "Open the app and Allow notifications first." };
 
     let sa: ServiceAccount;
@@ -162,39 +169,45 @@ export const sendTestPush = createServerFn({ method: "POST" })
       return { ok: false, reason: "oauth_failed" as const, error: String(e?.message ?? e) };
     }
 
-    const results: Array<{ ok: boolean; status: number; error?: string; token: string }> = [];
+    const results: Array<{ ok: boolean; status: number; error?: string; token: string; platform: string }> = [];
     for (const tk of list) {
       const r = await sendOne({
         projectId: fcm.project_id,
         accessToken,
-        token: tk,
+        token: tk.token,
         title: trig.title,
         body: trig.body,
         imageUrl: trig.image_url,
         actionUrl: trig.action_url,
+        highPriority: true,
+        extraData: { kind: "direct_test" },
       });
-      results.push({ ...r, token: tk });
+      results.push({ ...r, token: tk.token, platform: tk.platform });
       await supabaseAdmin.from("notification_logs").insert({
         trigger_id: data.trigger_id,
         user_id: targetUser,
-        device_token: tk,
+        device_token: tk.token,
         provider: "fcm",
         channel: "push",
         status: r.ok ? "delivered" : "failed",
         error: r.ok ? null : r.error?.slice(0, 500),
-        payload: { title: trig.title, body: trig.body, test: true },
+        payload: { title: trig.title, body: trig.body, test: true, kind: "direct_test" },
       } as any);
 
       // Auto-deactivate dead tokens
       if (!r.ok && (r.status === 404 || r.status === 400)) {
-        await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk);
+        await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk.token);
       }
     }
 
     await supabaseAdmin.from("notification_triggers").update({ last_fired_at: new Date().toISOString() }).eq("id", data.trigger_id);
 
     const okCount = results.filter((r) => r.ok).length;
-    return { ok: okCount > 0, sent: okCount, failed: results.length - okCount, results };
+    const platformCounts = results.reduce<Record<string, number>>((acc, r) => {
+      if (r.ok) acc[r.platform] = (acc[r.platform] ?? 0) + 1;
+      return acc;
+    }, {});
+    return { ok: okCount > 0, sent: okCount, failed: results.length - okCount, platformCounts, results };
   });
 
 /** Fan-out a single push to all active device tokens of a user. */
@@ -211,10 +224,10 @@ export async function pushToUser(opts: {
 }) {
   const [{ data: fcm }, { data: tokens }] = await Promise.all([
     supabaseAdmin.from("firebase_services").select("project_id, service_account_json").eq("service_key", "fcm").maybeSingle(),
-    supabaseAdmin.from("device_tokens").select("token").eq("user_id", opts.userId).eq("is_active", true),
+    supabaseAdmin.from("device_tokens").select("token, platform").eq("user_id", opts.userId).eq("is_active", true),
   ]);
   if (!fcm?.project_id || !fcm?.service_account_json) return { ok: false, reason: "fcm_not_configured" as const };
-  const list = (tokens ?? []).map((t: any) => t.token).filter(Boolean);
+  const list = (tokens ?? []).map((t: any) => ({ token: t.token as string, platform: String(t.platform ?? "unknown") })).filter((t) => t.token);
   if (list.length === 0) return { ok: false, reason: "no_device_tokens" as const };
 
   let sa: ServiceAccount;
@@ -227,12 +240,12 @@ export async function pushToUser(opts: {
   catch (e: any) { return { ok: false, reason: "oauth_failed" as const, error: String(e?.message ?? e) }; }
 
   let okCount = 0;
-  const results: Array<{ token: string; ok: boolean; status: number; error?: string }> = [];
+  const results: Array<{ token: string; platform: string; ok: boolean; status: number; error?: string }> = [];
   for (const tk of list) {
     const r = await sendOne({
       projectId: fcm.project_id,
       accessToken,
-      token: tk,
+      token: tk.token,
       title: opts.title,
       body: opts.body,
       imageUrl: opts.imageUrl,
@@ -242,11 +255,11 @@ export async function pushToUser(opts: {
       extraData: opts.extraData,
     });
     if (r.ok) okCount += 1;
-    results.push({ token: tk, ...r });
+    results.push({ token: tk.token, platform: tk.platform, ...r });
     // Log every send attempt for observability so we can debug delivery issues.
     await supabaseAdmin.from("notification_logs").insert({
       user_id: opts.userId,
-      device_token: tk,
+      device_token: tk.token,
       provider: "fcm",
       channel: "push",
       campaign_id: opts.campaignId ?? null,
@@ -260,10 +273,14 @@ export async function pushToUser(opts: {
       },
     } as any).then(() => null, () => null);
     if (!r.ok && (r.status === 404 || r.status === 400)) {
-      await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk);
+      await supabaseAdmin.from("device_tokens").update({ is_active: false }).eq("token", tk.token);
     }
   }
-  return { ok: okCount > 0, sent: okCount, total: list.length, results };
+  const platformCounts = results.reduce<Record<string, number>>((acc, r) => {
+    if (r.ok) acc[r.platform] = (acc[r.platform] ?? 0) + 1;
+    return acc;
+  }, {});
+  return { ok: okCount > 0, sent: okCount, total: list.length, platformCounts, results };
 }
 
 export async function sendLeadPushToVendorInternal(data: { vendor_id: string; lead_id: string }) {

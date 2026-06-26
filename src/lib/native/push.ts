@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isNative } from "./platform";
+import { playLeadAlert } from "@/lib/lead-sound";
+import { speakHindi } from "@/lib/tts";
 
 let registered = false;
 
@@ -11,6 +13,19 @@ export async function initNativePush(): Promise<void> {
   if (!isNative() || registered) return;
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
+
+    try {
+      await (PushNotifications as any).createChannel?.({
+        id: "lead_alerts_v2",
+        name: "Lead Alerts",
+        description: "Urgent incoming lead alerts",
+        importance: 5,
+        visibility: 1,
+        sound: "lead_ring",
+        vibration: true,
+        lights: true,
+      });
+    } catch { /* channel creation is Android-only */ }
 
     const perm = await PushNotifications.checkPermissions();
     let status = perm.receive;
@@ -34,6 +49,25 @@ export async function initNativePush(): Promise<void> {
 
     PushNotifications.addListener("registrationError", (err) => {
       console.warn("[native push] registration error", err);
+    });
+
+    PushNotifications.addListener("pushNotificationReceived", (notification) => {
+      const data: any = notification.data ?? {};
+      if (data.kind === "lead_alert" || data.kind === "new_lead") {
+        playLeadAlert("quick", { continuous: true });
+        speakHindi("Aashu bhai, aapko ek lead receive hui hai. Kripya jaldi dekhein.", {
+          dedupKey: `native-lead:${data.lead_id ?? Date.now()}`,
+          ignoreMute: true,
+        });
+      }
+    });
+
+    PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
+      const data: any = event.notification?.data ?? {};
+      const leadId = data.lead_id;
+      if (leadId && event.actionId === "accept") window.location.href = `/vendor/dashboard?leadId=${leadId}&action=accept`;
+      else if (leadId && event.actionId === "reject") window.location.href = `/vendor/dashboard?leadId=${leadId}&action=reject`;
+      else if (data.action_url || data.url) window.location.href = data.action_url || data.url;
     });
 
     await PushNotifications.register();
