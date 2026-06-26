@@ -33,6 +33,11 @@ export function registerPwaServiceWorker() {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        // Ask for the newest worker on every launch so stale cached bundles do
+        // not leave users stuck on an old Loading screen.
+        reg.update().catch(() => undefined);
+      })
       .catch((err) => console.warn("[PWA] SW registration failed:", err));
   });
 }
