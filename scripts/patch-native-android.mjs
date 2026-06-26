@@ -299,29 +299,28 @@ if (fs.existsSync(manifestPath)) {
 
 // 6) Fullscreen Android theme; removes any ActionBar/browser-like chrome.
 const stylesPath = path.join(resDir, "values/styles.xml");
-if (fs.existsSync(stylesPath)) {
-  let styles = read(stylesPath);
-  const immersiveItems = `
-        <item name="windowNoTitle">true</item>
-        <item name="windowActionBar">false</item>
+write(stylesPath, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>`;
-  if (!styles.includes('name="AppTheme.NoActionBar"')) {
-    styles = styles.replace(/<\/resources>/, `
-    <style name="AppTheme.NoActionBar" parent="@style/AppTheme">${immersiveItems}
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
+
+    <style name="AppTheme.NoActionBar" parent="@style/AppTheme" />
 
     <style name="AppTheme.NoActionBarLaunch" parent="@style/AppTheme.NoActionBar">
         <item name="android:background">@drawable/splash</item>
     </style>
-</resources>`);
-  }
-  write(stylesPath, styles);
-}
+</resources>
+`);
 
 // 7) Gradle signing + release config.
 if (fs.existsSync(buildGradlePath)) {
