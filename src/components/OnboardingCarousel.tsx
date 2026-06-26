@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import slide1 from "@/assets/ko-onboard-1.png.asset.json";
 import slide2 from "@/assets/ko-onboard-2.png.asset.json";
 import slide3 from "@/assets/ko-onboard-3.png.asset.json";
