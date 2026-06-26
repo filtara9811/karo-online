@@ -198,7 +198,7 @@ export const sendTestPush = createServerFn({ method: "POST" })
   });
 
 /** Fan-out a single push to all active device tokens of a user. */
-async function pushToUser(opts: {
+export async function pushToUser(opts: {
   userId: string;
   title: string;
   body: string;
@@ -207,6 +207,7 @@ async function pushToUser(opts: {
   actionUrl?: string | null;
   highPriority?: boolean;
   extraData?: Record<string, string>;
+  campaignId?: string;
 }) {
   const [{ data: fcm }, { data: tokens }] = await Promise.all([
     supabaseAdmin.from("firebase_services").select("project_id, service_account_json").eq("service_key", "fcm").maybeSingle(),
@@ -248,6 +249,7 @@ async function pushToUser(opts: {
       device_token: tk,
       provider: "fcm",
       channel: "push",
+      campaign_id: opts.campaignId ?? null,
       status: r.ok ? "delivered" : "failed",
       error: r.ok ? null : (r.error ?? `http_${r.status}`).slice(0, 500),
       payload: {
