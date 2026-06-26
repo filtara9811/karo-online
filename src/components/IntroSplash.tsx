@@ -1,23 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
-import splash1 from "@/assets/splash-1.jpg";
-import splash2 from "@/assets/splash-2.png";
+import splashPin from "@/assets/ko-splash-pin.png.asset.json";
 
 export const SPLASH_SESSION_KEY = "ko-splash-seen-session";
 const MUTE_KEY = "ko-tts-muted";
 
 /**
- * Two-slide branded splash shown on cold app open.
- * Slide 1: location-pin hero (1.6s)
- * Slide 2: full Karo Online splash with logo + store badges (2.0s)
- * Plays single Hindi greeting once (mute toggle in top-right).
- * Then calls onDone() — caller routes to /register or /quick.
- * Safety: never block app launch forever; a visible CTA + auto-finish fallback
- * prevents the "stuck on loading/location image" issue on slow devices.
+ * Single-image branded splash using the golden Karo Online map-pin logo.
+ * Plays a Hindi greeting once (mute toggle top-right), shows a Skip button,
+ * and auto-finishes after ~2.4s. Safety auto-finish at 6.2s.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
-  const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return window.localStorage.getItem(MUTE_KEY) === "1"; } catch { return false; }
@@ -32,10 +26,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance("करो ऑनलाइन में आपका स्वागत है");
-      u.lang = "hi-IN";
-      u.rate = 0.95;
-      u.pitch = 1.05;
-      u.volume = 1;
+      u.lang = "hi-IN"; u.rate = 0.95; u.pitch = 1.05; u.volume = 1;
       const voices = window.speechSynthesis.getVoices();
       const hi = voices.find((v) => v.lang?.toLowerCase().startsWith("hi"));
       if (hi) u.voice = hi;
@@ -43,141 +34,71 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
     } catch { /* ignore */ }
   };
 
-  useEffect(() => {
-    // Try immediately; if the browser delays voices/audio, retry on first voice load or tap.
-    speak();
-    const t = setTimeout(speak, 50);
-    const onGesture = () => speak();
-    const onVoices = () => speak();
-    try { window.speechSynthesis?.addEventListener("voiceschanged", onVoices, { once: true }); } catch { /* */ }
-    window.addEventListener("pointerdown", onGesture, { once: true });
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("pointerdown", onGesture);
-      try { window.speechSynthesis?.removeEventListener("voiceschanged", onVoices); } catch { /* */ }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Slide 1 → 2 at 1.6s. Slide 2 waits for the "Karo Online" CTA tap.
-    if (idx === 0) {
-      const t = setTimeout(() => setIdx(1), 1600);
-      return () => clearTimeout(t);
-    }
-  }, [idx]);
-
-  useEffect(() => {
-    // Hard fail-safe: even if an image/animation/audio API misbehaves, launch.
-    const t = setTimeout(() => finish(), 6200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const finish = () => {
     try { sessionStorage.setItem(SPLASH_SESSION_KEY, "1"); } catch { /* */ }
     try { window.speechSynthesis?.cancel(); } catch { /* */ }
     onDone();
   };
 
+  useEffect(() => {
+    speak();
+    const t1 = setTimeout(speak, 50);
+    const onGesture = () => speak();
+    try { window.speechSynthesis?.addEventListener("voiceschanged", speak, { once: true }); } catch { /* */ }
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    const auto = setTimeout(finish, 2400);
+    const safety = setTimeout(finish, 6200);
+    return () => {
+      clearTimeout(t1); clearTimeout(auto); clearTimeout(safety);
+      window.removeEventListener("pointerdown", onGesture);
+      try { window.speechSynthesis?.removeEventListener("voiceschanged", speak); } catch { /* */ }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleMute = () => {
     setMuted((m) => {
       const next = !m;
       try { localStorage.setItem(MUTE_KEY, next ? "1" : "0"); } catch {}
-      if (next) {
-        try { window.speechSynthesis?.cancel(); } catch {}
-      }
+      if (next) { try { window.speechSynthesis?.cancel(); } catch {} }
       return next;
     });
   };
 
   return (
-    <div className="fixed inset-0 z-[90] overflow-hidden bg-[#fdf6e0] flex items-center justify-center">
+    <div className="fixed inset-0 z-[90] overflow-hidden bg-[#fdf4d4] flex items-center justify-center">
+      <img
+        src={splashPin.url}
+        alt="Karo Online"
+        className="absolute inset-0 w-full h-full object-cover"
+        draggable={false}
+      />
+
       <button
         onClick={toggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="absolute top-4 right-4 z-20 h-10 w-10 grid place-items-center rounded-full bg-white/80 border border-[#d4af37]/40 shadow-md backdrop-blur-sm active:scale-90 transition"
+        className="absolute top-4 right-4 z-20 h-10 w-10 grid place-items-center rounded-full bg-white/90 border border-[#d4af37]/40 shadow-md backdrop-blur-sm active:scale-90"
       >
-        {muted
-          ? <VolumeX className="h-5 w-5 text-[#8b6508]" />
-          : <Volume2 className="h-5 w-5 text-[#8b6508]" />}
+        {muted ? <VolumeX className="h-5 w-5 text-[#8b6508]" /> : <Volume2 className="h-5 w-5 text-[#8b6508]" />}
       </button>
 
       <button
         onClick={finish}
-        className="absolute top-4 left-4 z-20 rounded-full bg-white/85 border border-[#d4af37]/40 px-3 py-2 text-[11px] font-bold text-[#8b6508] shadow-md active:scale-95"
+        className="absolute top-4 left-4 z-20 rounded-full bg-white/90 border border-[#d4af37]/40 px-3 py-2 text-[11px] font-bold text-[#8b6508] shadow-md active:scale-95"
       >
         Skip
       </button>
 
-      {/* Responsive stage: phone-shaped frame on tablet/laptop so the full
-          splash (including the in-image CTA) is visible without scrolling.
-          On mobile it fills the viewport. */}
-      <div
-        className="relative w-full h-full sm:h-[min(100vh,900px)] sm:w-[min(100vw,460px)] sm:rounded-[2rem] sm:shadow-2xl sm:overflow-hidden"
-        style={{ aspectRatio: "auto" }}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0"
-          >
-            <img
-              src={idx === 0 ? splash1 : splash2}
-              alt="Karo Online"
-              className="w-full h-full object-cover sm:object-contain"
-              draggable={false}
-            />
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.6, 0] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(circle at 50% 42%, rgba(255,243,200,0.55) 0%, transparent 45%)",
-              }}
-            />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* CTA on slide 2 — always visible. Earlier mobile used an invisible
-            overlay, which made users think the app was still loading. */}
-        <AnimatePresence>
-          {idx === 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ delay: 0.25, duration: 0.3 }}
-              className="absolute bottom-10 left-0 right-0 z-20 flex justify-center px-6"
-            >
-              <button
-                onClick={finish}
-                className="h-14 w-full max-w-xs rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-white font-bold text-base shadow-xl hover:scale-[1.02] active:scale-95 transition"
-              >
-                Karo Online — Continue
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* progress dots */}
-        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 z-10">
-          {[0, 1].map((i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                i === idx ? "w-8 bg-[#8b6508]" : "w-1.5 bg-[#8b6508]/30"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.55, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 45%, rgba(255,243,200,0.55) 0%, transparent 50%)",
+        }}
+      />
     </div>
   );
 }
