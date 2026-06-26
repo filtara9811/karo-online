@@ -1,165 +1,117 @@
-# AI Voice + WhatsApp Interactive Lead Broadcast — Plan
+# Phase 1 + Phase 2: Capacitor Native + Realtime
 
-यह plan हमारे existing **Ring-by-Ring Radar Broadcast** के ऊपर एक नया **Multi-Channel Delivery Layer** add करेगा: Push (existing) + WhatsApp Interactive + AI Voice Call (DialNexa)।
+दोनों phase एक साथ करेंगे, बिना bugs के। हर step के बाद test।
 
----
+## Phase 2 — Capacitor Native Wrap
 
-## 🎯 Goal
-
-जब lead broadcast हो — vendor को एक साथ 3 channels पर pingआए:
-1. **App Push** (already done 🟢)
-2. **WhatsApp Interactive** (Accept/Reject buttons + image) 🆕
-3. **AI Voice Call** via DialNexa (announce → ask → capture reason) 🆕
-
-Vendor कहीं भी (कोई भी channel पर) Accept दबा दे — एक ही `accept_lead` RPC trigger हो, बाकी channels auto-cancel हो जाएँ।
-
----
-
-## 1. Database Changes (Migration)
-
-### 1a. New table: `communication_settings` (singleton config)
-- `whatsapp_provider` (enum: `meta_cloud` | `gupshup` | `twilio`)
-- `whatsapp_phone_number_id`, `whatsapp_token` (secret ref)
-- `whatsapp_template_name`, `whatsapp_template_lang`
-- `dialnexa_api_url`, `dialnexa_api_key` (secret ref)
-- `dialnexa_agent_id`, `dialnexa_caller_id`
-- `voice_enabled_globally` (bool)
-- `whatsapp_enabled_globally` (bool)
-
-### 1b. `catalog_groups` ko extend
-- `voice_agent_enabled` (bool, default false) — per-group voice toggle (Plumbers ON, others OFF)
-- `whatsapp_enabled` (bool, default true)
-
-### 1c. New table: `voice_call_logs`
-- `lead_id`, `vendor_id`, `dialnexa_call_id`
-- `status` (queued/ringing/answered/no_answer/failed/completed)
-- `outcome` (accepted/rejected/no_response)
-- `rejection_reason` (text — captured by AI)
-- `transcript` (jsonb)
-- `duration_sec`, `started_at`, `ended_at`
-
-### 1d. New table: `whatsapp_message_logs`
-- `lead_id`, `vendor_id`, `wa_message_id`
-- `status` (sent/delivered/read/replied/failed)
-- `button_clicked` (accept/reject/null)
-- `clicked_at`
-- `error_payload` (jsonb)
-
-### 1e. Trigger update: `lead_broadcast_dispatch`
-मौजूदा broadcast trigger के अंदर, push notification के साथ-साथ दो नए jobs queue करे:
-- `pg_net` HTTP POST → `/api/public/whatsapp/send-lead`
-- `pg_net` HTTP POST → `/api/public/dialnexa/initiate-call`
-
-(Per-group toggle check पहले।)
-
----
-
-## 2. Backend — Server Routes (TanStack)
-
-सभी public callbacks `src/routes/api/public/*` के नीचे, HMAC signature verify करके।
-
-### 2a. `POST /api/public/whatsapp/send-lead`
-Internal cron/trigger से call। Lead + vendor lookup → WhatsApp template message भेजे:
-- Header: lead image (media)
-- Body: "नया लीड: {category} • {city} • ₹{budget}"
-- Buttons: `Accept_lead_{lead_id}`, `Reject_lead_{lead_id}` (quick-reply buttons)
-
-### 2b. `POST /api/public/whatsapp/webhook`
-Meta/Gupshup से inbound callback। Button click पर:
-- `button_clicked = accept` → call `accept_lead(lead_id, vendor_id)` RPC
-- `button_clicked = reject` → call `reject_lead(...)` और follow-up WA message भेजे: "कृपया reason बताएं: 1.Busy 2.Out of area 3.Price low" (list message)
-- Log सब कुछ `whatsapp_message_logs` में
-
-### 2c. `POST /api/public/dialnexa/initiate-call`
-Internal trigger से। DialNexa API call:
+### 1. Install & Init
 ```
-POST {dialnexa_api_url}/calls/initiate
-{
-  agent_id, to: vendor.phone, caller_id,
-  metadata: { lead_id, vendor_id, category, city, budget },
-  webhook_url: ".../api/public/dialnexa/callback"
-}
+bun add @capacitor/core @capacitor/cli @capacitor/android
+bun add @capacitor/status-bar @capacitor/splash-screen @capacitor/app
+bun add @capacitor/push-notifications @capacitor/geolocation
+bun add @capacitor/network @capacitor/preferences @capacitor/share
 ```
 
-### 2d. `POST /api/public/dialnexa/callback`
-DialNexa से events (call_started, call_ended, intent_captured):
-- intent=`accept` → `accept_lead` RPC
-- intent=`reject` → `reject_lead` RPC + `rejection_reason` save
-- Update `voice_call_logs`
-- Push transcript
+### 2. `capacitor.config.ts` (root)
+- `appId: app.karoonline.twa` (existing TWA package — reuse)
+- `appName: Karo Online`
+- `webDir: dist`
+- `server.androidScheme: https`
+- `server.url`: production `https://karoonline.in` (live reload off — bundled assets)
+- **Android Immersive Mode**: `android.overrideUserAgent`, plus custom `MainActivity` flag via plugin config
+- **StatusBar plugin**: `style: DARK`, `backgroundColor: #000000`, `overlaysWebView: true`
+- **SplashScreen**: 2s, `backgroundColor: #0a0606`, gold logo
+- **PushNotifications**: enabled
 
-### 2e. Race condition handling
-`accept_lead` RPC पहले से idempotent है (unique vendor per lead)। पहला channel win, बाकी पर "Already accepted" message भेजे और pending call cancel हो (DialNexa `cancel_call` API)।
+### 3. Native helpers (`src/lib/native/`)
+- `platform.ts` — `isNative()`, `isAndroid()` via `Capacitor.getPlatform()`
+- `status-bar.ts` — dynamic color per route (dark hero = transparent overlay, light pages = white bg)
+- `immersive.ts` — apply sticky-immersive on app resume so Chrome bar never reappears
+- `push.ts` — register FCM via `PushNotifications` plugin (replaces web FCM token on native), upsert to `device_tokens` with `platform: 'android'`
 
----
+### 4. Wire-up in `__root.tsx`
+- On mount: if native → call `StatusBar.setOverlaysWebView`, hide splash after first paint, register push
+- Existing web FCM hook stays for browser users (skip when `isNative()`)
 
-## 3. Admin Panel — Communication Settings
+### 5. Android project
+- `npx cap add android`
+- `MainActivity.java`: add `WindowCompat.setDecorFitsSystemWindows(false)` + immersive flags
+- `AndroidManifest.xml`: `android:windowSoftInputMode="adjustResize"`, FCM service, notification permission
+- `google-services.json` placeholder (user uploads when building APK)
 
-### Route: `/admin/communication`
-3 tabs:
+### 6. Build script
+- `bun run build && npx cap sync android` → APK build via `cd android && ./gradlew assembleRelease`
+- Document in `PLAYSTORE_DEPLOY.md`
 
-**Tab 1 — WhatsApp**
-- Provider select + API credentials inputs (save → `add_secret` tool flow)
-- Template name/language
-- "Send Test Message" button
-- Status indicator (last delivery success rate)
+## Phase 1 — Supabase Realtime
 
-**Tab 2 — AI Voice (DialNexa)**
-- API URL, API Key, Agent ID, Caller ID
-- Global ON/OFF toggle
-- Per-group toggle table:
-  ```
-  Group           | Voice | WhatsApp
-  Plumbers        | [✓]   | [✓]
-  Electricians    | [ ]   | [✓]
-  ...
-  ```
-- "Test Call" button (admin का number डालके verify)
-
-**Tab 3 — Voice Log (Report)**
-Table view:
+### 7. Migration: enable realtime on key tables
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE
+  public.leads,
+  public.lead_messages,
+  public.lead_notifications,
+  public.catalog_groups,
+  public.catalog_items,
+  public.vendor_item_mappings;
 ```
-Time | Lead | Vendor | Called | Duration | Outcome | Reason | Transcript
+
+### 8. Realtime hooks (`src/hooks/realtime/`)
+- `use-leads-realtime.ts` — vendor inbox auto-refresh on new lead row matching vendor's groups
+- `use-lead-thread-realtime.ts` — chat messages live
+- `use-catalog-realtime.ts` — admin catalog edits push to customer subcategory grid
+
+Pattern (RLS-respected, cleanup in `useEffect` return):
+```ts
+const ch = supabase.channel(`leads-${vendorId}`)
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' },
+      () => queryClient.invalidateQueries({ queryKey: ['vendor-leads'] }))
+  .subscribe();
+return () => { supabase.removeChannel(ch); };
 ```
-Filters: date range, group, outcome। CSV export।
+
+### 9. Integration points
+- `VendorLeadInbox` → `useLeadsRealtime(vendorId)`
+- `LeadChatThread` → `useLeadThreadRealtime(leadId)`
+- Customer `subcategories` page → `useCatalogRealtime(groupId)`
+
+## Auto-Logout Verification
+पिछली turn में fix लगाया था; इस turn में दोबारा regression test करूँगा (sign-in → refresh → ensure no auto-logout)।
+
+## Google Cloud IAM Steps (आप करेंगे)
+
+FCM `403 Forbidden` fix — Service Account को role दें:
+
+1. https://console.cloud.google.com → Project select करें (Firebase वाला — `karo-online` या जो भी)
+2. **IAM & Admin → IAM**
+3. अपना service account ढूँढें: `firebase-adminsdk-xxxxx@<project>.iam.gserviceaccount.com`
+4. **Edit (pencil)** → **+ ADD ANOTHER ROLE**
+5. ये roles add करें:
+   - `Firebase Cloud Messaging API Admin`
+   - `Service Account Token Creator`
+   - `Firebase Admin SDK Administrator Service Agent`
+6. **Save**
+7. **APIs & Services → Library** → "Firebase Cloud Messaging API" → **Enable** (अगर disabled है)
+8. 2-3 minute wait → हम test push भेजेंगे
+
+## Testing Plan (हर step पर)
+
+| Step | Test |
+|------|------|
+| Capacitor install | `bun run build` clean |
+| Native plugins | Web build still works (Capacitor APIs only call on native) |
+| Status bar/immersive | Web unchanged, native logic gated by `isNative()` |
+| Realtime migrations | Existing queries unaffected |
+| Realtime hooks | Open 2 tabs → lead/message updates in 2nd tab without refresh |
+| Auto-logout | Sign in → close tab → reopen → still signed in |
+
+हर change के बाद Playwright से preview check करूँगा। कोई regression मिले तो उसी turn में fix।
+
+## Out of scope (Phase 3 के लिए)
+- Geofencing (battery)
+- OTA via Capgo
+- BLE printer
+- Play Store upload
 
 ---
-
-## 4. Secrets Setup
-
-Following secrets `add_secret` से माँगने होंगे (user confirm करने पर):
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
-- `WHATSAPP_APP_SECRET` (signature verify)
-- `DIALNEXA_API_KEY`
-- `DIALNEXA_WEBHOOK_SECRET`
-
----
-
-## 5. Roadmap / Phases
-
-| Phase | Scope | ETA |
-|---|---|---|
-| **Phase A** | DB migrations + Communication Settings UI (without live calls — store config) | step 1 |
-| **Phase B** | WhatsApp send + webhook + button handling | step 2 |
-| **Phase C** | DialNexa initiate + callback + voice log report | step 3 |
-| **Phase D** | Broadcast trigger hooks (all 3 channels parallel) + race-condition cancel | step 4 |
-| **Phase E** | Per-group toggles + test buttons + admin polish | step 5 |
-
----
-
-## ⚠️ Pre-requisites (आपको पहले देने होंगे)
-
-1. **WhatsApp Business Account** — किस provider से? (Meta Cloud API सबसे सस्ता, Gupshup easy approval, Twilio premium)
-2. **Approved Template** का नाम + language (Meta में template पहले approve होना ज़रूरी — मैं sample template content draft कर दूँगा, आप Meta पर submit करेंगे)
-3. **DialNexa Account** — API docs link + sandbox credentials
-4. **Public webhook URL** — हमारा `karoonline.in` already live है ✅
-
----
-
-## ❓ Confirm करें start करने से पहले
-
-- कौनसे **WhatsApp provider** से जाना है? (Meta Cloud recommended)
-- **DialNexa** का API documentation link है? (मुझे exact endpoint shape चाहिए calls के लिए)
-- क्या मैं **Phase A** (DB + Admin UI) से शुरू करूँ — ताकि आप keys आते-आते settings page तैयार रखें?
+**Phase 3 अगली बार:** Geofencing + OTA + BLE + Play Store।

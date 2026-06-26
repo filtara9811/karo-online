@@ -9,6 +9,7 @@ import { registerPwaServiceWorker } from "@/lib/register-sw";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { startAutoSync } from "@/lib/offline/sync";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { bootstrapNative, isNative } from "@/lib/native";
 
 import appCss from "../styles.css?url";
 
@@ -159,8 +160,10 @@ function RootComponent() {
         document.documentElement.style.fontSize = "13px";
       }
     } catch { /* noop */ }
-    registerPwaServiceWorker();
+    // Skip web SW on native — Capacitor uses its own asset loader.
+    if (!isNative()) registerPwaServiceWorker();
     const stop = startAutoSync();
+    bootstrapNative().catch((e) => console.warn("[native bootstrap]", e));
     return () => { stop?.(); };
   }, []);
   return (
