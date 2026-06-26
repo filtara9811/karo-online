@@ -76,7 +76,13 @@ jobs:
           echo "✅ signing key.properties ready"
 
       - name: Build web and sync native project
+        env:
+          # Auto-bump per workflow run so Play Console always sees a new code.
+          # Offset 10 keeps us safely above the manually-uploaded codes 1..3.
+          APP_VERSION_CODE: ${{ github.run_number + 10 }}
+          APP_VERSION_NAME: 1.0.${{ github.run_number + 10 }}
         run: bun run native:sync
+
 
       - name: Build signed AAB
         working-directory: android
