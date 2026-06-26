@@ -348,7 +348,7 @@ android {`);
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'])
+                storeFile rootProject.file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
@@ -377,6 +377,13 @@ android {`);
     gradle = gradle.replace(/(buildTypes\s*\{\s*release\s*\{)/, `$1
             signingConfig signingConfigs.release`);
   }
+
+  // Older patched runs used project.file(...), which points at android/app/.
+  // key.properties lives in android/ and storeFile=upload-keystore.jks is rooted there.
+  gradle = gradle.replace(
+    /storeFile\s+file\(keystoreProperties\['storeFile'\]\)/g,
+    "storeFile rootProject.file(keystoreProperties['storeFile'])",
+  );
 
   write(buildGradlePath, gradle);
 }

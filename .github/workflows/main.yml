@@ -73,6 +73,12 @@ jobs:
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=upload-keystore.jks
           KEYEOF
+
+          keytool -list \
+            -keystore android/upload-keystore.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          echo "✅ keystore password and alias verified"
           echo "✅ signing key.properties ready"
 
       - name: Compute auto-bumped version
@@ -88,7 +94,27 @@ jobs:
 
       - name: Build signed APK and AAB
         working-directory: android
-        run: ./gradlew assembleRelease bundleRelease --stacktrace --warning-mode all --info
+        run: |
+          set +e
+          set -o pipefail
+          mkdir -p ../build_output
+          ./gradlew --no-daemon assembleRelease bundleRelease --stacktrace --warning-mode all --info 2>&1 | tee ../build_output/gradle-build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" -ne 0 ]; then
+            echo ""
+            echo "==================== EXACT GRADLE ERROR LINES ===================="
+            grep -nE "FAILURE:|\* What went wrong:|Execution failed|Caused by:|> Task .* FAILED|A failure occurred|Compilation failed|Manifest merger failed|Android resource linking failed|Duplicate class|Could not|Keystore|google-services|Firebase|error:|Exception|BUILD FAILED" ../build_output/gradle-build.log | tail -n 120 || true
+            echo "=================================================================="
+            exit "$STATUS"
+          fi
+
+      - name: Upload Gradle failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Karo-Online-Gradle-Failure-Logs
+          path: build_output/gradle-build.log
+          if-no-files-found: ignore
 
       - name: Verify and collect AAB
         run: |
