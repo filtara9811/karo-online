@@ -9,6 +9,7 @@ import { registerPwaServiceWorker } from "@/lib/register-sw";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { startAutoSync } from "@/lib/offline/sync";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { bootstrapNative, isNative } from "@/lib/native";
 
 import appCss from "../styles.css?url";
 
