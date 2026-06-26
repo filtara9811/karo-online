@@ -264,6 +264,56 @@ async function pushToUser(opts: {
   return { ok: okCount > 0, sent: okCount, total: list.length, results };
 }
 
+export async function sendLeadPushToVendorInternal(data: { vendor_id: string; lead_id: string }) {
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("id, sub_category_id, sub_category_name, customer_id, customer_name, customer_phone, address, images, lat, lng")
+    .eq("id", data.lead_id)
+    .maybeSingle();
+  if (!lead) return { ok: false, reason: "lead_not_found" as const };
+
+  // The target vendor must actually be notified for this lead.
+  const { data: notif } = await supabaseAdmin
+    .from("lead_notifications")
+    .select("id")
+    .eq("lead_id", data.lead_id)
+    .eq("vendor_id", data.vendor_id)
+    .maybeSingle();
+  if (!notif) return { ok: false, reason: "vendor_not_targeted" as const };
+
+  const [{ data: cust }, { data: cat }] = await Promise.all([
+    (lead as any).customer_id
+      ? supabaseAdmin.from("customers").select("avatar_url").eq("user_id", (lead as any).customer_id).maybeSingle()
+      : Promise.resolve({ data: null } as any),
+    (lead as any).sub_category_id
+      ? supabaseAdmin.from("categories").select("image_url, icon").eq("id", (lead as any).sub_category_id).maybeSingle()
+      : Promise.resolve({ data: null } as any),
+  ]);
+  const customerAvatar = (cust as any)?.avatar_url ?? null;
+  const subCatImage = (cat as any)?.image_url ?? (cat as any)?.icon ?? null;
+  const firstLeadImage = (((lead as any).images ?? []) as string[])[0] ?? null;
+  const heroImage = firstLeadImage || subCatImage || null;
+  const iconUrl = customerAvatar || subCatImage || null;
+
+  const last4 = (lead as any).customer_phone ? String((lead as any).customer_phone).replace(/\D/g, "").slice(-4) : "";
+  const body = `${(lead as any).customer_name ?? "Customer"} • ${(lead as any).sub_category_name}${last4 ? ` • •••• ${last4}` : ""}`;
+  return await pushToUser({
+    userId: data.vendor_id,
+    title: "🔔 New Lead — 15s to respond",
+    body,
+    imageUrl: heroImage,
+    iconUrl,
+    actionUrl: `/vendor/dashboard?leadId=${lead.id}`,
+    highPriority: true,
+    extraData: {
+      kind: "lead_alert",
+      lead_id: lead.id as string,
+      ...(iconUrl ? { icon: iconUrl } : {}),
+      ...(heroImage ? { image: heroImage } : {}),
+    },
+  });
+}
+
 /** High-priority push to a vendor when a new lead is targeted at them. */
 export const sendLeadPushToVendor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -298,40 +348,7 @@ export const sendLeadPushToVendor = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!notif) return { ok: false, reason: "vendor_not_targeted" as const };
 
-    // Fetch customer avatar (icon) + sub-category image (large image)
-    const [{ data: cust }, { data: cat }] = await Promise.all([
-      (lead as any).customer_id
-        ? supabaseAdmin.from("customers").select("avatar_url").eq("user_id", (lead as any).customer_id).maybeSingle()
-        : Promise.resolve({ data: null } as any),
-      (lead as any).sub_category_id
-        ? supabaseAdmin.from("categories").select("image_url, icon").eq("id", (lead as any).sub_category_id).maybeSingle()
-        : Promise.resolve({ data: null } as any),
-    ]);
-    const customerAvatar = (cust as any)?.avatar_url ?? null;
-    const subCatImage = (cat as any)?.image_url ?? (cat as any)?.icon ?? null;
-    const firstLeadImage = (((lead as any).images ?? []) as string[])[0] ?? null;
-    // Big image: prefer customer's actual lead photo, else sub-category image
-    const heroImage = firstLeadImage || subCatImage || null;
-    // Icon: customer avatar; fallback to sub-cat icon then default
-    const iconUrl = customerAvatar || subCatImage || null;
-
-    const last4 = (lead as any).customer_phone ? String((lead as any).customer_phone).replace(/\D/g, "").slice(-4) : "";
-    const body = `${(lead as any).customer_name ?? "Customer"} • ${(lead as any).sub_category_name}${last4 ? ` • •••• ${last4}` : ""}`;
-    return await pushToUser({
-      userId: data.vendor_id,
-      title: "🔔 New Lead — 15s to respond",
-      body,
-      imageUrl: heroImage,
-      iconUrl,
-      actionUrl: `/vendor/dashboard?leadId=${lead.id}`,
-      highPriority: true,
-      extraData: {
-        kind: "lead_alert",
-        lead_id: lead.id as string,
-        ...(iconUrl ? { icon: iconUrl } : {}),
-        ...(heroImage ? { image: heroImage } : {}),
-      },
-    });
+    return await sendLeadPushToVendorInternal(data);
   });
 
 /** Notify the customer with a vendor status update ("On the way", "Arrived", etc.). */
