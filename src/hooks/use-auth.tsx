@@ -79,11 +79,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+    // THEN check existing session. IMPORTANT: await profile load before
+    // flipping `ready` so AuthGate does not flash the RegistrationFlow
+    // (which looks like an auto-logout) on returning visits.
+    supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
       setSession(sess);
       setUser(sess?.user ?? null);
-      if (sess?.user) loadProfile(sess.user.id);
+      if (sess?.user) {
+        try { await loadProfile(sess.user.id); } catch { /* ignore */ }
+      }
       setReady(true);
     });
 
