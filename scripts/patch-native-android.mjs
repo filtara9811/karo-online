@@ -258,6 +258,19 @@ android {`);
   gradle = gradle.replace(/minSdkVersion\s+\d+/g, "minSdkVersion 26");
   gradle = gradle.replace(/targetSdkVersion\s+\d+/g, "targetSdkVersion 35");
   gradle = gradle.replace(/compileSdkVersion\s+\d+/g, "compileSdkVersion 35");
+
+  // Auto-bump versionCode / versionName so Play Console never rejects with
+  // "Version code X has already been used". Workflow passes APP_VERSION_CODE
+  // (github.run_number + offset) and APP_VERSION_NAME. Fallback keeps local
+  // builds working.
+  const BASE_VERSION_CODE = 10; // strictly greater than any previously uploaded code (last used: 3)
+  const envCode = parseInt(process.env.APP_VERSION_CODE || "", 10);
+  const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode : BASE_VERSION_CODE;
+  const versionName = process.env.APP_VERSION_NAME || `1.0.${versionCode}`;
+  gradle = gradle.replace(/versionCode\s+\d+/g, `versionCode ${versionCode}`);
+  gradle = gradle.replace(/versionName\s+"[^"]*"/g, `versionName "${versionName}"`);
+  console.log(`📦 Android versionCode=${versionCode} versionName=${versionName}`);
+
   if (!gradle.includes("signingConfig signingConfigs.release")) {
     gradle = gradle.replace(/release\s*\{/, `release {
             signingConfig signingConfigs.release`);
