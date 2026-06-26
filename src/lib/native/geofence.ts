@@ -57,8 +57,9 @@ export async function startBackgroundLocation(
   onTransition?: (zoneId: string, event: "enter" | "exit") => void,
 ): Promise<string> {
   if (!isNative()) throw new Error("Background location is only available in the native app");
-  const { BackgroundGeolocation } = await import("@capacitor-community/background-geolocation");
-  watcherId = await BackgroundGeolocation.addWatcher(
+  const mod: any = await import("@capacitor-community/background-geolocation");
+  const BackgroundGeolocation = mod.BackgroundGeolocation ?? mod.default;
+  const id: string = await BackgroundGeolocation.addWatcher(
     {
       backgroundMessage: "Karo Online is tracking your service zone",
       backgroundTitle: "Karo Online",
@@ -66,13 +67,13 @@ export async function startBackgroundLocation(
       stale: false,
       distanceFilter: 25,
     },
-    (location, error) => {
+    (location: BgLocation | null, error: any) => {
       if (error) {
         console.warn("[geofence] watcher error", error);
         return;
       }
       if (!location) return;
-      onUpdate(location as BgLocation);
+      onUpdate(location);
       if (!onTransition) return;
       for (const z of zones.values()) {
         const d = haversineMeters(location, z);
@@ -85,7 +86,8 @@ export async function startBackgroundLocation(
       }
     },
   );
-  return watcherId;
+  watcherId = id;
+  return id;
 }
 
 export async function stopBackgroundLocation(id?: string): Promise<void> {
