@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "cap:sync": "bun run build && cap sync android",
     "native:patch": "node scripts/patch-native-android.mjs",
-    "native:sync": "bun run build && cap sync android && bun run native:patch",
+    "native:sync": "cap sync android && bun run native:patch",
     "android:aab": "bun run native:sync && cd android && ./gradlew bundleRelease",
     "cap:open": "cap open android",
     "cap:add": "cap add android",
