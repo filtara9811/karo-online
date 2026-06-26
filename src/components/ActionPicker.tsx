@@ -55,9 +55,11 @@ export function ActionPicker({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
+    document.body.dataset.actionPickerOpen = "true";
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
+      delete document.body.dataset.actionPickerOpen;
       document.body.style.overflow = "";
     };
   }, [open, onClose]);

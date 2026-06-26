@@ -8,6 +8,7 @@ const manifestPath = path.join(appDir, "src/main/AndroidManifest.xml");
 const buildGradlePath = path.join(appDir, "build.gradle");
 const javaDir = path.join(appDir, "src/main/java/app/karoonline/twa");
 const resRawDir = path.join(appDir, "src/main/res/raw");
+const resDir = path.join(appDir, "src/main/res");
 
 function read(file) { return fs.readFileSync(file, "utf8"); }
 function write(file, text) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); }
@@ -25,31 +26,82 @@ const srcSound = path.join(root, "public/sounds/lead-ring.mp3");
 const dstSound = path.join(resRawDir, "lead_ring.mp3");
 if (fs.existsSync(srcSound)) fs.copyFileSync(srcSound, dstSound);
 
-// 2) MainActivity edge-to-edge / immersive bridge stability.
+// 2) App launcher icon + native splash image from the Karo Online icon.
+const iconSource = path.join(root, "public/icon-512.png");
+if (fs.existsSync(iconSource)) {
+  for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
+    const mip = path.join(resDir, `mipmap-${density}`);
+    fs.mkdirSync(mip, { recursive: true });
+    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher.png"));
+    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_round.png"));
+  }
+  const drawableDir = path.join(resDir, "drawable");
+  fs.mkdirSync(drawableDir, { recursive: true });
+  fs.copyFileSync(iconSource, path.join(drawableDir, "splash.png"));
+}
+
+// 3) MainActivity true fullscreen / immersive bridge stability.
 const mainActivityPath = path.join(javaDir, "MainActivity.java");
 if (fs.existsSync(mainActivityPath)) {
-  let main = read(mainActivityPath);
-  if (!main.includes("WindowCompat.setDecorFitsSystemWindows")) {
-    main = main.replace("import com.getcapacitor.BridgeActivity;", `import com.getcapacitor.BridgeActivity;
+  write(mainActivityPath, `package app.karoonline.twa;
+
+import com.getcapacitor.BridgeActivity;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.Window;`);
-    main = main.replace(/public class MainActivity extends BridgeActivity \{\s*\}/s, `public class MainActivity extends BridgeActivity {
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+
+public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    applyImmersiveMode();
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    applyImmersiveMode();
+  }
+
+  @Override
+  public void onWindowFocusChanged(boolean hasFocus) {
+    super.onWindowFocusChanged(hasFocus);
+    if (hasFocus) applyImmersiveMode();
+  }
+
+  private void applyImmersiveMode() {
     Window window = getWindow();
     WindowCompat.setDecorFitsSystemWindows(window, false);
     window.setStatusBarColor(Color.TRANSPARENT);
     window.setNavigationBarColor(Color.TRANSPARENT);
-  }
-}`);
-    write(mainActivityPath, main);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      WindowManager.LayoutParams attrs = window.getAttributes();
+      attrs.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+      window.setAttributes(attrs);
+    }
+    WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+    controller.hide(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.navigationBars());
+    controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+    window.getDecorView().setSystemUiVisibility(
+      View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        | View.SYSTEM_UI_FLAG_FULLSCREEN
+        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+    );
   }
 }
+`);
+}
 
-// 3) Native foreground lead alert service: rings loudly + Hindi TTS for background/killed app FCM.
+// 4) Native foreground lead alert service: rings loudly + Hindi TTS for background/killed app FCM.
 ensureFile(path.join(javaDir, "LeadAlertService.java"), `package app.karoonline.twa;
 
 import android.app.Notification;
@@ -127,7 +179,7 @@ public class LeadAlertService extends Service {
   private Notification buildNotification(String title, String body, String leadId) {
     Intent open = new Intent(this, MainActivity.class);
     open.setAction(Intent.ACTION_VIEW);
-    open.setData(Uri.parse("https://karoonline.in/vendor/dashboard" + (leadId != null ? "?leadId=" + leadId : "")));
+    open.setData(Uri.parse("karo://app/vendor/dashboard" + (leadId != null ? "?leadId=" + leadId : "")));
     PendingIntent openPi = PendingIntent.getActivity(this, 100, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
     PendingIntent stopPi = PendingIntent.getService(this, 101, new Intent(this, LeadAlertService.class).setAction("STOP"), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -185,7 +237,7 @@ public class KaroFirebaseMessagingService extends FirebaseMessagingService {
 }
 `);
 
-// 4) Manifest permissions + services + deep link.
+// 5) Manifest permissions + services + deep link.
 if (fs.existsSync(manifestPath)) {
   let manifest = read(manifestPath);
   const perms = [
@@ -202,6 +254,21 @@ if (fs.existsSync(manifestPath)) {
   for (const p of perms) {
     if (!manifest.includes(p)) manifest = manifest.replace("<manifest", `<manifest`).replace(/<application/, `    <uses-permission android:name="${p}" />\n\n    <application`);
   }
+  manifest = manifest.replace(/<application([^>]*)>/, (m, attrs) => {
+    let next = attrs
+      .replace(/\sandroid:icon="[^"]*"/g, "")
+      .replace(/\sandroid:roundIcon="[^"]*"/g, "")
+      .replace(/\sandroid:label="[^"]*"/g, "")
+      .replace(/\sandroid:usesCleartextTraffic="[^"]*"/g, "");
+    return `<application${next}\n        android:label="Karo Online"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"\n        android:usesCleartextTraffic="false">`;
+  });
+  manifest = manifest.replace(/<activity([\s\S]*?)>/, (m, attrs) => {
+    let next = attrs
+      .replace(/\sandroid:theme="[^"]*"/g, "")
+      .replace(/\sandroid:screenOrientation="[^"]*"/g, "")
+      .replace(/\sandroid:hardwareAccelerated="[^"]*"/g, "");
+    return `<activity${next}\n            android:theme="@style/AppTheme.NoActionBarLaunch"\n            android:screenOrientation="portrait"\n            android:hardwareAccelerated="true">`;
+  });
   if (!manifest.includes(".LeadAlertService")) {
     manifest = manifest.replace(/<\/application>/, `        <service
             android:name=".LeadAlertService"
@@ -227,10 +294,44 @@ if (fs.existsSync(manifestPath)) {
                 <data android:scheme="https" android:host="karoonline.in" />
             </intent-filter>`);
   }
+  if (!manifest.includes('android:scheme="karo"')) {
+    manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="karo" android:host="app" />
+            </intent-filter>`);
+  }
   write(manifestPath, manifest);
 }
 
-// 5) Gradle signing + release config.
+// 6) Fullscreen Android theme; removes any ActionBar/browser-like chrome.
+const stylesPath = path.join(resDir, "values/styles.xml");
+write(stylesPath, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="@style/AppTheme" />
+
+    <style name="AppTheme.NoActionBarLaunch" parent="@style/AppTheme.NoActionBar">
+        <item name="android:background">@drawable/splash</item>
+    </style>
+</resources>
+`);
+
+// 7) Gradle signing + release config.
 if (fs.existsSync(buildGradlePath)) {
   let gradle = read(buildGradlePath);
   if (!gradle.includes("keystorePropertiesFile")) {

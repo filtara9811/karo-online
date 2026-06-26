@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { reverseGeocode as googleReverseGeocode } from "@/lib/google-maps";
+import { isNative } from "@/lib/native/platform";
 
 export type GeoState = {
   status: "idle" | "loading" | "ready" | "denied" | "unsupported" | "error";
@@ -95,6 +96,7 @@ export function useGeolocation(): GeoState {
     if (typeof window === "undefined") return;
     let cancelled = false;
     let watchId: number | null = null;
+    let nativeWatchId: string | null = null;
     let oneShotTimer: number | null = null;
     let refreshTimer: number | null = null;
 
@@ -121,9 +123,8 @@ export function useGeolocation(): GeoState {
       });
     };
 
-    const onSuccess = (pos: GeolocationPosition) => {
+    const applyCoords = (lat: number, lng: number, accuracy: number) => {
       if (cancelled) return;
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
 
       // Always show first fix even if rough, but prefer better fixes after.
       // Reject only if a *much worse* fix arrives after a good one.
@@ -142,6 +143,11 @@ export function useGeolocation(): GeoState {
       void maybeReverseGeocode(lat, lng, accuracy);
     };
 
+    const onSuccess = (pos: GeolocationPosition) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      applyCoords(lat, lng, accuracy);
+    };
+
     const onError = (err: GeolocationPositionError) => {
       if (cancelled) return;
       setState((s) => ({
@@ -154,31 +160,88 @@ export function useGeolocation(): GeoState {
       }));
     };
 
+    const seedFromCache = (forceFresh: boolean) => {
+      if (forceFresh) {
+        bestAccuracyRef.current = Infinity;
+        setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
+        return;
+      }
+      const cached = readCache();
+      if (cached) {
+        setState({
+          status: "ready",
+          lat: cached.lat,
+          lng: cached.lng,
+          label: cached.label,
+          accuracyKm: cached.accuracy / 1000,
+        });
+        bestAccuracyRef.current = cached.accuracy;
+      } else {
+        setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
+      }
+    };
+
+    const startNative = async (forceFresh = false) => {
+      seedFromCache(forceFresh);
+      try {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const currentPerm = await Geolocation.checkPermissions().catch(() => null);
+        if (currentPerm?.location !== "granted") {
+          await Geolocation.requestPermissions({ permissions: ["location"] });
+        }
+        const first = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+        applyCoords(first.coords.latitude, first.coords.longitude, first.coords.accuracy ?? 9999);
+        if (nativeWatchId) {
+          await Geolocation.clearWatch({ id: nativeWatchId }).catch(() => undefined);
+        }
+        nativeWatchId = await Geolocation.watchPosition(
+          { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 },
+          (position, err) => {
+            if (cancelled) return;
+            if (err) {
+              const msg = String((err as any)?.message ?? err).toLowerCase();
+              setState((s) => ({
+                ...s,
+                status: msg.includes("denied") || msg.includes("permission") ? "denied" : "error",
+                label: msg.includes("denied") || msg.includes("permission")
+                  ? "Enable location to detect address"
+                  : "Location unavailable",
+              }));
+              return;
+            }
+            if (!position) return;
+            applyCoords(position.coords.latitude, position.coords.longitude, position.coords.accuracy ?? 9999);
+          },
+        );
+      } catch (err) {
+        if (cancelled) return;
+        const msg = String((err as any)?.message ?? err).toLowerCase();
+        setState((s) => ({
+          ...s,
+          status: msg.includes("denied") || msg.includes("permission") ? "denied" : "error",
+          label: msg.includes("denied") || msg.includes("permission")
+            ? "Enable location to detect address"
+            : "Location unavailable",
+        }));
+      }
+    };
+
     const start = (forceFresh = false) => {
+      if (isNative()) {
+        void startNative(forceFresh);
+        return;
+      }
       if (!("geolocation" in navigator)) {
         setState((s) => ({ ...s, status: "unsupported", label: "Location unavailable" }));
         return;
       }
 
       // Show cached position instantly while we await a fresh GPS fix.
-      if (!forceFresh) {
-        const cached = readCache();
-        if (cached) {
-          setState({
-            status: "ready",
-            lat: cached.lat,
-            lng: cached.lng,
-            label: cached.label,
-            accuracyKm: cached.accuracy / 1000,
-          });
-          bestAccuracyRef.current = cached.accuracy;
-        } else {
-          setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
-        }
-      } else {
-        bestAccuracyRef.current = Infinity;
-        setState((s) => ({ ...s, status: "loading", label: "Detecting your location…" }));
-      }
+      seedFromCache(forceFresh);
 
       // Kick a one-shot high-accuracy request to get a first fix fast.
       navigator.geolocation.getCurrentPosition(onSuccess, onError, {
@@ -210,6 +273,10 @@ export function useGeolocation(): GeoState {
     // When the tab/app regains focus, request a fresh fix (user may have moved).
     const onVisible = () => {
       if (document.visibilityState === "visible") {
+        if (isNative()) {
+          start(true);
+          return;
+        }
         navigator.geolocation.getCurrentPosition(onSuccess, () => {}, {
           enableHighAccuracy: true,
           timeout: 15000,
@@ -222,6 +289,12 @@ export function useGeolocation(): GeoState {
     return () => {
       cancelled = true;
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      if (nativeWatchId != null) {
+        const id = nativeWatchId;
+        void import("@capacitor/geolocation")
+          .then(({ Geolocation }) => Geolocation.clearWatch({ id }))
+          .catch(() => undefined);
+      }
       if (oneShotTimer != null) window.clearTimeout(oneShotTimer);
       if (refreshTimer != null) window.clearInterval(refreshTimer);
       window.removeEventListener("ko-geo-refresh", onRefresh);

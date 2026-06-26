@@ -3,6 +3,7 @@ import { initImmersive } from "./immersive";
 import { initNativePush } from "./push";
 import { initOta } from "./ota";
 import { initPrinter } from "./printer";
+import { initNativeNavigation } from "./navigation";
 import { isNative } from "./platform";
 
 export { isNative, isAndroid, isIOS } from "./platform";
@@ -16,6 +17,7 @@ export async function bootstrapNative(): Promise<void> {
   if (!isNative()) return;
   await initStatusBar();
   await initImmersive();
+  await initNativeNavigation();
   await initNativePush();
   // Non-blocking: OTA check shouldn't gate UI. Printer init is lazy
   // (only when user opens the printer screen), but BLE permission
