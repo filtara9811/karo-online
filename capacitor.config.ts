@@ -7,7 +7,11 @@ const config: CapacitorConfig = {
   // Bundle assets; for live-reload during dev, set CAP_SERVER_URL env and run cap sync.
   server: process.env.CAP_SERVER_URL
     ? { url: process.env.CAP_SERVER_URL, cleartext: true, androidScheme: "https" }
-    : { androidScheme: "https" },
+    : {
+        androidScheme: "https",
+        hostname: "karoonline.in",
+        allowNavigation: ["karoonline.in", "www.karoonline.in"],
+      },
   android: {
     allowMixedContent: false,
     captureInput: true,

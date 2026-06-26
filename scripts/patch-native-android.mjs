@@ -179,7 +179,7 @@ public class LeadAlertService extends Service {
   private Notification buildNotification(String title, String body, String leadId) {
     Intent open = new Intent(this, MainActivity.class);
     open.setAction(Intent.ACTION_VIEW);
-    open.setData(Uri.parse("https://karoonline.in/vendor/dashboard" + (leadId != null ? "?leadId=" + leadId : "")));
+    open.setData(Uri.parse("karo://app/vendor/dashboard" + (leadId != null ? "?leadId=" + leadId : "")));
     PendingIntent openPi = PendingIntent.getActivity(this, 100, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
     PendingIntent stopPi = PendingIntent.getService(this, 101, new Intent(this, LeadAlertService.class).setAction("STOP"), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -292,6 +292,15 @@ if (fs.existsSync(manifestPath)) {
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="karoonline.in" />
+            </intent-filter>`);
+  }
+  if (!manifest.includes('android:scheme="karo"')) {
+    manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="karo" android:host="app" />
             </intent-filter>`);
   }
   write(manifestPath, manifest);

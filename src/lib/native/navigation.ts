@@ -8,6 +8,18 @@ export async function initNativeNavigation(): Promise<void> {
   registered = true;
   try {
     const { App } = await import("@capacitor/app");
+    await App.addListener("appUrlOpen", ({ url }) => {
+      try {
+        const parsed = new URL(url);
+        const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        if (path && path !== window.location.pathname) {
+          window.history.pushState({}, "", path);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      } catch {
+        /* noop */
+      }
+    });
     await App.addListener("backButton", ({ canGoBack }) => {
       const path = window.location.pathname;
       const atHome = path === "/" || path === "/quick" || path === "/home";
