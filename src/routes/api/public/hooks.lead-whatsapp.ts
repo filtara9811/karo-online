@@ -63,21 +63,28 @@ export const Route = createFileRoute("/api/public/hooks/lead-whatsapp")({
 
         if (!bearerOk) {
           // Fallback authorization: lead must be in an active state AND every
-          // requested vendor must already be on the lead's notified list.
+          // requested vendor must have an actual lead_notifications row (i.e.
+          // was scheduled by our own broadcaster).
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: lead } = await supabaseAdmin
             .from("leads")
-            .select("id,status,notified_vendor_ids")
+            .select("id,status")
             .eq("id", body.lead_id)
             .maybeSingle();
           const status = (lead as any)?.status as string | undefined;
           if (!lead || (status !== "new" && status !== "notifying")) {
             return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
           }
-          const notified: string[] = ((lead as any)?.notified_vendor_ids ?? []) as string[];
-          const notifiedSet = new Set(notified);
-          const allKnown = body.vendor_ids.length > 0 && body.vendor_ids.every((v) => notifiedSet.has(v));
-          if (!allKnown) {
+          if (body.vendor_ids.length === 0) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+          const { data: notifs } = await supabaseAdmin
+            .from("lead_notifications")
+            .select("vendor_id")
+            .eq("lead_id", body.lead_id)
+            .in("vendor_id", body.vendor_ids);
+          const known = new Set(((notifs ?? []) as any[]).map((r) => r.vendor_id));
+          if (!body.vendor_ids.every((v) => known.has(v))) {
             return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
           }
         }
