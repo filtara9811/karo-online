@@ -96,6 +96,7 @@ export function useGeolocation(): GeoState {
     let cancelled = false;
     let watchId: number | null = null;
     let oneShotTimer: number | null = null;
+    let refreshTimer: number | null = null;
 
     const maybeReverseGeocode = async (lat: number, lng: number, accuracy: number) => {
       // Do not print a confident mohalla name from a rough GPS/IP fix.
@@ -197,6 +198,12 @@ export function useGeolocation(): GeoState {
 
     start();
 
+    // Auto-refresh location every 2 minutes while the app is open. This removes
+    // the need for manual refresh after the phone wakes/network changes.
+    refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") start(true);
+    }, 120_000);
+
     const onRefresh = () => start(true);
     window.addEventListener("ko-geo-refresh", onRefresh);
 
@@ -216,6 +223,7 @@ export function useGeolocation(): GeoState {
       cancelled = true;
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       if (oneShotTimer != null) window.clearTimeout(oneShotTimer);
+      if (refreshTimer != null) window.clearInterval(refreshTimer);
       window.removeEventListener("ko-geo-refresh", onRefresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
