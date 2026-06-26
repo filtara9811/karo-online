@@ -4,13 +4,13 @@
   "id": "/",
   "start_url": "/",
   "scope": "/",
-  "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
   "scope_extensions": [
     { "origin": "https://www.karoonline.in" },
     { "origin": "https://karoonline.in" }
   ],
-  "theme_color": "#e8e0d0",
+  "theme_color": "#000000",
   "background_color": "#FFFFFF",
   "orientation": "portrait",
   "lang": "en",
