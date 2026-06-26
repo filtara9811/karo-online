@@ -94,7 +94,8 @@ export async function stopBackgroundLocation(id?: string): Promise<void> {
   if (!isNative()) return;
   const target = id ?? watcherId;
   if (!target) return;
-  const { BackgroundGeolocation } = await import("@capacitor-community/background-geolocation");
+  const mod: any = await import("@capacitor-community/background-geolocation");
+  const BackgroundGeolocation = mod.BackgroundGeolocation ?? mod.default;
   try { await BackgroundGeolocation.removeWatcher({ id: target }); } catch {}
   if (target === watcherId) watcherId = null;
 }
