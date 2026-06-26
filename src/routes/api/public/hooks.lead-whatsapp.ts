@@ -46,11 +46,40 @@ export const Route = createFileRoute("/api/public/hooks/lead-whatsapp")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // SECURITY: Require a shared bearer secret OR strict in-DB validation
+        // that the (lead, vendor_ids) tuple was actually scheduled by our own
+        // broadcaster. Without this an attacker could forge requests to spam
+        // vendor phones with fake lead notifications.
+        const auth = request.headers.get("authorization") ?? "";
+        const expected = process.env.INTERNAL_HOOK_SECRET;
+        const bearerOk = !!expected && auth === `Bearer ${expected}`;
+
         let body: z.infer<typeof BodySchema>;
         try {
           body = BodySchema.parse(await request.json());
         } catch (e) {
           return Response.json({ ok: false, error: "invalid_body" }, { status: 400 });
+        }
+
+        if (!bearerOk) {
+          // Fallback authorization: lead must be in an active state AND every
+          // requested vendor must already be on the lead's notified list.
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: lead } = await supabaseAdmin
+            .from("leads")
+            .select("id,status,notified_vendor_ids")
+            .eq("id", body.lead_id)
+            .maybeSingle();
+          const status = (lead as any)?.status as string | undefined;
+          if (!lead || (status !== "new" && status !== "notifying")) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+          const notified: string[] = ((lead as any)?.notified_vendor_ids ?? []) as string[];
+          const notifiedSet = new Set(notified);
+          const allKnown = body.vendor_ids.length > 0 && body.vendor_ids.every((v) => notifiedSet.has(v));
+          if (!allKnown) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
         }
 
         const lovableKey = process.env.LOVABLE_API_KEY;

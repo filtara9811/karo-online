@@ -166,12 +166,39 @@ export const Route = createFileRoute("/api/public/whatsapp/send-lead")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // SECURITY: shared bearer secret OR DB-side validation that vendors
+        // were actually scheduled by our own broadcaster — prevents abuse of
+        // this public endpoint to spam arbitrary vendor phones / push tokens.
+        const auth = request.headers.get("authorization") ?? "";
+        const expected = process.env.INTERNAL_HOOK_SECRET;
+        const bearerOk = !!expected && auth === `Bearer ${expected}`;
+
         let body: z.infer<typeof BodySchema>;
         try {
           body = BodySchema.parse(await request.json());
         } catch {
           return Response.json({ ok: false, error: "invalid_body" }, { status: 400 });
         }
+
+        if (!bearerOk) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: lead } = await supabaseAdmin
+            .from("leads")
+            .select("id,status,notified_vendor_ids")
+            .eq("id", body.lead_id)
+            .maybeSingle();
+          const status = (lead as any)?.status as string | undefined;
+          if (!lead || (status !== "new" && status !== "notifying")) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+          const notified: string[] = ((lead as any)?.notified_vendor_ids ?? []) as string[];
+          const notifiedSet = new Set(notified);
+          const allKnown = body.vendor_ids.length > 0 && body.vendor_ids.every((v) => notifiedSet.has(v));
+          if (!allKnown) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+        }
+
 
         // Server-side FCM fallback: the DB trigger already calls this WhatsApp
         // hook after every broadcast batch. Send push from here too so vendor
