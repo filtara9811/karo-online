@@ -57,7 +57,8 @@ export async function startBackgroundLocation(
   onTransition?: (zoneId: string, event: "enter" | "exit") => void,
 ): Promise<string> {
   if (!isNative()) throw new Error("Background location is only available in the native app");
-  const mod: any = await import("@capacitor-community/background-geolocation");
+  const pkg = "@capacitor-community/background-geolocation";
+  const mod: any = await import(/* @vite-ignore */ pkg);
   const BackgroundGeolocation = mod.BackgroundGeolocation ?? mod.default;
   const id: string = await BackgroundGeolocation.addWatcher(
     {
@@ -94,7 +95,8 @@ export async function stopBackgroundLocation(id?: string): Promise<void> {
   if (!isNative()) return;
   const target = id ?? watcherId;
   if (!target) return;
-  const mod: any = await import("@capacitor-community/background-geolocation");
+  const pkg = "@capacitor-community/background-geolocation";
+  const mod: any = await import(/* @vite-ignore */ pkg);
   const BackgroundGeolocation = mod.BackgroundGeolocation ?? mod.default;
   try { await BackgroundGeolocation.removeWatcher({ id: target }); } catch {}
   if (target === watcherId) watcherId = null;
