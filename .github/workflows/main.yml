@@ -84,25 +84,34 @@ jobs:
         run: bun run native:sync
 
 
-      - name: Build signed AAB
+      - name: Build signed APK and AAB
         working-directory: android
-        run: ./gradlew bundleRelease --stacktrace
+        run: ./gradlew assembleRelease bundleRelease --stacktrace
 
       - name: Verify and collect AAB
         run: |
           set -euo pipefail
           AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$AAB" ]; then
             echo "::error::Signed AAB not found at $AAB"
             exit 1
           fi
+          if [ ! -f "$APK" ]; then
+            echo "::error::Signed APK not found at $APK"
+            exit 1
+          fi
           mkdir -p build_output
           cp "$AAB" build_output/UPLOAD-THIS-Karo-Online-Native.aab
+          cp "$APK" build_output/TEST-INSTALL-Karo-Online-Native.apk
           cat > build_output/README-HINDI.txt <<'HINDIEOF'
           यह Native Capacitor Android build है, Bubblewrap/TWA नहीं।
 
           Play Console में upload करने वाली file:
           UPLOAD-THIS-Karo-Online-Native.aab
+
+          Phone पर direct test install करने वाली file:
+          TEST-INSTALL-Karo-Online-Native.apk
 
           Test install के लिए पहले Play Console Internal Testing / Internal App Sharing use करें।
           HINDIEOF
