@@ -75,9 +75,20 @@ jobs:
             echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret missing. Firebase Console से Android app app.karoonline.twa का google-services.json base64 करके add करें."
             exit 1
           fi
-          mkdir -p android/app
-          decode_base64_secret "$GOOGLE_SERVICES_JSON_BASE64" android/app/google-services.json google-services-json
-          echo "✅ google-services.json ready"
+          ANDROID_DIR="$PWD/android"
+          APP_DIR="$ANDROID_DIR/app"
+          KEYSTORE_PATH="$ANDROID_DIR/upload-keystore.jks"
+          KEY_PROPERTIES_PATH="$ANDROID_DIR/key.properties"
+          GOOGLE_SERVICES_PATH="$APP_DIR/google-services.json"
+          mkdir -p "$APP_DIR"
+
+          decode_base64_secret "$GOOGLE_SERVICES_JSON_BASE64" "$RUNNER_TEMP/google-services.json" google-services-json
+          install -m 600 "$RUNNER_TEMP/google-services.json" "$GOOGLE_SERVICES_PATH"
+          if [ ! -s "$GOOGLE_SERVICES_PATH" ]; then
+            echo "::error::google-services.json was not written correctly at android/app/google-services.json."
+            exit 1
+          fi
+          echo "✅ google-services.json ready at android/app/google-services.json"
 
           KEYSTORE_BASE64="${ANDROID_KEYSTORE_BASE64:-}"
           KEYSTORE_SOURCE="ANDROID_KEYSTORE_BASE64"
@@ -91,8 +102,10 @@ jobs:
             exit 1
           fi
 
-          decode_base64_secret "$KEYSTORE_BASE64" android/upload-keystore.jks upload-keystore-jks
-          if [ ! -s android/upload-keystore.jks ]; then
+          mkdir -p "$ANDROID_DIR"
+          decode_base64_secret "$KEYSTORE_BASE64" "$RUNNER_TEMP/upload-keystore.jks" upload-keystore-jks
+          install -m 600 "$RUNNER_TEMP/upload-keystore.jks" "$KEYSTORE_PATH"
+          if [ ! -s "$KEYSTORE_PATH" ]; then
             echo "::error::Decoded keystore is empty at android/upload-keystore.jks. Please re-upload the keystore base64 secret."
             exit 1
           fi
@@ -100,24 +113,66 @@ jobs:
 
           ANDROID_KEYSTORE_PASSWORD="${ANDROID_KEYSTORE_PASSWORD:-${BUBBLEWRAP_KEYSTORE_PASSWORD:-}}"
           ANDROID_KEY_ALIAS="${ANDROID_KEY_ALIAS:-${BUBBLEWRAP_KEY_ALIAS:-}}"
-          ANDROID_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${BUBBLEWRAP_KEY_PASSWORD:-}}"
+          ANDROID_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${BUBBLEWRAP_KEY_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}}"
 
-          if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
-            echo "::error::Signing secrets required. Add ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (or matching BUBBLEWRAP_* fallback names)."
+          if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
+            echo "::error::Signing secrets required. Add ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_PASSWORD (or matching BUBBLEWRAP_* fallback names). If key password is same as store password, ANDROID_KEY_PASSWORD can be omitted."
             exit 1
           fi
 
-          cat > android/key.properties <<KEYEOF
+          if ! KEYTOOL_LIST_OUTPUT="$(keytool -list -v -keystore "$KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1)"; then
+            echo "::error::Keystore file is present at android/upload-keystore.jks, but ANDROID_KEYSTORE_PASSWORD cannot open it. Please verify the store password belongs to this exact keystore."
+            printf '%s\n' "$KEYTOOL_LIST_OUTPUT" | sed -E 's/(password|Password|passwd|storepass|keypass)[^[:space:]]*/[redacted]/g' || true
+            exit 1
+          fi
+
+          AVAILABLE_PRIVATE_ALIASES="$(printf '%s\n' "$KEYTOOL_LIST_OUTPUT" | awk '
+            BEGIN { alias="" }
+            /^Alias name:/ { alias=$0; sub(/^Alias name:[ \t]*/, "", alias) }
+            /^Entry type: PrivateKeyEntry/ && alias != "" { print alias; alias="" }
+          ' | awk 'NF && !seen[$0]++')"
+          ALIAS_COUNT="$(printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          if [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
+            if [ "$ALIAS_COUNT" = "1" ]; then
+              ANDROID_KEY_ALIAS="$AVAILABLE_PRIVATE_ALIASES"
+              echo "✅ ANDROID_KEY_ALIAS was empty, auto-detected the only private key alias from upload-keystore.jks"
+            else
+              echo "::error::ANDROID_KEY_ALIAS is missing and the keystore does not contain exactly one private key alias. Add the correct ANDROID_KEY_ALIAS secret."
+              echo "Available private key aliases:"
+              printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES"
+              exit 1
+            fi
+          elif ! printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES" | grep -Fxq "$ANDROID_KEY_ALIAS"; then
+            if [ "$ALIAS_COUNT" = "1" ]; then
+              echo "::warning::Configured ANDROID_KEY_ALIAS was not found in upload-keystore.jks; using the only private key alias found instead."
+              ANDROID_KEY_ALIAS="$AVAILABLE_PRIVATE_ALIASES"
+            else
+              echo "::error::ANDROID_KEY_ALIAS was not found in android/upload-keystore.jks. Update ANDROID_KEY_ALIAS to one of the available private key aliases below."
+              echo "Available private key aliases:"
+              printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES"
+              exit 1
+            fi
+          fi
+
+          cat > "$KEY_PROPERTIES_PATH" <<KEYEOF
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=upload-keystore.jks
           KEYEOF
+          chmod 600 "$KEY_PROPERTIES_PATH"
 
-          keytool -list \
-            -keystore android/upload-keystore.jks \
+          if ! keytool -list \
+            -keystore "$KEYSTORE_PATH" \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
-            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+            -alias "$ANDROID_KEY_ALIAS" >/tmp/keytool-alias-check.log 2>&1; then
+            echo "::error::Keystore file is present at android/upload-keystore.jks, but alias verification failed. Check ANDROID_KEY_ALIAS matches this exact keystore."
+            sed -E 's/(password|Password|passwd|storepass|keypass)[^[:space:]]*/[redacted]/g' /tmp/keytool-alias-check.log || true
+            echo "Available private key aliases:"
+            printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES"
+            exit 1
+          fi
           echo "✅ keystore password and alias verified"
           echo "✅ signing key.properties ready"
 
