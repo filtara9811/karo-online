@@ -1,7 +1,7 @@
 /* Karo Online PWA service worker — basic offline cache.
    Note: firebase-messaging-sw.js handles push separately at /firebase-messaging-sw.js */
 
-const CACHE_VERSION = "ko-v6";
+const CACHE_VERSION = "ko-v7";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
