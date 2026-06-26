@@ -1832,6 +1832,7 @@ export type Database = {
       notification_campaigns: {
         Row: {
           action_url: string | null
+          audience_filter: Json
           body: string
           channels: Json
           created_at: string
@@ -1841,17 +1842,20 @@ export type Database = {
           geo_filter: Json | null
           id: string
           image_url: string | null
+          manual_targets: Json
           name: string
           notification_type: string
           schedule_at: string | null
           sent_count: number
           status: string
           target_segment: string | null
+          template_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           action_url?: string | null
+          audience_filter?: Json
           body: string
           channels?: Json
           created_at?: string
@@ -1861,17 +1865,20 @@ export type Database = {
           geo_filter?: Json | null
           id?: string
           image_url?: string | null
+          manual_targets?: Json
           name: string
           notification_type?: string
           schedule_at?: string | null
           sent_count?: number
           status?: string
           target_segment?: string | null
+          template_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           action_url?: string | null
+          audience_filter?: Json
           body?: string
           channels?: Json
           created_at?: string
@@ -1881,16 +1888,26 @@ export type Database = {
           geo_filter?: Json | null
           id?: string
           image_url?: string | null
+          manual_targets?: Json
           name?: string
           notification_type?: string
           schedule_at?: string | null
           sent_count?: number
           status?: string
           target_segment?: string | null
+          template_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notification_campaigns_template_fk"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_logs: {
         Row: {
@@ -1948,6 +1965,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_templates: {
+        Row: {
+          action_url: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          name: string
+          notification_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          notification_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          notification_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_triggers: {
         Row: {
@@ -4563,6 +4619,20 @@ export type Database = {
         }
         Returns: string
       }
+      admin_get_log_details: {
+        Args: { _campaign_id?: string; _limit?: number; _status?: string }
+        Returns: {
+          channel: string
+          created_at: string
+          display_name: string
+          error: string
+          id: string
+          phone: string
+          provider: string
+          status: string
+          user_id: string
+        }[]
+      }
       admin_get_referral_overview: { Args: never; Returns: Json }
       admin_list_batch_codes: {
         Args: { p_batch_id: string }
@@ -4601,6 +4671,21 @@ export type Database = {
       admin_reject_referral_reward: {
         Args: { _notes?: string; _reward_id: string }
         Returns: Json
+      }
+      admin_resolve_campaign_users: {
+        Args: { _campaign_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
+      admin_segment_audience: {
+        Args: { _filter: Json }
+        Returns: {
+          display_name: string
+          phone: string
+          role: string
+          user_id: string
+        }[]
       }
       admin_test_notification: {
         Args: { _trigger_id: string; _user_id?: string }
