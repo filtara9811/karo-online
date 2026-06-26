@@ -27,7 +27,7 @@ const KNOWN_SERVICES = [
 
 export async function initPrinter(): Promise<void> {
   if (!isNative()) return;
-  const { BleClient } = await import("@capacitor-community/bluetooth-le");
+  const { BleClient } = (await import(/* @vite-ignore */ ("@capacitor-community/bluetooth-le" as string))) as any;
   await BleClient.initialize({ androidNeverForLocation: true });
 }
 
@@ -36,9 +36,9 @@ export async function scanPrinters(
   durationMs = 8000,
 ): Promise<void> {
   if (!isNative()) throw new Error("Bluetooth is only available in the native app");
-  const { BleClient } = await import("@capacitor-community/bluetooth-le");
+  const { BleClient } = (await import(/* @vite-ignore */ ("@capacitor-community/bluetooth-le" as string))) as any;
   await BleClient.initialize({ androidNeverForLocation: true });
-  await BleClient.requestLEScan({ allowDuplicates: false }, (result) => {
+  await BleClient.requestLEScan({ allowDuplicates: false }, (result: any) => {
     onDevice({
       deviceId: result.device.deviceId,
       name: result.device.name ?? result.localName,
@@ -52,7 +52,7 @@ export async function scanPrinters(
 
 export async function connectPrinter(deviceId: string): Promise<void> {
   if (!isNative()) throw new Error("Bluetooth is only available in the native app");
-  const { BleClient } = await import("@capacitor-community/bluetooth-le");
+  const { BleClient } = (await import(/* @vite-ignore */ ("@capacitor-community/bluetooth-le" as string))) as any;
   await BleClient.connect(deviceId, () => {
     connectedId = null;
     writeService = null;
@@ -95,7 +95,7 @@ export async function connectPrinter(deviceId: string): Promise<void> {
 export async function writeBytes(bytes: Uint8Array): Promise<void> {
   if (!isNative()) throw new Error("Bluetooth is only available in the native app");
   if (!connectedId || !writeService || !writeChar) throw new Error("Printer not connected");
-  const { BleClient, numbersToDataView } = await import("@capacitor-community/bluetooth-le");
+  const { BleClient, numbersToDataView } = (await import(/* @vite-ignore */ ("@capacitor-community/bluetooth-le" as string))) as any;
   const chunkSize = 180;
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const slice = bytes.slice(i, i + chunkSize);
@@ -106,7 +106,7 @@ export async function writeBytes(bytes: Uint8Array): Promise<void> {
 
 export async function disconnectPrinter(): Promise<void> {
   if (!isNative() || !connectedId) return;
-  const { BleClient } = await import("@capacitor-community/bluetooth-le");
+  const { BleClient } = (await import(/* @vite-ignore */ ("@capacitor-community/bluetooth-le" as string))) as any;
   try { await BleClient.disconnect(connectedId); } catch {}
   connectedId = null;
   writeService = null;

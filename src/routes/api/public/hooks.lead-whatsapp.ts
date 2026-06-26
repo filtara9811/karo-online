@@ -46,11 +46,47 @@ export const Route = createFileRoute("/api/public/hooks/lead-whatsapp")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // SECURITY: Require a shared bearer secret OR strict in-DB validation
+        // that the (lead, vendor_ids) tuple was actually scheduled by our own
+        // broadcaster. Without this an attacker could forge requests to spam
+        // vendor phones with fake lead notifications.
+        const auth = request.headers.get("authorization") ?? "";
+        const expected = process.env.INTERNAL_HOOK_SECRET;
+        const bearerOk = !!expected && auth === `Bearer ${expected}`;
+
         let body: z.infer<typeof BodySchema>;
         try {
           body = BodySchema.parse(await request.json());
         } catch (e) {
           return Response.json({ ok: false, error: "invalid_body" }, { status: 400 });
+        }
+
+        if (!bearerOk) {
+          // Fallback authorization: lead must be in an active state AND every
+          // requested vendor must have an actual lead_notifications row (i.e.
+          // was scheduled by our own broadcaster).
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: lead } = await supabaseAdmin
+            .from("leads")
+            .select("id,status")
+            .eq("id", body.lead_id)
+            .maybeSingle();
+          const status = (lead as any)?.status as string | undefined;
+          if (!lead || (status !== "new" && status !== "notifying")) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+          if (body.vendor_ids.length === 0) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
+          const { data: notifs } = await supabaseAdmin
+            .from("lead_notifications")
+            .select("vendor_id")
+            .eq("lead_id", body.lead_id)
+            .in("vendor_id", body.vendor_ids);
+          const known = new Set(((notifs ?? []) as any[]).map((r) => r.vendor_id));
+          if (!body.vendor_ids.every((v) => known.has(v))) {
+            return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+          }
         }
 
         const lovableKey = process.env.LOVABLE_API_KEY;

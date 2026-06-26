@@ -146,12 +146,14 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
         const providers = await loadProviders();
         // Accept signature from ANY configured Meta-style provider's app_secret.
-        // If no app_secret is set yet (Phase B bring-up), allow but log a warning.
+        // SECURITY: If no app_secret is configured, REJECT every request — an
+        // unconfigured webhook must never accept forged accept/reject actions.
         const secretCandidates = providers.map((p) => p.app_secret).filter((s): s is string => !!s);
-        const signatureOk =
-          secretCandidates.length === 0
-            ? true
-            : secretCandidates.some((s) => verifySignature(raw, sigHeader, s));
+        if (secretCandidates.length === 0) {
+          console.warn("[wa-webhook] rejected: no app_secret configured on any whatsapp_providers row");
+          return new Response("webhook_not_configured", { status: 401 });
+        }
+        const signatureOk = secretCandidates.some((s) => verifySignature(raw, sigHeader, s));
         if (!signatureOk) {
           return new Response("invalid_signature", { status: 401 });
         }
