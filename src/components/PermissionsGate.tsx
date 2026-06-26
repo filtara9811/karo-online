@@ -94,7 +94,7 @@ export function PermissionsGate() {
         (pos) => {
           try {
             localStorage.setItem(
-              "ko-geo-cache",
+                "ko-geo-cache-v2",
               JSON.stringify({
                 lat: pos.coords.latitude,
                 lng: pos.coords.longitude,

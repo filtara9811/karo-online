@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import slide1 from "@/assets/ko-onboard-1.png.asset.json";
@@ -25,6 +25,14 @@ export function OnboardingCarousel({
 }) {
   const [idx, setIdx] = useState(0);
   const startX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.dataset.onboardingOpen = "true";
+    return () => {
+      delete document.body.dataset.onboardingOpen;
+    };
+  }, []);
 
   const finish = () => {
     try { localStorage.setItem(ONBOARDING_SEEN_KEY, "1"); } catch {}

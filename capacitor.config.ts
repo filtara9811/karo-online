@@ -12,6 +12,7 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
+    appendUserAgent: " KaroOnlineNativeApp",
   },
   plugins: {
     SplashScreen: {

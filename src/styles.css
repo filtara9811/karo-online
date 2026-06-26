@@ -684,3 +684,9 @@ body[data-location-picker-open="true"] [data-bottom-action-bar] {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Hide the global bottom pill behind full-screen onboarding and action sheets. */
+body[data-onboarding-open="true"] [data-bottom-action-bar],
+body[data-action-picker-open="true"] [data-bottom-action-bar] {
+  display: none !important;
+}
