@@ -160,8 +160,10 @@ function RootComponent() {
         document.documentElement.style.fontSize = "13px";
       }
     } catch { /* noop */ }
-    registerPwaServiceWorker();
+    // Skip web SW on native — Capacitor uses its own asset loader.
+    if (!isNative()) registerPwaServiceWorker();
     const stop = startAutoSync();
+    bootstrapNative().catch((e) => console.warn("[native bootstrap]", e));
     return () => { stop?.(); };
   }, []);
   return (
