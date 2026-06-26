@@ -250,7 +250,7 @@ function QuickPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && !localStorage.getItem("ko-onboarding-seen-v1")) {
+      if (typeof window !== "undefined" && !localStorage.getItem("ko-onboarding-seen-v2")) {
         setShowOnboarding(true);
       }
     } catch {}
