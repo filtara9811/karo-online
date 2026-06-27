@@ -402,4 +402,31 @@ android {`);
   write(buildGradlePath, gradle);
 }
 
+// 5) Force JavaVersion.VERSION_17 in every gradle file under android/ (Capacitor 7 modules
+//    default to VERSION_21 which the JDK 17 runner cannot compile -> "invalid source release: 21").
+function walk(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "build" || entry.name === ".gradle" || entry.name === "node_modules") continue;
+      out.push(...walk(full));
+    } else if (/\.gradle(\.kts)?$/.test(entry.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+for (const gf of walk(androidDir)) {
+  let txt = fs.readFileSync(gf, "utf8");
+  const before = txt;
+  txt = txt.replace(/JavaVersion\.VERSION_(?:19|20|21|22|23|24)\b/g, "JavaVersion.VERSION_17");
+  txt = txt.replace(/jvmTarget\s*=\s*["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
+  txt = txt.replace(/jvmTarget\s+["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget "17"');
+  if (txt !== before) {
+    fs.writeFileSync(gf, txt);
+    console.log("☕ Forced Java 17 in", path.relative(root, gf));
+  }
+}
+
 console.log("✅ Native Android patches applied: foreground lead service, FCM data alerts, immersive mode, signing, cache-safe release.");
