@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "242509372770",
+    "project_id": "karoonline",
+    "storage_bucket": "karoonline.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242509372770:android:93843c74d910c686c5203b",
+        "android_client_info": {
+          "package_name": "app.karoonline.twa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAT8RYq_9bcyZBko0cqcVKRMFC-LIVWWeI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
