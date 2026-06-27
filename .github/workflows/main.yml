@@ -169,14 +169,6 @@ jobs:
             fi
           fi
 
-          cat > "$KEY_PROPERTIES_PATH" <<KEYEOF
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          storeFile=upload-keystore.jks
-          KEYEOF
-          chmod 600 "$KEY_PROPERTIES_PATH"
-
           if ! keytool -list \
             -keystore "$KEYSTORE_PATH" \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
@@ -209,6 +201,14 @@ jobs:
               exit 1
             fi
           fi
+
+          cat > "$KEY_PROPERTIES_PATH" <<KEYEOF
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=upload-keystore.jks
+          KEYEOF
+          chmod 600 "$KEY_PROPERTIES_PATH"
 
           echo "✅ keystore password, alias, and private key password verified"
           echo "✅ signing key.properties ready"
