@@ -241,8 +241,22 @@ jobs:
           grep -nE "compileSdk|compileSdkVersion|minSdk|targetSdk" android/app/build.gradle android/variables.gradle || true
           echo "============================================================"
 
+          echo "==================== JAVA VERSION CONFIG ===================="
+          grep -nE "JavaVersion\.VERSION_|JvmTarget\.JVM_|jvmTarget" \
+            android/app/build.gradle \
+            node_modules/@capacitor/android/capacitor/build.gradle \
+            node_modules/@capacitor-community/bluetooth-le/android/build.gradle \
+            node_modules/@capgo/capacitor-updater/android/build.gradle || true
+          echo "============================================================="
+
           if ! grep -Eq "compileSdk[[:space:]]*(=| )[[:space:]]*35|compileSdkVersion[[:space:]]*(=| )[[:space:]]*35" android/app/build.gradle android/variables.gradle; then
             echo "::error::compileSdk 35 was not written to the generated Android project."
+            exit 1
+          fi
+
+          if grep -RE "JavaVersion\.VERSION_21|JvmTarget\.JVM_21|jvmTarget[[:space:]]*(=| )[[:space:]]*['\"]21['\"]" \
+            android node_modules/@capacitor/android/capacitor node_modules/@capacitor-community/bluetooth-le/android node_modules/@capgo/capacitor-updater/android; then
+            echo "::error::Java 21 settings are still present after native patch. The JDK 17 runner would fail with invalid source release: 21."
             exit 1
           fi
 

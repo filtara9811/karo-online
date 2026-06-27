@@ -448,10 +448,15 @@ try {
   console.log(`📦 Wrote android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName})`);
 }
 
-// 5) Force JavaVersion.VERSION_17 in every gradle file under android/ (Capacitor 7 modules
-//    default to VERSION_21 which the JDK 17 runner cannot compile -> "invalid source release: 21").
+// 8) Force Java 17 in every Gradle file that participates in the Android build.
+//    Capacitor 8 ships `@capacitor/android/capacitor/build.gradle` from node_modules
+//    as project `:capacitor-android`, and that file defaults to Java 21. The GitHub
+//    runner intentionally uses JDK 17, so patching only android/app/build.gradle is
+//    not enough; `:capacitor-android:compileReleaseJavaWithJavac` still fails with
+//    "invalid source release: 21" unless the node_modules Gradle file is patched too.
 function walk(dir) {
   const out = [];
+  if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -463,16 +468,33 @@ function walk(dir) {
   }
   return out;
 }
-for (const gf of walk(androidDir)) {
+
+const gradlePatchRoots = [
+  androidDir,
+  path.join(root, "node_modules/@capacitor/android/capacitor"),
+  path.join(root, "node_modules/@capacitor-community/bluetooth-le/android"),
+  path.join(root, "node_modules/@capgo/capacitor-updater/android"),
+];
+
+const gradleFiles = [...new Set(gradlePatchRoots.flatMap((dir) => walk(dir)))];
+for (const gf of gradleFiles) {
   let txt = fs.readFileSync(gf, "utf8");
   const before = txt;
   txt = txt.replace(/JavaVersion\.VERSION_(?:19|20|21|22|23|24)\b/g, "JavaVersion.VERSION_17");
+  txt = txt.replace(/JvmTarget\.JVM_(?:19|20|21|22|23|24)\b/g, "JvmTarget.JVM_17");
   txt = txt.replace(/jvmTarget\s*=\s*["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
   txt = txt.replace(/jvmTarget\s+["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget "17"');
   if (txt !== before) {
     fs.writeFileSync(gf, txt);
     console.log("☕ Forced Java 17 in", path.relative(root, gf));
   }
+}
+
+const remainingJava21 = gradleFiles.filter((gf) => /JavaVersion\.VERSION_21|JvmTarget\.JVM_21|jvmTarget\s*(=\s*)?["']21["']/.test(fs.readFileSync(gf, "utf8")));
+if (remainingJava21.length > 0) {
+  console.error("Java 21 settings remain in Gradle files:");
+  for (const gf of remainingJava21) console.error(" -", path.relative(root, gf));
+  process.exit(1);
 }
 
 console.log("✅ Native Android patches applied: foreground lead service, FCM data alerts, immersive mode, signing, cache-safe release.");
