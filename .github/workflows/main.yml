@@ -14,8 +14,11 @@ jobs:
           distribution: 'temurin'
       - name: Copy Google Services
         run: |
-          # यह फाइल को सही जगह पर 'फोर्स' करके कॉपी कर देगा
-          cp android/app/google-services.json android/app/google-services.json || echo "Copy failed"
+          # यह कमांड फाइल को Debug और Release दोनों फोल्डर्स में डाल देगी ताकि कोई गलती न हो
+          mkdir -p android/app/src/debug
+          mkdir -p android/app/src/release
+          cp android/app/google-services.json android/app/src/debug/
+          cp android/app/google-services.json android/app/src/release/
       - name: Build with Gradle
         run: |
           cd android
