@@ -20,6 +20,48 @@ if (!fs.existsSync(androidDir)) {
   process.exit(1);
 }
 
+// 0) Ensure google-services.json exists at android/app/ so :app:processDebugGoogleServices passes.
+//    Priority:
+//      1. android/app/google-services.json already present (Appflow Native Configs injects here) → keep.
+//      2. google-services.json at project root → copy in.
+//      3. Otherwise, write a minimal valid placeholder with the correct package name so the
+//         Google Services Gradle plugin does not abort the build. Push notifications will only
+//         work after a real file is uploaded via Appflow → Native Configs (or committed at root).
+{
+  const dst = path.join(appDir, "google-services.json");
+  const rootCopy = path.join(root, "google-services.json");
+  fs.mkdirSync(appDir, { recursive: true });
+  if (fs.existsSync(dst)) {
+    console.log("🔥 google-services.json already at android/app/ — keeping Appflow/native upload.");
+  } else if (fs.existsSync(rootCopy)) {
+    fs.copyFileSync(rootCopy, dst);
+    console.log("🔥 Copied google-services.json from project root → android/app/");
+  } else {
+    const placeholder = {
+      project_info: {
+        project_number: "000000000000",
+        project_id: "karo-online-placeholder",
+        storage_bucket: "karo-online-placeholder.appspot.com",
+      },
+      client: [
+        {
+          client_info: {
+            mobilesdk_app_id: "1:000000000000:android:0000000000000000000000",
+            android_client_info: { package_name: "app.karoonline.twa" },
+          },
+          oauth_client: [],
+          api_key: [{ current_key: "AIzaSyDUMMYPLACEHOLDERKEYDONOTUSE0000000" }],
+          services: { appinvite_service: { other_platform_oauth_client: [] } },
+        },
+      ],
+      configuration_version: "1",
+    };
+    fs.writeFileSync(dst, JSON.stringify(placeholder, null, 2));
+    console.warn("⚠️  Wrote PLACEHOLDER google-services.json. Upload real file via Appflow → Native Configs for FCM to work.");
+  }
+}
+
+
 // 1) Native loud alert sound channel asset.
 fs.mkdirSync(resRawDir, { recursive: true });
 const srcSound = path.join(root, "public/sounds/lead-ring.mp3");
