@@ -356,9 +356,35 @@ android {`);
         }
     }`);
   }
-  gradle = gradle.replace(/minSdkVersion\s+\d+/g, "minSdkVersion 26");
-  gradle = gradle.replace(/targetSdkVersion\s+\d+/g, "targetSdkVersion 35");
-  gradle = gradle.replace(/compileSdkVersion\s+\d+/g, "compileSdkVersion 35");
+  // Normalize any existing SDK declarations (both old `xxxSdkVersion N` and new `xxxSdk N` forms).
+  gradle = gradle.replace(/compileSdkVersion\s+[^\s\n]+/g, "compileSdk 35");
+  gradle = gradle.replace(/compileSdk\s+[^\s\n]+/g, "compileSdk 35");
+  gradle = gradle.replace(/minSdkVersion\s+[^\s\n]+/g, "minSdk 26");
+  gradle = gradle.replace(/minSdk\s+[^\s\n]+/g, "minSdk 26");
+  gradle = gradle.replace(/targetSdkVersion\s+[^\s\n]+/g, "targetSdk 35");
+  gradle = gradle.replace(/targetSdk\s+[^\s\n]+/g, "targetSdk 35");
+
+  // Guarantee compileSdk/minSdk/targetSdk are present inside the android {} block.
+  // Capacitor 7 reads these from android/variables.gradle via rootProject.ext, but if
+  // that resolution fails (or the values are missing) AGP errors with
+  // "project ':app' does not specify compileSdk". Inject literals as a hard fallback.
+  if (!/compileSdk\s+\d+/.test(gradle)) {
+    gradle = gradle.replace(/android\s*\{/, `android {
+    compileSdk 35
+    defaultConfig {
+        minSdk 26
+        targetSdk 35
+    }`);
+  } else {
+    if (!/defaultConfig\s*\{[\s\S]*?minSdk\s+\d+/.test(gradle)) {
+      gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
+        minSdk 26`);
+    }
+    if (!/defaultConfig\s*\{[\s\S]*?targetSdk\s+\d+/.test(gradle)) {
+      gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
+        targetSdk 35`);
+    }
+  }
 
   // Force Java 17 toolchain (Capacitor 7 defaults to Java 21 which fails on JDK 17 runners).
   gradle = gradle.replace(/JavaVersion\.VERSION_\d+/g, "JavaVersion.VERSION_17");
