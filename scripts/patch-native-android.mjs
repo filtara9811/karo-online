@@ -378,33 +378,47 @@ android {`);
         }
     }`);
   }
-  // Normalize any existing SDK declarations (both old `xxxSdkVersion N` and new `xxxSdk N` forms).
-  gradle = gradle.replace(/compileSdkVersion\s+[^\s\n]+/g, "compileSdk 35");
-  gradle = gradle.replace(/compileSdk\s+[^\s\n]+/g, "compileSdk 35");
-  gradle = gradle.replace(/minSdkVersion\s+[^\s\n]+/g, "minSdk 26");
-  gradle = gradle.replace(/minSdk\s+[^\s\n]+/g, "minSdk 26");
-  gradle = gradle.replace(/targetSdkVersion\s+[^\s\n]+/g, "targetSdk 35");
-  gradle = gradle.replace(/targetSdk\s+[^\s\n]+/g, "targetSdk 35");
+  // Normalize any existing SDK declarations. Capacitor/AGP templates may use
+  // any of these forms:
+  //   compileSdkVersion rootProject.ext.compileSdkVersion
+  //   compileSdk rootProject.ext.compileSdkVersion
+  //   compileSdk = rootProject.ext.compileSdkVersion
+  // Use assignment syntax because it is accepted by modern Android Gradle
+  // Plugin and avoids Groovy method-resolution edge cases in generated files.
+  gradle = gradle.replace(/compileSdkVersion\s*=\s*[^\n]+/g, "compileSdk = 35");
+  gradle = gradle.replace(/compileSdkVersion\s+[^\n]+/g, "compileSdk = 35");
+  gradle = gradle.replace(/compileSdk\s*=\s*[^\n]+/g, "compileSdk = 35");
+  gradle = gradle.replace(/compileSdk\s+(?![=])[^\n]+/g, "compileSdk = 35");
+  gradle = gradle.replace(/minSdkVersion\s*=\s*[^\n]+/g, "minSdk = 26");
+  gradle = gradle.replace(/minSdkVersion\s+[^\n]+/g, "minSdk = 26");
+  gradle = gradle.replace(/minSdk\s*=\s*[^\n]+/g, "minSdk = 26");
+  gradle = gradle.replace(/minSdk\s+(?![=])[^\n]+/g, "minSdk = 26");
+  gradle = gradle.replace(/targetSdkVersion\s*=\s*[^\n]+/g, "targetSdk = 35");
+  gradle = gradle.replace(/targetSdkVersion\s+[^\n]+/g, "targetSdk = 35");
+  gradle = gradle.replace(/targetSdk\s*=\s*[^\n]+/g, "targetSdk = 35");
+  gradle = gradle.replace(/targetSdk\s+(?![=])[^\n]+/g, "targetSdk = 35");
 
-  // Guarantee compileSdk/minSdk/targetSdk are present inside the android {} block.
-  // Capacitor 7 reads these from android/variables.gradle via rootProject.ext, but if
-  // that resolution fails (or the values are missing) AGP errors with
-  // "project ':app' does not specify compileSdk". Inject literals as a hard fallback.
-  if (!/compileSdk\s+\d+/.test(gradle)) {
+  // Guarantee compileSdk/minSdk/targetSdk are present in the correct Gradle
+  // blocks. Do NOT inject a second defaultConfig block unless the generated
+  // file truly has none; duplicated/nested blocks can make AGP ignore compileSdk.
+  if (!/compileSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
     gradle = gradle.replace(/android\s*\{/, `android {
-    compileSdk 35
+    compileSdk = 35`);
+  }
+  if (!/defaultConfig\s*\{/.test(gradle)) {
+    gradle = gradle.replace(/android\s*\{/, `android {
     defaultConfig {
-        minSdk 26
-        targetSdk 35
+        minSdk = 26
+        targetSdk = 35
     }`);
   } else {
-    if (!/defaultConfig\s*\{[\s\S]*?minSdk\s+\d+/.test(gradle)) {
+    if (!/defaultConfig\s*\{[\s\S]*?minSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
       gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
-        minSdk 26`);
+        minSdk = 26`);
     }
-    if (!/defaultConfig\s*\{[\s\S]*?targetSdk\s+\d+/.test(gradle)) {
+    if (!/defaultConfig\s*\{[\s\S]*?targetSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
       gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
-        targetSdk 35`);
+        targetSdk = 35`);
     }
   }
 

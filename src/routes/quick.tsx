@@ -243,8 +243,15 @@ function QuickPage() {
   const { profile, isAuthenticated, ready } = useAuth();
   const { requireAuth } = useAuthGate();
   const geo = useGeolocation();
-  const [activeTypeCode] = useActiveTypeId();
-  const typeCode = activeTypeCode ?? "service";
+  const [activeTypeCode, setActiveTypeCode] = useActiveTypeId();
+  const typeCode = "service";
+
+  // /quick is the customer service screen. Some customers had an old
+  // localStorage value of "product" or "other", which filtered the service
+  // catalog out and showed "No categories yet" only on their phones.
+  useEffect(() => {
+    if (activeTypeCode !== "service") setActiveTypeCode("service");
+  }, [activeTypeCode, setActiveTypeCode]);
 
   // Onboarding carousel — first-visit only
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -964,25 +971,6 @@ function QuickPage() {
             );
           })}
 
-          {/* Suggest a category card (bottom of sub-category list) */}
-          {!loading && (
-            <button
-              type="button"
-              onClick={() => requireAuth(() => openSuggest({ category_name: selectedRoot?.name ?? "" }))}
-              className={`${isGridView ? "col-span-2" : ""} group w-full rounded-2xl border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.55)] bg-[color:oklch(0.99_0.01_85)] hover:bg-[color:oklch(0.97_0.03_85)] transition-colors p-4 flex flex-col items-center justify-center gap-1.5`}
-              aria-label="Other / Custom Request"
-            >
-              <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#fdf3c8] to-[#fff8dc] border-2 border-[color:oklch(0.78_0.14_82/0.5)] grid place-items-center">
-                <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
-              </span>
-              <span className="font-display text-sm font-bold text-[color:oklch(0.30_0.05_85)]">
-                Other / Custom Request
-              </span>
-              <span className="text-[11px] text-[color:oklch(0.45_0.08_85)] text-center leading-tight">
-                Don't see what you need? Describe it — we'll match a vendor.
-              </span>
-            </button>
-          )}
         </motion.div>
       </section>
 
@@ -1062,20 +1050,6 @@ function QuickPage() {
             No categories
           </span>
         )}
-        {/* Other / Custom Request tile (end of left rail) */}
-        <button
-          type="button"
-          onClick={() => requireAuth(() => openSuggest())}
-          aria-label="Other / Custom Request"
-          className="group flex-shrink-0 flex flex-col items-center gap-0.5 w-full px-1 pt-1"
-        >
-          <span className="relative h-11 w-11 rounded-full grid place-items-center border-2 border-dashed border-[color:oklch(0.78_0.14_82/0.6)] bg-white/70">
-            <Plus className="h-5 w-5 text-[color:oklch(0.45_0.15_60)]" strokeWidth={2.5} />
-          </span>
-          <span className="text-[8.5px] font-display font-semibold tracking-tight leading-tight w-full text-center text-[color:oklch(0.45_0.08_85)]">
-            Other
-          </span>
-        </button>
       </section>
       )}
 
