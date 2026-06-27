@@ -220,8 +220,31 @@ jobs:
           echo "APP_VERSION_NAME=1.0.$CODE" >> $GITHUB_ENV
           echo "📦 versionCode=$CODE versionName=1.0.$CODE"
 
-      - name: Build web and sync native project
-        run: bun run native:sync
+      - name: Build web assets
+        run: bun run build
+
+      - name: Sync, patch, and verify native Android project
+        run: |
+          set -euo pipefail
+          if [ ! -d android ]; then
+            bunx cap add android
+          fi
+          bunx cap sync android
+          bun run native:patch
+
+          if [ ! -f android/app/build.gradle ]; then
+            echo "::error::android/app/build.gradle was not generated. Capacitor Android sync failed before Gradle build."
+            exit 1
+          fi
+
+          echo "==================== ANDROID SDK CONFIG ===================="
+          grep -nE "compileSdk|compileSdkVersion|minSdk|targetSdk" android/app/build.gradle android/variables.gradle || true
+          echo "============================================================"
+
+          if ! grep -Eq "compileSdk[[:space:]]*(=| )[[:space:]]*35|compileSdkVersion[[:space:]]*(=| )[[:space:]]*35" android/app/build.gradle android/variables.gradle; then
+            echo "::error::compileSdk 35 was not written to the generated Android project."
+            exit 1
+          fi
 
 
       - name: Build signed APK and AAB
