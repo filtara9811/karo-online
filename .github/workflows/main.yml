@@ -15,4 +15,5 @@ jobs:
       - name: Build with Gradle
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleRelease
