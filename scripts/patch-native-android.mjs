@@ -332,6 +332,28 @@ write(stylesPath, `<?xml version="1.0" encoding="utf-8"?>
 `);
 
 // 7) Gradle signing + release config.
+// 7a) Force android/variables.gradle to contain known good SDK versions so any
+//     `rootProject.ext.compileSdkVersion` reference in generated build.gradle resolves.
+const variablesGradlePath = path.join(androidDir, "variables.gradle");
+write(variablesGradlePath, `ext {
+    minSdkVersion = 26
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+    androidxActivityVersion = '1.9.2'
+    androidxAppCompatVersion = '1.7.0'
+    androidxCoordinatorLayoutVersion = '1.2.0'
+    androidxCoreVersion = '1.13.1'
+    androidxFragmentVersion = '1.8.2'
+    coreSplashScreenVersion = '1.0.1'
+    androidxWebkitVersion = '1.11.0'
+    junitVersion = '4.13.2'
+    androidxJunitVersion = '1.2.1'
+    androidxEspressoCoreVersion = '3.6.1'
+    cordovaAndroidVersion = '10.1.1'
+}
+`);
+console.log("📐 Wrote android/variables.gradle with compileSdkVersion=35");
+
 if (fs.existsSync(buildGradlePath)) {
   let gradle = read(buildGradlePath);
   if (!gradle.includes("keystorePropertiesFile")) {
