@@ -12,17 +12,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Find and Copy Google Services File
-        run: |
-          # यह कमांड पूरे प्रोजेक्ट में फाइल को ढूँढेगी और उसे सही जगह कॉपी कर देगी
-          FILE_PATH=$(find . -name "google-services.json" | head -n 1)
-          if [ -f "$FILE_PATH" ]; then
-            echo "File found at: $FILE_PATH"
-            cp "$FILE_PATH" android/app/google-services.json
-          else
-            echo "File not found anywhere!"
-            exit 1
-          fi
       - name: Build with Gradle
         run: |
           cd android
