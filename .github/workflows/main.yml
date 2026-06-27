@@ -12,10 +12,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'tempt'
-      - name: Copy Google Services File
-        run: |
-          # यह लाइन फाइल को उठाकर सही जगह रख देगी
-          cp google-services.json android/app/google-services.json
       - name: Build with Gradle
         run: |
           cd android
