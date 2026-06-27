@@ -354,19 +354,40 @@ write(variablesGradlePath, `ext {
 `);
 console.log("📐 Wrote android/variables.gradle with compileSdkVersion=35");
 
-if (fs.existsSync(buildGradlePath)) {
-  let gradle = read(buildGradlePath);
-  if (!gradle.includes("keystorePropertiesFile")) {
-    gradle = gradle.replace(/android\s*\{/, `def keystoreProperties = new Properties()
+// 7b) Overwrite android/app/build.gradle with a complete, known-good template.
+//     Stop patching the Capacitor-generated file with multiple regex injections
+//     (the stacked replacements were producing duplicate/nested blocks and
+//     intermittent Groovy ScriptCompilationException failures).
+{
+  const BASE_VERSION_CODE = 10;
+  const envCode = parseInt(process.env.APP_VERSION_CODE || "", 10);
+  const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode : BASE_VERSION_CODE;
+  const versionName = process.env.APP_VERSION_NAME || `1.0.${versionCode}`;
+
+  const buildGradle = `apply plugin: 'com.android.application'
+
+def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-android {`);
-  }
-  if (!gradle.includes("signingConfigs")) {
-    gradle = gradle.replace(/android\s*\{/, `android {
+android {
+    namespace "app.karoonline.twa"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "app.karoonline.twa"
+        minSdkVersion 26
+        targetSdkVersion 35
+        versionCode ${versionCode}
+        versionName "${versionName}"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
@@ -376,92 +397,59 @@ android {`);
                 keyPassword keystoreProperties['keyPassword']
             }
         }
-    }`);
-  }
-  // Normalize any existing SDK declarations. Capacitor/AGP templates may use
-  // any of these forms:
-  //   compileSdkVersion rootProject.ext.compileSdkVersion
-  //   compileSdk rootProject.ext.compileSdkVersion
-  //   compileSdk = rootProject.ext.compileSdkVersion
-  // Use assignment syntax because it is accepted by modern Android Gradle
-  // Plugin and avoids Groovy method-resolution edge cases in generated files.
-  gradle = gradle.replace(/compileSdkVersion\s*=\s*[^\n]+/g, "compileSdk = 35");
-  gradle = gradle.replace(/compileSdkVersion\s+[^\n]+/g, "compileSdk = 35");
-  gradle = gradle.replace(/compileSdk\s*=\s*[^\n]+/g, "compileSdk = 35");
-  gradle = gradle.replace(/compileSdk\s+(?![=])[^\n]+/g, "compileSdk = 35");
-  gradle = gradle.replace(/minSdkVersion\s*=\s*[^\n]+/g, "minSdk = 26");
-  gradle = gradle.replace(/minSdkVersion\s+[^\n]+/g, "minSdk = 26");
-  gradle = gradle.replace(/minSdk\s*=\s*[^\n]+/g, "minSdk = 26");
-  gradle = gradle.replace(/minSdk\s+(?![=])[^\n]+/g, "minSdk = 26");
-  gradle = gradle.replace(/targetSdkVersion\s*=\s*[^\n]+/g, "targetSdk = 35");
-  gradle = gradle.replace(/targetSdkVersion\s+[^\n]+/g, "targetSdk = 35");
-  gradle = gradle.replace(/targetSdk\s*=\s*[^\n]+/g, "targetSdk = 35");
-  gradle = gradle.replace(/targetSdk\s+(?![=])[^\n]+/g, "targetSdk = 35");
-
-  // Guarantee compileSdk/minSdk/targetSdk are present in the correct Gradle
-  // blocks. Do NOT inject a second defaultConfig block unless the generated
-  // file truly has none; duplicated/nested blocks can make AGP ignore compileSdk.
-  if (!/compileSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
-    gradle = gradle.replace(/android\s*\{/, `android {
-    compileSdk = 35`);
-  }
-  if (!/defaultConfig\s*\{/.test(gradle)) {
-    gradle = gradle.replace(/android\s*\{/, `android {
-    defaultConfig {
-        minSdk = 26
-        targetSdk = 35
-    }`);
-  } else {
-    if (!/defaultConfig\s*\{[\s\S]*?minSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
-      gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
-        minSdk = 26`);
     }
-    if (!/defaultConfig\s*\{[\s\S]*?targetSdk\s*(?:=|\s)\s*\d+/.test(gradle)) {
-      gradle = gradle.replace(/defaultConfig\s*\{/, `defaultConfig {
-        targetSdk = 35`);
-    }
-  }
 
-  // Force Java 17 toolchain (Capacitor 7 defaults to Java 21 which fails on JDK 17 runners).
-  gradle = gradle.replace(/JavaVersion\.VERSION_\d+/g, "JavaVersion.VERSION_17");
-  gradle = gradle.replace(/jvmTarget\s*=?\s*["']\d+["']/g, 'jvmTarget = "17"');
-  if (!/compileOptions\s*\{/.test(gradle)) {
-    gradle = gradle.replace(/android\s*\{/, `android {
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
-    }`);
-  }
+    }
+}
 
-  // Auto-bump versionCode / versionName so Play Console never rejects with
-  // "Version code X has already been used". Workflow passes APP_VERSION_CODE
-  // (github.run_number + offset) and APP_VERSION_NAME. Fallback keeps local
-  // builds working.
-  const BASE_VERSION_CODE = 10; // strictly greater than any previously uploaded code (last used: 3)
-  const envCode = parseInt(process.env.APP_VERSION_CODE || "", 10);
-  const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode : BASE_VERSION_CODE;
-  const versionName = process.env.APP_VERSION_NAME || `1.0.${versionCode}`;
-  gradle = gradle.replace(/versionCode\s+\d+/g, `versionCode ${versionCode}`);
-  gradle = gradle.replace(/versionName\s+"[^"]*"/g, `versionName "${versionName}"`);
-  console.log(`📦 Android versionCode=${versionCode} versionName=${versionName}`);
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
 
-  // Inject signingConfig ONLY into buildTypes.release (not signingConfigs.release).
-  if (!/buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?signingConfig\s+signingConfigs\.release/.test(gradle)) {
-    gradle = gradle.replace(/(buildTypes\s*\{\s*release\s*\{)/, `$1
-            signingConfig signingConfigs.release`);
-  }
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:\$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:\$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:\$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:\$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:\$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:\$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-messaging'
+}
 
-  // Older patched runs used project.file(...), which points at android/app/.
-  // key.properties lives in android/ and storeFile=upload-keystore.jks is rooted there.
-  gradle = gradle.replace(
-    /storeFile\s+file\(keystoreProperties\['storeFile'\]\)/g,
-    "storeFile rootProject.file(keystoreProperties['storeFile'])",
-  );
+apply from: 'capacitor.build.gradle'
 
-  write(buildGradlePath, gradle);
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
+`;
+  write(buildGradlePath, buildGradle);
+  console.log(`📦 Wrote android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName})`);
 }
 
 // 5) Force JavaVersion.VERSION_17 in every gradle file under android/ (Capacitor 7 modules
