@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -88,6 +88,19 @@ jobs:
             echo "::error::google-services.json was not written correctly at android/app/google-services.json."
             exit 1
           fi
+          node -e '
+            const fs = require("fs");
+            const file = process.argv[1];
+            const expected = "app.karoonline.twa";
+            const json = JSON.parse(fs.readFileSync(file, "utf8"));
+            const packages = (json.client || [])
+              .map((client) => client?.client_info?.android_client_info?.package_name)
+              .filter(Boolean);
+            if (!packages.includes(expected)) {
+              console.error(`::error::google-services.json package mismatch. Expected ${expected}, found: ${packages.join(", ") || "none"}. Download Firebase Android config for package ${expected}.`);
+              process.exit(1);
+            }
+          ' "$GOOGLE_SERVICES_PATH"
           echo "✅ google-services.json ready at android/app/google-services.json"
 
           KEYSTORE_BASE64="${ANDROID_KEYSTORE_BASE64:-}"
@@ -113,7 +126,8 @@ jobs:
 
           ANDROID_KEYSTORE_PASSWORD="${ANDROID_KEYSTORE_PASSWORD:-${BUBBLEWRAP_KEYSTORE_PASSWORD:-}}"
           ANDROID_KEY_ALIAS="${ANDROID_KEY_ALIAS:-${BUBBLEWRAP_KEY_ALIAS:-}}"
-          ANDROID_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${BUBBLEWRAP_KEY_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}}"
+          PROVIDED_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${BUBBLEWRAP_KEY_PASSWORD:-}}"
+          ANDROID_KEY_PASSWORD="${PROVIDED_KEY_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}"
 
           if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
             echo "::error::Signing secrets required. Add ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_PASSWORD (or matching BUBBLEWRAP_* fallback names). If key password is same as store password, ANDROID_KEY_PASSWORD can be omitted."
@@ -155,14 +169,6 @@ jobs:
             fi
           fi
 
-          cat > "$KEY_PROPERTIES_PATH" <<KEYEOF
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          storeFile=upload-keystore.jks
-          KEYEOF
-          chmod 600 "$KEY_PROPERTIES_PATH"
-
           if ! keytool -list \
             -keystore "$KEYSTORE_PATH" \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
@@ -173,7 +179,38 @@ jobs:
             printf '%s\n' "$AVAILABLE_PRIVATE_ALIASES"
             exit 1
           fi
-          echo "✅ keystore password and alias verified"
+
+          test_key_password() {
+            local candidate="$1"
+            rm -f "$RUNNER_TEMP/keypass-test.csr"
+            keytool -certreq \
+              -keystore "$KEYSTORE_PATH" \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -alias "$ANDROID_KEY_ALIAS" \
+              -keypass "$candidate" \
+              -file "$RUNNER_TEMP/keypass-test.csr" >/tmp/keytool-keypass-check.log 2>&1
+          }
+
+          if ! test_key_password "$ANDROID_KEY_PASSWORD"; then
+            if [ -n "${PROVIDED_KEY_PASSWORD:-}" ] && [ "$PROVIDED_KEY_PASSWORD" != "$ANDROID_KEYSTORE_PASSWORD" ] && test_key_password "$ANDROID_KEYSTORE_PASSWORD"; then
+              echo "::warning::ANDROID_KEY_PASSWORD did not unlock the private key, but ANDROID_KEYSTORE_PASSWORD did. Using store password as keyPassword for this build."
+              ANDROID_KEY_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
+            else
+              echo "::error::Keystore and alias are correct, but the private key password is wrong. Update ANDROID_KEY_PASSWORD, or delete it if it is the same as ANDROID_KEYSTORE_PASSWORD."
+              sed -E 's/(password|Password|passwd|storepass|keypass)[^[:space:]]*/[redacted]/g' /tmp/keytool-keypass-check.log || true
+              exit 1
+            fi
+          fi
+
+          cat > "$KEY_PROPERTIES_PATH" <<KEYEOF
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=upload-keystore.jks
+          KEYEOF
+          chmod 600 "$KEY_PROPERTIES_PATH"
+
+          echo "✅ keystore password, alias, and private key password verified"
           echo "✅ signing key.properties ready"
 
       - name: Compute auto-bumped version
