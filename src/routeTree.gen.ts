@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendorsRouteImport } from './routes/vendors'
+import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
@@ -117,6 +118,11 @@ import { Route as ApiPublicShareImageKindCodeRouteImport } from './routes/api.pu
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
   path: '/vendors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestBellRoute = TestBellRouteImport.update({
+  id: '/test-bell',
+  path: '/test-bell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
@@ -665,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -770,6 +777,7 @@ export interface FileRoutesByTo {
   '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -877,6 +885,7 @@ export interface FileRoutesById {
   '/shipping-policy': typeof ShippingPolicyRoute
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
@@ -985,6 +994,7 @@ export interface FileRouteTypes {
     | '/shipping-policy'
     | '/status'
     | '/terms-and-conditions'
+    | '/test-bell'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -1090,6 +1100,7 @@ export interface FileRouteTypes {
     | '/shipping-policy'
     | '/status'
     | '/terms-and-conditions'
+    | '/test-bell'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -1196,6 +1207,7 @@ export interface FileRouteTypes {
     | '/shipping-policy'
     | '/status'
     | '/terms-and-conditions'
+    | '/test-bell'
     | '/vendors'
     | '/admin/branding'
     | '/admin/cashfree'
@@ -1303,6 +1315,7 @@ export interface RootRouteChildren {
   ShippingPolicyRoute: typeof ShippingPolicyRoute
   StatusRoute: typeof StatusRoute
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
+  TestBellRoute: typeof TestBellRoute
   VendorsRoute: typeof VendorsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CCodeRoute: typeof CCodeRoute
@@ -1344,6 +1357,13 @@ declare module '@tanstack/react-router' {
       path: '/vendors'
       fullPath: '/vendors'
       preLoaderRoute: typeof VendorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-bell': {
+      id: '/test-bell'
+      path: '/test-bell'
+      fullPath: '/test-bell'
+      preLoaderRoute: typeof TestBellRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms-and-conditions': {
@@ -2198,6 +2218,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShippingPolicyRoute: ShippingPolicyRoute,
   StatusRoute: StatusRoute,
   TermsAndConditionsRoute: TermsAndConditionsRoute,
+  TestBellRoute: TestBellRoute,
   VendorsRoute: VendorsRoute,
   BlogSlugRoute: BlogSlugRoute,
   CCodeRoute: CCodeRoute,
@@ -2234,13 +2255,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
