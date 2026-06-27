@@ -360,6 +360,20 @@ android {`);
   gradle = gradle.replace(/targetSdkVersion\s+\d+/g, "targetSdkVersion 35");
   gradle = gradle.replace(/compileSdkVersion\s+\d+/g, "compileSdkVersion 35");
 
+  // Force Java 17 toolchain (Capacitor 7 defaults to Java 21 which fails on JDK 17 runners).
+  gradle = gradle.replace(/JavaVersion\.VERSION_\d+/g, "JavaVersion.VERSION_17");
+  gradle = gradle.replace(/jvmTarget\s*=?\s*["']\d+["']/g, 'jvmTarget = "17"');
+  if (!/compileOptions\s*\{/.test(gradle)) {
+    gradle = gradle.replace(/android\s*\{/, `android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }`);
+  }
+
   // Auto-bump versionCode / versionName so Play Console never rejects with
   // "Version code X has already been used". Workflow passes APP_VERSION_CODE
   // (github.run_number + offset) and APP_VERSION_NAME. Fallback keeps local
