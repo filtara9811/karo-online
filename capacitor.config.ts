@@ -4,12 +4,14 @@ const config: CapacitorConfig = {
   appId: "app.karoonline.twa",
   appName: "Karo Online",
   webDir: "capacitor-shell",
-  // Bundle assets; for live-reload during dev, set CAP_SERVER_URL env and run cap sync.
+  // Native Android must load inside Capacitor WebView, not hand off to Chrome.
+  // CAP_SERVER_URL remains only for local live-reload testing.
   server: process.env.CAP_SERVER_URL
     ? { url: process.env.CAP_SERVER_URL, cleartext: true, androidScheme: "https" }
     : {
+        url: "https://karoonline.in",
+        cleartext: false,
         androidScheme: "https",
-        hostname: "karoonline.in",
         allowNavigation: ["karoonline.in", "www.karoonline.in"],
       },
   android: {
