@@ -12,6 +12,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Copy Google Services
+        run: |
+          # यह फाइल को सही जगह पर 'फोर्स' करके कॉपी कर देगा
+          cp android/app/google-services.json android/app/google-services.json || echo "Copy failed"
       - name: Build with Gradle
         run: |
           cd android
