@@ -19,12 +19,18 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Verify tool versions
+        run: |
+          node --version
+          bun --version
+          java -version
 
       - name: Install dependencies
         run: bun install --frozen-lockfile || bun install
