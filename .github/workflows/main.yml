@@ -91,7 +91,11 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
+          # --info surfaces the actual AAPT2 resource error if processReleaseResources fails.
+          ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace --info 2>&1 | tee build.log | tail -400
+          echo "::group::Last 200 lines of full Gradle log"
+          tail -200 build.log
+          echo "::endgroup::"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
