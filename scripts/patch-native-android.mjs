@@ -69,6 +69,11 @@ const dstSound = path.join(resRawDir, "lead_ring.mp3");
 if (fs.existsSync(srcSound)) fs.copyFileSync(srcSound, dstSound);
 
 // 2) App launcher icon + native splash image from the Karo Online icon.
+//    AAPT2 fails processReleaseResources when adaptive-icon XMLs reference foreground
+//    drawables that don't exist or live in a mismatched resource type. Strategy:
+//    a) Copy the source icon into every mipmap density as ic_launcher / _round / _foreground.
+//    b) Delete the adaptive-icon XMLs + v24 vector foreground so AAPT just uses the PNG.
+//    c) Consolidate launcher background color into values/colors.xml (no duplicates).
 const iconSource = path.join(root, "public/icon-512.png");
 if (fs.existsSync(iconSource)) {
   for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
@@ -76,11 +81,33 @@ if (fs.existsSync(iconSource)) {
     fs.mkdirSync(mip, { recursive: true });
     fs.copyFileSync(iconSource, path.join(mip, "ic_launcher.png"));
     fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_round.png"));
+    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_foreground.png"));
   }
   const drawableDir = path.join(resDir, "drawable");
   fs.mkdirSync(drawableDir, { recursive: true });
   fs.copyFileSync(iconSource, path.join(drawableDir, "splash.png"));
 }
+for (const rel of [
+  "mipmap-anydpi-v26/ic_launcher.xml",
+  "mipmap-anydpi-v26/ic_launcher_round.xml",
+  "drawable-v24/ic_launcher_foreground.xml",
+  "values/ic_launcher_background.xml",
+]) {
+  const p = path.join(resDir, rel);
+  if (fs.existsSync(p)) { try { fs.unlinkSync(p); console.log(`🧹 removed ${rel}`); } catch {} }
+}
+for (const dir of ["mipmap-anydpi-v26", "drawable-v24"]) {
+  const p = path.join(resDir, dir);
+  try { if (fs.existsSync(p) && fs.readdirSync(p).length === 0) fs.rmdirSync(p); } catch {}
+}
+write(path.join(resDir, "values/colors.xml"), `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="colorPrimary">#D4AF37</color>
+    <color name="colorPrimaryDark">#B8941F</color>
+    <color name="colorAccent">#D4AF37</color>
+</resources>
+`);
 
 // 3) MainActivity true fullscreen / immersive bridge stability.
 const mainActivityPath = path.join(javaDir, "MainActivity.java");
