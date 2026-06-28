@@ -1,43 +1,34 @@
-## Marketing Notifications Module (Admin)
+## Problem
 
-Add a new "Campaigns" tab inside the existing **Admin → Notifications** page (`src/routes/admin.notifications.tsx`) so all push tooling lives in one place.
+GitHub build is failing at **Capacitor sync (android)** with:
 
-### 1. Database (migration)
-- `notification_campaigns` already exists — extend with: `audience_filter jsonb`, `manual_targets jsonb` (list of user_ids/phones), `image_url`, `action_url`, `template_id`, `status`, `sent_count`, `delivered_count`, `failed_count`.
-- New `notification_templates` table: `name`, `title`, `body`, `image_url`, `action_url`, `notification_type`, created_by, timestamps. Admin-only RLS.
-- Storage bucket `notification-media` (public read) for image uploads.
-- RPC `admin_segment_audience(_filter jsonb)` → returns matching `user_id[]` by joining `vendors`/`customers`/`kyc_verifications` (filters: role=vendor|customer|all, city, kyc_status, active_status).
-- RPC `admin_send_campaign(_campaign_id uuid)` → resolves audience (filter ∪ manual), loops `device_tokens`, writes `notification_logs`, calls existing FCM sender.
-- RPC `admin_get_log_details(_status text, _trigger_id uuid?, _campaign_id uuid?)` → joins logs with profile names/phones for the drawer.
+```text
+[fatal] The Capacitor CLI requires NodeJS >=22.0.0
+```
 
-### 2. UI — new tabs added to `admin.notifications.tsx`
-- **Campaigns tab**
-  - "Create New Campaign" button → bottom-sheet editor with: Title, Body, Image upload (SmartMediaPicker → storage), Action URL, Type, **Save as Template** toggle.
-  - **Segmentation card**: Audience type (All / Vendors / Customers), City multi-select (from existing `india-cities`), KYC status (pending/approved/rejected/none), Active status. Live preview count via `admin_segment_audience`.
-  - **Manual targets**: textarea to paste user IDs or 10-digit phones (comma/newline separated) — merged with filter result.
-  - **Templates** strip: load saved templates into the editor.
-  - Send Now / Schedule buttons.
-- **Direct Send card** (top of Campaigns tab): single phone/user ID input + "Send Test" — reuses `sendTestPush` with `to_user_id` param.
-- **Logs tab enhancement**
-  - KPI tiles (Sent/Delivered/Failed) become clickable → open `AdminRecordDrawer` showing data grid: user name, phone, channel, provider, timestamp, error reason. Backed by `admin_get_log_details`.
+This is not an Android resource/signing/google-services issue. The workflow currently sets Node.js to **20**, while the installed Capacitor packages are **8.x**, which require **Node 22 or newer**.
 
-### 3. Server functions (`src/lib/notification-campaigns.functions.ts`)
-- `previewAudience({ filter })` → count + sample
-- `createCampaign({...})`, `listCampaigns()`, `sendCampaignNow({id})`
-- `listTemplates()`, `saveTemplate({...})`, `deleteTemplate({id})`
-- `sendDirectTest({ target, title, body, image_url, action_url })`
-- `getLogDetails({ status, campaign_id? })`
+## Plan
 
-All gated with `requireSupabaseAuth` + `has_role(admin)` check. Privileged sends use `supabaseAdmin` loaded inside the handler.
+1. **Update GitHub Actions Node version**
+   - Change `.github/workflows/main.yml` from `node-version: '20'` to `node-version: '22'`.
+   - Keep JDK at **17**, because Android/Gradle Java compatibility was already stabilized around Java 17.
 
-### 4. Files touched
-- New: migration, `notification-campaigns.functions.ts`, `src/components/admin/CampaignEditor.tsx`, `src/components/admin/SegmentationPanel.tsx`, `src/components/admin/LogDetailDrawer.tsx`.
-- Edited: `src/routes/admin.notifications.tsx` (add Campaigns tab + clickable KPIs + Direct Send).
-- Reuses: `SmartMediaPicker`, existing FCM `sendLeadPushToVendorInternal` style helper, `AdminLayout`, `GoldCard`.
+2. **Add a fast version check before sync**
+   - Add a workflow step after Bun setup to print:
+     - `node --version`
+     - `bun --version`
+     - `java -version`
+   - This will make future logs clear before the build reaches Capacitor/Gradle.
 
-### Notes
-- Audience preview runs server-side to keep PII out of the browser.
-- Image uploads go to the new `notification-media` storage bucket; URL stored on campaign/template.
-- Existing Triggers and Analytics tabs remain unchanged.
+3. **Keep the existing Android build fixes intact**
+   - Do not change signing, google-services, resources, Gradle SDK, package name, or native files in this fix.
+   - The current error happens before those later steps, so changing them now would risk creating another new issue.
 
-Shall I proceed with the migration + implementation?
+4. **Expected next run**
+   - The workflow should pass the **Capacitor sync (android)** step.
+   - If a later Gradle/resource/signing error appears, the existing `--stacktrace --info` Gradle logging should reveal the exact next issue.
+
+## After implementation
+
+Re-run GitHub Actions manually with **Run workflow**. If it fails again, it should now fail later than Capacitor sync, and the logs will show the real Android-side error.
