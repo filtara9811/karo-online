@@ -48,6 +48,27 @@ jobs:
         env:
           APP_VERSION_CODE: ${{ github.run_number }}
 
+      - name: Verify launcher icons present in every mipmap density
+        run: |
+          set -e
+          MISSING=0
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            for f in ic_launcher.png ic_launcher_round.png; do
+              P="android/app/src/main/res/mipmap-$d/$f"
+              if [ ! -f "$P" ]; then
+                echo "❌ MISSING: $P"
+                MISSING=1
+              else
+                echo "✅ $P ($(stat -c%s "$P") bytes)"
+              fi
+            done
+          done
+          if [ $MISSING -ne 0 ]; then
+            echo "Launcher icons missing — patch script did not produce them."
+            exit 1
+          fi
+
+
       - name: Ensure google-services.json is in place
         run: |
           set -e
