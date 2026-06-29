@@ -74,19 +74,43 @@ if (fs.existsSync(srcSound)) fs.copyFileSync(srcSound, dstSound);
 //    a) Copy the source icon into every mipmap density as ic_launcher / _round / _foreground.
 //    b) Delete the adaptive-icon XMLs + v24 vector foreground so AAPT just uses the PNG.
 //    c) Consolidate launcher background color into values/colors.xml (no duplicates).
-const iconSource = path.join(root, "public/icon-512.png");
-if (fs.existsSync(iconSource)) {
-  for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
-    const mip = path.join(resDir, `mipmap-${density}`);
-    fs.mkdirSync(mip, { recursive: true });
-    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher.png"));
-    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_round.png"));
-    fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_foreground.png"));
-  }
-  const drawableDir = path.join(resDir, "drawable");
-  fs.mkdirSync(drawableDir, { recursive: true });
-  fs.copyFileSync(iconSource, path.join(drawableDir, "splash.png"));
+const iconCandidates = [
+  path.join(root, "public/icon-512.png"),
+  path.join(root, "public/icon-192.png"),
+  path.join(root, "public/icon-vendor-512.png"),
+  path.join(root, "public/icon-vendor-192.png"),
+  path.join(root, "src/assets/karo-logo.png"),
+];
+const iconSource = iconCandidates.find((p) => fs.existsSync(p));
+if (!iconSource) {
+  console.error("❌ No launcher icon source found. Looked for:", iconCandidates.join(", "));
+  process.exit(1);
 }
+console.log(`🎨 Using launcher icon source: ${path.relative(root, iconSource)}`);
+for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
+  const mip = path.join(resDir, `mipmap-${density}`);
+  fs.mkdirSync(mip, { recursive: true });
+  fs.copyFileSync(iconSource, path.join(mip, "ic_launcher.png"));
+  fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_round.png"));
+  fs.copyFileSync(iconSource, path.join(mip, "ic_launcher_foreground.png"));
+}
+const drawableDir = path.join(resDir, "drawable");
+fs.mkdirSync(drawableDir, { recursive: true });
+fs.copyFileSync(iconSource, path.join(drawableDir, "splash.png"));
+// Verify icons landed in every mipmap density (catches case-sensitive FS or stale cap sync wipes).
+const missing = [];
+for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
+  for (const f of ["ic_launcher.png", "ic_launcher_round.png"]) {
+    const p = path.join(resDir, `mipmap-${density}`, f);
+    if (!fs.existsSync(p)) missing.push(path.relative(root, p));
+  }
+}
+if (missing.length) {
+  console.error("❌ Launcher icons missing after copy:\n" + missing.join("\n"));
+  process.exit(1);
+}
+console.log("✅ Launcher icons written to all 5 mipmap densities.");
+
 for (const rel of [
   "mipmap-anydpi-v26/ic_launcher.xml",
   "mipmap-anydpi-v26/ic_launcher_round.xml",
