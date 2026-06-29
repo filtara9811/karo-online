@@ -96,17 +96,21 @@ jobs:
       - name: Build release APK & AAB
         working-directory: android
         run: |
+          set -euo pipefail
           chmod +x gradlew
-          # --info surfaces the actual AAPT2 resource error if processReleaseResources fails.
-          ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace --info 2>&1 | tee build.log | tail -400
+          ./gradlew :app:assembleRelease --stacktrace --info 2>&1 | tee build.log
           echo "::group::Last 200 lines of full Gradle log"
           tail -200 build.log
           echo "::endgroup::"
 
-      - name: Upload artifacts
+      - name: List APK files
+        run: |
+          echo "📂 Listing android/app/build/outputs/apk/release/"
+          ls -lah android/app/build/outputs/apk/release/ || echo "⚠️ No APK output directory found"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: karo-online-release
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          name: karo-online-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
