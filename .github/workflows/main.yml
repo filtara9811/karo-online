@@ -98,40 +98,73 @@ jobs:
             && echo "✅ google-services plugin applied in android/app/build.gradle" \
             || (echo "❌ google-services plugin not applied"; exit 1)
 
-      - name: Decode signing keystore (optional)
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+      - name: Decode and verify signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
+            echo "❌ Play Store release signing secrets are missing. Required: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS."
+            exit 1
+          fi
+          KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          keytool -list -keystore android/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           cat > android/key.properties <<EOF
           storeFile=upload-keystore.jks
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
-          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyPassword=${KEY_PASSWORD}
           EOF
+          echo "✅ Release keystore decoded and alias verified."
 
       - name: Build release APK & AAB
         working-directory: android
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew :app:assembleRelease --stacktrace --info 2>&1 | tee build.log
+          set +e
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease --stacktrace --warning-mode all 2>&1 | tee build.log
+          GRADLE_EXIT=${PIPESTATUS[0]}
+          set -e
           echo "::group::Last 200 lines of full Gradle log"
           tail -200 build.log
           echo "::endgroup::"
+          if [ "$GRADLE_EXIT" -ne 0 ]; then
+            echo "::group::Detected Gradle failure details"
+            grep -n -B4 -A30 -E "FAILURE:|What went wrong|Execution failed|invalid source release|Keystore|keystore|AAPT|resource .* not found|error:" build.log | tail -300 || true
+            echo "::endgroup::"
+          fi
+          exit "$GRADLE_EXIT"
 
-      - name: List APK files
+      - name: List release files
         run: |
           echo "📂 Listing android/app/build/outputs/apk/release/"
           ls -lah android/app/build/outputs/apk/release/ || echo "⚠️ No APK output directory found"
+          echo "📂 Listing android/app/build/outputs/bundle/release/"
+          ls -lah android/app/build/outputs/bundle/release/ || echo "⚠️ No AAB output directory found"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: karo-online-apk
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload Play Store AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: karo-online-playstore-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Upload Gradle log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-gradle-build-log
+          path: android/build.log
           if-no-files-found: warn

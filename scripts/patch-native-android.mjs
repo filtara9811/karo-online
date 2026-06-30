@@ -564,9 +564,9 @@ function walk(dir) {
 
 const gradlePatchRoots = [
   androidDir,
-  path.join(root, "node_modules/@capacitor/android/capacitor"),
-  path.join(root, "node_modules/@capacitor-community/bluetooth-le/android"),
-  path.join(root, "node_modules/@capgo/capacitor-updater/android"),
+  path.join(root, "node_modules/@capacitor"),
+  path.join(root, "node_modules/@capacitor-community"),
+  path.join(root, "node_modules/@capgo"),
 ];
 
 const gradleFiles = [...new Set(gradlePatchRoots.flatMap((dir) => walk(dir)))];
