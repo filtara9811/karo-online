@@ -57,15 +57,15 @@ async function sendOne(opts: {
     android: {
       priority: isHigh ? "HIGH" : "NORMAL",
       ttl: isHigh ? "60s" : "3600s",
-      ...(isHigh ? {} : { notification: {
+      notification: {
         channel_id: isHigh ? "lead_alerts_v2" : "default",
         sound: isHigh ? "lead_ring" : "default",
         notification_priority: isHigh ? "PRIORITY_MAX" : "PRIORITY_DEFAULT",
-        default_vibrate_timings: true,
+        default_vibrate_timings: !isHigh,
         default_light_settings: true,
         visibility: "PUBLIC",
         ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
-      } }),
+      },
     },
     apns: {
       headers: { "apns-priority": isHigh ? "10" : "5" },
@@ -103,13 +103,11 @@ async function sendOne(opts: {
       ...(opts.extraData ?? {}),
     },
   };
-  if (!isHigh) {
-    message.notification = {
-      title: opts.title,
-      body: opts.body,
-      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
-    };
-  }
+  message.notification = {
+    title: opts.title,
+    body: opts.body,
+    ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+  };
   const r = await fetch(
     `https://fcm.googleapis.com/v1/projects/${opts.projectId}/messages:send`,
     {
