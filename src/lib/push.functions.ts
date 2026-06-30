@@ -103,13 +103,11 @@ async function sendOne(opts: {
       ...(opts.extraData ?? {}),
     },
   };
-  if (!isHigh) {
-    message.notification = {
-      title: opts.title,
-      body: opts.body,
-      ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
-    };
-  }
+  message.notification = {
+    title: opts.title,
+    body: opts.body,
+    ...(opts.imageUrl ? { image: opts.imageUrl } : {}),
+  };
   const r = await fetch(
     `https://fcm.googleapis.com/v1/projects/${opts.projectId}/messages:send`,
     {
