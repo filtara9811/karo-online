@@ -4,7 +4,7 @@
   "id": "/",
   "start_url": "/",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
   "scope_extensions": [
     { "origin": "https://www.karoonline.in" },
