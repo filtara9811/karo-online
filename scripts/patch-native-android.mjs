@@ -454,7 +454,7 @@ console.log("📐 Wrote android/variables.gradle with compileSdkVersion=35");
 {
   const BASE_VERSION_CODE = 10;
   const envCode = parseInt(process.env.APP_VERSION_CODE || "", 10);
-  const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode : BASE_VERSION_CODE;
+  const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode + BASE_VERSION_CODE : BASE_VERSION_CODE;
   const versionName = process.env.APP_VERSION_NAME || `1.0.${versionCode}`;
 
   const buildGradle = `apply plugin: 'com.android.application'

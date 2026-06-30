@@ -121,7 +121,7 @@ jobs:
           EOF
           echo "✅ Release keystore decoded and alias verified."
 
-      - name: Build release APK & AAB
+      - name: Build signed release APK & Play Store AAB
         working-directory: android
         run: |
           set -euo pipefail
