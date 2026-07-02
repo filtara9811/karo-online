@@ -1304,8 +1304,132 @@ function QuickPage() {
       <SearchOverlay
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
+        items={items}
+        subCategories={categories}
         onSubmit={(q) => {
           console.log("Search:", q);
+        }}
+        onQuickPick={async ({ subId, subName, itemIds, label, image }) => {
+          setSearchOpen(false);
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              requireAuth(() => setSearchOpen(true));
+              return;
+            }
+            // Resolve sub + parent-root from catalog state (search can pick ANY sub).
+            const sub = categories.find((c) => c.id === subId) ?? null;
+            const root = sub?.parent_id ? categories.find((c) => c.id === sub.parent_id) ?? null : null;
+            // Sync UI selection so FindingVendor / VendorList show the right category.
+            if (root) setSelectedRootId(root.id);
+            setSelectedSubId(subId);
+
+            const origin = pickedLocation
+              ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
+              : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
+            if (!origin) {
+              toast.error("Location de\u0902 taaki nearby vendors ko bhej sakein");
+              setLocationSheetOpen(true);
+              return;
+            }
+
+            const itemNames = itemIds
+              .map((id) => items.find((it) => it.id === id)?.name)
+              .filter(Boolean) as string[];
+            const noteWithFilter = `Vendor types: wholesaler, retailer, manufacturer`;
+
+            // OFFLINE queue path
+            if (typeof navigator !== "undefined" && !navigator.onLine) {
+              await enqueue("lead.create", {
+                customer_id: user.id,
+                type_id: root?.type_id ?? activeType?.id ?? null,
+                root_category_id: root?.id ?? null,
+                sub_category_id: subId,
+                sub_category_name: subName,
+                item_ids: itemIds,
+                item_names: itemNames.length ? itemNames : [label],
+                note: noteWithFilter,
+                images: [],
+                address: effectiveLabel ?? null,
+                lat: origin.lat,
+                lng: origin.lng,
+                search_radius_km: searchRadiusKm || 10,
+                vendor_types: ["wholesaler", "retailer", "manufacturer"],
+                is_remote: false,
+                group_name: null,
+              });
+              toast.success("Request saved \u2014 internet aate hi vendors ko bhej denge.");
+              return;
+            }
+
+            const [{ data: profile }, { data: subCatRow }, { data: defaults }] = await Promise.all([
+              supabase.from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle(),
+              supabase.from("categories").select("lead_price_inr, max_vendors_per_lead").eq("id", subId).maybeSingle(),
+              supabase.from("app_settings").select("value").eq("key", "lead_defaults").maybeSingle(),
+            ]);
+            const def = (defaults as any)?.value ?? {};
+            const price = (subCatRow as any)?.lead_price_inr ?? def.default_price_inr ?? 0;
+            const maxSlots = (subCatRow as any)?.max_vendors_per_lead ?? def.max_vendors_per_lead ?? 5;
+
+            const { data: lead, error: leadErr } = await supabase
+              .from("leads")
+              .insert({
+                customer_id: user.id,
+                customer_name: (profile as any)?.name ?? null,
+                customer_phone: (profile as any)?.phone ?? null,
+                type_id: root?.type_id ?? activeType?.id ?? null,
+                root_category_id: root?.id ?? null,
+                sub_category_id: subId,
+                sub_category_name: subName,
+                item_ids: itemIds,
+                item_names: itemNames.length ? itemNames : [label],
+                note: noteWithFilter,
+                images: [],
+                address: pickedLocation?.address ?? (profile as any)?.address ?? geo.label ?? null,
+                lat: origin.lat,
+                lng: origin.lng,
+                max_slots: maxSlots,
+                lead_price_inr: price,
+                search_radius_km: searchRadiusKm || 10,
+                vendor_types: ["wholesaler", "retailer", "manufacturer"],
+                is_remote: false,
+                group_name: null,
+              })
+              .select("id")
+              .single();
+            if (leadErr || !lead) {
+              toast.error(leadErr?.message || "Request create nahi ho paayi");
+              return;
+            }
+            setActiveLeadId(lead.id);
+
+            const { data: matchRes, error: matchErr } = await supabase.rpc("broadcast_next_lead_batch", {
+              _lead_id: lead.id,
+              _batch_size: 5,
+              _ring_index: 0,
+            });
+            const notified = Number((matchRes as any)?.notified ?? 0);
+            const vendorIds: string[] = ((matchRes as any)?.vendor_ids ?? []) as string[];
+            setMatchInfo({ notified, requestedAt: Date.now() });
+            if (matchErr) {
+              toast.error(matchErr.message || "Vendor matching fail");
+            } else if (notified > 0) {
+              toast.success(`\u201C${label}\u201D \u2014 ${notified} vendor ko request bhej di gayi`);
+              const { sendLeadPushToVendor } = await import("@/lib/push.functions");
+              vendorIds.forEach((vid) => {
+                sendLeadPushToVendor({ data: { vendor_id: vid, lead_id: lead.id } })
+                  .catch((e) => console.warn("lead push failed", vid, e));
+              });
+            } else {
+              toast.info("Aapke area me abhi vendor available nahi hain.");
+            }
+            setFindingOpen(true);
+            // Silence unused-var warning for image param
+            void image;
+          } catch (e) {
+            console.error("quick-pick lead create failed", e);
+            toast.error("Request send fail hui \u2014 login/profile check karein");
+          }
         }}
       />
 
