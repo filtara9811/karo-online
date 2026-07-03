@@ -466,43 +466,43 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "app.karoonline.twa"
-    compileSdk 35
+    namespace = "app.karoonline.twa"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId "app.karoonline.twa"
-        minSdkVersion 26
-        targetSdkVersion 35
-        versionCode ${versionCode}
-        versionName "${versionName}"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        applicationId = "app.karoonline.twa"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = ${versionCode}
+        versionName = "${versionName}"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
 
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
-                storeFile rootProject.file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
+                storeFile = rootProject.file(keystoreProperties['storeFile'])
+                storePassword = keystoreProperties['storePassword']
+                keyAlias = keystoreProperties['keyAlias']
+                keyPassword = keystoreProperties['keyPassword']
             }
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
@@ -570,16 +570,55 @@ const gradlePatchRoots = [
 ];
 
 const gradleFiles = [...new Set(gradlePatchRoots.flatMap((dir) => walk(dir)))];
+
+function modernizeGradleAssignmentSyntax(txt) {
+  // Gradle 8.14+/9 rejects property-style calls such as `compileSdk 35`,
+  // `minSdkVersion 24`, `versionCode 1`, `namespace "..."`, etc.
+  // Community Capacitor plugins may still ship that old Groovy DSL syntax, so
+  // normalize every generated/plugin Gradle file before GitHub Actions builds.
+  const assignmentProperties = [
+    "namespace",
+    "applicationId",
+    "testInstrumentationRunner",
+    "versionCode",
+    "versionName",
+    "minifyEnabled",
+    "abortOnError",
+    "checkReleaseBuilds",
+    "warningsAsErrors",
+    "sourceCompatibility",
+    "targetCompatibility",
+    "jvmTarget",
+    "signingConfig",
+  ];
+
+  for (const prop of assignmentProperties) {
+    txt = txt.replace(new RegExp(`^(\\s*)${prop}\\s+(?![=])(.+)$`, "gm"), `$1${prop} = $2`);
+  }
+
+  // Android Gradle Plugin renamed these DSL properties. Using the new names
+  // also avoids the old Gradle-generated method-call form.
+  txt = txt.replace(/^(\s*)compileSdkVersion\s+(?![=])(.+)$/gm, "$1compileSdk = $2");
+  txt = txt.replace(/^(\s*)compileSdk\s+(?![=])(.+)$/gm, "$1compileSdk = $2");
+  txt = txt.replace(/^(\s*)minSdkVersion\s+(?![=])(.+)$/gm, "$1minSdk = $2");
+  txt = txt.replace(/^(\s*)targetSdkVersion\s+(?![=])(.+)$/gm, "$1targetSdk = $2");
+  txt = txt.replace(/^(\s*)minSdk\s+(?![=])(.+)$/gm, "$1minSdk = $2");
+  txt = txt.replace(/^(\s*)targetSdk\s+(?![=])(.+)$/gm, "$1targetSdk = $2");
+
+  return txt;
+}
+
 for (const gf of gradleFiles) {
   let txt = fs.readFileSync(gf, "utf8");
   const before = txt;
+  txt = modernizeGradleAssignmentSyntax(txt);
   txt = txt.replace(/JavaVersion\.VERSION_(?:19|20|21|22|23|24)\b/g, "JavaVersion.VERSION_17");
   txt = txt.replace(/JvmTarget\.JVM_(?:19|20|21|22|23|24)\b/g, "JvmTarget.JVM_17");
   txt = txt.replace(/jvmTarget\s*=\s*["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
-  txt = txt.replace(/jvmTarget\s+["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget "17"');
+  txt = txt.replace(/jvmTarget\s+["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
   if (txt !== before) {
     fs.writeFileSync(gf, txt);
-    console.log("☕ Forced Java 17 in", path.relative(root, gf));
+    console.log("🛠️  Normalized Gradle DSL / Java 17 in", path.relative(root, gf));
   }
 }
 
@@ -589,5 +628,22 @@ if (remainingJava21.length > 0) {
   for (const gf of remainingJava21) console.error(" -", path.relative(root, gf));
   process.exit(1);
 }
+
+const oldAssignmentSyntax = /^(\s*)(namespace|applicationId|testInstrumentationRunner|compileSdkVersion|compileSdk|minSdkVersion|targetSdkVersion|minSdk|targetSdk|versionCode|versionName|minifyEnabled|abortOnError|checkReleaseBuilds|warningsAsErrors|sourceCompatibility|targetCompatibility|jvmTarget|signingConfig)\s+(?![=]).+$/gm;
+const remainingOldSyntax = [];
+for (const gf of gradleFiles) {
+  const rel = path.relative(root, gf);
+  const txt = fs.readFileSync(gf, "utf8");
+  for (const match of txt.matchAll(oldAssignmentSyntax)) {
+    const line = txt.slice(0, match.index).split("\n").length;
+    remainingOldSyntax.push(`${rel}:${line}: ${match[0].trim()}`);
+  }
+}
+if (remainingOldSyntax.length > 0) {
+  console.error("Old Gradle property assignment syntax remains:");
+  for (const line of remainingOldSyntax) console.error(" -", line);
+  process.exit(1);
+}
+console.log("✅ Gradle DSL syntax normalized for Gradle 8.14+/9 compatibility.");
 
 console.log("✅ Native Android patches applied: foreground lead service, FCM data alerts, immersive mode, signing, cache-safe release.");
