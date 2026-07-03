@@ -153,6 +153,7 @@ jobs:
           name: karo-online-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+          retention-days: 30
 
       - name: Upload Play Store AAB artifact
         uses: actions/upload-artifact@v4
@@ -160,6 +161,19 @@ jobs:
           name: karo-online-playstore-aab
           path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Add one-click download links to build summary
+        run: |
+          {
+            echo "## ✅ Karo Online Android build ready"
+            echo ""
+            echo "Download buttons are available in this workflow run's **Artifacts** section:"
+            echo "- **karo-online-apk** → installable APK"
+            echo "- **karo-online-playstore-aab** → Play Store upload AAB"
+            echo ""
+            echo "Open this run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Gradle log on failure
         if: failure()
