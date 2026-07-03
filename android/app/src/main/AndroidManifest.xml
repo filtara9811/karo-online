@@ -36,6 +36,10 @@
        
        
        
+       
+       
+       
+       
         android:label="Karo Online"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -48,6 +52,9 @@
            
             android:launchMode="singleTask"
             android:exported="true"
+           
+           
+           
            
            
            
