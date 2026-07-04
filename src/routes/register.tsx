@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
+import { RoleChoiceScreen } from "@/components/RoleChoiceScreen";
 import { IntroSplash, SPLASH_SESSION_KEY } from "@/components/IntroSplash";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -26,8 +27,9 @@ function Register() {
     window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
   const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
 
-  // Show branded splash once per session (cold app open).
   const [showSplash, setShowSplash] = useState(false);
+  const [showRoleChoice, setShowRoleChoice] = useState(false);
+
   useEffect(() => {
     try {
       if (typeof window !== "undefined" && !sessionStorage.getItem(SPLASH_SESSION_KEY)) {
@@ -36,19 +38,29 @@ function Register() {
     } catch {}
   }, []);
 
-  // If already registered → go straight to home (hard gate satisfied).
+  // Already registered → go straight home (skip role choice — one-time only).
   useEffect(() => {
-    if (ready && profileComplete && !showSplash) navigate({ to: "/quick", replace: true });
-  }, [navigate, profileComplete, ready, showSplash]);
+    if (ready && profileComplete && !showSplash && !showRoleChoice) {
+      navigate({ to: "/quick", replace: true });
+    }
+  }, [navigate, profileComplete, ready, showSplash, showRoleChoice]);
 
   if (showSplash) {
     return (
       <IntroSplash
         onDone={() => {
           setShowSplash(false);
-          // After splash: if already authed, send straight to home.
           if (ready && profileComplete) navigate({ to: "/quick", replace: true });
         }}
+      />
+    );
+  }
+
+  if (showRoleChoice) {
+    return (
+      <RoleChoiceScreen
+        onBuyer={() => navigate({ to: "/quick", replace: true })}
+        onSeller={() => navigate({ to: "/vendor/join", replace: true })}
       />
     );
   }
@@ -58,7 +70,7 @@ function Register() {
   return (
     <RegistrationFlow
       onBack={() => navigate({ to: "/quick" })}
-      onComplete={() => navigate({ to: "/quick" })}
+      onComplete={() => setShowRoleChoice(true)}
     />
   );
 }
