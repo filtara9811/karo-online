@@ -429,10 +429,10 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
 
   const handleSuccessHome = () => {
     setSuccessOpen(false);
+    // Parent (register route / AuthGate) decides where to send the user next —
+    // customer flow shows the buyer-vs-seller RoleChoiceScreen; vendor flow
+    // continues its own path. Do NOT auto-navigate here.
     onComplete?.();
-    if (flow !== "vendor") {
-      try { navigate({ to: "/quick" }); } catch { /* ignore */ }
-    }
   };
 
   return (
