@@ -3307,16 +3307,20 @@ export type Database = {
           deals_in: string | null
           email: string | null
           entity: string | null
+          experience_years: number | null
           facebook: string | null
+          gallery_urls: string[]
           google_place_id: string | null
           gst: string | null
           id: string
           instagram: string | null
+          intro_video_url: string | null
           is_blocked: boolean
           is_online: boolean
           is_premium: boolean
           is_remote_capable: boolean
           lat: number | null
+          lead_preferences: Json | null
           live_lat: number | null
           live_lng: number | null
           lng: number | null
@@ -3329,6 +3333,7 @@ export type Database = {
           payment_completed: boolean
           payment_completed_at: string | null
           plan: string | null
+          profile_photo_url: string | null
           referral: string | null
           referral_active: boolean
           role: string | null
@@ -3347,6 +3352,7 @@ export type Database = {
           verified: boolean
           website: string | null
           whatsapp: string | null
+          working_hours: Json | null
         }
         Insert: {
           aadhaar?: string | null
@@ -3362,16 +3368,20 @@ export type Database = {
           deals_in?: string | null
           email?: string | null
           entity?: string | null
+          experience_years?: number | null
           facebook?: string | null
+          gallery_urls?: string[]
           google_place_id?: string | null
           gst?: string | null
           id?: string
           instagram?: string | null
+          intro_video_url?: string | null
           is_blocked?: boolean
           is_online?: boolean
           is_premium?: boolean
           is_remote_capable?: boolean
           lat?: number | null
+          lead_preferences?: Json | null
           live_lat?: number | null
           live_lng?: number | null
           lng?: number | null
@@ -3384,6 +3394,7 @@ export type Database = {
           payment_completed?: boolean
           payment_completed_at?: string | null
           plan?: string | null
+          profile_photo_url?: string | null
           referral?: string | null
           referral_active?: boolean
           role?: string | null
@@ -3402,6 +3413,7 @@ export type Database = {
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
+          working_hours?: Json | null
         }
         Update: {
           aadhaar?: string | null
@@ -3417,16 +3429,20 @@ export type Database = {
           deals_in?: string | null
           email?: string | null
           entity?: string | null
+          experience_years?: number | null
           facebook?: string | null
+          gallery_urls?: string[]
           google_place_id?: string | null
           gst?: string | null
           id?: string
           instagram?: string | null
+          intro_video_url?: string | null
           is_blocked?: boolean
           is_online?: boolean
           is_premium?: boolean
           is_remote_capable?: boolean
           lat?: number | null
+          lead_preferences?: Json | null
           live_lat?: number | null
           live_lng?: number | null
           lng?: number | null
@@ -3439,6 +3455,7 @@ export type Database = {
           payment_completed?: boolean
           payment_completed_at?: string | null
           plan?: string | null
+          profile_photo_url?: string | null
           referral?: string | null
           referral_active?: boolean
           role?: string | null
@@ -3457,6 +3474,7 @@ export type Database = {
           verified?: boolean
           website?: string | null
           whatsapp?: string | null
+          working_hours?: Json | null
         }
         Relationships: []
       }
@@ -5198,16 +5216,20 @@ export type Database = {
               deals_in: string | null
               email: string | null
               entity: string | null
+              experience_years: number | null
               facebook: string | null
+              gallery_urls: string[]
               google_place_id: string | null
               gst: string | null
               id: string
               instagram: string | null
+              intro_video_url: string | null
               is_blocked: boolean
               is_online: boolean
               is_premium: boolean
               is_remote_capable: boolean
               lat: number | null
+              lead_preferences: Json | null
               live_lat: number | null
               live_lng: number | null
               lng: number | null
@@ -5220,6 +5242,7 @@ export type Database = {
               payment_completed: boolean
               payment_completed_at: string | null
               plan: string | null
+              profile_photo_url: string | null
               referral: string | null
               referral_active: boolean
               role: string | null
@@ -5238,6 +5261,7 @@ export type Database = {
               verified: boolean
               website: string | null
               whatsapp: string | null
+              working_hours: Json | null
             }
             SetofOptions: {
               from: "*"
@@ -5282,16 +5306,20 @@ export type Database = {
               deals_in: string | null
               email: string | null
               entity: string | null
+              experience_years: number | null
               facebook: string | null
+              gallery_urls: string[]
               google_place_id: string | null
               gst: string | null
               id: string
               instagram: string | null
+              intro_video_url: string | null
               is_blocked: boolean
               is_online: boolean
               is_premium: boolean
               is_remote_capable: boolean
               lat: number | null
+              lead_preferences: Json | null
               live_lat: number | null
               live_lng: number | null
               lng: number | null
@@ -5304,6 +5332,7 @@ export type Database = {
               payment_completed: boolean
               payment_completed_at: string | null
               plan: string | null
+              profile_photo_url: string | null
               referral: string | null
               referral_active: boolean
               role: string | null
@@ -5322,6 +5351,7 @@ export type Database = {
               verified: boolean
               website: string | null
               whatsapp: string | null
+              working_hours: Json | null
             }
             SetofOptions: {
               from: "*"
