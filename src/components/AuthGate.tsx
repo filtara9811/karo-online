@@ -48,6 +48,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [locallyOnboarded, setLocallyOnboarded] = useState(false);
+  const pendingCb = useRef<(() => void) | null>(null);
   const [showRoleChoice, setShowRoleChoice] = useState(false);
   const navigate = useNavigate();
 
