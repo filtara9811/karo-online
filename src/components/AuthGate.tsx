@@ -128,12 +128,26 @@ export function AuthGate({ children }: { children?: ReactNode }) {
             background: "linear-gradient(180deg, #fffaeb 0%, #f5e8c4 100%)",
           }}
         >
-          <RegistrationFlow
-            transparent
-            hideBack
-            onBack={() => { /* cannot dismiss — forced gate */ }}
-            onComplete={handleComplete}
-          />
+          {showRoleChoice ? (
+            <RoleChoiceScreen
+              onBuyer={() => {
+                setShowRoleChoice(false);
+                handleComplete();
+              }}
+              onSeller={() => {
+                setShowRoleChoice(false);
+                handleComplete();
+                try { navigate({ to: "/vendor/join" }); } catch { /* ignore */ }
+              }}
+            />
+          ) : (
+            <RegistrationFlow
+              transparent
+              hideBack
+              onBack={() => { /* cannot dismiss — forced gate */ }}
+              onComplete={() => setShowRoleChoice(true)}
+            />
+          )}
         </div>
       ) : (
         <>
