@@ -53,7 +53,7 @@ export function VendorModeToggle({ mode }: { mode: "customer" | "vendor" }) {
   if (state !== "vendor") {
     return (
       <button
-        onClick={() => navigate({ to: "/vendor/register" })}
+        onClick={() => navigate({ to: "/vendor/join" })}
         aria-label="Join Business"
         className="flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-gradient-to-br from-[#fff8dc] to-[#f5d97a] border-2 border-[color:oklch(0.78_0.14_82/0.7)] shadow-[0_4px_12px_-2px_rgba(212,175,55,0.5)] active:scale-95 transition"
       >
