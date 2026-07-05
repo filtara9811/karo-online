@@ -3206,6 +3206,63 @@ export type Database = {
           },
         ]
       }
+      vendor_subscription_settings: {
+        Row: {
+          auto_deduct_after_trial: boolean
+          features: Json
+          headline: string
+          id: string
+          is_active: boolean
+          original_price_paise: number
+          payment_gateway: string
+          plan_name: string
+          price_paise: number
+          sub_headline: string
+          trial_days: number
+          trial_enabled: boolean
+          trial_price_paise: number
+          updated_at: string
+          updated_by: string | null
+          upi_id: string | null
+        }
+        Insert: {
+          auto_deduct_after_trial?: boolean
+          features?: Json
+          headline?: string
+          id?: string
+          is_active?: boolean
+          original_price_paise?: number
+          payment_gateway?: string
+          plan_name?: string
+          price_paise?: number
+          sub_headline?: string
+          trial_days?: number
+          trial_enabled?: boolean
+          trial_price_paise?: number
+          updated_at?: string
+          updated_by?: string | null
+          upi_id?: string | null
+        }
+        Update: {
+          auto_deduct_after_trial?: boolean
+          features?: Json
+          headline?: string
+          id?: string
+          is_active?: boolean
+          original_price_paise?: number
+          payment_gateway?: string
+          plan_name?: string
+          price_paise?: number
+          sub_headline?: string
+          trial_days?: number
+          trial_enabled?: boolean
+          trial_price_paise?: number
+          updated_at?: string
+          updated_by?: string | null
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
       vendor_variation_mappings: {
         Row: {
           created_at: string
@@ -3326,6 +3383,8 @@ export type Database = {
           lng: number | null
           location_updated_at: string | null
           manager_email: string | null
+          onboarding_completed_at: string | null
+          onboarding_step: number
           operation_mode: string
           owner_name: string | null
           pan: string | null
@@ -3342,6 +3401,8 @@ export type Database = {
           shop_bio: string | null
           shop_cta_label: string
           status: string
+          subscription_expires_at: string | null
+          subscription_order_id: string | null
           tags: string[] | null
           trade: string | null
           trade_line_path: Json | null
@@ -3387,6 +3448,8 @@ export type Database = {
           lng?: number | null
           location_updated_at?: string | null
           manager_email?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
           operation_mode?: string
           owner_name?: string | null
           pan?: string | null
@@ -3403,6 +3466,8 @@ export type Database = {
           shop_bio?: string | null
           shop_cta_label?: string
           status?: string
+          subscription_expires_at?: string | null
+          subscription_order_id?: string | null
           tags?: string[] | null
           trade?: string | null
           trade_line_path?: Json | null
@@ -3448,6 +3513,8 @@ export type Database = {
           lng?: number | null
           location_updated_at?: string | null
           manager_email?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
           operation_mode?: string
           owner_name?: string | null
           pan?: string | null
@@ -3464,6 +3531,8 @@ export type Database = {
           shop_bio?: string | null
           shop_cta_label?: string
           status?: string
+          subscription_expires_at?: string | null
+          subscription_order_id?: string | null
           tags?: string[] | null
           trade?: string | null
           trade_line_path?: Json | null
@@ -5235,6 +5304,8 @@ export type Database = {
               lng: number | null
               location_updated_at: string | null
               manager_email: string | null
+              onboarding_completed_at: string | null
+              onboarding_step: number
               operation_mode: string
               owner_name: string | null
               pan: string | null
@@ -5251,6 +5322,8 @@ export type Database = {
               shop_bio: string | null
               shop_cta_label: string
               status: string
+              subscription_expires_at: string | null
+              subscription_order_id: string | null
               tags: string[] | null
               trade: string | null
               trade_line_path: Json | null
@@ -5325,6 +5398,8 @@ export type Database = {
               lng: number | null
               location_updated_at: string | null
               manager_email: string | null
+              onboarding_completed_at: string | null
+              onboarding_step: number
               operation_mode: string
               owner_name: string | null
               pan: string | null
@@ -5341,6 +5416,8 @@ export type Database = {
               shop_bio: string | null
               shop_cta_label: string
               status: string
+              subscription_expires_at: string | null
+              subscription_order_id: string | null
               tags: string[] | null
               trade: string | null
               trade_line_path: Json | null

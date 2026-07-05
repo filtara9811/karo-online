@@ -1,773 +1,384 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  MapPin,
-  Camera,
-  Phone,
-  Building2,
-  Wrench,
-  Package,
-  ClipboardList,
+  ArrowLeft,
+  ArrowRight,
   Check,
   ChevronRight,
-  ArrowLeft,
+  MapPin,
+  LayoutGrid,
+  Crown,
+  ShieldCheck,
+  Lock,
+  Store,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  BusinessInfoSheet,
+  EMPTY_BUSINESS,
+  type BusinessInfoDraft,
+} from "@/components/vendor-join/BusinessInfoSheet";
+import { InventoryMappingSheet } from "@/components/vendor-join/InventoryMappingSheet";
+import { SubscriptionSheet } from "@/components/vendor-join/SubscriptionSheet";
 
 export const Route = createFileRoute("/vendor/join")({
   head: () => ({
     meta: [
-      { title: "Vendor Joining — Karo Online" },
-      { name: "description", content: "Apna business Karo Online pe list karein aur leads paayein." },
+      { title: "Vendor Onboarding — Karo Online" },
+      { name: "description", content: "3 simple steps me apna business Karo Online pe list karein aur leads paayein." },
     ],
   }),
   component: VendorJoinPage,
 });
 
-// ── Draft state ────────────────────────────────────────────────────────────
+type StepKey = "business" | "inventory" | "subscription";
+
 type Draft = {
-  location: { lat: number | null; lng: number | null; address: string; radiusKm: number };
-  photos: { profile: string; shop: string; cover: string; gallery: string[]; intro: string };
-  contact: { mobile: string; whatsapp: string; email: string; primary: "mobile" | "whatsapp" };
-  business: {
-    name: string;
-    type: string;
-    experience: string;
-    hoursOpen: string;
-    hoursClose: string;
-    gst: string;
-  };
-  services: string[];
-  products: Array<{ category: string; name: string; price: string; description: string }>;
+  business: BusinessInfoDraft;
+  items: string[];
+  completed: Record<StepKey, boolean>;
 };
 
-const EMPTY_DRAFT: Draft = {
-  location: { lat: null, lng: null, address: "", radiusKm: 10 },
-  photos: { profile: "", shop: "", cover: "", gallery: [], intro: "" },
-  contact: { mobile: "", whatsapp: "", email: "", primary: "mobile" },
-  business: { name: "", type: "", experience: "", hoursOpen: "", hoursClose: "", gst: "" },
-  services: [],
-  products: [],
+const EMPTY: Draft = {
+  business: EMPTY_BUSINESS,
+  items: [],
+  completed: { business: false, inventory: false, subscription: false },
 };
 
-const DRAFT_KEY = "ko-vendor-join-draft-v1";
+const DRAFT_KEY = "ko-vendor-onboard-v2";
 
 function readDraft(): Draft {
-  if (typeof window === "undefined") return EMPTY_DRAFT;
+  if (typeof window === "undefined") return EMPTY;
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
-    if (!raw) return EMPTY_DRAFT;
-    return { ...EMPTY_DRAFT, ...JSON.parse(raw) };
+    if (!raw) return EMPTY;
+    return { ...EMPTY, ...JSON.parse(raw) };
   } catch {
-    return EMPTY_DRAFT;
+    return EMPTY;
   }
 }
-
 function saveDraft(d: Draft) {
   try {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
-  } catch { /* ignore */ }
+  } catch {}
 }
 
-// ── Sections ───────────────────────────────────────────────────────────────
-type SectionKey = "location" | "photos" | "contact" | "business" | "services" | "products";
-
-const SECTIONS: Array<{ key: SectionKey; label: string; icon: React.ComponentType<{ className?: string }>; required: boolean; sub: string }> = [
-  { key: "location", label: "Business Location", icon: MapPin, required: true, sub: "Select your business location" },
-  { key: "photos", label: "Profile & Photos", icon: Camera, required: false, sub: "Add your photo, shop images etc." },
-  { key: "contact", label: "Contact Details", icon: Phone, required: true, sub: "Mobile, WhatsApp, Email" },
-  { key: "business", label: "Business Information", icon: Building2, required: true, sub: "Business type, Name, Experience" },
-  { key: "services", label: "Services", icon: Wrench, required: true, sub: "Select your services / skills" },
-  { key: "products", label: "Products", icon: Package, required: false, sub: "Add your products (optional)" },
+const STEPS: Array<{
+  key: StepKey;
+  num: number;
+  title: string;
+  short: string;
+  desc: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    key: "business",
+    num: 1,
+    title: "Business Info",
+    short: "Business Info",
+    desc: "Add your business name, location, type and contact details.",
+    icon: MapPin,
+  },
+  {
+    key: "inventory",
+    num: 2,
+    title: "Mapping (Category)",
+    short: "Mapping",
+    desc: "Map your services / products with category and sub category.",
+    icon: LayoutGrid,
+  },
+  {
+    key: "subscription",
+    num: 3,
+    title: "Subscription (Plan)",
+    short: "Subscription",
+    desc: "Choose a plan and start receiving quality leads.",
+    icon: Crown,
+  },
 ];
 
-const POPULAR_SERVICES = [
-  "Plumber", "AC Repair", "Electrician", "Carpenter", "Painting", "Cleaning",
-  "Appliance", "Salon", "Pest Control", "Packers & Movers", "Tailor", "Boutique",
-];
-
-const BUSINESS_TYPES = [
-  "Sole Proprietor", "Partnership", "Pvt Ltd", "LLP", "Freelancer",
-];
-
-const EXPERIENCE_OPTIONS = [
-  "Less than 1 year", "1-3 years", "3-5 years", "5-10 years", "10+ years",
-];
-
-// ── Main ───────────────────────────────────────────────────────────────────
 function VendorJoinPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>(() => readDraft());
-  const [openSheet, setOpenSheet] = useState<SectionKey | "review" | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [openSheet, setOpenSheet] = useState<StepKey | null>(null);
+  const [savingBiz, setSavingBiz] = useState(false);
+  const [savingInv, setSavingInv] = useState(false);
 
+  useEffect(() => saveDraft(draft), [draft]);
+
+  // If user returns from Cashfree with cf_sub_order, auto-open subscription
   useEffect(() => {
-    saveDraft(draft);
-  }, [draft]);
+    if (typeof window !== "undefined" && window.location.search.includes("cf_sub_order")) {
+      setOpenSheet("subscription");
+    }
+  }, []);
 
-  const completeness = useMemo(() => {
-    const checks: Record<SectionKey, boolean> = {
-      location: !!draft.location.address,
-      photos: !!draft.photos.profile || !!draft.photos.shop,
-      contact: !!draft.contact.mobile,
-      business: !!draft.business.name && !!draft.business.type,
-      services: draft.services.length > 0,
-      products: draft.products.length > 0,
-    };
-    const done = Object.values(checks).filter(Boolean).length;
-    return { checks, percent: Math.round((done / SECTIONS.length) * 100) };
-  }, [draft]);
+  const completedCount = Object.values(draft.completed).filter(Boolean).length;
 
-  const canSubmit =
-    completeness.checks.location &&
-    completeness.checks.contact &&
-    completeness.checks.business &&
-    completeness.checks.services;
-
-  const submit = async () => {
-    if (!canSubmit || submitting) return;
-    setSubmitting(true);
+  const saveBusinessInfo = async () => {
+    setSavingBiz(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Pehle login karein");
+        toast.error("Login required");
         navigate({ to: "/register" });
         return;
       }
-      const { error } = await supabase.from("vendors").upsert({
+      const b = draft.business;
+      const payload = {
         user_id: user.id,
-        business_name: draft.business.name,
-        entity: draft.business.type,
-        experience_years: parseExperience(draft.business.experience),
-        gst: draft.business.gst || null,
-        whatsapp: draft.contact.whatsapp || draft.contact.mobile,
-        email: draft.contact.email || null,
-        profile_photo_url: draft.photos.profile || null,
-        avatar_url: draft.photos.profile || null,
-        cover_image_url: draft.photos.cover || null,
-        gallery_urls: draft.photos.gallery,
-        intro_video_url: draft.photos.intro || null,
-        lat: draft.location.lat,
-        lng: draft.location.lng,
-        service_radius_km: draft.location.radiusKm,
-        working_hours: draft.business.hoursOpen || draft.business.hoursClose
-          ? { open: draft.business.hoursOpen, close: draft.business.hoursClose }
-          : null,
-        tags: draft.services,
-        deals_in: draft.products.length ? "product" : "service",
-        role: "owner",
-        trade: "service",
-        status: "pending",
-      }, { onConflict: "user_id" });
-
-      if (error) {
-        console.error("[vendor.join] upsert", error);
-        toast.error(error.message || "Save fail hua");
-        return;
-      }
-
-      try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-      try { window.localStorage.setItem("ko-vendor-mode-v1", "vendor"); } catch { /* ignore */ }
-
-      toast.success("Vendor profile created — welcome!");
-      navigate({ to: "/vendor/dashboard", replace: true });
+        owner_name: b.owner_name,
+        business_name: b.shop_name,
+        entity: b.business_nature,
+        deals_in: b.main_dealing,
+        experience_years:
+          b.experience === "10+ yrs" ? 10 : parseInt(b.experience.split("-")[0]) || null,
+        whatsapp: b.whatsapp,
+        lat: b.lat,
+        lng: b.lng,
+        cover_image_url: b.front_image || null,
+        intro_video_url: b.shop_video || null,
+        gallery_urls: [b.front_image, b.inside_image, b.another_image].filter(Boolean),
+        onboarding_step: 2,
+        role: b.shop_type || null,
+      };
+      const { error } = await supabase.from("vendors").upsert(payload, { onConflict: "user_id" });
+      if (error) throw error;
+      setDraft({ ...draft, completed: { ...draft.completed, business: true } });
+      toast.success("Business info saved");
+      setOpenSheet(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Save failed");
     } finally {
-      setSubmitting(false);
+      setSavingBiz(false);
     }
   };
 
+  const saveInventory = async () => {
+    setSavingInv(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: vendor } = await supabase
+        .from("vendors")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!vendor) {
+        toast.error("Pehle Business Info bharein");
+        return;
+      }
+      await supabase.from("vendor_item_mappings").delete().eq("vendor_id", vendor.id);
+      if (draft.items.length) {
+        const rows = draft.items.map((item_id) => ({
+          vendor_id: vendor.id,
+          item_id,
+        }));
+        const { error } = await supabase.from("vendor_item_mappings").insert(rows);
+        if (error) throw error;
+      }
+      await supabase
+        .from("vendors")
+        .update({ onboarding_step: 3 })
+        .eq("id", vendor.id);
+      setDraft({ ...draft, completed: { ...draft.completed, inventory: true } });
+      toast.success("Inventory saved");
+      setOpenSheet(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Save failed");
+    } finally {
+      setSavingInv(false);
+    }
+  };
+
+  const onSubscribed = () => {
+    setDraft({ ...draft, completed: { ...draft.completed, subscription: true } });
+    setOpenSheet(null);
+    setTimeout(() => navigate({ to: "/vendor/dashboard" }), 800);
+  };
+
+  const canOpen = (k: StepKey) => {
+    if (k === "business") return true;
+    if (k === "inventory") return draft.completed.business;
+    return draft.completed.business && draft.completed.inventory;
+  };
+
+  const activeStepNum = draft.completed.business
+    ? draft.completed.inventory
+      ? 3
+      : 2
+    : 1;
+
   return (
-    <main
-      className="min-h-dvh pb-32"
-      style={{ background: "linear-gradient(180deg, #f8f0d6 0%, #fdf6e2 60%, #ffffff 100%)" }}
-    >
+    <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-[color:oklch(0.85_0.08_85/0.4)] px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-neutral-100 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => navigate({ to: "/quick" })}
-          aria-label="Back"
-          className="h-9 w-9 rounded-full grid place-items-center hover:bg-[color:oklch(0.94_0.05_85)]"
+          className="h-9 w-9 rounded-full grid place-items-center hover:bg-neutral-100"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[16px] font-display font-bold text-[color:oklch(0.20_0.03_85)]">
-            Vendor Joining
-          </h1>
-          <p className="text-[11px] text-[color:oklch(0.50_0.03_85)] leading-tight">
-            Complete your profile to start getting leads
-          </p>
+        <div className="flex-1">
+          <h1 className="text-base font-bold text-neutral-900">Vendor Onboarding</h1>
+          <p className="text-xs text-neutral-500">{completedCount}/3 steps complete</p>
         </div>
-        <span className="h-9 min-w-[44px] px-2 rounded-full bg-[color:oklch(0.78_0.14_82)] text-white text-[12px] font-bold grid place-items-center">
-          {completeness.percent}%
-        </span>
       </header>
 
-      {/* Progress dots */}
-      <div className="px-4 pt-4 pb-2 overflow-x-auto no-scrollbar">
-        <ol className="flex items-center gap-1 min-w-max">
-          {SECTIONS.map((s, i) => {
-            const done = completeness.checks[s.key];
-            return (
-              <li key={s.key} className="flex items-center gap-1">
-                <span
-                  className={`h-7 w-7 rounded-full grid place-items-center text-[11px] font-bold border ${
-                    done
-                      ? "bg-[color:oklch(0.78_0.14_82)] border-[color:oklch(0.78_0.14_82)] text-white"
-                      : "bg-white border-[color:oklch(0.85_0.05_85)] text-[color:oklch(0.55_0.05_85)]"
-                  }`}
-                >
-                  {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : i + 1}
-                </span>
-                {i < SECTIONS.length - 1 && (
-                  <span className={`h-[2px] w-6 ${done ? "bg-[color:oklch(0.78_0.14_82)]" : "bg-[color:oklch(0.90_0.03_85)]"}`} />
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      {/* Rows */}
-      <div className="px-4 mt-2 space-y-3">
-        {SECTIONS.map((s) => {
-          const Icon = s.icon;
-          const done = completeness.checks[s.key];
-          return (
-            <button
-              key={s.key}
-              onClick={() => setOpenSheet(s.key)}
-              className={`w-full text-left rounded-2xl bg-white border-2 p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition ${
-                done ? "border-emerald-300" : "border-[color:oklch(0.88_0.05_85)]"
-              }`}
-            >
-              <span className={`h-11 w-11 rounded-xl grid place-items-center shrink-0 ${
-                done ? "bg-emerald-50" : "bg-[color:oklch(0.95_0.05_85)]"
-              }`}>
-                <Icon className={`h-5 w-5 ${done ? "text-emerald-600" : "text-[color:oklch(0.55_0.12_75)]"}`} />
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="flex items-center gap-2">
-                  <span className="text-[15px] font-display font-bold text-[color:oklch(0.20_0.03_85)]">
-                    {s.label}
-                  </span>
-                  {!s.required && (
-                    <span className="text-[10px] font-semibold text-[color:oklch(0.55_0.05_85)]">
-                      (Optional)
-                    </span>
-                  )}
-                </span>
-                <span className="block text-[12px] text-[color:oklch(0.50_0.03_85)] leading-tight mt-0.5 truncate">
-                  {sectionSummary(s.key, draft) || s.sub}
-                </span>
-              </span>
-              {done ? (
-                <span className="h-6 w-6 rounded-full bg-emerald-500 text-white grid place-items-center shrink-0">
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                </span>
-              ) : (
-                <ChevronRight className="h-5 w-5 text-[color:oklch(0.55_0.05_85)] shrink-0" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Submit bar */}
-      <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-[color:oklch(0.85_0.08_85/0.5)] px-4 py-3">
-        <button
-          onClick={() => setOpenSheet("review")}
-          disabled={!canSubmit || submitting}
-          className="w-full h-12 rounded-xl bg-gradient-to-r from-[#d4a017] to-[#b8860b] text-white font-display font-bold text-[15px] disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-500 active:scale-[0.99] transition"
-        >
-          {submitting ? "Saving…" : canSubmit ? "Submit & Get Started" : "Complete required steps"}
-        </button>
-      </div>
-
-      {/* Sheets */}
-      <SectionSheet
-        section={openSheet}
-        draft={draft}
-        setDraft={setDraft}
-        onClose={() => setOpenSheet(null)}
-        onSubmit={submit}
-        submitting={submitting}
-        canSubmit={canSubmit}
-      />
-    </main>
-  );
-}
-
-// ── Section summary helper ─────────────────────────────────────────────────
-function sectionSummary(key: SectionKey, d: Draft): string {
-  switch (key) {
-    case "location":
-      return d.location.address ? `${d.location.address} · ${d.location.radiusKm} KM` : "";
-    case "photos": {
-      const n = [d.photos.profile, d.photos.shop, d.photos.cover].filter(Boolean).length + d.photos.gallery.length;
-      return n ? `${n} photo${n > 1 ? "s" : ""} added` : "";
-    }
-    case "contact":
-      return d.contact.mobile ? `+91 ${d.contact.mobile}${d.contact.email ? " · " + d.contact.email : ""}` : "";
-    case "business":
-      return d.business.name ? `${d.business.name}${d.business.type ? " · " + d.business.type : ""}` : "";
-    case "services":
-      return d.services.length ? `${d.services.length} selected: ${d.services.slice(0, 3).join(", ")}${d.services.length > 3 ? "…" : ""}` : "";
-    case "products":
-      return d.products.length ? `${d.products.length} product${d.products.length > 1 ? "s" : ""} added` : "";
-  }
-}
-
-function parseExperience(v: string): number | null {
-  if (!v) return null;
-  const m = v.match(/(\d+)/);
-  return m ? parseInt(m[1], 10) : null;
-}
-
-// ── The bottom-sheet container ─────────────────────────────────────────────
-function SectionSheet({
-  section,
-  draft,
-  setDraft,
-  onClose,
-  onSubmit,
-  submitting,
-  canSubmit,
-}: {
-  section: SectionKey | "review" | null;
-  draft: Draft;
-  setDraft: (fn: (d: Draft) => Draft) => void;
-  onClose: () => void;
-  onSubmit: () => void;
-  submitting: boolean;
-  canSubmit: boolean;
-}) {
-  const open = section !== null;
-  const title = section
-    ? section === "review"
-      ? "Review & Submit"
-      : SECTIONS.find((s) => s.key === section)?.label ?? ""
-    : "";
-
-  return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="max-h-[90dvh] bg-white">
-        <DrawerHeader className="flex items-center justify-between border-b border-[color:oklch(0.90_0.03_85)] py-3">
-          <DrawerTitle className="text-[16px] font-display font-bold">{title}</DrawerTitle>
-          <button onClick={onClose} aria-label="Close" className="h-8 w-8 rounded-full grid place-items-center hover:bg-[color:oklch(0.95_0.03_85)]">
-            <X className="h-5 w-5" />
-          </button>
-        </DrawerHeader>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {section === "location" && <LocationBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "photos" && <PhotosBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "contact" && <ContactBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "business" && <BusinessBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "services" && <ServicesBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "products" && <ProductsBody draft={draft} setDraft={setDraft} onDone={onClose} />}
-          {section === "review" && (
-            <ReviewBody
-              draft={draft}
-              onSubmit={onSubmit}
-              submitting={submitting}
-              canSubmit={canSubmit}
-            />
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-// ── Individual sheet bodies ────────────────────────────────────────────────
-function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
-  return (
-    <label className="block text-[13px] font-semibold text-[color:oklch(0.25_0.03_85)] mb-1.5">
-      {children} {required && <span className="text-red-500">*</span>}
-    </label>
-  );
-}
-
-function Field(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className="w-full h-11 px-3 rounded-xl border border-[color:oklch(0.88_0.05_85)] bg-white text-[14px] placeholder:text-[color:oklch(0.65_0.03_85)] focus:outline-none focus:border-[color:oklch(0.78_0.14_82)]"
-    />
-  );
-}
-
-function DoneBtn({ onClick, label = "Save & Continue" }: { onClick: () => void; label?: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#d4a017] to-[#b8860b] text-white font-display font-bold text-[15px] active:scale-[0.99] mt-4"
-    >
-      {label}
-    </button>
-  );
-}
-
-function LocationBody({ draft, setDraft, onDone }: BodyProps) {
-  return (
-    <div>
-      <Label required>Address / Area</Label>
-      <textarea
-        value={draft.location.address}
-        onChange={(e) => setDraft((d) => ({ ...d, location: { ...d.location, address: e.target.value } }))}
-        placeholder="Andheri East, Mumbai, Maharashtra"
-        rows={3}
-        className="w-full px-3 py-2 rounded-xl border border-[color:oklch(0.88_0.05_85)] bg-white text-[14px] focus:outline-none focus:border-[color:oklch(0.78_0.14_82)]"
-      />
-
-      <button
-        onClick={async () => {
-          if (!("geolocation" in navigator)) return toast.error("GPS available nahi hai");
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              setDraft((d) => ({
-                ...d,
-                location: { ...d.location, lat: pos.coords.latitude, lng: pos.coords.longitude },
-              }));
-              toast.success("Location captured");
-            },
-            () => toast.error("Location permission denied"),
-          );
-        }}
-        className="mt-2 text-[13px] font-semibold text-[color:oklch(0.55_0.12_75)]"
-      >
-        📍 Use my current location
-      </button>
-
-      <div className="mt-4">
-        <Label>Service Radius</Label>
-        <div className="grid grid-cols-4 gap-2">
-          {[5, 10, 20, 50].map((km) => (
-            <button
-              key={km}
-              onClick={() => setDraft((d) => ({ ...d, location: { ...d.location, radiusKm: km } }))}
-              className={`h-11 rounded-xl border-2 text-[13px] font-bold ${
-                draft.location.radiusKm === km
-                  ? "bg-[color:oklch(0.78_0.14_82)] text-white border-[color:oklch(0.78_0.14_82)]"
-                  : "bg-white text-[color:oklch(0.30_0.03_85)] border-[color:oklch(0.88_0.05_85)]"
-              }`}
-            >
-              {km} KM
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <DoneBtn onClick={onDone} label="Confirm Location" />
-    </div>
-  );
-}
-
-function PhotoInput({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <Field
-        type="url"
-        placeholder="Paste image URL"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {value && (
-        <img src={value} alt={label} className="mt-2 h-20 w-20 rounded-xl object-cover border border-[color:oklch(0.88_0.05_85)]" />
-      )}
-    </div>
-  );
-}
-
-function PhotosBody({ draft, setDraft, onDone }: BodyProps) {
-  return (
-    <div className="space-y-3">
-      <PhotoInput
-        label="Profile Photo"
-        value={draft.photos.profile}
-        onChange={(v) => setDraft((d) => ({ ...d, photos: { ...d.photos, profile: v } }))}
-      />
-      <PhotoInput
-        label="Shop / Work Photo"
-        value={draft.photos.shop}
-        onChange={(v) => setDraft((d) => ({ ...d, photos: { ...d.photos, shop: v } }))}
-      />
-      <PhotoInput
-        label="Cover Image"
-        value={draft.photos.cover}
-        onChange={(v) => setDraft((d) => ({ ...d, photos: { ...d.photos, cover: v } }))}
-      />
-      <div>
-        <Label>Intro Video URL (Optional)</Label>
-        <Field
-          type="url"
-          placeholder="15-sec YouTube / Instagram video link"
-          value={draft.photos.intro}
-          onChange={(e) => setDraft((d) => ({ ...d, photos: { ...d.photos, intro: e.target.value } }))}
-        />
-      </div>
-      <DoneBtn onClick={onDone} />
-    </div>
-  );
-}
-
-function ContactBody({ draft, setDraft, onDone }: BodyProps) {
-  return (
-    <div className="space-y-3">
-      <div>
-        <Label required>Mobile Number</Label>
-        <Field
-          type="tel"
-          inputMode="numeric"
-          maxLength={10}
-          placeholder="Enter mobile number"
-          value={draft.contact.mobile}
-          onChange={(e) => setDraft((d) => ({ ...d, contact: { ...d.contact, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) } }))}
-        />
-      </div>
-      <div>
-        <Label>WhatsApp Number (Optional)</Label>
-        <Field
-          type="tel"
-          inputMode="numeric"
-          maxLength={10}
-          placeholder="Enter WhatsApp number"
-          value={draft.contact.whatsapp}
-          onChange={(e) => setDraft((d) => ({ ...d, contact: { ...d.contact, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) } }))}
-        />
-      </div>
-      <div>
-        <Label>Preferred Call Number</Label>
-        <div className="flex gap-2">
-          {(["mobile", "whatsapp"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => setDraft((d) => ({ ...d, contact: { ...d.contact, primary: k } }))}
-              className={`flex-1 h-11 rounded-xl border-2 text-[13px] font-bold capitalize ${
-                draft.contact.primary === k
-                  ? "bg-[color:oklch(0.78_0.14_82)] text-white border-[color:oklch(0.78_0.14_82)]"
-                  : "bg-white text-[color:oklch(0.30_0.03_85)] border-[color:oklch(0.88_0.05_85)]"
-              }`}
-            >
-              {k === "mobile" ? "Primary (Mobile)" : "Secondary (WhatsApp)"}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <Label>Email (Optional)</Label>
-        <Field
-          type="email"
-          placeholder="Enter email address"
-          value={draft.contact.email}
-          onChange={(e) => setDraft((d) => ({ ...d, contact: { ...d.contact, email: e.target.value } }))}
-        />
-      </div>
-      <DoneBtn onClick={onDone} />
-    </div>
-  );
-}
-
-function BusinessBody({ draft, setDraft, onDone }: BodyProps) {
-  return (
-    <div className="space-y-3">
-      <div>
-        <Label required>Business / Shop Name</Label>
-        <Field
-          placeholder="Enter business name"
-          value={draft.business.name}
-          onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, name: e.target.value } }))}
-        />
-      </div>
-      <div>
-        <Label required>Business Type</Label>
-        <select
-          value={draft.business.type}
-          onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, type: e.target.value } }))}
-          className="w-full h-11 px-3 rounded-xl border border-[color:oklch(0.88_0.05_85)] bg-white text-[14px] focus:outline-none focus:border-[color:oklch(0.78_0.14_82)]"
-        >
-          <option value="">Select business type</option>
-          {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div>
-        <Label required>Experience</Label>
-        <select
-          value={draft.business.experience}
-          onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, experience: e.target.value } }))}
-          className="w-full h-11 px-3 rounded-xl border border-[color:oklch(0.88_0.05_85)] bg-white text-[14px] focus:outline-none focus:border-[color:oklch(0.78_0.14_82)]"
-        >
-          <option value="">Select experience</option>
-          {EXPERIENCE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div>
-        <Label required>Working Hours</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <Field type="time" value={draft.business.hoursOpen} onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, hoursOpen: e.target.value } }))} />
-          <Field type="time" value={draft.business.hoursClose} onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, hoursClose: e.target.value } }))} />
-        </div>
-      </div>
-      <div>
-        <Label>GST Number (Optional)</Label>
-        <Field
-          placeholder="Enter GST number"
-          value={draft.business.gst}
-          onChange={(e) => setDraft((d) => ({ ...d, business: { ...d.business, gst: e.target.value.toUpperCase() } }))}
-        />
-      </div>
-      <DoneBtn onClick={onDone} />
-    </div>
-  );
-}
-
-function ServicesBody({ draft, setDraft, onDone }: BodyProps) {
-  const [q, setQ] = useState("");
-  const filtered = POPULAR_SERVICES.filter((s) => s.toLowerCase().includes(q.toLowerCase()));
-  const toggle = (s: string) =>
-    setDraft((d) => ({
-      ...d,
-      services: d.services.includes(s) ? d.services.filter((x) => x !== s) : [...d.services, s],
-    }));
-  return (
-    <div>
-      <Field placeholder="Search service or category" value={q} onChange={(e) => setQ(e.target.value)} />
-      <Label>Popular Categories</Label>
-      <div className="grid grid-cols-4 gap-2">
-        {filtered.map((s) => {
-          const on = draft.services.includes(s);
-          return (
-            <button
-              key={s}
-              onClick={() => toggle(s)}
-              className={`h-20 rounded-xl border-2 text-[11px] font-bold text-center px-1 ${
-                on
-                  ? "bg-[color:oklch(0.95_0.08_85)] border-[color:oklch(0.78_0.14_82)] text-[color:oklch(0.30_0.05_85)]"
-                  : "bg-white border-[color:oklch(0.88_0.05_85)] text-[color:oklch(0.35_0.03_85)]"
-              }`}
-            >
-              {s}
-            </button>
-          );
-        })}
-      </div>
-      {draft.services.length > 0 && (
-        <>
-          <Label>Selected Services ({draft.services.length})</Label>
-          <div className="flex flex-wrap gap-2">
-            {draft.services.map((s) => (
-              <button
-                key={s}
-                onClick={() => toggle(s)}
-                className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-[color:oklch(0.95_0.08_85)] border border-[color:oklch(0.78_0.14_82)] text-[12px] font-bold text-[color:oklch(0.30_0.05_85)]"
-              >
-                {s} <X className="h-3 w-3" />
-              </button>
-            ))}
+      <main className="max-w-md mx-auto px-4 py-4 space-y-5">
+        {/* Hero card */}
+        <div className="relative rounded-3xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 p-5 overflow-hidden">
+          <div className="max-w-[62%]">
+            <h2 className="text-2xl font-extrabold text-neutral-900 leading-tight">
+              Grow Your Business
+              <br />
+              Get More Leads
+            </h2>
+            <p className="text-sm text-neutral-700 mt-2 leading-snug">
+              Join thousands of vendors and grow your business with real-time leads.
+            </p>
           </div>
-        </>
-      )}
-      <DoneBtn onClick={onDone} />
-    </div>
-  );
-}
-
-function ProductsBody({ draft, setDraft, onDone }: BodyProps) {
-  const addProduct = () =>
-    setDraft((d) => ({
-      ...d,
-      products: [...d.products, { category: "", name: "", price: "", description: "" }],
-    }));
-  const updateProduct = (i: number, patch: Partial<Draft["products"][0]>) =>
-    setDraft((d) => ({
-      ...d,
-      products: d.products.map((p, idx) => (idx === i ? { ...p, ...patch } : p)),
-    }));
-  const removeProduct = (i: number) =>
-    setDraft((d) => ({ ...d, products: d.products.filter((_, idx) => idx !== i) }));
-
-  return (
-    <div className="space-y-4">
-      {draft.products.length === 0 && (
-        <p className="text-[13px] text-[color:oklch(0.50_0.03_85)] text-center py-4">
-          No products yet. Add your first product to showcase.
-        </p>
-      )}
-      {draft.products.map((p, i) => (
-        <div key={i} className="rounded-xl border border-[color:oklch(0.88_0.05_85)] p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-[color:oklch(0.45_0.03_85)]">Product {i + 1}</span>
-            <button onClick={() => removeProduct(i)} className="text-red-500 text-[12px] font-semibold">Remove</button>
-          </div>
-          <Field placeholder="Category" value={p.category} onChange={(e) => updateProduct(i, { category: e.target.value })} />
-          <Field placeholder="Product name" value={p.name} onChange={(e) => updateProduct(i, { name: e.target.value })} />
-          <Field type="number" placeholder="Price ₹" value={p.price} onChange={(e) => updateProduct(i, { price: e.target.value })} />
-          <textarea
-            placeholder="Description"
-            value={p.description}
-            onChange={(e) => updateProduct(i, { description: e.target.value })}
-            rows={2}
-            className="w-full px-3 py-2 rounded-xl border border-[color:oklch(0.88_0.05_85)] bg-white text-[14px] focus:outline-none focus:border-[color:oklch(0.78_0.14_82)]"
-          />
+          <div className="absolute right-2 top-3 text-6xl">🏪</div>
         </div>
-      ))}
-      <button
-        onClick={addProduct}
-        className="w-full h-11 rounded-xl border-2 border-dashed border-[color:oklch(0.78_0.14_82)] text-[color:oklch(0.55_0.12_75)] font-semibold text-[14px]"
-      >
-        + Add Product
-      </button>
-      <DoneBtn onClick={onDone} />
-    </div>
-  );
-}
 
-function ReviewBody({
-  draft,
-  onSubmit,
-  submitting,
-  canSubmit,
-}: {
-  draft: Draft;
-  onSubmit: () => void;
-  submitting: boolean;
-  canSubmit: boolean;
-}) {
-  return (
-    <div className="space-y-3">
-      {SECTIONS.map((s) => (
-        <div key={s.key} className="flex items-start gap-3 p-3 rounded-xl border border-[color:oklch(0.88_0.05_85)]">
-          <s.icon className="h-5 w-5 mt-0.5 text-[color:oklch(0.55_0.12_75)]" />
-          <div className="flex-1">
-            <div className="text-[13px] font-display font-bold">{s.label}</div>
-            <div className="text-[12px] text-[color:oklch(0.50_0.03_85)] mt-0.5">
-              {sectionSummary(s.key, draft) || <span className="italic text-red-500">Not filled</span>}
+        {/* Step tracker */}
+        <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+          <div className="flex items-center justify-between relative">
+            <div className="absolute top-4 left-8 right-8 h-0.5 bg-neutral-200" />
+            {STEPS.map((s) => {
+              const done = draft.completed[s.key];
+              const active = activeStepNum === s.num;
+              return (
+                <div key={s.key} className="relative z-10 flex flex-col items-center gap-2 flex-1">
+                  <div
+                    className={`h-8 w-8 rounded-full grid place-items-center font-bold text-sm border-2 ${
+                      done
+                        ? "bg-green-500 border-green-500 text-white"
+                        : active
+                          ? "bg-amber-500 border-amber-500 text-white"
+                          : "bg-white border-neutral-300 text-neutral-500"
+                    }`}
+                  >
+                    {done ? <Check className="h-4 w-4" /> : s.num}
+                  </div>
+                  <div
+                    className={`text-[11px] font-semibold text-center leading-tight ${
+                      active ? "text-amber-600" : "text-neutral-700"
+                    }`}
+                  >
+                    {s.short}
+                    <br />
+                    {s.key === "inventory" && "(Category)"}
+                    {s.key === "subscription" && "(Plan)"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Complete Your Onboarding */}
+        <div>
+          <h3 className="text-xl font-extrabold text-neutral-900">Complete Your Onboarding</h3>
+          <p className="text-sm text-neutral-500 mb-4">Just 3 simple steps to start getting leads</p>
+
+          <div className="relative">
+            <div className="absolute left-[15px] top-6 bottom-6 w-px bg-neutral-200" />
+            <div className="space-y-3">
+              {STEPS.map((s) => {
+                const done = draft.completed[s.key];
+                const enabled = canOpen(s.key);
+                return (
+                  <div key={s.key} className="flex items-start gap-3">
+                    <div
+                      className={`relative z-10 h-8 w-8 rounded-full grid place-items-center font-bold text-sm shrink-0 ${
+                        done
+                          ? "bg-green-500 text-white"
+                          : enabled
+                            ? "bg-amber-500 text-white"
+                            : "bg-neutral-200 text-neutral-500"
+                      }`}
+                    >
+                      {done ? <Check className="h-4 w-4" /> : s.num}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => setOpenSheet(s.key)}
+                      className={`flex-1 rounded-2xl border p-3.5 flex items-center gap-3 text-left ${
+                        enabled
+                          ? "bg-white border-neutral-200 hover:border-amber-400"
+                          : "bg-neutral-100 border-neutral-200 opacity-60"
+                      }`}
+                    >
+                      <div className="h-12 w-12 rounded-2xl bg-amber-50 grid place-items-center text-amber-600 shrink-0">
+                        <s.icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-neutral-900">{s.title}</div>
+                        <p className="text-xs text-neutral-500 leading-snug">{s.desc}</p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-amber-500 shrink-0" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      ))}
-      <button
-        onClick={onSubmit}
-        disabled={!canSubmit || submitting}
-        className="w-full h-12 rounded-xl bg-gradient-to-r from-[#d4a017] to-[#b8860b] text-white font-display font-bold text-[15px] disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-500 active:scale-[0.99]"
-      >
-        {submitting ? "Saving…" : "Submit & Get Started"}
-      </button>
+
+        {/* Safety footer */}
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-amber-400 grid place-items-center text-white">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-neutral-900">Your Information is Safe</div>
+            <div className="text-xs text-neutral-600">We never share your data with anyone.</div>
+          </div>
+          <Lock className="h-5 w-5 text-amber-600" />
+        </div>
+      </main>
+
+      {/* Sheets */}
+      <Drawer open={openSheet === "business"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <DrawerContent className="max-h-[95vh]">
+          <div className="overflow-y-auto">
+            <BusinessInfoSheet
+              draft={draft.business}
+              onChange={(b) => setDraft({ ...draft, business: b })}
+              onSubmit={saveBusinessInfo}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={openSheet === "inventory"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <DrawerContent className="max-h-[95vh]">
+          <div className="overflow-y-auto">
+            <InventoryMappingSheet
+              selected={draft.items}
+              onChange={(ids) => setDraft({ ...draft, items: ids })}
+              onSubmit={saveInventory}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={openSheet === "subscription"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <DrawerContent className="max-h-[95vh]">
+          <div className="overflow-y-auto">
+            <SubscriptionSheet onPaid={onSubscribed} />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
-
-type BodyProps = {
-  draft: Draft;
-  setDraft: (fn: (d: Draft) => Draft) => void;
-  onDone: () => void;
-};
