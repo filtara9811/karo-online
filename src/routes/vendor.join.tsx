@@ -177,9 +177,9 @@ function VendorJoinPage() {
       }
       await supabase.from("vendor_item_mappings").delete().eq("vendor_id", vendor.id);
       if (draft.items.length) {
-        const rows = draft.items.map((catalog_item_id) => ({
+        const rows = draft.items.map((item_id) => ({
           vendor_id: vendor.id,
-          catalog_item_id,
+          item_id,
         }));
         const { error } = await supabase.from("vendor_item_mappings").insert(rows);
         if (error) throw error;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Crown, Check, Zap, Calendar, Loader2 } from "lucide-react";
-import { useServerFn } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   getVendorSubscriptionSettings,
   startVendorSubscription,
@@ -32,14 +32,14 @@ export function SubscriptionSheet({ onPaid }: { onPaid: () => void }) {
   const [busy, setBusy] = useState<"" | "full" | "trial">("");
 
   useEffect(() => {
-    getSettings().then((r) => {
+    getSettings().then((r: any) => {
       if (r.ok && r.settings) setSettings(r.settings as Settings);
     });
     // Verify on return from Cashfree
     const url = new URL(window.location.href);
     const orderId = url.searchParams.get("cf_sub_order");
     if (orderId) {
-      verifySub({ data: { order_id: orderId } }).then((r) => {
+      verifySub({ data: { order_id: orderId } }).then((r: any) => {
         if (r.ok && r.paid) {
           toast.success("Payment successful! Dashboard active ho gaya");
           onPaid();
