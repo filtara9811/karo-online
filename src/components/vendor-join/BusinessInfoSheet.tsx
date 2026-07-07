@@ -1,5 +1,20 @@
-import { useEffect, useState } from "react";
-import { MapPin, Store, Building2, Phone, User, Package, Mic, Crosshair } from "lucide-react";
+import { useState } from "react";
+import {
+  X,
+  Store,
+  MapPin,
+  Layers,
+  Building2,
+  Briefcase,
+  User,
+  Phone,
+  Upload,
+  Mic,
+  Crosshair,
+  Video,
+  ChevronRight,
+  FileText,
+} from "lucide-react";
 import { PhotoPicker } from "./PhotoPicker";
 
 export type BusinessInfoDraft = {
@@ -40,19 +55,20 @@ export const EMPTY_BUSINESS: BusinessInfoDraft = {
   shop_video: "",
 };
 
-const SHOP_TYPES = ["Shop", "Home Service", "Office", "Godown", "Online Only"];
 const DEALING = ["Products", "Service", "Both"];
-const EXPERIENCE = ["<1 yr", "1-3 yrs", "3-5 yrs", "5-10 yrs", "10+ yrs"];
-const NATURE = ["Sole Proprietor", "Partnership", "Pvt Ltd", "LLP", "Freelancer"];
+const PLACE_TYPES = ["Shop", "Home Service", "Office", "Godown", "Online Only"];
+const BUSINESS_TYPES = ["Sole Proprietor", "Partnership", "Pvt Ltd", "LLP", "Freelancer"];
 
 export function BusinessInfoSheet({
   draft,
   onChange,
   onSubmit,
+  onClose,
 }: {
   draft: BusinessInfoDraft;
   onChange: (d: BusinessInfoDraft) => void;
   onSubmit: () => void;
+  onClose?: () => void;
 }) {
   const set = <K extends keyof BusinessInfoDraft>(k: K, v: BusinessInfoDraft[K]) =>
     onChange({ ...draft, [k]: v });
@@ -71,17 +87,19 @@ export function BusinessInfoSheet({
     );
   };
 
-  const [listening, setListening] = useState(false);
-  const startVoice = () => {
+  const [listening, setListening] = useState<"name" | "address" | null>(null);
+  const voice = (field: "shop_name" | "address") => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const rec = new SR();
     rec.lang = "hi-IN";
-    rec.onresult = (e: any) =>
-      set("address", (draft.address + " " + e.results[0][0].transcript).trim());
-    rec.onend = () => setListening(false);
+    rec.onresult = (e: any) => {
+      const t = e.results[0][0].transcript as string;
+      set(field, ((draft[field] as string) + " " + t).trim());
+    };
+    rec.onend = () => setListening(null);
     rec.start();
-    setListening(true);
+    setListening(field === "shop_name" ? "name" : "address");
   };
 
   const canSubmit =
@@ -93,19 +111,25 @@ export function BusinessInfoSheet({
     draft.whatsapp.trim().length >= 10;
 
   return (
-    <div className="pb-32 px-4 pt-2 space-y-5 max-w-md mx-auto">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-extrabold text-neutral-900">Business Information</h2>
-          <p className="text-sm text-neutral-500">Add your business basic details</p>
-        </div>
-        <span className="px-3 py-1 rounded-full border border-amber-400 text-amber-700 text-xs font-semibold">
-          Step 1 of 3
-        </span>
-      </header>
+    <div className="px-5 pt-3 pb-28 max-w-md mx-auto">
+      <div className="mx-auto w-10 h-1 rounded-full bg-neutral-300/70 mb-4" />
 
-      {/* Map card */}
-      <div className="relative rounded-2xl overflow-hidden border border-neutral-200 h-40 bg-neutral-100">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-2xl font-extrabold text-neutral-900">Business Information</h2>
+          <p className="text-sm text-neutral-500 mt-0.5">Add your business details</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"
+        >
+          <X className="h-4 w-4 text-neutral-700" />
+        </button>
+      </div>
+
+      {/* Map */}
+      <div className="relative rounded-2xl overflow-hidden border border-neutral-200 h-44 bg-neutral-100 mb-4">
         <div
           className="absolute inset-0"
           style={{
@@ -116,208 +140,189 @@ export function BusinessInfoSheet({
             },${draft.lng ?? 77.209}")`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: 0.9,
           }}
         />
-        {!draft.lat && (
-          <div className="relative z-10 h-full flex flex-col items-center justify-center text-neutral-500">
-            <MapPin className="h-6 w-6 mb-1" />
-            <span className="text-xs">Location select karein</span>
+        {/* Pin */}
+        <div className="absolute inset-0 grid place-items-center pointer-events-none">
+          <div className="relative">
+            <div className="absolute -inset-6 rounded-full bg-blue-400/25" />
+            <div className="relative h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow" />
+            <MapPin className="absolute -top-6 left-1/2 -translate-x-1/2 h-8 w-8 text-orange-500 fill-orange-500" />
           </div>
-        )}
+        </div>
         <button
           type="button"
           onClick={locate}
-          className="absolute top-2 right-2 z-20 h-9 w-9 rounded-full bg-white shadow grid place-items-center"
-          aria-label="Current location"
+          className="absolute bottom-3 right-3 h-10 pl-3 pr-4 rounded-full bg-white shadow flex items-center gap-1.5 text-sm font-semibold text-neutral-800"
         >
-          <Crosshair className={`h-4 w-4 ${locating ? "animate-spin" : ""} text-neutral-700`} />
+          <Crosshair className={`h-4 w-4 ${locating ? "animate-spin" : ""}`} />
+          Use my location
         </button>
       </div>
 
-      {/* Shop name + type */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-3 flex items-center gap-3">
-        <Store className="h-5 w-5 text-amber-600 shrink-0" />
-        <div className="flex-1 grid grid-cols-2 gap-2 divide-x divide-neutral-200">
-          <div className="pr-2">
-            <label className="block text-[11px] font-bold text-neutral-800">Enter Shop Name</label>
-            <input
-              value={draft.shop_name}
-              onChange={(e) => set("shop_name", e.target.value)}
-              placeholder="Enter shop or business name"
-              className="w-full text-sm text-neutral-900 placeholder:text-neutral-400 bg-transparent outline-none"
-            />
-          </div>
-          <div className="pl-2">
-            <label className="block text-[11px] font-bold text-neutral-800">Shop Type</label>
-            <select
-              value={draft.shop_type}
-              onChange={(e) => set("shop_type", e.target.value)}
-              className="w-full text-sm text-neutral-900 bg-transparent outline-none"
-            >
-              <option value="">Select shop type</option>
-              {SHOP_TYPES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+      {/* Shop Name */}
+      <div className="rounded-2xl border border-neutral-200 bg-white px-4 h-14 flex items-center gap-3 mb-3">
+        <Store className="h-5 w-5 text-neutral-500 shrink-0" />
+        <input
+          value={draft.shop_name}
+          onChange={(e) => set("shop_name", e.target.value)}
+          placeholder="Business / Shop Name"
+          className="flex-1 text-[15px] bg-transparent outline-none placeholder:text-neutral-400"
+        />
+        <button
+          type="button"
+          onClick={() => voice("shop_name")}
+          className={`h-8 w-8 rounded-full grid place-items-center ${
+            listening === "name" ? "bg-red-500 text-white" : "text-neutral-400"
+          }`}
+        >
+          <Mic className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* City | Pincode */}
+      <div className="rounded-2xl border border-neutral-200 bg-white h-14 flex items-center mb-3">
+        <div className="flex-1 h-full flex items-center gap-3 px-4">
+          <MapPin className="h-5 w-5 text-neutral-500" />
+          <input
+            value={draft.city}
+            onChange={(e) => set("city", e.target.value)}
+            placeholder="City"
+            className="flex-1 text-[15px] bg-transparent outline-none placeholder:text-neutral-400"
+          />
+        </div>
+        <div className="h-8 w-px bg-neutral-200" />
+        <div className="flex-1 h-full flex items-center gap-3 px-4">
+          <FileText className="h-5 w-5 text-neutral-500" />
+          <input
+            value={draft.pincode}
+            onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="Pincode"
+            inputMode="numeric"
+            className="flex-1 text-[15px] bg-transparent outline-none placeholder:text-neutral-400"
+          />
         </div>
       </div>
 
-      {/* City / Pincode / Address */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-3 space-y-3">
-        <div className="flex items-center gap-3">
-          <Building2 className="h-5 w-5 text-amber-600 shrink-0" />
-          <div className="flex-1 grid grid-cols-2 gap-2 divide-x divide-neutral-200">
-            <div className="pr-2">
-              <label className="block text-[11px] font-bold text-neutral-800">City</label>
-              <input
-                value={draft.city}
-                onChange={(e) => set("city", e.target.value)}
-                placeholder="Select city"
-                className="w-full text-sm bg-transparent outline-none"
-              />
-            </div>
-            <div className="pl-2">
-              <label className="block text-[11px] font-bold text-neutral-800">Pincode</label>
-              <input
-                value={draft.pincode}
-                onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="Enter pincode"
-                inputMode="numeric"
-                className="w-full text-sm bg-transparent outline-none"
-              />
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-neutral-200 pt-3">
-          <div className="flex items-start gap-2">
-            <div className="flex-1">
-              <label className="block text-[11px] font-bold text-neutral-800">Full Address</label>
-              <textarea
-                value={draft.address}
-                onChange={(e) => set("address", e.target.value)}
-                placeholder="Type your complete business address"
-                rows={2}
-                className="w-full text-sm bg-transparent outline-none resize-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={startVoice}
-              className={`p-2 rounded-full ${listening ? "bg-red-500 text-white" : "text-neutral-500"}`}
-            >
-              <Mic className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+      {/* Full address */}
+      <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 flex items-start gap-3 mb-3">
+        <FileText className="h-5 w-5 text-neutral-500 mt-1 shrink-0" />
+        <textarea
+          value={draft.address}
+          onChange={(e) => set("address", e.target.value)}
+          placeholder="Full Address (House No., Street, Area, Landmark)"
+          rows={2}
+          className="flex-1 text-[15px] bg-transparent outline-none placeholder:text-neutral-400 resize-none"
+        />
+        <button
+          type="button"
+          onClick={() => voice("address")}
+          className={`h-8 w-8 rounded-full grid place-items-center shrink-0 ${
+            listening === "address" ? "bg-red-500 text-white" : "text-neutral-400"
+          }`}
+        >
+          <Mic className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Dealing / Experience / Nature */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-3 flex items-center gap-2">
-        <Package className="h-5 w-5 text-amber-600 shrink-0" />
-        <div className="flex-1 grid grid-cols-3 gap-2 divide-x divide-neutral-200">
-          <div className="pr-1">
-            <label className="block text-[10px] font-bold text-neutral-800">Main Dealing In</label>
-            <select
-              value={draft.main_dealing}
-              onChange={(e) => set("main_dealing", e.target.value)}
-              className="w-full text-xs bg-transparent outline-none"
-            >
-              <option value="">Select</option>
-              {DEALING.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-          <div className="px-1">
-            <label className="block text-[10px] font-bold text-neutral-800">Experience</label>
-            <select
-              value={draft.experience}
-              onChange={(e) => set("experience", e.target.value)}
-              className="w-full text-xs bg-transparent outline-none"
-            >
-              <option value="">Select</option>
-              {EXPERIENCE.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-          <div className="pl-1">
-            <label className="block text-[10px] font-bold text-neutral-800">Nature</label>
-            <select
-              value={draft.business_nature}
-              onChange={(e) => set("business_nature", e.target.value)}
-              className="w-full text-xs bg-transparent outline-none"
-            >
-              <option value="">Select</option>
-              {NATURE.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+      {/* 3 selects */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <SelectCard
+          Icon={Layers}
+          label="Service / Product"
+          value={draft.main_dealing}
+          onChange={(v) => set("main_dealing", v)}
+          options={DEALING}
+        />
+        <SelectCard
+          Icon={Building2}
+          label="Place Type"
+          value={draft.shop_type}
+          onChange={(v) => set("shop_type", v)}
+          options={PLACE_TYPES}
+        />
+        <SelectCard
+          Icon={Briefcase}
+          label="Business Type"
+          value={draft.business_nature}
+          onChange={(v) => set("business_nature", v)}
+          options={BUSINESS_TYPES}
+        />
       </div>
 
-      {/* Name + WhatsApp */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-3 flex items-center gap-3">
-        <User className="h-5 w-5 text-amber-600 shrink-0" />
-        <div className="flex-1 grid grid-cols-2 gap-2 divide-x divide-neutral-200">
-          <div className="pr-2">
-            <label className="block text-[11px] font-bold text-neutral-800">Enter Name</label>
+      {/* Owner + WhatsApp */}
+      <div className="grid grid-cols-2 gap-2 mb-5">
+        <div className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 flex items-center gap-2">
+          <User className="h-5 w-5 text-neutral-500 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold text-neutral-800">Owner / Operator Name</div>
             <input
               value={draft.owner_name}
               onChange={(e) => set("owner_name", e.target.value)}
-              placeholder="Owner name"
-              className="w-full text-sm bg-transparent outline-none"
+              placeholder="Enter full name"
+              className="w-full text-[13px] bg-transparent outline-none placeholder:text-neutral-400"
             />
           </div>
-          <div className="pl-2">
-            <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3 text-amber-600" />
-              <label className="text-[11px] font-bold text-neutral-800">WhatsApp</label>
-            </div>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 flex items-center gap-2">
+          <Phone className="h-5 w-5 text-emerald-600 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold text-neutral-800">WhatsApp Number</div>
             <input
               value={draft.whatsapp}
               onChange={(e) => set("whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10))}
-              placeholder="WhatsApp number"
+              placeholder="+91 98765 43210"
               inputMode="tel"
-              className="w-full text-sm bg-transparent outline-none"
+              className="w-full text-[13px] bg-transparent outline-none placeholder:text-neutral-400"
             />
           </div>
         </div>
       </div>
 
-      {/* Photos & Video */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-3 space-y-3">
-        <div>
-          <h4 className="text-sm font-bold text-neutral-900">Photos & Video</h4>
-          <p className="text-xs text-neutral-500">Add photos of your shop and a short video</p>
+      {/* Shop Images */}
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-base font-extrabold text-neutral-900">Shop Images</h4>
+        <span className="text-xs font-semibold text-orange-500">Tap on image to preview</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <ImageSlot
+          value={draft.front_image}
+          onChange={(v) => set("front_image", v)}
+          label="Shop Front Image"
+        />
+        <ImageSlot
+          value={draft.inside_image}
+          onChange={(v) => set("inside_image", v)}
+          label="Shop Interior Image"
+        />
+        <ImageSlot
+          value={draft.another_image}
+          onChange={(v) => set("another_image", v)}
+          label="Owner Image"
+        />
+      </div>
+
+      {/* 360 video row */}
+      <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 flex items-center gap-3 mb-6">
+        <div className="h-10 w-10 rounded-xl bg-neutral-100 grid place-items-center">
+          <Video className="h-5 w-5 text-neutral-700" />
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          <PhotoPicker
-            value={draft.front_image}
-            onChange={(v) => set("front_image", v)}
-            label="Front Image"
-          />
-          <PhotoPicker
-            value={draft.inside_image}
-            onChange={(v) => set("inside_image", v)}
-            label="Inside Image"
-          />
-          <PhotoPicker
-            value={draft.another_image}
-            onChange={(v) => set("another_image", v)}
-            label="Another Image"
-          />
-          <PhotoPicker
-            value={draft.shop_video}
-            onChange={(v) => set("shop_video", v)}
-            label="Shop Video"
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold text-neutral-900">Upload 360° Video (Optional)</div>
+          <div className="text-[11px] text-neutral-500">Show your business in detail</div>
+        </div>
+        <label className="cursor-pointer">
+          <input
+            type="file"
             accept="video/*"
-            video
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) set("shop_video", URL.createObjectURL(f));
+            }}
           />
-        </div>
+          <ChevronRight className="h-5 w-5 text-neutral-400" />
+        </label>
       </div>
 
       {/* Sticky submit */}
@@ -326,11 +331,96 @@ export function BusinessInfoSheet({
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
-          className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-bold text-base shadow-lg flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-bold text-base shadow-lg"
         >
-          Submit & Continue →
+          Submit & Continue
         </button>
       </div>
     </div>
   );
 }
+
+function SelectCard({
+  Icon,
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white px-2.5 py-2 flex items-center gap-1.5 min-w-0">
+      <Icon className="h-4 w-4 text-neutral-500 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] font-bold text-neutral-800 leading-tight truncate">
+          {label}
+        </div>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full text-[11px] text-neutral-600 bg-transparent outline-none appearance-none pr-1 truncate"
+        >
+          <option value="">Select option</option>
+          {options.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function ImageSlot({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+}) {
+  return (
+    <div>
+      <label className="relative block aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-neutral-300 bg-white cursor-pointer">
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onChange(URL.createObjectURL(f));
+          }}
+        />
+        {value ? (
+          <>
+            <img src={value} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onChange("");
+              }}
+              className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 grid place-items-center shadow"
+            >
+              <X className="h-3.5 w-3.5 text-neutral-700" />
+            </button>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-neutral-500">
+            <Upload className="h-6 w-6" />
+            <span className="text-[11px] font-semibold">Upload Image</span>
+          </div>
+        )}
+      </label>
+      <div className="text-[11px] text-neutral-600 text-center mt-1.5">{label}</div>
+    </div>
+  );
+}
+
+// keep PhotoPicker export used elsewhere referenced but not used in this file
+void PhotoPicker;
