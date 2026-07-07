@@ -142,6 +142,7 @@ function SubscriptionAdmin() {
         title="Vendor Subscription Plan"
         subtitle="Configure price, trial, and features shown to vendors"
       />
+      <VideoSettingCard />
       <GoldCard className="p-5 space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <Crown className="h-5 w-5 text-amber-400" />
