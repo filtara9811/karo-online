@@ -3,7 +3,55 @@ import { useEffect, useState } from "react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Crown } from "lucide-react";
+import { Save, Crown, Video } from "lucide-react";
+
+function VideoSettingCard() {
+  const [url, setUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "vendor_onboarding_video")
+      .maybeSingle()
+      .then(({ data }) => setUrl(((data?.value as any)?.url as string) ?? ""));
+  }, []);
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert({ key: "vendor_onboarding_video", value: { url } as any });
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else toast.success("Onboarding video updated");
+  };
+  return (
+    <GoldCard className="p-5 space-y-3 mb-4">
+      <div className="flex items-center gap-2">
+        <Video className="h-5 w-5 text-amber-400" />
+        <span className="font-bold text-white">Onboarding Background Video</span>
+      </div>
+      <p className="text-xs text-white/60">
+        Paste a YouTube link or a direct MP4/WEBM URL. Shown behind the vendor onboarding screen.
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://youtube.com/watch?v=... or https://cdn.example.com/video.mp4"
+          className="flex-1 px-3 py-2 rounded-lg bg-black/30 border border-[#d4af37]/30 text-white outline-none focus:border-[#d4af37]"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold disabled:opacity-50"
+        >
+          <Save className="h-4 w-4 inline mr-1" /> Save
+        </button>
+      </div>
+    </GoldCard>
+  );
+}
 
 export const Route = createFileRoute("/admin/subscription")({
   head: () => ({ meta: [{ title: "Vendor Subscription — Admin" }, { name: "robots", content: "noindex" }] }),
@@ -94,6 +142,7 @@ function SubscriptionAdmin() {
         title="Vendor Subscription Plan"
         subtitle="Configure price, trial, and features shown to vendors"
       />
+      <VideoSettingCard />
       <GoldCard className="p-5 space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <Crown className="h-5 w-5 text-amber-400" />
