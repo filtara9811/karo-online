@@ -122,7 +122,7 @@ export function BusinessInfoSheet({
         </div>
         <button
           onClick={onClose}
-          className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"
+          className="h-8 w-8 rounded-full bg-neutral-100 grid place-items-center transition hover:bg-neutral-200"
         >
           <X className="h-4 w-4 text-neutral-700" />
         </button>
