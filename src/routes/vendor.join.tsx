@@ -457,8 +457,8 @@ function VendorJoinPage() {
         <DrawerContent className="max-h-[95vh]">
           <div className="overflow-y-auto">
             <InventoryMappingSheet
-              selected={draft.items}
-              onChange={(ids) => setDraft({ ...draft, items: ids })}
+              mappings={draft.mappings}
+              onChange={(m) => setDraft({ ...draft, mappings: m })}
               onSubmit={saveInventory}
               onClose={() => setOpenSheet(null)}
             />
