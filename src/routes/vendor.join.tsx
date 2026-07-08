@@ -24,7 +24,7 @@ import {
   EMPTY_BUSINESS,
   type BusinessInfoDraft,
 } from "@/components/vendor-join/BusinessInfoSheet";
-import { InventoryMappingSheet } from "@/components/vendor-join/InventoryMappingSheet";
+import { InventoryMappingSheet, type ItemMapping } from "@/components/vendor-join/InventoryMappingSheet";
 import { QrPaymentSheet } from "@/components/vendor-join/QrPaymentSheet";
 
 export const Route = createFileRoute("/vendor/join")({
@@ -42,19 +42,19 @@ type PlanChoice = "trial" | "premium";
 
 type Draft = {
   business: BusinessInfoDraft;
-  items: string[];
+  mappings: Record<string, ItemMapping>;
   completed: Record<StepKey, boolean>;
   plan: PlanChoice | null;
 };
 
 const EMPTY: Draft = {
   business: EMPTY_BUSINESS,
-  items: [],
+  mappings: {},
   completed: { business: false, inventory: false },
   plan: null,
 };
 
-const DRAFT_KEY = "ko-vendor-onboard-v4";
+const DRAFT_KEY = "ko-vendor-onboard-v5";
 
 function readDraft(): Draft {
   if (typeof window === "undefined") return EMPTY;
