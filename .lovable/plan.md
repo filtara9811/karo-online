@@ -1,102 +1,51 @@
-## Goal
+## Vendor Onboarding — Polish + Full Product Mapping Flow + Admin Video Upload
 
-Customer registration ke baad ek naya **role-choice screen** (screenshot 2 style) add karna, aur "Become a Seller" pe click karne pe ek naya **Vendor Joining flow** (screenshot 1 style — one screen + 6 bottom sheets) chalana. Purana vendor register flow hata dena.
+Three focused changes. No backend/schema changes. Uses existing `catalog_groups`, `catalog_items`, and (if present) sub-category / pricing columns.
 
----
+### 1. UI smoothness pass (Business Info + Category Mapping sheets)
 
-## Flow (naya)
+- Reduce primary CTA height: `Submit & Continue` and `Save Mapping` from `py-4` to `py-3` (about 44px) with smaller text and gentler shadow.
+- Reduce close buttons to `h-8 w-8`, tab bar to `h-9`, category chips to `min-w-[76px] h-14`, service-type tabs to slightly smaller icons.
+- Smoother transitions: add `transition-all duration-200 ease-out` on expand/collapse, chip active state, and toggle switches. Framer-motion is already in the project, use `AnimatePresence` + `motion.div` for the expandable variation panels.
+- Slightly softer rounded radii and shadows on sheets to feel more "premium mobile".
 
-```text
-Mobile → OTP → Basic Details form → [NEW: Role Choice screen]
-                                          ├── "Continue as Buyer"  → /quick (home)
-                                          └── "Become a Seller"    → /vendor/join (naya)
+### 2. Full Category Mapping breakdown (screenshot #3 flow)
+
+Rework `InventoryMappingSheet.tsx` into a **3-level expandable flow** driven by real data:
+
+```
+Type tab (Service / Product / Both)
+  └─ Category chip strip (All + admin categories with icons)
+       └─ Main Category card (e.g., Tailor Service — Mapped/Map Now badge, chevron)
+            └─ Sub-category tabs (All / Ladies Tailor / Gents Tailor / Kids Wear)
+                 └─ Product & Variation rows (image, name, Basic Price, Premium Price, toggle, chevron)
+                      └─ Row tap opens inline editor: edit basic/premium price + short note
 ```
 
-`/vendor/join` ke andar screenshot 1 wala pattern:
+- Sub-categories: read from `catalog_items` where an item has children (or from a `sub_category` field if present). If schema doesn't expose sub-categories, treat the first-level `catalog_items` as sub-categories and their `variations` (JSON field) as products; fall back to flat items when neither exists — no schema change.
+- `Mapped` badge = at least one variation under that category is toggled ON in `selected[]`. Updates instantly.
+- Progress % = mapped main categories ÷ visible main categories.
+- "View All Products (N)" expands beyond first 6.
+- Inline price editing writes to a local `priceOverrides` map, persisted alongside `selected` in the same draft (localStorage) — save handler already exists; extend the `vendor_item_mappings` upsert to include price fields only if the columns exist (safe optional spread).
+- Row toggle uses smooth spring motion; expanded panel uses `motion.div` height animation.
 
-```text
-┌─ Vendor Joining (One Screen)
-│  Progress: Location · Photos · Business · Services · Products · Review
-│
-│  6 rows (tap = bottom sheet khulti hai):
-│    1. Business Location   → map + radius (5/10/20/Custom KM)
-│    2. Profile & Photos    → profile / shop / cover / gallery / intro video
-│    3. Contact Details     → mobile, whatsapp, email, preferred call
-│    4. Business Info       → shop name, type, experience, hours, GST
-│    5. Services            → search + popular categories, multi-select chips
-│    6. Products (Optional) → category, name, price, description, add more
-│
-│  Bottom: "Submit & Get Started" → Review sheet → dashboard
-└─
-```
+### 3. Admin video upload (file OR YouTube URL)
 
-Har row filled ho jaane pe green tick + progress % update.
+Currently `admin.subscription.tsx` only accepts a URL. Extend `VideoSettingCard`:
 
----
+- Two tabs: **Paste URL** (existing) and **Upload Video**.
+- Upload tab: file input (`accept="video/mp4,video/webm"`), uploads to Supabase Storage bucket `public-assets` (already used elsewhere; if missing, use `vendor-assets`) at path `onboarding/vendor-bg-{timestamp}.mp4`, then stores the public URL in `app_settings.vendor_onboarding_video.url`. Shows upload progress and preview.
+- Also surface a shortcut link **Admin → Onboarding Video** from `admin.index.tsx` so it's discoverable (user couldn't find it).
+- The vendor onboarding page already reads this key — no change needed there.
 
-## Files (changes)
+### Files touched
 
-**New**
-- `src/components/RoleChoiceScreen.tsx` — screenshot 2 layout (map hero image, "Continue as Buyer" / "Become a Seller" cards, trust footer)
-- `src/components/vendor-join/VendorJoinFlow.tsx` — one-screen hub with 6 rows + progress bar
-- `src/components/vendor-join/sheets/LocationSheet.tsx`
-- `src/components/vendor-join/sheets/PhotosSheet.tsx`
-- `src/components/vendor-join/sheets/ContactSheet.tsx`
-- `src/components/vendor-join/sheets/BusinessInfoSheet.tsx`
-- `src/components/vendor-join/sheets/ServicesSheet.tsx`
-- `src/components/vendor-join/sheets/ProductsSheet.tsx`
-- `src/components/vendor-join/sheets/ReviewSheet.tsx`
-- `src/components/vendor-join/useVendorDraft.ts` — local draft state (localStorage persistence)
-- `src/routes/vendor.join.tsx` — mounts `VendorJoinFlow`, on submit → save to Supabase (`vendors`, `vendor_services`, `vendor_products`) → redirect `/vendor/dashboard`
+- `src/components/vendor-join/InventoryMappingSheet.tsx` — rewrite with 3-level flow, sub-category tabs, inline price editor, motion transitions, smaller buttons.
+- `src/components/vendor-join/BusinessInfoSheet.tsx` — smaller CTA + close button, smoother transitions.
+- `src/routes/vendor.join.tsx` — extend draft type with `priceOverrides`, pass to sheet, pass to save handler.
+- `src/routes/admin.subscription.tsx` — add file-upload tab in `VideoSettingCard`.
+- `src/routes/admin.index.tsx` — add "Onboarding Video" quick-link card.
 
-**Edited**
-- `src/components/RegistrationFlow.tsx` — final step (baad customer save hone ke) `onComplete` ki jagah pehle RoleChoiceScreen render kare; buyer → parent onComplete, seller → `navigate("/vendor/join")`
-- `src/routes/register.tsx` — role-choice ke baad routing (no functional change, RegistrationFlow ke andar hi hoga)
-- `src/components/AuthGate.tsx` — force-gate ke complete callback role-choice ke baad hi fire ho
-- `src/routeTree.gen.ts` — auto (naya route add hoga)
+### Out of scope (confirm if needed)
 
-**Deprecated (removed)**
-- `src/routes/vendor.register.tsx` — purana multi-step vendor register. `/vendor/register` ko `/vendor/join` pe redirect kar denge (existing "Join Business" CTA in `VendorModeToggle` ko bhi update).
-
----
-
-## Data model (backend)
-
-`vendors` table already exists — usi mein save karenge. Naye optional columns (agar missing) ke liye ek migration:
-
-```sql
-ALTER TABLE public.vendors
-  ADD COLUMN IF NOT EXISTS cover_image_url text,
-  ADD COLUMN IF NOT EXISTS gallery_urls   text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS intro_video_url text,
-  ADD COLUMN IF NOT EXISTS working_hours  jsonb,
-  ADD COLUMN IF NOT EXISTS lead_preferences jsonb;
-```
-
-Services/products existing tables mein hi jayenge. Grants/RLS already in place — check aur update if needed.
-
----
-
-## UI / design
-
-- Same warm gold + off-white palette (existing tokens `oklch(0.78 0.14 82)` etc.) — screenshot 1 se match karta hai.
-- Bottom sheets: rounded top corners, drag handle, ~85–90% height (existing `SearchOverlay` pattern reuse).
-- Progress dots + labels on top (Location / Photos / Business / Services / Products / Review) with amber active state.
-- Green tick chips on completed rows; disabled "Submit & Get Started" until required rows done (Location + Business + Services + at least Contact).
-
----
-
-## Out of scope (is turn)
-
-- Payment / activation fee (already stubbed in `registration-backend.functions.ts` — leave as-is)
-- KYC docs upload (existing `KycStepFlow` untouched, will be prompted post-onboarding as before)
-- Admin approval flow — same as current
-
----
-
-## Verification
-
-1. Manual: `/register` complete → role screen → Buyer → `/quick` ✓
-2. `/register` complete → Seller → `/vendor/join` → fill 6 sheets → submit → `/vendor/dashboard`
-3. `/vendor/register` → redirects to `/vendor/join`
-4. Playwright smoke: open `/register`, mock session, verify role screen renders with both CTAs.
+- The 5-tab "Map Plumbing Service" full editor (screenshot #4 — Profile / Pricing / Service Areas / Media / Review) is a much larger screen. This plan implements the inline expandable editor first (matches screenshot #3). The full-page editor can be a follow-up if you want it built too.

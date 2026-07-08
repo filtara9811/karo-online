@@ -24,7 +24,7 @@ import {
   EMPTY_BUSINESS,
   type BusinessInfoDraft,
 } from "@/components/vendor-join/BusinessInfoSheet";
-import { InventoryMappingSheet } from "@/components/vendor-join/InventoryMappingSheet";
+import { InventoryMappingSheet, type ItemMapping } from "@/components/vendor-join/InventoryMappingSheet";
 import { QrPaymentSheet } from "@/components/vendor-join/QrPaymentSheet";
 
 export const Route = createFileRoute("/vendor/join")({
@@ -42,19 +42,19 @@ type PlanChoice = "trial" | "premium";
 
 type Draft = {
   business: BusinessInfoDraft;
-  items: string[];
+  mappings: Record<string, ItemMapping>;
   completed: Record<StepKey, boolean>;
   plan: PlanChoice | null;
 };
 
 const EMPTY: Draft = {
   business: EMPTY_BUSINESS,
-  items: [],
+  mappings: {},
   completed: { business: false, inventory: false },
   plan: null,
 };
 
-const DRAFT_KEY = "ko-vendor-onboard-v4";
+const DRAFT_KEY = "ko-vendor-onboard-v5";
 
 function readDraft(): Draft {
   if (typeof window === "undefined") return EMPTY;
@@ -191,8 +191,17 @@ function VendorJoinPage() {
         return;
       }
       await supabase.from("vendor_item_mappings").delete().eq("vendor_id", vendor.id);
-      if (draft.items.length) {
-        const rows = draft.items.map((item_id) => ({ vendor_id: vendor.id, item_id }));
+      const rows = Object.entries(draft.mappings)
+        .filter(([, m]) => m.variations.length > 0)
+        .map(([item_id, m]) => ({
+          vendor_id: vendor.id,
+          item_id,
+          variations: m.variations,
+          price_min: m.price_min,
+          price_max: m.price_max,
+          notes: m.notes || null,
+        }));
+      if (rows.length) {
         const { error } = await supabase.from("vendor_item_mappings").insert(rows);
         if (error) throw error;
       }
@@ -448,8 +457,8 @@ function VendorJoinPage() {
         <DrawerContent className="max-h-[95vh]">
           <div className="overflow-y-auto">
             <InventoryMappingSheet
-              selected={draft.items}
-              onChange={(ids) => setDraft({ ...draft, items: ids })}
+              mappings={draft.mappings}
+              onChange={(m) => setDraft({ ...draft, mappings: m })}
               onSubmit={saveInventory}
               onClose={() => setOpenSheet(null)}
             />

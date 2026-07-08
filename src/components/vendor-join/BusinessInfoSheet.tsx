@@ -122,7 +122,7 @@ export function BusinessInfoSheet({
         </div>
         <button
           onClick={onClose}
-          className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"
+          className="h-8 w-8 rounded-full bg-neutral-100 grid place-items-center transition hover:bg-neutral-200"
         >
           <X className="h-4 w-4 text-neutral-700" />
         </button>
@@ -326,12 +326,12 @@ export function BusinessInfoSheet({
       </div>
 
       {/* Sticky submit */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white via-white to-transparent">
         <button
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
-          className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-bold text-base shadow-lg"
+          className="w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-[.99] disabled:opacity-40 text-white font-bold text-[15px] shadow-md transition-all duration-200"
         >
           Submit & Continue
         </button>

@@ -3,11 +3,14 @@ import { useEffect, useState } from "react";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Crown, Video } from "lucide-react";
+import { Save, Crown, Video, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
 
 function VideoSettingCard() {
   const [url, setUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [mode, setMode] = useState<"url" | "upload">("url");
+
   useEffect(() => {
     supabase
       .from("app_settings")
@@ -16,15 +19,48 @@ function VideoSettingCard() {
       .maybeSingle()
       .then(({ data }) => setUrl(((data?.value as any)?.url as string) ?? ""));
   }, []);
-  const save = async () => {
-    setSaving(true);
+
+  const persist = async (nextUrl: string) => {
     const { error } = await supabase
       .from("app_settings")
-      .upsert({ key: "vendor_onboarding_video", value: { url } as any });
-    setSaving(false);
+      .upsert({ key: "vendor_onboarding_video", value: { url: nextUrl } as any });
     if (error) toast.error(error.message);
     else toast.success("Onboarding video updated");
   };
+
+  const save = async () => {
+    setSaving(true);
+    await persist(url);
+    setSaving(false);
+  };
+
+  const uploadFile = async (file: File) => {
+    if (!file.type.startsWith("video/")) {
+      toast.error("Please choose a video file");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Video is too large (max 100 MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "mp4";
+      const path = `onboarding/vendor-bg-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("catalog")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("catalog").getPublicUrl(path);
+      setUrl(pub.publicUrl);
+      await persist(pub.publicUrl);
+    } catch (e: any) {
+      toast.error(e?.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <GoldCard className="p-5 space-y-3 mb-4">
       <div className="flex items-center gap-2">
@@ -32,23 +68,79 @@ function VideoSettingCard() {
         <span className="font-bold text-white">Onboarding Background Video</span>
       </div>
       <p className="text-xs text-white/60">
-        Paste a YouTube link or a direct MP4/WEBM URL. Shown behind the vendor onboarding screen.
+        Shown behind the vendor onboarding screen (Vendor → Join). Paste a YouTube link or upload an MP4/WEBM directly.
       </p>
-      <div className="flex gap-2">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://youtube.com/watch?v=... or https://cdn.example.com/video.mp4"
-          className="flex-1 px-3 py-2 rounded-lg bg-black/30 border border-[#d4af37]/30 text-white outline-none focus:border-[#d4af37]"
-        />
+
+      <div className="flex gap-1 rounded-lg bg-black/30 border border-[#d4af37]/20 p-1 w-fit">
         <button
-          onClick={save}
-          disabled={saving}
-          className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold disabled:opacity-50"
+          onClick={() => setMode("url")}
+          className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition ${
+            mode === "url" ? "bg-amber-400 text-black" : "text-white/70"
+          }`}
         >
-          <Save className="h-4 w-4 inline mr-1" /> Save
+          <LinkIcon className="h-3.5 w-3.5" /> Paste URL
+        </button>
+        <button
+          onClick={() => setMode("upload")}
+          className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition ${
+            mode === "upload" ? "bg-amber-400 text-black" : "text-white/70"
+          }`}
+        >
+          <Upload className="h-3.5 w-3.5" /> Upload File
         </button>
       </div>
+
+      {mode === "url" ? (
+        <div className="flex gap-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://youtube.com/watch?v=... or https://cdn.example.com/video.mp4"
+            className="flex-1 px-3 py-2 rounded-lg bg-black/30 border border-[#d4af37]/30 text-white outline-none focus:border-[#d4af37]"
+          />
+          <button
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold disabled:opacity-50"
+          >
+            <Save className="h-4 w-4 inline mr-1" /> Save
+          </button>
+        </div>
+      ) : (
+        <label className="block cursor-pointer rounded-xl border-2 border-dashed border-[#d4af37]/40 bg-black/20 px-4 py-6 text-center hover:bg-black/30 transition">
+          <input
+            type="file"
+            accept="video/mp4,video/webm,video/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadFile(f);
+              e.target.value = "";
+            }}
+          />
+          {uploading ? (
+            <div className="flex items-center justify-center gap-2 text-amber-300 font-semibold">
+              <Loader2 className="h-5 w-5 animate-spin" /> Uploading…
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1 text-white/80">
+              <Upload className="h-6 w-6 text-amber-400" />
+              <span className="font-bold">Choose a video file</span>
+              <span className="text-xs text-white/50">MP4 or WEBM, up to 100 MB</span>
+            </div>
+          )}
+        </label>
+      )}
+
+      {url && (
+        <div className="mt-2">
+          <div className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Current</div>
+          <div className="text-xs text-white/80 break-all bg-black/30 border border-white/10 rounded-lg px-3 py-2">
+            {url}
+          </div>
+        </div>
+      )}
     </GoldCard>
   );
 }
