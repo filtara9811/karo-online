@@ -191,8 +191,17 @@ function VendorJoinPage() {
         return;
       }
       await supabase.from("vendor_item_mappings").delete().eq("vendor_id", vendor.id);
-      if (draft.items.length) {
-        const rows = draft.items.map((item_id) => ({ vendor_id: vendor.id, item_id }));
+      const rows = Object.entries(draft.mappings)
+        .filter(([, m]) => m.variations.length > 0)
+        .map(([item_id, m]) => ({
+          vendor_id: vendor.id,
+          item_id,
+          variations: m.variations,
+          price_min: m.price_min,
+          price_max: m.price_max,
+          notes: m.notes || null,
+        }));
+      if (rows.length) {
         const { error } = await supabase.from("vendor_item_mappings").insert(rows);
         if (error) throw error;
       }
