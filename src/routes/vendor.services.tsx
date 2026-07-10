@@ -385,62 +385,24 @@ function VendorServicesPage() {
         )}
       </main>
 
-      {/* ── BOTTOM BAR: category | sub-category | + suggest ── */}
-      <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30">
-        <div className="max-w-3xl mx-auto flex items-stretch gap-2">
-          <div className="flex-1 grid grid-cols-2 gap-2">
-            <PickerButton
-              label={currentCat?.name ?? "Category"}
-              disabled={rootCats.length === 0}
-              onClick={() => setOpenPicker("cat")}
-            />
-            <PickerButton
-              label={currentSub?.name ?? "Sub-category"}
-              withImage
-              disabled={subCats.length === 0}
-              onClick={() => setOpenPicker("sub")}
-            />
-          </div>
-          <button
-            onClick={() => openSuggest({
-              category_name: currentCat?.name ?? "",
-              subcategory_name: currentSub?.name ?? "",
-            })}
-            aria-label="Suggest a new category"
-            className="click-feedback h-11 w-11 grid place-items-center rounded-xl border border-[#d4af37]/60 text-[#1a1208] flex-shrink-0"
-            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37)" }}
-          >
-            <Plus className="h-5 w-5" strokeWidth={2.5} />
-          </button>
-        </div>
-      </div>
-
-
-      <PickerSheet
-        open={openPicker === "cat"}
-        title="Select category"
-        subtitle={rootCats.length > 0 ? `${rootCats.length} categories linked to this type` : undefined}
-        items={rootCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
-        selectedId={catId}
-        onPick={(id) => {
-          setCatId(id);
-          setOpenPicker(null);
-          // If picked category has sub-categories, chain-open the sub picker
-          const hasSubs = cats.some((c) => c.parent_id === id);
-          if (hasSubs) setTimeout(() => setOpenPicker("sub"), 260);
+      {/* ── Floating +Suggest FAB ── */}
+      <button
+        onClick={() => openSuggest({
+          category_name: currentCat?.name ?? "",
+          subcategory_name: currentSub?.name ?? "",
+        })}
+        aria-label="Suggest a new category"
+        className="click-feedback fixed z-30 h-12 w-12 grid place-items-center rounded-full border border-[#d4af37]/60 text-[#1a1208] shadow-[0_6px_18px_-6px_rgba(180,130,20,0.55)]"
+        style={{
+          background: "linear-gradient(180deg, #f5d97a, #d4af37)",
+          right: 16,
+          bottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
         }}
-        onClose={() => setOpenPicker(null)}
-      />
+      >
+        <Plus className="h-5 w-5" strokeWidth={2.5} />
+      </button>
 
-      <PickerSheet
-        open={openPicker === "sub"}
-        title="Select sub-category"
-        subtitle={subCats.length > 0 ? `${subCats.length} sub-categories` : undefined}
-        items={subCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
-        selectedId={subId}
-        onPick={(id) => { setSubId(id); setOpenPicker(null); }}
-        onClose={() => setOpenPicker(null)}
-      />
+
 
 
       <ItemPricingSheet
