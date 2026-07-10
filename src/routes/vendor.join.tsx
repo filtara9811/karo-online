@@ -174,44 +174,37 @@ function VendorJoinPage() {
     }
   };
 
-  const saveInventory = async () => {
+  // Mapping now lives at /vendor/services. When the join page mounts (or re-focuses),
+  // detect whether the vendor has any mappings saved and mark step 2 complete.
+  const refreshInventoryStatus = async () => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: vendor } = await supabase
-        .from("vendors")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!vendor) {
-        toast.error("Please fill Business Info first");
-        return;
-      }
-      await supabase.from("vendor_item_mappings").delete().eq("vendor_id", vendor.id);
-      const rows = Object.entries(draft.mappings)
-        .filter(([, m]) => m.variations.length > 0)
-        .map(([item_id, m]) => ({
-          vendor_id: vendor.id,
-          item_id,
-          variations: m.variations,
-          price_min: m.price_min,
-          price_max: m.price_max,
-          notes: m.notes || null,
-        }));
-      if (rows.length) {
-        const { error } = await supabase.from("vendor_item_mappings").insert(rows);
-        if (error) throw error;
-      }
-      await supabase.from("vendors").update({ onboarding_step: 3 }).eq("id", vendor.id);
-      setDraft({ ...draft, completed: { ...draft.completed, inventory: true } });
-      toast.success("Categories mapped");
-      setOpenSheet(null);
-    } catch (e: any) {
-      toast.error(e?.message || "Save failed");
+      const { count } = await supabase
+        .from("vendor_item_mappings")
+        .select("item_id", { count: "exact", head: true })
+        .eq("vendor_id", user.id);
+      const done = (count ?? 0) > 0;
+      setDraft((d) =>
+        d.completed.inventory === done
+          ? d
+          : { ...d, completed: { ...d.completed, inventory: done } },
+      );
+    } catch {
+      /* ignore */
     }
   };
+
+  useEffect(() => {
+    refreshInventoryStatus();
+    const onFocus = () => refreshInventoryStatus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const pickPlan = (plan: PlanChoice) => {
     if (!bothDone) {
