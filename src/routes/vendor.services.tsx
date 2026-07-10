@@ -509,6 +509,19 @@ function VendorServicesPage() {
         onSave={savePricing}
       />
 
+function SectionLabel({ title, suffix }: { title: string; suffix?: string | null }) {
+  return (
+    <div className="flex items-center gap-2 px-0.5">
+      <span className="inline-block h-3.5 w-1 rounded-full bg-gradient-to-b from-[#fbbf24] to-[#b8860b]" />
+      <span className="text-[12px] font-bold text-[#2a1f08]">{title}</span>
+      {suffix ? (
+        <span className="text-[11px] font-bold text-[#b8860b] truncate">({suffix})</span>
+      ) : null}
+    </div>
+  );
+}
+
+
       <CategorySuggestionSheet
         open={suggestOpen}
         onClose={() => setSuggestOpen(false)}
