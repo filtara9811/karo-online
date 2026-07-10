@@ -24,7 +24,7 @@ import {
   EMPTY_BUSINESS,
   type BusinessInfoDraft,
 } from "@/components/vendor-join/BusinessInfoSheet";
-import { InventoryMappingSheet, type ItemMapping } from "@/components/vendor-join/InventoryMappingSheet";
+// InventoryMappingSheet removed — Step 2 now navigates to /vendor/services
 import { QrPaymentSheet } from "@/components/vendor-join/QrPaymentSheet";
 
 export const Route = createFileRoute("/vendor/join")({
