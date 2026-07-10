@@ -132,6 +132,16 @@ function VendorServicesPage() {
 
   useEffect(() => { setActiveGroup(""); }, [subId]);
 
+  // Auto-open category picker once per type when user switches Service/Product/Other
+  useEffect(() => {
+    if (!typeId || loading) return;
+    if (autoOpenedRef.current === typeId) return;
+    const hasRoots = cats.some((c) => c.type_id === typeId && !c.parent_id);
+    if (!hasRoots) return;
+    autoOpenedRef.current = typeId;
+    setOpenPicker("cat");
+  }, [typeId, cats, loading]);
+
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
   const subItems = useMemo(() => items.filter((it) => it.category_id === subId), [items, subId]);
