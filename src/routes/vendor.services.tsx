@@ -426,20 +426,29 @@ function VendorServicesPage() {
       <PickerSheet
         open={openPicker === "cat"}
         title="Select category"
-        items={rootCats.map((c) => ({ id: c.id, name: c.name }))}
+        subtitle={rootCats.length > 0 ? `${rootCats.length} categories linked to this type` : undefined}
+        items={rootCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
         selectedId={catId}
-        onPick={(id) => { setCatId(id); setOpenPicker(null); }}
+        onPick={(id) => {
+          setCatId(id);
+          setOpenPicker(null);
+          // If picked category has sub-categories, chain-open the sub picker
+          const hasSubs = cats.some((c) => c.parent_id === id);
+          if (hasSubs) setTimeout(() => setOpenPicker("sub"), 260);
+        }}
         onClose={() => setOpenPicker(null)}
       />
 
       <PickerSheet
         open={openPicker === "sub"}
         title="Select sub-category"
-        items={subCats.map((c) => ({ id: c.id, name: c.name }))}
+        subtitle={subCats.length > 0 ? `${subCats.length} sub-categories` : undefined}
+        items={subCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
         selectedId={subId}
         onPick={(id) => { setSubId(id); setOpenPicker(null); }}
         onClose={() => setOpenPicker(null)}
       />
+
 
       <ItemPricingSheet
         open={!!pricingItem}
