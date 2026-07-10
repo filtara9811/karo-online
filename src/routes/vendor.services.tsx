@@ -58,8 +58,6 @@ function VendorServicesPage() {
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("");
 
-  const [pickerOpen, setPickerOpen] = useState(false); // legacy — no longer used
-  void pickerOpen;
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
 
   const [suggestOpen, setSuggestOpen] = useState(false);
