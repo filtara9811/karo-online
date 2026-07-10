@@ -1,81 +1,86 @@
 ## Goal
-Vendor ke liye ek naya **My Listing / Inventory** page banana (screenshot 2 jaisa), aur usko dashboard ke top-right filter icon se link karna. Us page ka floating `+ Add Inventory` button existing mapping page (`/vendor/services`, screenshot 3) kholega — jahaan already sab category/sub-category/variation ke saath toggle + pricing ready hai.
+Polish `/vendor/listing` UI to match reference (screenshot B) — premium, smooth, with cover/avatar upload, Business/Personal profile toggle, and edit-card action on each listing. Also ensure `/vendor/listing` and `/vendor/services` open as **bottom-sheet style overlays above the home dashboard** rather than as independent full-screen routes.
 
-Sirf frontend + routing changes. Koi DB / RLS / server function change nahi.
+## Scope
+Frontend/UI only. No DB, no RLS, no server functions. Reuse existing `vendor_item_mappings`, `vendors`, `catalog_items`, `categories` queries already wired.
 
-## Flow
+---
+
+## 1. Bottom-sheet presentation (both `/vendor/listing` + `/vendor/services`)
+
+Currently both are full-page routes rendered on their own background. Change presentation so that when the user opens either from the dashboard, the vendor dashboard stays visually behind (dimmed), and the target screen slides up as a rounded bottom-sheet panel filling ~92% of the viewport height.
+
+Approach (no route change, keeps deep-linkability):
+- Add a shared `<SheetShell>` wrapper (new file `src/components/vendor/SheetShell.tsx`) that renders:
+  - fixed inset-0 backdrop `bg-black/40 backdrop-blur-sm`, click → `router.history.back()`
+  - inner panel: `fixed inset-x-0 bottom-0 top-4 rounded-t-3xl overflow-hidden shadow-2xl` with slide-up spring animation (framer-motion, already in project)
+  - small grabber handle at top
+- Wrap `VendorListingPage` and `VendorServicesPage` in `<SheetShell>`.
+- Background image: render a static snapshot of dashboard (simple: keep dashboard route mounted by using `useCanGoBack` + rendering nothing behind — instead we paint a soft dashboard-tinted gradient so the sheet feels layered).
+- Back button + backdrop tap both call `navigate({ to: '/vendor/dashboard' })`.
+
+## 2. My Listing — premium visual polish
+
+Match screenshot B closely:
+
+**Header row**
+- Back circle + `My Listing ›` gold pill (unchanged position, tighten spacing)
+- Title `My Listing / Inventory` in serif display, subtitle muted
+
+**Business card**
+- Cover: 160px, real image fill (fix current broken `alt="cover"` display), rounded top only, `Change Cover` chip top-right; tapping opens hidden file input → upload to `vendors.cover_image_url` via existing Supabase Storage bucket (reuse whatever `profile` route uses; if none, use `avatars` bucket + `covers/` prefix).
+- Avatar: 96px circle overlapping cover by ~40px, ring-4 white, camera badge bottom-right → upload to `vendors.profile_photo_url`.
+- Right side: Name (serif bold) + verified tick, tagline `trade`, location with pin icon, `Edit Profile` gold-outline pill → `/profile`.
+- Premium Member gold chip below.
+- **Business Profile / Personal Profile segmented toggle** (visual only for now — stores selection in local `useState`; both tabs show same data).
+- 5-column stats strip (Total Listings, Total Orders, Total Leads, Happy %, Member Since). Icons in gold circles above numbers; numbers in serif display font.
+
+**Search + filter bar** — unchanged shape, slightly taller (h-12), softer shadow.
+
+**Quick tiles (4)** — enlarge to fit label fully (`Active Listings`, `Inactive Listings`, `Total Orders`, `Total Leads`) instead of truncating to `ACT…`. Two-line layout: icon+label top, big number bottom, small % chip.
+
+**Your Listings header** — serif bold + `View All ›`.
+
+**Listing card** (redesigned to match screenshot B):
 ```
-Vendor Dashboard
-   └── top-right filter icon (screenshot 1)
-        → /vendor/listing  (NEW — My Listing / Inventory, screenshot 2)
-             ├── Business card (cover + avatar + name + stats)
-             ├── Search + filter
-             ├── Quick stats (Active / Inactive / Orders / Leads)
-             ├── "Your Listings" cards (image, name, price range, toggle, orders/leads/views/response)
-             └── Floating gold "+" FAB  →  /vendor/services  (existing mapping, screenshot 3)
+┌──────────────────────────────────────────────┐
+│ [img]  Blazer Stitching        [Active] [◉] │
+│  80px  Gents Tailor                          │
+│        ₹1500 – ₹4000        [✎] Updated 2d  │
+│        ⏱30-45m 🛡Home  🎖Standard   ★4.8    │
+├──────────────────────────────────────────────┤
+│ Orders  Leads  Views  Resp     [ ⋯ ]        │
+│  156    340   2.4K    98%                   │
+└──────────────────────────────────────────────┘
 ```
+- Image 80×80 rounded-2xl.
+- Edit pencil button next to price → opens small bottom-sheet to edit `price_min`/`price_max` (updates `vendor_item_mappings`).
+- Gold toggle switch mutates `is_active` (already wired — keep).
+- `⋯` menu: Edit, Duplicate (stub), Remove (soft delete via `is_active=false` for now).
+- Meta row (duration/home service/standard/rating) uses tiny pill icons — placeholders when data missing.
 
-## Changes
+**Floating FAB** — gold circle with `Add Your Inventory` black pill label to its left (matches screenshot). Slightly larger (56px), stronger shadow.
 
-### 1. `src/routes/vendor.dashboard.tsx` (small)
-- Line ~1011–1017: filter icon button ka `onClick` change karo:
-  `navigate({ to: "/vendor/services" })` → `navigate({ to: "/vendor/listing" })`.
-- `aria-label` ko `"My Listing"` kar do.
-- Baaki dashboard untouched.
+**Motion**
+- Sheet slide-up: framer-motion spring (stiffness 320, damping 32).
+- Cards: staggered fade+lift on first paint (`initial y:8 opacity:0` → `animate y:0 opacity:1`, 40ms stagger).
+- Toggle: existing scale, keep.
 
-### 2. `src/routes/vendor.listing.tsx` (NEW file)
-Screenshot 2 ke hisaab se page. Same premium cream + gold theme jaisa baaki app.
+## 3. Upload plumbing (cover + avatar)
+- Hidden `<input type=file accept="image/*">` per target.
+- Client-side compress via `createImageBitmap` + canvas to max 1600px width, JPEG q0.85.
+- Upload path: `supabase.storage.from('avatars').upload(\`${uid}/cover-${Date.now()}.jpg\`, blob, { upsert: true })` → get public URL → update `vendors` row.
+- Optimistic preview via `URL.createObjectURL`.
+- Toast success/failure via existing `sonner`.
 
-**Head / SEO:** title `My Listing — Karo Online`, description apne mapped services & products manage karein.
-
-**Sections (top → bottom):**
-
-1. **Header row** — back button (← `/vendor/dashboard`) + right side `My Listing` pill button (currently selected state); title `My Listing / Inventory`, subtitle `All your mapped services & products`.
-
-2. **Business card** (reuse styling from `VendorDashboardCard`):
-   - Cover image (from `profiles.cover_url` if present, fallback gradient) + `Change Cover` chip (upload → existing storage bucket).
-   - Circular avatar (profile.avatar_url) with camera overlay.
-   - Name + verified tick, tagline (`profiles.tagline`), location (`profiles.city, profiles.state`), `Premium Member` badge if subscription active, `Edit Profile` outline button → `/profile`.
-   - Business / Personal Profile tab pills (visual only for now, Business active).
-   - 5-column mini stats row: Total Listings, Total Orders, Total Leads, Happy Customers %, Member Since — sab existing data se derive (mappings count, orders count, leads count, static % for now).
-
-3. **Search + filter bar** — `Search services, products, categories…` input + gold funnel icon button (opens simple sheet with type/category filter — reuse `ActionPicker` pattern).
-
-4. **Quick stat tiles (4)**: Active Listings, Inactive Listings, Total Orders, Total Leads. Numbers derived from `vendor_item_mappings` (`is_active` true/false counts) + orders/leads hooks already in use on dashboard.
-
-5. **"Your Listings" section**:
-   - Heading + `View All ›` link (scrolls / no-op).
-   - List of cards from `vendor_item_mappings` joined to `catalog_items`:
-     - Left: item image (56–64px, rounded).
-     - Middle: item name (bold), category name (small), price range `₹basic – ₹premium`, meta row (duration if present, `Home Service`, `Standard`).
-     - Right: Active/Inactive chip + gold toggle switch (mutates `vendor_item_mappings.is_active` — same mutation already used in `/vendor/services`).
-     - Second row inside card: 4 mini stats — Orders, Leads, Views, Response Rate — plus `…` menu (edit price / remove).
-   - Empty state: friendly message + big `Add Your First Listing` button → `/vendor/services`.
-
-6. **Floating `+ Add Inventory` FAB** (bottom-right, above bottom nav) — gold circular button with `+` icon and pill label `Add Your Inventory` on the left. `onClick` → `navigate({ to: "/vendor/services" })`.
-
-**Data hooks (reuse, no new backend):**
-- `supabase.from('vendor_item_mappings').select('*, catalog_items(*, categories(*))').eq('vendor_id', user.id)` — same shape as dashboard already fetches.
-- Realtime channel same as dashboard (`vendor-inventory-${user.id}`) for live toggle sync.
-- Orders / Leads counts: reuse `useMyOrders` / `useVendorLeads` hooks.
-
-**Styling:** same tokens as dashboard/services — cream bg, gold gradient accents, silver-gradient headings, `rounded-2xl` cards, `active:scale-95`. Koi hardcoded colors nahi.
-
-### 3. Route registration
-- `src/routeTree.gen.ts` auto-generated by TanStack plugin — nahi chhedenge.
-- `_authenticated` layout ke andar rakhne ki zaroorat nahi kyunki `vendor.dashboard.tsx` bhi flat route hai; usi pattern follow karenge.
+## Files
+- **NEW** `src/components/vendor/SheetShell.tsx` — backdrop + slide-up panel wrapper.
+- **NEW** `src/components/vendor/ListingCard.tsx` — extracted premium card.
+- **EDIT** `src/routes/vendor.listing.tsx` — wrap in SheetShell, redesign business card (cover/avatar upload, Business/Personal toggle, larger stats), redesign quick tiles (no truncation), swap listing rendering to `<ListingCard>`, add edit-price sheet, upgrade FAB.
+- **EDIT** `src/routes/vendor.services.tsx` — wrap existing content in `SheetShell` (no other changes).
 
 ## Out of scope
-- Koi DB migration nahi, koi RLS change nahi, koi nayi server function nahi.
-- `/vendor/services` mapping page (screenshot 3) already ready hai — us mein koi change nahi.
-- Edit/remove listing sheet (only `…` menu placeholder) — full editor baad mein.
-- Business/Personal Profile toggle sirf visual (functional split baad mein).
-
-## Files touched
-- `src/routes/vendor.dashboard.tsx` — 2 line change (filter icon target + aria-label).
-- `src/routes/vendor.listing.tsx` — NEW.
-
-## Verify
-- Dashboard filter icon → `/vendor/listing` khule.
-- Listing cards ke toggle real-time `/vendor/services` ke saath sync ho (same table).
-- `+` FAB → `/vendor/services` khule, wahin se naya add hote hi listing page pe naya card aa jaaye.
+- No changes to `/vendor/dashboard`, catalog, mapping logic, or any backend.
+- Business/Personal toggle is visual (same data both tabs) — real personal-profile data model can come later.
+- Duplicate listing is a stub toast.
+- Reviews count (`4.8 (320 Reviews)`) shown only when data exists; otherwise hidden.
