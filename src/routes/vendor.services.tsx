@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,8 +58,6 @@ function VendorServicesPage() {
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("");
 
-  const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
-  const autoOpenedRef = useRef<string | null>(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
 
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -132,15 +130,8 @@ function VendorServicesPage() {
 
   useEffect(() => { setActiveGroup(""); }, [subId]);
 
-  // Auto-open category picker once per type when user switches Service/Product/Other
-  useEffect(() => {
-    if (!typeId || loading) return;
-    if (autoOpenedRef.current === typeId) return;
-    const hasRoots = cats.some((c) => c.type_id === typeId && !c.parent_id);
-    if (!hasRoots) return;
-    autoOpenedRef.current = typeId;
-    setOpenPicker("cat");
-  }, [typeId, cats, loading]);
+  // (auto-open picker removed — categories/sub-categories are inline now)
+
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
@@ -271,183 +262,226 @@ function VendorServicesPage() {
             );
           })}
         </div>
-      </header>
 
-
-      <main
-        className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 max-w-3xl mx-auto w-full"
-        style={{ paddingBottom: BOTTOM_BARS_H + 24 }}
-      >
-        <div className="mb-3">
-          <h2 className="font-display text-xl font-bold text-[#2a1f08]">
-            {currentSub?.name ?? "Select a sub-category"}
-          </h2>
-          <p className="text-[11px] text-[#6b5a2e]">
-            ON karein wo services jo aap dete hain
-          </p>
-        </div>
-
-        {/* Parent-variation tabs — admin-managed (read-only here, vendor only picks) */}
-        <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-            {groupTabs.map((g) => {
-              const active = activeGroup === g;
-              const meta = subGroups.find((x) => x.name === g);
+        {/* ── MAIN CATEGORIES: horizontal scroll strip ── */}
+        {rootCats.length > 0 && (
+          <div className="max-w-3xl mx-auto mt-2 flex items-stretch gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2">
+            {rootCats.map((rc) => {
+              const active = rc.id === catId;
               return (
                 <button
-                  key={g}
-                  onClick={() => setActiveGroup(active ? "" : g)}
-                  className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
+                  key={rc.id}
+                  onClick={() => setCatId(rc.id)}
+                  className={`snap-start shrink-0 w-[76px] rounded-2xl px-1.5 py-2 flex flex-col items-center gap-1 border-2 transition active:scale-95 ${
                     active
-                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
-                      : "bg-white text-[#3a2c10] border-[#d4af37]/40"
+                      ? "border-[#b8860b] shadow-[0_4px_12px_-4px_rgba(217,119,6,0.55)]"
+                      : "border-[#d4af37]/35 bg-white"
                   }`}
+                  style={
+                    active
+                      ? { background: "linear-gradient(180deg, #fff3c4, #ffe79a)" }
+                      : undefined
+                  }
                 >
-                  {meta ? (
-                    <IconImage url={meta.image_url} icon={meta.icon} size={38} />
-                  ) : (
-                    <div
-                      className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
-                        active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
-                      }`}
-                    >
-                      {g.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
-                    {g}
+                  <IconImage url={rc.image_url} icon={rc.icon} size={32} />
+                  <span className="text-[10px] font-bold leading-tight text-center text-[#2a1f08] line-clamp-2">
+                    {rc.name}
                   </span>
                 </button>
               );
             })}
           </div>
-        </div>
-
-
-
-
-        {visibleItems.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="h-10 w-10 text-[#d4af37]/60 mx-auto mb-3" />
-            <p className="text-sm text-[#6b5a2e]">Koi item nahi mila</p>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {visibleItems.map((it) => {
-              const mapping = mappings.get(it.id);
-              const on = !!mapping;
-              const busy = savingKey === it.id;
-              return (
-                <div
-                  key={it.id}
-                  className="rounded-2xl border p-3 flex items-center gap-3 bg-white"
-                  style={{
-                    background: on
-                      ? "linear-gradient(180deg, rgba(34,197,94,0.10), rgba(255,255,255,1))"
-                      : "#ffffff",
-                    borderColor: on ? "rgba(34,197,94,0.55)" : "rgba(212,175,55,0.35)",
-                    boxShadow: "0 1px 4px -1px rgba(120,90,20,0.10)",
-                  }}
-                >
-                  <IconImage url={it.image_url} icon={it.icon} size={44} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2a1f08] truncate">{it.name}</p>
-                    <p className="text-[11px] text-[#6b5a2e] truncate">
-                      {on && (mapping!.price_min || mapping!.price_max)
-                        ? `₹${mapping!.price_min ?? "?"} – ${mapping!.price_max ?? "?"}`
-                        : it.price_min || it.price_max
-                        ? `Suggested ₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}`
-                        : on
-                        ? "Linked — leads ON"
-                        : "Tap to enable"}
-                    </p>
-                    {on && mapping!.variations && mapping!.variations.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {mapping!.variations.slice(0, 3).map((v) => (
-                          <span key={v} className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold uppercase tracking-wider">
-                            {v}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {on && (
-                    <button
-                      onClick={() => setPricingItem(it)}
-                      className="h-8 w-8 rounded-full grid place-items-center bg-[#fff8dc] border border-[#d4af37]/50 text-[#b8860b]"
-                      aria-label="Edit rate"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <ToggleSwitch
-                    on={on}
-                    busy={busy}
-                    onChange={() => (on ? turnOff(it.id) : setPricingItem(it))}
-                  />
-                </div>
-              );
-            })}
-          </div>
         )}
+      </header>
+
+
+      <main
+        className="flex-1 min-h-0 overflow-hidden max-w-3xl mx-auto w-full grid"
+        style={{ gridTemplateColumns: "112px 1fr" }}
+      >
+
+        {/* ── LEFT RAIL: sub-categories ── */}
+        <aside className="h-full overflow-y-auto border-r border-[#d4af37]/25 bg-white/60 py-2 pl-2 pr-1.5 space-y-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a6a1e] px-1 pb-1">
+            Categories
+          </p>
+          {subCats.length === 0 ? (
+            <p className="text-[11px] text-[#6b5a2e] px-1">No sub-categories</p>
+          ) : (
+            subCats.map((sc) => {
+              const active = sc.id === subId;
+              return (
+                <button
+                  key={sc.id}
+                  onClick={() => setSubId(sc.id)}
+                  className={`click-feedback relative w-full rounded-xl px-2 py-2 flex flex-col items-center gap-1 text-center transition border ${
+                    active
+                      ? "border-[#d4af37] shadow-[0_3px_10px_-4px_rgba(180,130,20,0.45)]"
+                      : "border-transparent bg-white/70"
+                  }`}
+                  style={
+                    active
+                      ? { background: "linear-gradient(180deg, #fff3c4, #ffe79a)" }
+                      : undefined
+                  }
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-[#b8860b]" />
+                  )}
+                  <IconImage url={sc.image_url} icon={sc.icon} size={28} />
+                  <span className="text-[10.5px] font-bold leading-tight text-[#2a1f08] line-clamp-2">
+                    {sc.name}
+                  </span>
+                </button>
+              );
+            })
+          )}
+          <button
+            onClick={() => openSuggest({ category_name: currentCat?.name ?? "" })}
+            className="w-full mt-1 rounded-xl px-2 py-2 flex items-center justify-center gap-1 border border-dashed border-[#d4af37]/60 text-[#b8860b] text-[10.5px] font-bold"
+          >
+            <Plus className="h-3 w-3" strokeWidth={3} /> Add
+          </button>
+        </aside>
+
+        {/* ── RIGHT: variation tabs + items list ── */}
+        <section
+          className="h-full overflow-y-auto px-3 sm:px-5 py-4"
+          style={{ paddingBottom: BOTTOM_BARS_H + 24 }}
+        >
+          <div className="mb-3">
+            <h2 className="font-display text-lg font-bold text-[#2a1f08] truncate">
+              {currentSub?.name ?? "Select a sub-category"}
+            </h2>
+            <p className="text-[11px] text-[#6b5a2e]">
+              ON karein wo services jo aap dete hain
+            </p>
+          </div>
+
+          {/* Parent-variation tabs — admin-managed */}
+          {groupTabs.length > 0 && (
+            <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                {groupTabs.map((g) => {
+                  const active = activeGroup === g;
+                  const meta = subGroups.find((x) => x.name === g);
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => setActiveGroup(active ? "" : g)}
+                      className={`snap-start shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
+                        active
+                          ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
+                          : "bg-white text-[#3a2c10] border-[#d4af37]/40"
+                      }`}
+                    >
+                      {meta ? (
+                        <IconImage url={meta.image_url} icon={meta.icon} size={34} />
+                      ) : (
+                        <div
+                          className={`h-[34px] w-[34px] rounded-xl grid place-items-center text-base font-black ${
+                            active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
+                          }`}
+                        >
+                          {g.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-[9.5px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
+                        {g}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {visibleItems.length === 0 ? (
+            <div className="text-center py-16">
+              <Package className="h-10 w-10 text-[#d4af37]/60 mx-auto mb-3" />
+              <p className="text-sm text-[#6b5a2e]">Koi item nahi mila</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {visibleItems.map((it) => {
+                const mapping = mappings.get(it.id);
+                const on = !!mapping;
+                const busy = savingKey === it.id;
+                return (
+                  <div
+                    key={it.id}
+                    className="rounded-2xl border p-3 flex items-center gap-3 bg-white"
+                    style={{
+                      background: on
+                        ? "linear-gradient(180deg, rgba(34,197,94,0.10), rgba(255,255,255,1))"
+                        : "#ffffff",
+                      borderColor: on ? "rgba(34,197,94,0.55)" : "rgba(212,175,55,0.35)",
+                      boxShadow: "0 1px 4px -1px rgba(120,90,20,0.10)",
+                    }}
+                  >
+                    <IconImage url={it.image_url} icon={it.icon} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#2a1f08] truncate">{it.name}</p>
+                      <p className="text-[11px] text-[#6b5a2e] truncate">
+                        {on && (mapping!.price_min || mapping!.price_max)
+                          ? `₹${mapping!.price_min ?? "?"} – ${mapping!.price_max ?? "?"}`
+                          : it.price_min || it.price_max
+                          ? `Suggested ₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}`
+                          : on
+                          ? "Linked — leads ON"
+                          : "Tap to enable"}
+                      </p>
+                      {on && mapping!.variations && mapping!.variations.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {mapping!.variations.slice(0, 3).map((v) => (
+                            <span key={v} className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold uppercase tracking-wider">
+                              {v}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {on && (
+                      <button
+                        onClick={() => setPricingItem(it)}
+                        className="h-8 w-8 rounded-full grid place-items-center bg-[#fff8dc] border border-[#d4af37]/50 text-[#b8860b]"
+                        aria-label="Edit rate"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <ToggleSwitch
+                      on={on}
+                      busy={busy}
+                      onChange={() => (on ? turnOff(it.id) : setPricingItem(it))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </main>
 
-      {/* ── BOTTOM BAR: category | sub-category | + suggest ── */}
-      <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30">
-        <div className="max-w-3xl mx-auto flex items-stretch gap-2">
-          <div className="flex-1 grid grid-cols-2 gap-2">
-            <PickerButton
-              label={currentCat?.name ?? "Category"}
-              disabled={rootCats.length === 0}
-              onClick={() => setOpenPicker("cat")}
-            />
-            <PickerButton
-              label={currentSub?.name ?? "Sub-category"}
-              withImage
-              disabled={subCats.length === 0}
-              onClick={() => setOpenPicker("sub")}
-            />
-          </div>
-          <button
-            onClick={() => openSuggest({
-              category_name: currentCat?.name ?? "",
-              subcategory_name: currentSub?.name ?? "",
-            })}
-            aria-label="Suggest a new category"
-            className="click-feedback h-11 w-11 grid place-items-center rounded-xl border border-[#d4af37]/60 text-[#1a1208] flex-shrink-0"
-            style={{ background: "linear-gradient(180deg, #f5d97a, #d4af37)" }}
-          >
-            <Plus className="h-5 w-5" strokeWidth={2.5} />
-          </button>
-        </div>
-      </div>
 
-
-      <PickerSheet
-        open={openPicker === "cat"}
-        title="Select category"
-        subtitle={rootCats.length > 0 ? `${rootCats.length} categories linked to this type` : undefined}
-        items={rootCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
-        selectedId={catId}
-        onPick={(id) => {
-          setCatId(id);
-          setOpenPicker(null);
-          // If picked category has sub-categories, chain-open the sub picker
-          const hasSubs = cats.some((c) => c.parent_id === id);
-          if (hasSubs) setTimeout(() => setOpenPicker("sub"), 260);
+      {/* ── Floating +Suggest FAB ── */}
+      <button
+        onClick={() => openSuggest({
+          category_name: currentCat?.name ?? "",
+          subcategory_name: currentSub?.name ?? "",
+        })}
+        aria-label="Suggest a new category"
+        className="click-feedback fixed z-30 h-12 w-12 grid place-items-center rounded-full border border-[#d4af37]/60 text-[#1a1208] shadow-[0_6px_18px_-6px_rgba(180,130,20,0.55)]"
+        style={{
+          background: "linear-gradient(180deg, #f5d97a, #d4af37)",
+          right: 16,
+          bottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
         }}
-        onClose={() => setOpenPicker(null)}
-      />
+      >
+        <Plus className="h-5 w-5" strokeWidth={2.5} />
+      </button>
 
-      <PickerSheet
-        open={openPicker === "sub"}
-        title="Select sub-category"
-        subtitle={subCats.length > 0 ? `${subCats.length} sub-categories` : undefined}
-        items={subCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
-        selectedId={subId}
-        onPick={(id) => { setSubId(id); setOpenPicker(null); }}
-        onClose={() => setOpenPicker(null)}
-      />
+
 
 
       <ItemPricingSheet
