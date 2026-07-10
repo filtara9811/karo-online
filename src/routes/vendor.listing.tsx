@@ -196,13 +196,16 @@ function VendorListingPage() {
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (error) throw error;
       const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
-      const col = kind === "cover" ? "cover_image_url" : "profile_photo_url";
+      const patch = kind === "cover"
+        ? { cover_image_url: data.publicUrl }
+        : { profile_photo_url: data.publicUrl };
       const { error: uErr } = await supabase
         .from("vendors")
-        .update({ [col]: data.publicUrl })
+        .update(patch)
         .eq("user_id", uid);
       if (uErr) throw uErr;
-      setVendor((v) => (v ? { ...v, [col]: data.publicUrl } as VendorRow : v));
+      setVendor((v) => (v ? { ...v, ...patch } as VendorRow : v));
+
       toast.success(kind === "cover" ? "Cover updated" : "Photo updated");
     } catch (e) {
       toast.error("Upload failed");
