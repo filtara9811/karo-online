@@ -445,18 +445,8 @@ function VendorJoinPage() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={openSheet === "inventory"} onOpenChange={(o) => !o && setOpenSheet(null)}>
-        <DrawerContent className="max-h-[95vh]">
-          <div className="overflow-y-auto">
-            <InventoryMappingSheet
-              mappings={draft.mappings}
-              onChange={(m) => setDraft({ ...draft, mappings: m })}
-              onSubmit={saveInventory}
-              onClose={() => setOpenSheet(null)}
-            />
-          </div>
-        </DrawerContent>
-      </Drawer>
+      {/* Inventory Drawer removed — Step 2 now navigates to /vendor/services */}
+
 
       <Drawer open={openSheet === "qr"} onOpenChange={(o) => !o && setOpenSheet(null)}>
         <DrawerContent className="max-h-[95vh]">
