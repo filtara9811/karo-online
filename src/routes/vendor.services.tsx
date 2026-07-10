@@ -222,11 +222,11 @@ function VendorServicesPage() {
     );
   }
 
-  const BOTTOM_BARS_H = 124;
+  const BOTTOM_BARS_H = 72;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PAGE_BG }}>
-      <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 border-b border-[#d4af37]/30 backdrop-blur-xl bg-white/80">
+      <header className="sticky top-0 z-20 px-4 sm:px-6 pt-4 pb-2 border-b border-[#d4af37]/30 backdrop-blur-xl bg-white/85">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button
             onClick={() => navigate({ to: "/vendor/dashboard" })}
@@ -235,16 +235,44 @@ function VendorServicesPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-bold" style={{ background: HEADING_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               My Services
             </h1>
-            <p className="text-[11px] text-[#6b5a2e] mt-1 truncate">
+            <p className="text-[11px] text-[#6b5a2e] mt-0.5 truncate">
               Type → Category → Sub-category → toggle ON karke rate set karein.
             </p>
           </div>
         </div>
+
+        {/* ── TYPE PILLS (moved up from bottom bar) ── */}
+        <div className="max-w-3xl mx-auto mt-3 flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {types.map((t) => {
+            const active = t.id === typeId;
+            const Icon = typeIcon(t.name);
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTypeId(t.id)}
+                className={`flex items-center gap-2 px-4 h-9 rounded-full text-xs font-bold whitespace-nowrap transition border ${
+                  active
+                    ? "text-white border-[#b8860b] shadow-[0_3px_10px_-3px_rgba(217,119,6,0.5)]"
+                    : "text-[#3a2c10] border-[#d4af37]/40 bg-white"
+                }`}
+                style={
+                  active
+                    ? { background: "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)" }
+                    : undefined
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
       </header>
+
 
       <main
         className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 max-w-3xl mx-auto w-full"
