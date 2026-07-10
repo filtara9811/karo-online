@@ -1,47 +1,81 @@
 ## Goal
-Polish the Category Mapping UI on `/vendor/services` to match the reference screenshot (screenshot 1) — bigger, cleaner cards with proper spacing, better hierarchy, and smooth auto-selection. No backend/data changes.
+Vendor ke liye ek naya **My Listing / Inventory** page banana (screenshot 2 jaisa), aur usko dashboard ke top-right filter icon se link karna. Us page ka floating `+ Add Inventory` button existing mapping page (`/vendor/services`, screenshot 3) kholega — jahaan already sab category/sub-category/variation ke saath toggle + pricing ready hai.
 
-## Changes (only `src/routes/vendor.services.tsx`)
+Sirf frontend + routing changes. Koi DB / RLS / server function change nahi.
 
-### 1. Header cleanup
-- Remove the small `<p>` "Type → Category → Sub-category → toggle ON karke rate set karein." text from inside the title block and place it as a subtle breadcrumb line directly under "My Services" (matching screenshot: `Type → Category → Sub-category → Toggle ON karein`).
-- Keep back button + `Open Shop` style spacing consistent.
+## Flow
+```
+Vendor Dashboard
+   └── top-right filter icon (screenshot 1)
+        → /vendor/listing  (NEW — My Listing / Inventory, screenshot 2)
+             ├── Business card (cover + avatar + name + stats)
+             ├── Search + filter
+             ├── Quick stats (Active / Inactive / Orders / Leads)
+             ├── "Your Listings" cards (image, name, price range, toggle, orders/leads/views/response)
+             └── Floating gold "+" FAB  →  /vendor/services  (existing mapping, screenshot 3)
+```
 
-### 2. Main Categories row (bigger, cleaner)
-- Add a section label `▎Main Categories` (gold accent bar + bold text) above the strip.
-- Increase card size from `w-[76px]` → `w-[92px]` with `p-3`, `rounded-2xl`, white bg, subtle border.
-- Increase icon size from 32 → 44.
-- Text: 2 lines, `text-[11px]`, bold, dark brown.
-- Active state: soft gold gradient fill + gold border + shadow (same as screenshot).
-- Horizontal scroll retained.
+## Changes
 
-### 3. Sub-categories → move OUT of the left rail into a horizontal row
-- Reference screenshot 1 shows sub-categories as a **horizontal scroller** below main categories, not a vertical left rail.
-- Remove the `grid-cols-[112px_1fr]` two-column layout.
-- Add a new section `▎Sub-categories (Home Services)` header with the active main category name in gold.
-- Render sub-categories as horizontal pill-cards: icon (28px) on the left + name on the right, `rounded-xl`, white bg, gold border on active with light gold fill.
-- Add `+` add card at the end of the row (was in left rail).
+### 1. `src/routes/vendor.dashboard.tsx` (small)
+- Line ~1011–1017: filter icon button ka `onClick` change karo:
+  `navigate({ to: "/vendor/services" })` → `navigate({ to: "/vendor/listing" })`.
+- `aria-label` ko `"My Listing"` kar do.
+- Baaki dashboard untouched.
 
-### 4. Variations row polish
-- Header `Variations (AC Services)` with active sub-category name in gold accent.
-- Keep as horizontal scroll, but enlarge cards to `w-[96px] h-[96px]`, icon 40px, bold name below.
-- Active = gold gradient fill + white icon tint.
-- **Auto-select first variation**: change `useEffect(() => { setActiveGroup(""); }, [subId])` to auto-pick `subGroups[0]?.name ?? ""` when sub changes (so a variation is always selected instead of showing all).
+### 2. `src/routes/vendor.listing.tsx` (NEW file)
+Screenshot 2 ke hisaab se page. Same premium cream + gold theme jaisa baaki app.
 
-### 5. Items list header
-- Change `<h2>{currentSub?.name}</h2>` block to match screenshot: `Services / Products (AC Repairing)` with the active variation name in gold, and an `+ Add New Service / Variation` button on the right.
+**Head / SEO:** title `My Listing — Karo Online`, description apne mapped services & products manage karein.
 
-### 6. Items list (already close, minor polish)
-- Keep existing toggle/pricing behavior untouched.
-- Slightly tighten card padding and ensure icon boxes render at 56–64px for readability (small tweak from current sizing).
+**Sections (top → bottom):**
 
-### 7. Bottom `+` FAB
-- Keep the floating gold `+` for suggesting new categories.
+1. **Header row** — back button (← `/vendor/dashboard`) + right side `My Listing` pill button (currently selected state); title `My Listing / Inventory`, subtitle `All your mapped services & products`.
+
+2. **Business card** (reuse styling from `VendorDashboardCard`):
+   - Cover image (from `profiles.cover_url` if present, fallback gradient) + `Change Cover` chip (upload → existing storage bucket).
+   - Circular avatar (profile.avatar_url) with camera overlay.
+   - Name + verified tick, tagline (`profiles.tagline`), location (`profiles.city, profiles.state`), `Premium Member` badge if subscription active, `Edit Profile` outline button → `/profile`.
+   - Business / Personal Profile tab pills (visual only for now, Business active).
+   - 5-column mini stats row: Total Listings, Total Orders, Total Leads, Happy Customers %, Member Since — sab existing data se derive (mappings count, orders count, leads count, static % for now).
+
+3. **Search + filter bar** — `Search services, products, categories…` input + gold funnel icon button (opens simple sheet with type/category filter — reuse `ActionPicker` pattern).
+
+4. **Quick stat tiles (4)**: Active Listings, Inactive Listings, Total Orders, Total Leads. Numbers derived from `vendor_item_mappings` (`is_active` true/false counts) + orders/leads hooks already in use on dashboard.
+
+5. **"Your Listings" section**:
+   - Heading + `View All ›` link (scrolls / no-op).
+   - List of cards from `vendor_item_mappings` joined to `catalog_items`:
+     - Left: item image (56–64px, rounded).
+     - Middle: item name (bold), category name (small), price range `₹basic – ₹premium`, meta row (duration if present, `Home Service`, `Standard`).
+     - Right: Active/Inactive chip + gold toggle switch (mutates `vendor_item_mappings.is_active` — same mutation already used in `/vendor/services`).
+     - Second row inside card: 4 mini stats — Orders, Leads, Views, Response Rate — plus `…` menu (edit price / remove).
+   - Empty state: friendly message + big `Add Your First Listing` button → `/vendor/services`.
+
+6. **Floating `+ Add Inventory` FAB** (bottom-right, above bottom nav) — gold circular button with `+` icon and pill label `Add Your Inventory` on the left. `onClick` → `navigate({ to: "/vendor/services" })`.
+
+**Data hooks (reuse, no new backend):**
+- `supabase.from('vendor_item_mappings').select('*, catalog_items(*, categories(*))').eq('vendor_id', user.id)` — same shape as dashboard already fetches.
+- Realtime channel same as dashboard (`vendor-inventory-${user.id}`) for live toggle sync.
+- Orders / Leads counts: reuse `useMyOrders` / `useVendorLeads` hooks.
+
+**Styling:** same tokens as dashboard/services — cream bg, gold gradient accents, silver-gradient headings, `rounded-2xl` cards, `active:scale-95`. Koi hardcoded colors nahi.
+
+### 3. Route registration
+- `src/routeTree.gen.ts` auto-generated by TanStack plugin — nahi chhedenge.
+- `_authenticated` layout ke andar rakhne ki zaroorat nahi kyunki `vendor.dashboard.tsx` bhi flat route hai; usi pattern follow karenge.
 
 ## Out of scope
-- No changes to database, RLS, server functions, `vendor_item_mappings`, admin panel, or realtime subscriptions.
-- No changes to `ItemPricingSheet`, `CategorySuggestionSheet`, or `IconImage`.
-- No route changes; `/vendor/services` stays the single page.
+- Koi DB migration nahi, koi RLS change nahi, koi nayi server function nahi.
+- `/vendor/services` mapping page (screenshot 3) already ready hai — us mein koi change nahi.
+- Edit/remove listing sheet (only `…` menu placeholder) — full editor baad mein.
+- Business/Personal Profile toggle sirf visual (functional split baad mein).
 
 ## Files touched
-- `src/routes/vendor.services.tsx` (layout + styling only)
+- `src/routes/vendor.dashboard.tsx` — 2 line change (filter icon target + aria-label).
+- `src/routes/vendor.listing.tsx` — NEW.
+
+## Verify
+- Dashboard filter icon → `/vendor/listing` khule.
+- Listing cards ke toggle real-time `/vendor/services` ke saath sync ho (same table).
+- `+` FAB → `/vendor/services` khule, wahin se naya add hote hi listing page pe naya card aa jaaye.
