@@ -516,6 +516,7 @@ function PickerButton({
 function PickerSheet({
   open,
   title,
+  subtitle,
   items,
   selectedId,
   onPick,
@@ -523,7 +524,8 @@ function PickerSheet({
 }: {
   open: boolean;
   title: string;
-  items: { id: string; name: string }[];
+  subtitle?: string;
+  items: { id: string; name: string; icon?: string | null; image_url?: string | null }[];
   selectedId: string | null;
   onPick: (id: string) => void;
   onClose: () => void;
@@ -544,7 +546,7 @@ function PickerSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 280, damping: 32 }}
-            className="fixed inset-x-0 bottom-0 z-[61] max-h-[70vh] rounded-t-[28px] flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[61] max-h-[80vh] rounded-t-[28px] flex flex-col"
             style={{
               background: "linear-gradient(180deg, #fffdf6 0%, #fdf6e3 100%)",
               borderTop: "1px solid rgba(212,175,55,0.5)",
@@ -554,12 +556,15 @@ function PickerSheet({
               <span className="block h-1.5 w-12 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
             </div>
             <div className="px-5 pb-3 pt-1 flex items-start gap-3 border-b border-[#d4af37]/30">
-              <h3 className="flex-1 font-display text-lg font-bold text-[#2a1f08]">{title}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg font-bold text-[#2a1f08]">{title}</h3>
+                {subtitle && <p className="text-[11px] text-[#6b5a2e] mt-0.5 truncate">{subtitle}</p>}
+              </div>
               <button onClick={onClose} aria-label="Close" className="h-8 w-8 rounded-full grid place-items-center border border-[#d4af37]/40 text-[#3a2c10] bg-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-[max(env(safe-area-inset-bottom),16px)]">
               {items.length === 0 ? (
                 <p className="text-sm text-[#6b5a2e] text-center py-8">Empty</p>
               ) : (
@@ -569,15 +574,28 @@ function PickerSheet({
                     <button
                       key={it.id}
                       onClick={() => onPick(it.id)}
-                      className="w-full rounded-2xl border p-3.5 text-left text-sm font-semibold text-[#2a1f08] transition bg-white"
+                      className="w-full rounded-2xl border p-3 flex items-center gap-3 text-left transition active:scale-[0.99]"
                       style={{
                         background: on
                           ? "linear-gradient(180deg, #fff3c4, #ffe79a)"
                           : "#ffffff",
                         borderColor: on ? "#d4af37" : "rgba(212,175,55,0.35)",
+                        boxShadow: on
+                          ? "0 4px 14px -6px rgba(180,130,20,0.35)"
+                          : "0 1px 3px -1px rgba(120,90,20,0.10)",
                       }}
                     >
-                      {it.name}
+                      <div className="h-12 w-12 rounded-2xl overflow-hidden bg-[#fff8dc] border border-[#d4af37]/40 grid place-items-center flex-shrink-0">
+                        <IconImage url={it.image_url ?? null} icon={it.icon ?? null} size={46} />
+                      </div>
+                      <span className="flex-1 text-base font-bold text-[#2a1f08] truncate">
+                        {it.name}
+                      </span>
+                      {on && (
+                        <span className="h-6 w-6 rounded-full grid place-items-center bg-[#b8860b] text-white flex-shrink-0">
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        </span>
+                      )}
                     </button>
                   );
                 })
@@ -589,6 +607,7 @@ function PickerSheet({
     </AnimatePresence>
   );
 }
+
 
 function ToggleSwitch({ on, busy, onChange }: { on: boolean; busy: boolean; onChange: () => void }) {
   return (
