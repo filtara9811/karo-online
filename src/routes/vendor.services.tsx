@@ -268,122 +268,172 @@ function VendorServicesPage() {
 
 
       <main
-        className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 max-w-3xl mx-auto w-full"
-        style={{ paddingBottom: BOTTOM_BARS_H + 24 }}
+        className="flex-1 overflow-hidden max-w-3xl mx-auto w-full grid"
+        style={{ gridTemplateColumns: "112px 1fr" }}
       >
-        <div className="mb-3">
-          <h2 className="font-display text-xl font-bold text-[#2a1f08]">
-            {currentSub?.name ?? "Select a sub-category"}
-          </h2>
-          <p className="text-[11px] text-[#6b5a2e]">
-            ON karein wo services jo aap dete hain
+        {/* ── LEFT RAIL: sub-categories ── */}
+        <aside className="h-full overflow-y-auto border-r border-[#d4af37]/25 bg-white/60 py-2 pl-2 pr-1.5 space-y-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a6a1e] px-1 pb-1">
+            Categories
           </p>
-        </div>
-
-        {/* Parent-variation tabs — admin-managed (read-only here, vendor only picks) */}
-        <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-            {groupTabs.map((g) => {
-              const active = activeGroup === g;
-              const meta = subGroups.find((x) => x.name === g);
+          {subCats.length === 0 ? (
+            <p className="text-[11px] text-[#6b5a2e] px-1">No sub-categories</p>
+          ) : (
+            subCats.map((sc) => {
+              const active = sc.id === subId;
               return (
                 <button
-                  key={g}
-                  onClick={() => setActiveGroup(active ? "" : g)}
-                  className={`snap-start shrink-0 flex flex-col items-center justify-center w-[78px] h-[88px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
+                  key={sc.id}
+                  onClick={() => setSubId(sc.id)}
+                  className={`click-feedback relative w-full rounded-xl px-2 py-2 flex flex-col items-center gap-1 text-center transition border ${
                     active
-                      ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
-                      : "bg-white text-[#3a2c10] border-[#d4af37]/40"
+                      ? "border-[#d4af37] shadow-[0_3px_10px_-4px_rgba(180,130,20,0.45)]"
+                      : "border-transparent bg-white/70"
                   }`}
+                  style={
+                    active
+                      ? { background: "linear-gradient(180deg, #fff3c4, #ffe79a)" }
+                      : undefined
+                  }
                 >
-                  {meta ? (
-                    <IconImage url={meta.image_url} icon={meta.icon} size={38} />
-                  ) : (
-                    <div
-                      className={`h-[38px] w-[38px] rounded-xl grid place-items-center text-base font-black ${
-                        active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
-                      }`}
-                    >
-                      {g.slice(0, 1).toUpperCase()}
-                    </div>
+                  {active && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-[#b8860b]" />
                   )}
-                  <span className="text-[10px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
-                    {g}
+                  <IconImage url={sc.image_url} icon={sc.icon} size={28} />
+                  <span className="text-[10.5px] font-bold leading-tight text-[#2a1f08] line-clamp-2">
+                    {sc.name}
                   </span>
                 </button>
               );
-            })}
+            })
+          )}
+          <button
+            onClick={() => openSuggest({ category_name: currentCat?.name ?? "" })}
+            className="w-full mt-1 rounded-xl px-2 py-2 flex items-center justify-center gap-1 border border-dashed border-[#d4af37]/60 text-[#b8860b] text-[10.5px] font-bold"
+          >
+            <Plus className="h-3 w-3" strokeWidth={3} /> Add
+          </button>
+        </aside>
+
+        {/* ── RIGHT: variation tabs + items list ── */}
+        <section
+          className="h-full overflow-y-auto px-3 sm:px-5 py-4"
+          style={{ paddingBottom: BOTTOM_BARS_H + 24 }}
+        >
+          <div className="mb-3">
+            <h2 className="font-display text-lg font-bold text-[#2a1f08] truncate">
+              {currentSub?.name ?? "Select a sub-category"}
+            </h2>
+            <p className="text-[11px] text-[#6b5a2e]">
+              ON karein wo services jo aap dete hain
+            </p>
           </div>
-        </div>
 
-
-
-
-        {visibleItems.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="h-10 w-10 text-[#d4af37]/60 mx-auto mb-3" />
-            <p className="text-sm text-[#6b5a2e]">Koi item nahi mila</p>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {visibleItems.map((it) => {
-              const mapping = mappings.get(it.id);
-              const on = !!mapping;
-              const busy = savingKey === it.id;
-              return (
-                <div
-                  key={it.id}
-                  className="rounded-2xl border p-3 flex items-center gap-3 bg-white"
-                  style={{
-                    background: on
-                      ? "linear-gradient(180deg, rgba(34,197,94,0.10), rgba(255,255,255,1))"
-                      : "#ffffff",
-                    borderColor: on ? "rgba(34,197,94,0.55)" : "rgba(212,175,55,0.35)",
-                    boxShadow: "0 1px 4px -1px rgba(120,90,20,0.10)",
-                  }}
-                >
-                  <IconImage url={it.image_url} icon={it.icon} size={44} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2a1f08] truncate">{it.name}</p>
-                    <p className="text-[11px] text-[#6b5a2e] truncate">
-                      {on && (mapping!.price_min || mapping!.price_max)
-                        ? `₹${mapping!.price_min ?? "?"} – ${mapping!.price_max ?? "?"}`
-                        : it.price_min || it.price_max
-                        ? `Suggested ₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}`
-                        : on
-                        ? "Linked — leads ON"
-                        : "Tap to enable"}
-                    </p>
-                    {on && mapping!.variations && mapping!.variations.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {mapping!.variations.slice(0, 3).map((v) => (
-                          <span key={v} className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold uppercase tracking-wider">
-                            {v}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {on && (
+          {/* Parent-variation tabs — admin-managed */}
+          {groupTabs.length > 0 && (
+            <div className="mb-3 rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[#d4af37]/40 p-2">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                {groupTabs.map((g) => {
+                  const active = activeGroup === g;
+                  const meta = subGroups.find((x) => x.name === g);
+                  return (
                     <button
-                      onClick={() => setPricingItem(it)}
-                      className="h-8 w-8 rounded-full grid place-items-center bg-[#fff8dc] border border-[#d4af37]/50 text-[#b8860b]"
-                      aria-label="Edit rate"
+                      key={g}
+                      onClick={() => setActiveGroup(active ? "" : g)}
+                      className={`snap-start shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-2xl px-1.5 py-1.5 gap-1 transition-all active:scale-95 border-2 ${
+                        active
+                          ? "bg-gradient-to-b from-[#fbbf24] to-[#d97706] text-white border-[#b8860b] shadow-[0_4px_12px_-3px_rgba(217,119,6,0.55)]"
+                          : "bg-white text-[#3a2c10] border-[#d4af37]/40"
+                      }`}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      {meta ? (
+                        <IconImage url={meta.image_url} icon={meta.icon} size={34} />
+                      ) : (
+                        <div
+                          className={`h-[34px] w-[34px] rounded-xl grid place-items-center text-base font-black ${
+                            active ? "bg-white/20" : "bg-[#fff8dc] text-[#b8860b]"
+                          }`}
+                        >
+                          {g.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-[9.5px] font-display font-bold uppercase tracking-wider truncate w-full text-center">
+                        {g}
+                      </span>
                     </button>
-                  )}
-                  <ToggleSwitch
-                    on={on}
-                    busy={busy}
-                    onChange={() => (on ? turnOff(it.id) : setPricingItem(it))}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {visibleItems.length === 0 ? (
+            <div className="text-center py-16">
+              <Package className="h-10 w-10 text-[#d4af37]/60 mx-auto mb-3" />
+              <p className="text-sm text-[#6b5a2e]">Koi item nahi mila</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {visibleItems.map((it) => {
+                const mapping = mappings.get(it.id);
+                const on = !!mapping;
+                const busy = savingKey === it.id;
+                return (
+                  <div
+                    key={it.id}
+                    className="rounded-2xl border p-3 flex items-center gap-3 bg-white"
+                    style={{
+                      background: on
+                        ? "linear-gradient(180deg, rgba(34,197,94,0.10), rgba(255,255,255,1))"
+                        : "#ffffff",
+                      borderColor: on ? "rgba(34,197,94,0.55)" : "rgba(212,175,55,0.35)",
+                      boxShadow: "0 1px 4px -1px rgba(120,90,20,0.10)",
+                    }}
+                  >
+                    <IconImage url={it.image_url} icon={it.icon} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#2a1f08] truncate">{it.name}</p>
+                      <p className="text-[11px] text-[#6b5a2e] truncate">
+                        {on && (mapping!.price_min || mapping!.price_max)
+                          ? `₹${mapping!.price_min ?? "?"} – ${mapping!.price_max ?? "?"}`
+                          : it.price_min || it.price_max
+                          ? `Suggested ₹${it.price_min ?? "?"} – ${it.price_max ?? "?"}`
+                          : on
+                          ? "Linked — leads ON"
+                          : "Tap to enable"}
+                      </p>
+                      {on && mapping!.variations && mapping!.variations.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {mapping!.variations.slice(0, 3).map((v) => (
+                            <span key={v} className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold uppercase tracking-wider">
+                              {v}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {on && (
+                      <button
+                        onClick={() => setPricingItem(it)}
+                        className="h-8 w-8 rounded-full grid place-items-center bg-[#fff8dc] border border-[#d4af37]/50 text-[#b8860b]"
+                        aria-label="Edit rate"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <ToggleSwitch
+                      on={on}
+                      busy={busy}
+                      onChange={() => (on ? turnOff(it.id) : setPricingItem(it))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </main>
+
 
       {/* ── Floating +Suggest FAB ── */}
       <button
