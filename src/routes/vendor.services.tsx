@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus } from "lucide-react";
+import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
