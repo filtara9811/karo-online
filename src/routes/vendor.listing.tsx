@@ -110,7 +110,7 @@ function VendorListingPage() {
         .eq("vendor_id", userId)
         .order("updated_at", { ascending: false }),
       supabase.from("catalog_items").select(
-        "id, name, image_url, icon, category_id, price_min, price_max, duration_min, duration_max",
+        "id, name, image_url, icon, category_id, price_min, price_max",
       ),
       supabase.from("categories").select("id, name, parent_id"),
     ]);
