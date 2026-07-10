@@ -58,8 +58,8 @@ function VendorServicesPage() {
   const [subId, setSubId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("");
 
-  const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
-  const autoOpenedRef = useRef<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false); // legacy — no longer used
+  void pickerOpen;
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
 
   const [suggestOpen, setSuggestOpen] = useState(false);
