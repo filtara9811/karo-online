@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, ChevronUp, Package, ArrowLeft, X, Pencil, Wrench, Boxes, MoreHorizontal, Plus, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { IconImage } from "@/components/admin/ImageUpload";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/vendor/services")({
   component: () => (<VendorAuthGate><VendorServicesPage /></VendorAuthGate>),
 });
 
-type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean; group_tag?: string | null };
+type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean; group_tag?: string | null; icon: string | null; image_url: string | null };
 type Item = { id: string; category_id: string; name: string; image_url: string | null; icon: string | null; price_min: number | null; price_max: number | null; is_active: boolean; group_tag?: string | null };
 type Type = { id: string; name: string; icon: string | null; is_active: boolean };
 type Group = { id: string; category_id: string; name: string; icon: string | null; image_url: string | null; sort_order: number; is_active: boolean };
@@ -59,6 +59,7 @@ function VendorServicesPage() {
   const [activeGroup, setActiveGroup] = useState<string>("");
 
   const [openPicker, setOpenPicker] = useState<null | "cat" | "sub">(null);
+  const autoOpenedRef = useRef<string | null>(null);
   const [pricingItem, setPricingItem] = useState<Item | null>(null);
 
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -130,6 +131,16 @@ function VendorServicesPage() {
   }, [catId, cats]);
 
   useEffect(() => { setActiveGroup(""); }, [subId]);
+
+  // Auto-open category picker once per type when user switches Service/Product/Other
+  useEffect(() => {
+    if (!typeId || loading) return;
+    if (autoOpenedRef.current === typeId) return;
+    const hasRoots = cats.some((c) => c.type_id === typeId && !c.parent_id);
+    if (!hasRoots) return;
+    autoOpenedRef.current = typeId;
+    setOpenPicker("cat");
+  }, [typeId, cats, loading]);
 
   const rootCats = useMemo(() => cats.filter((c) => c.type_id === typeId && !c.parent_id), [cats, typeId]);
   const subCats = useMemo(() => cats.filter((c) => c.parent_id === catId), [cats, catId]);
@@ -211,11 +222,11 @@ function VendorServicesPage() {
     );
   }
 
-  const BOTTOM_BARS_H = 124;
+  const BOTTOM_BARS_H = 72;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PAGE_BG }}>
-      <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 border-b border-[#d4af37]/30 backdrop-blur-xl bg-white/80">
+      <header className="sticky top-0 z-20 px-4 sm:px-6 pt-4 pb-2 border-b border-[#d4af37]/30 backdrop-blur-xl bg-white/85">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button
             onClick={() => navigate({ to: "/vendor/dashboard" })}
@@ -224,16 +235,44 @@ function VendorServicesPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-bold" style={{ background: HEADING_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               My Services
             </h1>
-            <p className="text-[11px] text-[#6b5a2e] mt-1 truncate">
+            <p className="text-[11px] text-[#6b5a2e] mt-0.5 truncate">
               Type → Category → Sub-category → toggle ON karke rate set karein.
             </p>
           </div>
         </div>
+
+        {/* ── TYPE PILLS (moved up from bottom bar) ── */}
+        <div className="max-w-3xl mx-auto mt-3 flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {types.map((t) => {
+            const active = t.id === typeId;
+            const Icon = typeIcon(t.name);
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTypeId(t.id)}
+                className={`flex items-center gap-2 px-4 h-9 rounded-full text-xs font-bold whitespace-nowrap transition border ${
+                  active
+                    ? "text-white border-[#b8860b] shadow-[0_3px_10px_-3px_rgba(217,119,6,0.5)]"
+                    : "text-[#3a2c10] border-[#d4af37]/40 bg-white"
+                }`}
+                style={
+                  active
+                    ? { background: "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)" }
+                    : undefined
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
       </header>
+
 
       <main
         className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 max-w-3xl mx-auto w-full"
@@ -353,12 +392,9 @@ function VendorServicesPage() {
         )}
       </main>
 
-      {/* ── BOTTOM BAR 2: category | sub-category | + suggest ── */}
-      <div
-        className="fixed inset-x-0 z-30 px-3"
-        style={{ bottom: 56 + 8, paddingBottom: 0 }}
-      >
-        <div className="max-w-3xl mx-auto flex items-stretch gap-2 rounded-2xl border border-[#d4af37]/40 bg-white/90 backdrop-blur-xl p-1.5 shadow-[0_4px_18px_-6px_rgba(120,90,20,0.25)]">
+      {/* ── BOTTOM BAR: category | sub-category | + suggest ── */}
+      <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30">
+        <div className="max-w-3xl mx-auto flex items-stretch gap-2">
           <div className="flex-1 grid grid-cols-2 gap-2">
             <PickerButton
               label={currentCat?.name ?? "Category"}
@@ -386,52 +422,33 @@ function VendorServicesPage() {
         </div>
       </div>
 
-      {/* ── BOTTOM BAR 1: type pills ── */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30 pb-[max(env(safe-area-inset-bottom),6px)]">
-        <div className="max-w-3xl mx-auto flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
-          {types.map((t) => {
-            const active = t.id === typeId;
-            const Icon = typeIcon(t.name);
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTypeId(t.id)}
-                className={`flex items-center gap-2 px-4 h-10 rounded-full text-xs font-bold whitespace-nowrap transition border ${
-                  active
-                    ? "text-white border-[#b8860b]"
-                    : "text-[#3a2c10] border-[#d4af37]/40 bg-white"
-                }`}
-                style={
-                  active
-                    ? { background: "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)" }
-                    : undefined
-                }
-              >
-                <Icon className="h-4 w-4" />
-                {t.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       <PickerSheet
         open={openPicker === "cat"}
         title="Select category"
-        items={rootCats.map((c) => ({ id: c.id, name: c.name }))}
+        subtitle={rootCats.length > 0 ? `${rootCats.length} categories linked to this type` : undefined}
+        items={rootCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
         selectedId={catId}
-        onPick={(id) => { setCatId(id); setOpenPicker(null); }}
+        onPick={(id) => {
+          setCatId(id);
+          setOpenPicker(null);
+          // If picked category has sub-categories, chain-open the sub picker
+          const hasSubs = cats.some((c) => c.parent_id === id);
+          if (hasSubs) setTimeout(() => setOpenPicker("sub"), 260);
+        }}
         onClose={() => setOpenPicker(null)}
       />
 
       <PickerSheet
         open={openPicker === "sub"}
         title="Select sub-category"
-        items={subCats.map((c) => ({ id: c.id, name: c.name }))}
+        subtitle={subCats.length > 0 ? `${subCats.length} sub-categories` : undefined}
+        items={subCats.map((c) => ({ id: c.id, name: c.name, icon: c.icon, image_url: c.image_url }))}
         selectedId={subId}
         onPick={(id) => { setSubId(id); setOpenPicker(null); }}
         onClose={() => setOpenPicker(null)}
       />
+
 
       <ItemPricingSheet
         open={!!pricingItem}
@@ -499,6 +516,7 @@ function PickerButton({
 function PickerSheet({
   open,
   title,
+  subtitle,
   items,
   selectedId,
   onPick,
@@ -506,7 +524,8 @@ function PickerSheet({
 }: {
   open: boolean;
   title: string;
-  items: { id: string; name: string }[];
+  subtitle?: string;
+  items: { id: string; name: string; icon?: string | null; image_url?: string | null }[];
   selectedId: string | null;
   onPick: (id: string) => void;
   onClose: () => void;
@@ -527,7 +546,7 @@ function PickerSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 280, damping: 32 }}
-            className="fixed inset-x-0 bottom-0 z-[61] max-h-[70vh] rounded-t-[28px] flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[61] max-h-[80vh] rounded-t-[28px] flex flex-col"
             style={{
               background: "linear-gradient(180deg, #fffdf6 0%, #fdf6e3 100%)",
               borderTop: "1px solid rgba(212,175,55,0.5)",
@@ -537,12 +556,15 @@ function PickerSheet({
               <span className="block h-1.5 w-12 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
             </div>
             <div className="px-5 pb-3 pt-1 flex items-start gap-3 border-b border-[#d4af37]/30">
-              <h3 className="flex-1 font-display text-lg font-bold text-[#2a1f08]">{title}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg font-bold text-[#2a1f08]">{title}</h3>
+                {subtitle && <p className="text-[11px] text-[#6b5a2e] mt-0.5 truncate">{subtitle}</p>}
+              </div>
               <button onClick={onClose} aria-label="Close" className="h-8 w-8 rounded-full grid place-items-center border border-[#d4af37]/40 text-[#3a2c10] bg-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-[max(env(safe-area-inset-bottom),16px)]">
               {items.length === 0 ? (
                 <p className="text-sm text-[#6b5a2e] text-center py-8">Empty</p>
               ) : (
@@ -552,15 +574,28 @@ function PickerSheet({
                     <button
                       key={it.id}
                       onClick={() => onPick(it.id)}
-                      className="w-full rounded-2xl border p-3.5 text-left text-sm font-semibold text-[#2a1f08] transition bg-white"
+                      className="w-full rounded-2xl border p-3 flex items-center gap-3 text-left transition active:scale-[0.99]"
                       style={{
                         background: on
                           ? "linear-gradient(180deg, #fff3c4, #ffe79a)"
                           : "#ffffff",
                         borderColor: on ? "#d4af37" : "rgba(212,175,55,0.35)",
+                        boxShadow: on
+                          ? "0 4px 14px -6px rgba(180,130,20,0.35)"
+                          : "0 1px 3px -1px rgba(120,90,20,0.10)",
                       }}
                     >
-                      {it.name}
+                      <div className="h-12 w-12 rounded-2xl overflow-hidden bg-[#fff8dc] border border-[#d4af37]/40 grid place-items-center flex-shrink-0">
+                        <IconImage url={it.image_url ?? null} icon={it.icon ?? null} size={46} />
+                      </div>
+                      <span className="flex-1 text-base font-bold text-[#2a1f08] truncate">
+                        {it.name}
+                      </span>
+                      {on && (
+                        <span className="h-6 w-6 rounded-full grid place-items-center bg-[#b8860b] text-white flex-shrink-0">
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        </span>
+                      )}
                     </button>
                   );
                 })
@@ -572,6 +607,7 @@ function PickerSheet({
     </AnimatePresence>
   );
 }
+
 
 function ToggleSwitch({ on, busy, onChange }: { on: boolean; busy: boolean; onChange: () => void }) {
   return (
