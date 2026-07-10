@@ -42,17 +42,16 @@ type PlanChoice = "trial" | "premium";
 
 type Draft = {
   business: BusinessInfoDraft;
-  mappings: Record<string, ItemMapping>;
   completed: Record<StepKey, boolean>;
   plan: PlanChoice | null;
 };
 
 const EMPTY: Draft = {
   business: EMPTY_BUSINESS,
-  mappings: {},
   completed: { business: false, inventory: false },
   plan: null,
 };
+
 
 const DRAFT_KEY = "ko-vendor-onboard-v5";
 
