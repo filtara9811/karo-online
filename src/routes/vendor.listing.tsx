@@ -58,8 +58,6 @@ type Item = {
   category_id: string;
   price_min: number | null;
   price_max: number | null;
-  duration_min: number | null;
-  duration_max: number | null;
 };
 
 type Cat = { id: string; name: string; parent_id: string | null };
