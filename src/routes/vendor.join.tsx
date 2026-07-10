@@ -350,7 +350,7 @@ function VendorJoinPage() {
           desc="Map your products and services for better reach"
           done={draft.completed.inventory}
           disabled={!draft.completed.business}
-          onClick={() => setOpenSheet("inventory")}
+          onClick={() => navigate({ to: "/vendor/services" })}
         />
 
         {/* Choose Your Plan */}
