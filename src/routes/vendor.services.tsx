@@ -392,12 +392,9 @@ function VendorServicesPage() {
         )}
       </main>
 
-      {/* ── BOTTOM BAR 2: category | sub-category | + suggest ── */}
-      <div
-        className="fixed inset-x-0 z-30 px-3"
-        style={{ bottom: 56 + 8, paddingBottom: 0 }}
-      >
-        <div className="max-w-3xl mx-auto flex items-stretch gap-2 rounded-2xl border border-[#d4af37]/40 bg-white/90 backdrop-blur-xl p-1.5 shadow-[0_4px_18px_-6px_rgba(120,90,20,0.25)]">
+      {/* ── BOTTOM BAR: category | sub-category | + suggest ── */}
+      <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30">
+        <div className="max-w-3xl mx-auto flex items-stretch gap-2">
           <div className="flex-1 grid grid-cols-2 gap-2">
             <PickerButton
               label={currentCat?.name ?? "Category"}
@@ -425,34 +422,6 @@ function VendorServicesPage() {
         </div>
       </div>
 
-      {/* ── BOTTOM BAR 1: type pills ── */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/90 backdrop-blur-xl border-t border-[#d4af37]/30 pb-[max(env(safe-area-inset-bottom),6px)]">
-        <div className="max-w-3xl mx-auto flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
-          {types.map((t) => {
-            const active = t.id === typeId;
-            const Icon = typeIcon(t.name);
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTypeId(t.id)}
-                className={`flex items-center gap-2 px-4 h-10 rounded-full text-xs font-bold whitespace-nowrap transition border ${
-                  active
-                    ? "text-white border-[#b8860b]"
-                    : "text-[#3a2c10] border-[#d4af37]/40 bg-white"
-                }`}
-                style={
-                  active
-                    ? { background: "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)" }
-                    : undefined
-                }
-              >
-                <Icon className="h-4 w-4" />
-                {t.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       <PickerSheet
         open={openPicker === "cat"}
