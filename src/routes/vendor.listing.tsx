@@ -497,7 +497,7 @@ function QuickTile({
   value,
   sub,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   tone: "green" | "red" | "violet" | "blue";
   label: string;
   value: number;
