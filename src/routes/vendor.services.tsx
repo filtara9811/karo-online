@@ -264,13 +264,44 @@ function VendorServicesPage() {
             );
           })}
         </div>
+
+        {/* ── MAIN CATEGORIES: horizontal scroll strip ── */}
+        {rootCats.length > 0 && (
+          <div className="max-w-3xl mx-auto mt-2 flex items-stretch gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2">
+            {rootCats.map((rc) => {
+              const active = rc.id === catId;
+              return (
+                <button
+                  key={rc.id}
+                  onClick={() => setCatId(rc.id)}
+                  className={`snap-start shrink-0 w-[76px] rounded-2xl px-1.5 py-2 flex flex-col items-center gap-1 border-2 transition active:scale-95 ${
+                    active
+                      ? "border-[#b8860b] shadow-[0_4px_12px_-4px_rgba(217,119,6,0.55)]"
+                      : "border-[#d4af37]/35 bg-white"
+                  }`}
+                  style={
+                    active
+                      ? { background: "linear-gradient(180deg, #fff3c4, #ffe79a)" }
+                      : undefined
+                  }
+                >
+                  <IconImage url={rc.image_url} icon={rc.icon} size={32} />
+                  <span className="text-[10px] font-bold leading-tight text-center text-[#2a1f08] line-clamp-2">
+                    {rc.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </header>
 
 
       <main
-        className="flex-1 overflow-hidden max-w-3xl mx-auto w-full grid"
+        className="flex-1 min-h-0 overflow-hidden max-w-3xl mx-auto w-full grid"
         style={{ gridTemplateColumns: "112px 1fr" }}
       >
+
         {/* ── LEFT RAIL: sub-categories ── */}
         <aside className="h-full overflow-y-auto border-r border-[#d4af37]/25 bg-white/60 py-2 pl-2 pr-1.5 space-y-1.5">
           <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a6a1e] px-1 pb-1">
