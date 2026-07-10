@@ -128,7 +128,11 @@ function VendorServicesPage() {
     setSubId((cur) => (cur && subs.some((c) => c.id === cur) ? cur : subs[0]?.id ?? null));
   }, [catId, cats]);
 
-  useEffect(() => { setActiveGroup(""); }, [subId]);
+  // Auto-select the first variation whenever the sub-category changes.
+  useEffect(() => {
+    const groups = allGroups.filter((g) => g.category_id === subId).sort((a, b) => a.sort_order - b.sort_order);
+    setActiveGroup(groups[0]?.name ?? "");
+  }, [subId, allGroups]);
 
   // (auto-open picker removed — categories/sub-categories are inline now)
 
