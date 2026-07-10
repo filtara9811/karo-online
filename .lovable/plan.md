@@ -1,51 +1,47 @@
-## Vendor Onboarding — Polish + Full Product Mapping Flow + Admin Video Upload
+# Product/Service Mapping — Simplify & Reuse in Onboarding
 
-Three focused changes. No backend/schema changes. Uses existing `catalog_groups`, `catalog_items`, and (if present) sub-category / pricing columns.
+## पूरा overview (Hindi)
 
-### 1. UI smoothness pass (Business Info + Category Mapping sheets)
+आपकी screenshots से 3 दिक्कतें clear हैं:
 
-- Reduce primary CTA height: `Submit & Continue` and `Save Mapping` from `py-4` to `py-3` (about 44px) with smaller text and gentler shadow.
-- Reduce close buttons to `h-8 w-8`, tab bar to `h-9`, category chips to `min-w-[76px] h-14`, service-type tabs to slightly smaller icons.
-- Smoother transitions: add `transition-all duration-200 ease-out` on expand/collapse, chip active state, and toggle switches. Framer-motion is already in the project, use `AnimatePresence` + `motion.div` for the expandable variation panels.
-- Slightly softer rounded radii and shadows on sheets to feel more "premium mobile".
+1. **Type buttons (Service / Product / Other)** अभी नीचे fixed bottom bar में हैं — इसे ऊपर header के नीचे segmented top bar बनाना है।
+2. **Category & Sub-category picker sheets** में सिर्फ text list दिख रही है — admin से जो icon/image आ रहा है वो नहीं दिख रहा। Cards भी बहुत छोटे और flat हैं।
+3. Onboarding का Step 2 ("Category Mapping") अभी अलग `InventoryMappingSheet` component खोलता है — आप चाहते हैं कि यही `vendor/services` वाला page खुले ताकि दोनों जगह same experience रहे।
 
-### 2. Full Category Mapping breakdown (screenshot #3 flow)
+बाकी personality (cream/gold theme, toggle, pricing sheet, + suggest, group tabs, cards) बिल्कुल same रहेगा — सिर्फ layout re-arrange और picker beautify होगा।
 
-Rework `InventoryMappingSheet.tsx` into a **3-level expandable flow** driven by real data:
+---
 
-```
-Type tab (Service / Product / Both)
-  └─ Category chip strip (All + admin categories with icons)
-       └─ Main Category card (e.g., Tailor Service — Mapped/Map Now badge, chevron)
-            └─ Sub-category tabs (All / Ladies Tailor / Gents Tailor / Kids Wear)
-                 └─ Product & Variation rows (image, name, Basic Price, Premium Price, toggle, chevron)
-                      └─ Row tap opens inline editor: edit basic/premium price + short note
-```
+## Changes
 
-- Sub-categories: read from `catalog_items` where an item has children (or from a `sub_category` field if present). If schema doesn't expose sub-categories, treat the first-level `catalog_items` as sub-categories and their `variations` (JSON field) as products; fall back to flat items when neither exists — no schema change.
-- `Mapped` badge = at least one variation under that category is toggled ON in `selected[]`. Updates instantly.
-- Progress % = mapped main categories ÷ visible main categories.
-- "View All Products (N)" expands beyond first 6.
-- Inline price editing writes to a local `priceOverrides` map, persisted alongside `selected` in the same draft (localStorage) — save handler already exists; extend the `vendor_item_mappings` upsert to include price fields only if the columns exist (safe optional spread).
-- Row toggle uses smooth spring motion; expanded panel uses `motion.div` height animation.
+### 1. `src/routes/vendor.services.tsx` — layout re-order (same file, same logic)
 
-### 3. Admin video upload (file OR YouTube URL)
+- **Top area (नीचे header के):** एक sticky segmented bar जिसमें Service / Product / Other pills — active gold gradient, inactive white with gold border। यही अभी नीचे है, वहाँ से हटा के ऊपर आएगा।
+- **Bottom bar अब सिर्फ एक:** Category | Sub-category | `+` suggest — same look, बस अकेला row (type वाला bar delete)।
+- **Auto-open picker:** पहली बार जब type change हो और `catId` set हो जाए, तो category picker sheet अपने आप खुले (आप कह रहे थे "open हो के सामने आए")। User एक बार select कर ले तो auto-open बंद।
 
-Currently `admin.subscription.tsx` only accepts a URL. Extend `VideoSettingCard`:
+### 2. `PickerSheet` beautify (same file)
 
-- Two tabs: **Paste URL** (existing) and **Upload Video**.
-- Upload tab: file input (`accept="video/mp4,video/webm"`), uploads to Supabase Storage bucket `public-assets` (already used elsewhere; if missing, use `vendor-assets`) at path `onboarding/vendor-bg-{timestamp}.mp4`, then stores the public URL in `app_settings.vendor_onboarding_video.url`. Shows upload progress and preview.
-- Also surface a shortcut link **Admin → Onboarding Video** from `admin.index.tsx` so it's discoverable (user couldn't find it).
-- The vendor onboarding page already reads this key — no change needed there.
+- Cards बड़े: `p-4` की जगह `p-4 min-h-[64px]`, बीच में flex row: **icon/image (48×48 rounded-2xl)** + name (base font, bold) + selected checkmark right side।
+- Icon source priority:
+  - Category picker: `categories.icon` (emoji/text) या future `image_url` — अभी `categories` में `image_url` नहीं है तो `catalog_groups`/fallback emoji circle।
+  - Sub-category picker: same source।
+- Fallback: gold gradient circle with first letter (जैसा services list में items के लिए `IconImage` fallback है)।
+- Selected state: gold gradient background + gold border (जैसा अभी है, बस bigger)।
+- Sheet header में subtitle ("Type se linked X categories") add।
 
-### Files touched
+> Backend/schema बिलकुल नहीं change होगा — जो field `categories`/`catalog_groups` में admin से आ रहा है वही read होगा। अगर image field नहीं है, तो emoji/letter fallback दिखेगा और future में admin panel से image डालते ही auto reflect।
 
-- `src/components/vendor-join/InventoryMappingSheet.tsx` — rewrite with 3-level flow, sub-category tabs, inline price editor, motion transitions, smaller buttons.
-- `src/components/vendor-join/BusinessInfoSheet.tsx` — smaller CTA + close button, smoother transitions.
-- `src/routes/vendor.join.tsx` — extend draft type with `priceOverrides`, pass to sheet, pass to save handler.
-- `src/routes/admin.subscription.tsx` — add file-upload tab in `VideoSettingCard`.
-- `src/routes/admin.index.tsx` — add "Onboarding Video" quick-link card.
+### 3. `src/routes/vendor.join.tsx` — Step 2 को link करना
 
-### Out of scope (confirm if needed)
+- `InventoryMappingSheet` वाला Drawer हटाना (import भी)।
+- Step 2 का `onClick` अब direct navigate करेगा `/vendor/services` पर।
+- Vendor जब वहाँ से एक भी service/product toggle ON कर देगा, `completed.inventory` mark करने के लिए: `vendor.join` reopen होने पर `vendor_item_mappings` count > 0 check करके auto-set (already loading logic में fit होगा)।
+- `draft.mappings` field और `saveInventory` function अब unused — बस Step 3 (`bothDone`) की shape same रखने के लिए `completed.inventory` derive होगा DB से।
 
-- The 5-tab "Map Plumbing Service" full editor (screenshot #4 — Profile / Pricing / Service Areas / Media / Review) is a much larger screen. This plan implements the inline expandable editor first (matches screenshot #3). The full-page editor can be a follow-up if you want it built too.
+Files touched: `src/routes/vendor.services.tsx`, `src/routes/vendor.join.tsx`. (InventoryMappingSheet.tsx untouched — deprecated, बाद में हटा सकते हैं।)
+
+## Out of scope
+
+- Admin panel में category `image_url` field add करना (अगर आप चाहें तो अलग follow-up)। अभी सिर्फ जो field पहले से admin से आ रहा है वो render होगा।
+- Toggle/pricing/variation flow — untouched।
