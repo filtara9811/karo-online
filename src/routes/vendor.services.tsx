@@ -8,6 +8,7 @@ import { ItemPricingSheet, type PricingValues } from "@/components/ItemPricingSh
 import { toast } from "sonner";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { CategorySuggestionSheet, type CategorySuggestionDefaults } from "@/components/CategorySuggestionSheet";
+import { SheetShell } from "@/components/vendor/SheetShell";
 
 export const Route = createFileRoute("/vendor/services")({
   head: () => ({
@@ -16,8 +17,9 @@ export const Route = createFileRoute("/vendor/services")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: () => (<VendorAuthGate><VendorServicesPage /></VendorAuthGate>),
+  component: () => (<VendorAuthGate><SheetShell><VendorServicesPage /></SheetShell></VendorAuthGate>),
 });
+
 
 type Cat = { id: string; name: string; parent_id: string | null; type_id: string | null; is_active: boolean; group_tag?: string | null; icon: string | null; image_url: string | null };
 type Item = { id: string; category_id: string; name: string; image_url: string | null; icon: string | null; price_min: number | null; price_max: number | null; is_active: boolean; group_tag?: string | null };
