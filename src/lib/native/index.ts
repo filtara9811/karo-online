@@ -24,4 +24,26 @@ export async function bootstrapNative(): Promise<void> {
   // priming here is cheap.
   initOta().catch(() => {});
   initPrinter().catch(() => {});
+
+  // Re-hydrate Supabase session on app resume. Android may evict the WebView
+  // in the background, dropping in-memory auth state — force a refresh so
+  // users don't appear "logged out" when they return to the app.
+  try {
+    const { App } = await import("@capacitor/app");
+    App.addListener("appStateChange", async ({ isActive }) => {
+      if (!isActive) return;
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          // No cached session — nothing to do; user will see signed-out UI.
+          return;
+        }
+        // Nudge listeners so hooks re-sync (e.g. profile fetch).
+        await supabase.auth.refreshSession().catch(() => undefined);
+      } catch { /* noop */ }
+    });
+  } catch (e) {
+    console.warn("[native] resume listener failed", e);
+  }
 }
