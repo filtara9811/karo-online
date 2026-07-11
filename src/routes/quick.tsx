@@ -693,6 +693,9 @@ function QuickPage() {
             setPickedLocation(null);
           }}
         />
+        ) : (
+          <div className="absolute inset-0 bg-[#eef2f6]" aria-hidden />
+        )}
         {/* Top-right: Join Business / Vendor on-off toggle */}
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <VendorModeToggle mode="customer" />
