@@ -148,7 +148,7 @@ function VendorJoinPage() {
         return;
       }
       const b = draft.business;
-      const vendorPayload: Record<string, unknown> = {
+      const vendorPayload: any = {
         user_id: user.id,
         owner_name: b.owner_name,
         business_name: b.shop_name,
