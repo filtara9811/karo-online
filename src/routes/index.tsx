@@ -76,14 +76,9 @@ function LandingPage() {
   }, [navigate]);
 
   if (checking) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-[#0a0a0a] text-white">
-        <div className="text-center">
-          <div className="font-display text-3xl ko-gold-text">KaroOnline</div>
-          <div className="text-xs text-white/40 mt-2 tracking-widest uppercase">Loading…</div>
-        </div>
-      </div>
-    );
+    // Render a neutral transparent placeholder so no black flash appears on native/PWA cold start.
+    // If we're going to navigate to /quick, this is unmounted within a tick.
+    return <div className="min-h-screen bg-background" aria-hidden />;
   }
 
   const handleOpenApp = () => {
