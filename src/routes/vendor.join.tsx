@@ -60,7 +60,8 @@ function readDraft(): Draft {
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
     if (!raw) return EMPTY;
-    return { ...EMPTY, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<Draft>;
+    return { ...EMPTY, ...parsed, business: { ...EMPTY_BUSINESS, ...(parsed.business ?? {}) } };
   } catch {
     return EMPTY;
   }
@@ -159,7 +160,7 @@ function VendorJoinPage() {
           lng: b.lng,
           cover_image_url: b.front_image || null,
           intro_video_url: b.shop_video || null,
-          gallery_urls: [b.front_image, b.inside_image, b.another_image].filter(Boolean),
+          gallery_urls: [b.front_image, b.inside_image, b.another_image, ...(b.gallery_images ?? [])].filter(Boolean),
           onboarding_step: 2,
           role: b.shop_type || null,
         },

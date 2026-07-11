@@ -34,7 +34,7 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
 
     const { data: vendors, error: vendorsError } = await (supabaseAdmin as any)
       .from("vendors")
-      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
+      .select("id, user_id, business_name, owner_name, avatar_url, profile_photo_url, cover_image_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
       .in("user_id", vendorIds);
 
     if (vendorsError) return { ok: false as const, error: vendorsError.message, vendors: [] };
@@ -59,7 +59,8 @@ export const getQuickMapVendors = createServerFn({ method: "POST" })
         user_id: String(v.user_id),
         business_name: v.business_name as string | null,
         owner_name: v.owner_name as string | null,
-        avatar_url: v.avatar_url as string | null,
+        avatar_url: (v.profile_photo_url ?? v.avatar_url) as string | null,
+        cover_image_url: v.cover_image_url as string | null,
         status: v.status as string | null,
         is_online: online,
         lat,
@@ -117,7 +118,7 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
 
     const { data: vendors, error } = await (supabaseAdmin as any)
       .from("vendors")
-      .select("id, user_id, business_name, owner_name, avatar_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
+      .select("id, user_id, business_name, owner_name, avatar_url, profile_photo_url, cover_image_url, status, is_blocked, is_online, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km")
       .eq("is_blocked", false);
 
     if (error) return { ok: false as const, error: error.message, vendors: [], onlineCount: 0, offlineCount: 0 };
@@ -142,7 +143,8 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
           user_id: String(v.user_id),
           business_name: v.business_name as string | null,
           owner_name: v.owner_name as string | null,
-          avatar_url: (v.avatar_url ?? null) as string | null,
+          avatar_url: (v.profile_photo_url ?? v.avatar_url ?? null) as string | null,
+          cover_image_url: (v.cover_image_url ?? null) as string | null,
           status: v.status as string | null,
           is_online: isOnline,
           area: null as string | null,

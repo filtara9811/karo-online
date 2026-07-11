@@ -44,7 +44,7 @@ export const getNearbyDigitalShops = createServerFn({ method: "POST" })
     const { data: rows, error } = await (supabaseAdmin as any)
       .from("vendors")
       .select(
-        "id, business_name, owner_name, trade, deals_in, avatar_url, cover_image_url, cover_video_url, verified, is_online, status, is_blocked, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km"
+        "id, business_name, owner_name, trade, deals_in, avatar_url, profile_photo_url, cover_image_url, cover_video_url, verified, is_online, status, is_blocked, lat, lng, live_lat, live_lng, location_updated_at, operation_mode, service_radius_km"
       )
       .eq("is_blocked", false)
       .eq("status", "active");
@@ -73,7 +73,7 @@ export const getNearbyDigitalShops = createServerFn({ method: "POST" })
           owner_name: v.owner_name ?? null,
           trade: v.trade ?? null,
           deals_in: v.deals_in ?? null,
-          avatar_url: v.avatar_url ?? null,
+          avatar_url: v.profile_photo_url ?? v.avatar_url ?? null,
           cover_image_url: v.cover_image_url ?? null,
           cover_video_url: v.cover_video_url ?? null,
           verified: Boolean(v.verified),
