@@ -527,10 +527,13 @@ function QuickPage() {
 
     let cancelled = false;
 
-    // 1) Paint cached vendors INSTANTLY (offline-first).
-    void cachePeek<any[]>(cacheKey).then((cached) => {
-      if (!cancelled && cached && cached.length) setRealVendors(toMapped(cached));
-    });
+    // 1) Paint cached vendors ONLY when offline — avoids the "stale data
+    //    flash then swap" experience on cold start with a live network.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      void cachePeek<any[]>(cacheKey).then((cached) => {
+        if (!cancelled && cached && cached.length) setRealVendors(toMapped(cached));
+      });
+    }
 
     const loadRealVendors = async () => {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
