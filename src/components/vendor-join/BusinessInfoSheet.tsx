@@ -498,6 +498,7 @@ function ImageSlot({
               type="button"
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onChange("");
               }}
               className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 grid place-items-center shadow"
