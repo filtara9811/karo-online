@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
 import { RoleChoiceScreen } from "@/components/RoleChoiceScreen";
-import { IntroSplash, SPLASH_SESSION_KEY } from "@/components/IntroSplash";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
@@ -27,34 +26,14 @@ function Register() {
     window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
   const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
 
-  const [showSplash, setShowSplash] = useState(false);
   const [showRoleChoice, setShowRoleChoice] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && !sessionStorage.getItem(SPLASH_SESSION_KEY)) {
-        setShowSplash(true);
-      }
-    } catch {}
-  }, []);
 
   // Already registered → go straight home (skip role choice — one-time only).
   useEffect(() => {
-    if (ready && profileComplete && !showSplash && !showRoleChoice) {
+    if (ready && profileComplete && !showRoleChoice) {
       navigate({ to: "/quick", replace: true });
     }
-  }, [navigate, profileComplete, ready, showSplash, showRoleChoice]);
-
-  if (showSplash) {
-    return (
-      <IntroSplash
-        onDone={() => {
-          setShowSplash(false);
-          if (ready && profileComplete) navigate({ to: "/quick", replace: true });
-        }}
-      />
-    );
-  }
+  }, [navigate, profileComplete, ready, showRoleChoice]);
 
   if (showRoleChoice) {
     return (
