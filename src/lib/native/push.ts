@@ -70,8 +70,14 @@ export async function initNativePush(): Promise<void> {
       else if (data.action_url || data.url) window.location.href = data.action_url || data.url;
     });
 
-    await PushNotifications.register();
-    registered = true;
+    // Wrap register() to silently swallow Google Play services missing/outdated errors
+    // (surfaces as an intrusive "Something went wrong · Check that Google Play is enabled" dialog on some devices).
+    try {
+      await PushNotifications.register();
+      registered = true;
+    } catch (e) {
+      console.warn("[native push] register() failed — likely missing/outdated Play services; push disabled on this device.", e);
+    }
   } catch (e) {
     console.warn("[native push] init failed", e);
   }
