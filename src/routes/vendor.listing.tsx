@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Search,
@@ -21,12 +21,17 @@ import {
   Loader2,
   User as UserIcon,
   X,
+  Images,
+  Clock3,
+  SlidersHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { SheetShell } from "@/components/vendor/SheetShell";
 import { ListingCard, type ListingCardData } from "@/components/vendor/ListingCard";
+import { CameraGalleryPicker } from "@/components/vendor/CameraGalleryPicker";
+import { uploadVendorMedia } from "@/lib/vendor-media";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/vendor/listing")({
@@ -74,6 +79,7 @@ type VendorRow = {
   avatar_url: string | null;
   profile_photo_url: string | null;
   cover_image_url: string | null;
+  gallery_urls: string[] | null;
   verified: boolean | null;
   is_premium: boolean | null;
   city: string | null;
@@ -94,12 +100,10 @@ function VendorListingPage() {
   const [query, setQuery] = useState("");
   const [profileTab, setProfileTab] = useState<"business" | "personal">("business");
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<"cover" | "avatar" | null>(null);
+  const [uploading, setUploading] = useState<"cover" | "avatar" | "gallery" | null>(null);
+  const [mediaPicker, setMediaPicker] = useState<"cover" | "avatar" | "gallery" | null>(null);
   const [editPrice, setEditPrice] = useState<Mapping | null>(null);
   const [moreOpen, setMoreOpen] = useState<Mapping | null>(null);
-
-  const coverInput = useRef<HTMLInputElement | null>(null);
-  const avatarInput = useRef<HTMLInputElement | null>(null);
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
@@ -113,7 +117,7 @@ function VendorListingPage() {
       supabase
         .from("vendors")
         .select(
-          "business_name, owner_name, trade, avatar_url, profile_photo_url, cover_image_url, verified, is_premium, city, state, created_at",
+          "business_name, owner_name, trade, avatar_url, profile_photo_url, cover_image_url, gallery_urls, verified, is_premium, city, state, created_at",
         )
         .eq("user_id", userId)
         .maybeSingle(),
@@ -172,33 +176,14 @@ function VendorListingPage() {
     }
   };
 
-  const compressImage = async (file: File, maxW: number): Promise<Blob> => {
-    const bmp = await createImageBitmap(file);
-    const scale = Math.min(1, maxW / bmp.width);
-    const w = Math.round(bmp.width * scale);
-    const h = Math.round(bmp.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(bmp, 0, 0, w, h);
-    return await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/jpeg", 0.85)!);
-  };
-
   const uploadImage = async (kind: "cover" | "avatar", file: File) => {
     if (!uid) return;
     setUploading(kind);
     try {
-      const blob = await compressImage(file, kind === "cover" ? 1600 : 720);
-      const path = `${uid}/vendor-${kind}-${Date.now()}.jpg`;
-      const { error } = await supabase.storage
-        .from("business-cards")
-        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-      if (error) throw error;
-      const { data } = supabase.storage.from("business-cards").getPublicUrl(path);
+      const publicUrl = await uploadVendorMedia({ userId: uid, file, kind, maxSide: kind === "cover" ? 1800 : 720 });
       const patch = kind === "cover"
-        ? { cover_image_url: data.publicUrl }
-        : { profile_photo_url: data.publicUrl };
+        ? { cover_image_url: publicUrl }
+        : { profile_photo_url: publicUrl, avatar_url: publicUrl };
       const { error: uErr } = await supabase
         .from("vendors")
         .update(patch)
@@ -207,8 +192,29 @@ function VendorListingPage() {
       setVendor((v) => (v ? { ...v, ...patch } as VendorRow : v));
 
       toast.success(kind === "cover" ? "Cover updated" : "Photo updated");
-    } catch (e) {
-      toast.error("Upload failed");
+      setMediaPicker(null);
+    } catch (e: any) {
+      toast.error(e?.message ? `Upload failed: ${e.message}` : "Upload failed");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const uploadGalleryImages = async (files: File[]) => {
+    if (!uid || files.length === 0) return;
+    setUploading("gallery");
+    try {
+      const urls = await Promise.all(
+        files.slice(0, 10).map((file) => uploadVendorMedia({ userId: uid, file, kind: "gallery", maxSide: 1400 })),
+      );
+      const next = [...(vendor?.gallery_urls ?? []), ...urls].filter(Boolean).slice(-30);
+      const { error } = await supabase.from("vendors").update({ gallery_urls: next }).eq("user_id", uid);
+      if (error) throw error;
+      setVendor((v) => (v ? { ...v, gallery_urls: next } : v));
+      toast.success(`${urls.length} gallery photo${urls.length > 1 ? "s" : ""} uploaded`);
+      setMediaPicker(null);
+    } catch (e: any) {
+      toast.error(e?.message ? `Gallery upload failed: ${e.message}` : "Gallery upload failed");
     } finally {
       setUploading(null);
     }
@@ -302,19 +308,8 @@ function VendorListingPage() {
                   }}
                 />
               )}
-              <input
-                ref={coverInput}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) uploadImage("cover", f);
-                  e.target.value = "";
-                }}
-              />
               <button
-                onClick={() => coverInput.current?.click()}
+                onClick={() => setMediaPicker("cover")}
                 disabled={uploading === "cover"}
                 className="absolute top-2.5 right-2.5 h-8 px-2.5 rounded-full bg-black/60 backdrop-blur text-white text-[10.5px] font-bold flex items-center gap-1 active:scale-95"
               >
@@ -332,19 +327,8 @@ function VendorListingPage() {
                   <div className="h-[84px] w-[84px] rounded-full ring-4 ring-white overflow-hidden bg-white shadow-md">
                     <img src={avatar} alt="" className="h-full w-full object-cover" />
                   </div>
-                  <input
-                    ref={avatarInput}
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) uploadImage("avatar", f);
-                      e.target.value = "";
-                    }}
-                  />
                   <button
-                    onClick={() => avatarInput.current?.click()}
+                    onClick={() => setMediaPicker("avatar")}
                     disabled={uploading === "avatar"}
                     className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-black/75 grid place-items-center text-white ring-2 ring-white active:scale-90"
                     aria-label="Change photo"
@@ -425,6 +409,15 @@ function VendorListingPage() {
                 <MiniStat icon={Users} label="Total Leads" value={0} />
                 <MiniStat icon={ThumbsUp} label="Happy" value="—" />
                 <MiniStat icon={CalendarCheck} label="Since" value={memberSince} small />
+              </div>
+
+              <div className="mt-3 flex gap-2 overflow-x-auto border-t border-[color:oklch(0.92_0.02_82)] pt-3 pb-1">
+                <ProfileAction icon={BadgeCheck} label="KYC Verified" sub={vendor?.verified ? "Verified" : "Pending"} tone={vendor?.verified ? "green" : "amber"} onClick={() => navigate({ to: "/vendor/kyc" })} />
+                <ProfileAction icon={Pencil} label="Update Profile" onClick={() => navigate({ to: "/profile" })} />
+                <ProfileAction icon={Images} label="Gallery" sub={`${vendor?.gallery_urls?.length ?? 0} Photos`} onClick={() => setMediaPicker("gallery")} />
+                <ProfileAction icon={ThumbsUp} label="Reviews" sub="Coming" onClick={() => toast("Reviews coming soon")} />
+                <ProfileAction icon={Clock3} label="Timing" sub="Online" onClick={() => navigate({ to: "/vendor/dashboard" })} />
+                <ProfileAction icon={SlidersHorizontal} label="Service Mode" sub="Online & Offline" onClick={() => navigate({ to: "/vendor/dashboard" })} />
               </div>
             </div>
           </motion.section>
@@ -581,6 +574,27 @@ function VendorListingPage() {
           toast.success("Listing hidden");
           setMoreOpen(null);
           load();
+        }}
+      />
+
+      <CameraGalleryPicker
+        open={mediaPicker !== null}
+        title={
+          mediaPicker === "cover"
+            ? "Change Cover Photo"
+            : mediaPicker === "avatar"
+              ? "Change Profile Photo"
+              : "Upload Gallery Photos"
+        }
+        description={mediaPicker === "gallery" ? "Camera ya gallery se multiple photos add karein." : "Camera ya gallery se photo select karein."}
+        multiple={mediaPicker === "gallery"}
+        uploading={!!uploading}
+        capture={mediaPicker === "avatar" ? "user" : "environment"}
+        onClose={() => setMediaPicker(null)}
+        onFiles={(files) => {
+          if (mediaPicker === "cover" && files[0]) return uploadImage("cover", files[0]);
+          if (mediaPicker === "avatar" && files[0]) return uploadImage("avatar", files[0]);
+          if (mediaPicker === "gallery") return uploadGalleryImages(files);
         }}
       />
     </div>
@@ -794,6 +808,33 @@ function MiniStat({
         {label}
       </p>
     </div>
+  );
+}
+
+function ProfileAction({
+  icon: Icon,
+  label,
+  sub,
+  tone = "default",
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  sub?: string;
+  tone?: "default" | "green" | "amber";
+  onClick: () => void;
+}) {
+  const color = tone === "green" ? "text-emerald-700" : tone === "amber" ? "text-amber-700" : "text-[color:oklch(0.40_0.10_65)]";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-w-[78px] rounded-xl border border-[color:oklch(0.90_0.03_82)] bg-white px-2 py-2 text-center shadow-sm active:scale-95"
+    >
+      <Icon className={`mx-auto h-5 w-5 ${color}`} />
+      <p className="mt-1 text-[9.5px] font-extrabold leading-tight text-[color:oklch(0.25_0.05_60)]">{label}</p>
+      {sub ? <p className={`mt-0.5 text-[8.5px] font-bold leading-tight ${color}`}>{sub}</p> : null}
+    </button>
   );
 }
 

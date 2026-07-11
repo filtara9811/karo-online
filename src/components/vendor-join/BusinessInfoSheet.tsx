@@ -14,8 +14,13 @@ import {
   Video,
   ChevronRight,
   FileText,
+  Loader2,
+  Image as ImageIcon,
 } from "lucide-react";
-import { PhotoPicker } from "./PhotoPicker";
+import { toast } from "sonner";
+import { CameraGalleryPicker } from "@/components/vendor/CameraGalleryPicker";
+import { supabase } from "@/integrations/supabase/client";
+import { uploadVendorMedia } from "@/lib/vendor-media";
 
 export type BusinessInfoDraft = {
   lat: number | null;
@@ -33,6 +38,7 @@ export type BusinessInfoDraft = {
   front_image: string;
   inside_image: string;
   another_image: string;
+  gallery_images: string[];
   shop_video: string;
 };
 
@@ -52,6 +58,7 @@ export const EMPTY_BUSINESS: BusinessInfoDraft = {
   front_image: "",
   inside_image: "",
   another_image: "",
+  gallery_images: [],
   shop_video: "",
 };
 
@@ -88,6 +95,8 @@ export function BusinessInfoSheet({
   };
 
   const [listening, setListening] = useState<"name" | "address" | null>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<"front_image" | "inside_image" | "another_image" | "gallery_images" | null>(null);
+  const [galleryPickerOpen, setGalleryPickerOpen] = useState(false);
   const voice = (field: "shop_name" | "address") => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
@@ -109,6 +118,36 @@ export function BusinessInfoSheet({
     draft.address.trim() &&
     draft.owner_name.trim() &&
     draft.whatsapp.trim().length >= 10;
+
+  const uploadBusinessImages = async (
+    field: "front_image" | "inside_image" | "another_image" | "gallery_images",
+    files: File[],
+  ) => {
+    if (!files.length) return;
+    setUploadingSlot(field);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error("Login required");
+      const urls = await Promise.all(
+        files.slice(0, field === "gallery_images" ? 10 : 1).map((file) =>
+          uploadVendorMedia({ userId, file, kind: field === "gallery_images" ? "gallery" : "business", maxSide: 1600 }),
+        ),
+      );
+      if (field === "gallery_images") {
+        set("gallery_images", [...(draft.gallery_images ?? []), ...urls].slice(-30));
+        setGalleryPickerOpen(false);
+        toast.success(`${urls.length} gallery photo${urls.length > 1 ? "s" : ""} uploaded`);
+      } else {
+        set(field, urls[0] ?? "");
+        toast.success("Image uploaded");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ? `Upload failed: ${e.message}` : "Upload failed");
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
 
   return (
     <div className="px-5 pt-3 pb-28 max-w-md mx-auto">
@@ -289,18 +328,69 @@ export function BusinessInfoSheet({
           value={draft.front_image}
           onChange={(v) => set("front_image", v)}
           label="Shop Front Image"
+          uploading={uploadingSlot === "front_image"}
+          onPick={(files) => uploadBusinessImages("front_image", files)}
         />
         <ImageSlot
           value={draft.inside_image}
           onChange={(v) => set("inside_image", v)}
           label="Shop Interior Image"
+          uploading={uploadingSlot === "inside_image"}
+          onPick={(files) => uploadBusinessImages("inside_image", files)}
         />
         <ImageSlot
           value={draft.another_image}
           onChange={(v) => set("another_image", v)}
           label="Owner Image"
+          uploading={uploadingSlot === "another_image"}
+          onPick={(files) => uploadBusinessImages("another_image", files)}
         />
       </div>
+
+      <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-sm font-extrabold text-neutral-900">Gallery / KYC Photos</div>
+            <div className="text-[11px] text-neutral-500">Camera ya gallery se multiple photos upload karein</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGalleryPickerOpen(true)}
+            disabled={uploadingSlot === "gallery_images"}
+            className="h-10 px-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
+          >
+            {uploadingSlot === "gallery_images" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+            Add
+          </button>
+        </div>
+        {draft.gallery_images?.length ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {draft.gallery_images.map((url) => (
+              <div key={url} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+                <img src={url} alt="Gallery" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => set("gallery_images", draft.gallery_images.filter((item) => item !== url))}
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-white/90 shadow"
+                  aria-label="Remove gallery photo"
+                >
+                  <X className="h-3 w-3 text-neutral-700" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <CameraGalleryPicker
+        open={galleryPickerOpen}
+        title="Upload Gallery Photos"
+        description="Multiple photos select kar sakte hain."
+        multiple
+        uploading={uploadingSlot === "gallery_images"}
+        onClose={() => setGalleryPickerOpen(false)}
+        onFiles={(files) => uploadBusinessImages("gallery_images", files)}
+      />
 
       {/* 360 video row */}
       <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 flex items-center gap-3 mb-6">
@@ -379,23 +469,28 @@ function ImageSlot({
   value,
   onChange,
   label,
+  uploading,
+  onPick,
 }: {
   value: string;
   onChange: (v: string) => void;
   label: string;
+  uploading?: boolean;
+  onPick: (files: File[]) => void | Promise<void>;
 }) {
+  const [open, setOpen] = useState(false);
   return (
     <div>
-      <label className="relative block aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-neutral-300 bg-white cursor-pointer">
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onChange(URL.createObjectURL(f));
-          }}
-        />
+      <div
+        role="button"
+        tabIndex={uploading ? -1 : 0}
+        onClick={() => !uploading && setOpen(true)}
+        onKeyDown={(event) => {
+          if (!uploading && (event.key === "Enter" || event.key === " ")) setOpen(true);
+        }}
+        className="relative block aspect-square w-full overflow-hidden rounded-2xl border-2 border-dashed border-neutral-300 bg-white text-left"
+        aria-disabled={uploading}
+      >
         {value ? (
           <>
             <img src={value} alt={label} className="absolute inset-0 w-full h-full object-cover" />
@@ -403,6 +498,7 @@ function ImageSlot({
               type="button"
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onChange("");
               }}
               className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 grid place-items-center shadow"
@@ -410,17 +506,30 @@ function ImageSlot({
               <X className="h-3.5 w-3.5 text-neutral-700" />
             </button>
           </>
+        ) : uploading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-orange-600">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="text-[11px] font-semibold">Uploading</span>
+          </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-neutral-500">
             <Upload className="h-6 w-6" />
             <span className="text-[11px] font-semibold">Upload Image</span>
           </div>
         )}
-      </label>
+      </div>
       <div className="text-[11px] text-neutral-600 text-center mt-1.5">{label}</div>
+      <CameraGalleryPicker
+        open={open}
+        title={label}
+        description="Camera ya gallery se image select karein."
+        uploading={uploading}
+        onClose={() => setOpen(false)}
+        onFiles={async (files) => {
+          await onPick(files);
+          setOpen(false);
+        }}
+      />
     </div>
   );
 }
-
-// keep PhotoPicker export used elsewhere referenced but not used in this file
-void PhotoPicker;

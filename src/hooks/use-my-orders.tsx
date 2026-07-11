@@ -66,12 +66,12 @@ export function useMyOrders(): { groups: VendorGroup[]; loading: boolean; refres
     if (vendorIds.length) {
       const { data: vs } = await supabase
         .from("vendors")
-        .select("user_id, business_name, owner_name, avatar_url")
+        .select("user_id, business_name, owner_name, avatar_url, profile_photo_url, cover_image_url")
         .in("user_id", vendorIds);
       vs?.forEach((v) => {
         vendorMap.set(v.user_id as string, {
           name: (v.business_name || v.owner_name || "Vendor") as string,
-          avatar: (v.avatar_url || "") as string,
+          avatar: ((v as any).profile_photo_url || v.avatar_url || "") as string,
         });
       });
     }
