@@ -148,22 +148,27 @@ function VendorJoinPage() {
         return;
       }
       const b = draft.business;
+      const vendorPayload: Record<string, unknown> = {
+        user_id: user.id,
+        owner_name: b.owner_name,
+        business_name: b.shop_name,
+        entity: b.business_nature,
+        deals_in: b.main_dealing,
+        whatsapp: b.whatsapp,
+        lat: b.lat,
+        lng: b.lng,
+        cover_image_url: b.front_image || null,
+        intro_video_url: b.shop_video || null,
+        gallery_urls: [b.front_image, b.inside_image, b.another_image, ...(b.gallery_images ?? [])].filter(Boolean),
+        onboarding_step: 2,
+        role: b.shop_type || null,
+      };
+      if (b.another_image) {
+        vendorPayload.avatar_url = b.another_image;
+        vendorPayload.profile_photo_url = b.another_image;
+      }
       const { error } = await supabase.from("vendors").upsert(
-        {
-          user_id: user.id,
-          owner_name: b.owner_name,
-          business_name: b.shop_name,
-          entity: b.business_nature,
-          deals_in: b.main_dealing,
-          whatsapp: b.whatsapp,
-          lat: b.lat,
-          lng: b.lng,
-          cover_image_url: b.front_image || null,
-          intro_video_url: b.shop_video || null,
-          gallery_urls: [b.front_image, b.inside_image, b.another_image, ...(b.gallery_images ?? [])].filter(Boolean),
-          onboarding_step: 2,
-          role: b.shop_type || null,
-        },
+        vendorPayload,
         { onConflict: "user_id" },
       );
       if (error) throw error;

@@ -481,11 +481,15 @@ function ImageSlot({
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
+      <div
+        role="button"
+        tabIndex={uploading ? -1 : 0}
+        onClick={() => !uploading && setOpen(true)}
+        onKeyDown={(event) => {
+          if (!uploading && (event.key === "Enter" || event.key === " ")) setOpen(true);
+        }}
         className="relative block aspect-square w-full overflow-hidden rounded-2xl border-2 border-dashed border-neutral-300 bg-white text-left"
-        disabled={uploading}
+        aria-disabled={uploading}
       >
         {value ? (
           <>
@@ -512,7 +516,7 @@ function ImageSlot({
             <span className="text-[11px] font-semibold">Upload Image</span>
           </div>
         )}
-      </button>
+      </div>
       <div className="text-[11px] text-neutral-600 text-center mt-1.5">{label}</div>
       <CameraGalleryPicker
         open={open}
