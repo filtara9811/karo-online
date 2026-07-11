@@ -640,6 +640,9 @@ function QuickPage() {
       {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
+        {/* Wait for geolocation to resolve (or a picked location) before
+            mounting the map — kills the grey "cloud" flash on cold start. */}
+        {(geo.status === "ready" || geo.status === "denied" || geo.status === "unsupported" || geo.status === "error" || pickedLocation) ? (
         <QuickServiceMap
           center={effectiveCenter}
           vendors={filteredVendors.map((v) => ({
