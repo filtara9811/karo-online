@@ -31,9 +31,14 @@ function writeCached(v: VendorState) {
 
 export function VendorModeToggle({ mode }: { mode: "customer" | "vendor" }) {
   const navigate = useNavigate();
-  const [state, setState] = useState<VendorState>(readCached());
+  // Always start "unknown" on SSR + first client render to avoid a
+  // hydration mismatch (localStorage isn't available on the server).
+  const [state, setState] = useState<VendorState>("unknown");
 
   useEffect(() => {
+    // Hydrate synchronously from localStorage after mount.
+    const cached = readCached();
+    if (cached !== "unknown") setState(cached);
     let cancelled = false;
     (async () => {
       try {

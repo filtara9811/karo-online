@@ -527,10 +527,13 @@ function QuickPage() {
 
     let cancelled = false;
 
-    // 1) Paint cached vendors INSTANTLY (offline-first).
-    void cachePeek<any[]>(cacheKey).then((cached) => {
-      if (!cancelled && cached && cached.length) setRealVendors(toMapped(cached));
-    });
+    // 1) Paint cached vendors ONLY when offline — avoids the "stale data
+    //    flash then swap" experience on cold start with a live network.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      void cachePeek<any[]>(cacheKey).then((cached) => {
+        if (!cancelled && cached && cached.length) setRealVendors(toMapped(cached));
+      });
+    }
 
     const loadRealVendors = async () => {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -637,6 +640,9 @@ function QuickPage() {
       {showOnboarding && <OnboardingCarousel onDone={() => setShowOnboarding(false)} />}
       {/* MAP */}
       <section className="relative flex-shrink-0" style={{ height: "calc(34vh + env(safe-area-inset-top))", minHeight: 260 }}>
+        {/* Wait for geolocation to resolve (or a picked location) before
+            mounting the map — kills the grey "cloud" flash on cold start. */}
+        {(geo.status === "ready" || geo.status === "denied" || geo.status === "unsupported" || geo.status === "error" || pickedLocation) ? (
         <QuickServiceMap
           center={effectiveCenter}
           vendors={filteredVendors.map((v) => ({
@@ -687,6 +693,9 @@ function QuickPage() {
             setPickedLocation(null);
           }}
         />
+        ) : (
+          <div className="absolute inset-0 bg-[#eef2f6]" aria-hidden />
+        )}
         {/* Top-right: Join Business / Vendor on-off toggle */}
         <div className="absolute top-2 right-2 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <VendorModeToggle mode="customer" />
