@@ -447,6 +447,23 @@ export function BusinessInfoSheet({
           Submit & Continue
         </button>
       </div>
+
+      {/* Floating Smart Scanner FAB */}
+      <button
+        type="button"
+        onClick={() => setScannerOpen(true)}
+        aria-label="Smart Scanner — auto-fill from photo"
+        className="fixed z-40 bottom-24 right-5 h-14 w-14 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-white grid place-items-center shadow-lg shadow-amber-500/40 active:scale-95 transition"
+      >
+        <ScanLine className="h-6 w-6" />
+        <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-neutral-900 text-[9px] font-extrabold text-amber-300 grid place-items-center">AI</span>
+      </button>
+
+      <SmartScannerSheet
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onApply={applyOcr}
+      />
     </div>
   );
 }
