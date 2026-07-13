@@ -16,9 +16,12 @@ import {
   FileText,
   Loader2,
   Image as ImageIcon,
+  ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CameraGalleryPicker } from "@/components/vendor/CameraGalleryPicker";
+import { SmartScannerSheet } from "@/components/vendor-join/SmartScannerSheet";
+import type { OcrExtraction } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadVendorMedia } from "@/lib/vendor-media";
 
