@@ -100,6 +100,24 @@ export function BusinessInfoSheet({
   const [listening, setListening] = useState<"name" | "address" | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<"front_image" | "inside_image" | "another_image" | "gallery_images" | null>(null);
   const [galleryPickerOpen, setGalleryPickerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const applyOcr = (o: OcrExtraction) => {
+    const next: BusinessInfoDraft = { ...draft };
+    if (o.business_name) next.shop_name = o.business_name;
+    if (o.owner_name) next.owner_name = o.owner_name;
+    if (o.whatsapp) next.whatsapp = o.whatsapp.slice(-10);
+    else if (o.mobile) next.whatsapp = o.mobile.slice(-10);
+    if (o.address) next.address = o.address;
+    if (o.city) next.city = o.city;
+    if (o.pincode) next.pincode = o.pincode.slice(-6);
+    if (o.shop_type_hint) {
+      const hint = o.shop_type_hint.toLowerCase();
+      const matched = PLACE_TYPES.find((t) => hint.includes(t.toLowerCase()) || t.toLowerCase().includes(hint));
+      if (matched) next.shop_type = matched;
+    }
+    onChange(next);
+  };
   const voice = (field: "shop_name" | "address") => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
