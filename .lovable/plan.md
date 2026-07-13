@@ -1,41 +1,67 @@
-Plan: My Listing image upload and customer visibility fix
+# Smart Scanner (OCR Auto-Fill) for Vendor Joining
 
-1. Add a proper native-style media picker on My Listing
-- Replace direct hidden file click for cover and profile photo with a bottom sheet.
-- Sheet will show two clear choices: Camera and Gallery.
-- Camera input will use `capture="environment"` for cover/business photos and camera flow for profile image.
-- Gallery input will open the phone gallery.
-- Add uploading, cancel, retry-safe states and clear success/error messages.
+Goal: Jaisa screen mein dikhaya hai — Business Information form ke upar ek floating "Smart Scanner" button ho. Tap karne par ek bottom sheet khule with **Camera** aur **Gallery** options. User visiting card / bill book / shop board ka photo le ya select kare, aur OCR se business name, owner name, mobile / WhatsApp, address, city, pincode, email, shop type automatic form mein fill ho jaye.
 
-2. Fix upload failure for cover/profile pictures
-- Stop using a likely wrong/restricted upload path/bucket behavior from this screen.
-- Use one consistent vendor media upload helper that compresses images, creates safe unique paths, uploads to the existing storage bucket, and stores the public URL.
-- Update both vendor fields when profile photo changes:
-  - `profile_photo_url` for My Listing UI
-  - `avatar_url` for customer-facing vendor lists/chat/orders
-- Update cover image in `cover_image_url`.
-- Show the real backend error in toast instead of generic “Upload failed”, so future issues are visible.
+## User Flow
 
-3. Fix onboarding/shop image uploads and multiple gallery images
-- Replace the current onboarding `ImageSlot` behavior that only creates temporary `blob:` preview URLs and never uploads real files.
-- Reuse the camera/gallery picker for Shop Front, Interior, Owner/Profile, Gallery/KYC-style images.
-- Upload each selected file immediately and save real URLs into the draft.
-- Allow multiple gallery-style image selection where needed and store uploaded URLs in `gallery_urls`.
+1. Vendor `/vendor/join` → Step 1 "Business Information" khole.
+2. Right side floating scanner FAB (camera-frame icon, gold circle) tap kare.
+3. Bottom sheet "Smart Scanner — Scan and auto fill business details" khule with 2 big tiles:
+   - **Tap to Scan** (Camera) — Visiting Card / Bill Book / Shop Board
+   - **Choose from Gallery**
+4. Image select hone ke baad ek loading state ("Scanning… business details nikaal rahe hain") + preview thumbnail.
+5. OCR complete → extracted fields ek "Review & Apply" panel mein dikhaayein (name, mobile, address, pincode, city, shop type, email). Har field ke saath ek small checkbox / toggle so user unwanted field skip kar sake.
+6. "Apply to Form" button dabate hi `BusinessInfoDraft` update ho, sheet band, toast: "Details bhar diye — please check karein."
+7. User manually edit kar sake before final submit (already possible).
 
-4. Make uploaded vendor pictures appear for customers after request/accept
-- Update customer-facing reads to prefer the new uploaded profile photo:
-  - quick vendor map/list
-  - customer order/vendor list after vendor accepts
-  - customer chat accepted-vendor header
-  - digital shop/vendor browsing cards
-- Include `cover_image_url` where customer screens need background/cover photos.
-- Keep fallbacks only when the vendor has not uploaded an image.
+## Extraction Logic (server-side)
 
-5. Verify
-- Run typecheck after changes.
-- Use Playwright on mobile viewport to verify:
-  - My Listing cover picker opens Camera/Gallery sheet
-  - profile picker opens Camera/Gallery sheet
-  - selected image updates preview after upload path is triggered
-  - customer/vendor data mapping uses uploaded image fields
-- No schema change planned unless storage permissions prove to be the root cause; if storage policy is missing, I will add only the minimal storage RLS migration needed for authenticated vendor uploads.
+Use **Lovable AI Gateway** with `google/gemini-3-flash-preview` (multimodal — image input) via `createServerFn`. Model ko structured JSON output dena hai using AI SDK `Output.object` + Zod schema:
+
+```
+{
+  business_name?: string,
+  owner_name?: string,
+  mobile?: string,          // 10-digit Indian
+  whatsapp?: string,
+  email?: string,
+  address?: string,
+  city?: string,
+  pincode?: string,         // 6-digit
+  shop_type_hint?: string,  // e.g. "electronics", "grocery"
+  raw_text?: string
+}
+```
+
+Server function `extractBusinessCard` in `src/lib/ocr.functions.ts`:
+- Input: base64 image data URL + kind ("visiting_card" | "bill_book" | "shop_board")
+- Compress client-side pehle (max 1600px, jpeg 0.8) to keep payload small
+- Prompt tuned per `kind` (visiting card = personal details priority; bill book = GSTIN/address; shop board = business name + type)
+- Return validated object; unknown/low-confidence fields as `undefined` (not empty string) so existing draft values don't overwrite
+
+No new secret required — `LOVABLE_API_KEY` already present.
+
+## Frontend Pieces
+
+- **New:** `src/components/vendor-join/SmartScannerSheet.tsx`
+  - Reuses existing `CameraGalleryPicker` UI language (camera + gallery tiles), but styled per screenshot (amber gradient tile, "What can you scan?" chips, tips list, "View Scanned Data" CTA after scan).
+  - Manages states: `idle → capturing → scanning → review → applied`.
+  - Renders extracted fields in review step with per-field toggle.
+- **New:** `src/lib/ocr.functions.ts` — `extractBusinessCard` server fn.
+- **Edit:** `src/components/vendor-join/BusinessInfoSheet.tsx`
+  - Add floating scanner FAB (curved arrow + gold circle) at bottom-right of the form area, matching the screenshot.
+  - Wire `SmartScannerSheet`, on "Apply" merge into `BusinessInfoDraft` (only fill blank fields by default; user can toggle "overwrite existing" in review).
+  - City auto-select: if OCR returns city + it exists in cities list → set; else keep manual.
+  - Shop type mapping: map free-text hint to closest option from existing shop type list (simple lowercase includes match).
+
+## Not in scope (unless asked later)
+- Multi-image scan / KYC document extraction (Aadhaar/PAN) — different privacy handling.
+- GSTIN lookup / verification.
+- Realtime camera streaming OCR (we use capture-then-process, simpler and reliable).
+
+## Verify
+1. `bunx tsgo --noEmit` passes.
+2. Playwright: open `/vendor/join`, tap scanner FAB → sheet opens → gallery picker triggers file input.
+3. Manual smoke: upload a sample visiting card image via the sheet in preview, confirm review panel shows parsed fields, "Apply" fills form.
+
+Shall I build it?

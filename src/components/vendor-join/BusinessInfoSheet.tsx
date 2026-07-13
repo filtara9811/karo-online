@@ -16,9 +16,12 @@ import {
   FileText,
   Loader2,
   Image as ImageIcon,
+  ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CameraGalleryPicker } from "@/components/vendor/CameraGalleryPicker";
+import { SmartScannerSheet } from "@/components/vendor-join/SmartScannerSheet";
+import type { OcrExtraction } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadVendorMedia } from "@/lib/vendor-media";
 
@@ -97,6 +100,24 @@ export function BusinessInfoSheet({
   const [listening, setListening] = useState<"name" | "address" | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<"front_image" | "inside_image" | "another_image" | "gallery_images" | null>(null);
   const [galleryPickerOpen, setGalleryPickerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const applyOcr = (o: OcrExtraction) => {
+    const next: BusinessInfoDraft = { ...draft };
+    if (o.business_name) next.shop_name = o.business_name;
+    if (o.owner_name) next.owner_name = o.owner_name;
+    if (o.whatsapp) next.whatsapp = o.whatsapp.slice(-10);
+    else if (o.mobile) next.whatsapp = o.mobile.slice(-10);
+    if (o.address) next.address = o.address;
+    if (o.city) next.city = o.city;
+    if (o.pincode) next.pincode = o.pincode.slice(-6);
+    if (o.shop_type_hint) {
+      const hint = o.shop_type_hint.toLowerCase();
+      const matched = PLACE_TYPES.find((t) => hint.includes(t.toLowerCase()) || t.toLowerCase().includes(hint));
+      if (matched) next.shop_type = matched;
+    }
+    onChange(next);
+  };
   const voice = (field: "shop_name" | "address") => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
@@ -426,6 +447,23 @@ export function BusinessInfoSheet({
           Submit & Continue
         </button>
       </div>
+
+      {/* Floating Smart Scanner FAB */}
+      <button
+        type="button"
+        onClick={() => setScannerOpen(true)}
+        aria-label="Smart Scanner — auto-fill from photo"
+        className="fixed z-40 bottom-24 right-5 h-14 w-14 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-white grid place-items-center shadow-lg shadow-amber-500/40 active:scale-95 transition"
+      >
+        <ScanLine className="h-6 w-6" />
+        <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-neutral-900 text-[9px] font-extrabold text-amber-300 grid place-items-center">AI</span>
+      </button>
+
+      <SmartScannerSheet
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onApply={applyOcr}
+      />
     </div>
   );
 }
