@@ -482,7 +482,32 @@ function VendorJoinPage() {
       {/* Inventory Drawer removed — Step 2 now navigates to /vendor/services */}
 
 
+      <Drawer open={openSheet === "categories"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <div className="overflow-y-auto px-5 pt-2 pb-6">
+            <div className="mx-auto w-10 h-1 rounded-full bg-neutral-200 mb-4" />
+            <CategoryMappingStep
+              hint={{
+                business_name: draft.business.shop_name || null,
+                shop_type_hint: [draft.business.shop_type, draft.business.main_dealing]
+                  .filter(Boolean)
+                  .join(" ") || null,
+                services: draft.business.main_dealing === "Service" || draft.business.main_dealing === "Both"
+                  ? [draft.business.main_dealing]
+                  : null,
+                products: draft.business.main_dealing === "Products" || draft.business.main_dealing === "Both"
+                  ? [draft.business.main_dealing]
+                  : null,
+              }}
+              onApply={applyCategorySuggestions}
+              onSkip={() => setOpenSheet(null)}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <Drawer open={openSheet === "qr"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+
         <DrawerContent className="max-h-[95vh]">
           <div className="overflow-y-auto">
             <QrPaymentSheet
