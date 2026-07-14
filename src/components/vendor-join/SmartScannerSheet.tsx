@@ -123,10 +123,9 @@ export function SmartScannerSheet({
 
   useEffect(() => {
     if (!open) return;
-    // preload history in the background
     setHistoryLoading(true);
-    runList({})
-      .then((rows) => setHistory(rows ?? []))
+    runList()
+      .then((rows) => setHistory((rows ?? []) as ScanHistoryEntry[]))
       .catch(() => setHistory([]))
       .finally(() => setHistoryLoading(false));
   }, [open, runList]);
