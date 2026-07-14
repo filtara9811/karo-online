@@ -26,6 +26,8 @@ import {
 } from "@/components/vendor-join/BusinessInfoSheet";
 // InventoryMappingSheet removed — Step 2 now navigates to /vendor/services
 import { QrPaymentSheet } from "@/components/vendor-join/QrPaymentSheet";
+import { CategoryMappingStep } from "@/components/vendor-join/CategoryMappingStep";
+import type { CategorySuggestion } from "@/lib/category-suggest.functions";
 
 export const Route = createFileRoute("/vendor/join")({
   head: () => ({
