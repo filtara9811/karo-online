@@ -68,6 +68,7 @@ import { Route as AdminSubscriptionRouteImport } from './routes/admin.subscripti
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminScanInsightsRouteImport } from './routes/admin.scan-insights'
 import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminQrAssetsRouteImport } from './routes/admin.qr-assets'
@@ -413,6 +414,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminScanInsightsRoute = AdminScanInsightsRouteImport.update({
+  id: '/scan-insights',
+  path: '/scan-insights',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -716,6 +722,7 @@ export interface FileRoutesByFullPath {
   '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/admin/scan-insights': typeof AdminScanInsightsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -825,6 +832,7 @@ export interface FileRoutesByTo {
   '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/admin/scan-insights': typeof AdminScanInsightsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -936,6 +944,7 @@ export interface FileRoutesById {
   '/admin/qr-assets': typeof AdminQrAssetsRoute
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/admin/scan-insights': typeof AdminScanInsightsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -1048,6 +1057,7 @@ export interface FileRouteTypes {
     | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
+    | '/admin/scan-insights'
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
@@ -1157,6 +1167,7 @@ export interface FileRouteTypes {
     | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
+    | '/admin/scan-insights'
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
@@ -1267,6 +1278,7 @@ export interface FileRouteTypes {
     | '/admin/qr-assets'
     | '/admin/referrals'
     | '/admin/reset-password'
+    | '/admin/scan-insights'
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
@@ -1803,6 +1815,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/scan-insights': {
+      id: '/admin/scan-insights'
+      path: '/scan-insights'
+      fullPath: '/admin/scan-insights'
+      preLoaderRoute: typeof AdminScanInsightsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/reset-password': {
       id: '/admin/reset-password'
       path: '/reset-password'
@@ -2175,6 +2194,7 @@ interface AdminRouteChildren {
   AdminQrAssetsRoute: typeof AdminQrAssetsRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
   AdminResetPasswordRoute: typeof AdminResetPasswordRoute
+  AdminScanInsightsRoute: typeof AdminScanInsightsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
@@ -2226,6 +2246,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminQrAssetsRoute: AdminQrAssetsRoute,
   AdminReferralsRoute: AdminReferralsRoute,
   AdminResetPasswordRoute: AdminResetPasswordRoute,
+  AdminScanInsightsRoute: AdminScanInsightsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
