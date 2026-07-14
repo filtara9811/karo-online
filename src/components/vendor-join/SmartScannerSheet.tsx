@@ -601,11 +601,14 @@ export function SmartScannerSheet({
 
             <ConfidenceBar score={overallConf} className="mb-3" />
 
-            {/* Map pin preview when we have an address */}
-            {result.address && (
+            {/* Map pin preview — tries progressively simpler geocode queries */}
+            {(result.address || result.pincode || result.city) && (
               <div className="mb-3">
                 <MapPinPreview
                   address={result.address}
+                  pincode={result.pincode}
+                  city={result.city}
+                  state={result.state}
                   onConfirm={(r) => setPin(r)}
                 />
                 {pin && (
