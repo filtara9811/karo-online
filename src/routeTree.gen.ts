@@ -52,6 +52,7 @@ import { Route as VendorJoinRouteImport } from './routes/vendor.join'
 import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
+import { Route as StaffLoginRouteImport } from './routes/staff.login'
 import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as QCodeRouteImport } from './routes/q.$code'
@@ -332,6 +333,11 @@ const VendorDashboardRoute = VendorDashboardRouteImport.update({
 const VendorChatRoute = VendorChatRouteImport.update({
   id: '/vendor/chat',
   path: '/vendor/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffLoginRoute = StaffLoginRouteImport.update({
+  id: '/staff/login',
+  path: '/staff/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SCodeRoute = SCodeRouteImport.update({
@@ -739,6 +745,7 @@ export interface FileRoutesByFullPath {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -849,6 +856,7 @@ export interface FileRoutesByTo {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -961,6 +969,7 @@ export interface FileRoutesById {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -1074,6 +1083,7 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1184,6 +1194,7 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1295,6 +1306,7 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1373,6 +1385,7 @@ export interface RootRouteChildren {
   QCodeRoute: typeof QCodeRoute
   RCodeRoute: typeof RCodeRoute
   SCodeRoute: typeof SCodeRoute
+  StaffLoginRoute: typeof StaffLoginRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorInstallRoute: typeof VendorInstallRoute
@@ -1701,6 +1714,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/chat'
       fullPath: '/vendor/chat'
       preLoaderRoute: typeof VendorChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff/login': {
+      id: '/staff/login'
+      path: '/staff/login'
+      fullPath: '/staff/login'
+      preLoaderRoute: typeof StaffLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/s/$code': {
@@ -2310,6 +2330,7 @@ const rootRouteChildren: RootRouteChildren = {
   QCodeRoute: QCodeRoute,
   RCodeRoute: RCodeRoute,
   SCodeRoute: SCodeRoute,
+  StaffLoginRoute: StaffLoginRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   VendorInstallRoute: VendorInstallRoute,
