@@ -178,9 +178,33 @@ function VendorJoinPage() {
       if (error) throw error;
       setDraft({ ...draft, completed: { ...draft.completed, business: true } });
       toast.success("Business info saved");
-      setOpenSheet(null);
+      // Open Category Mapping bottom sheet immediately in the same flow
+      setOpenSheet("categories");
     } catch (e: any) {
       toast.error(e?.message || "Save failed");
+    }
+  };
+
+  const applyCategorySuggestions = async (chosen: CategorySuggestion[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from("vendors")
+        .update({
+          suggested_categories: chosen.map((c) => ({
+            path: c.path,
+            labels: c.labels,
+            confidence: c.confidence,
+          })) as any,
+        })
+        .eq("user_id", user.id);
+      toast.success("Categories saved");
+      setOpenSheet(null);
+      // Continue into detailed product/service mapping
+      setTimeout(() => navigate({ to: "/vendor/services" }), 250);
+    } catch (e: any) {
+      toast.error(e?.message || "Category save failed");
     }
   };
 
