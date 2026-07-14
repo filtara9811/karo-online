@@ -11,7 +11,7 @@ export const Route = createFileRoute("/staff/vendors")({
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CatRow = { id: string; category_id: string; can_onboard: boolean; category?: any };
-type Vendor = { id: string; business_name: string | null; phone: string | null; created_at: string; category_id: string | null };
+type Vendor = { id: string; business_name: string | null; phone: string | null; created_at: string };
 
 function StaffVendorsPage() {
   const fetchCats = useServerFn(listMyCategories);
