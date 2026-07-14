@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, UserPlus, CheckCircle2, XCircle, Send, Copy, Link2, MessageCircle, Phone } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, XCircle, Send, Copy, Link2, MessageCircle, Phone, ListChecks, Wallet } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listSignupRequests, approveSignupRequest, rejectSignupRequest,
