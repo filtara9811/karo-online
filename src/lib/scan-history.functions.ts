@@ -35,7 +35,7 @@ export const listScanHistory = createServerFn({ method: "GET" })
 const SaveInput = z.object({
   kinds: z.array(z.string()).min(1).max(10),
   thumbnail: z.string().nullable(),
-  extracted: z.record(z.unknown()),
+  extracted: z.record(z.string(), z.unknown()),
 });
 
 export const saveScanHistory = createServerFn({ method: "POST" })
