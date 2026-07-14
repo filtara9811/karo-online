@@ -13,12 +13,13 @@ export const Route = createFileRoute("/staff")({
   component: StaffLayout,
 });
 
-const TABS = [
+type Tab = { to: string; label: string; icon: typeof MessageSquare; exact?: boolean };
+const TABS: Tab[] = [
   { to: "/staff", label: "Chats", icon: MessageSquare, exact: true },
   { to: "/staff/vendors", label: "Vendors", icon: Store },
   { to: "/staff/tasks", label: "Tasks", icon: ListChecks },
   { to: "/staff/wallet", label: "Wallet", icon: Wallet },
-] as const;
+];
 
 function StaffLayout() {
   const navigate = useNavigate();

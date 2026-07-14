@@ -13,6 +13,7 @@ import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -138,6 +139,11 @@ const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShippingPolicyRoute = ShippingPolicyRouteImport.update({
@@ -336,9 +342,9 @@ const VendorChatRoute = VendorChatRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const StaffLoginRoute = StaffLoginRouteImport.update({
-  id: '/staff/login',
-  path: '/staff/login',
-  getParentRoute: () => rootRouteImport,
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => StaffRoute,
 } as any)
 const SCodeRoute = SCodeRouteImport.update({
   id: '/s/$code',
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/staff': typeof StaffRouteWithChildren
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
@@ -810,6 +817,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/staff': typeof StaffRouteWithChildren
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
@@ -923,6 +931,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/staff': typeof StaffRouteWithChildren
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
@@ -1037,6 +1046,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/shipping-policy'
+    | '/staff'
     | '/status'
     | '/terms-and-conditions'
     | '/test-bell'
@@ -1148,6 +1158,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/shipping-policy'
+    | '/staff'
     | '/status'
     | '/terms-and-conditions'
     | '/test-bell'
@@ -1260,6 +1271,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/shipping-policy'
+    | '/staff'
     | '/status'
     | '/terms-and-conditions'
     | '/test-bell'
@@ -1373,6 +1385,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
   ShippingPolicyRoute: typeof ShippingPolicyRoute
+  StaffRoute: typeof StaffRouteWithChildren
   StatusRoute: typeof StatusRoute
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TestBellRoute: typeof TestBellRoute
@@ -1385,7 +1398,6 @@ export interface RootRouteChildren {
   QCodeRoute: typeof QCodeRoute
   RCodeRoute: typeof RCodeRoute
   SCodeRoute: typeof SCodeRoute
-  StaffLoginRoute: typeof StaffLoginRoute
   VendorChatRoute: typeof VendorChatRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorInstallRoute: typeof VendorInstallRoute
@@ -1441,6 +1453,13 @@ declare module '@tanstack/react-router' {
       path: '/status'
       fullPath: '/status'
       preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shipping-policy': {
@@ -1718,10 +1737,10 @@ declare module '@tanstack/react-router' {
     }
     '/staff/login': {
       id: '/staff/login'
-      path: '/staff/login'
+      path: '/login'
       fullPath: '/staff/login'
       preLoaderRoute: typeof StaffLoginRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof StaffRoute
     }
     '/s/$code': {
       id: '/s/$code'
@@ -2294,6 +2313,16 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface StaffRouteChildren {
+  StaffLoginRoute: typeof StaffLoginRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffLoginRoute: StaffLoginRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -2318,6 +2347,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
   ShippingPolicyRoute: ShippingPolicyRoute,
+  StaffRoute: StaffRouteWithChildren,
   StatusRoute: StatusRoute,
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   TestBellRoute: TestBellRoute,
@@ -2330,7 +2360,6 @@ const rootRouteChildren: RootRouteChildren = {
   QCodeRoute: QCodeRoute,
   RCodeRoute: RCodeRoute,
   SCodeRoute: SCodeRoute,
-  StaffLoginRoute: StaffLoginRoute,
   VendorChatRoute: VendorChatRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   VendorInstallRoute: VendorInstallRoute,
