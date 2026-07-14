@@ -32,9 +32,7 @@ function StaffVendorsPage() {
 
   useEffect(() => {
     (async () => {
-      let query = supabase.from("vendors").select("id, business_name, phone, created_at, category_id").order("created_at", { ascending: false }).limit(50);
-      if (selected) query = query.eq("category_id", selected);
-      const { data } = await query;
+      const { data } = await supabase.from("vendors").select("id, business_name, phone, created_at").order("created_at", { ascending: false }).limit(50);
       setVendors((data as Vendor[] | null) ?? []);
     })();
   }, [selected]);
