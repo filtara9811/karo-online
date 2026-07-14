@@ -24,6 +24,8 @@ import { SmartScannerSheet } from "@/components/vendor-join/SmartScannerSheet";
 import type { OcrExtraction } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadVendorMedia } from "@/lib/vendor-media";
+import { useServerFn } from "@tanstack/react-start";
+import { geocodeFn } from "@/lib/maps.functions";
 
 export type BusinessInfoDraft = {
   lat: number | null;
@@ -102,7 +104,9 @@ export function BusinessInfoSheet({
   const [galleryPickerOpen, setGalleryPickerOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  const applyOcr = (o: OcrExtraction) => {
+  const runGeocode = useServerFn(geocodeFn);
+
+  const applyOcr = async (o: OcrExtraction) => {
     const next: BusinessInfoDraft = { ...draft };
     if (o.business_name) next.shop_name = o.business_name;
     if (o.owner_name) next.owner_name = o.owner_name;
@@ -117,6 +121,24 @@ export function BusinessInfoSheet({
       if (matched) next.shop_type = matched;
     }
     onChange(next);
+
+    // Auto-detect map pin location from scanned address/pincode
+    const queries = [
+      next.address,
+      [next.address, next.pincode].filter(Boolean).join(", "),
+      [next.city, next.pincode, "India"].filter(Boolean).join(", "),
+      [next.pincode, "India"].filter(Boolean).join(", "),
+    ].filter((q): q is string => typeof q === "string" && q.trim().length > 3);
+    for (const q of queries) {
+      try {
+        const g = await runGeocode({ data: { address: q } });
+        if (g.ok) {
+          onChange({ ...next, lat: g.lat, lng: g.lng });
+          toast.success("Location auto-detected");
+          return;
+        }
+      } catch { /* try next */ }
+    }
   };
   const voice = (field: "shop_name" | "address") => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;

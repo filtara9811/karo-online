@@ -26,6 +26,8 @@ import {
 } from "@/components/vendor-join/BusinessInfoSheet";
 // InventoryMappingSheet removed — Step 2 now navigates to /vendor/services
 import { QrPaymentSheet } from "@/components/vendor-join/QrPaymentSheet";
+import { CategoryMappingStep } from "@/components/vendor-join/CategoryMappingStep";
+import type { CategorySuggestion } from "@/lib/category-suggest.functions";
 
 export const Route = createFileRoute("/vendor/join")({
   head: () => ({
@@ -108,8 +110,10 @@ function VendorJoinPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>(() => readDraft());
   const [openSheet, setOpenSheet] = useState<
-    null | "business" | "inventory" | "qr" | "lang" | "menu"
+    null | "business" | "inventory" | "qr" | "lang" | "menu" | "categories"
   >(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [muted, setMuted] = useState(true);
   const [lang, setLang] = useState("en");
   const [videoUrl, setVideoUrl] = useState<string>(FALLBACK_VIDEO);
@@ -174,9 +178,33 @@ function VendorJoinPage() {
       if (error) throw error;
       setDraft({ ...draft, completed: { ...draft.completed, business: true } });
       toast.success("Business info saved");
-      setOpenSheet(null);
+      // Open Category Mapping bottom sheet immediately in the same flow
+      setOpenSheet("categories");
     } catch (e: any) {
       toast.error(e?.message || "Save failed");
+    }
+  };
+
+  const applyCategorySuggestions = async (chosen: CategorySuggestion[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from("vendors")
+        .update({
+          suggested_categories: chosen.map((c) => ({
+            path: c.path,
+            labels: c.labels,
+            confidence: c.confidence,
+          })) as any,
+        })
+        .eq("user_id", user.id);
+      toast.success("Categories saved");
+      setOpenSheet(null);
+      // Continue into detailed product/service mapping
+      setTimeout(() => navigate({ to: "/vendor/services" }), 250);
+    } catch (e: any) {
+      toast.error(e?.message || "Category save failed");
     }
   };
 
@@ -306,11 +334,11 @@ function VendorJoinPage() {
           <div className="flex-1 h-1.5 rounded-full bg-white/25 overflow-hidden">
             <div
               className="h-full bg-emerald-400 transition-all"
-              style={{ width: `${Math.max(progressPct, completed * 35)}%` }}
+              style={{ width: mounted ? `${Math.max(progressPct, completed * 35)}%` : "0%" }}
             />
           </div>
           <span className="text-xs font-semibold whitespace-nowrap">
-            {Math.round(Math.max(progressPct, completed * 35))}% Completed
+            {mounted ? Math.round(Math.max(progressPct, completed * 35)) : 0}% Completed
           </span>
         </div>
       </div>
@@ -454,7 +482,32 @@ function VendorJoinPage() {
       {/* Inventory Drawer removed — Step 2 now navigates to /vendor/services */}
 
 
+      <Drawer open={openSheet === "categories"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <div className="overflow-y-auto px-5 pt-2 pb-6">
+            <div className="mx-auto w-10 h-1 rounded-full bg-neutral-200 mb-4" />
+            <CategoryMappingStep
+              hint={{
+                business_name: draft.business.shop_name || null,
+                shop_type_hint: [draft.business.shop_type, draft.business.main_dealing]
+                  .filter(Boolean)
+                  .join(" ") || null,
+                services: draft.business.main_dealing === "Service" || draft.business.main_dealing === "Both"
+                  ? [draft.business.main_dealing]
+                  : null,
+                products: draft.business.main_dealing === "Products" || draft.business.main_dealing === "Both"
+                  ? [draft.business.main_dealing]
+                  : null,
+              }}
+              onApply={applyCategorySuggestions}
+              onSkip={() => setOpenSheet(null)}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <Drawer open={openSheet === "qr"} onOpenChange={(o) => !o && setOpenSheet(null)}>
+
         <DrawerContent className="max-h-[95vh]">
           <div className="overflow-y-auto">
             <QrPaymentSheet
