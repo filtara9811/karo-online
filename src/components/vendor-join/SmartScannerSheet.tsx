@@ -1,41 +1,52 @@
-import { useRef, useState } from "react";
-import { X, Camera, ImageIcon, Loader2, ScanLine, Sparkles, IdCard, ReceiptText, Store, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  X, Camera, ImageIcon, Loader2, ScanLine, Sparkles,
+  IdCard, ReceiptText, Store, Check, History, Trash2, Plus, RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { extractBusinessCard, type OcrExtraction } from "@/lib/ocr.functions";
+import { extractBusinessCard, type OcrExtraction, type ScanKind } from "@/lib/ocr.functions";
+import {
+  listScanHistory, saveScanHistory, deleteScanHistory,
+  type ScanHistoryEntry,
+} from "@/lib/scan-history.functions";
 
-type Kind = "visiting_card" | "bill_book" | "shop_board";
-
-const KINDS: { id: Kind; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+const KINDS: { id: ScanKind; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "visiting_card", label: "Visiting Card", Icon: IdCard },
   { id: "bill_book", label: "Bill Book", Icon: ReceiptText },
   { id: "shop_board", label: "Shop Board", Icon: Store },
 ];
 
-const FIELD_LABELS: Record<keyof OcrExtraction, string> = {
+const FIELD_LABELS: Record<string, string> = {
   business_name: "Business Name",
   owner_name: "Owner Name",
   mobile: "Mobile",
   whatsapp: "WhatsApp",
+  alt_phone: "Alternate Phone",
   email: "Email",
   address: "Full Address",
+  landmark: "Landmark",
   city: "City",
+  state: "State",
   pincode: "Pincode",
+  gstin: "GSTIN",
+  website: "Website / Social",
+  established_year: "Established",
+  business_hours: "Business Hours",
   shop_type_hint: "Shop Type",
-  raw_text: "Raw Text",
+  services: "Services",
+  products: "Products",
 };
 
 const APPLIABLE: (keyof OcrExtraction)[] = [
-  "business_name",
-  "owner_name",
-  "mobile",
-  "whatsapp",
-  "email",
-  "address",
-  "city",
-  "pincode",
-  "shop_type_hint",
+  "business_name", "owner_name", "mobile", "whatsapp", "alt_phone", "email",
+  "address", "landmark", "city", "state", "pincode", "gstin", "website",
+  "established_year", "business_hours", "shop_type_hint", "services", "products",
 ];
+
+const MAX_IMAGES = 5;
+
+type Shot = { id: string; kind: ScanKind; dataUrl: string };
 
 async function compressImage(file: File, maxSide = 1600): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Please pick an image");
@@ -52,12 +63,38 @@ async function compressImage(file: File, maxSide = 1600): Promise<string> {
   const w = Math.round(bmp.width * scale);
   const h = Math.round(bmp.height * scale);
   const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
+  c.width = w; c.height = h;
   const ctx = c.getContext("2d");
   if (!ctx) throw new Error("Canvas not available");
   ctx.drawImage(bmp, 0, 0, w, h);
   return c.toDataURL("image/jpeg", 0.82);
+}
+
+async function makeThumbnail(dataUrl: string, side = 240): Promise<string> {
+  try {
+    const img = document.createElement("img");
+    await new Promise<void>((res, rej) => {
+      img.onload = () => res();
+      img.onerror = () => rej(new Error("thumb load"));
+      img.src = dataUrl;
+    });
+    const scale = Math.min(1, side / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return c.toDataURL("image/jpeg", 0.6);
+  } catch {
+    return dataUrl;
+  }
+}
+
+function fmtValue(v: unknown): string {
+  if (Array.isArray(v)) return v.filter(Boolean).join(", ");
+  return String(v ?? "");
 }
 
 export function SmartScannerSheet({
@@ -69,59 +106,38 @@ export function SmartScannerSheet({
   onClose: () => void;
   onApply: (data: OcrExtraction) => void;
 }) {
-  const [kind, setKind] = useState<Kind>("visiting_card");
-  const [phase, setPhase] = useState<"pick" | "scanning" | "review">("pick");
-  const [preview, setPreview] = useState<string | null>(null);
+  const [kind, setKind] = useState<ScanKind>("visiting_card");
+  const [phase, setPhase] = useState<"pick" | "scanning" | "review" | "history">("pick");
+  const [shots, setShots] = useState<Shot[]>([]);
   const [result, setResult] = useState<OcrExtraction | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set(APPLIABLE));
+  const [selected, setSelected] = useState<Set<string>>(new Set(APPLIABLE as string[]));
+  const [history, setHistory] = useState<ScanHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const camRef = useRef<HTMLInputElement | null>(null);
   const galRef = useRef<HTMLInputElement | null>(null);
+
   const runExtract = useServerFn(extractBusinessCard);
+  const runSave = useServerFn(saveScanHistory);
+  const runList = useServerFn(listScanHistory);
+  const runDelete = useServerFn(deleteScanHistory);
+
+  useEffect(() => {
+    if (!open) return;
+    // preload history in the background
+    setHistoryLoading(true);
+    runList({})
+      .then((rows) => setHistory(rows ?? []))
+      .catch(() => setHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [open, runList]);
 
   if (!open) return null;
 
   const reset = () => {
     setPhase("pick");
-    setPreview(null);
+    setShots([]);
     setResult(null);
-    setSelected(new Set(APPLIABLE));
-  };
-
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    try {
-      setPhase("scanning");
-      const dataUrl = await compressImage(file, 1600);
-      setPreview(dataUrl);
-      const out = await runExtract({ data: { image_data_url: dataUrl, kind } });
-      const nonEmpty = APPLIABLE.some((k) => (out as Record<string, unknown>)[k]);
-      if (!nonEmpty) {
-        toast.error("Kuch details nahi mili — dobara clear photo lein");
-        setPhase("pick");
-        setPreview(null);
-        return;
-      }
-      setResult(out);
-      // pre-select only fields that have a value
-      setSelected(new Set(APPLIABLE.filter((k) => (out as Record<string, unknown>)[k])));
-      setPhase("review");
-    } catch (e) {
-      toast.error((e as Error).message || "Scan failed");
-      setPhase("pick");
-      setPreview(null);
-    }
-  };
-
-  const apply = () => {
-    if (!result) return;
-    const filtered: OcrExtraction = {};
-    for (const k of APPLIABLE) {
-      if (selected.has(k)) (filtered as Record<string, unknown>)[k] = (result as Record<string, unknown>)[k];
-    }
-    onApply(filtered);
-    toast.success("Details bhar diye — please check karein");
-    reset();
-    onClose();
+    setSelected(new Set(APPLIABLE as string[]));
   };
 
   const closeAll = () => {
@@ -129,6 +145,116 @@ export function SmartScannerSheet({
     reset();
     onClose();
   };
+
+  const addFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (shots.length >= MAX_IMAGES) {
+      toast.error(`Max ${MAX_IMAGES} images`);
+      return;
+    }
+    try {
+      const dataUrl = await compressImage(file, 1600);
+      setShots((prev) => [...prev, { id: crypto.randomUUID(), kind, dataUrl }]);
+    } catch (e) {
+      toast.error((e as Error).message || "Could not read image");
+    }
+  };
+
+  const removeShot = (id: string) =>
+    setShots((prev) => prev.filter((s) => s.id !== id));
+
+  const scanAll = async () => {
+    if (!shots.length) {
+      toast.error("Pehle photo add karein");
+      return;
+    }
+    try {
+      setPhase("scanning");
+      const out = await runExtract({
+        data: { images: shots.map((s) => ({ image_data_url: s.dataUrl, kind: s.kind })) },
+      });
+      const nonEmpty = APPLIABLE.some((k) => {
+        const v = (out as Record<string, unknown>)[k];
+        return Array.isArray(v) ? v.length > 0 : Boolean(v);
+      });
+      if (!nonEmpty) {
+        toast.error("Kuch details nahi mili — clear photos add karein");
+        setPhase("pick");
+        return;
+      }
+      setResult(out);
+      setSelected(
+        new Set(
+          APPLIABLE.filter((k) => {
+            const v = (out as Record<string, unknown>)[k];
+            return Array.isArray(v) ? v.length > 0 : Boolean(v);
+          }) as string[],
+        ),
+      );
+      setPhase("review");
+
+      // Save to history in the background (best-effort)
+      try {
+        const thumb = shots[0] ? await makeThumbnail(shots[0].dataUrl) : null;
+        const { id } = await runSave({
+          data: {
+            kinds: shots.map((s) => s.kind),
+            thumbnail: thumb,
+            extracted: out as Record<string, unknown>,
+          },
+        });
+        if (id) {
+          setHistory((prev) => [
+            { id, kinds: shots.map((s) => s.kind), thumbnail: thumb, extracted: out as Record<string, unknown>, created_at: new Date().toISOString() },
+            ...prev,
+          ].slice(0, 50));
+        }
+      } catch {
+        /* non-blocking */
+      }
+    } catch (e) {
+      toast.error((e as Error).message || "Scan failed");
+      setPhase("pick");
+    }
+  };
+
+  const apply = () => {
+    if (!result) return;
+    const filtered: Record<string, unknown> = {};
+    for (const k of APPLIABLE) {
+      if (selected.has(k as string)) filtered[k] = (result as Record<string, unknown>)[k];
+    }
+    onApply(filtered as OcrExtraction);
+    toast.success("Details bhar diye — please check karein");
+    reset();
+    onClose();
+  };
+
+  const reapplyFromHistory = (entry: ScanHistoryEntry) => {
+    const ext = entry.extracted as OcrExtraction;
+    setResult(ext);
+    setSelected(
+      new Set(
+        APPLIABLE.filter((k) => {
+          const v = (ext as Record<string, unknown>)[k];
+          return Array.isArray(v) ? v.length > 0 : Boolean(v);
+        }) as string[],
+      ),
+    );
+    setShots([]);
+    setPhase("review");
+  };
+
+  const removeHistory = async (id: string) => {
+    setHistory((prev) => prev.filter((h) => h.id !== id));
+    try {
+      await runDelete({ data: { id } });
+    } catch (e) {
+      toast.error((e as Error).message || "Delete failed");
+    }
+  };
+
+  const showHeaderHistory = phase === "pick" && history.length > 0;
 
   return (
     <div className="fixed inset-0 z-[95] flex items-end bg-black/55" onClick={closeAll}>
@@ -138,64 +264,54 @@ export function SmartScannerSheet({
       >
         <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-neutral-200" />
         <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-amber-100 grid place-items-center">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-amber-100 grid place-items-center shrink-0">
               <Sparkles className="h-5 w-5 text-amber-700" />
             </div>
-            <div>
-              <h3 className="text-lg font-extrabold text-neutral-950">Smart Scanner</h3>
-              <p className="text-[11px] font-medium text-neutral-500">Scan and auto fill business details</p>
+            <div className="min-w-0">
+              <h3 className="text-lg font-extrabold text-neutral-950 truncate">
+                {phase === "history" ? "Scan History" : "Smart Scanner"}
+              </h3>
+              <p className="text-[11px] font-medium text-neutral-500 truncate">
+                {phase === "history"
+                  ? "Purane scans se re-apply karein"
+                  : "Multi-photo scan · Card + Board + Bill"}
+              </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={closeAll}
-            disabled={phase === "scanning"}
-            className="grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-700 disabled:opacity-50"
-            aria-label="Close scanner"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {showHeaderHistory && (
+              <button
+                type="button"
+                onClick={() => setPhase("history")}
+                className="grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-amber-700 relative"
+                aria-label="Scan history"
+              >
+                <History className="h-4 w-4" />
+                <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-amber-600 text-white text-[9px] font-extrabold grid place-items-center">
+                  {history.length}
+                </span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={phase === "history" ? () => setPhase("pick") : closeAll}
+              disabled={phase === "scanning"}
+              className="grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-700 disabled:opacity-50"
+              aria-label={phase === "history" ? "Back" : "Close scanner"}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {phase === "pick" && (
           <>
-            <div className="rounded-2xl bg-gradient-to-b from-amber-100 to-amber-50 border border-amber-200 p-4 mb-4">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => camRef.current?.click()}
-                  className="flex flex-col items-center gap-2 py-3 active:scale-[0.98]"
-                >
-                  <div className="h-14 w-14 rounded-full bg-white grid place-items-center shadow-sm">
-                    <Camera className="h-7 w-7 text-amber-700" />
-                  </div>
-                  <div className="text-sm font-extrabold text-neutral-900">Tap to Scan</div>
-                  <div className="text-[10px] leading-tight text-neutral-600 text-center px-2">
-                    Visiting Card / Bill Book / Shop Board
-                  </div>
-                </button>
-                <div className="relative">
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-16 w-px bg-amber-300" />
-                  <button
-                    type="button"
-                    onClick={() => galRef.current?.click()}
-                    className="w-full flex flex-col items-center gap-2 py-3 active:scale-[0.98]"
-                  >
-                    <div className="h-14 w-14 rounded-full bg-white grid place-items-center shadow-sm">
-                      <ImageIcon className="h-7 w-7 text-amber-700" />
-                    </div>
-                    <div className="text-sm font-extrabold text-neutral-900">Choose from Gallery</div>
-                    <div className="text-[10px] leading-tight text-neutral-600 text-center px-2">
-                      Select image from gallery to scan
-                    </div>
-                  </button>
-                </div>
+            {/* Kind selector */}
+            <div className="mb-3">
+              <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-1.5">
+                Next photo type
               </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="text-sm font-extrabold text-neutral-900 mb-2">What are you scanning?</div>
               <div className="grid grid-cols-3 gap-2">
                 {KINDS.map(({ id, label, Icon }) => {
                   const active = kind === id;
@@ -218,31 +334,134 @@ export function SmartScannerSheet({
               </div>
             </div>
 
-            <ul className="space-y-1.5 text-[12px] text-neutral-600 mb-2">
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Business name, mobile, address auto-extract</li>
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Manual typing time bachta hai</li>
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Scan ke baad edit kar sakte hain</li>
+            {/* Capture buttons */}
+            <div className="rounded-2xl bg-gradient-to-b from-amber-100 to-amber-50 border border-amber-200 p-4 mb-3">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => camRef.current?.click()}
+                  disabled={shots.length >= MAX_IMAGES}
+                  className="flex flex-col items-center gap-1.5 py-2 active:scale-[0.98] disabled:opacity-40"
+                >
+                  <div className="h-12 w-12 rounded-full bg-white grid place-items-center shadow-sm">
+                    <Camera className="h-6 w-6 text-amber-700" />
+                  </div>
+                  <div className="text-sm font-extrabold text-neutral-900">Camera</div>
+                </button>
+                <div className="relative">
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-14 w-px bg-amber-300" />
+                  <button
+                    type="button"
+                    onClick={() => galRef.current?.click()}
+                    disabled={shots.length >= MAX_IMAGES}
+                    className="w-full flex flex-col items-center gap-1.5 py-2 active:scale-[0.98] disabled:opacity-40"
+                  >
+                    <div className="h-12 w-12 rounded-full bg-white grid place-items-center shadow-sm">
+                      <ImageIcon className="h-6 w-6 text-amber-700" />
+                    </div>
+                    <div className="text-sm font-extrabold text-neutral-900">Gallery</div>
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 text-center text-[11px] font-semibold text-amber-800">
+                {shots.length}/{MAX_IMAGES} photos added
+              </div>
+            </div>
+
+            {/* Shot thumbnails */}
+            {shots.length > 0 && (
+              <div className="mb-3">
+                <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-1.5">
+                  Added photos
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {shots.map((s) => {
+                    const K = KINDS.find((k) => k.id === s.kind);
+                    return (
+                      <div key={s.id} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100">
+                        <img src={s.dataUrl} alt="" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeShot(s.id)}
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white grid place-items-center"
+                          aria-label="Remove"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 flex items-center gap-1">
+                          {K ? <K.Icon className="h-3 w-3" /> : null}
+                          <span className="truncate">{K?.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {shots.length < MAX_IMAGES && (
+                    <button
+                      type="button"
+                      onClick={() => galRef.current?.click()}
+                      className="aspect-square rounded-xl border-2 border-dashed border-neutral-300 grid place-items-center text-neutral-400"
+                      aria-label="Add another photo"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={scanAll}
+              disabled={shots.length === 0}
+              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-extrabold text-sm shadow flex items-center justify-center gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Scan {shots.length > 0 ? `${shots.length} photo${shots.length > 1 ? "s" : ""}` : "photos"}
+            </button>
+
+            <ul className="mt-3 space-y-1 text-[11px] text-neutral-600">
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Multi-photo merge — sabse best value auto pick</li>
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />GSTIN, category, services auto detect</li>
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Purane scans History me save hote hain</li>
             </ul>
           </>
         )}
 
         {phase === "scanning" && (
-          <div className="py-10 flex flex-col items-center gap-3">
-            {preview ? (
-              <img src={preview} alt="Scanning" className="max-h-40 rounded-xl border border-neutral-200" />
-            ) : null}
+          <div className="py-8 flex flex-col items-center gap-3">
+            <div className="flex -space-x-3">
+              {shots.slice(0, 3).map((s, i) => (
+                <img
+                  key={s.id}
+                  src={s.dataUrl}
+                  alt=""
+                  className="h-16 w-16 rounded-xl border-2 border-white object-cover shadow"
+                  style={{ zIndex: 10 - i }}
+                />
+              ))}
+            </div>
             <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-            <div className="text-sm font-bold text-neutral-800">Scanning… details nikaal rahe hain</div>
-            <div className="text-[11px] text-neutral-500">Thoda sabar karein — 5-10 sec</div>
+            <div className="text-sm font-bold text-neutral-800">
+              Scanning {shots.length} photo{shots.length > 1 ? "s" : ""}…
+            </div>
+            <div className="text-[11px] text-neutral-500">Merge kar rahe hain — 5-10 sec</div>
           </div>
         )}
 
         {phase === "review" && result && (
           <div>
             <div className="flex items-center gap-3 mb-3">
-              {preview ? (
-                <img src={preview} alt="Scan" className="h-16 w-16 rounded-xl object-cover border border-neutral-200" />
-              ) : null}
+              <div className="flex -space-x-2">
+                {shots.slice(0, 3).map((s, i) => (
+                  <img
+                    key={s.id}
+                    src={s.dataUrl}
+                    alt=""
+                    className="h-12 w-12 rounded-xl border-2 border-white object-cover shadow"
+                    style={{ zIndex: 10 - i }}
+                  />
+                ))}
+              </div>
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-neutral-900">Ye details mili hain</div>
                 <div className="text-[11px] text-neutral-500">Jo apply karna ho tick rakhein</div>
@@ -250,9 +469,10 @@ export function SmartScannerSheet({
             </div>
             <div className="space-y-2 mb-4">
               {APPLIABLE.map((k) => {
-                const val = (result as Record<string, unknown>)[k] as string | null | undefined;
-                if (!val) return null;
-                const checked = selected.has(k);
+                const val = (result as Record<string, unknown>)[k];
+                const isEmpty = Array.isArray(val) ? val.length === 0 : !val;
+                if (isEmpty) return null;
+                const checked = selected.has(k as string);
                 return (
                   <label
                     key={k}
@@ -273,16 +493,16 @@ export function SmartScannerSheet({
                       checked={checked}
                       onChange={() => {
                         const next = new Set(selected);
-                        if (checked) next.delete(k);
-                        else next.add(k);
+                        if (checked) next.delete(k as string);
+                        else next.add(k as string);
                         setSelected(next);
                       }}
                     />
                     <div className="min-w-0 flex-1">
                       <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
-                        {FIELD_LABELS[k]}
+                        {FIELD_LABELS[k as string] ?? k}
                       </div>
-                      <div className="text-sm text-neutral-900 break-words">{val}</div>
+                      <div className="text-sm text-neutral-900 break-words">{fmtValue(val)}</div>
                     </div>
                   </label>
                 );
@@ -308,6 +528,73 @@ export function SmartScannerSheet({
           </div>
         )}
 
+        {phase === "history" && (
+          <div>
+            {historyLoading && (
+              <div className="py-8 flex items-center justify-center text-neutral-500 text-sm gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              </div>
+            )}
+            {!historyLoading && history.length === 0 && (
+              <div className="py-10 text-center text-neutral-500 text-sm">
+                <History className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                Abhi tak koi scan save nahi hua
+              </div>
+            )}
+            <div className="space-y-2">
+              {history.map((h) => {
+                const ext = (h.extracted ?? {}) as OcrExtraction;
+                const title =
+                  (ext.business_name as string) ||
+                  (ext.owner_name as string) ||
+                  (ext.mobile as string) ||
+                  "Untitled scan";
+                const subtitle = [ext.city, ext.pincode].filter(Boolean).join(" · ");
+                const when = new Date(h.created_at).toLocaleDateString("en-IN", {
+                  day: "2-digit", month: "short", year: "2-digit",
+                });
+                return (
+                  <div
+                    key={h.id}
+                    className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-2.5"
+                  >
+                    <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-100 shrink-0">
+                      {h.thumbnail ? (
+                        <img src={h.thumbnail} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full grid place-items-center text-neutral-400">
+                          <ScanLine className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-neutral-900 truncate">{title}</div>
+                      <div className="text-[11px] text-neutral-500 truncate">
+                        {subtitle || (h.kinds ?? []).join(", ")} · {when}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => reapplyFromHistory(h)}
+                      className="h-9 px-3 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center gap-1"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> Re-apply
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeHistory(h.id)}
+                      className="h-9 w-9 grid place-items-center rounded-full bg-neutral-100 text-neutral-500"
+                      aria-label="Delete scan"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <input
           ref={camRef}
           type="file"
@@ -317,7 +604,7 @@ export function SmartScannerSheet({
           onChange={(e) => {
             const f = e.currentTarget.files?.[0];
             e.currentTarget.value = "";
-            void handleFile(f);
+            void addFile(f);
           }}
         />
         <input
@@ -328,7 +615,7 @@ export function SmartScannerSheet({
           onChange={(e) => {
             const f = e.currentTarget.files?.[0];
             e.currentTarget.value = "";
-            void handleFile(f);
+            void addFile(f);
           }}
         />
       </div>
