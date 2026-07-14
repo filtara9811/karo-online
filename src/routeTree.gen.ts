@@ -71,6 +71,7 @@ import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminTestAccountsRouteImport } from './routes/admin.test-accounts'
 import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
 import { Route as AdminSubscriptionRouteImport } from './routes/admin.subscription'
+import { Route as AdminStaffOpsRouteImport } from './routes/admin.staff-ops'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -436,6 +437,11 @@ const AdminSubscriptionRoute = AdminSubscriptionRouteImport.update({
   path: '/subscription',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStaffOpsRoute = AdminStaffOpsRouteImport.update({
+  id: '/staff-ops',
+  path: '/staff-ops',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -769,6 +775,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -885,6 +892,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -1004,6 +1012,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -1124,6 +1133,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1240,6 +1250,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1358,6 +1369,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1919,6 +1931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubscriptionRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/staff-ops': {
+      id: '/admin/staff-ops'
+      path: '/staff-ops'
+      fullPath: '/admin/staff-ops'
+      preLoaderRoute: typeof AdminStaffOpsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/staff'
@@ -2330,6 +2349,7 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminStaffOpsRoute: typeof AdminStaffOpsRoute
   AdminSubscriptionRoute: typeof AdminSubscriptionRoute
   AdminSystemStatusRoute: typeof AdminSystemStatusRoute
   AdminTestAccountsRoute: typeof AdminTestAccountsRoute
@@ -2382,6 +2402,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminStaffOpsRoute: AdminStaffOpsRoute,
   AdminSubscriptionRoute: AdminSubscriptionRoute,
   AdminSystemStatusRoute: AdminSystemStatusRoute,
   AdminTestAccountsRoute: AdminTestAccountsRoute,

@@ -31,7 +31,6 @@ function StaffOpsPage() {
   return (
     <AdminLayout>
       <PageHeader
-        icon={<Users className="h-5 w-5" />}
         title="Staff Operations"
         subtitle="Approve signups, create staff, assign tasks, process payouts"
       />
