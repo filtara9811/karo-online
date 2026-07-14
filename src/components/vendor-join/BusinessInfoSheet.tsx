@@ -24,6 +24,8 @@ import { SmartScannerSheet } from "@/components/vendor-join/SmartScannerSheet";
 import type { OcrExtraction } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadVendorMedia } from "@/lib/vendor-media";
+import { useServerFn } from "@tanstack/react-start";
+import { geocodeFn } from "@/lib/maps.functions";
 
 export type BusinessInfoDraft = {
   lat: number | null;
