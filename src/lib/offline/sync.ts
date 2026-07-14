@@ -38,6 +38,13 @@ async function handle(a: QueuedAction): Promise<void> {
       if (error) throw error;
       return;
     }
+    case "visit.create": {
+      const { error } = await supabase
+        .from("vendor_customer_visits")
+        .insert(a.payload as never);
+      if (error) throw error;
+      return;
+    }
     case "generic": {
       // Offline scan sync: payload = { kind: "scan.save", payload: OfflineScanPayload }
       const p = a.payload as { kind?: string; payload?: Record<string, unknown> };
