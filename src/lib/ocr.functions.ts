@@ -84,7 +84,8 @@ export const extractBusinessCard = createServerFn({ method: "POST" })
       `website (URL or social handle), established_year, business_hours (e.g. "10AM-9PM"), ` +
       `shop_type_hint (short category like "electronics", "menswear", "grocery", "clinic"), ` +
       `services (array of services offered, max 6), products (array of products sold, max 8), ` +
-      `raw_text (concatenated OCR text).\n\n` +
+      `raw_text (concatenated OCR text), ` +
+      `_confidence (object with SAME keys as above whose values are your self-rated confidence 0.0-1.0 for each extracted field; omit keys you did not extract).\n\n` +
       `For shop boards/banners with only a name and phone visible, still extract those confidently.`;
 
     const body = {
