@@ -110,8 +110,10 @@ function VendorJoinPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>(() => readDraft());
   const [openSheet, setOpenSheet] = useState<
-    null | "business" | "inventory" | "qr" | "lang" | "menu"
+    null | "business" | "inventory" | "qr" | "lang" | "menu" | "categories"
   >(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [muted, setMuted] = useState(true);
   const [lang, setLang] = useState("en");
   const [videoUrl, setVideoUrl] = useState<string>(FALLBACK_VIDEO);
