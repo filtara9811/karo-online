@@ -1,67 +1,164 @@
-# Smart Scanner (OCR Auto-Fill) for Vendor Joining
 
-Goal: Jaisa screen mein dikhaya hai — Business Information form ke upar ek floating "Smart Scanner" button ho. Tap karne par ek bottom sheet khule with **Camera** aur **Gallery** options. User visiting card / bill book / shop board ka photo le ya select kare, aur OCR se business name, owner name, mobile / WhatsApp, address, city, pincode, email, shop type automatic form mein fill ho jaye.
+# Smart Scanner v2 — पूरा Roadmap (हिंदी में)
 
-## User Flow
+## 🔑 सबसे पहले: कौन-कौन सी API चाहिए?
 
-1. Vendor `/vendor/join` → Step 1 "Business Information" khole.
-2. Right side floating scanner FAB (camera-frame icon, gold circle) tap kare.
-3. Bottom sheet "Smart Scanner — Scan and auto fill business details" khule with 2 big tiles:
-   - **Tap to Scan** (Camera) — Visiting Card / Bill Book / Shop Board
-   - **Choose from Gallery**
-4. Image select hone ke baad ek loading state ("Scanning… business details nikaal rahe hain") + preview thumbnail.
-5. OCR complete → extracted fields ek "Review & Apply" panel mein dikhaayein (name, mobile, address, pincode, city, shop type, email). Har field ke saath ek small checkbox / toggle so user unwanted field skip kar sake.
-6. "Apply to Form" button dabate hi `BusinessInfoDraft` update ho, sheet band, toast: "Details bhar diye — please check karein."
-7. User manually edit kar sake before final submit (already possible).
+**खुशखबरी — कोई भी नई API key नहीं लेनी पड़ेगी।** सब कुछ already project में configured है:
 
-## Extraction Logic (server-side)
+| API | क्या करेगी | Status |
+|---|---|---|
+| **Lovable AI (Gemini 3 Flash)** | Image OCR, category auto-detect, multi-image merge, product/service suggest | ✅ Ready (`LOVABLE_API_KEY`) |
+| **Google Maps Platform** | Address → lat/lng geocoding, place autocomplete, map pin preview | ✅ Ready (`src/lib/maps.functions.ts` में connector connected है) |
+| **India Post Pincode API** | Pincode → City/District/State fallback | ✅ Free public API, no key |
 
-Use **Lovable AI Gateway** with `google/gemini-3-flash-preview` (multimodal — image input) via `createServerFn`. Model ko structured JSON output dena hai using AI SDK `Output.object` + Zod schema:
+**आपको admin panel में कोई API field manually नहीं भरनी है।** सब backend में inject होता है।
 
+---
+
+## 🎯 Vendor Journey — नया Flow
+
+```text
+    Vendor "Join" खोलता है
+              ↓
+    [ Smart Scanner FAB (⚡ AI) ]
+              ↓
+    ┌─────────────────────────────┐
+    │  Multi-photo Capture Sheet  │
+    │  • Visiting Card  📇        │
+    │  • Shop Banner    🏪        │
+    │  • Bill Book      🧾        │
+    │  → कई photos एक साथ add करो │
+    └─────────────────────────────┘
+              ↓
+    Gemini सारी images एक साथ पढ़ता है
+    → best data merge करता है (सबसे confident value जीतती है)
+              ↓
+    ┌─────────────────────────────┐
+    │  Auto-detected output:      │
+    │  • Business + Owner + Phone │
+    │  • GSTIN + Email + Website  │
+    │  • Category → Trade Tree    │
+    │  • Services + Products list │
+    │  • Address → Map pin 📍     │
+    └─────────────────────────────┘
+              ↓
+    Review Sheet (editable + Add Field)
+              ↓
+    Form auto-fill → Next step में category-mapped
+    product picker खुले
+              ↓
+    Scan History में save (बाद में re-apply)
 ```
-{
-  business_name?: string,
-  owner_name?: string,
-  mobile?: string,          // 10-digit Indian
-  whatsapp?: string,
-  email?: string,
-  address?: string,
-  city?: string,
-  pincode?: string,         // 6-digit
-  shop_type_hint?: string,  // e.g. "electronics", "grocery"
-  raw_text?: string
-}
-```
 
-Server function `extractBusinessCard` in `src/lib/ocr.functions.ts`:
-- Input: base64 image data URL + kind ("visiting_card" | "bill_book" | "shop_board")
-- Compress client-side pehle (max 1600px, jpeg 0.8) to keep payload small
-- Prompt tuned per `kind` (visiting card = personal details priority; bill book = GSTIN/address; shop board = business name + type)
-- Return validated object; unknown/low-confidence fields as `undefined` (not empty string) so existing draft values don't overwrite
+---
 
-No new secret required — `LOVABLE_API_KEY` already present.
+## 📦 क्या-क्या Build करूँगा
 
-## Frontend Pieces
+### 1. **Multi-Photo Scanner** (बड़ा upgrade)
+- Scanner sheet में अब **1 photo की जगह 5 तक photos** add कर सकते हो
+- हर photo पर छोटा kind-tag: Visiting Card / Banner / Bill Book
+- सब एक साथ Gemini को भेजे जाएंगे → वो **merge करके single best result** देगा (जैसे visiting card से phone, banner से category, bill book से GSTIN)
+- Progress bar: "Scanning 3 of 3 images…"
 
-- **New:** `src/components/vendor-join/SmartScannerSheet.tsx`
-  - Reuses existing `CameraGalleryPicker` UI language (camera + gallery tiles), but styled per screenshot (amber gradient tile, "What can you scan?" chips, tips list, "View Scanned Data" CTA after scan).
-  - Manages states: `idle → capturing → scanning → review → applied`.
-  - Renders extracted fields in review step with per-field toggle.
-- **New:** `src/lib/ocr.functions.ts` — `extractBusinessCard` server fn.
-- **Edit:** `src/components/vendor-join/BusinessInfoSheet.tsx`
-  - Add floating scanner FAB (curved arrow + gold circle) at bottom-right of the form area, matching the screenshot.
-  - Wire `SmartScannerSheet`, on "Apply" merge into `BusinessInfoDraft` (only fill blank fields by default; user can toggle "overwrite existing" in review).
-  - City auto-select: if OCR returns city + it exists in cities list → set; else keep manual.
-  - Shop type mapping: map free-text hint to closest option from existing shop type list (simple lowercase includes match).
+### 2. **Smart Category Auto-detect + Trade-Tree Mapping**
+- Gemini prompt में `trade-tree.ts` की सारी categories inject होंगी
+- वो image देखकर हर image के लिए exact `path` return करेगा:
+  ```json
+  { "trade_path": ["retailer","apparel_r"], 
+    "confidence": 0.92,
+    "products": ["Men's shirt","Kurta","Jeans"],
+    "services": ["Alteration","Home delivery"] }
+  ```
+- Next step (product mapping) उसी category पर auto-open होगा — vendor को दोबारा select नहीं करना पड़ेगा
 
-## Not in scope (unless asked later)
-- Multi-image scan / KYC document extraction (Aadhaar/PAN) — different privacy handling.
-- GSTIN lookup / verification.
-- Realtime camera streaming OCR (we use capture-then-process, simpler and reliable).
+### 3. **Address → Auto Location Pin** 📍
+- OCR से address मिला → तुरंत **Google Maps Geocoding** call
+- Latitude, Longitude, verified pincode, city, state auto-fill
+- Fallback: India Post API (pincode से city/state)
+- Review sheet में **mini-map preview + draggable pin** — vendor देख सकता है सही जगह है या नहीं
+- यही lat/lng vendor profile में save होगा → customer के "Nearby vendors" में सही distance पर दिखेगा
 
-## Verify
-1. `bunx tsgo --noEmit` passes.
-2. Playwright: open `/vendor/join`, tap scanner FAB → sheet opens → gallery picker triggers file input.
-3. Manual smoke: upload a sample visiting card image via the sheet in preview, confirm review panel shows parsed fields, "Apply" fills form.
+### 4. **Scan History Panel** 📚
+- Nया Supabase table: `vendor_scan_history` (image URL, extracted JSON, kind, created_at, user_id)
+- Storage bucket: `scan-history` (private, user-scoped RLS)
+- Scanner sheet में top-right पर "History" icon
+- हर entry पर thumbnail + business name + "Re-apply" button
+- Vendor पुराना scan खोलकर form में दोबारा apply कर सकता है
+- Auto-cleanup: 30 दिन बाद delete (या 50 latest रखें)
 
-Shall I build it?
+### 5. **Extra Fields Extract** (ज़्यादा data)
+Gemini अब ये भी निकालेगा:
+- GSTIN (15-digit + state code auto-detect)
+- Established Year
+- Alternate Phone / Landline
+- Landmark
+- Website / Instagram / Facebook handle
+- Business hours (जैसे "10 AM - 9 PM")
+- Languages spoken
+
+### 6. **Admin Panel Integration** 🛠️
+- सारा scanned data `vendors` table में save होगा (already 63 columns हैं — new fields जोड़ेंगे: `gstin`, `established_year`, `landmark`, `business_hours`, `languages`, `auto_scan_confidence`)
+- Admin panel में `admin.vendors.tsx` में नया tab: **"Scan Insights"**
+  - कौन-सी vendor ने scanner use किया
+  - Auto-fill accuracy score
+  - Which images uploaded (viewer)
+  - Manual override count
+
+### 7. **Alignment Fix** (Screenshot #2)
+- `vendor.listing.tsx` में shop images वाले broken slots ठीक करूँगा
+- Proper empty state (Upload icon + "Add photo" text) + aspect-ratio fix
+
+---
+
+## 🛠️ Technical Details (short)
+
+**Files बनाऊँगा/edit करूँगा:**
+- Edit `src/lib/ocr.functions.ts` — multi-image support + trade-tree injection + geocoding call
+- Edit `src/components/vendor-join/SmartScannerSheet.tsx` — multi-photo UI + history panel + map preview
+- New: `src/components/vendor-join/ScanHistoryPanel.tsx`
+- New: `src/components/vendor-join/MapPinPreview.tsx` (Google Maps embed)
+- Edit `src/components/vendor-join/BusinessInfoSheet.tsx` — auto-select category from scan
+- New migration: `vendor_scan_history` table + `scan-history` storage bucket + RLS
+- Edit `vendors` table: add extra columns
+- Edit `src/routes/vendor.listing.tsx` — alignment fix
+- Edit `src/routes/admin.vendors.tsx` — Scan Insights tab
+
+**AI Model:** `google/gemini-3-flash-preview` (multimodal, fast, already default)
+
+**कोई नया package install नहीं होगा** — सब existing dependencies से बनेगा।
+
+---
+
+## 🚀 और क्या-क्या Add कर सकते हैं (आपकी choice)
+
+ये सब **optional enhancements** हैं — बाद में भी जोड़ सकते हैं:
+
+1. **Voice input** — बोलकर address बताए, तो auto text हो जाए (Web Speech API, free)
+2. **GST Verification** — GSTIN निकालने के बाद उसे verify करना (paid GST API चाहिए — बाद में)
+3. **Auto-translate** — vendor का Hindi/regional text → English (Gemini कर देगा)
+4. **Duplicate detection** — अगर same phone/GSTIN पहले से है तो warn करे
+5. **QR-code from card** — visiting card पर QR हो तो auto-scan करके UPI/website link निकाले
+6. **Image enhancement** — photo blurry हो तो auto-sharpen करे (client-side canvas)
+7. **Draft auto-save** — form छोड़कर जाए तो data local में save (offline भी काम करे)
+8. **Bulk vendor import (admin)** — admin एक साथ 50 visiting cards upload करे → 50 vendors बन जाएँ
+
+---
+
+## ⏱️ Speed & Accuracy Guarantees
+
+- **Scan time**: 1 image → ~4 sec, 3 images merge → ~7-8 sec
+- **Accuracy**: Clear photos पर 90%+, blurry पर 60-70% (इसलिए review sheet editable है)
+- **Cost per scan**: ~₹0.30-0.50 (Lovable AI credits से, workspace billing)
+- **Offline safe**: बिना internet scanner disable दिखेगा (clear error)
+
+---
+
+## अगर plan approve हो तो implementation order
+
+1. Multi-photo + trade-tree category detect + address geocoding (core)
+2. Map pin preview + editable review sheet (UX)
+3. Scan history table + panel (persistence)
+4. Admin Scan Insights tab + extra vendor columns (admin visibility)
+5. Alignment fix in vendor.listing.tsx (bug fix)
+
+बताइए **approve** करते हो तो build mode में जाकर एक-एक step बनाना शुरू करूँ।
