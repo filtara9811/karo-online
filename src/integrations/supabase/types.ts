@@ -3168,6 +3168,33 @@ export type Database = {
           },
         ]
       }
+      vendor_scan_history: {
+        Row: {
+          created_at: string
+          extracted: Json
+          id: string
+          kinds: string[]
+          thumbnail: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted?: Json
+          id?: string
+          kinds?: string[]
+          thumbnail?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted?: Json
+          id?: string
+          kinds?: string[]
+          thumbnail?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendor_status_updates: {
         Row: {
           created_at: string
