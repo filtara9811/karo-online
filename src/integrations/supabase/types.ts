@@ -2781,62 +2781,534 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_category_assignments: {
+        Row: {
+          can_edit: boolean
+          can_onboard: boolean
+          category_id: string
+          created_at: string
+          id: string
+          staff_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_onboard?: boolean
+          category_id: string
+          created_at?: string
+          id?: string
+          staff_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_onboard?: boolean
+          category_id?: string
+          created_at?: string
+          id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_category_assignments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_category_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_chat_members: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          last_read_at: string | null
+          member_role: string
+          muted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          member_role?: string
+          muted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          member_role?: string
+          muted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_chat_members_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "staff_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_chat_messages: {
+        Row: {
+          attachments: Json
+          body: string | null
+          chat_id: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          reply_to: string | null
+          sender_id: string
+          sent_at: string
+        }
+        Insert: {
+          attachments?: Json
+          body?: string | null
+          chat_id: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          reply_to?: string | null
+          sender_id: string
+          sent_at?: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string | null
+          chat_id?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          reply_to?: string | null
+          sender_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "staff_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_chats: {
+        Row: {
+          chat_type: Database["public"]["Enums"]["staff_chat_type"]
+          created_at: string
+          created_by: string
+          id: string
+          last_message_at: string | null
+          title: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          chat_type: Database["public"]["Enums"]["staff_chat_type"]
+          created_at?: string
+          created_by: string
+          id?: string
+          last_message_at?: string | null
+          title?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          chat_type?: Database["public"]["Enums"]["staff_chat_type"]
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_message_at?: string | null
+          title?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_chats_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_chats_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_permissions: {
+        Row: {
+          perms: Json
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          perms?: Json
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          perms?: Json
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_permissions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_profiles: {
         Row: {
           admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
           assigned_to: string | null
           avatar_url: string | null
           created_at: string
           department: string | null
           designation: string | null
           email: string | null
+          employee_code: string | null
           id: string
           is_blocked: boolean
+          joined_at: string | null
+          monthly_salary_inr: number
           name: string | null
+          payout_model: Database["public"]["Enums"]["staff_payout_model"]
           phone: string | null
+          staff_status: Database["public"]["Enums"]["staff_status"]
           status: string
           tags: string[] | null
           updated_at: string
+          upi_id: string | null
           user_id: string
           verified: boolean
         }
         Insert: {
           admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
           designation?: string | null
           email?: string | null
+          employee_code?: string | null
           id?: string
           is_blocked?: boolean
+          joined_at?: string | null
+          monthly_salary_inr?: number
           name?: string | null
+          payout_model?: Database["public"]["Enums"]["staff_payout_model"]
           phone?: string | null
+          staff_status?: Database["public"]["Enums"]["staff_status"]
           status?: string
           tags?: string[] | null
           updated_at?: string
+          upi_id?: string | null
           user_id: string
           verified?: boolean
         }
         Update: {
           admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
           designation?: string | null
           email?: string | null
+          employee_code?: string | null
           id?: string
           is_blocked?: boolean
+          joined_at?: string | null
+          monthly_salary_inr?: number
           name?: string | null
+          payout_model?: Database["public"]["Enums"]["staff_payout_model"]
           phone?: string | null
+          staff_status?: Database["public"]["Enums"]["staff_status"]
           status?: string
           tags?: string[] | null
           updated_at?: string
+          upi_id?: string | null
           user_id?: string
           verified?: boolean
         }
         Relationships: []
+      }
+      staff_signup_requests: {
+        Row: {
+          created_at: string
+          decision_note: string | null
+          email: string
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision_note?: string | null
+          email: string
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision_note?: string | null
+          email?: string
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      staff_tasks: {
+        Row: {
+          admin_note: string | null
+          amount_inr: number
+          assigned_at: string
+          assigned_by: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          proof_urls: Json
+          staff_id: string
+          status: Database["public"]["Enums"]["staff_task_status"]
+          submitted_at: string | null
+          task_type: Database["public"]["Enums"]["staff_task_type"]
+          title: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_inr?: number
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          proof_urls?: Json
+          staff_id: string
+          status?: Database["public"]["Enums"]["staff_task_status"]
+          submitted_at?: string | null
+          task_type?: Database["public"]["Enums"]["staff_task_type"]
+          title: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount_inr?: number
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          proof_urls?: Json
+          staff_id?: string
+          status?: Database["public"]["Enums"]["staff_task_status"]
+          submitted_at?: string | null
+          task_type?: Database["public"]["Enums"]["staff_task_type"]
+          title?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_tasks_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_wallet_ledger: {
+        Row: {
+          amount_inr: number
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["staff_ledger_kind"]
+          note: string | null
+          ref_id: string | null
+          staff_id: string
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["staff_ledger_kind"]
+          note?: string | null
+          ref_id?: string | null
+          staff_id: string
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["staff_ledger_kind"]
+          note?: string | null
+          ref_id?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_wallet_ledger_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_wallets: {
+        Row: {
+          balance_inr: number
+          lifetime_earned: number
+          lifetime_withdrawn: number
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance_inr?: number
+          lifetime_earned?: number
+          lifetime_withdrawn?: number
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance_inr?: number
+          lifetime_earned?: number
+          lifetime_withdrawn?: number
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_wallets_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_withdrawal_requests: {
+        Row: {
+          admin_note: string | null
+          amount_inr: number
+          created_at: string
+          id: string
+          paid_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_id: string
+          status: Database["public"]["Enums"]["staff_withdrawal_status"]
+          updated_at: string
+          upi_id: string
+          utr: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_inr: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id: string
+          status?: Database["public"]["Enums"]["staff_withdrawal_status"]
+          updated_at?: string
+          upi_id: string
+          utr?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount_inr?: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id?: string
+          status?: Database["public"]["Enums"]["staff_withdrawal_status"]
+          updated_at?: string
+          upi_id?: string
+          utr?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_withdrawal_requests_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_logs: {
         Row: {
@@ -4721,6 +5193,7 @@ export type Database = {
       }
     }
     Functions: {
+      _is_admin: { Args: never; Returns: boolean }
       _lead_whatsapp_webhook_url: { Args: never; Returns: string }
       accept_lead: { Args: { _lead_id: string }; Returns: Json }
       accept_lead_for_vendor: {
@@ -5104,6 +5577,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      is_chat_member: { Args: { _chat_id: string }; Returns: boolean }
       is_lead_owner: {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
@@ -5550,6 +6024,28 @@ export type Database = {
         | "moderator"
         | "support"
         | "field_executive"
+        | "staff"
+      staff_chat_type: "direct" | "group" | "vendor_thread" | "broadcast"
+      staff_ledger_kind:
+        | "task_earned"
+        | "salary_credit"
+        | "withdrawal"
+        | "adjustment"
+      staff_payout_model: "per_task" | "monthly" | "hybrid"
+      staff_status: "pending" | "active" | "suspended" | "soon"
+      staff_task_status:
+        | "assigned"
+        | "in_progress"
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "paid"
+      staff_task_type:
+        | "vendor_onboarding"
+        | "verification"
+        | "follow_up"
+        | "custom"
+      staff_withdrawal_status: "pending" | "approved" | "paid" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5683,7 +6179,32 @@ export const Constants = {
         "moderator",
         "support",
         "field_executive",
+        "staff",
       ],
+      staff_chat_type: ["direct", "group", "vendor_thread", "broadcast"],
+      staff_ledger_kind: [
+        "task_earned",
+        "salary_credit",
+        "withdrawal",
+        "adjustment",
+      ],
+      staff_payout_model: ["per_task", "monthly", "hybrid"],
+      staff_status: ["pending", "active", "suspended", "soon"],
+      staff_task_status: [
+        "assigned",
+        "in_progress",
+        "submitted",
+        "approved",
+        "rejected",
+        "paid",
+      ],
+      staff_task_type: [
+        "vendor_onboarding",
+        "verification",
+        "follow_up",
+        "custom",
+      ],
+      staff_withdrawal_status: ["pending", "approved", "paid", "rejected"],
     },
   },
 } as const
