@@ -3404,6 +3404,7 @@ export type Database = {
           experience_years: number | null
           facebook: string | null
           gallery_urls: string[]
+          google_maps_url: string | null
           google_place_id: string | null
           gst: string | null
           id: string
@@ -3440,6 +3441,7 @@ export type Database = {
           status: string
           subscription_expires_at: string | null
           subscription_order_id: string | null
+          suggested_categories: Json | null
           tags: string[] | null
           trade: string | null
           trade_line_path: Json | null
@@ -3470,6 +3472,7 @@ export type Database = {
           experience_years?: number | null
           facebook?: string | null
           gallery_urls?: string[]
+          google_maps_url?: string | null
           google_place_id?: string | null
           gst?: string | null
           id?: string
@@ -3506,6 +3509,7 @@ export type Database = {
           status?: string
           subscription_expires_at?: string | null
           subscription_order_id?: string | null
+          suggested_categories?: Json | null
           tags?: string[] | null
           trade?: string | null
           trade_line_path?: Json | null
@@ -3536,6 +3540,7 @@ export type Database = {
           experience_years?: number | null
           facebook?: string | null
           gallery_urls?: string[]
+          google_maps_url?: string | null
           google_place_id?: string | null
           gst?: string | null
           id?: string
@@ -3572,6 +3577,7 @@ export type Database = {
           status?: string
           subscription_expires_at?: string | null
           subscription_order_id?: string | null
+          suggested_categories?: Json | null
           tags?: string[] | null
           trade?: string | null
           trade_line_path?: Json | null
@@ -4964,6 +4970,13 @@ export type Database = {
           unread_count: number
         }[]
       }
+      customer_admin_fields_unchanged: {
+        Args: {
+          _new: Database["public"]["Tables"]["customers"]["Row"]
+          _old: Database["public"]["Tables"]["customers"]["Row"]
+        }
+        Returns: boolean
+      }
       customer_approve_vendor: {
         Args: { _lead_id: string; _vendor_id: string }
         Returns: Json
@@ -5328,6 +5341,7 @@ export type Database = {
               experience_years: number | null
               facebook: string | null
               gallery_urls: string[]
+              google_maps_url: string | null
               google_place_id: string | null
               gst: string | null
               id: string
@@ -5364,6 +5378,7 @@ export type Database = {
               status: string
               subscription_expires_at: string | null
               subscription_order_id: string | null
+              suggested_categories: Json | null
               tags: string[] | null
               trade: string | null
               trade_line_path: Json | null
@@ -5423,6 +5438,7 @@ export type Database = {
               experience_years: number | null
               facebook: string | null
               gallery_urls: string[]
+              google_maps_url: string | null
               google_place_id: string | null
               gst: string | null
               id: string
@@ -5459,6 +5475,7 @@ export type Database = {
               status: string
               subscription_expires_at: string | null
               subscription_order_id: string | null
+              suggested_categories: Json | null
               tags: string[] | null
               trade: string | null
               trade_line_path: Json | null

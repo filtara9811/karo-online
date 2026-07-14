@@ -1,106 +1,92 @@
-## Smart Scanner v3 — Roadmap Implementation
+## Smart Scanner v3.1 — Fixes & Auto Category Mapping
 
-Building all 5 approved items in one coordinated pass. Everything reuses existing Lovable AI + Google Maps + IndexedDB stack — **no new API keys**.
-
----
-
-### 1. Map Pin Preview (accurate location tagging)
-
-- **New component:** `src/components/vendor-join/MapPinPreview.tsx`
-  - Renders a mini Google Map from the extracted `address` (uses existing `src/lib/maps.functions.ts` → geocode server fn).
-  - Shows a draggable pin so vendor can fine-tune (drag → reverse-geocode → update `address/city/state/pincode`).
-  - Fallback: India Post Pincode API when geocoding fails.
-  - Stores final `lat`, `lng` on the vendor row (existing `vendors.latitude/longitude` columns) so customers can be redirected to the shop location.
-- **Wired into:** `SmartScannerSheet` review phase (below extracted fields) + `BusinessInfoSheet` (after auto-fill).
+Aapke screenshots aur feedback ke basis par 4 problems fix karne hain + 1 naya flow. Sab kuch existing stack pe (Google Maps connector + Lovable AI + Supabase) — koi nayi API key nahi chahiye.
 
 ---
 
-### 2. Admin Scan Insights Tab
+### 1. Map "Location detect nahi hui" fix (Screenshot 1)
 
-- **Edit:** `src/routes/admin.vendors.tsx` — add a new **"Scan Insights"** tab.
-  - Total scans (today / 7d / 30d)
-  - Avg confidence score
-  - Success vs empty scans
-  - Field-level fill rate (which fields OCR misses most — helps improve prompt)
-  - Recent scans table with thumbnail + confidence badge + vendor link
-- **New server fn:** `src/lib/scan-history.functions.ts → getScanInsights` (admin-gated via `has_role('admin')`).
+**Problem:** Runtime error `i.maps.Map is not a constructor` — Google Maps JS script async load ho raha hai lekin `Marker`/`Map` constructor available hone se pehle use ho raha hai. Isliye pin blank dikh raha hai, address hone ke bawajood.
 
----
+**Fix (`MapPinPreview.tsx`):**
+- `loadMapsScript()` me `libraries=marker,places` add karein aur `google.maps.importLibrary("maps")` + `importLibrary("marker")` await karein (async loading ka correct pattern).
+- Fallback geocoding: agar `geocodeFn` fail ho, to `pincode + city + state` se retry karein (aksar full address me Hindi/mixed script hoti hai jise Google reject karta hai).
+- Agar phir bhi fail ho → India Post pincode API se lat/lng approximate karein (already available flow).
+- Map ready hone par auto-confirm pin (user ko manually "Confirm" tap na karna pade jab tak drag na ho).
+- Save hone par vendor row me `lat`, `lng`, `google_maps_url` (`https://www.google.com/maps/dir/?api=1&destination={lat},{lng}`) — ye vendor listing pe "Get Directions" button me use hoga customer redirect ke liye.
 
-### 3. Vendor Listing Alignment Fix
+### 2. Review sheet UI alignment fix (Screenshots 2 & 3)
 
-- **Edit:** `src/routes/vendor.listing.tsx` — fix the awkward text alignment reported in screenshot #2:
-  - Consistent left-align for name/address blocks
-  - Fixed truncation for long business names
-  - Uniform spacing between card rows
-  - Confidence badge (from scan) shown as small chip near the vendor name so admins can spot low-quality onboardings at a glance.
+**Problem:** Fields ke andar text left-align hai lekin label + confidence % right-side pe float kar raha hai, jisse spacing tooti dikh rahi hai. PIN code, address bahut niche scroll pe milta hai.
 
----
+**Fix (`SmartScannerSheet.tsx` review phase):**
+- Field card ko 2-row grid me convert karein: row 1 = checkbox + LABEL (left) + confidence pill (right); row 2 = value full-width, uniform padding (`px-3 py-2.5`), consistent font size (`text-[15px] font-semibold`).
+- Priority ordering: Business Name → Mobile → WhatsApp → **Address + PIN + City + State (grouped card)** → Landmark → Shop Type → Services → Products → rest. PIN aur address ek saath dikhein, alag-alag scroll na karna pade.
+- Confidence pill compact: sirf color dot + % (no "High/Medium/Low" text — space bachega).
+- Sticky footer me "Re-scan" + "Apply to Form" (already hai, bas padding fix).
 
-### 4. Offline Capability (market-area resilience)
+### 3. Vendor Join form alignment fix (Screenshot 4)
 
-Reuse existing `src/lib/offline/` (IndexedDB via `idb`) infra — already used for leads/visits sync.
+**Problem:** Screenshot me PIN code field, WhatsApp field, Business Type field — sab alag-alag widths me hain, right side me bada empty space, mic icons randomly placed.
 
-- **New queue types:** extend `QueuedAction` in `src/lib/offline/db.ts`:
-  - `"scan.save"` — save scan (image + extracted JSON) locally when offline
-  - `"vendor.scan_apply"` — pending "apply to vendor form" ops
-- **New store:** `offline_scans` object store in IndexedDB — full image dataUrls + extracted results + kinds + createdAt.
-- **New helper:** `src/lib/offline/scans.ts`
-  - `queueScanOffline({ shots, extracted })` when `!navigator.onLine`
-  - `syncPendingScans()` — auto-runs on `online` event via existing `startAutoSync()`
-- **Offline OCR strategy:** since Gemini needs network, when offline:
-  1. Save raw photos + kinds locally with `status: "pending_ocr"`
-  2. Show them in Scan History tab with a **"Waiting for network"** badge
-  3. On reconnect: auto-run OCR + save to server + update history
-- **UI:** `SmartScannerSheet` shows offline banner ("Offline mode — will scan when back online"), disables live scan button but keeps photo capture.
-- **Edit:** `src/lib/offline/sync.ts` — add `scan.save` handler to flush pending scans.
+**Fix (`vendor.join.tsx` form section):**
+- All inputs full-width (`w-full`), consistent `h-11 rounded-xl`, icon slot fixed 40px on left, mic slot fixed 36px on right.
+- 2-column grid sirf desktop pe (`md:grid-cols-2`), mobile pe hamesha single column.
+- "Use my location" chip + PIN + Address ek visual group me (bordered card) — taki relationship clear ho.
+- Business type dropdown text truncate na ho — `min-w-0 flex-1`.
 
----
+### 4. Auto Category Mapping (naya flow after submit)
 
-### 5. Confidence Scoring (visual quality indicator)
+**Yeh aapki actual request hai:** vendor submit kare → shop board/products hint ke base pe categories/sub-categories automatic pre-select ho jayein.
 
-- **Server-side:** update `src/lib/ocr.functions.ts`
-  - Extend Gemini prompt to also return `_confidence` per-field: `{ business_name: 0.95, mobile: 0.4, ... }`
-  - Compute `overall_confidence` = weighted avg (mobile/business_name/address weighted higher).
-  - New response field: `confidence: { overall: number, fields: Record<string, number> }`
-- **UI:** in `SmartScannerSheet` review phase
-  - Each field row gets a small color dot: 🟢 ≥0.8 (high), 🟡 0.5–0.8 (medium), 🔴 <0.5 (low — verify manually)
-  - Overall confidence header bar: e.g. "Overall confidence: 87% — Good"
-  - Low-confidence fields are auto-unchecked in the apply-set (user must opt-in).
-- **Store:** overall confidence in `vendor_scan_history.confidence` (new column) + `vendors.auto_scan_confidence`.
+**Implementation:**
+- Naya server fn `suggestCategoriesFromScan` (`src/lib/category-suggest.functions.ts`):
+  - Input: `{ shop_type_hint, services[], products[], business_name }` (scanner se already extract ho raha hai).
+  - Gemini call: existing `TRADE_TREE` (`src/lib/trade-tree.ts`) ko system prompt me deta hai, model se ranked path array return karvata hai (e.g. `[["retailer","apparel_r"], ["wholesaler","apparel_w"]]`) + confidence per suggestion.
+- Submit ke baad `/vendor/categories` route (naya, ya existing category step) khulega with pre-selected checkboxes:
+  - Top suggestion auto-selected (green highlight + "AI suggested" badge).
+  - Alternates suggested with confidence %.
+  - Vendor manually add/remove kar sakta hai.
+- Selected categories `vendors.trade_selection` (jsonb) me save + `vendor_categories` join table (already exists ya create karna hoga — check karke).
+- Next mapping step: "Products & Services" — same pattern se products array se product catalog suggest karein.
+
+### 5. Smoothness improvements
+- Review sheet me `framer-motion` `AnimatePresence` staggered field reveal (already partial hai).
+- Success haptic (`navigator.vibrate(30)`) on "Apply to Form" & submit.
+- Skeleton loader for map (shimmer) instead of blank grey.
+- Toast messages Hinglish + consistent icon.
 
 ---
 
-### Technical Details
+### Files to change
 
-**Files created (5):**
-- `src/components/vendor-join/MapPinPreview.tsx`
-- `src/lib/offline/scans.ts`
-- `src/components/admin/ScanInsightsTab.tsx`
-- `src/components/vendor-join/ConfidenceBadge.tsx`
-- `src/lib/scan-confidence.ts` (color/label helpers)
+**Edit:**
+- `src/components/vendor-join/MapPinPreview.tsx` — fix async Maps loading + fallback geocoding + auto-confirm
+- `src/components/vendor-join/SmartScannerSheet.tsx` — review card grid alignment, field ordering, compact confidence
+- `src/routes/vendor.join.tsx` — form field alignment (input widths, icon slots)
+- `src/lib/maps.functions.ts` — add fallback geocoding (pincode-only retry)
 
-**Files edited (7):**
-- `src/lib/ocr.functions.ts` — confidence extraction
-- `src/lib/scan-history.functions.ts` — `getScanInsights` fn + confidence column
-- `src/lib/offline/db.ts` — new store + queue types
-- `src/lib/offline/sync.ts` — scan.save handler
-- `src/components/vendor-join/SmartScannerSheet.tsx` — offline banner, confidence UI, map pin
-- `src/routes/admin.vendors.tsx` — Scan Insights tab
-- `src/routes/vendor.listing.tsx` — alignment fix + confidence chip
+**Create:**
+- `src/lib/category-suggest.functions.ts` — Gemini-powered category suggestion server fn
+- `src/components/vendor-join/CategoryMappingStep.tsx` — post-submit auto-select UI
 
-**Migration (1):**
-- Add `confidence numeric` + `field_confidence jsonb` + `status text` (for pending_ocr) to `vendor_scan_history`
-- Add `auto_scan_confidence numeric` to `vendors`
-- Bump IndexedDB version to 2 (adds `offline_scans` store)
+**Migration:**
+- Add `lat`, `lng`, `google_maps_url` columns to `vendors` (if not present)
+- Add `suggested_categories` jsonb to `vendors` for audit
+- Create `vendor_categories` join table (if not present) with RLS + GRANTs
 
-**Cost & performance:**
-- Confidence extraction: adds ~200 tokens/scan (~₹0.05 extra)
-- Map pin preview: uses existing Google Maps allowance (~free for typical vendor volume)
-- Offline queue: 100% local, zero cost until sync
+### APIs needed
+✅ Google Maps connector (already connected) — geocoding, reverse geocoding, browser Maps JS
+✅ Lovable AI (Gemini) — already used, category suggestion bhi isi se
+✅ Supabase — already connected
 
-**Ordering:** migration first (needs approval), then all code edits in parallel.
+**No new API keys required.**
+
+### Cost impact
+- Category suggestion: ~₹0.03/vendor (1 Gemini flash call)
+- Map load: free tier me hai
+- Total per vendor onboarding: ~₹0.10 (OCR + confidence + category = 3 AI calls)
 
 ---
 
-Say **"go ahead"** and I'll start with the DB migration, then ship the code.
+Approve karo to main build mode me implement karta hoon.

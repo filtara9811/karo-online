@@ -18,44 +18,71 @@ const TRACKING_ID =
     ]) ||
   "";
 
+// Using loose types — we lazy-load via importLibrary and only touch a small surface.
 declare global {
   interface Window {
     google?: {
       maps?: {
-        Map: new (el: HTMLElement, opts: Record<string, unknown>) => unknown;
-        Marker: new (opts: Record<string, unknown>) => {
-          getPosition(): { lat(): number; lng(): number };
-          addListener(ev: string, cb: () => void): void;
-        };
+        importLibrary: (name: string) => Promise<Record<string, unknown>>;
+        Map?: unknown;
+        Marker?: unknown;
       };
     };
-    __koInitMap?: () => void;
+    __koMapsBootstrap?: () => void;
   }
 }
 
-let scriptPromise: Promise<void> | null = null;
-function loadMapsScript(): Promise<void> {
+let bootstrapPromise: Promise<void> | null = null;
+function loadMapsBootstrap(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
-  if (window.google?.maps?.Map) return Promise.resolve();
-  if (scriptPromise) return scriptPromise;
+  if (window.google?.maps?.importLibrary) return Promise.resolve();
+  if (bootstrapPromise) return bootstrapPromise;
   if (!BROWSER_KEY) return Promise.reject(new Error("Maps browser key missing"));
 
-  scriptPromise = new Promise((resolve, reject) => {
-    window.__koInitMap = () => resolve();
-    const s = document.createElement("script");
-    s.async = true;
-    s.defer = true;
+  bootstrapPromise = new Promise((resolve, reject) => {
+    // Google's official async bootstrap loader — resolves importLibrary reliably.
+    // Ref: https://developers.google.com/maps/documentation/javascript/load-maps-js-api#dynamic-library-import
+    const g = document.createElement("script");
+    g.async = true;
+    g.defer = true;
     const params = new URLSearchParams({
       key: BROWSER_KEY,
+      v: "weekly",
+      libraries: "maps,marker",
       loading: "async",
-      callback: "__koInitMap",
     });
     if (TRACKING_ID) params.set("channel", TRACKING_ID);
-    s.src = `https://maps.googleapis.com/maps/api/js?${params}`;
-    s.onerror = () => reject(new Error("Failed to load Google Maps"));
-    document.head.appendChild(s);
+    g.src = `https://maps.googleapis.com/maps/api/js?${params}`;
+    g.onload = () => {
+      // The importLibrary API exists once the base script executes.
+      if (window.google?.maps?.importLibrary) resolve();
+      else reject(new Error("Google Maps loaded but importLibrary missing"));
+    };
+    g.onerror = () => reject(new Error("Failed to load Google Maps"));
+    document.head.appendChild(g);
   });
-  return scriptPromise;
+  return bootstrapPromise;
+}
+
+async function loadMapClasses(): Promise<{
+  Map: new (el: HTMLElement, opts: Record<string, unknown>) => unknown;
+  Marker: new (opts: Record<string, unknown>) => {
+    getPosition(): { lat(): number; lng(): number };
+    addListener(ev: string, cb: () => void): void;
+  };
+}> {
+  await loadMapsBootstrap();
+  const maps = window.google!.maps!;
+  const mapsLib = (await maps.importLibrary("maps")) as {
+    Map: new (el: HTMLElement, opts: Record<string, unknown>) => unknown;
+  };
+  const markerLib = (await maps.importLibrary("marker")) as {
+    Marker: new (opts: Record<string, unknown>) => {
+      getPosition(): { lat(): number; lng(): number };
+      addListener(ev: string, cb: () => void): void;
+    };
+  };
+  return { Map: mapsLib.Map, Marker: markerLib.Marker };
 }
 
 export type MapPinResult = {
@@ -69,13 +96,20 @@ export type MapPinResult = {
 
 /**
  * Compact draggable map pin used inside the scanner review + business info sheet.
- * Geocodes the provided address, drops a pin, and reports back on drag.
+ * Tries multiple geocode strategies (full address → pincode+city → pincode-only)
+ * to maximize hit rate on messy OCR addresses.
  */
 export function MapPinPreview({
   address,
+  pincode,
+  city,
+  state,
   onConfirm,
 }: {
   address: string | null | undefined;
+  pincode?: string | null;
+  city?: string | null;
+  state?: string | null;
   onConfirm: (r: MapPinResult) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,50 +120,72 @@ export function MapPinPreview({
   const runReverse = useServerFn(reverseGeocodeFn);
 
   useEffect(() => {
-    if (!address || !address.trim()) return;
+    if (!address && !pincode && !city) return;
     let cancelled = false;
 
     (async () => {
       setStatus("loading");
       setErrorMsg("");
       try {
-        const g = await runGeocode({ data: { address } });
-        if (cancelled) return;
-        if (!g.ok) {
+        // Try progressively simpler queries until one geocodes successfully.
+        const queries = [
+          address,
+          [address, pincode].filter(Boolean).join(", "),
+          [city, state, pincode, "India"].filter(Boolean).join(", "),
+          [pincode, "India"].filter(Boolean).join(", "),
+        ].filter((q): q is string => typeof q === "string" && q.trim().length > 3);
+
+        let lat = 0;
+        let lng = 0;
+        let found = false;
+        for (const q of queries) {
+          const g = await runGeocode({ data: { address: q } });
+          if (cancelled) return;
+          if (g.ok) {
+            lat = g.lat;
+            lng = g.lng;
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
           setStatus("error");
-          setErrorMsg("Location detect nahi hui — manually pin drag karein");
+          setErrorMsg("Location detect nahi hui — Google Maps me pin manually drop karein");
           return;
         }
-        await loadMapsScript();
+
+        const { Map, Marker } = await loadMapClasses();
         if (cancelled) return;
         const el = containerRef.current;
-        if (!el || !window.google?.maps) {
+        if (!el) {
           setStatus("error");
-          setErrorMsg("Map load failed");
+          setErrorMsg("Map container missing");
           return;
         }
-        const center = { lat: g.lat, lng: g.lng };
-        const map = new window.google.maps.Map(el, {
+        const center = { lat, lng };
+        const map = new Map(el, {
           center,
           zoom: 16,
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
+          clickableIcons: false,
         });
-        const marker = new window.google.maps.Marker({
+        const marker = new Marker({
           position: center,
           map,
           draggable: true,
         });
-        const initial: MapPinResult = { lat: g.lat, lng: g.lng, address };
+        const initial: MapPinResult = { lat, lng, address: address ?? undefined, city: city ?? undefined, state: state ?? undefined, pincode: pincode ?? undefined };
         setPin(initial);
         setStatus("ready");
 
         marker.addListener("dragend", async () => {
           const p = marker.getPosition();
-          const lat = p.lat();
-          const lng = p.lng();
-          const r = await runReverse({ data: { lat, lng } });
+          const nlat = p.lat();
+          const nlng = p.lng();
+          const r = await runReverse({ data: { lat: nlat, lng: nlng } });
           if (r.ok && r.results?.[0]) {
             const res = r.results[0] as {
               formatted_address: string;
@@ -138,15 +194,15 @@ export function MapPinPreview({
             const findComp = (t: string) =>
               res.address_components?.find((c) => c.types?.includes(t))?.long_name;
             setPin({
-              lat,
-              lng,
+              lat: nlat,
+              lng: nlng,
               address: res.formatted_address,
               city: findComp("locality") ?? findComp("administrative_area_level_2"),
               state: findComp("administrative_area_level_1"),
               pincode: findComp("postal_code"),
             });
           } else {
-            setPin({ lat, lng });
+            setPin({ lat: nlat, lng: nlng });
           }
         });
       } catch (e) {
@@ -161,9 +217,9 @@ export function MapPinPreview({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address]);
+  }, [address, pincode, city, state]);
 
-  if (!address) return null;
+  if (!address && !pincode && !city) return null;
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
@@ -176,7 +232,12 @@ export function MapPinPreview({
           <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400 ml-auto" />
         )}
       </div>
-      <div ref={containerRef} className="h-40 w-full bg-neutral-100">
+      <div ref={containerRef} className="h-44 w-full bg-neutral-100 relative">
+        {status === "loading" && (
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="h-full w-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100 animate-pulse" />
+          </div>
+        )}
         {status === "error" && (
           <div className="h-full grid place-items-center text-[11px] text-neutral-500 text-center px-4">
             {errorMsg || "Map load nahi hua"}
@@ -195,6 +256,9 @@ export function MapPinPreview({
             type="button"
             onClick={() => {
               onConfirm(pin);
+              if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                try { navigator.vibrate(20); } catch { /* ignore */ }
+              }
               toast.success("Pin saved");
             }}
             className="h-8 px-3 rounded-full bg-amber-500 text-white text-[11px] font-extrabold flex items-center gap-1"
