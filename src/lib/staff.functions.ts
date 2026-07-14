@@ -213,6 +213,101 @@ export const createStaffAccount = createServerFn({ method: "POST" })
     return { ok: true, user_id: uid };
   });
 
+// ---------- Admin: create INVITE (token-based deep link) ----------
+const InviteInput = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email().optional(),
+  phone: z.string().max(20).optional(),
+  payout_model: z.enum(["per_task", "monthly", "hybrid"]).default("per_task"),
+  monthly_salary_inr: z.number().min(0).default(0),
+  channel: z.enum(["whatsapp", "sms", "manual"]).default("manual"),
+});
+export const createStaffInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((v: unknown) => InviteInput.parse(v))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase
+      .rpc("is_admin_user" as never, { _user_id: context.userId } as never);
+    if (!isAdmin) throw new Error("Forbidden — admin only");
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(24)))
+      .map((b) => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[b % 62])
+      .join("");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("staff_invites" as never)
+      .insert({
+        invite_token: token, invited_by: context.userId,
+        name: data.name, email: data.email ?? null, phone: data.phone ?? null,
+        payout_model: data.payout_model, monthly_salary_inr: data.monthly_salary_inr,
+        channel: data.channel,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any).select("*").single();
+    if (error) throw new Error(error.message);
+    const base = process.env.PUBLIC_SITE_URL ?? "https://karoonline.in";
+    return { ok: true, token, url: `${base}/s/onboard/${token}`, invite: row };
+  });
+
+export const listStaffInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async ({ context }): Promise<any[]> => {
+    const { data } = await context.supabase
+      .from("staff_invites" as never).select("*")
+      .order("created_at", { ascending: false }).limit(100);
+    return (data as unknown as unknown[]) ?? [];
+  });
+
+// Public validate (no auth) — RLS filters expired/used automatically
+export const validateStaffInvite = createServerFn({ method: "GET" })
+  .inputValidator((v: unknown) => z.object({ token: z.string().min(8).max(64) }).parse(v))
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+    const sb = createClient(process.env.SUPABASE_URL!, key, {
+      auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+      global: { fetch: (input, init) => {
+        const h = new Headers(init?.headers);
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        h.set("apikey", key);
+        return fetch(input, { ...init, headers: h });
+      } },
+    });
+    const { data: row } = await sb.from("staff_invites")
+      .select("name, email, phone, payout_model, expires_at")
+      .eq("invite_token", data.token).maybeSingle();
+    if (!row) return { ok: false as const, reason: "invalid_or_expired" };
+    return { ok: true as const, invite: row };
+  });
+
+// Accept invite (staff signed in)
+export const acceptStaffInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((v: unknown) => z.object({ token: z.string().min(8).max(64) }).parse(v))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inv } = await supabaseAdmin.from("staff_invites" as never)
+      .select("*").eq("invite_token", data.token).maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const i = inv as any;
+    if (!i || i.used_at) throw new Error("Invite invalid or already used");
+    if (new Date(i.expires_at).getTime() < Date.now()) throw new Error("Invite expired");
+    await supabaseAdmin.from("user_roles" as never)
+      .upsert({ user_id: context.userId, role: "staff" } as never, { onConflict: "user_id,role" } as never);
+    await supabaseAdmin.from("staff_profiles" as never).upsert({
+      user_id: context.userId, name: i.name,
+      email: i.email ?? null, phone: i.phone,
+      payout_model: i.payout_model, monthly_salary_inr: i.monthly_salary_inr ?? 0,
+      staff_status: "active", joined_at: new Date().toISOString(),
+      approved_by: i.invited_by, approved_at: new Date().toISOString(),
+    } as never, { onConflict: "user_id" } as never);
+    await supabaseAdmin.from("staff_invites" as never)
+      .update({ used_at: new Date().toISOString(), staff_user_id: context.userId } as never)
+      .eq("id", i.id);
+    return { ok: true };
+  });
+
+
+
 // ---------- Tasks ----------
 export const listMyTasks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

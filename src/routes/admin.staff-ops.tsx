@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, UserPlus, CheckCircle2, XCircle, Wallet, ListChecks, Users } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, XCircle, Send, Copy, Link2, MessageCircle, Phone, ListChecks, Wallet } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listSignupRequests, approveSignupRequest, rejectSignupRequest,
   listAllStaff, createStaffAccount, listAllTasks, createTask, approveTask,
   listWithdrawals, processWithdrawal,
+  createStaffInvite, listStaffInvites,
 } from "@/lib/staff.functions";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/admin/staff-ops")({
   component: StaffOpsPage,
 });
 
-type Tab = "requests" | "staff" | "tasks" | "payouts";
+type Tab = "requests" | "staff" | "invites" | "tasks" | "payouts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -32,23 +33,168 @@ function StaffOpsPage() {
     <AdminLayout>
       <PageHeader
         title="Staff Operations"
-        subtitle="Approve signups, create staff, assign tasks, process payouts"
+        subtitle="Approve signups, invite via deep link, create staff, assign tasks, process payouts"
       />
       <div className="mb-4 flex gap-2 flex-wrap">
-        {(["requests", "staff", "tasks", "payouts"] as Tab[]).map((t) => (
+        {(["requests", "invites", "staff", "tasks", "payouts"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 h-9 rounded-full text-sm font-medium border ${tab === t ? "bg-[oklch(0.55_0.16_82)] text-white border-transparent" : "bg-white border-[color:oklch(0.9_0.03_85)]"}`}>
-            {t === "requests" ? "Signup Requests" : t === "staff" ? "Staff Members" : t === "tasks" ? "Tasks" : "Payouts"}
+            {t === "requests" ? "Signup Requests" : t === "invites" ? "Invite Staff" : t === "staff" ? "Staff Members" : t === "tasks" ? "Tasks" : "Payouts"}
           </button>
         ))}
       </div>
       {tab === "requests" && <RequestsPanel />}
+      {tab === "invites" && <InvitesPanel />}
       {tab === "staff" && <StaffPanel />}
       {tab === "tasks" && <TasksPanel />}
       {tab === "payouts" && <PayoutsPanel />}
     </AdminLayout>
   );
 }
+
+// ---------- Invites (deep-link onboarding) ----------
+function InvitesPanel() {
+  const create = useServerFn(createStaffInvite);
+  const fetchInvites = useServerFn(listStaffInvites);
+  const [rows, setRows] = useState<Any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", payout_model: "per_task" as const, monthly_salary_inr: 0 });
+
+  const load = () => fetchInvites().then((r) => setRows(r as Any[])).catch(() => {});
+  useEffect(() => { load().finally(() => setLoading(false)); /* eslint-disable-next-line */ }, []);
+
+  const submit = async () => {
+    if (!form.name) { toast.error("Name required"); return; }
+    setBusy(true);
+    try {
+      const res = await create({ data: { ...form, monthly_salary_inr: Number(form.monthly_salary_inr), channel: "manual" } });
+      toast.success("Invite link created!");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const url = (res as any).url as string;
+      try { await navigator.clipboard.writeText(url); toast("Copied to clipboard"); } catch { /* ignore */ }
+      setForm({ name: "", email: "", phone: "", payout_model: "per_task", monthly_salary_inr: 0 });
+      await load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(false); }
+  };
+
+  const shareUrl = (url: string) => {
+    try { navigator.clipboard.writeText(url); toast("Link copied"); } catch { /* ignore */ }
+  };
+  const whatsappSend = (phone: string | null, name: string, url: string) => {
+    const msg = encodeURIComponent(`Hi ${name}, welcome to Karo Online team! Aap yahan click karke apna Staff panel access karein: ${url}\n\nAgar app installed nahi hai to Play Store se "Karo Staff" install kar lena.`);
+    const digits = (phone ?? "").replace(/\D/g, "");
+    const wa = digits ? `https://wa.me/${digits}?text=${msg}` : `https://wa.me/?text=${msg}`;
+    window.open(wa, "_blank");
+  };
+  const smsSend = (phone: string | null, name: string, url: string) => {
+    const body = encodeURIComponent(`Hi ${name}, Karo Online staff invite: ${url}`);
+    const digits = (phone ?? "").replace(/\D/g, "");
+    window.location.href = digits ? `sms:${digits}?body=${body}` : `sms:?body=${body}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <GoldCard>
+        <div className="p-4 space-y-3">
+          <h3 className="font-bold text-sm flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite new staff via deep link</h3>
+          <p className="text-xs text-muted-foreground">Ek link generate hoga, WhatsApp/SMS pe bhej dijiye. Staff link kholega → Staff App (installed) ya browser me sign-in → auto-activate hoke Staff dashboard.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium">Full name *</label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full h-10 mt-1 px-3 rounded-lg border border-input text-sm" placeholder="Raj Kumar" />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Phone (for WhatsApp)</label>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full h-10 mt-1 px-3 rounded-lg border border-input text-sm" placeholder="+91 98xxxxxxxx" />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Email (optional)</label>
+              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full h-10 mt-1 px-3 rounded-lg border border-input text-sm" placeholder="raj@example.com" />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Payout</label>
+              <select value={form.payout_model} onChange={(e) => setForm({ ...form, payout_model: e.target.value as "per_task" })}
+                className="w-full h-10 mt-1 px-3 rounded-lg border border-input text-sm bg-background">
+                <option value="per_task">Per task</option>
+                <option value="monthly">Monthly salary</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+            {form.payout_model !== "per_task" && (
+              <div>
+                <label className="text-xs font-medium">Monthly salary (₹)</label>
+                <input type="number" value={form.monthly_salary_inr}
+                  onChange={(e) => setForm({ ...form, monthly_salary_inr: Number(e.target.value) })}
+                  className="w-full h-10 mt-1 px-3 rounded-lg border border-input text-sm" />
+              </div>
+            )}
+          </div>
+          <button onClick={submit} disabled={busy}
+            className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold flex items-center justify-center gap-2 shadow">
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} <Send className="h-4 w-4" /> Generate invite link
+          </button>
+        </div>
+      </GoldCard>
+
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Recent invites</h3>
+        {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto my-4" /> : rows.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">Koi invite abhi tak nahi bheja gaya.</p>
+        ) : (
+          <div className="space-y-2">
+            {rows.map((r) => {
+              const url = `${typeof window !== "undefined" ? window.location.origin : "https://karoonline.in"}/s/onboard/${r.invite_token}`;
+              const used = !!r.used_at;
+              const expired = new Date(r.expires_at).getTime() < Date.now();
+              return (
+                <GoldCard key={r.id}>
+                  <div className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{r.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{r.phone ?? r.email ?? "no contact"} · {r.payout_model}</p>
+                      </div>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${used ? "bg-emerald-100 text-emerald-700" : expired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                        {used ? "ACCEPTED" : expired ? "EXPIRED" : "PENDING"}
+                      </span>
+                    </div>
+                    {!used && !expired && (
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => whatsappSend(r.phone, r.name, url)}
+                          className="h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-semibold flex items-center gap-1">
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </button>
+                        <button onClick={() => smsSend(r.phone, r.name, url)}
+                          className="h-8 px-3 rounded-lg bg-sky-600 text-white text-xs font-semibold flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5" /> SMS
+                        </button>
+                        <button onClick={() => shareUrl(url)}
+                          className="h-8 px-3 rounded-lg bg-slate-800 text-white text-xs font-semibold flex items-center gap-1">
+                          <Copy className="h-3.5 w-3.5" /> Copy link
+                        </button>
+                        <a href={url} target="_blank" rel="noopener noreferrer"
+                          className="h-8 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1">
+                          <Link2 className="h-3.5 w-3.5" /> Open
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </GoldCard>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 
 function RequestsPanel() {
   const fetchReqs = useServerFn(listSignupRequests);

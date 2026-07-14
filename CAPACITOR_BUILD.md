@@ -1,88 +1,40 @@
-# Karo Online — Android (Capacitor) Build Guide
+# Capacitor Native Builds — 3 apps from 1 codebase
 
-This project is wrapped with **Capacitor 8** to produce a native Android APK / AAB. The web app stays the source of truth; Capacitor just packages it and adds native hooks (StatusBar overlay, immersive mode, native FCM, native geolocation).
+Karo Online ships as **three separate Android apps**, all sharing the same web
+codebase and Supabase backend but each with its own package name, launcher
+icon, and default landing screen.
 
-## Prerequisites (one-time, on your dev machine)
+| Variant  | Package name            | Landing URL                                            | Play Store title |
+|----------|-------------------------|--------------------------------------------------------|-------------------|
+| customer | `app.karoonline.twa`    | `https://karoonline.in/quick`                          | Karo Online       |
+| vendor   | `app.karoonline.vendor` | `https://karoonline.in/vendor/dashboard?app=vendor`    | Karo Vendor       |
+| staff    | `app.karoonline.staff`  | `https://karoonline.in/staff?app=staff`                | Karo Staff        |
 
-1. **Node 20+** and `bun` (project already uses bun).
-2. **Android Studio** (Hedgehog or newer) → installs Android SDK + platform-tools.
-3. **JDK 17** (Android Studio bundles one).
-4. Environment vars (Linux/macOS):
-   ```bash
-   export ANDROID_HOME=$HOME/Android/Sdk
-   export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin
-   ```
+The web app auto-detects the variant from `?app=` or the user-agent
+(`KaroOnlineVendorApp` / `KaroOnlineStaffApp`) via `src/lib/app-variant.ts`.
 
-## First-time Android folder setup
-
-The `android/` folder is NOT committed (it's generated). Create it once:
+## Build a native APK for one variant
 
 ```bash
-bun install
-bun run build
-npx cap add android
+# 1. Point Capacitor at the right config
+cp capacitor.config.customer.ts capacitor.config.ts     # or .vendor.ts / .staff.ts
+
+# 2. Sync + open Android Studio
 npx cap sync android
-```
-
-Then drop your Firebase config:
-
-```bash
-cp /path/to/google-services.json android/app/google-services.json
-```
-
-## Build & Run
-
-```bash
-# 1. Build the web bundle
-bun run build
-
-# 2. Copy bundle + plugins into android/
-npx cap sync android
-
-# 3. Open in Android Studio (recommended for first build)
 npx cap open android
 
-# OR build APK from CLI
-cd android
-./gradlew assembleRelease   # → android/app/build/outputs/apk/release/app-release.apk
-./gradlew bundleRelease     # → AAB for Play Store
+# 3. In Android Studio: Build → Generate Signed APK / AAB
 ```
 
-## Immersive Mode (no Chrome bar)
+Each variant has its own Play Store listing under the package name above.
+Backend (Supabase) is shared, so real-time sync just works across all three.
 
-`capacitor.config.ts` already enables `StatusBar.overlaysWebView` and dark style. To make it truly edge-to-edge on Android 13+, add this to `android/app/src/main/java/app/karoonline/twa/MainActivity.java` after the `super.onCreate(...)` call:
+## Deep links
 
-```java
-import androidx.core.view.WindowCompat;
-import android.view.WindowManager;
+- `https://karoonline.in/s/onboard/<token>` → opens Staff App if installed
+  (via Android App Links / assetlinks.json), else Play Store or browser.
+- `https://karoonline.in/v/onboard/<token>` → same for Vendor App.
 
-@Override
-public void onCreate(android.os.Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-    getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
-    getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
-}
-```
-
-## Signing (Play Store)
-
-Use the **same SHA-256 fingerprint** already registered in `public/.well-known/assetlinks.json`. Generate the keystore once and reuse for every release.
-
-## Live reload during dev (optional)
-
-```bash
-CAP_SERVER_URL=http://<your-laptop-lan-ip>:8080 npx cap sync android
-```
-
-Then run `bun run dev` on your laptop and launch the APK on a phone on the same Wi-Fi.
-
-## What works natively (auto, no extra code)
-
-- `@capacitor/status-bar` — dark immersive status bar
-- `@capacitor/splash-screen` — wine/gold splash
-- `@capacitor/push-notifications` — native FCM (requires `google-services.json`)
-- `@capacitor/geolocation` — high-accuracy GPS
-- `@capacitor/network`, `@capacitor/preferences`, `@capacitor/share`
-
-The web FCM token registration is automatically skipped on native; the native plugin takes over.
+Configure the intent-filter with `android:autoVerify="true"` per variant's
+`AndroidManifest.xml` before submitting to Play Store, and add each package's
+SHA-256 fingerprint to `public/.well-known/assetlinks.json`.

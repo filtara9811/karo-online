@@ -2953,6 +2953,60 @@ export type Database = {
           },
         ]
       }
+      staff_invites: {
+        Row: {
+          channel: string
+          created_at: string
+          email: string | null
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string
+          monthly_salary: number | null
+          name: string
+          payout_model: string
+          phone: string | null
+          sent_at: string | null
+          staff_user_id: string | null
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token: string
+          invited_by: string
+          monthly_salary?: number | null
+          name: string
+          payout_model?: string
+          phone?: string | null
+          sent_at?: string | null
+          staff_user_id?: string | null
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          monthly_salary?: number | null
+          name?: string
+          payout_model?: string
+          phone?: string | null
+          sent_at?: string | null
+          staff_user_id?: string | null
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       staff_permissions: {
         Row: {
           perms: Json

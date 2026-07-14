@@ -576,10 +576,27 @@ function SheetBody({
             </motion.div>
           ))}
           {visible.length === 0 && (
-            <div className="py-10 text-center text-xs text-[color:oklch(0.55_0.10_82)] font-semibold">
-              No shops match these filters. Try clearing them.
+            <div className="py-10 text-center space-y-3">
+              <div className="mx-auto h-14 w-14 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 grid place-items-center">
+                <Package className="h-6 w-6 text-amber-700" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[color:oklch(0.4_0.1_82)]">
+                  आपके पास कोई matching shop नहीं मिली
+                </p>
+                <p className="text-[11px] text-[color:oklch(0.55_0.10_82)] mt-1">
+                  Filters clear करें या radius बढ़ाएँ। नए vendors रोज़ जुड़ रहे हैं।
+                </p>
+              </div>
+              <button
+                onClick={() => { setCity("All"); setArea("All"); setTrader("All"); setMaxKm(25); setCategory("All"); }}
+                className="mx-auto inline-flex items-center gap-1 px-4 py-2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-white text-xs font-semibold shadow"
+              >
+                Clear all filters
+              </button>
             </div>
           )}
+
         </div>
 
         <p className="text-center text-[10px] text-[color:oklch(0.55_0.10_82)] font-semibold mt-6 mb-2 italic">

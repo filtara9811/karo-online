@@ -104,6 +104,7 @@ import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminWebIndexRouteImport } from './routes/admin.web.index'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 import { Route as StaffChatChatIdRouteImport } from './routes/staff.chat.$chatId'
+import { Route as SOnboardTokenRouteImport } from './routes/s.onboard.$token'
 import { Route as LeadRejectIdRouteImport } from './routes/lead.reject.$id'
 import { Route as LeadAcceptIdRouteImport } from './routes/lead.accept.$id'
 import { Route as ApiPublicVendorLocationRouteImport } from './routes/api.public.vendor-location'
@@ -602,6 +603,11 @@ const StaffChatChatIdRoute = StaffChatChatIdRouteImport.update({
   path: '/chat/$chatId',
   getParentRoute: () => StaffRoute,
 } as any)
+const SOnboardTokenRoute = SOnboardTokenRouteImport.update({
+  id: '/s/onboard/$token',
+  path: '/s/onboard/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeadRejectIdRoute = LeadRejectIdRouteImport.update({
   id: '/lead/reject/$id',
   path: '/lead/reject/$id',
@@ -826,6 +832,7 @@ export interface FileRoutesByFullPath {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/s/onboard/$token': typeof SOnboardTokenRoute
   '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
@@ -943,6 +950,7 @@ export interface FileRoutesByTo {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/s/onboard/$token': typeof SOnboardTokenRoute
   '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
@@ -1063,6 +1071,7 @@ export interface FileRoutesById {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/s/onboard/$token': typeof SOnboardTokenRoute
   '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
@@ -1184,6 +1193,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/s/onboard/$token'
     | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web/'
@@ -1301,6 +1311,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/s/onboard/$token'
     | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web'
@@ -1420,6 +1431,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/s/onboard/$token'
     | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web/'
@@ -1486,6 +1498,7 @@ export interface RootRouteChildren {
   ApiPublicVendorLocationRoute: typeof ApiPublicVendorLocationRoute
   LeadAcceptIdRoute: typeof LeadAcceptIdRoute
   LeadRejectIdRoute: typeof LeadRejectIdRoute
+  SOnboardTokenRoute: typeof SOnboardTokenRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
   ApiPublicHooksLeadWhatsappRoute: typeof ApiPublicHooksLeadWhatsappRoute
   ApiPublicPushSendLeadRoute: typeof ApiPublicPushSendLeadRoute
@@ -2162,6 +2175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffChatChatIdRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/s/onboard/$token': {
+      id: '/s/onboard/$token'
+      path: '/s/onboard/$token'
+      fullPath: '/s/onboard/$token'
+      preLoaderRoute: typeof SOnboardTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lead/reject/$id': {
       id: '/lead/reject/$id'
       path: '/lead/reject/$id'
@@ -2502,6 +2522,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicVendorLocationRoute: ApiPublicVendorLocationRoute,
   LeadAcceptIdRoute: LeadAcceptIdRoute,
   LeadRejectIdRoute: LeadRejectIdRoute,
+  SOnboardTokenRoute: SOnboardTokenRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
   ApiPublicHooksLeadWhatsappRoute: ApiPublicHooksLeadWhatsappRoute,
   ApiPublicPushSendLeadRoute: ApiPublicPushSendLeadRoute,
@@ -2513,13 +2534,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
