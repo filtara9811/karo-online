@@ -693,6 +693,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             if (value === "vendor") navigate({ to: "/vendor/dashboard" });
             else if (value === "admin") navigate({ to: "/admin" });
             else if (value === "customer") navigate({ to: "/" });
+            else if (value === "staff") navigate({ to: "/staff" });
           }, 220);
         }}
         onClose={() => setPanelPicker(false)}
@@ -705,7 +706,7 @@ const PANEL_OPTIONS: ActionOption[] = [
   { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile, shareTo: "/" },
   { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase, shareTo: "/vendor/dashboard" },
   { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO", shareTo: "/admin" },
-  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, badge: "SOON", disabled: true },
+  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, shareTo: "/staff" },
 ];
 
 function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {

@@ -13,6 +13,7 @@ import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -36,6 +37,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
@@ -52,6 +54,10 @@ import { Route as VendorJoinRouteImport } from './routes/vendor.join'
 import { Route as VendorInstallRouteImport } from './routes/vendor.install'
 import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as VendorChatRouteImport } from './routes/vendor.chat'
+import { Route as StaffWalletRouteImport } from './routes/staff.wallet'
+import { Route as StaffVendorsRouteImport } from './routes/staff.vendors'
+import { Route as StaffTasksRouteImport } from './routes/staff.tasks'
+import { Route as StaffLoginRouteImport } from './routes/staff.login'
 import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as QCodeRouteImport } from './routes/q.$code'
@@ -65,6 +71,7 @@ import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminTestAccountsRouteImport } from './routes/admin.test-accounts'
 import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
 import { Route as AdminSubscriptionRouteImport } from './routes/admin.subscription'
+import { Route as AdminStaffOpsRouteImport } from './routes/admin.staff-ops'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSmsRouteImport } from './routes/admin.sms'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -96,6 +103,7 @@ import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminWebIndexRouteImport } from './routes/admin.web.index'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
+import { Route as StaffChatChatIdRouteImport } from './routes/staff.chat.$chatId'
 import { Route as LeadRejectIdRouteImport } from './routes/lead.reject.$id'
 import { Route as LeadAcceptIdRouteImport } from './routes/lead.accept.$id'
 import { Route as ApiPublicVendorLocationRouteImport } from './routes/api.public.vendor-location'
@@ -137,6 +145,11 @@ const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShippingPolicyRoute = ShippingPolicyRouteImport.update({
@@ -254,6 +267,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRoute,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -334,6 +352,26 @@ const VendorChatRoute = VendorChatRouteImport.update({
   path: '/vendor/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffWalletRoute = StaffWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffVendorsRoute = StaffVendorsRouteImport.update({
+  id: '/vendors',
+  path: '/vendors',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffTasksRoute = StaffTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffLoginRoute = StaffLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => StaffRoute,
+} as any)
 const SCodeRoute = SCodeRouteImport.update({
   id: '/s/$code',
   path: '/s/$code',
@@ -397,6 +435,11 @@ const AdminSystemStatusRoute = AdminSystemStatusRouteImport.update({
 const AdminSubscriptionRoute = AdminSubscriptionRouteImport.update({
   id: '/subscription',
   path: '/subscription',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStaffOpsRoute = AdminStaffOpsRouteImport.update({
+  id: '/staff-ops',
+  path: '/staff-ops',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
@@ -554,6 +597,11 @@ const VendorLeadIdRoute = VendorLeadIdRouteImport.update({
   path: '/vendor/lead/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffChatChatIdRoute = StaffChatChatIdRouteImport.update({
+  id: '/chat/$chatId',
+  path: '/chat/$chatId',
+  getParentRoute: () => StaffRoute,
+} as any)
 const LeadRejectIdRoute = LeadRejectIdRouteImport.update({
   id: '/lead/reject/$id',
   path: '/lead/reject/$id',
@@ -693,6 +741,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/staff': typeof StaffRouteWithChildren
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
@@ -726,6 +775,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -739,6 +789,10 @@ export interface FileRoutesByFullPath {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
+  '/staff/tasks': typeof StaffTasksRoute
+  '/staff/vendors': typeof StaffVendorsRoute
+  '/staff/wallet': typeof StaffWalletRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -755,6 +809,7 @@ export interface FileRoutesByFullPath {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -771,6 +826,7 @@ export interface FileRoutesByFullPath {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -836,6 +892,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -849,6 +906,10 @@ export interface FileRoutesByTo {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
+  '/staff/tasks': typeof StaffTasksRoute
+  '/staff/vendors': typeof StaffVendorsRoute
+  '/staff/wallet': typeof StaffWalletRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -865,6 +926,7 @@ export interface FileRoutesByTo {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/staff': typeof StaffIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -881,6 +943,7 @@ export interface FileRoutesByTo {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -915,6 +978,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/staff': typeof StaffRouteWithChildren
   '/status': typeof StatusRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
@@ -948,6 +1012,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/sms': typeof AdminSmsRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/staff-ops': typeof AdminStaffOpsRoute
   '/admin/subscription': typeof AdminSubscriptionRoute
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
@@ -961,6 +1026,10 @@ export interface FileRoutesById {
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
+  '/staff/login': typeof StaffLoginRoute
+  '/staff/tasks': typeof StaffTasksRoute
+  '/staff/vendors': typeof StaffVendorsRoute
+  '/staff/wallet': typeof StaffWalletRoute
   '/vendor/chat': typeof VendorChatRoute
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/vendor/install': typeof VendorInstallRoute
@@ -977,6 +1046,7 @@ export interface FileRoutesById {
   '/vendor/wallet': typeof VendorWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/admin/view/$userId': typeof AdminViewUserIdRoute
   '/admin/web/apk': typeof AdminWebApkRoute
   '/admin/web/blog': typeof AdminWebBlogRoute
@@ -993,6 +1063,7 @@ export interface FileRoutesById {
   '/api/public/vendor-location': typeof ApiPublicVendorLocationRoute
   '/lead/accept/$id': typeof LeadAcceptIdRoute
   '/lead/reject/$id': typeof LeadRejectIdRoute
+  '/staff/chat/$chatId': typeof StaffChatChatIdRoute
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
@@ -1028,6 +1099,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/shipping-policy'
+    | '/staff'
     | '/status'
     | '/terms-and-conditions'
     | '/test-bell'
@@ -1061,6 +1133,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1074,6 +1147,10 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
+    | '/staff/tasks'
+    | '/staff/vendors'
+    | '/staff/wallet'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1090,6 +1167,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin/'
     | '/blog/'
+    | '/staff/'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -1106,6 +1184,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
@@ -1171,6 +1250,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1184,6 +1264,10 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
+    | '/staff/tasks'
+    | '/staff/vendors'
+    | '/staff/wallet'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1200,6 +1284,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin'
     | '/blog'
+    | '/staff'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -1216,6 +1301,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web'
     | '/api/public/hooks/lead-whatsapp'
@@ -1249,6 +1335,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/shipping-policy'
+    | '/staff'
     | '/status'
     | '/terms-and-conditions'
     | '/test-bell'
@@ -1282,6 +1369,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/sms'
     | '/admin/staff'
+    | '/admin/staff-ops'
     | '/admin/subscription'
     | '/admin/system-status'
     | '/admin/test-accounts'
@@ -1295,6 +1383,10 @@ export interface FileRouteTypes {
     | '/q/$code'
     | '/r/$code'
     | '/s/$code'
+    | '/staff/login'
+    | '/staff/tasks'
+    | '/staff/vendors'
+    | '/staff/wallet'
     | '/vendor/chat'
     | '/vendor/dashboard'
     | '/vendor/install'
@@ -1311,6 +1403,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/admin/'
     | '/blog/'
+    | '/staff/'
     | '/admin/view/$userId'
     | '/admin/web/apk'
     | '/admin/web/blog'
@@ -1327,6 +1420,7 @@ export interface FileRouteTypes {
     | '/api/public/vendor-location'
     | '/lead/accept/$id'
     | '/lead/reject/$id'
+    | '/staff/chat/$chatId'
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
@@ -1361,6 +1455,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
   ShippingPolicyRoute: typeof ShippingPolicyRoute
+  StaffRoute: typeof StaffRouteWithChildren
   StatusRoute: typeof StatusRoute
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TestBellRoute: typeof TestBellRoute
@@ -1428,6 +1523,13 @@ declare module '@tanstack/react-router' {
       path: '/status'
       fullPath: '/status'
       preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shipping-policy': {
@@ -1591,6 +1693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/': {
+      id: '/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -1703,6 +1812,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/wallet': {
+      id: '/staff/wallet'
+      path: '/wallet'
+      fullPath: '/staff/wallet'
+      preLoaderRoute: typeof StaffWalletRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/vendors': {
+      id: '/staff/vendors'
+      path: '/vendors'
+      fullPath: '/staff/vendors'
+      preLoaderRoute: typeof StaffVendorsRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/tasks': {
+      id: '/staff/tasks'
+      path: '/tasks'
+      fullPath: '/staff/tasks'
+      preLoaderRoute: typeof StaffTasksRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/login': {
+      id: '/staff/login'
+      path: '/login'
+      fullPath: '/staff/login'
+      preLoaderRoute: typeof StaffLoginRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/s/$code': {
       id: '/s/$code'
       path: '/s/$code'
@@ -1792,6 +1929,13 @@ declare module '@tanstack/react-router' {
       path: '/subscription'
       fullPath: '/admin/subscription'
       preLoaderRoute: typeof AdminSubscriptionRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/staff-ops': {
+      id: '/admin/staff-ops'
+      path: '/staff-ops'
+      fullPath: '/admin/staff-ops'
+      preLoaderRoute: typeof AdminStaffOpsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/staff': {
@@ -2011,6 +2155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorLeadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/chat/$chatId': {
+      id: '/staff/chat/$chatId'
+      path: '/chat/$chatId'
+      fullPath: '/staff/chat/$chatId'
+      preLoaderRoute: typeof StaffChatChatIdRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/lead/reject/$id': {
       id: '/lead/reject/$id'
       path: '/lead/reject/$id'
@@ -2198,6 +2349,7 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSmsRoute: typeof AdminSmsRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminStaffOpsRoute: typeof AdminStaffOpsRoute
   AdminSubscriptionRoute: typeof AdminSubscriptionRoute
   AdminSystemStatusRoute: typeof AdminSystemStatusRoute
   AdminTestAccountsRoute: typeof AdminTestAccountsRoute
@@ -2250,6 +2402,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSmsRoute: AdminSmsRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminStaffOpsRoute: AdminStaffOpsRoute,
   AdminSubscriptionRoute: AdminSubscriptionRoute,
   AdminSystemStatusRoute: AdminSystemStatusRoute,
   AdminTestAccountsRoute: AdminTestAccountsRoute,
@@ -2273,6 +2426,26 @@ const AdminRouteChildren: AdminRouteChildren = {
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface StaffRouteChildren {
+  StaffLoginRoute: typeof StaffLoginRoute
+  StaffTasksRoute: typeof StaffTasksRoute
+  StaffVendorsRoute: typeof StaffVendorsRoute
+  StaffWalletRoute: typeof StaffWalletRoute
+  StaffIndexRoute: typeof StaffIndexRoute
+  StaffChatChatIdRoute: typeof StaffChatChatIdRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffLoginRoute: StaffLoginRoute,
+  StaffTasksRoute: StaffTasksRoute,
+  StaffVendorsRoute: StaffVendorsRoute,
+  StaffWalletRoute: StaffWalletRoute,
+  StaffIndexRoute: StaffIndexRoute,
+  StaffChatChatIdRoute: StaffChatChatIdRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -2298,6 +2471,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
   ShippingPolicyRoute: ShippingPolicyRoute,
+  StaffRoute: StaffRouteWithChildren,
   StatusRoute: StatusRoute,
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   TestBellRoute: TestBellRoute,
