@@ -334,11 +334,11 @@ function VendorJoinPage() {
           <div className="flex-1 h-1.5 rounded-full bg-white/25 overflow-hidden">
             <div
               className="h-full bg-emerald-400 transition-all"
-              style={{ width: `${Math.max(progressPct, completed * 35)}%` }}
+              style={{ width: mounted ? `${Math.max(progressPct, completed * 35)}%` : "0%" }}
             />
           </div>
           <span className="text-xs font-semibold whitespace-nowrap">
-            {Math.round(Math.max(progressPct, completed * 35))}% Completed
+            {mounted ? Math.round(Math.max(progressPct, completed * 35)) : 0}% Completed
           </span>
         </div>
       </div>
