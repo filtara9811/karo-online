@@ -9,13 +9,15 @@ export type ScanHistoryEntry = {
   id: string;
   kinds: string[];
   thumbnail: string | null;
+  // Loose JSON — validated at consumer level.
   extracted: Record<string, unknown>;
   created_at: string;
 };
 
 export const listScanHistory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ScanHistoryEntry[]> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async ({ context }): Promise<any[]> => {
     const { data, error } = await context.supabase
       .from("vendor_scan_history" as never)
       .select("id, kinds, thumbnail, extracted, created_at")
@@ -27,7 +29,7 @@ export const listScanHistory = createServerFn({ method: "GET" })
       console.warn("[scan-history] list failed:", error.message);
       return [];
     }
-    return (data as unknown as ScanHistoryEntry[]) ?? [];
+    return (data as unknown as unknown[]) ?? [];
   });
 
 const SaveInput = z.object({
