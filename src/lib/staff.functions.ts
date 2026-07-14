@@ -146,7 +146,7 @@ export const approveSignupRequest = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("staff_signup_requests" as never)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() } as any)
+      .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() } as never)
       .eq("id", data.request_id);
 
     return { ok: true };
@@ -160,7 +160,7 @@ export const rejectSignupRequest = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("staff_signup_requests" as never)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ status: "rejected", decision_note: data.note ?? null, reviewed_by: context.userId, reviewed_at: new Date().toISOString() } as any)
+      .update({ status: "rejected", decision_note: data.note ?? null, reviewed_by: context.userId, reviewed_at: new Date().toISOString() } as never)
       .eq("id", data.request_id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -280,7 +280,7 @@ export const updateMyTaskStatus = createServerFn({ method: "POST" })
     const patch: any = { status: data.status };
     if (data.status === "submitted") patch.submitted_at = new Date().toISOString();
     if (data.proof_urls) patch.proof_urls = data.proof_urls;
-    const { error } = await context.supabase.from("staff_tasks" as never).update(patch).eq("id", data.task_id);
+    const { error } = await context.supabase.from("staff_tasks" as never).update(patch as never).eq("id", data.task_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -306,7 +306,7 @@ export const approveTask = createServerFn({ method: "POST" })
     };
     const { data: updated, error } = await supabaseAdmin
       .from("staff_tasks" as never)
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.task_id)
       .select("*")
       .maybeSingle();
@@ -322,7 +322,7 @@ export const approveTask = createServerFn({ method: "POST" })
         note: `Task: ${t.title}`,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
-      await supabaseAdmin.from("staff_tasks" as never).update({ status: "paid" }).eq("id", t.id);
+      await supabaseAdmin.from("staff_tasks" as never).update({ status: "paid" } as never).eq("id", t.id);
     }
     return { ok: true };
   });
@@ -413,7 +413,7 @@ export const processWithdrawal = createServerFn({ method: "POST" })
 
     const { data: updated, error } = await supabaseAdmin
       .from("staff_withdrawal_requests" as never)
-      .update(patch).eq("id", data.id).select("*").maybeSingle();
+      .update(patch as never).eq("id", data.id).select("*").maybeSingle();
     if (error) throw new Error(error.message);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
