@@ -45,6 +45,34 @@ async function handle(a: QueuedAction): Promise<void> {
       if (error) throw error;
       return;
     }
+    case "generic": {
+      // Offline scan sync: payload = { kind: "scan.save", payload: OfflineScanPayload }
+      const p = a.payload as { kind?: string; payload?: Record<string, unknown> };
+      if (p?.kind === "scan.save" && p.payload) {
+        const scan = p.payload as {
+          kinds: string[];
+          thumbnail: string | null;
+          extracted: Record<string, unknown> | null;
+          confidence: number | null;
+          field_confidence: Record<string, number> | null;
+          status: "pending_ocr" | "complete";
+        };
+        // If OCR was never run (offline), we save with status pending_ocr and
+        // let the client re-run OCR later. Here we just persist what we have.
+        const { error } = await supabase
+          .from("vendor_scan_history" as never)
+          .insert({
+            kinds: scan.kinds,
+            thumbnail: scan.thumbnail,
+            extracted: scan.extracted ?? {},
+            confidence: scan.confidence,
+            field_confidence: scan.field_confidence,
+            status: scan.status,
+          } as never);
+        if (error) throw error;
+      }
+      return;
+    }
     default:
       return;
   }

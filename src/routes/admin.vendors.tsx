@@ -136,6 +136,17 @@ function VendorsPage() {
     <AdminLayout>
       <PageHeader title="Vendors" subtitle={`${rows.length} registered vendors`} />
 
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin/scan-insights" })}
+          className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-4 py-2 text-xs font-extrabold text-[#f5d97a] hover:bg-[#d4af37]/20"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" />
+          View Scan Insights
+        </button>
+      </div>
+
       <AdminListToolbar
         filters={filters}
         onChange={setFilters}

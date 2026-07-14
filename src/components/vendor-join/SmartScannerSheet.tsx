@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   X, Camera, ImageIcon, Loader2, ScanLine, Sparkles,
   IdCard, ReceiptText, Store, Check, History, Trash2, Plus, RotateCcw,
+  WifiOff, CloudUpload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -10,6 +11,12 @@ import {
   listScanHistory, saveScanHistory, deleteScanHistory,
   type ScanHistoryEntry,
 } from "@/lib/scan-history.functions";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { queueOfflineScan, listOfflineScans, removeOfflineScan } from "@/lib/offline/scans";
+import { flushQueue } from "@/lib/offline/sync";
+import { computeOverall } from "@/lib/scan-confidence";
+import { ConfidenceBar, ConfidenceDot, ConfidencePill } from "./ConfidenceBadge";
+import { MapPinPreview, type MapPinResult } from "./MapPinPreview";
 
 const KINDS: { id: ScanKind; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "visiting_card", label: "Visiting Card", Icon: IdCard },
@@ -47,6 +54,14 @@ const APPLIABLE: (keyof OcrExtraction)[] = [
 const MAX_IMAGES = 5;
 
 type Shot = { id: string; kind: ScanKind; dataUrl: string };
+type OfflineRow = {
+  id: string;
+  kinds: string[];
+  thumbnail: string | null;
+  extracted: Record<string, unknown> | null;
+  status: "pending_ocr" | "complete";
+  queuedAt: number;
+};
 
 async function compressImage(file: File, maxSide = 1600): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Please pick an image");
@@ -104,14 +119,19 @@ export function SmartScannerSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  onApply: (data: OcrExtraction) => void;
+  onApply: (data: OcrExtraction & { _pin?: MapPinResult }) => void;
 }) {
+  const online = useOnlineStatus();
   const [kind, setKind] = useState<ScanKind>("visiting_card");
   const [phase, setPhase] = useState<"pick" | "scanning" | "review" | "history">("pick");
   const [shots, setShots] = useState<Shot[]>([]);
   const [result, setResult] = useState<OcrExtraction | null>(null);
+  const [fieldConf, setFieldConf] = useState<Record<string, number>>({});
+  const [overallConf, setOverallConf] = useState<number>(0);
   const [selected, setSelected] = useState<Set<string>>(new Set(APPLIABLE as string[]));
+  const [pin, setPin] = useState<MapPinResult | null>(null);
   const [history, setHistory] = useState<ScanHistoryEntry[]>([]);
+  const [offlineRows, setOfflineRows] = useState<OfflineRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const camRef = useRef<HTMLInputElement | null>(null);
   const galRef = useRef<HTMLInputElement | null>(null);
@@ -121,14 +141,41 @@ export function SmartScannerSheet({
   const runList = useServerFn(listScanHistory);
   const runDelete = useServerFn(deleteScanHistory);
 
+  const refreshHistory = () => {
+    setHistoryLoading(true);
+    Promise.all([
+      online ? runList().catch(() => [] as unknown[]) : Promise.resolve([] as unknown[]),
+      listOfflineScans(),
+    ])
+      .then(([rows, off]) => {
+        setHistory((rows as ScanHistoryEntry[]) ?? []);
+        setOfflineRows(
+          off.map((o) => ({
+            id: o.id,
+            kinds: o.scan.kinds,
+            thumbnail: o.scan.thumbnail,
+            extracted: o.scan.extracted,
+            status: o.scan.status,
+            queuedAt: o.queuedAt,
+          })),
+        );
+      })
+      .finally(() => setHistoryLoading(false));
+  };
+
   useEffect(() => {
     if (!open) return;
-    setHistoryLoading(true);
-    runList()
-      .then((rows) => setHistory((rows ?? []) as ScanHistoryEntry[]))
-      .catch(() => setHistory([]))
-      .finally(() => setHistoryLoading(false));
-  }, [open, runList]);
+    refreshHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, online]);
+
+  // Auto-flush pending scans when we come back online.
+  useEffect(() => {
+    if (online) {
+      void flushQueue().then(() => refreshHistory());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
 
   if (!open) return null;
 
@@ -136,6 +183,9 @@ export function SmartScannerSheet({
     setPhase("pick");
     setShots([]);
     setResult(null);
+    setFieldConf({});
+    setOverallConf(0);
+    setPin(null);
     setSelected(new Set(APPLIABLE as string[]));
   };
 
@@ -162,9 +212,32 @@ export function SmartScannerSheet({
   const removeShot = (id: string) =>
     setShots((prev) => prev.filter((s) => s.id !== id));
 
+  const queueForLater = async () => {
+    if (!shots.length) return;
+    const thumb = shots[0] ? await makeThumbnail(shots[0].dataUrl) : null;
+    await queueOfflineScan({
+      kinds: shots.map((s) => s.kind),
+      images: shots.map((s) => s.dataUrl),
+      thumbnail: thumb,
+      extracted: null,
+      confidence: null,
+      fieldConfidence: null,
+      status: "pending_ocr",
+      createdAt: Date.now(),
+    });
+    toast.success("Offline mode — network aane pe auto-sync ho jayega");
+    refreshHistory();
+    reset();
+    onClose();
+  };
+
   const scanAll = async () => {
     if (!shots.length) {
       toast.error("Pehle photo add karein");
+      return;
+    }
+    if (!online) {
+      toast.error("Offline — 'Save for later' use karein");
       return;
     }
     try {
@@ -181,18 +254,28 @@ export function SmartScannerSheet({
         setPhase("pick");
         return;
       }
+      const conf =
+        ((out as unknown as { _confidence?: Record<string, number> })._confidence) ?? {};
+      const overall = computeOverall(conf);
       setResult(out);
+      setFieldConf(conf);
+      setOverallConf(overall);
+      // Auto-select high/medium confidence fields; leave low unchecked so vendor
+      // consciously opts-in to uncertain values.
       setSelected(
         new Set(
           APPLIABLE.filter((k) => {
             const v = (out as Record<string, unknown>)[k];
-            return Array.isArray(v) ? v.length > 0 : Boolean(v);
+            const has = Array.isArray(v) ? v.length > 0 : Boolean(v);
+            if (!has) return false;
+            const c = conf[k as string];
+            return c == null || c >= 0.5;
           }) as string[],
         ),
       );
       setPhase("review");
 
-      // Save to history in the background (best-effort)
+      // Save to history in background (best-effort)
       try {
         const thumb = shots[0] ? await makeThumbnail(shots[0].dataUrl) : null;
         const { id } = await runSave({
@@ -200,13 +283,23 @@ export function SmartScannerSheet({
             kinds: shots.map((s) => s.kind),
             thumbnail: thumb,
             extracted: out as Record<string, unknown>,
+            confidence: overall,
+            field_confidence: conf,
+            status: "complete",
           },
         });
         if (id) {
-          setHistory((prev) => [
-            { id, kinds: shots.map((s) => s.kind), thumbnail: thumb, extracted: out as Record<string, unknown>, created_at: new Date().toISOString() },
-            ...prev,
-          ].slice(0, 50));
+          const entry: ScanHistoryEntry = {
+            id,
+            kinds: shots.map((s) => s.kind),
+            thumbnail: thumb,
+            extracted: out as Record<string, unknown>,
+            confidence: overall,
+            field_confidence: conf,
+            status: "complete",
+            created_at: new Date().toISOString(),
+          };
+          setHistory((prev) => [entry, ...prev].slice(0, 50));
         }
       } catch {
         /* non-blocking */
@@ -223,7 +316,15 @@ export function SmartScannerSheet({
     for (const k of APPLIABLE) {
       if (selected.has(k as string)) filtered[k] = (result as Record<string, unknown>)[k];
     }
-    onApply(filtered as OcrExtraction);
+    // Merge in map pin overrides if present
+    if (pin) {
+      if (pin.address) filtered.address = pin.address;
+      if (pin.city) filtered.city = pin.city;
+      if (pin.state) filtered.state = pin.state;
+      if (pin.pincode) filtered.pincode = pin.pincode;
+      (filtered as Record<string, unknown>)._pin = pin;
+    }
+    onApply(filtered as OcrExtraction & { _pin?: MapPinResult });
     toast.success("Details bhar diye — please check karein");
     reset();
     onClose();
@@ -231,7 +332,10 @@ export function SmartScannerSheet({
 
   const reapplyFromHistory = (entry: ScanHistoryEntry) => {
     const ext = entry.extracted as OcrExtraction;
+    const conf = (entry.field_confidence ?? {}) as Record<string, number>;
     setResult(ext);
+    setFieldConf(conf);
+    setOverallConf(entry.confidence ?? computeOverall(conf));
     setSelected(
       new Set(
         APPLIABLE.filter((k) => {
@@ -253,7 +357,13 @@ export function SmartScannerSheet({
     }
   };
 
-  const showHeaderHistory = phase === "pick" && history.length > 0;
+  const removeOffline = async (id: string) => {
+    setOfflineRows((prev) => prev.filter((r) => r.id !== id));
+    await removeOfflineScan(id);
+  };
+
+  const totalHistory = history.length + offlineRows.length;
+  const showHeaderHistory = phase === "pick" && totalHistory > 0;
 
   return (
     <div className="fixed inset-0 z-[95] flex items-end bg-black/55" onClick={closeAll}>
@@ -273,8 +383,8 @@ export function SmartScannerSheet({
               </h3>
               <p className="text-[11px] font-medium text-neutral-500 truncate">
                 {phase === "history"
-                  ? "Purane scans se re-apply karein"
-                  : "Multi-photo scan · Card + Board + Bill"}
+                  ? "Purane scans + offline queue"
+                  : "Multi-photo scan · Auto-fill + confidence"}
               </p>
             </div>
           </div>
@@ -288,7 +398,7 @@ export function SmartScannerSheet({
               >
                 <History className="h-4 w-4" />
                 <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-amber-600 text-white text-[9px] font-extrabold grid place-items-center">
-                  {history.length}
+                  {totalHistory}
                 </span>
               </button>
             )}
@@ -303,6 +413,16 @@ export function SmartScannerSheet({
             </button>
           </div>
         </div>
+
+        {!online && phase !== "history" && (
+          <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-2.5 flex items-start gap-2">
+            <WifiOff className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+            <div className="text-[11px] text-amber-900">
+              <div className="font-extrabold">Offline mode</div>
+              Photos capture kar sakte hain — network aane pe auto-scan & sync ho jayega
+            </div>
+          </div>
+        )}
 
         {phase === "pick" && (
           <>
@@ -408,20 +528,32 @@ export function SmartScannerSheet({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={scanAll}
-              disabled={shots.length === 0}
-              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-extrabold text-sm shadow flex items-center justify-center gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              Scan {shots.length > 0 ? `${shots.length} photo${shots.length > 1 ? "s" : ""}` : "photos"}
-            </button>
+            {online ? (
+              <button
+                type="button"
+                onClick={scanAll}
+                disabled={shots.length === 0}
+                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-extrabold text-sm shadow flex items-center justify-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Scan {shots.length > 0 ? `${shots.length} photo${shots.length > 1 ? "s" : ""}` : "photos"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={queueForLater}
+                disabled={shots.length === 0}
+                className="w-full py-3.5 rounded-2xl bg-neutral-800 disabled:opacity-40 text-white font-extrabold text-sm shadow flex items-center justify-center gap-2"
+              >
+                <CloudUpload className="h-4 w-4" />
+                Save for later — sync when online
+              </button>
+            )}
 
             <ul className="mt-3 space-y-1 text-[11px] text-neutral-600">
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Multi-photo merge — sabse best value auto pick</li>
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />GSTIN, category, services auto detect</li>
-              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Purane scans History me save hote hain</li>
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Multi-photo merge · Confidence score dikhega</li>
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Location auto-detect + drag-pin correction</li>
+              <li className="flex items-center gap-2"><ScanLine className="h-3.5 w-3.5 text-amber-600" />Offline capture — auto-sync jab network aaye</li>
             </ul>
           </>
         )}
@@ -463,15 +595,34 @@ export function SmartScannerSheet({
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-neutral-900">Ye details mili hain</div>
-                <div className="text-[11px] text-neutral-500">Jo apply karna ho tick rakhein</div>
+                <div className="text-[11px] text-neutral-500">Low-confidence fields ko verify karein</div>
               </div>
             </div>
+
+            <ConfidenceBar score={overallConf} className="mb-3" />
+
+            {/* Map pin preview when we have an address */}
+            {result.address && (
+              <div className="mb-3">
+                <MapPinPreview
+                  address={result.address}
+                  onConfirm={(r) => setPin(r)}
+                />
+                {pin && (
+                  <div className="mt-1 text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Pin confirmed — will save with vendor
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2 mb-4">
               {APPLIABLE.map((k) => {
                 const val = (result as Record<string, unknown>)[k];
                 const isEmpty = Array.isArray(val) ? val.length === 0 : !val;
                 if (isEmpty) return null;
                 const checked = selected.has(k as string);
+                const c = fieldConf[k as string];
                 return (
                   <label
                     key={k}
@@ -498,8 +649,16 @@ export function SmartScannerSheet({
                       }}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
-                        {FIELD_LABELS[k as string] ?? k}
+                      <div className="flex items-center gap-1.5">
+                        <ConfidenceDot score={c} />
+                        <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
+                          {FIELD_LABELS[k as string] ?? k}
+                        </div>
+                        {c != null && (
+                          <span className="text-[10px] text-neutral-400 font-semibold ml-auto">
+                            {Math.round(c * 100)}%
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-neutral-900 break-words">{fmtValue(val)}</div>
                     </div>
@@ -534,12 +693,57 @@ export function SmartScannerSheet({
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading…
               </div>
             )}
-            {!historyLoading && history.length === 0 && (
+            {!historyLoading && totalHistory === 0 && (
               <div className="py-10 text-center text-neutral-500 text-sm">
                 <History className="h-8 w-8 mx-auto mb-2 opacity-40" />
                 Abhi tak koi scan save nahi hua
               </div>
             )}
+
+            {/* Offline queue (pending) */}
+            {offlineRows.length > 0 && (
+              <div className="mb-3">
+                <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                  <CloudUpload className="h-3 w-3" /> Waiting to sync ({offlineRows.length})
+                </div>
+                <div className="space-y-2">
+                  {offlineRows.map((o) => (
+                    <div
+                      key={o.id}
+                      className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-2.5"
+                    >
+                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-white shrink-0">
+                        {o.thumbnail ? (
+                          <img src={o.thumbnail} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full grid place-items-center text-amber-500">
+                            <ScanLine className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-neutral-900 truncate">
+                          {o.status === "pending_ocr" ? "Waiting for network" : "Ready to sync"}
+                        </div>
+                        <div className="text-[11px] text-amber-800 truncate">
+                          {o.kinds.join(", ")} · {new Date(o.queuedAt).toLocaleTimeString("en-IN")}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeOffline(o.id)}
+                        className="h-9 w-9 grid place-items-center rounded-full bg-white text-amber-700"
+                        aria-label="Discard pending scan"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Completed history */}
             <div className="space-y-2">
               {history.map((h) => {
                 const ext = (h.extracted ?? {}) as OcrExtraction;
@@ -567,7 +771,12 @@ export function SmartScannerSheet({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-neutral-900 truncate">{title}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="text-sm font-bold text-neutral-900 truncate">{title}</div>
+                        {typeof h.confidence === "number" && (
+                          <ConfidencePill score={h.confidence} />
+                        )}
+                      </div>
                       <div className="text-[11px] text-neutral-500 truncate">
                         {subtitle || (h.kinds ?? []).join(", ")} · {when}
                       </div>
