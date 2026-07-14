@@ -3170,26 +3170,35 @@ export type Database = {
       }
       vendor_scan_history: {
         Row: {
+          confidence: number | null
           created_at: string
           extracted: Json
+          field_confidence: Json | null
           id: string
           kinds: string[]
+          status: string
           thumbnail: string | null
           user_id: string
         }
         Insert: {
+          confidence?: number | null
           created_at?: string
           extracted?: Json
+          field_confidence?: Json | null
           id?: string
           kinds?: string[]
+          status?: string
           thumbnail?: string | null
           user_id: string
         }
         Update: {
+          confidence?: number | null
           created_at?: string
           extracted?: Json
+          field_confidence?: Json | null
           id?: string
           kinds?: string[]
+          status?: string
           thumbnail?: string | null
           user_id?: string
         }
@@ -3382,6 +3391,7 @@ export type Database = {
           admin_notes: string | null
           assigned_to: string | null
           auto_accept_leads: boolean
+          auto_scan_confidence: number | null
           avatar_url: string | null
           business_name: string | null
           cover_image_url: string | null
@@ -3447,6 +3457,7 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           auto_accept_leads?: boolean
+          auto_scan_confidence?: number | null
           avatar_url?: string | null
           business_name?: string | null
           cover_image_url?: string | null
@@ -3512,6 +3523,7 @@ export type Database = {
           admin_notes?: string | null
           assigned_to?: string | null
           auto_accept_leads?: boolean
+          auto_scan_confidence?: number | null
           avatar_url?: string | null
           business_name?: string | null
           cover_image_url?: string | null
@@ -5303,6 +5315,7 @@ export type Database = {
               admin_notes: string | null
               assigned_to: string | null
               auto_accept_leads: boolean
+              auto_scan_confidence: number | null
               avatar_url: string | null
               business_name: string | null
               cover_image_url: string | null
@@ -5397,6 +5410,7 @@ export type Database = {
               admin_notes: string | null
               assigned_to: string | null
               auto_accept_leads: boolean
+              auto_scan_confidence: number | null
               avatar_url: string | null
               business_name: string | null
               cover_image_url: string | null
