@@ -44,7 +44,7 @@ function resolvePath(path: string[]): { labels: string[]; valid: boolean } {
   const labels: string[] = [];
   let level: TradeNode[] | undefined = TRADE_TREE;
   for (const v of path) {
-    const found = level?.find((n) => n.value === v);
+    const found: TradeNode | undefined = level?.find((n) => n.value === v);
     if (!found) return { labels, valid: false };
     labels.push(found.label);
     level = found.children;
