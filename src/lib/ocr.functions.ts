@@ -36,6 +36,8 @@ const ExtractionSchema = z.object({
   services: z.array(z.string()).nullable().optional(),
   products: z.array(z.string()).nullable().optional(),
   raw_text: z.string().nullable().optional(),
+  // Per-field confidence 0..1 — model self-reports how sure it is per key.
+  _confidence: z.record(z.string(), z.number().min(0).max(1)).nullable().optional(),
 });
 
 export type OcrExtraction = z.infer<typeof ExtractionSchema>;
