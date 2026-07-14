@@ -693,6 +693,7 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
             if (value === "vendor") navigate({ to: "/vendor/dashboard" });
             else if (value === "admin") navigate({ to: "/admin" });
             else if (value === "customer") navigate({ to: "/" });
+            else if (value === "staff") navigate({ to: "/staff" });
           }, 220);
         }}
         onClose={() => setPanelPicker(false)}
