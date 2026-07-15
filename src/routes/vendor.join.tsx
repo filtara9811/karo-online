@@ -123,7 +123,8 @@ function VendorJoinPage() {
 
   useEffect(() => saveDraft(draft), [draft]);
 
-  // Load admin-controlled onboarding video URL
+  // Load admin-controlled onboarding video URL + enabled flag
+  const [videoEnabled, setVideoEnabled] = useState(true);
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -131,10 +132,13 @@ function VendorJoinPage() {
         .select("value")
         .eq("key", "vendor_onboarding_video")
         .maybeSingle();
-      const v = (data?.value as any)?.url as string | undefined;
-      if (v) setVideoUrl(v);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const v = (data?.value as any) ?? {};
+      if (v.enabled === false) { setVideoEnabled(false); setVideoUrl(""); return; }
+      if (v.url) setVideoUrl(v.url as string);
     })();
   }, []);
+
 
   const ytEmbed = useMemo(() => toYouTubeEmbed(videoUrl), [videoUrl]);
 

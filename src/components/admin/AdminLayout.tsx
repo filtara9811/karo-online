@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
   { to: "/admin/vendors", label: "Vendors", icon: Store },
   { to: "/admin/catalog", label: "Catalog", icon: FolderTree },
   { to: "/admin/staff", label: "Staff & Roles", icon: Shield },
+  { to: "/admin/staff-ops", label: "👥 Staff Ops (Field)", icon: Users },
   { to: "/admin/payments", label: "Payment Gateways", icon: CreditCard },
   { to: "/admin/cashfree", label: "Cashfree Services", icon: Zap },
   { to: "/admin/kyc", label: "KYC Verification", icon: ShieldCheck },

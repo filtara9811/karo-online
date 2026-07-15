@@ -1,87 +1,83 @@
-## Phase 1 — Blank screen fix (immediate)
+# Staff Panel + Vendor Onboarding — Complete Build & Test Plan
 
-Screenshot में `/quick` (customer home) पर header + stats के नीचे सिर्फ loader घूम रहा है — content mount नहीं हो रहा।
+Scope: Admin ke andar full Staff Ops dashboard, staff app ke andar simple invite→login→onboard→wallet→chat flow, onboarding background video toggle, aur Playwright se end-to-end testing so aap khud verify kar sako.
 
-- `src/routes/quick.tsx` का data flow और `useEffect` chain audit करूँगा; likely कारण: एक server-fn / query pending state कभी resolve नहीं होती (auth-guarded fn public route पर, या missing catch)।
-- Fix: pending state के लिए proper skeleton + fallback content (categories grid, recent vendors, promo strip) render हो, ताकि loading में भी screen कभी blank न रहे।
-- Console/network से exact failing call पकड़ूँगा और उसे graceful बनाऊँगा।
+## 1. Blank/confusing screens fix
 
-## Phase 2 — 3 Capacitor apps से 1 codebase
+**Customer home (screenshot 1)** — top header par sirf "Welcome / RESELLING | AFFILIATE" strip visible hai, avatar overlap ho raha hai, aur search bar upar nazar aa rahi hai. Fix:
+- Header ko compact karenge: avatar left, "Welcome, {name}" center, cart right — single row, no overlap.
+- "RESELLING | AFFILIATE" strip hata ke sirf logged-in user ke role-specific chip dikhayenge.
+- Stats strip (Rating/Reviews/Happy/Service) horizontal scroll fix + last chip cut-off fix.
 
-Same repo, 3 build variants — env flag से decide होगा कौन सा app है।
+**Admin sidebar (screenshots 2–6)** — "Staff & Roles" hai but koi dedicated dashboard/insight nahi. Fix:
+- Sidebar me naya group **"👥 Staff Ops"** add: sub-items → Dashboard, Invites, Signup Requests, Category Lock, Withdrawals, Insights, Chat.
 
-```text
-APP_VARIANT=customer  → app.karoonline.twa      (already live)
-APP_VARIANT=vendor    → app.karoonline.vendor   (new)
-APP_VARIANT=staff     → app.karoonline.staff    (new)
-```
+## 2. Admin → Staff Ops (naya complete dashboard)
 
-- `capacitor.config.customer.ts`, `capacitor.config.vendor.ts`, `capacitor.config.staff.ts` — तीनों अलग `appId`, `appName`, splash/icon paths।
-- `package.json` scripts: `build:customer`, `build:vendor`, `build:staff` (सिर्फ `APP_VARIANT` env और सही capacitor config copy करेगा)।
-- `src/lib/app-variant.ts` — runtime में `import.meta.env.VITE_APP_VARIANT` पढ़कर decide करे कौन सा landing route open हो:
-  - customer → `/quick`
-  - vendor → `/vendor/dashboard` (या `/vendor/join` अगर onboard नहीं है)
-  - staff → `/staff/login` → `/staff`
-- Root splash / cold start भी variant के हिसाब से।
-- Assets (icon, splash): `resources/customer/`, `resources/vendor/`, `resources/staff/`।
-- Docs update: `CAPACITOR_BUILD.md` में तीनों build commands।
+Route: `/admin/staff-ops` (already partially exists — expand karenge with tabs)
 
-Backend Supabase एक ही रहेगा — real-time sync automatic।
+Tabs:
+1. **Dashboard** — total staff, active today, pending approvals, pending withdrawals, today's scans graph.
+2. **Invites** — Name + Mobile + Category select → generates deep link → 1-click WhatsApp/SMS/Copy.
+3. **Signup Requests** — self-signup queue → Approve/Reject button → account instantly activates.
+4. **Staff List** — har staff card: avatar, name, mobile, assigned categories, today's scans, wallet balance, block/unblock.
+5. **Category Lock** — per-staff multi-select category assignment (garment, electronics etc.) — `staff_category_assignments` table already exists.
+6. **Withdrawals** — pending withdrawal requests → Approve/Reject → wallet ledger auto-update.
+7. **Insights** — today's/week's scans bar chart, top performers, OCR confidence avg.
+8. **Chat** — WhatsApp-style thread list with each staff.
 
-## Phase 3 — Staff role assign (hybrid) + deep link
+## 3. Staff App (simple mobile UI)
 
-Journey (admin ↔ staff):
+Bottom tabs (already scaffolded): **Chats · Vendors · Tasks · Wallet**
 
-```text
-1. Admin  → /admin/staff-ops → "Invite staff"
-             ↓ email + name + phone + payout_model
-2. System → supabaseAdmin.auth.admin.createUser (email confirm auto)
-           → insert user_roles (role=staff)
-           → insert staff_profiles (status=active)
-           → generate one-time deep link:
-             https://karoonline.in/s/onboard/<token>
-3. WhatsApp/SMS भेजा जाए (WhatsApp template + Fast2SMS)
-4. Staff link क्लिक करे:
-   - Staff App installed  → intent-filter उसे direct /staff/login खोले
-   - Not installed        → Play Store (app.karoonline.staff)
-5. Self-signup path भी open: /staff/signup → row in staff_signup_requests
-   → admin /admin/staff-ops में "Pending" tab में approve → same deep-link flow
-```
+Improvements:
+- **Login/Signup** — sirf Name + Mobile + OTP (Password optional). "Request access" fallback bhi.
+- **Vendors tab** → "Onboard" button → **camera modal**:
+  - Upto 5 photos ek saath capture/upload.
+  - OCR (already `ocr.functions.ts`) → auto-fill business name / phone / address.
+  - Confidence score: green (>75%), amber (50–75%), red (<50%).
+  - Manual edit allowed on every field.
+  - Map pin auto-set from geolocation, draggable.
+  - Duplicate check by phone + shop-name similarity → toast "Data already collected".
+  - Offline mode: IndexedDB queue (`offline/queue.ts` already exists) → auto-sync when online.
+- **Tasks tab** — assigned tasks list, mark complete → wallet credit on admin approval.
+- **Wallet tab** — balance, ledger, **Withdraw** button → request goes to admin.
+- **Chats tab** — realtime staff↔admin thread (Supabase realtime on `staff_chat_messages`).
 
-Deep link setup:
-- `AndroidManifest.xml` (staff variant): `intent-filter` for `https://karoonline.in/s/*` with `autoVerify=true`।
-- Same के लिए vendor: `https://karoonline.in/v/*` → `/vendor/join` या `/vendor/dashboard`।
-- `public/.well-known/assetlinks.json` में तीनों package names add — sha256 fingerprints के साथ।
-- Route: `src/routes/s.$code.tsx` (already exists — verify staff onboard token handle करता है)। नया `/s/onboard/$token` add करूँगा।
-- `src/lib/native/deep-link.ts` — Capacitor `App.addListener('appUrlOpen')` से incoming URL parse करके router navigate।
+## 4. Onboarding background video toggle
 
-## Phase 4 — Admin UI polish
+Currently video probably hardcoded in vendor onboarding. Fix:
+- Add row in `app_settings`: `vendor_onboarding_video_url`, `vendor_onboarding_video_enabled`.
+- Admin panel → **Onboarding Screens** page → new "Background Video" section: URL input + enable toggle + preview.
+- Vendor onboarding page reads setting; if disabled → static gradient bg.
 
-`/admin/staff-ops` में:
-- Tabs: Signup Requests | Active Staff | Invite New | Categories | Payouts | Withdrawals
-- "Invite New": form → generate link → 1-click "WhatsApp Send" / "SMS Send" / "Copy Link"
-- Role assign अभी `/admin/staff` में manual UUID paste है — नया flow से एक-क्लिक assign होगा
+## 5. Database (single migration)
 
-## Technical Details
+Additions only (most tables already exist):
+- `app_settings` rows: video URL + enabled flag.
+- Trigger: on `staff_tasks.status = 'approved'` → auto insert into `staff_wallet_ledger` with task amount.
+- Trigger: on `staff_signup_requests.status = 'approved'` → auto insert `user_roles(staff)` + activate `staff_profiles`.
+- RLS + GRANTs verified for all staff_* tables.
 
-- Files touched (approx 15):
-  - `src/routes/quick.tsx` (blank fix)
-  - `capacitor.config.{customer,vendor,staff}.ts` (new)
-  - `package.json` (scripts)
-  - `src/lib/app-variant.ts` (new)
-  - `src/routes/__root.tsx` (variant-aware initial redirect)
-  - `src/lib/native/deep-link.ts` (new)
-  - `src/routes/s.onboard.$token.tsx` (new — staff invite landing)
-  - `src/routes/v.onboard.$token.tsx` (new — vendor invite landing)
-  - `src/routes/admin.staff-ops.tsx` (invite UI)
-  - `src/lib/staff.functions.ts` (`inviteStaff` server fn — admin only, uses `supabaseAdmin` inside handler)
-  - `android/app/src/main/AndroidManifest.xml` (staff/vendor intent filters — 3 build variants)
-  - `public/.well-known/assetlinks.json` (add 2 more package sha256 slots)
-  - `CAPACITOR_BUILD.md` (docs)
-- 1 migration: `staff_invites (token, staff_user_id, expires_at, used_at)` table + RLS + GRANTs।
+## 6. Playwright end-to-end tests
 
-## Out of scope (जब बोलें तब)
+Sandbox me headless Chromium run karke ye 6 flows verify karenge, screenshots ke saath (`/tmp/browser/staff/*.png`):
 
-- Chat UI का full WhatsApp-clone polish (bubbles, typing, media)
-- Play Store listings — bundle IDs config कर दूँगा, upload आप करेंगे
-- iOS variants (सिर्फ Android)
+1. **Admin invite → staff onboard**: admin login → create invite → copy link → open in fresh context → signup → auto-role assign → land on `/staff`.
+2. **Self-signup approval**: staff signup → admin sees request → approve → staff can login.
+3. **OCR onboarding**: mock file upload → confidence colors visible → edit field → save vendor.
+4. **Duplicate check**: onboard same phone twice → alert shows.
+5. **Offline queue**: `context.setOffline(true)` → save → visible in Scan History → `setOffline(false)` → auto-sync → appears in admin panel.
+6. **Wallet withdraw**: task approve → balance increase → withdraw request → admin sees it.
+7. **Realtime chat**: 2 browser contexts (admin + staff) → message → appears on other side <1s.
+
+Failing flows will be fixed in the same turn.
+
+## Out of scope (is turn me nahi)
+- Native APK build (already documented in `CAPACITOR_BUILD.md`).
+- iOS variants.
+- Play Store listing text.
+- Advanced insights (funnel, cohort) — sirf basic bar chart.
+
+## Deliverable
+Aap `/admin/staff-ops` khol ke sab kuch use kar payenge, staff mobile UI se onboarding kar payenge, aur main ek `TEST_REPORT.md` bhi generate karunga jisme har checklist item ka pass/fail + screenshot link hoga.
