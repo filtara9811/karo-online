@@ -218,6 +218,7 @@ function OnboardingAdmin() {
 
   return (
     <div>
+      <VendorOnboardingVideoCard />
       <PageHeader
         title="Customer Onboarding Screens"
         subtitle="Splash / intro slides shown before the customer logs in. Drag-style ordering, image / video / Lottie animation supported."
@@ -227,6 +228,7 @@ function OnboardingAdmin() {
           </GoldButton>
         }
       />
+
 
       {loading ? (
         <div className="flex items-center gap-2 text-[#f5d97a]">
