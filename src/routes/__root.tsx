@@ -1,5 +1,6 @@
 import { Link, createRootRoute, HeadContent, Scripts, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AppPrefsProvider } from "@/hooks/use-app-prefs";
 import { CartProvider } from "@/hooks/use-cart";
@@ -10,6 +11,7 @@ import { startAutoSync } from "@/lib/offline/sync";
 import { bootstrapNative, isNative } from "@/lib/native";
 
 import appCss from "../styles.css?url";
+
 
 function NotFoundComponent() {
   const location = useLocation();
@@ -178,15 +180,21 @@ function RootComponent() {
     bootstrapNative().catch((e) => console.warn("[native bootstrap]", e));
     return () => { stop?.(); };
   }, []);
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+  }));
   return (
-    <AppPrefsProvider>
-      <AuthProvider>
-        <CartProvider>
-          <OfflineBanner />
-          <AppShell />
-          <Toaster position="top-center" richColors closeButton />
-        </CartProvider>
-      </AuthProvider>
-    </AppPrefsProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppPrefsProvider>
+        <AuthProvider>
+          <CartProvider>
+            <OfflineBanner />
+            <AppShell />
+            <Toaster position="top-center" richColors closeButton />
+          </CartProvider>
+        </AuthProvider>
+      </AppPrefsProvider>
+    </QueryClientProvider>
   );
 }
+
