@@ -20,6 +20,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ReferralRouteImport } from './routes/referral'
 import { Route as QuicklegacyRouteImport } from './routes/quicklegacy'
+import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -182,6 +183,11 @@ const ReferralRoute = ReferralRouteImport.update({
 const QuicklegacyRoute = QuicklegacyRouteImport.update({
   id: '/quicklegacy',
   path: '/quicklegacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuickRoute = QuickRouteImport.update({
+  id: '/quick',
+  path: '/quick',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -747,6 +753,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/quick': typeof QuickRoute
   '/quicklegacy': typeof QuicklegacyRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -867,6 +874,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/quick': typeof QuickRoute
   '/quicklegacy': typeof QuicklegacyRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -988,6 +996,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/quick': typeof QuickRoute
   '/quicklegacy': typeof QuicklegacyRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -1111,6 +1120,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
+    | '/quick'
     | '/quicklegacy'
     | '/referral'
     | '/refund-policy'
@@ -1231,6 +1241,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
+    | '/quick'
     | '/quicklegacy'
     | '/referral'
     | '/refund-policy'
@@ -1351,6 +1362,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
+    | '/quick'
     | '/quicklegacy'
     | '/referral'
     | '/refund-policy'
@@ -1473,6 +1485,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
+  QuickRoute: typeof QuickRoute
   QuicklegacyRoute: typeof QuicklegacyRoute
   ReferralRoute: typeof ReferralRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
@@ -1597,6 +1610,13 @@ declare module '@tanstack/react-router' {
       path: '/quicklegacy'
       fullPath: '/quicklegacy'
       preLoaderRoute: typeof QuicklegacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quick': {
+      id: '/quick'
+      path: '/quick'
+      fullPath: '/quick'
+      preLoaderRoute: typeof QuickRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -2506,6 +2526,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
+  QuickRoute: QuickRoute,
   QuicklegacyRoute: QuicklegacyRoute,
   ReferralRoute: ReferralRoute,
   RefundPolicyRoute: RefundPolicyRoute,
