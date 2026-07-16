@@ -42,7 +42,7 @@ import svcAc from "@/assets/svc-ac.png";
 import svcCarpenter from "@/assets/svc-carpenter.png";
 import svcElectronics from "@/assets/svc-electronics.png";
 
-export const Route = createFileRoute("/quick/legacy")({
+export const Route = createFileRoute("/quicklegacy")({
   head: () => ({
     meta: [
       { title: "Quick Service — Find Local Vendors Near You | Karo Online" },
