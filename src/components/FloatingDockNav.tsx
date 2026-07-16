@@ -26,7 +26,7 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
   const trigger = (slot: SlotKey) => {
     setActive(slot);
     if (slot === "orders") {
-      try { window.dispatchEvent(new Event("ko-open-orders")); } catch {}
+      setTimeout(() => navigate({ to: "/orders" }), 160);
     } else if (slot === "profile") {
       setHubOpen(true);
     } else {
