@@ -601,6 +601,11 @@ function QuickPage() {
     }
   }, [isGridView]);
   const [ordersSheetOpen, setOrdersSheetOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setOrdersSheetOpen(true);
+    window.addEventListener("ko-open-orders", open);
+    return () => window.removeEventListener("ko-open-orders", open);
+  }, []);
   const [radiusOpen, setRadiusOpen] = useState(false);
   // pickedLocation/locationSheetOpen are declared earlier (above the vendor-load effect).
   const effectiveCenter = pickedLocation

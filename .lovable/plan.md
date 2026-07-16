@@ -1,134 +1,61 @@
-## Scope
+# TikTok-Style Customer Home Redesign
 
-Two independent tracks:
+Redesigning `/` (customer home) to match screenshot #1 layout and adopting the floating 3-button bottom nav from screenshot #2. Keeps ALL existing business logic (leads, vendor find, cart, digital shops, join vendor) — only the presentation layer changes.
 
-**A. Staff App → Gig-Work Marketplace UI + flow**
-**B. Admin → dedicated Onboarding Video control page (fix visibility + persistence)**
+## New Home Layout (`src/routes/index.tsx` + new components)
 
----
+Vertical stack (mobile-first, single column):
 
-## A. Staff App: Gig Marketplace
+1. **Map hero (top)** — reuse existing `MapView` / customer + vendor pins. Height ~38vh. Curved bottom edge with soft shadow. Show "You / Ravi Plumber / Amit Carpenter" style pins with distance labels (data already available from `nearby-customers.functions`).
 
-### A1. Home screen redesign (`src/routes/staff.index.tsx`)
+2. **Type + Location row** — two pill selectors side by side:
+   - Left pill: **Service / Product / Other** (icon + label + chevron). Tap → opens existing `ProductServicePicker` bottom sheet. Selection persists via existing `useActiveTypeId`. Changing type re-filters the categories below.
+   - Right pill: **Location** (map-pin icon + city name + chevron). Tap → opens existing `LocationPickerSheet`.
 
-Replace current chat-list home with a marketplace dashboard modeled on the reference screenshot:
+3. **All Categories row** — horizontal scroller of 4 main categories (Home / Finance / Legal / Basic). Header `All Categories` + `View ›` on right. Tapping `View ›` or the header opens a new bottom sheet showing every category. Selected category is highlighted with orange border + tinted background (animated with framer-motion `layoutId` for smooth pill-slide).
 
-- **Header**: avatar + "Hi, {name}" + tier badge (Bronze/Silver/Gold based on completed tasks) + notification bell.
-- **Earnings hero card** (purple gradient like screenshot): Balance ₹, big number, **Withdraw** button (opens existing withdraw sheet from `staff.wallet.tsx`), Total Earning row at bottom.
-- **Task Pool section** ("AVAILABLE TASKS"): horizontal category chips (All / Field / Remote / Data / Marketing) + 2-col grid of task cards. Each card: icon, title, "Earn upto ₹X", Start Task button.
-- **Top Earners leaderboard**: horizontal scroll strip, top 5 staff by 30-day earnings (rank, avatar, name, ₹).
-- **Bottom nav** stays (Home/Tasks/Wallet/Chats — rename Vendors→Tasks since tasks now cover all work types).
+4. **Sub-category cards (main content)** — big rounded cards per sub-category (Plumber, Carpenter, Electrician…). Each card shows:
+   - Illustration/thumb (left)
+   - Title, tagline, rating, verified/available counts
+   - When card is **selected/expanded**: a bottom action row appears inside the card with:
+     - Left: **Variation selector** pill (opens existing variation bottom sheet — reuses current `ItemPricingSheet` / needs sheet)
+     - Right: Orange **Find Vendor** button → triggers existing raise-lead flow directly
+   - Collapsed cards just show a `›` chevron; tapping expands with a smooth height animation.
 
-### A2. Public signup (frictionless)
+5. **Floating bottom nav (screenshot #2 style)** — new `FloatingDockNav` component:
+   - Dark rounded pill bar with 3 slots
+   - Left: **My Orders** (badge = order count) → opens bottom sheet with existing `MyOrdersList`
+   - Center: **Profile FAB** (raised circular avatar, sits above the bar with white halo) → opens bottom sheet with two big buttons: **Join Vendor / Vendor Dashboard** and **Menu**
+   - Right: **My Shops** (badge = shop count) → opens digital shops bottom sheet (reuse existing digital-shop UI)
+   - Selected slot animates: icon lifts into the raised circle (framer-motion `layoutId="dock-active"`), background highlight slides to its position
 
-- Update `staff.login.tsx`: single form — Name, Phone, Email (optional), OTP.
-- Server fn `publicStaffSignup` in `staff.functions.ts`: on OTP verify, auto-create `staff_profiles` row + grant `staff` role + init `staff_wallets` — **no admin approval**. Auto-link if phone already exists in `customers`.
-- Remove/bypass `staff_signup_requests` approval gate for this path (keep table for legacy).
+## Animation & Polish
 
-### A3. Task execution + auto-pay
-
-- **Start Task** → opens task form route `/staff/task/$taskId` (dynamic per `task_type`: vendor_onboarding uses existing OCR camera flow; data_entry uses plain form; marketing uses link submit).
-- On submit, server fn `submitTaskWork`:
-  1. Save submission + AI confidence score (already computed by OCR for onboarding; other types default 100 or use validator).
-  2. **If confidence ≥ 80** → auto-approve, credit `staff_wallet_ledger`, mark task `paid`, no admin queue.
-  3. Else → status `submitted` (admin reviews as today).
-- Threshold stored in `app_settings.staff_autopay_threshold` (default 80) so admin can tune.
-
-### A4. Tiered incentives (schema only, admin UI later)
-
-New table `staff_incentive_tiers`:
-- `task_type`, `min_completed`, `max_completed`, `multiplier` (or fixed `amount_inr`), `active`.
-- Server fn `resolveTaskAmount(staff_id, task_type, base_amount)` applies tier at credit time.
-- Seed default tier (1–10 = 1.0×, 11–50 = 1.1×, 51+ = 1.25×).
-
-### A5. Task categorization
-
-Extend `staff_tasks.task_type` enum values: `field_vendor_onboarding`, `field_visit`, `remote_data_entry`, `remote_affiliate`, `marketing_share`. Add `requires_gps bool`, `requires_camera bool` columns for form routing.
-
-### A6. i18n scaffold
-
-Add `src/lib/i18n.ts` with `en` / `hi` dictionaries covering staff screens; language toggle in staff header, persisted to `localStorage`. No full translation of admin — staff surfaces only.
-
-### A7. Leaderboard
-
-Server fn `getTopEarners({ period: '30d' })` — sums `staff_wallet_ledger` credits grouped by staff, joins name/avatar, returns top 5. Called from home.
-
----
-
-## B. Admin Onboarding Video — dedicated page
-
-Current state: `VendorOnboardingVideoCard` lives inside `admin.onboarding.tsx` but user can't find/use it.
-
-### B1. Separate route
-
-New route `src/routes/admin.video.tsx` — "Onboarding Video" with its own sidebar entry (Video icon) in `AdminLayout.tsx`, above/near Onboarding.
-
-### B2. Controls
-
-- **Enabled toggle** (switch) — persists `app_settings.vendor_onboarding_video.enabled`.
-- **Source tabs**: `YouTube URL` | `Direct URL (mp4/webm)` | `Upload file`.
-- Upload uses Supabase Storage bucket `onboarding-videos` (create in migration, public read). Show progress bar; on success sets URL.
-- **Live preview** panel — renders `<video>` (or YouTube iframe if youtube.com/youtu.be) using the currently saved value; reloads after save.
-- **Save button** writes `app_settings.vendor_onboarding_video = { url, kind, enabled }` via server fn (upsert with proper JSON merge — the current bug likely: writes were partial-overwriting or key mismatch).
-- Show "Current active URL" text + Copy button + "Test on vendor join page" link (`/vendor/join?preview=1`).
-
-### B3. Fix persistence
-
-Audit the existing upsert in `admin.onboarding.tsx` — ensure key is exactly `vendor_onboarding_video`, value is `{ enabled, kind, url }`, and reload uses the same shape. `vendor.join.tsx` already reads `.enabled` and `.url` — keep contract stable.
-
----
-
-## Database migration (single)
-
-```sql
--- Tiered incentives
-CREATE TABLE public.staff_incentive_tiers (...);
-GRANT SELECT ON public.staff_incentive_tiers TO authenticated;
-GRANT ALL ON public.staff_incentive_tiers TO service_role;
-ALTER TABLE ... ENABLE RLS;
-CREATE POLICY "read tiers" ... USING (true);
-
--- Task category flags
-ALTER TABLE public.staff_tasks
-  ADD COLUMN requires_gps bool DEFAULT false,
-  ADD COLUMN requires_camera bool DEFAULT false,
-  ADD COLUMN ai_confidence numeric;
-
--- Auto-pay threshold + video settings
-INSERT INTO public.app_settings(key, value) VALUES
-  ('staff_autopay_threshold', '80'::jsonb),
-  ('vendor_onboarding_video', '{"enabled":false,"kind":"url","url":""}'::jsonb)
-ON CONFLICT (key) DO NOTHING;
-
--- Storage bucket for video uploads (public read)
-INSERT INTO storage.buckets(id, name, public) VALUES ('onboarding-videos','onboarding-videos',true)
-ON CONFLICT DO NOTHING;
-
--- Trigger: on staff_tasks status→paid, credit wallet with tier multiplier
-CREATE FUNCTION public.credit_staff_on_paid() ...;
-CREATE TRIGGER ... AFTER UPDATE ON public.staff_tasks ...;
-```
-
----
+- `framer-motion` for: pill selection slide, card expand/collapse, bottom-sheet spring open, dock icon lift.
+- Bottom sheets use existing shadcn `Drawer` with spring easing; add drag-to-dismiss.
+- Tap feedback: `whileTap={{ scale: 0.96 }}` on all buttons.
 
 ## Files
 
-**New**: `src/routes/admin.video.tsx`, `src/routes/staff.task.$taskId.tsx`, `src/lib/i18n.ts`, migration.
+**New**
+- `src/components/home/HomeMapHero.tsx` — map + pin overlay
+- `src/components/home/TypeLocationRow.tsx` — the two pills
+- `src/components/home/CategoryStrip.tsx` — 4 main categories + View sheet
+- `src/components/home/SubCategoryCard.tsx` — expandable card with Find Vendor + variation
+- `src/components/FloatingDockNav.tsx` — 3-button dock (screenshot #2)
+- `src/components/ProfileHubSheet.tsx` — center-FAB bottom sheet (Join Vendor / Menu)
 
-**Edit**: `src/routes/staff.index.tsx` (full rewrite → marketplace home), `src/routes/staff.tsx` (rename Vendors→Tasks tab), `src/routes/staff.login.tsx` (frictionless signup), `src/lib/staff.functions.ts` (add `publicStaffSignup`, `getTopEarners`, `submitTaskWork`, `listAvailableTasks`), `src/components/admin/AdminLayout.tsx` (add Video link), `src/routes/admin.onboarding.tsx` (remove video card, link out to new page).
+**Edited**
+- `src/routes/index.tsx` — recompose using above
+- `src/components/AppShell.tsx` — hide old bottom bar on `/`, mount `FloatingDockNav` instead
 
----
+## Out of Scope (unchanged)
+- Backend / server functions / DB
+- Staff, admin, vendor panels
+- Auth flows
+- Existing lead-raise logic (only the trigger button moves)
 
-## Testing (Playwright)
-
-1. Staff signup → home shows earnings card + task grid + leaderboard.
-2. Start a task with confidence 90 → wallet auto-credits, task shows `paid`.
-3. Start a task with confidence 60 → status `submitted`, no credit.
-4. Admin `/admin/video` → toggle on, paste YouTube URL, save, reload → preview plays; open `/vendor/join` → video shows.
-5. Toggle off → `/vendor/join` shows static bg.
-
----
-
-## Out of scope
-
-Full Hindi translation of every string (scaffold only), tier admin UI (schema ready, edit via SQL for now), native APK rebuild.
+## Technical notes
+- Reuses `useActiveTypeId`, `ProductServicePicker`, `LocationPickerSheet`, `MyOrdersList`, existing lead-raise mutation, existing digital-shops sheet — no logic rewrites.
+- All colors use existing semantic tokens (orange = `--gold-*` tokens already in `styles.css`).
+- Mobile-only layout (max-w-md centered), matches current app shell width.
