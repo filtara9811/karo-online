@@ -300,7 +300,7 @@ function QuickPage() {
       {/* Floating mic FAB (bottom-right, above dock) */}
       <button
         aria-label="Voice search"
-        onClick={() => navigate({ to: "/quicklegacy" })}
+        onClick={() => setTypePickerOpen(true)}
         className="fixed right-4 bottom-28 z-30 h-14 w-14 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 text-white shadow-[0_10px_24px_-8px_rgba(249,115,22,0.65)] grid place-items-center active:scale-95"
       >
         <Mic className="h-6 w-6" strokeWidth={2.3} />
