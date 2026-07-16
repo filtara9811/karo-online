@@ -176,9 +176,9 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* 4 root category tiles */}
-        <div className="mt-3 px-4">
-          <div className="grid grid-cols-4 gap-2.5">
+        {/* Root category tiles — HORIZONTAL SCROLL RAIL */}
+        <div className="mt-3">
+          <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {ROOT_CATS.map((c) => {
               const isActive = selectedRoot === c.key;
               const Icon = c.Icon;
@@ -187,7 +187,7 @@ function QuickPage() {
                   key={c.key}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedRoot(c.key)}
-                  className={`relative rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 h-[92px] border-2 transition-colors ${
+                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 w-[92px] h-[96px] border-2 transition-colors ${
                     isActive ? "border-orange-400 bg-orange-50/60" : "border-transparent"
                   }`}
                 >
@@ -195,7 +195,7 @@ function QuickPage() {
                     <motion.span layoutId="root-cat-glow" className="absolute inset-0 rounded-2xl ring-2 ring-orange-300/60 pointer-events-none" transition={{ type: "spring", stiffness: 350, damping: 28 }} />
                   )}
                   <Icon className={`h-7 w-7 ${isActive ? "text-orange-500" : "text-slate-700"}`} strokeWidth={2.1} />
-                  <span className={`text-[10.5px] font-semibold text-center leading-tight ${isActive ? "text-orange-600" : "text-slate-700"}`}>
+                  <span className={`text-[11px] font-semibold text-center leading-tight ${isActive ? "text-orange-600" : "text-slate-700"}`}>
                     {c.name}
                   </span>
                 </motion.button>
