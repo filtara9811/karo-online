@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { MessageSquare, Store, ListChecks, Wallet, Loader2 } from "lucide-react";
+import { Home, ListChecks, Share2, Users, Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/staff")({
@@ -13,12 +13,12 @@ export const Route = createFileRoute("/staff")({
   component: StaffLayout,
 });
 
-type Tab = { to: string; label: string; icon: typeof MessageSquare; exact?: boolean };
+type Tab = { to: string; label: string; icon: typeof Home; exact?: boolean };
 const TABS: Tab[] = [
-  { to: "/staff", label: "Chats", icon: MessageSquare, exact: true },
-  { to: "/staff/vendors", label: "Vendors", icon: Store },
-  { to: "/staff/tasks", label: "Tasks", icon: ListChecks },
-  { to: "/staff/wallet", label: "Wallet", icon: Wallet },
+  { to: "/staff", label: "Home", icon: Home, exact: true },
+  { to: "/staff/tasks", label: "Leads", icon: ListChecks },
+  { to: "/staff/wallet", label: "Referral", icon: Share2 },
+  { to: "/staff/vendors", label: "My Team", icon: Users },
 ];
 
 function StaffLayout() {
@@ -61,17 +61,32 @@ function StaffLayout() {
         <Outlet />
       </main>
       {!hideNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[color:oklch(0.9_0.03_85)] shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.05)]">
-          <div className="max-w-md mx-auto grid grid-cols-4">
-            {TABS.map((t) => {
+        <nav className="fixed bottom-3 left-3 right-3 z-40 bg-white rounded-full border border-slate-200 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.15)]">
+          <div className="max-w-md mx-auto grid grid-cols-5 items-center relative">
+            {TABS.slice(0, 2).map((t) => {
               const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
               const Icon = t.icon;
               return (
                 <Link key={t.to} to={t.to}
-                  className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${active ? "text-[color:oklch(0.55_0.16_82)]" : "text-muted-foreground"}`}>
-                  <Icon className={`h-5 w-5 ${active ? "fill-[oklch(0.9_0.08_85/0.3)]" : ""}`} />
+                  className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition-colors ${active ? "text-violet-600" : "text-slate-500"}`}>
+                  <Icon className="h-5 w-5" />
                   <span>{t.label}</span>
-                  {active && <div className="h-0.5 w-6 rounded-full bg-[color:oklch(0.55_0.16_82)]" />}
+                </Link>
+              );
+            })}
+            <Link to="/staff/tasks" className="flex justify-center -mt-6">
+              <span className="h-14 w-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg ring-4 ring-white">
+                <Plus className="h-7 w-7" strokeWidth={3} />
+              </span>
+            </Link>
+            {TABS.slice(2).map((t) => {
+              const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
+              const Icon = t.icon;
+              return (
+                <Link key={t.to} to={t.to}
+                  className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition-colors ${active ? "text-violet-600" : "text-slate-500"}`}>
+                  <Icon className="h-5 w-5" />
+                  <span>{t.label}</span>
                 </Link>
               );
             })}
