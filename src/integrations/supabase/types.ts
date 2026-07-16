@@ -4754,6 +4754,7 @@ export type Database = {
           created_at: string
           file_size: number | null
           id: string
+          is_active: boolean
           mime: string | null
           public_url: string
           tags: string[]
@@ -4766,6 +4767,7 @@ export type Database = {
           created_at?: string
           file_size?: number | null
           id?: string
+          is_active?: boolean
           mime?: string | null
           public_url: string
           tags?: string[]
@@ -4778,6 +4780,7 @@ export type Database = {
           created_at?: string
           file_size?: number | null
           id?: string
+          is_active?: boolean
           mime?: string | null
           public_url?: string
           tags?: string[]
