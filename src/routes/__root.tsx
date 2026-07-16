@@ -180,15 +180,21 @@ function RootComponent() {
     bootstrapNative().catch((e) => console.warn("[native bootstrap]", e));
     return () => { stop?.(); };
   }, []);
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+  }));
   return (
-    <AppPrefsProvider>
-      <AuthProvider>
-        <CartProvider>
-          <OfflineBanner />
-          <AppShell />
-          <Toaster position="top-center" richColors closeButton />
-        </CartProvider>
-      </AuthProvider>
-    </AppPrefsProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppPrefsProvider>
+        <AuthProvider>
+          <CartProvider>
+            <OfflineBanner />
+            <AppShell />
+            <Toaster position="top-center" richColors closeButton />
+          </CartProvider>
+        </AuthProvider>
+      </AppPrefsProvider>
+    </QueryClientProvider>
   );
 }
+
