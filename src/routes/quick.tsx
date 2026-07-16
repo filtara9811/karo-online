@@ -59,7 +59,7 @@ const DEMO_VENDORS: QuickMapVendor[] = [
 ];
 
 /* -------------------------------- Page ----------------------------------- */
-function QuickPage() {
+export function QuickPage() {
   const { profile } = useAuth();
   const { requireAuth } = useAuthGate();
   const geo = useGeolocation();
