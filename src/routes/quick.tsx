@@ -310,9 +310,8 @@ function QuickPage() {
       <ProductServicePicker open={typePickerOpen} onClose={() => setTypePickerOpen(false)} onCategoryPick={() => setTypePickerOpen(false)} />
       <LocationPickerSheet
         open={locationSheetOpen}
-        onOpenChange={setLocationSheetOpen}
-        currentLat={effectiveCenter?.lat ?? null}
-        currentLng={effectiveCenter?.lng ?? null}
+        onClose={() => setLocationSheetOpen(false)}
+        bias={effectiveCenter ?? undefined}
         currentLabel={effectiveLabel}
         onPick={(loc) => { setPickedLocation(loc); setLocationSheetOpen(false); }}
       />
