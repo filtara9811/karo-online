@@ -98,7 +98,7 @@ function QuickPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { toast.error("Please sign in"); return; }
         const { data: prof } = await supabase.from("customers").select("name, phone, address").eq("user_id", user.id).maybeSingle();
-        const { error } = await supabase.from("leads").insert({
+        const leadPayload = {
           customer_id: user.id,
           customer_name: (prof as { name?: string } | null)?.name ?? null,
           customer_phone: (prof as { phone?: string } | null)?.phone ?? null,
@@ -110,7 +110,9 @@ function QuickPage() {
           lng: effectiveCenter?.lng ?? geo.lng,
           search_radius_km: 10,
           max_slots: 5,
-        });
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await supabase.from("leads").insert(leadPayload as any);
         if (error) throw error;
         toast.success(`Vendor request sent for ${sub.title}`);
       } catch (e) {
