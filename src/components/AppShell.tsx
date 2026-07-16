@@ -60,11 +60,12 @@ export function AppShell() {
   useFcmToken();
   const isMarketing = MARKETING_EXACT.has(location.pathname);
   const hideShell = isMarketing || HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
-  const hideTopHeader = isMarketing || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
+  const isHome = location.pathname === "/";
+  const hideTopHeader = isMarketing || isHome || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
   const showFloatingDock = !isMarketing && SHOW_FLOATING_DOCK_ON.includes(location.pathname);
-  const isQuickRoute = location.pathname.startsWith("/quick");
+  const isQuickRoute = isHome || location.pathname.startsWith("/quick");
   const isVendorRoute = location.pathname.startsWith("/vendor");
   const isChatRoute = location.pathname === "/chat" || location.pathname === "/vendor/chat";
 
