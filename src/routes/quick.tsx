@@ -224,12 +224,12 @@ function QuickPage() {
                 }`}
                 transition={{ layout: { type: "spring", stiffness: 340, damping: 32 } }}
               >
-                <div className="flex items-stretch gap-3 p-3">
-                  <div className="w-28 h-28 rounded-xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
+                <div className="flex items-stretch gap-3 p-4">
+                  <div className="w-36 h-36 rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
                     <img src={s.img} alt="" className="h-full w-full object-contain" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="font-display font-extrabold text-[17px] text-slate-900 leading-tight truncate">{s.title}</h3>
+                    <h3 className="font-display font-extrabold text-[19px] text-slate-900 leading-tight truncate">{s.title}</h3>
                     <p className="text-[12px] text-slate-500 truncate">{s.tagline}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
