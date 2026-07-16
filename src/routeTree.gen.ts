@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
@@ -130,6 +131,11 @@ import { Route as ApiPublicPushSendLeadRouteImport } from './routes/api/public/p
 import { Route as ApiPublicHooksLeadWhatsappRouteImport } from './routes/api/public/hooks.lead-whatsapp'
 import { Route as ApiPublicShareImageKindCodeRouteImport } from './routes/api.public.share-image.$kind.$code'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
   path: '/vendors',
@@ -765,6 +771,7 @@ export interface FileRoutesByFullPath {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -885,6 +892,7 @@ export interface FileRoutesByTo {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -1008,6 +1016,7 @@ export interface FileRoutesById {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -1132,6 +1141,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1252,6 +1262,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1374,6 +1385,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1497,6 +1509,7 @@ export interface RootRouteChildren {
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TestBellRoute: typeof TestBellRoute
   VendorsRoute: typeof VendorsRoute
+  WelcomeRoute: typeof WelcomeRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CCodeRoute: typeof CCodeRoute
   FSlugRoute: typeof FSlugRoute
@@ -1535,6 +1548,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendors': {
       id: '/vendors'
       path: '/vendors'
@@ -2538,6 +2558,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   TestBellRoute: TestBellRoute,
   VendorsRoute: VendorsRoute,
+  WelcomeRoute: WelcomeRoute,
   BlogSlugRoute: BlogSlugRoute,
   CCodeRoute: CCodeRoute,
   FSlugRoute: FSlugRoute,

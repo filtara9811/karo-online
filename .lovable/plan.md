@@ -1,63 +1,41 @@
 ## Goal
-Redesign only the `/quick` page UI to match screenshot #2 (TikTok-style). Backend / flow / lead-raise logic stays identical. Fix the "flash then disappears" issue so the new UI stays mounted reliably.
+App खोलते ही customer को TikTok-style UI दिखे (जो अभी `/quick` पर बना है)। यानी home route `/` पर वही UI render हो।
 
-## Layout changes (top → bottom)
+## Root cause of the confusion
+- अभी `/` = marketing landing page (`src/routes/index.tsx`)
+- नया UI `/quick` पर बना है
+- `AppShell.tsx` में `MARKETING_EXACT` set में `/` है, जिसकी वजह से `/` पर सारा app chrome bypass होता है और marketing layout render होता है
+- इसलिए user को home पर पुराना/reselling UI ही दिखता रहा
 
-```text
-┌─────────────────────────────┐
-│  MAP HERO (unchanged)       │
-├─────────────────────────────┤
-│  [Service ▾]  [Delhi ▾]     │  ← Type + Location pills (was already here)
-├─────────────────────────────┤
-│  All Categories       View ›│
-│  ← [Home][Finance][Legal][Basic][…] →   ← NOW HORIZONTAL SCROLL
-├─────────────────────────────┤
-│  Sub Category View          │
-│  ┌───────────────────────┐  │
-│  │  BIGGER sub-cat card  │  │  ← plumber / carpenter cards
-│  │  (image + info)       │  │     enlarged; vertical scroll here only
-│  └───────────────────────┘  │
-│  ...                        │
-├─────────────────────────────┤
-│  Floating Mic FAB (search)  │  ← stays floating, right side
-├─────────────────────────────┤
-│  [My Orders] [👤 Profile] [My Shops]  ← 3-slot floating dock
-└─────────────────────────────┘
-```
+## Changes
 
-## Specific changes
+1. **`src/routes/index.tsx`** — पूरा content replace करके `QuickPage` (जो `src/routes/quick.tsx` में है) को यहाँ render करें। दो तरीके:
+   - **Option A (recommended):** `quick.tsx` की page body को एक shared component `src/components/pages/QuickHome.tsx` में निकालें। फिर `index.tsx` और `quick.tsx` दोनों वही component render करें। इससे duplication नहीं होगी।
+   - Head metadata (`title`, `description`) home-appropriate रखें।
 
-1. **Categories row → horizontal scroll strip**
-   - Replace the current `grid grid-cols-4` root-category tiles with a horizontal `overflow-x-auto snap-x` rail placed directly under the Service/Location pills.
-   - Each tile ~84×84 rounded-2xl; active tile has orange border + tint (keep `layoutId` glow animation).
-   - Only this row scrolls horizontally; page still scrolls vertically for cards.
+2. **`src/components/AppShell.tsx`**
+   - `MARKETING_EXACT` से `"/"` हटाएँ ताकि home पर app chrome (auth gate, dock etc.) चले।
+   - `HIDE_TOP_HEADER_ON` में `"/"` (exact match) add करें ताकि map wali screen पर top header न आए।
+   - `SHOW_FLOATING_DOCK_ON` में `"/"` add करें ताकि नीचे wala 3-slot dock home पर भी दिखे।
+   - `isQuickRoute` जैसी conditions को `pathname === "/" || pathname.startsWith("/quick")` तक extend करें (padding / no-footer logic)।
 
-2. **Sub-category cards → larger**
-   - Increase card image from `w-28 h-28` → `w-32 h-32` (or full-height `h-36`).
-   - Bigger title (`text-[18px]`), more padding (`p-4`), rounded-3xl, softer shadow.
-   - Keep expand-on-tap → variation selector + Find Vendor button (unchanged behavior).
+3. **Marketing landing page preservation** — पुराना marketing content किसी को publicly चाहिए हो सकता है, इसलिए उसे `src/routes/welcome.tsx` (route `/welcome`) पर move कर दें। SEO के लिए `head()` वहीं रहेगा। अगर user कहे तो पूरी तरह delete भी कर सकते हैं।
 
-3. **Floating dock (3 slots)** — already exists as `FloatingDockNav`, ensure it renders on `/quick`:
-   - Left: **My Orders** (badge, dispatches `ko-open-orders`)
-   - Center (raised): **Profile avatar FAB** → opens `ProfileHubSheet`
-   - Right: **My Shops** (badge, → `/vendors`)
+4. **Navigation cleanup** — किसी `Link to="/"` जो marketing के लिए था उसे `to="/welcome"` कर दें (footer के "Home" link वगैरह)। Bottom nav / customer menu में जो "Home" जाता है वो `/` (यानी नया UI) पर ही रहे।
 
-4. **Mic / search → floating FAB** (already floating; keep it above the dock at `bottom-28 right-4`).
+5. **Verify "flash then revert" fix**
+   - `AuthGate` redirect chains check करें — unauthenticated user को home पर auth screen नहीं दिखनी चाहिए, या दिखे तो सिर्फ overlay के तौर पर (map + UI behind रहे)।
+   - Ensure कोई `useEffect` `navigate({ to: "/welcome" })` या ऐसा auto-redirect नहीं है।
 
-5. **Top-corner profile removed** — the profile is now only the center dock FAB. Ensure `AppShell` header on `/quick` doesn't render a duplicate profile icon.
-
-6. **Fix the "UI flashes then reverts" bug**
-   - Root cause suspicion: `AppShell` conditionally hides/shows chrome based on route, and something re-mounts `quick.tsx` with the legacy layout.
-   - Verify `SHOW_FLOATING_DOCK_ON = ["/quick"]` matches actual pathname (no trailing slash mismatch).
-   - Ensure `/quick` route is not falling back to `/quicklegacy` anywhere (remove any redirect / navigate call in current `quick.tsx` — the mic FAB currently does `navigate({ to: "/quicklegacy" })`, change it to trigger voice input instead of navigating away).
-   - Confirm `routeTree.gen.ts` picks up the new `quick.tsx`, not a cached duplicate.
-
-## Files to edit
-- `src/routes/quick.tsx` — categories → horizontal rail; enlarge sub-cat cards; mic FAB no longer navigates to legacy.
-- `src/components/AppShell.tsx` — verify FloatingDockNav shows on `/quick`; hide any duplicate top-right profile on this route.
-- `src/components/FloatingDockNav.tsx` — minor polish only if needed (already 3-slot).
+## Files to touch
+- `src/routes/index.tsx` (replace body)
+- `src/routes/quick.tsx` (import shared component or keep as alias)
+- `src/components/pages/QuickHome.tsx` (NEW — extracted component)
+- `src/components/AppShell.tsx` (route lists)
+- `src/routes/welcome.tsx` (NEW — old marketing content moved)
+- footer / any `Link to="/"` marketing references — spot fix
 
 ## Out of scope
-- No backend, DB, server-function, or lead-flow changes.
-- No changes to other routes.
-- No new categories or content — only visual/layout restructure.
+- कोई backend / DB / lead-flow change नहीं
+- `/quick` route delete नहीं होगा (backward compatibility के लिए रहने दें, वही UI serve करेगा)
+- Vendor / admin / staff routes untouched
