@@ -218,7 +218,13 @@ function OnboardingAdmin() {
 
   return (
     <div>
-      <VendorOnboardingVideoCard />
+      <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-amber-200">🎬 Vendor onboarding video moved</div>
+          <div className="text-xs text-amber-100/70">Use the dedicated page to add or replace the background video shown on vendor join.</div>
+        </div>
+        <a href="/admin/video" className="text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg bg-amber-400 text-black hover:bg-amber-300">Open</a>
+      </div>
       <PageHeader
         title="Customer Onboarding Screens"
         subtitle="Splash / intro slides shown before the customer logs in. Drag-style ordering, image / video / Lottie animation supported."

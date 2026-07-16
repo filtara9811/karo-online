@@ -67,6 +67,7 @@ import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminWhatsappRouteImport } from './routes/admin.whatsapp'
+import { Route as AdminVideoRouteImport } from './routes/admin.video'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminTestAccountsRouteImport } from './routes/admin.test-accounts'
 import { Route as AdminSystemStatusRouteImport } from './routes/admin.system-status'
@@ -416,6 +417,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
 const AdminWhatsappRoute = AdminWhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminVideoRoute = AdminVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminVendorsRoute = AdminVendorsRouteImport.update({
@@ -786,6 +792,7 @@ export interface FileRoutesByFullPath {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/video': typeof AdminVideoRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
@@ -904,6 +911,7 @@ export interface FileRoutesByTo {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/video': typeof AdminVideoRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
@@ -1025,6 +1033,7 @@ export interface FileRoutesById {
   '/admin/system-status': typeof AdminSystemStatusRoute
   '/admin/test-accounts': typeof AdminTestAccountsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/video': typeof AdminVideoRoute
   '/admin/whatsapp': typeof AdminWhatsappRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/c/$code': typeof CCodeRoute
@@ -1147,6 +1156,7 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/test-accounts'
     | '/admin/vendors'
+    | '/admin/video'
     | '/admin/whatsapp'
     | '/blog/$slug'
     | '/c/$code'
@@ -1265,6 +1275,7 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/test-accounts'
     | '/admin/vendors'
+    | '/admin/video'
     | '/admin/whatsapp'
     | '/blog/$slug'
     | '/c/$code'
@@ -1385,6 +1396,7 @@ export interface FileRouteTypes {
     | '/admin/system-status'
     | '/admin/test-accounts'
     | '/admin/vendors'
+    | '/admin/video'
     | '/admin/whatsapp'
     | '/blog/$slug'
     | '/c/$code'
@@ -1916,6 +1928,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWhatsappRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/video': {
+      id: '/admin/video'
+      path: '/video'
+      fullPath: '/admin/video'
+      preLoaderRoute: typeof AdminVideoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/vendors': {
       id: '/admin/vendors'
       path: '/vendors'
@@ -2374,6 +2393,7 @@ interface AdminRouteChildren {
   AdminSystemStatusRoute: typeof AdminSystemStatusRoute
   AdminTestAccountsRoute: typeof AdminTestAccountsRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
+  AdminVideoRoute: typeof AdminVideoRoute
   AdminWhatsappRoute: typeof AdminWhatsappRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminViewUserIdRoute: typeof AdminViewUserIdRoute
@@ -2427,6 +2447,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSystemStatusRoute: AdminSystemStatusRoute,
   AdminTestAccountsRoute: AdminTestAccountsRoute,
   AdminVendorsRoute: AdminVendorsRoute,
+  AdminVideoRoute: AdminVideoRoute,
   AdminWhatsappRoute: AdminWhatsappRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminViewUserIdRoute: AdminViewUserIdRoute,
@@ -2534,13 +2555,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -635,3 +635,41 @@ export const assignCategories = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// ---------- Leaderboard (top earners, last 30 days) ----------
+export const getTopEarners = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async ({ context }): Promise<any[]> => {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Sum credits per staff in last 30 days
+    const { data: ledger } = await context.supabase
+      .from("staff_wallet_ledger" as never)
+      .select("staff_id, amount_inr, kind, created_at")
+      .neq("kind", "withdrawal")
+      .gte("created_at", since)
+      .limit(1000);
+    const totals = new Map<string, number>();
+    for (const row of ((ledger as unknown as { staff_id: string; amount_inr: number }[]) ?? [])) {
+      totals.set(row.staff_id, (totals.get(row.staff_id) ?? 0) + Number(row.amount_inr));
+    }
+    const ids = [...totals.keys()];
+    if (!ids.length) return [];
+    const { data: profiles } = await context.supabase
+      .from("staff_profiles" as never)
+      .select("id, name, avatar_url, employee_code")
+      .in("id", ids);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const byId = new Map<string, any>(((profiles as unknown as any[]) ?? []).map((p) => [p.id, p]));
+    return ids
+      .map((id) => ({
+        staff_id: id,
+        name: byId.get(id)?.name ?? "Staff",
+        avatar_url: byId.get(id)?.avatar_url ?? null,
+        employee_code: byId.get(id)?.employee_code ?? null,
+        earned_inr: totals.get(id) ?? 0,
+      }))
+      .sort((a, b) => b.earned_inr - a.earned_inr)
+      .slice(0, 5);
+  });
+

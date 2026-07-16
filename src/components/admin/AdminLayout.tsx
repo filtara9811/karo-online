@@ -66,6 +66,7 @@ const NAV: NavItem[] = [
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
   { to: "/admin/web", label: "✨ Special Web (CMS)", icon: Globe },
   { to: "/admin/onboarding", label: "Onboarding Screens", icon: LayoutDashboard },
+  { to: "/admin/video", label: "🎬 Onboarding Video", icon: Palette },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
   { to: "/admin/feedback", label: "💬 Feedback / Support", icon: MessageSquare },
 ];
