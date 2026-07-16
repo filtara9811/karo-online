@@ -19,7 +19,6 @@ import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ReferralRouteImport } from './routes/referral'
-import { Route as QuickRouteImport } from './routes/quick'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -60,6 +59,7 @@ import { Route as StaffTasksRouteImport } from './routes/staff.tasks'
 import { Route as StaffLoginRouteImport } from './routes/staff.login'
 import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as QuickLegacyRouteImport } from './routes/quick.legacy'
 import { Route as QCodeRouteImport } from './routes/q.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as LeadsInboxRouteImport } from './routes/leads.inbox'
@@ -177,11 +177,6 @@ const RefundPolicyRoute = RefundPolicyRouteImport.update({
 const ReferralRoute = ReferralRouteImport.update({
   id: '/referral',
   path: '/referral',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuickRoute = QuickRouteImport.update({
-  id: '/quick',
-  path: '/quick',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -382,6 +377,11 @@ const SCodeRoute = SCodeRouteImport.update({
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuickLegacyRoute = QuickLegacyRouteImport.update({
+  id: '/quick/legacy',
+  path: '/quick/legacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QCodeRoute = QCodeRouteImport.update({
@@ -747,7 +747,6 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
-  '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
@@ -800,6 +799,7 @@ export interface FileRoutesByFullPath {
   '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
+  '/quick/legacy': typeof QuickLegacyRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
@@ -867,7 +867,6 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
-  '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
@@ -919,6 +918,7 @@ export interface FileRoutesByTo {
   '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
+  '/quick/legacy': typeof QuickLegacyRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
@@ -988,7 +988,6 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
-  '/quick': typeof QuickRoute
   '/referral': typeof ReferralRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
@@ -1041,6 +1040,7 @@ export interface FileRoutesById {
   '/leads/inbox': typeof LeadsInboxRoute
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
+  '/quick/legacy': typeof QuickLegacyRoute
   '/r/$code': typeof RCodeRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
@@ -1111,7 +1111,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
-    | '/quick'
     | '/referral'
     | '/refund-policy'
     | '/register'
@@ -1164,6 +1163,7 @@ export interface FileRouteTypes {
     | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
+    | '/quick/legacy'
     | '/r/$code'
     | '/s/$code'
     | '/staff/login'
@@ -1231,7 +1231,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
-    | '/quick'
     | '/referral'
     | '/refund-policy'
     | '/register'
@@ -1283,6 +1282,7 @@ export interface FileRouteTypes {
     | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
+    | '/quick/legacy'
     | '/r/$code'
     | '/s/$code'
     | '/staff/login'
@@ -1351,7 +1351,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/profile'
-    | '/quick'
     | '/referral'
     | '/refund-policy'
     | '/register'
@@ -1404,6 +1403,7 @@ export interface FileRouteTypes {
     | '/leads/inbox'
     | '/product/$id'
     | '/q/$code'
+    | '/quick/legacy'
     | '/r/$code'
     | '/s/$code'
     | '/staff/login'
@@ -1473,7 +1473,6 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
-  QuickRoute: typeof QuickRoute
   ReferralRoute: typeof ReferralRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   RegisterRoute: typeof RegisterRoute
@@ -1490,6 +1489,7 @@ export interface RootRouteChildren {
   LeadsInboxRoute: typeof LeadsInboxRoute
   ProductIdRoute: typeof ProductIdRoute
   QCodeRoute: typeof QCodeRoute
+  QuickLegacyRoute: typeof QuickLegacyRoute
   RCodeRoute: typeof RCodeRoute
   SCodeRoute: typeof SCodeRoute
   VendorChatRoute: typeof VendorChatRoute
@@ -1590,13 +1590,6 @@ declare module '@tanstack/react-router' {
       path: '/referral'
       fullPath: '/referral'
       preLoaderRoute: typeof ReferralRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quick': {
-      id: '/quick'
-      path: '/quick'
-      fullPath: '/quick'
-      preLoaderRoute: typeof QuickRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -1877,6 +1870,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$code'
       fullPath: '/r/$code'
       preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quick/legacy': {
+      id: '/quick/legacy'
+      path: '/quick/legacy'
+      fullPath: '/quick/legacy'
+      preLoaderRoute: typeof QuickLegacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/q/$code': {
@@ -2506,7 +2506,6 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
-  QuickRoute: QuickRoute,
   ReferralRoute: ReferralRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   RegisterRoute: RegisterRoute,
@@ -2523,6 +2522,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeadsInboxRoute: LeadsInboxRoute,
   ProductIdRoute: ProductIdRoute,
   QCodeRoute: QCodeRoute,
+  QuickLegacyRoute: QuickLegacyRoute,
   RCodeRoute: RCodeRoute,
   SCodeRoute: SCodeRoute,
   VendorChatRoute: VendorChatRoute,
