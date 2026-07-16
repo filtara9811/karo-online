@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -60,7 +60,6 @@ const DEMO_VENDORS: QuickMapVendor[] = [
 
 /* -------------------------------- Page ----------------------------------- */
 function QuickPage() {
-  const navigate = useNavigate();
   const { profile } = useAuth();
   const { requireAuth } = useAuthGate();
   const geo = useGeolocation();
@@ -176,9 +175,9 @@ function QuickPage() {
           </button>
         </div>
 
-        {/* 4 root category tiles */}
-        <div className="mt-3 px-4">
-          <div className="grid grid-cols-4 gap-2.5">
+        {/* Root category tiles — HORIZONTAL SCROLL RAIL */}
+        <div className="mt-3">
+          <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {ROOT_CATS.map((c) => {
               const isActive = selectedRoot === c.key;
               const Icon = c.Icon;
@@ -187,7 +186,7 @@ function QuickPage() {
                   key={c.key}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedRoot(c.key)}
-                  className={`relative rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 h-[92px] border-2 transition-colors ${
+                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 w-[92px] h-[96px] border-2 transition-colors ${
                     isActive ? "border-orange-400 bg-orange-50/60" : "border-transparent"
                   }`}
                 >
@@ -195,7 +194,7 @@ function QuickPage() {
                     <motion.span layoutId="root-cat-glow" className="absolute inset-0 rounded-2xl ring-2 ring-orange-300/60 pointer-events-none" transition={{ type: "spring", stiffness: 350, damping: 28 }} />
                   )}
                   <Icon className={`h-7 w-7 ${isActive ? "text-orange-500" : "text-slate-700"}`} strokeWidth={2.1} />
-                  <span className={`text-[10.5px] font-semibold text-center leading-tight ${isActive ? "text-orange-600" : "text-slate-700"}`}>
+                  <span className={`text-[11px] font-semibold text-center leading-tight ${isActive ? "text-orange-600" : "text-slate-700"}`}>
                     {c.name}
                   </span>
                 </motion.button>
@@ -219,17 +218,17 @@ function QuickPage() {
                 key={s.key}
                 layout
                 onClick={() => setExpandedSub(isOpen ? null : s.key)}
-                className={`rounded-2xl overflow-hidden border-2 bg-white shadow-[0_6px_18px_-10px_rgba(0,0,0,0.25)] cursor-pointer ${
+                className={`rounded-3xl overflow-hidden border-2 bg-white shadow-[0_10px_28px_-14px_rgba(0,0,0,0.28)] cursor-pointer ${
                   isOpen ? "border-orange-400 bg-orange-50/40" : "border-transparent"
                 }`}
                 transition={{ layout: { type: "spring", stiffness: 340, damping: 32 } }}
               >
-                <div className="flex items-stretch gap-3 p-3">
-                  <div className="w-28 h-28 rounded-xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
+                <div className="flex items-stretch gap-3 p-4">
+                  <div className="w-36 h-36 rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
                     <img src={s.img} alt="" className="h-full w-full object-contain" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="font-display font-extrabold text-[17px] text-slate-900 leading-tight truncate">{s.title}</h3>
+                    <h3 className="font-display font-extrabold text-[19px] text-slate-900 leading-tight truncate">{s.title}</h3>
                     <p className="text-[12px] text-slate-500 truncate">{s.tagline}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
@@ -300,7 +299,7 @@ function QuickPage() {
       {/* Floating mic FAB (bottom-right, above dock) */}
       <button
         aria-label="Voice search"
-        onClick={() => navigate({ to: "/quicklegacy" })}
+        onClick={() => setTypePickerOpen(true)}
         className="fixed right-4 bottom-28 z-30 h-14 w-14 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 text-white shadow-[0_10px_24px_-8px_rgba(249,115,22,0.65)] grid place-items-center active:scale-95"
       >
         <Mic className="h-6 w-6" strokeWidth={2.3} />

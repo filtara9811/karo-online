@@ -1,61 +1,63 @@
-# TikTok-Style Customer Home Redesign
+## Goal
+Redesign only the `/quick` page UI to match screenshot #2 (TikTok-style). Backend / flow / lead-raise logic stays identical. Fix the "flash then disappears" issue so the new UI stays mounted reliably.
 
-Redesigning `/` (customer home) to match screenshot #1 layout and adopting the floating 3-button bottom nav from screenshot #2. Keeps ALL existing business logic (leads, vendor find, cart, digital shops, join vendor) — only the presentation layer changes.
+## Layout changes (top → bottom)
 
-## New Home Layout (`src/routes/index.tsx` + new components)
+```text
+┌─────────────────────────────┐
+│  MAP HERO (unchanged)       │
+├─────────────────────────────┤
+│  [Service ▾]  [Delhi ▾]     │  ← Type + Location pills (was already here)
+├─────────────────────────────┤
+│  All Categories       View ›│
+│  ← [Home][Finance][Legal][Basic][…] →   ← NOW HORIZONTAL SCROLL
+├─────────────────────────────┤
+│  Sub Category View          │
+│  ┌───────────────────────┐  │
+│  │  BIGGER sub-cat card  │  │  ← plumber / carpenter cards
+│  │  (image + info)       │  │     enlarged; vertical scroll here only
+│  └───────────────────────┘  │
+│  ...                        │
+├─────────────────────────────┤
+│  Floating Mic FAB (search)  │  ← stays floating, right side
+├─────────────────────────────┤
+│  [My Orders] [👤 Profile] [My Shops]  ← 3-slot floating dock
+└─────────────────────────────┘
+```
 
-Vertical stack (mobile-first, single column):
+## Specific changes
 
-1. **Map hero (top)** — reuse existing `MapView` / customer + vendor pins. Height ~38vh. Curved bottom edge with soft shadow. Show "You / Ravi Plumber / Amit Carpenter" style pins with distance labels (data already available from `nearby-customers.functions`).
+1. **Categories row → horizontal scroll strip**
+   - Replace the current `grid grid-cols-4` root-category tiles with a horizontal `overflow-x-auto snap-x` rail placed directly under the Service/Location pills.
+   - Each tile ~84×84 rounded-2xl; active tile has orange border + tint (keep `layoutId` glow animation).
+   - Only this row scrolls horizontally; page still scrolls vertically for cards.
 
-2. **Type + Location row** — two pill selectors side by side:
-   - Left pill: **Service / Product / Other** (icon + label + chevron). Tap → opens existing `ProductServicePicker` bottom sheet. Selection persists via existing `useActiveTypeId`. Changing type re-filters the categories below.
-   - Right pill: **Location** (map-pin icon + city name + chevron). Tap → opens existing `LocationPickerSheet`.
+2. **Sub-category cards → larger**
+   - Increase card image from `w-28 h-28` → `w-32 h-32` (or full-height `h-36`).
+   - Bigger title (`text-[18px]`), more padding (`p-4`), rounded-3xl, softer shadow.
+   - Keep expand-on-tap → variation selector + Find Vendor button (unchanged behavior).
 
-3. **All Categories row** — horizontal scroller of 4 main categories (Home / Finance / Legal / Basic). Header `All Categories` + `View ›` on right. Tapping `View ›` or the header opens a new bottom sheet showing every category. Selected category is highlighted with orange border + tinted background (animated with framer-motion `layoutId` for smooth pill-slide).
+3. **Floating dock (3 slots)** — already exists as `FloatingDockNav`, ensure it renders on `/quick`:
+   - Left: **My Orders** (badge, dispatches `ko-open-orders`)
+   - Center (raised): **Profile avatar FAB** → opens `ProfileHubSheet`
+   - Right: **My Shops** (badge, → `/vendors`)
 
-4. **Sub-category cards (main content)** — big rounded cards per sub-category (Plumber, Carpenter, Electrician…). Each card shows:
-   - Illustration/thumb (left)
-   - Title, tagline, rating, verified/available counts
-   - When card is **selected/expanded**: a bottom action row appears inside the card with:
-     - Left: **Variation selector** pill (opens existing variation bottom sheet — reuses current `ItemPricingSheet` / needs sheet)
-     - Right: Orange **Find Vendor** button → triggers existing raise-lead flow directly
-   - Collapsed cards just show a `›` chevron; tapping expands with a smooth height animation.
+4. **Mic / search → floating FAB** (already floating; keep it above the dock at `bottom-28 right-4`).
 
-5. **Floating bottom nav (screenshot #2 style)** — new `FloatingDockNav` component:
-   - Dark rounded pill bar with 3 slots
-   - Left: **My Orders** (badge = order count) → opens bottom sheet with existing `MyOrdersList`
-   - Center: **Profile FAB** (raised circular avatar, sits above the bar with white halo) → opens bottom sheet with two big buttons: **Join Vendor / Vendor Dashboard** and **Menu**
-   - Right: **My Shops** (badge = shop count) → opens digital shops bottom sheet (reuse existing digital-shop UI)
-   - Selected slot animates: icon lifts into the raised circle (framer-motion `layoutId="dock-active"`), background highlight slides to its position
+5. **Top-corner profile removed** — the profile is now only the center dock FAB. Ensure `AppShell` header on `/quick` doesn't render a duplicate profile icon.
 
-## Animation & Polish
+6. **Fix the "UI flashes then reverts" bug**
+   - Root cause suspicion: `AppShell` conditionally hides/shows chrome based on route, and something re-mounts `quick.tsx` with the legacy layout.
+   - Verify `SHOW_FLOATING_DOCK_ON = ["/quick"]` matches actual pathname (no trailing slash mismatch).
+   - Ensure `/quick` route is not falling back to `/quicklegacy` anywhere (remove any redirect / navigate call in current `quick.tsx` — the mic FAB currently does `navigate({ to: "/quicklegacy" })`, change it to trigger voice input instead of navigating away).
+   - Confirm `routeTree.gen.ts` picks up the new `quick.tsx`, not a cached duplicate.
 
-- `framer-motion` for: pill selection slide, card expand/collapse, bottom-sheet spring open, dock icon lift.
-- Bottom sheets use existing shadcn `Drawer` with spring easing; add drag-to-dismiss.
-- Tap feedback: `whileTap={{ scale: 0.96 }}` on all buttons.
+## Files to edit
+- `src/routes/quick.tsx` — categories → horizontal rail; enlarge sub-cat cards; mic FAB no longer navigates to legacy.
+- `src/components/AppShell.tsx` — verify FloatingDockNav shows on `/quick`; hide any duplicate top-right profile on this route.
+- `src/components/FloatingDockNav.tsx` — minor polish only if needed (already 3-slot).
 
-## Files
-
-**New**
-- `src/components/home/HomeMapHero.tsx` — map + pin overlay
-- `src/components/home/TypeLocationRow.tsx` — the two pills
-- `src/components/home/CategoryStrip.tsx` — 4 main categories + View sheet
-- `src/components/home/SubCategoryCard.tsx` — expandable card with Find Vendor + variation
-- `src/components/FloatingDockNav.tsx` — 3-button dock (screenshot #2)
-- `src/components/ProfileHubSheet.tsx` — center-FAB bottom sheet (Join Vendor / Menu)
-
-**Edited**
-- `src/routes/index.tsx` — recompose using above
-- `src/components/AppShell.tsx` — hide old bottom bar on `/`, mount `FloatingDockNav` instead
-
-## Out of Scope (unchanged)
-- Backend / server functions / DB
-- Staff, admin, vendor panels
-- Auth flows
-- Existing lead-raise logic (only the trigger button moves)
-
-## Technical notes
-- Reuses `useActiveTypeId`, `ProductServicePicker`, `LocationPickerSheet`, `MyOrdersList`, existing lead-raise mutation, existing digital-shops sheet — no logic rewrites.
-- All colors use existing semantic tokens (orange = `--gold-*` tokens already in `styles.css`).
-- Mobile-only layout (max-w-md centered), matches current app shell width.
+## Out of scope
+- No backend, DB, server-function, or lead-flow changes.
+- No changes to other routes.
+- No new categories or content — only visual/layout restructure.
