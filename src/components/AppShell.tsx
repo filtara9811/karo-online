@@ -41,12 +41,12 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/staff", "/referral", "/r/", "/s/", "/c/", "/privacy-policy", "/terms-and-conditions", "/refund-policy", "/shipping-policy", "/blog", "/f/", "/orders", "/cart", "/checkout"];
 const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/staff", "/orders"];
 // Marketing/public website routes — render their own layout, no app chrome at all.
-const MARKETING_EXACT = new Set(["/", "/about", "/features", "/pricing", "/for-vendors", "/for-customers", "/download", "/contact", "/blog"]);
+const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", "/for-vendors", "/for-customers", "/download", "/contact", "/blog"]);
 // Bottom service/product picker bar ONLY shows on these routes.
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
 const SHOW_BOTTOM_BAR_ON: string[] = [];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
-const SHOW_FLOATING_DOCK_ON = ["/quick"];
+const SHOW_FLOATING_DOCK_ON = ["/quick", "/"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },

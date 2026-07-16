@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
@@ -37,7 +38,6 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -130,6 +130,11 @@ import { Route as ApiPublicPushSendLeadRouteImport } from './routes/api/public/p
 import { Route as ApiPublicHooksLeadWhatsappRouteImport } from './routes/api/public/hooks.lead-whatsapp'
 import { Route as ApiPublicShareImageKindCodeRouteImport } from './routes/api.public.share-image.$kind.$code'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorsRoute = VendorsRouteImport.update({
   id: '/vendors',
   path: '/vendors',
@@ -268,11 +273,6 @@ const AdminRoute = AdminRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StaffIndexRoute = StaffIndexRouteImport.update({
@@ -736,7 +736,6 @@ const ApiPublicShareImageKindCodeRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
@@ -765,6 +764,7 @@ export interface FileRoutesByFullPath {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -858,7 +858,6 @@ export interface FileRoutesByFullPath {
   '/api/public/share-image/$kind/$code': typeof ApiPublicShareImageKindCodeRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
@@ -885,6 +884,7 @@ export interface FileRoutesByTo {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -979,7 +979,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
@@ -1008,6 +1007,7 @@ export interface FileRoutesById {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
+  '/welcome': typeof WelcomeRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -1103,7 +1103,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/about'
     | '/admin'
     | '/cart'
@@ -1132,6 +1131,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1225,7 +1225,6 @@ export interface FileRouteTypes {
     | '/api/public/share-image/$kind/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/about'
     | '/cart'
     | '/chat'
@@ -1252,6 +1251,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1345,7 +1345,6 @@ export interface FileRouteTypes {
     | '/api/public/share-image/$kind/$code'
   id:
     | '__root__'
-    | '/'
     | '/about'
     | '/admin'
     | '/cart'
@@ -1374,6 +1373,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/test-bell'
     | '/vendors'
+    | '/welcome'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1468,7 +1468,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   CartRoute: typeof CartRoute
@@ -1497,6 +1496,7 @@ export interface RootRouteChildren {
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TestBellRoute: typeof TestBellRoute
   VendorsRoute: typeof VendorsRoute
+  WelcomeRoute: typeof WelcomeRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CCodeRoute: typeof CCodeRoute
   FSlugRoute: typeof FSlugRoute
@@ -1535,6 +1535,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendors': {
       id: '/vendors'
       path: '/vendors'
@@ -1729,13 +1736,6 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/staff/': {
@@ -2509,7 +2509,6 @@ const StaffRouteChildren: StaffRouteChildren = {
 const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   CartRoute: CartRoute,
@@ -2538,6 +2537,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   TestBellRoute: TestBellRoute,
   VendorsRoute: VendorsRoute,
+  WelcomeRoute: WelcomeRoute,
   BlogSlugRoute: BlogSlugRoute,
   CCodeRoute: CCodeRoute,
   FSlugRoute: FSlugRoute,
