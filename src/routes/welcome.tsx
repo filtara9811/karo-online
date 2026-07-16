@@ -10,7 +10,7 @@ import { Section, SectionHeader, FeatureCard } from "@/components/marketing/sect
 const OG_IMAGE =
   "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b6c58009-aed3-4f10-8b1d-c9bf371df617";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/welcome")({
   head: () => ({
     meta: [
       { title: "KaroOnline — India's Premium Hyperlocal Marketplace" },
