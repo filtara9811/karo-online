@@ -10,6 +10,7 @@ import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceM
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
+import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useAuth } from "@/hooks/use-auth";
@@ -86,6 +87,13 @@ export function QuickPage() {
   const [variationSheet, setVariationSheet] = useState<DBCategory | null>(null);
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<{
+    phase: SubmitPhase;
+    category: string | null;
+    variation: string | null;
+    error: string | null;
+    retry: (() => void) | null;
+  } | null>(null);
   const [finder, setFinder] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
   const [recent, setRecent] = useState<RecentSub[]>([]);
   useEffect(() => {
@@ -204,24 +212,38 @@ export function QuickPage() {
     } catch { /* noop */ }
   };
 
-  const handleFindVendor = async (sub: DBCategory) => {
-    requireAuth(async () => {
-      const items = itemsBySub.get(sub.id) ?? [];
-      const variation = variationBySub[sub.id];
-      // Always show variation sheet when catalog has items — user needs to pick.
-      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
-      const useVariation = variation ?? sub.name;
+  const submitLead = async (sub: DBCategory, useVariation: string) => {
+    const attempt = async () => {
       setSubmitting(sub.id);
+      setSubmitState({ phase: "submitting", category: sub.name, variation: useVariation, error: null, retry: null });
       try {
         const leadId = await createLead(sub, useVariation);
         pushRecent(sub);
         if (!leadId) throw new Error("Could not create lead");
-        setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
+        setSubmitState({ phase: "success", category: sub.name, variation: useVariation, error: null, retry: null });
+        toast.success("Request submitted — finding vendors");
+        // brief success celebration, then hand off to the radar
+        setTimeout(() => {
+          setSubmitState(null);
+          setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
+        }, 700);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Could not send request");
+        const msg = e instanceof Error ? e.message : "Could not send request";
+        setSubmitState({ phase: "error", category: sub.name, variation: useVariation, error: msg, retry: attempt });
+        toast.error(msg);
       } finally {
         setSubmitting(null);
       }
+    };
+    await attempt();
+  };
+
+  const handleFindVendor = async (sub: DBCategory) => {
+    requireAuth(async () => {
+      const items = itemsBySub.get(sub.id) ?? [];
+      const variation = variationBySub[sub.id];
+      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
+      await submitLead(sub, variation ?? sub.name);
     });
   };
 
@@ -234,25 +256,16 @@ export function QuickPage() {
       image_url: pick.image ?? null, icon: null, parent_id: null,
       sort_order: 0, keywords: null, type_id: SERVICE_TYPE_ID,
     };
-    // If user picked a specific item, use its label as variation, else defer to sheet
     if (pick.itemIds.length > 0) {
       setVariationBySub((prev) => ({ ...prev, [target.id]: pick.label }));
-      requireAuth(async () => {
-        setSubmitting(target.id);
-        try {
-          const leadId = await createLead(target, pick.label);
-          if (leadId) setFinder({ leadId, category: target.name, categoryImage: target.image_url });
-        } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not send request");
-        } finally { setSubmitting(null); }
-      });
+      requireAuth(async () => { await submitLead(target, pick.label); });
     } else {
-      // Open the sub card + variation sheet
       if (sub?.parent_id) setSelectedRoot(sub.parent_id);
       setExpandedSub(target.id);
       setVariationSheet(target);
     }
   };
+
 
   /* --------------------------------- UI ---------------------------------- */
   return (
@@ -646,6 +659,16 @@ export function QuickPage() {
       </AnimatePresence>
 
       {/* Finding vendor radar overlay */}
+      <SubmittingRequestOverlay
+        open={!!submitState}
+        phase={submitState?.phase ?? "submitting"}
+        category={submitState?.category ?? null}
+        variation={submitState?.variation ?? null}
+        errorMessage={submitState?.error ?? null}
+        onRetry={() => submitState?.retry?.()}
+        onClose={() => setSubmitState(null)}
+      />
+
       <FindingVendorOverlay
         open={!!finder}
         leadId={finder?.leadId ?? null}
