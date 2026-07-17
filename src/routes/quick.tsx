@@ -140,6 +140,14 @@ export function QuickPage() {
     [expandedSub, visibleSubs],
   );
 
+  const selectedSubIcon = useMemo(() => {
+    if (!selectedSub) return undefined;
+    if (selectedSub.image_url?.startsWith("http")) return selectedSub.image_url;
+    if (isEmojiLike(selectedSub.image_url)) return selectedSub.image_url ?? undefined;
+    if (isEmojiLike(selectedSub.icon)) return selectedSub.icon ?? undefined;
+    return undefined;
+  }, [selectedSub]);
+
   // Auto-expand first sub whenever the visible list changes (so one card is always "selected")
   useEffect(() => {
     if (visibleSubs.length === 0) { setExpandedSub(null); return; }
@@ -361,7 +369,7 @@ export function QuickPage() {
             geoStatus={geo.status}
             showControls={false}
             radiusKm={10}
-            categoryIcon={selectedSub?.image_url?.startsWith("http") ? selectedSub.image_url : undefined}
+            categoryIcon={selectedSubIcon}
             onLocationTap={() => setLocationSheetOpen(true)}
           />
         ) : (
