@@ -10,6 +10,7 @@ import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceM
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
+import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useAuth } from "@/hooks/use-auth";
