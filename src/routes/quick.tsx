@@ -181,15 +181,27 @@ export function QuickPage() {
     return (data as { id: string } | null)?.id ?? null;
   };
 
+  const pushRecent = (sub: DBCategory) => {
+    try {
+      const raw = localStorage.getItem("ko-recent-subs");
+      const arr: RecentSub[] = raw ? JSON.parse(raw) : [];
+      const next = [{ id: sub.id, name: sub.name, image: sub.image_url }, ...arr.filter((r) => r.id !== sub.id)].slice(0, 8);
+      localStorage.setItem("ko-recent-subs", JSON.stringify(next));
+      setRecent(next);
+    } catch { /* noop */ }
+  };
+
   const handleFindVendor = async (sub: DBCategory) => {
     requireAuth(async () => {
       const items = itemsBySub.get(sub.id) ?? [];
-      const variation = variationBySub[sub.id]
-        ?? (items.length === 0 ? sub.name : undefined);
-      if (!variation) { setVariationSheet(sub); return; }
+      const variation = variationBySub[sub.id];
+      // Always show variation sheet when catalog has items — user needs to pick.
+      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
+      const useVariation = variation ?? sub.name;
       setSubmitting(sub.id);
       try {
-        const leadId = await createLead(sub, variation);
+        const leadId = await createLead(sub, useVariation);
+        pushRecent(sub);
         if (leadId) {
           setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
         } else {
