@@ -334,6 +334,45 @@ export function QuickPage() {
           </div>
         </div>
 
+        {/* Recent History rail */}
+        {recent.length > 0 && (
+          <>
+            <div className="px-4 pt-5 flex items-center justify-between">
+              <span className="font-semibold text-[15px] text-slate-800">Recent</span>
+              <button
+                onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
+                className="text-orange-500 text-xs font-semibold"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="mt-2 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {recent.map((r) => {
+                const full = allSubs.find((s) => s.id === r.id);
+                return (
+                  <motion.button
+                    key={r.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
+                    className="shrink-0 w-[112px] rounded-2xl bg-white border border-slate-200 p-2 flex flex-col items-center gap-1.5 shadow-[0_4px_12px_-8px_rgba(0,0,0,0.2)]"
+                  >
+                    <span className="h-14 w-14 rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
+                      {r.image && r.image.startsWith("http") ? (
+                        <img src={r.image} alt="" className="h-full w-full object-cover" />
+                      ) : isEmojiLike(r.image) ? (
+                        <span className="text-3xl">{r.image}</span>
+                      ) : (
+                        <Wrench className="h-6 w-6 text-orange-500" />
+                      )}
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* Sub Category View label */}
         <div className="px-4 pt-5 pb-2">
           <span className="text-[13px] text-slate-500 font-medium">Sub Category View</span>
