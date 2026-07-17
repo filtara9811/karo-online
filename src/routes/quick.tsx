@@ -207,11 +207,8 @@ export function QuickPage() {
       try {
         const leadId = await createLead(sub, useVariation);
         pushRecent(sub);
-        if (leadId) {
-          setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
-        } else {
-          toast.success(`Vendor request sent for ${sub.name}`);
-        }
+        if (!leadId) throw new Error("Could not create lead");
+        setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not send request");
       } finally {
