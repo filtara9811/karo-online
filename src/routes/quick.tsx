@@ -256,9 +256,9 @@ export function QuickPage() {
 
   /* --------------------------------- UI ---------------------------------- */
   return (
-    <div className="fixed inset-0 bg-[#f7f7f7] flex flex-col overflow-hidden">
-      {/* ==================== TOP MAP ==================== */}
-      <section className="relative flex-shrink-0" style={{ height: "34vh", minHeight: 240 }}>
+    <div className="fixed inset-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
+      {/* ==================== MAP HERO (top ~45%) with GLASS overlays ==================== */}
+      <section className="relative flex-shrink-0" style={{ height: "46vh", minHeight: 320 }}>
         {(geo.status !== "loading" || pickedLocation) ? (
           <QuickServiceMap
             center={effectiveCenter}
@@ -272,83 +272,93 @@ export function QuickPage() {
         ) : (
           <div className="h-full w-full bg-gradient-to-b from-amber-50 to-white animate-pulse" />
         )}
-      </section>
 
-      {/* ==================== FIXED FLOATING PANEL (overlaps map bottom) ==================== */}
-      <div className="relative z-20 flex-shrink-0 -mt-16 px-3 pb-2">
-        {/* Type + Location pills — sit on map */}
-        <div className="flex items-center gap-2.5">
+        {/* Glass Type + Location header — floats on the map */}
+        <div className="absolute left-3 right-3 top-3 z-20 flex items-center gap-2.5">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setSearchOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4 active:shadow-sm"
+            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
           >
             <Wrench className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-800">Service</span>
-            <ChevronDown className="h-4 w-4 text-slate-500" />
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 drop-shadow-sm">Service</span>
+            <ChevronDown className="h-4 w-4 text-slate-700" />
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setLocationSheetOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4"
+            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
           >
             <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-800 truncate">{shortLocation}</span>
-            <ChevronDown className="h-4 w-4 text-slate-500" />
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
+            <ChevronDown className="h-4 w-4 text-slate-700" />
           </motion.button>
         </div>
 
-        {/* All Categories header */}
-        <div className="pt-3 flex items-center justify-between px-1">
-          <button onClick={() => setAllCatsOpen(true)} className="font-semibold text-[14px] text-slate-800">
-            All Categories
-          </button>
-          <button onClick={() => setAllCatsOpen(true)} className="flex items-center gap-1 text-orange-500 text-[13px] font-semibold">
-            View <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Root category tiles — HORIZONTAL SCROLL RAIL */}
-        <div className="mt-2">
-          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {catQ.isLoading && rootCats.length === 0 ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="shrink-0 w-[84px] h-[84px] rounded-2xl bg-white/70 animate-pulse" />
-              ))
-            ) : rootCats.map((c) => {
-              const isActive = selectedRoot === c.id;
-              return (
-                <motion.button
-                  key={c.id}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedRoot(c.id)}
-                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2 flex flex-col items-center justify-center gap-1 w-[84px] h-[84px] border-2 shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] transition-colors ${
-                    isActive ? "border-orange-400 bg-orange-50/60" : "border-transparent"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.span layoutId="root-cat-glow" className="absolute inset-0 rounded-2xl ring-2 ring-orange-300/60 pointer-events-none" transition={{ type: "spring", stiffness: 350, damping: 28 }} />
-                  )}
-                  <CategoryGlyph cat={c} active={isActive} size={26} />
-                  <span className={`text-[10.5px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? "text-orange-600" : "text-slate-700"}`}>
-                    {c.name}
-                  </span>
-                </motion.button>
-              );
-            })}
+        {/* Floating GLASS category rail — pinned near the bottom of the map */}
+        <div className="absolute inset-x-0 bottom-3 z-20 px-3">
+          <div className="rounded-3xl bg-white/20 backdrop-blur-2xl border border-white/40 shadow-[0_14px_36px_-14px_rgba(0,0,0,0.45)] px-2 py-2">
+            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {catQ.isLoading && rootCats.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="shrink-0 w-[64px] h-[76px] rounded-2xl bg-white/40 animate-pulse" />
+                ))
+              ) : (
+                <>
+                  {rootCats.map((c) => {
+                    const isActive = selectedRoot === c.id;
+                    return (
+                      <motion.button
+                        key={c.id}
+                        whileTap={{ scale: 0.94 }}
+                        onClick={() => setSelectedRoot(c.id)}
+                        className={`relative shrink-0 snap-start rounded-2xl flex flex-col items-center justify-center gap-1 transition-all ${
+                          isActive
+                            ? "w-[74px] h-[82px] bg-white/85 border-2 border-amber-400 shadow-[0_10px_20px_-8px_rgba(217,119,6,0.55)]"
+                            : "w-[64px] h-[76px] bg-white/35 border border-white/50"
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="root-cat-glow"
+                            className="absolute -inset-0.5 rounded-2xl ring-2 ring-amber-300/70 pointer-events-none"
+                            transition={{ type: "spring", stiffness: 340, damping: 28 }}
+                          />
+                        )}
+                        <CategoryGlyph cat={c} active={isActive} size={isActive ? 26 : 22} />
+                        <span className={`text-[10px] font-semibold text-center leading-tight line-clamp-2 px-1 ${
+                          isActive ? "text-orange-600" : "text-slate-800"
+                        }`}>
+                          {c.name}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => setAllCatsOpen(true)}
+                    className="shrink-0 snap-start w-[64px] h-[76px] rounded-2xl bg-white/35 border border-white/50 flex flex-col items-center justify-center gap-1"
+                  >
+                    <span className="h-7 w-7 rounded-full bg-white/80 grid place-items-center">
+                      <ChevronRight className="h-4 w-4 text-slate-700" />
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-800">More</span>
+                  </motion.button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ==================== SCROLL AREA (only Recent + Sub cards) ==================== */}
-      <div className="flex-1 overflow-y-auto pb-32 bg-[#f7f7f7] relative z-10">
-
+      {/* ==================== SCROLL AREA (Recent + Sub cards) ==================== */}
+      <div className="flex-1 overflow-y-auto pb-32 bg-[#f5f6f8] relative z-10">
 
         {/* Recent History rail */}
         {recent.length > 0 && (
           <>
             <div className="px-4 pt-4 flex items-center justify-between">
-              <span className="font-semibold text-[15px] text-slate-800">Recent</span>
+              <span className="font-semibold text-[14px] text-slate-800">Recent</span>
               <button
                 onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
                 className="text-orange-500 text-xs font-semibold"
@@ -356,7 +366,7 @@ export function QuickPage() {
                 Clear
               </button>
             </div>
-            <div className="mt-2 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {recent.map((r) => {
                 const full = allSubs.find((s) => s.id === r.id);
                 return (
@@ -364,18 +374,16 @@ export function QuickPage() {
                     key={r.id}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
-                    className="shrink-0 w-[140px] rounded-2xl bg-white border border-slate-200 p-2.5 flex flex-col items-center gap-2 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.2)]"
+                    className="shrink-0 h-9 px-3 rounded-full bg-white border border-slate-200 flex items-center gap-2 shadow-sm"
                   >
-                    <span className="h-20 w-full rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
-                      {r.image && r.image.startsWith("http") ? (
-                        <img src={r.image} alt="" className="h-full w-full object-cover" />
-                      ) : isEmojiLike(r.image) ? (
-                        <span className="text-4xl">{r.image}</span>
-                      ) : (
-                        <Wrench className="h-8 w-8 text-orange-500" />
-                      )}
-                    </span>
-                    <span className="text-[12px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
+                    {r.image && r.image.startsWith("http") ? (
+                      <img src={r.image} alt="" className="h-6 w-6 rounded-full object-cover" />
+                    ) : isEmojiLike(r.image) ? (
+                      <span className="text-base">{r.image}</span>
+                    ) : (
+                      <Wrench className="h-3.5 w-3.5 text-orange-500" />
+                    )}
+                    <span className="text-[12px] font-semibold text-slate-700 whitespace-nowrap">{r.name}</span>
                   </motion.button>
                 );
               })}
@@ -383,56 +391,75 @@ export function QuickPage() {
           </>
         )}
 
-        {/* Sub Category View label */}
-        <div className="px-4 pt-5 pb-2">
-          <span className="text-[13px] text-slate-500 font-medium">Sub Category View</span>
+        {/* Recommended header */}
+        <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+          <span className="font-semibold text-[15px] text-slate-900">Recommended</span>
+          <span className="text-[11px] text-slate-400">{visibleSubs.length} services</span>
         </div>
 
-        {/* Sub-category cards */}
-        <div className="px-4 space-y-3">
+        {/* Sub-category cards — compact by default, selected expands to premium card */}
+        <div className="px-4 space-y-2.5">
           {visibleSubs.map((s) => {
             const isOpen = expandedSub === s.id;
             const variation = variationBySub[s.id];
             const items = itemsBySub.get(s.id) ?? [];
             const thumb = s.image_url && s.image_url.startsWith("http") ? s.image_url : null;
+            const variationRequired = items.length > 0;
+            const canFind = !variationRequired || !!variation;
             return (
               <motion.article
                 key={s.id}
                 layout
-                onClick={() => setExpandedSub(isOpen ? null : s.id)}
-                className={`rounded-3xl overflow-hidden border-2 bg-white shadow-[0_10px_28px_-14px_rgba(0,0,0,0.28)] cursor-pointer ${
-                  isOpen ? "border-orange-400 bg-orange-50/40" : "border-transparent"
+                onClick={() => setExpandedSub(s.id)}
+                className={`rounded-2xl overflow-hidden bg-white cursor-pointer transition-shadow ${
+                  isOpen
+                    ? "border-2 border-amber-400 shadow-[0_16px_36px_-16px_rgba(217,119,6,0.55)]"
+                    : "border border-slate-200 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.15)]"
                 }`}
                 transition={{ layout: { type: "spring", stiffness: 340, damping: 32 } }}
               >
-                <div className="flex items-stretch gap-3 p-4">
-                  <div className="w-36 h-36 rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
+                <div className={`flex items-center gap-3 ${isOpen ? "p-3.5" : "p-2.5"}`}>
+                  <motion.div
+                    layout
+                    className={`rounded-xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0 ${
+                      isOpen ? "w-24 h-24" : "w-14 h-14"
+                    }`}
+                  >
                     {thumb ? (
                       <img src={thumb} alt="" className="h-full w-full object-cover" />
                     ) : isEmojiLike(s.image_url) ? (
-                      <span className="text-6xl">{s.image_url}</span>
+                      <span className={isOpen ? "text-5xl" : "text-2xl"}>{s.image_url}</span>
                     ) : (
                       <img src={svcCarpenter} alt="" className="h-full w-full object-contain" />
                     )}
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="font-display font-extrabold text-[19px] text-slate-900 leading-tight line-clamp-2">{s.name}</h3>
-                    <p className="text-[12px] text-slate-500 line-clamp-1">
-                      {items.length > 0 ? `${items.length} services available` : "Tap to book a service"}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span className="text-[13px] font-bold text-slate-800">4.7</span>
-                      <span className="text-[11px] text-slate-400">nearby</span>
-                    </div>
-                    <div className="mt-1.5 grid grid-cols-2 gap-1 text-[10.5px] text-slate-600">
-                      <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-emerald-500" /><span className="truncate">Verified</span></div>
-                      <div className="flex items-center gap-1"><Users className="h-3 w-3 text-sky-500" /><span className="truncate">Available</span></div>
-                    </div>
+                  </motion.div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-display font-bold text-slate-900 leading-tight line-clamp-1 ${
+                      isOpen ? "text-[17px]" : "text-[14px]"
+                    }`}>{s.name}</h3>
+                    {isOpen ? (
+                      <>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-[12px] font-bold text-slate-800">4.8</span>
+                          <span className="text-[11px] text-slate-400">(120)</span>
+                        </div>
+                        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-600">
+                          <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-emerald-500" /><span>98 Verified</span></div>
+                          <div className="flex items-center gap-1"><Users className="h-3 w-3 text-sky-500" /><span>56 Available</span></div>
+                          <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" /><span>0.6 km</span></div>
+                          <div className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /><span>{items.length || "—"} options</span></div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[11px] text-slate-500 line-clamp-1">
+                        {items.length > 0 ? `${items.length} services · Tap to select` : "Tap to book"}
+                      </p>
+                    )}
                   </div>
                   {!isOpen && (
-                    <div className="self-center h-8 w-8 rounded-full bg-white shadow grid place-items-center shrink-0">
-                      <ChevronRight className="h-4 w-4 text-slate-500" />
+                    <div className="h-7 w-7 rounded-full bg-slate-50 grid place-items-center shrink-0">
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
                     </div>
                   )}
                 </div>
@@ -449,23 +476,29 @@ export function QuickPage() {
                     >
                       <div className="px-3 pb-3 flex items-center gap-2">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setVariationSheet(s); }}
-                          className="flex-1 h-11 rounded-xl bg-white border border-slate-200 flex items-center gap-2 px-3 active:scale-[0.98] transition-transform"
-                          disabled={items.length === 0}
+                          onClick={(e) => { e.stopPropagation(); if (variationRequired) setVariationSheet(s); }}
+                          disabled={!variationRequired}
+                          className="flex-1 h-11 rounded-xl bg-white border border-slate-200 flex items-center gap-2 px-3 active:scale-[0.98] transition-transform disabled:opacity-70"
                         >
                           <span className="h-6 w-6 rounded-full bg-orange-100 grid place-items-center shrink-0">
                             <Sparkles className="h-3.5 w-3.5 text-orange-500" />
                           </span>
-                          <span className="flex-1 text-left text-[13px] font-semibold text-slate-800 truncate">
-                            {variation || (items.length === 0 ? "General request" : "Select variation")}
+                          <span className={`flex-1 text-left text-[13px] font-semibold truncate ${
+                            variation ? "text-orange-600" : "text-slate-700"
+                          }`}>
+                            {variation || (variationRequired ? "Select variation" : "General request")}
                           </span>
-                          {items.length > 0 && <ChevronDown className="h-4 w-4 text-slate-500" />}
+                          {variationRequired && <ChevronDown className="h-4 w-4 text-slate-500" />}
                         </button>
                         <motion.button
                           whileTap={{ scale: 0.95 }}
-                          disabled={submitting === s.id}
+                          disabled={submitting === s.id || !canFind}
                           onClick={(e) => { e.stopPropagation(); handleFindVendor(s); }}
-                          className="h-11 px-4 rounded-xl bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-[14px] flex items-center gap-2 shadow-[0_8px_18px_-6px_rgba(249,115,22,0.55)] disabled:opacity-60"
+                          className={`h-11 px-4 rounded-xl font-bold text-[14px] flex items-center gap-2 transition-all ${
+                            canFind
+                              ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-[0_8px_18px_-6px_rgba(249,115,22,0.55)]"
+                              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          } disabled:opacity-60`}
                         >
                           {submitting === s.id ? "Sending…" : "Find Vendor"}
                           <Send className="h-4 w-4" />
