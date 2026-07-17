@@ -87,6 +87,13 @@ export function QuickPage() {
   const [variationSheet, setVariationSheet] = useState<DBCategory | null>(null);
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<{
+    phase: SubmitPhase;
+    category: string | null;
+    variation: string | null;
+    error: string | null;
+    retry: (() => void) | null;
+  } | null>(null);
   const [finder, setFinder] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
   const [recent, setRecent] = useState<RecentSub[]>([]);
   useEffect(() => {
