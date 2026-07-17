@@ -181,7 +181,7 @@ export function QuickPage() {
       max_slots: 5,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").maybeSingle();
+    const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").single();
     if (error) throw error;
     return (data as { id: string } | null)?.id ?? null;
   };
@@ -207,11 +207,8 @@ export function QuickPage() {
       try {
         const leadId = await createLead(sub, useVariation);
         pushRecent(sub);
-        if (leadId) {
-          setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
-        } else {
-          toast.success(`Vendor request sent for ${sub.name}`);
-        }
+        if (!leadId) throw new Error("Could not create lead");
+        setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not send request");
       } finally {
@@ -269,46 +266,46 @@ export function QuickPage() {
         )}
       </section>
 
-      {/* ==================== SCROLL AREA ==================== */}
-      <div className="flex-1 overflow-y-auto pb-32 -mt-4 rounded-t-3xl bg-[#f7f7f7] relative z-10">
-        {/* Type + Location pills */}
-        <div className="px-4 pt-4 flex items-center gap-3">
+      {/* ==================== FIXED FLOATING PANEL (overlaps map bottom) ==================== */}
+      <div className="relative z-20 flex-shrink-0 -mt-16 px-3 pb-2">
+        {/* Type + Location pills — sit on map */}
+        <div className="flex items-center gap-2.5">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setSearchOpen(true)}
-            className="flex-1 h-12 rounded-full bg-white shadow-[0_4px_14px_-8px_rgba(0,0,0,0.2)] border border-black/5 flex items-center gap-2 px-4 active:shadow-sm"
+            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4 active:shadow-sm"
           >
             <Wrench className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[15px] text-slate-800">Service</span>
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-800">Service</span>
             <ChevronDown className="h-4 w-4 text-slate-500" />
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setLocationSheetOpen(true)}
-            className="flex-1 h-12 rounded-full bg-white shadow-[0_4px_14px_-8px_rgba(0,0,0,0.2)] border border-black/5 flex items-center gap-2 px-4"
+            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4"
           >
             <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[15px] text-slate-800 truncate">{shortLocation}</span>
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-800 truncate">{shortLocation}</span>
             <ChevronDown className="h-4 w-4 text-slate-500" />
           </motion.button>
         </div>
 
         {/* All Categories header */}
-        <div className="px-4 pt-5 flex items-center justify-between">
-          <button onClick={() => setAllCatsOpen(true)} className="font-semibold text-[15px] text-slate-800">
+        <div className="pt-3 flex items-center justify-between px-1">
+          <button onClick={() => setAllCatsOpen(true)} className="font-semibold text-[14px] text-slate-800">
             All Categories
           </button>
-          <button onClick={() => setAllCatsOpen(true)} className="flex items-center gap-1 text-orange-500 text-sm font-semibold">
+          <button onClick={() => setAllCatsOpen(true)} className="flex items-center gap-1 text-orange-500 text-[13px] font-semibold">
             View <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
         {/* Root category tiles — HORIZONTAL SCROLL RAIL */}
-        <div className="mt-3">
-          <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-2">
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {catQ.isLoading && rootCats.length === 0 ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="shrink-0 w-[92px] h-[96px] rounded-2xl bg-white/70 animate-pulse" />
+                <div key={i} className="shrink-0 w-[84px] h-[84px] rounded-2xl bg-white/70 animate-pulse" />
               ))
             ) : rootCats.map((c) => {
               const isActive = selectedRoot === c.id;
@@ -317,15 +314,15 @@ export function QuickPage() {
                   key={c.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedRoot(c.id)}
-                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 w-[92px] h-[96px] border-2 transition-colors ${
+                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2 flex flex-col items-center justify-center gap-1 w-[84px] h-[84px] border-2 shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] transition-colors ${
                     isActive ? "border-orange-400 bg-orange-50/60" : "border-transparent"
                   }`}
                 >
                   {isActive && (
                     <motion.span layoutId="root-cat-glow" className="absolute inset-0 rounded-2xl ring-2 ring-orange-300/60 pointer-events-none" transition={{ type: "spring", stiffness: 350, damping: 28 }} />
                   )}
-                  <CategoryGlyph cat={c} active={isActive} size={28} />
-                  <span className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? "text-orange-600" : "text-slate-700"}`}>
+                  <CategoryGlyph cat={c} active={isActive} size={26} />
+                  <span className={`text-[10.5px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? "text-orange-600" : "text-slate-700"}`}>
                     {c.name}
                   </span>
                 </motion.button>
@@ -333,11 +330,16 @@ export function QuickPage() {
             })}
           </div>
         </div>
+      </div>
+
+      {/* ==================== SCROLL AREA (only Recent + Sub cards) ==================== */}
+      <div className="flex-1 overflow-y-auto pb-32 bg-[#f7f7f7] relative z-10">
+
 
         {/* Recent History rail */}
         {recent.length > 0 && (
           <>
-            <div className="px-4 pt-5 flex items-center justify-between">
+            <div className="px-4 pt-4 flex items-center justify-between">
               <span className="font-semibold text-[15px] text-slate-800">Recent</span>
               <button
                 onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
@@ -346,7 +348,7 @@ export function QuickPage() {
                 Clear
               </button>
             </div>
-            <div className="mt-2 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-2 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {recent.map((r) => {
                 const full = allSubs.find((s) => s.id === r.id);
                 return (
@@ -354,18 +356,18 @@ export function QuickPage() {
                     key={r.id}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
-                    className="shrink-0 w-[112px] rounded-2xl bg-white border border-slate-200 p-2 flex flex-col items-center gap-1.5 shadow-[0_4px_12px_-8px_rgba(0,0,0,0.2)]"
+                    className="shrink-0 w-[140px] rounded-2xl bg-white border border-slate-200 p-2.5 flex flex-col items-center gap-2 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.2)]"
                   >
-                    <span className="h-14 w-14 rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
+                    <span className="h-20 w-full rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
                       {r.image && r.image.startsWith("http") ? (
                         <img src={r.image} alt="" className="h-full w-full object-cover" />
                       ) : isEmojiLike(r.image) ? (
-                        <span className="text-3xl">{r.image}</span>
+                        <span className="text-4xl">{r.image}</span>
                       ) : (
-                        <Wrench className="h-6 w-6 text-orange-500" />
+                        <Wrench className="h-8 w-8 text-orange-500" />
                       )}
                     </span>
-                    <span className="text-[11px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
+                    <span className="text-[12px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
                   </motion.button>
                 );
               })}
