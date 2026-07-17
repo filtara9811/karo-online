@@ -87,6 +87,10 @@ export function QuickPage() {
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [finder, setFinder] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
+  const [recent, setRecent] = useState<RecentSub[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("ko-recent-subs") ?? "[]"); } catch { return []; }
+  });
 
   /* ------------------------ Data: admin-managed catalog ------------------ */
   const catQ = useQuery({
