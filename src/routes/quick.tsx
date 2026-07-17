@@ -266,46 +266,46 @@ export function QuickPage() {
         )}
       </section>
 
-      {/* ==================== SCROLL AREA ==================== */}
-      <div className="flex-1 overflow-y-auto pb-32 -mt-4 rounded-t-3xl bg-[#f7f7f7] relative z-10">
-        {/* Type + Location pills */}
-        <div className="px-4 pt-4 flex items-center gap-3">
+      {/* ==================== FIXED FLOATING PANEL (overlaps map bottom) ==================== */}
+      <div className="relative z-20 flex-shrink-0 -mt-16 px-3 pb-2">
+        {/* Type + Location pills — sit on map */}
+        <div className="flex items-center gap-2.5">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setSearchOpen(true)}
-            className="flex-1 h-12 rounded-full bg-white shadow-[0_4px_14px_-8px_rgba(0,0,0,0.2)] border border-black/5 flex items-center gap-2 px-4 active:shadow-sm"
+            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4 active:shadow-sm"
           >
             <Wrench className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[15px] text-slate-800">Service</span>
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-800">Service</span>
             <ChevronDown className="h-4 w-4 text-slate-500" />
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setLocationSheetOpen(true)}
-            className="flex-1 h-12 rounded-full bg-white shadow-[0_4px_14px_-8px_rgba(0,0,0,0.2)] border border-black/5 flex items-center gap-2 px-4"
+            className="flex-1 h-11 rounded-full bg-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.25)] border border-black/5 flex items-center gap-2 px-4"
           >
             <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[15px] text-slate-800 truncate">{shortLocation}</span>
+            <span className="flex-1 text-left font-bold text-[14px] text-slate-800 truncate">{shortLocation}</span>
             <ChevronDown className="h-4 w-4 text-slate-500" />
           </motion.button>
         </div>
 
         {/* All Categories header */}
-        <div className="px-4 pt-5 flex items-center justify-between">
-          <button onClick={() => setAllCatsOpen(true)} className="font-semibold text-[15px] text-slate-800">
+        <div className="pt-3 flex items-center justify-between px-1">
+          <button onClick={() => setAllCatsOpen(true)} className="font-semibold text-[14px] text-slate-800">
             All Categories
           </button>
-          <button onClick={() => setAllCatsOpen(true)} className="flex items-center gap-1 text-orange-500 text-sm font-semibold">
+          <button onClick={() => setAllCatsOpen(true)} className="flex items-center gap-1 text-orange-500 text-[13px] font-semibold">
             View <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
         {/* Root category tiles — HORIZONTAL SCROLL RAIL */}
-        <div className="mt-3">
-          <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-2">
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {catQ.isLoading && rootCats.length === 0 ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="shrink-0 w-[92px] h-[96px] rounded-2xl bg-white/70 animate-pulse" />
+                <div key={i} className="shrink-0 w-[84px] h-[84px] rounded-2xl bg-white/70 animate-pulse" />
               ))
             ) : rootCats.map((c) => {
               const isActive = selectedRoot === c.id;
@@ -314,15 +314,15 @@ export function QuickPage() {
                   key={c.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedRoot(c.id)}
-                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2.5 flex flex-col items-center justify-center gap-1.5 w-[92px] h-[96px] border-2 transition-colors ${
+                  className={`relative shrink-0 snap-start rounded-2xl bg-white p-2 flex flex-col items-center justify-center gap-1 w-[84px] h-[84px] border-2 shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] transition-colors ${
                     isActive ? "border-orange-400 bg-orange-50/60" : "border-transparent"
                   }`}
                 >
                   {isActive && (
                     <motion.span layoutId="root-cat-glow" className="absolute inset-0 rounded-2xl ring-2 ring-orange-300/60 pointer-events-none" transition={{ type: "spring", stiffness: 350, damping: 28 }} />
                   )}
-                  <CategoryGlyph cat={c} active={isActive} size={28} />
-                  <span className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? "text-orange-600" : "text-slate-700"}`}>
+                  <CategoryGlyph cat={c} active={isActive} size={26} />
+                  <span className={`text-[10.5px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? "text-orange-600" : "text-slate-700"}`}>
                     {c.name}
                   </span>
                 </motion.button>
@@ -330,6 +330,11 @@ export function QuickPage() {
             })}
           </div>
         </div>
+      </div>
+
+      {/* ==================== SCROLL AREA (only Recent + Sub cards) ==================== */}
+      <div className="flex-1 overflow-y-auto pb-32 bg-[#f7f7f7] relative z-10">
+
 
         {/* Recent History rail */}
         {recent.length > 0 && (
