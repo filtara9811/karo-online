@@ -51,6 +51,7 @@ type DBItem = {
   image_url: string | null;
   keywords: string[] | null;
 };
+type RecentSub = { id: string; name: string; image: string | null };
 
 const SERVICE_TYPE_ID = "8a13aacc-a4d1-4c93-8556-fddd8f0a67a3";
 
