@@ -659,6 +659,16 @@ export function QuickPage() {
       </AnimatePresence>
 
       {/* Finding vendor radar overlay */}
+      <SubmittingRequestOverlay
+        open={!!submitState}
+        phase={submitState?.phase ?? "submitting"}
+        category={submitState?.category ?? null}
+        variation={submitState?.variation ?? null}
+        errorMessage={submitState?.error ?? null}
+        onRetry={() => submitState?.retry?.()}
+        onClose={() => setSubmitState(null)}
+      />
+
       <FindingVendorOverlay
         open={!!finder}
         leadId={finder?.leadId ?? null}
