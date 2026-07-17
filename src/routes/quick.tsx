@@ -51,6 +51,7 @@ type DBItem = {
   image_url: string | null;
   keywords: string[] | null;
 };
+type RecentSub = { id: string; name: string; image: string | null };
 
 const SERVICE_TYPE_ID = "8a13aacc-a4d1-4c93-8556-fddd8f0a67a3";
 
@@ -86,6 +87,10 @@ export function QuickPage() {
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [finder, setFinder] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
+  const [recent, setRecent] = useState<RecentSub[]>([]);
+  useEffect(() => {
+    try { setRecent(JSON.parse(localStorage.getItem("ko-recent-subs") ?? "[]")); } catch { /* noop */ }
+  }, []);
 
   /* ------------------------ Data: admin-managed catalog ------------------ */
   const catQ = useQuery({
@@ -181,15 +186,27 @@ export function QuickPage() {
     return (data as { id: string } | null)?.id ?? null;
   };
 
+  const pushRecent = (sub: DBCategory) => {
+    try {
+      const raw = localStorage.getItem("ko-recent-subs");
+      const arr: RecentSub[] = raw ? JSON.parse(raw) : [];
+      const next = [{ id: sub.id, name: sub.name, image: sub.image_url }, ...arr.filter((r) => r.id !== sub.id)].slice(0, 8);
+      localStorage.setItem("ko-recent-subs", JSON.stringify(next));
+      setRecent(next);
+    } catch { /* noop */ }
+  };
+
   const handleFindVendor = async (sub: DBCategory) => {
     requireAuth(async () => {
       const items = itemsBySub.get(sub.id) ?? [];
-      const variation = variationBySub[sub.id]
-        ?? (items.length === 0 ? sub.name : undefined);
-      if (!variation) { setVariationSheet(sub); return; }
+      const variation = variationBySub[sub.id];
+      // Always show variation sheet when catalog has items — user needs to pick.
+      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
+      const useVariation = variation ?? sub.name;
       setSubmitting(sub.id);
       try {
-        const leadId = await createLead(sub, variation);
+        const leadId = await createLead(sub, useVariation);
+        pushRecent(sub);
         if (leadId) {
           setFinder({ leadId, category: sub.name, categoryImage: sub.image_url });
         } else {
@@ -316,6 +333,45 @@ export function QuickPage() {
             })}
           </div>
         </div>
+
+        {/* Recent History rail */}
+        {recent.length > 0 && (
+          <>
+            <div className="px-4 pt-5 flex items-center justify-between">
+              <span className="font-semibold text-[15px] text-slate-800">Recent</span>
+              <button
+                onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
+                className="text-orange-500 text-xs font-semibold"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="mt-2 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {recent.map((r) => {
+                const full = allSubs.find((s) => s.id === r.id);
+                return (
+                  <motion.button
+                    key={r.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
+                    className="shrink-0 w-[112px] rounded-2xl bg-white border border-slate-200 p-2 flex flex-col items-center gap-1.5 shadow-[0_4px_12px_-8px_rgba(0,0,0,0.2)]"
+                  >
+                    <span className="h-14 w-14 rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
+                      {r.image && r.image.startsWith("http") ? (
+                        <img src={r.image} alt="" className="h-full w-full object-cover" />
+                      ) : isEmojiLike(r.image) ? (
+                        <span className="text-3xl">{r.image}</span>
+                      ) : (
+                        <Wrench className="h-6 w-6 text-orange-500" />
+                      )}
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Sub Category View label */}
         <div className="px-4 pt-5 pb-2">
