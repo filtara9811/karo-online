@@ -339,7 +339,7 @@ export function QuickPage() {
         {/* Recent History rail */}
         {recent.length > 0 && (
           <>
-            <div className="px-4 pt-5 flex items-center justify-between">
+            <div className="px-4 pt-4 flex items-center justify-between">
               <span className="font-semibold text-[15px] text-slate-800">Recent</span>
               <button
                 onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
@@ -348,7 +348,7 @@ export function QuickPage() {
                 Clear
               </button>
             </div>
-            <div className="mt-2 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-2 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {recent.map((r) => {
                 const full = allSubs.find((s) => s.id === r.id);
                 return (
@@ -356,18 +356,18 @@ export function QuickPage() {
                     key={r.id}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
-                    className="shrink-0 w-[112px] rounded-2xl bg-white border border-slate-200 p-2 flex flex-col items-center gap-1.5 shadow-[0_4px_12px_-8px_rgba(0,0,0,0.2)]"
+                    className="shrink-0 w-[140px] rounded-2xl bg-white border border-slate-200 p-2.5 flex flex-col items-center gap-2 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.2)]"
                   >
-                    <span className="h-14 w-14 rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
+                    <span className="h-20 w-full rounded-xl overflow-hidden bg-amber-50 grid place-items-center">
                       {r.image && r.image.startsWith("http") ? (
                         <img src={r.image} alt="" className="h-full w-full object-cover" />
                       ) : isEmojiLike(r.image) ? (
-                        <span className="text-3xl">{r.image}</span>
+                        <span className="text-4xl">{r.image}</span>
                       ) : (
-                        <Wrench className="h-6 w-6 text-orange-500" />
+                        <Wrench className="h-8 w-8 text-orange-500" />
                       )}
                     </span>
-                    <span className="text-[11px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
+                    <span className="text-[12px] font-semibold text-slate-700 text-center line-clamp-2 leading-tight">{r.name}</span>
                   </motion.button>
                 );
               })}
