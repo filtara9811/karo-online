@@ -122,6 +122,14 @@ export function QuickPage() {
     [allSubs, selectedRoot],
   );
 
+  // Auto-expand first sub whenever the visible list changes (so one card is always "selected")
+  useEffect(() => {
+    if (visibleSubs.length === 0) { setExpandedSub(null); return; }
+    if (!expandedSub || !visibleSubs.some((s) => s.id === expandedSub)) {
+      setExpandedSub(visibleSubs[0].id);
+    }
+  }, [visibleSubs, expandedSub]);
+
   // Items (used for variations + search overlay live mode)
   const itemsQ = useQuery({
     queryKey: ["quick-service-items"],
