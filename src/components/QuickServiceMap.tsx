@@ -78,8 +78,15 @@ function buildVendorPinHTML(v: QuickMapVendor, categoryIcon?: string) {
   const km = typeof v.km === "number" ? `${v.km.toFixed(1)} km.` : "";
   const status = v.status || "Office";
   const statusClass = status === "Online" ? "ko-online" : status === "Offline" ? "ko-offline" : "ko-office";
-  const iconImg = categoryIcon
-    ? `<img src="${categoryIcon.replace(/"/g, "&quot;")}" alt="" />`
+  const safeCategoryIcon = categoryIcon
+    ?.replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  const iconImg = safeCategoryIcon
+    ? (categoryIcon?.startsWith("http")
+      ? `<img src="${safeCategoryIcon}" alt="" />`
+      : `<span class="ko-vpin-emoji">${safeCategoryIcon}</span>`)
     : `<img src="${safeAvatar}" alt="" />`;
   return `
     <div class="ko-vpin ${statusClass}" data-vid="${v.id}">
@@ -97,7 +104,7 @@ function buildVendorPinHTML(v: QuickMapVendor, categoryIcon?: string) {
 }
 
 // Legacy alias used by the SSR-safe MapFallback below.
-const buildVendorCardHTML = (v: QuickMapVendor) => buildVendorPinHTML(v);
+const buildVendorCardHTML = (v: QuickMapVendor, categoryIcon?: string) => buildVendorPinHTML(v, categoryIcon);
 
 export function QuickServiceMap({
   center,
@@ -559,6 +566,9 @@ export function QuickServiceMap({
           width: 100%; height: 100%; border-radius: 9999px; object-fit: cover;
           filter: brightness(0) invert(1);
         }
+        .ko-vpin-emoji {
+          font-size: 14px; line-height: 1; filter: none;
+        }
         .ko-vpin.ko-online .ko-vpin-head img,
         .ko-vpin.ko-office .ko-vpin-head img,
         .ko-vpin.ko-offline .ko-vpin-head img { filter: brightness(0) invert(1); }
@@ -595,8 +605,8 @@ export function QuickServiceMap({
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
       `}</style>
-      <div ref={ref} className="absolute inset-0" />
-      {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} showUserPin={showUserPin} />}
+      <div ref={ref} className={`absolute inset-0 ${status === "error" ? "hidden" : ""}`} />
+      {status === "error" && <MapFallback center={center ?? DEFAULT_CENTER} vendors={vendors} userAvatar={userAvatar} userLabel={userLabel} showUserPin={showUserPin} categoryIcon={categoryIcon} />}
       {status === "loading" && (
         <div className="absolute inset-0 grid place-items-center bg-[#f5f1e8]">
           <Loader2 className="h-5 w-5 animate-spin text-amber-700" />
@@ -704,12 +714,14 @@ function MapFallback({
   userAvatar,
   userLabel,
   showUserPin = true,
+  categoryIcon,
 }: {
   center: { lat: number; lng: number };
   vendors: QuickMapVendor[];
   userAvatar: string;
   userLabel?: string;
   showUserPin?: boolean;
+  categoryIcon?: string;
 }) {
   return (
     <div className="absolute inset-0 z-20 overflow-hidden bg-[linear-gradient(135deg,#faf5e8_0%,#efe6d2_45%,#f5efdc_100%)]">
@@ -722,7 +734,7 @@ function MapFallback({
           key={v.id}
           className="absolute -translate-x-1/2 -translate-y-full"
           style={{ left: `${v.x}%`, top: `${v.y}%` }}
-          dangerouslySetInnerHTML={{ __html: buildVendorCardHTML(v) }}
+          dangerouslySetInnerHTML={{ __html: buildVendorCardHTML(v, categoryIcon) }}
         />
       ))}
       {showUserPin && (
