@@ -52,10 +52,11 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const [showRoleChoice, setShowRoleChoice] = useState(false);
   const navigate = useNavigate();
 
-  const skip =
+  const hardSkip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
+  const skipAutoGate =
     PUBLIC_EXACT.has(location.pathname) ||
     PUBLIC_PREFIXES.some((p) => location.pathname.startsWith(p)) ||
-    SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
+    hardSkip;
 
   useEffect(() => {
     const sync = () => {
@@ -76,18 +77,18 @@ export function AuthGate({ children }: { children?: ReactNode }) {
 
   const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
 
-  const isReady = !skip ? profileComplete : true;
+  const isReady = !skipAutoGate ? profileComplete : true;
 
   const requireAuth = useCallback(
     (cb?: () => void) => {
-      if (skip || profileComplete) {
+      if (hardSkip || profileComplete) {
         cb?.();
         return;
       }
       pendingCb.current = cb ?? null;
       setOpen(true);
     },
-    [skip, profileComplete],
+    [hardSkip, profileComplete],
   );
 
   // If profile becomes complete while open, fire pending callback and close.
@@ -116,7 +117,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
 
   // FORCED GATE: on customer routes, block the entire app behind login/registration
   // until the profile is complete. Admin/vendor/register routes skip this.
-  const forceGate = !skip && !profileComplete;
+  const forceGate = !skipAutoGate && !profileComplete;
 
   return (
     <Ctx.Provider value={{ requireAuth, isReady }}>
@@ -152,14 +153,13 @@ export function AuthGate({ children }: { children?: ReactNode }) {
       ) : (
         <>
           {children}
-          {open && !skip && (
+          {open && !hardSkip && (
             <div
               data-auth-gate
               className="fixed inset-0 z-[60]"
               style={{
                 background: "linear-gradient(180deg, rgba(255,250,235,0.18) 0%, rgba(245,217,122,0.22) 100%)",
-                backdropFilter: "blur(2px)",
-                WebkitBackdropFilter: "blur(2px)",
+                  backdropFilter: "blur(2px)",
               }}
             >
               <RegistrationFlow
