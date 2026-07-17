@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ import { useGeolocation } from "@/hooks/use-geolocation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthGate } from "@/components/AuthGate";
 import { supabase } from "@/integrations/supabase/client";
+import { getNearbyOnlineVendors } from "@/lib/quick-vendors.functions";
 import { toast } from "sonner";
 import avatarUser from "@/assets/avatar-user.png";
 import avatarRaj from "@/assets/avatar-raj.png";
@@ -51,10 +53,12 @@ type DBItem = {
   category_id: string;
   image_url: string | null;
   keywords: string[] | null;
+  group_tag: string | null;
 };
 type RecentSub = { id: string; name: string; image: string | null };
 
 const SERVICE_TYPE_ID = "8a13aacc-a4d1-4c93-8556-fddd8f0a67a3";
+const QUICK_FALLBACK_CENTER = { lat: 28.6562, lng: 77.241 };
 
 const DEMO_VENDORS: QuickMapVendor[] = [
   { id: "v1", name: "Ravi Plumber", avatar: avatarRaj, x: 22, y: 40, area: "Sadar", km: 0.4, status: "Online" },
@@ -73,6 +77,7 @@ function isEmojiLike(s: string | null | undefined): boolean {
 export function QuickPage() {
   const { profile } = useAuth();
   const { requireAuth } = useAuthGate();
+  const fetchNearbyVendors = useServerFn(getNearbyOnlineVendors);
   const geo = useGeolocation();
   const [, setActiveType] = useActiveTypeId();
 
@@ -130,6 +135,19 @@ export function QuickPage() {
     [allSubs, selectedRoot],
   );
 
+  const selectedSub = useMemo(
+    () => visibleSubs.find((s) => s.id === expandedSub) ?? visibleSubs[0] ?? null,
+    [expandedSub, visibleSubs],
+  );
+
+  const selectedSubIcon = useMemo(() => {
+    if (!selectedSub) return undefined;
+    if (selectedSub.image_url?.startsWith("http")) return selectedSub.image_url;
+    if (isEmojiLike(selectedSub.image_url)) return selectedSub.image_url ?? undefined;
+    if (isEmojiLike(selectedSub.icon)) return selectedSub.icon ?? undefined;
+    return undefined;
+  }, [selectedSub]);
+
   // Auto-expand first sub whenever the visible list changes (so one card is always "selected")
   useEffect(() => {
     if (visibleSubs.length === 0) { setExpandedSub(null); return; }
@@ -144,7 +162,7 @@ export function QuickPage() {
     queryFn: async (): Promise<DBItem[]> => {
       const { data, error } = await supabase
         .from("catalog_items")
-        .select("id,name,category_id,image_url,keywords")
+        .select("id,name,category_id,image_url,keywords,group_tag")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
@@ -168,6 +186,7 @@ export function QuickPage() {
   const effectiveCenter = pickedLocation
     ? { lat: pickedLocation.lat, lng: pickedLocation.lng }
     : (geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null);
+  const mapCenter = effectiveCenter ?? QUICK_FALLBACK_CENTER;
   const effectiveLabel = pickedLocation?.address ?? geo.label ?? "Delhi";
   const shortLocation = useMemo(() => {
     const s = effectiveLabel || "Delhi";
@@ -175,6 +194,50 @@ export function QuickPage() {
   }, [effectiveLabel]);
 
   /* ---------------------------- Lead creation ---------------------------- */
+  const selectedMapItemIds = useMemo(() => {
+    if (!selectedSub) return [];
+    const items = itemsBySub.get(selectedSub.id) ?? [];
+    const variation = variationBySub[selectedSub.id];
+    return (variation ? items.filter((it) => it.name === variation) : items).map((it) => it.id);
+  }, [itemsBySub, selectedSub, variationBySub]);
+
+  const mapVendorsQ = useQuery({
+    queryKey: [
+      "quick-map-vendors",
+      mapCenter.lat,
+      mapCenter.lng,
+      selectedSub?.id ?? null,
+      selectedMapItemIds.join(","),
+    ],
+    queryFn: () => fetchNearbyVendors({
+      data: {
+        origin: mapCenter,
+        radiusKm: 10,
+        subCategoryId: selectedSub?.id ?? null,
+        itemIds: selectedMapItemIds.slice(0, 50),
+      },
+    }),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
+  const mapVendors: QuickMapVendor[] = useMemo(() => {
+    const rows = (mapVendorsQ.data as any)?.ok ? ((mapVendorsQ.data as any).vendors ?? []) : [];
+    if (!rows.length) return selectedSub ? [] : DEMO_VENDORS;
+    return rows.map((v: any, index: number) => ({
+      id: String(v.id ?? v.user_id ?? index),
+      name: v.business_name || v.owner_name || `${selectedSub?.name ?? "Service"} vendor`,
+      avatar: v.avatar_url || avatarUser,
+      x: 18 + ((index * 23) % 64),
+      y: 30 + ((index * 17) % 42),
+      area: v.area || (typeof v.km === "number" ? `${v.km.toFixed(1)} km away` : "Nearby"),
+      km: typeof v.km === "number" ? v.km : undefined,
+      status: v.is_online ? "Online" : "Office",
+      lat: typeof v.lat === "number" ? v.lat : Number(v.lat),
+      lng: typeof v.lng === "number" ? v.lng : Number(v.lng),
+    }));
+  }, [mapVendorsQ.data, selectedSub]);
+
   const createLead = async (sub: DBCategory, variation: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Please sign in"); return null; }
@@ -183,23 +246,49 @@ export function QuickPage() {
       .select("name, phone, address")
       .eq("user_id", user.id)
       .maybeSingle();
+    const matchedItems = (itemsBySub.get(sub.id) ?? []).filter((it) => it.name === variation);
+    const itemIds = matchedItems.map((it) => it.id);
     const leadPayload = {
       customer_id: user.id,
       customer_name: (prof as { name?: string } | null)?.name ?? null,
       customer_phone: (prof as { phone?: string } | null)?.phone ?? null,
+      type_id: SERVICE_TYPE_ID,
+      root_category_id: sub.parent_id ?? selectedRoot,
+      sub_category_id: sub.id,
       sub_category_name: sub.name,
+      item_ids: itemIds,
       item_names: [variation],
+      group_name: matchedItems[0]?.group_tag ?? null,
       note: `${sub.name} · ${variation}`,
       address: pickedLocation?.address ?? (prof as { address?: string } | null)?.address ?? geo.label ?? null,
-      lat: effectiveCenter?.lat ?? geo.lat,
-      lng: effectiveCenter?.lng ?? geo.lng,
+      lat: mapCenter.lat,
+      lng: mapCenter.lng,
       search_radius_km: 10,
       max_slots: 5,
+      source: "quick_home",
+      status: "new",
+      vendor_types: ["wholesaler", "retailer", "manufacturer"],
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").single();
     if (error) throw error;
-    return (data as { id: string } | null)?.id ?? null;
+    const leadId = (data as { id: string } | null)?.id ?? null;
+    if (leadId) {
+      // Safety net: the DB trigger also broadcasts ring 0; this keeps the
+      // customer radar reliable even if a scheduled fan-out is delayed.
+      void (async () => {
+        try {
+          await supabase.rpc("broadcast_next_lead_batch", {
+            _lead_id: leadId,
+            _batch_size: 5,
+            _ring_index: 0,
+          });
+        } catch {
+          // Non-blocking: the DB trigger/scheduler still handles fan-out.
+        }
+      })();
+    }
+    return leadId;
   };
 
   const pushRecent = (sub: DBCategory) => {
@@ -230,7 +319,6 @@ export function QuickPage() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not send request";
         setSubmitState({ phase: "error", category: sub.name, variation: useVariation, error: msg, retry: attempt });
-        toast.error(msg);
       } finally {
         setSubmitting(null);
       }
@@ -274,12 +362,14 @@ export function QuickPage() {
       <section className="relative flex-shrink-0" style={{ height: "46vh", minHeight: 320 }}>
         {(geo.status !== "loading" || pickedLocation) ? (
           <QuickServiceMap
-            center={effectiveCenter}
-            vendors={DEMO_VENDORS}
+            center={mapCenter}
+            vendors={mapVendors}
             userAvatar={profile?.avatar_url || avatarUser}
             userLabel={shortLocation}
             geoStatus={geo.status}
             showControls={false}
+            radiusKm={10}
+            categoryIcon={selectedSubIcon}
             onLocationTap={() => setLocationSheetOpen(true)}
           />
         ) : (
@@ -309,12 +399,11 @@ export function QuickPage() {
         </div>
 
         {/* Floating GLASS category rail — pinned near the bottom of the map */}
-        <div className="absolute inset-x-0 bottom-3 z-20 px-3">
-          <div className="rounded-3xl bg-white/20 backdrop-blur-2xl border border-white/40 shadow-[0_14px_36px_-14px_rgba(0,0,0,0.45)] px-2 py-2">
-            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="absolute inset-x-0 bottom-2 z-20 px-2">
+            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
               {catQ.isLoading && rootCats.length === 0 ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="shrink-0 w-[64px] h-[76px] rounded-2xl bg-white/40 animate-pulse" />
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="shrink-0 w-[52px] h-[68px] rounded-2xl bg-white/35 animate-pulse" />
                 ))
               ) : (
                 <>
@@ -325,22 +414,26 @@ export function QuickPage() {
                         key={c.id}
                         whileTap={{ scale: 0.94 }}
                         onClick={() => setSelectedRoot(c.id)}
-                        className={`relative shrink-0 snap-start rounded-2xl flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-0.5 transition-all ${
                           isActive
-                            ? "w-[74px] h-[82px] bg-white/85 border-2 border-amber-400 shadow-[0_10px_20px_-8px_rgba(217,119,6,0.55)]"
-                            : "w-[64px] h-[76px] bg-white/35 border border-white/50"
+                            ? "w-[56px] h-[72px]"
+                            : "w-[52px] h-[68px]"
                         }`}
                       >
-                        {isActive && (
-                          <motion.span
-                            layoutId="root-cat-glow"
-                            className="absolute -inset-0.5 rounded-2xl ring-2 ring-amber-300/70 pointer-events-none"
-                            transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                          />
-                        )}
-                        <CategoryGlyph cat={c} active={isActive} size={isActive ? 26 : 22} />
-                        <span className={`text-[10px] font-semibold text-center leading-tight line-clamp-2 px-1 ${
-                          isActive ? "text-orange-600" : "text-slate-800"
+                        <span className={`relative h-10 w-10 rounded-2xl grid place-items-center backdrop-blur-xl border shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] ${
+                          isActive ? "bg-white/90 border-amber-400" : "bg-white/45 border-white/60"
+                        }`}>
+                          {isActive && (
+                            <motion.span
+                              layoutId="root-cat-glow"
+                              className="absolute -inset-0.5 rounded-2xl ring-2 ring-amber-300/80 pointer-events-none"
+                              transition={{ type: "spring", stiffness: 340, damping: 28 }}
+                            />
+                          )}
+                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 22 : 20} />
+                        </span>
+                        <span className={`w-full text-[8.5px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)] ${
+                          isActive ? "text-orange-700" : "text-slate-900"
                         }`}>
                           {c.name}
                         </span>
@@ -350,17 +443,16 @@ export function QuickPage() {
                   <motion.button
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setAllCatsOpen(true)}
-                    className="shrink-0 snap-start w-[64px] h-[76px] rounded-2xl bg-white/35 border border-white/50 flex flex-col items-center justify-center gap-1"
+                    className="shrink-0 snap-start w-[52px] h-[68px] flex flex-col items-center justify-start gap-0.5"
                   >
-                    <span className="h-7 w-7 rounded-full bg-white/80 grid place-items-center">
+                    <span className="h-10 w-10 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/60 grid place-items-center shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)]">
                       <ChevronRight className="h-4 w-4 text-slate-700" />
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-800">More</span>
+                    <span className="text-[8.5px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">More</span>
                   </motion.button>
                 </>
               )}
             </div>
-          </div>
         </div>
       </section>
 

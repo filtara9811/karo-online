@@ -75,7 +75,7 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
               whileTap={{ scale: 0.9 }}
               onClick={() => trigger("profile")}
               aria-label="Open menu"
-              className="absolute left-1/2 -translate-x-1/2 -top-6 h-16 w-16 rounded-full bg-white p-1 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.55)] active:shadow-md"
+              className="absolute left-1/2 -translate-x-1/2 -top-3 h-14 w-14 rounded-full bg-white p-1 shadow-[0_10px_24px_-10px_rgba(0,0,0,0.55)] active:shadow-md"
             >
               <span className="block h-full w-full rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-br from-amber-300 to-orange-500">
                 <img
