@@ -181,7 +181,7 @@ export function QuickPage() {
       max_slots: 5,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").maybeSingle();
+    const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").single();
     if (error) throw error;
     return (data as { id: string } | null)?.id ?? null;
   };
