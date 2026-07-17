@@ -6041,6 +6041,16 @@ export type Database = {
         Returns: Json
       }
       upsert_merchant_link_settings: { Args: { _payload: Json }; Returns: Json }
+      validate_staff_invite: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          name: string
+          payout_model: string
+          phone: string
+        }[]
+      }
       vendor_claim_by_phone: {
         Args: { _phone: string }
         Returns: {

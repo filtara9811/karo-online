@@ -272,9 +272,8 @@ export const validateStaffInvite = createServerFn({ method: "GET" })
         return fetch(input, { ...init, headers: h });
       } },
     });
-    const { data: row } = await sb.from("staff_invites")
-      .select("name, email, phone, payout_model, expires_at")
-      .eq("invite_token", data.token).maybeSingle();
+    const { data: rows } = await sb.rpc("validate_staff_invite" as never, { _token: data.token } as never);
+    const row = Array.isArray(rows) ? (rows[0] ?? null) : rows;
     if (!row) return { ok: false as const, reason: "invalid_or_expired" };
     return { ok: true as const, invite: row };
   });
