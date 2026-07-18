@@ -99,6 +99,8 @@ export function QuickPage() {
   const [expandedSub, setExpandedSub] = useState<string | null>(null);
   const [variationBySub, setVariationBySub] = useState<Record<string, string>>({});
   const [variationSheet, setVariationSheet] = useState<DBCategory | null>(null);
+  const [variationGender, setVariationGender] = useState<string | null>(null);
+
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<{
