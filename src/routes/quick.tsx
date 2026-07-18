@@ -116,13 +116,13 @@ export function QuickPage() {
 
   /* ------------------------ Data: admin-managed catalog ------------------ */
   const catQ = useQuery({
-    queryKey: ["quick-service-categories"],
+    queryKey: ["quick-categories", typeCode],
     queryFn: async (): Promise<DBCategory[]> => {
       const { data, error } = await supabase
         .from("categories")
         .select("id,name,slug,image_url,icon,parent_id,sort_order,keywords,type_id")
         .eq("is_active", true)
-        .eq("type_id", SERVICE_TYPE_ID)
+        .eq("type_id", TYPE_ID_BY_CODE[typeCode])
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
       if (error) throw error;
