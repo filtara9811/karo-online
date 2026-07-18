@@ -33,6 +33,8 @@ export type Lead = {
   status: LeadStatus;
   time: string;
   createdAtIso?: string;
+  autoAssigned?: boolean;
+  startedAtIso?: string | null;
   progressPct?: number;
   note: string;
   items?: LeadItem[];

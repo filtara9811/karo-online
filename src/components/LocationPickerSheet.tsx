@@ -39,7 +39,7 @@ const INDIAN_CITIES: { name: string; state: string; lat: number; lng: number }[]
   { name: "Gurugram", state: "Haryana", lat: 28.4595, lng: 77.0266 },
 ];
 
-const DISTANCE_OPTIONS = [1, 5, 10, 20, 30, 50];
+const DISTANCE_OPTIONS = [1, 2, 5, 7, 10, 20, 50];
 
 function loadRecents(): PickedLocation[] {
   if (typeof window === "undefined") return [];

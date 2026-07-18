@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 export type LeadUiStatus = "pending" | "in_process" | "success" | "rejected";
 
-export type LeadFilter = "all" | LeadUiStatus;
+export type LeadFilter = "all" | "auto_assigned" | LeadUiStatus;
 
 type Row = {
   notificationId: string;
@@ -34,6 +34,7 @@ type Row = {
   note: string | null;
   createdAt: string;
   acceptedAt: string | null;
+  autoMatched: boolean;
 };
 
 const STATUS_META: Record<LeadUiStatus, { label: string; tone: string; dot: string }> = {
@@ -80,6 +81,35 @@ export function usePendingLeadsCount(): number {
   return count;
 }
 
+export function useAutoAssignedLeadsCount(): number {
+  const { user } = useAuth();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const refresh = async () => {
+      const { count: c } = await supabase
+        .from("lead_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("vendor_id", user.id)
+        .eq("auto_matched", true)
+        .neq("status", "rejected");
+      if (alive) setCount(c ?? 0);
+    };
+    refresh();
+    const ch = supabase
+      .channel(`auto-assigned-leads-count-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lead_notifications", filter: `vendor_id=eq.${user.id}` },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [user]);
+  return count;
+}
+
 export function VendorPendingLeadsSheet({
   open,
   onClose,
@@ -109,7 +139,7 @@ export function VendorPendingLeadsSheet({
       setLoading(true);
       const { data: notifs } = await supabase
         .from("lead_notifications")
-        .select("id, lead_id, status, created_at, responded_at, vendor_started_at, sub_category_name")
+        .select("id, lead_id, status, created_at, responded_at, vendor_started_at, sub_category_name, auto_matched")
         .eq("vendor_id", user.id)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -173,6 +203,7 @@ export function VendorPendingLeadsSheet({
           note: lead.note ?? null,
           createdAt: n.created_at,
           acceptedAt: n.responded_at ?? null,
+          autoMatched: Boolean(n.auto_matched),
         };
       });
 
@@ -188,13 +219,13 @@ export function VendorPendingLeadsSheet({
   }, [open, user]);
 
   const counts = useMemo(() => {
-    const c = { all: rows.length, pending: 0, in_process: 0, success: 0, rejected: 0 } as Record<LeadFilter, number>;
-    rows.forEach((r) => { c[r.status] += 1; });
+    const c = { all: rows.length, auto_assigned: 0, pending: 0, in_process: 0, success: 0, rejected: 0 } as Record<LeadFilter, number>;
+    rows.forEach((r) => { c[r.status] += 1; if (r.autoMatched) c.auto_assigned += 1; });
     return c;
   }, [rows]);
 
   const visible = useMemo(
-    () => filter === "all" ? rows : rows.filter((r) => r.status === filter),
+    () => filter === "all" ? rows : filter === "auto_assigned" ? rows.filter((r) => r.autoMatched) : rows.filter((r) => r.status === filter),
     [rows, filter],
   );
 
@@ -221,6 +252,7 @@ export function VendorPendingLeadsSheet({
 
   const FILTERS: { key: LeadFilter; label: string }[] = [
     { key: "all", label: "All" },
+    { key: "auto_assigned", label: "Auto Assigned" },
     { key: "pending", label: "Pending" },
     { key: "in_process", label: "In Process" },
     { key: "success", label: "Success" },
@@ -296,6 +328,8 @@ export function VendorPendingLeadsSheet({
                   <p className="text-xs text-amber-900/60 mt-1 px-8">
                     {filter === "all"
                       ? "Jaise hi koi customer request bhejega, yahan turant dikhega."
+                      : filter === "auto_assigned"
+                      ? "Auto-matched customer leads yahan direct dikhenge."
                       : `Koi lead ${STATUS_META[filter as LeadUiStatus]?.label ?? filter} mein nahi hai.`}
                   </p>
                 </div>
@@ -330,6 +364,11 @@ export function VendorPendingLeadsSheet({
                               </span>
                             </div>
                             <p className="text-xs font-semibold text-amber-800 mt-0.5">{r.subCategoryName}</p>
+                            {r.autoMatched && (
+                              <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[9px] font-black uppercase tracking-wide text-emerald-700">
+                                <CheckCircle2 className="h-2.5 w-2.5" /> Auto Assigned
+                              </span>
+                            )}
                             {r.customerPhone && (
                               <p className="text-[11px] text-slate-600 mt-0.5 flex items-center gap-1">
                                 <Phone className="h-2.5 w-2.5" /> {r.customerPhone}
@@ -373,19 +412,30 @@ export function VendorPendingLeadsSheet({
 
                       {/* Action footer: status pill + quick actions */}
                       <div className="flex items-stretch border-t border-amber-100 relative">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setMenuFor(showMenu ? null : r.notificationId); }}
-                          disabled={busy === r.leadId}
-                          className={`flex-1 px-3 py-2 text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 ${meta.tone} border-r border-amber-100`}
-                        >
-                          <span className={`inline-block h-2 w-2 rounded-full ${meta.dot}`} />
-                          {meta.label}
-                          {busy === r.leadId ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <ChevronDown className="h-3 w-3" />
-                          )}
-                        </button>
+                        {r.autoMatched ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); moveTo(r.leadId, "success"); }}
+                            disabled={busy === r.leadId || r.status === "success"}
+                            className="flex-1 px-3 py-2 text-[11px] font-bold flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-700 border-r border-amber-100 disabled:opacity-60"
+                          >
+                            {busy === r.leadId ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                            {r.status === "success" ? "Done" : "Mark Done"}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setMenuFor(showMenu ? null : r.notificationId); }}
+                            disabled={busy === r.leadId}
+                            className={`flex-1 px-3 py-2 text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 ${meta.tone} border-r border-amber-100`}
+                          >
+                            <span className={`inline-block h-2 w-2 rounded-full ${meta.dot}`} />
+                            {meta.label}
+                            {busy === r.leadId ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </button>
+                        )}
 
                         {r.customerPhone && (
                           <a
@@ -405,7 +455,7 @@ export function VendorPendingLeadsSheet({
                           <MessageCircle className="h-4 w-4 text-emerald-700" />
                         </button>
 
-                        {showMenu && (
+                        {showMenu && !r.autoMatched && (
                           <motion.div
                             initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}

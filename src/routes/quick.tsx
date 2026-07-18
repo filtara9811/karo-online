@@ -95,6 +95,7 @@ export function QuickPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
+  const [radiusKm, setRadiusKm] = useState(1);
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
   const [expandedSub, setExpandedSub] = useState<string | null>(null);
   const [variationBySub, setVariationBySub] = useState<Record<string, string>>({});
@@ -220,13 +221,14 @@ export function QuickPage() {
       "quick-map-vendors",
       mapCenter.lat,
       mapCenter.lng,
+      radiusKm,
       selectedSub?.id ?? null,
       selectedMapItemIds.join(","),
     ],
     queryFn: () => fetchNearbyVendors({
       data: {
         origin: mapCenter,
-        radiusKm: 10,
+        radiusKm,
         subCategoryId: selectedSub?.id ?? null,
         itemIds: selectedMapItemIds.slice(0, 50),
       },
@@ -277,7 +279,8 @@ export function QuickPage() {
       address: pickedLocation?.address ?? (prof as { address?: string } | null)?.address ?? geo.label ?? null,
       lat: mapCenter.lat,
       lng: mapCenter.lng,
-      search_radius_km: 10,
+      search_radius_km: radiusKm,
+      radius_km: radiusKm,
       max_slots: 5,
       source: "quick_home",
       status: "new",
@@ -389,7 +392,7 @@ export function QuickPage() {
               userLabel={shortLocation}
               geoStatus={geo.status}
               showControls={false}
-              radiusKm={10}
+              radiusKm={radiusKm}
               categoryIcon={selectedSubIcon}
               onLocationTap={() => setLocationSheetOpen(true)}
             />
@@ -411,8 +414,8 @@ export function QuickPage() {
           </motion.button>
         </div>
 
-        {/* Segmented Service / Product / Other selector — glass, top-left */}
-        <div className="absolute left-3 top-3 z-20">
+        {/* Segmented Service / Product / Other selector — moved below location pill to avoid overlap */}
+        <div className="absolute left-3 top-14 z-20">
           <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
             {(["service","product","other"] as TypeCode[]).map((code) => {
               const active = typeCode === code;
@@ -730,6 +733,8 @@ export function QuickPage() {
         onClose={() => setLocationSheetOpen(false)}
         bias={effectiveCenter ?? undefined}
         currentLabel={effectiveLabel}
+        radiusKm={radiusKm}
+        onRadiusChange={setRadiusKm}
         onPick={(loc) => { setPickedLocation(loc); setLocationSheetOpen(false); }}
       />
 
