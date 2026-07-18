@@ -368,52 +368,74 @@ export function QuickPage() {
   /* --------------------------------- UI ---------------------------------- */
   return (
     <div className="fixed inset-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
-      {/* ==================== MAP HERO (top ~45%) with GLASS overlays ==================== */}
-      <section className="relative flex-shrink-0" style={{ height: "46vh", minHeight: 320 }}>
-        {(geo.status !== "loading" || pickedLocation) ? (
-          <QuickServiceMap
-            center={mapCenter}
-            vendors={mapVendors}
-            userAvatar={profile?.avatar_url || avatarUser}
-            userLabel={shortLocation}
-            geoStatus={geo.status}
-            showControls={false}
-            radiusKm={10}
-            categoryIcon={selectedSubIcon}
-            onLocationTap={() => setLocationSheetOpen(true)}
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-b from-amber-50 to-white animate-pulse" />
-        )}
+      {/* ==================== MAP HERO — shorter + attribution clipped ==================== */}
+      <section className="relative flex-shrink-0 overflow-hidden" style={{ height: "40vh", minHeight: 290 }}>
+        {/* Inner wrapper is 30px taller than the section so Google's attribution
+            strip renders BELOW the visible clip area and never overlaps the rail. */}
+        <div className="absolute inset-x-0 top-0" style={{ height: "calc(100% + 30px)" }}>
+          {(geo.status !== "loading" || pickedLocation) ? (
+            <QuickServiceMap
+              center={mapCenter}
+              vendors={mapVendors}
+              userAvatar={profile?.avatar_url || avatarUser}
+              userLabel={shortLocation}
+              geoStatus={geo.status}
+              showControls={false}
+              radiusKm={10}
+              categoryIcon={selectedSubIcon}
+              onLocationTap={() => setLocationSheetOpen(true)}
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-b from-amber-50 to-white animate-pulse" />
+          )}
+        </div>
 
-        {/* Glass Type + Location header — floats on the map */}
-        <div className="absolute left-3 right-3 top-3 z-20 flex items-center gap-2.5">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setSearchOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
-          >
-            <Wrench className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 drop-shadow-sm">Service</span>
-            <ChevronDown className="h-4 w-4 text-slate-700" />
-          </motion.button>
+        {/* Top-right location pill */}
+        <div className="absolute right-3 top-3 z-20">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setLocationSheetOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
+            className="h-10 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-3.5"
           >
             <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
+            <span className="max-w-[110px] text-left font-bold text-[13px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
             <ChevronDown className="h-4 w-4 text-slate-700" />
           </motion.button>
         </div>
 
+        {/* Segmented Service / Product / Other selector — glass, top-left */}
+        <div className="absolute left-3 top-3 z-20">
+          <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
+            {(["service","product","other"] as TypeCode[]).map((code) => {
+              const active = typeCode === code;
+              const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
+              return (
+                <motion.button
+                  key={code}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setTypeCode(code)}
+                  className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="type-seg-active"
+                      className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">{label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Floating GLASS category rail — pinned near the bottom of the map */}
         <div className="absolute inset-x-0 bottom-2 z-20 px-2">
-            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
+            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
               {catQ.isLoading && rootCats.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="shrink-0 w-[52px] h-[68px] rounded-2xl bg-white/35 animate-pulse" />
+                  <div key={i} className="shrink-0 w-[64px] h-[80px] rounded-2xl bg-white/40 animate-pulse" />
                 ))
               ) : (
                 <>
@@ -424,25 +446,23 @@ export function QuickPage() {
                         key={c.id}
                         whileTap={{ scale: 0.94 }}
                         onClick={() => setSelectedRoot(c.id)}
-                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-0.5 transition-all ${
-                          isActive
-                            ? "w-[56px] h-[72px]"
-                            : "w-[52px] h-[68px]"
+                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-1 transition-all ${
+                          isActive ? "w-[68px] h-[82px]" : "w-[64px] h-[78px]"
                         }`}
                       >
-                        <span className={`relative h-10 w-10 rounded-2xl grid place-items-center backdrop-blur-xl border shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] ${
-                          isActive ? "bg-white/90 border-amber-400" : "bg-white/45 border-white/60"
+                        <span className={`relative h-14 w-14 rounded-full grid place-items-center backdrop-blur-2xl border-2 shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)] ${
+                          isActive ? "bg-white/95 border-amber-400" : "bg-white/60 border-white/80"
                         }`}>
                           {isActive && (
                             <motion.span
                               layoutId="root-cat-glow"
-                              className="absolute -inset-0.5 rounded-2xl ring-2 ring-amber-300/80 pointer-events-none"
+                              className="absolute -inset-1 rounded-full ring-2 ring-amber-300/80 pointer-events-none"
                               transition={{ type: "spring", stiffness: 340, damping: 28 }}
                             />
                           )}
-                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 22 : 20} />
+                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 28 : 26} />
                         </span>
-                        <span className={`w-full text-[8.5px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)] ${
+                        <span className={`w-full text-[9px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
                           isActive ? "text-orange-700" : "text-slate-900"
                         }`}>
                           {c.name}
@@ -453,18 +473,19 @@ export function QuickPage() {
                   <motion.button
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setAllCatsOpen(true)}
-                    className="shrink-0 snap-start w-[52px] h-[68px] flex flex-col items-center justify-start gap-0.5"
+                    className="shrink-0 snap-start w-[64px] h-[78px] flex flex-col items-center justify-start gap-1"
                   >
-                    <span className="h-10 w-10 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/60 grid place-items-center shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)]">
-                      <ChevronRight className="h-4 w-4 text-slate-700" />
+                    <span className="h-14 w-14 rounded-full bg-white/65 backdrop-blur-2xl border-2 border-white/80 grid place-items-center shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)]">
+                      <ChevronRight className="h-5 w-5 text-slate-700" />
                     </span>
-                    <span className="text-[8.5px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">More</span>
+                    <span className="text-[9px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
                   </motion.button>
                 </>
               )}
             </div>
         </div>
       </section>
+
 
       {/* ==================== SCROLL AREA (Recent + Sub cards) ==================== */}
       <div className="flex-1 overflow-y-auto pb-32 bg-[#f5f6f8] relative z-10">
