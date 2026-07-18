@@ -585,8 +585,10 @@ export function QuickPage() {
             return (
               <motion.article
                 key={s.id}
+                id={`sub-card-${s.id}`}
                 layout
                 onClick={() => setExpandedSub(s.id)}
+
                 className={`rounded-2xl overflow-hidden bg-white cursor-pointer transition-shadow ${
                   isOpen
                     ? "border-2 border-amber-400 shadow-[0_16px_36px_-16px_rgba(217,119,6,0.55)]"
