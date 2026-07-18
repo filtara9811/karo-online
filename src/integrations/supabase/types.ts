@@ -1512,6 +1512,7 @@ export type Database = {
           marketplace_reason: string | null
           max_slots: number
           note: string | null
+          radius_km: number | null
           root_category_id: string | null
           search_radius_km: number
           source: string
@@ -1549,6 +1550,7 @@ export type Database = {
           marketplace_reason?: string | null
           max_slots?: number
           note?: string | null
+          radius_km?: number | null
           root_category_id?: string | null
           search_radius_km?: number
           source?: string
@@ -1586,6 +1588,7 @@ export type Database = {
           marketplace_reason?: string | null
           max_slots?: number
           note?: string | null
+          radius_km?: number | null
           root_category_id?: string | null
           search_radius_km?: number
           source?: string
@@ -5473,6 +5476,7 @@ export type Database = {
       approve_vendor: { Args: { _vendor_user_id: string }; Returns: undefined }
       assert_realtime_publication_columns: { Args: never; Returns: undefined }
       auto_accept_expired_lead_notifications: { Args: never; Returns: Json }
+      auto_match_lead_vendors: { Args: { _lead_id: string }; Returns: number }
       broadcast_next_lead_batch:
         | { Args: { _batch_size?: number; _lead_id: string }; Returns: Json }
         | {
