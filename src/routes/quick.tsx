@@ -288,20 +288,24 @@ export function QuickPage() {
     if (error) throw error;
     const leadId = (data as { id: string } | null)?.id ?? null;
     if (leadId) {
-      // Safety net: the DB trigger also broadcasts ring 0; this keeps the
-      // customer radar reliable even if a scheduled fan-out is delayed.
+      // Auto-match: instantly attach every eligible in-radius vendor as "accepted"
+      // so the customer sees profiles right after the radar animation — no vendor
+      // action needed. The DB broadcast trigger still fires in parallel to notify
+      // vendors via push/whatsapp.
       void (async () => {
+        try {
+          await supabase.rpc("auto_match_lead_vendors", { _lead_id: leadId });
+        } catch { /* non-blocking */ }
         try {
           await supabase.rpc("broadcast_next_lead_batch", {
             _lead_id: leadId,
             _batch_size: 5,
             _ring_index: 0,
           });
-        } catch {
-          // Non-blocking: the DB trigger/scheduler still handles fan-out.
-        }
+        } catch { /* non-blocking */ }
       })();
     }
+
     return leadId;
   };
 
