@@ -88,8 +88,9 @@ export function QuickPage() {
   const fetchNearbyVendors = useServerFn(getNearbyOnlineVendors);
   const geo = useGeolocation();
   const [, setActiveType] = useActiveTypeId();
+  const [typeCode, setTypeCode] = useState<TypeCode>("service");
 
-  useEffect(() => { setActiveType("service"); }, [setActiveType]);
+  useEffect(() => { setActiveType(typeCode); }, [typeCode, setActiveType]);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
