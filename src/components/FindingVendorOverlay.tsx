@@ -358,7 +358,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
           <div className="absolute left-0 right-0 bottom-0 px-3 pb-2 space-y-1.5 pointer-events-none">
             {vendors.length > 0 && !done && (
               <p className="text-center text-[10px] font-display font-bold text-[color:oklch(0.42_0.10_82)] mb-1">
-                ✦ {vendors.length} vendor{vendors.length === 1 ? "" : "s"} ne abhi accept kiya · aur aa rahe hain…
+                ✦ {vendors.length} vendor{vendors.length === 1 ? "" : "s"} aapke paas · profiles taiyaar ho rahi hain…
               </p>
             )}
             <AnimatePresence initial={false}>
