@@ -100,6 +100,8 @@ export function QuickPage() {
   const [variationBySub, setVariationBySub] = useState<Record<string, string>>({});
   const [variationSheet, setVariationSheet] = useState<DBCategory | null>(null);
   const [variationGender, setVariationGender] = useState<string | null>(null);
+  useEffect(() => { setVariationGender(null); }, [variationSheet?.id]);
+
 
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
