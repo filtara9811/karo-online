@@ -12,7 +12,9 @@ import { LocationPickerSheet, type PickedLocation } from "@/components/LocationP
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
+import { VendorListSheet } from "@/components/VendorListSheet";
 import { useActiveTypeId } from "@/hooks/use-active-type";
+import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthGate } from "@/components/AuthGate";
@@ -84,6 +86,7 @@ function isEmojiLike(s: string | null | undefined): boolean {
 /* -------------------------------- Page ----------------------------------- */
 export function QuickPage() {
   const { profile } = useAuth();
+  const { inquiry } = useActiveInquiry();
   const { requireAuth } = useAuthGate();
   const fetchNearbyVendors = useServerFn(getNearbyOnlineVendors);
   const geo = useGeolocation();
@@ -142,7 +145,9 @@ export function QuickPage() {
   // Reset root selection whenever the active type changes
   useEffect(() => { setSelectedRoot(null); setExpandedSub(null); }, [typeCode]);
   useEffect(() => {
-    if (!selectedRoot && rootCats.length > 0) setSelectedRoot(rootCats[0].id);
+    if (selectedRoot || rootCats.length === 0) return;
+    const preferredHome = rootCats.find((c) => /home/i.test(c.name));
+    setSelectedRoot((preferredHome ?? rootCats[0]).id);
   }, [rootCats, selectedRoot]);
 
   const visibleSubs = useMemo(
@@ -900,8 +905,30 @@ export function QuickPage() {
         leadId={finder?.leadId ?? null}
         category={finder?.category ?? null}
         categoryImage={finder?.categoryImage ?? null}
-        onComplete={() => setFinder(null)}
+        onComplete={() => {
+          if (finder) {
+            setActiveInquiry({
+              leadId: finder.leadId,
+              category: finder.category,
+              productImage: finder.categoryImage,
+              startedAt: Date.now(),
+              vendorCount: 0,
+              approved: null,
+              open: true,
+            });
+          }
+          setFinder(null);
+        }}
         onClose={() => setFinder(null)}
+      />
+
+      <VendorListSheet
+        open={!!inquiry?.open}
+        leadId={inquiry?.leadId ?? null}
+        category={inquiry?.category ?? null}
+        productImage={inquiry?.productImage ?? null}
+        expectedVendors={5}
+        onClose={() => {}}
       />
     </div>
   );
