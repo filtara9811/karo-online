@@ -47,6 +47,7 @@ import { VendorAuthGate } from "@/components/VendorAuthGate";
 import { CoinRateTicker } from "@/components/CoinRateTicker";
 import {
   VendorPendingLeadsSheet,
+  useAutoAssignedLeadsCount,
   usePendingLeadsCount,
 } from "@/components/VendorPendingLeadsSheet";
 import { VendorLeadDetailSheet } from "@/components/VendorLeadDetailSheet";
@@ -138,7 +139,7 @@ function VendorDashboard() {
   const geo = useGeolocation();
   const updateQuickControl = useServerFn(updateVendorQuickControl);
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"my" | "potential">("my");
+  const [tab, setTab] = useState<"my" | "auto" | "potential">("my");
   const [activePanel, setActivePanel] = useState<0 | 1 | 2>(0);
   const [statRange, setStatRange] = useState<"day" | "week" | "month" | "year" | "custom">("day");
   const [customRange, setCustomRange] = useState<{ from: string; to: string }>(() => {
@@ -183,6 +184,7 @@ function VendorDashboard() {
   const [findingNeedId, setFindingNeedId] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const pendingCount = usePendingLeadsCount();
+  const autoAssignedCount = useAutoAssignedLeadsCount();
   const [vendor, setVendor] = useState<{
     business_name?: string | null;
     owner_name?: string | null;
@@ -278,12 +280,12 @@ function VendorDashboard() {
     const load = async () => {
       const { data: notifs } = await supabase
         .from("lead_notifications")
-        .select("lead_id, status, created_at, vendor_started_at")
+        .select("lead_id, status, created_at, responded_at, vendor_started_at, auto_matched")
         .eq("vendor_id", user.id)
-        .not("vendor_started_at", "is", null)
-        .order("vendor_started_at", { ascending: false })
-        .limit(50);
-      const ids = Array.from(new Set((notifs ?? []).map((n: any) => n.lead_id)));
+        .order("created_at", { ascending: false })
+        .limit(80);
+      const actionableNotifs = ((notifs ?? []) as any[]).filter((n) => n.vendor_started_at || n.auto_matched);
+      const ids = Array.from(new Set(actionableNotifs.map((n: any) => n.lead_id)));
       if (ids.length === 0) {
         if (!cancelled) {
           setLeads([]);
@@ -344,11 +346,13 @@ function VendorDashboard() {
         );
       }
 
-      const notifStatusMap = new Map((notifs ?? []).map((n: any) => [n.lead_id, n.status]));
+      const notifStatusMap = new Map(actionableNotifs.map((n: any) => [n.lead_id, n.status]));
+      const notifMetaMap = new Map(actionableNotifs.map((n: any) => [n.lead_id, n]));
       const mapped: Lead[] = (rows ?? []).map((r: any) => {
         const customer = customerMap.get(r.customer_id);
         const accepted = (r.accepted_vendor_ids ?? []).includes(user.id);
         const nstatus = notifStatusMap.get(r.id);
+        const nmeta = notifMetaMap.get(r.id) as any;
         let st: LeadStatus = "process";
         if (r.status === "completed" && accepted) st = "success";
         else if (accepted) st = "process";
@@ -401,6 +405,8 @@ function VendorDashboard() {
           status: st,
           time: timeAgo(r.created_at),
           createdAtIso: r.created_at,
+          autoAssigned: Boolean(nmeta?.auto_matched),
+          startedAtIso: nmeta?.vendor_started_at ?? null,
           progressPct: st === "success" ? 100 : 55,
           note: r.note ?? "",
           items,
@@ -699,6 +705,16 @@ function VendorDashboard() {
     const action = rangedLeads.filter((l) => l.status === "new").length;
     return { total, success, process, rejected, action };
   }, [rangedLeads]);
+
+  const autoAssignedLeads = useMemo(
+    () => leads.filter((lead) => lead.autoAssigned),
+    [leads],
+  );
+
+  const myStartedLeads = useMemo(
+    () => leads.filter((lead) => !lead.autoAssigned || lead.startedAtIso),
+    [leads],
+  );
 
   // Live inventory images (vendor's mapped catalog items) — used to keep the
   // product strip populated even when no leads exist yet, and refreshed in
@@ -1192,7 +1208,7 @@ function VendorDashboard() {
               </Link>
             </div>
 
-            {/* My Leads / Potential tabs */}
+            {/* My Leads / Auto Assigned / Potential tabs */}
             <div className="px-3 pb-3">
               <div className="flex bg-white rounded-2xl border border-[color:oklch(0.72_0.01_260/0.4)] p-1 shadow-sm">
                 <button
@@ -1203,6 +1219,15 @@ function VendorDashboard() {
                   style={tab === "my" ? { background: "linear-gradient(180deg, #eef0f3 0%, #d8dde3 60%, #a8acb3 100%)" } : undefined}
                 >
                   My Leads
+                </button>
+                <button
+                  onClick={() => setTab("auto")}
+                  className={`flex-1 py-1.5 text-xs font-display font-bold rounded-xl transition-all ${
+                    tab === "auto" ? "text-[color:oklch(0.20_0.01_260)] shadow-md" : "text-[color:oklch(0.55_0.10_82)]"
+                  }`}
+                  style={tab === "auto" ? { background: "linear-gradient(180deg, #fff8dc 0%, #f5e9b8 60%, #d4af37 100%)" } : undefined}
+                >
+                  Auto {autoAssignedCount > 0 ? `(${autoAssignedCount})` : ""}
                 </button>
                 <button
                   onClick={() => setTab("potential")}
@@ -1341,7 +1366,7 @@ function VendorDashboard() {
                 Leads load ho rahi hain…
               </div>
             )}
-            {!loadingLeads && leads.length === 0 && (
+            {!loadingLeads && myStartedLeads.length === 0 && (
               <div className="rounded-2xl bg-white border border-[color:oklch(0.72_0.01_260/0.4)] p-6 text-center shadow-sm">
                 <Bell className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-60" />
                 <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
@@ -1352,7 +1377,31 @@ function VendorDashboard() {
                 </p>
               </div>
             )}
-            {leads.map((lead) => (
+            {myStartedLeads.map((lead) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                unread={unreadByLead[lead.id] ?? 0}
+                onOpen={() => setDetailLeadId(lead.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {activePanel === 0 && tab === "auto" && (
+          <div className="space-y-3">
+            {!loadingLeads && autoAssignedLeads.length === 0 && (
+              <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] p-6 text-center shadow-sm">
+                <Handshake className="h-8 w-8 mx-auto text-[color:oklch(0.55_0.10_82)] opacity-70" />
+                <p className="mt-2 font-display font-bold text-sm text-[color:oklch(0.25_0.01_260)]">
+                  Auto-assigned lead nahi hai
+                </p>
+                <p className="text-[11px] text-[color:oklch(0.45_0.01_260)] mt-1">
+                  Customer request match hote hi yahan direct profile card aa jayega.
+                </p>
+              </div>
+            )}
+            {autoAssignedLeads.map((lead) => (
               <LeadCard
                 key={lead.id}
                 lead={lead}
@@ -2048,6 +2097,11 @@ function LeadCard({ lead, unread, onOpen }: { lead: Lead; unread: number; onOpen
           LEAD&nbsp;ID
           <span className="font-mono text-[color:oklch(0.20_0.01_260)]">{lead.leadCode}</span>
         </span>
+        {lead.autoAssigned && (
+          <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-black text-emerald-700">
+            <Zap className="h-3 w-3" /> Auto Assigned
+          </span>
+        )}
       </div>
 
       <button

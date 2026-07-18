@@ -1401,6 +1401,7 @@ export type Database = {
       lead_notifications: {
         Row: {
           auto_accept_at: string
+          auto_matched: boolean
           created_at: string
           id: string
           lead_id: string
@@ -1415,6 +1416,7 @@ export type Database = {
         }
         Insert: {
           auto_accept_at?: string
+          auto_matched?: boolean
           created_at?: string
           id?: string
           lead_id: string
@@ -1429,6 +1431,7 @@ export type Database = {
         }
         Update: {
           auto_accept_at?: string
+          auto_matched?: boolean
           created_at?: string
           id?: string
           lead_id?: string
