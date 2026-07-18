@@ -386,7 +386,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                       {v.business_name || v.owner_name || "Vendor"}
                     </p>
                     <p className="text-[9px] text-emerald-700 font-semibold truncate">
-                      ✓ {done ? "Ready to connect" : "Just accepted"}
+                      ✓ {done ? "Ready to connect" : "Nearby · matched"}
                     </p>
                   </div>
                   <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold flex-shrink-0">
