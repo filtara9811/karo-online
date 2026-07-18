@@ -134,7 +134,8 @@ export function QuickPage() {
   const rootCats = useMemo(() => (catQ.data ?? []).filter((c) => !c.parent_id), [catQ.data]);
   const allSubs = useMemo(() => (catQ.data ?? []).filter((c) => !!c.parent_id), [catQ.data]);
 
-  // Default selection to first root when data lands
+  // Reset root selection whenever the active type changes
+  useEffect(() => { setSelectedRoot(null); setExpandedSub(null); }, [typeCode]);
   useEffect(() => {
     if (!selectedRoot && rootCats.length > 0) setSelectedRoot(rootCats[0].id);
   }, [rootCats, selectedRoot]);
