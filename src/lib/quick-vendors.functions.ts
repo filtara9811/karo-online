@@ -112,7 +112,10 @@ export const getNearbyOnlineVendors = createServerFn({ method: "POST" })
       }
       mappedVendorIds = Array.from(new Set((mappings ?? []).map((m: any) => String(m.vendor_id)).filter(Boolean)));
       if (mappedVendorIds.length === 0) {
-        return { ok: true as const, vendors: [], onlineCount: 0, offlineCount: 0 };
+        // Do not show an empty map just because a newly-added category/item
+        // has not been mapped yet. Fall back to real nearby active vendors;
+        // auto-match still ranks exact item/category vendors first when they exist.
+        mappedVendorIds = null;
       }
     }
 
