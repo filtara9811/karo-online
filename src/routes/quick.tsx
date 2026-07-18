@@ -58,6 +58,14 @@ type DBItem = {
 type RecentSub = { id: string; name: string; image: string | null };
 
 const SERVICE_TYPE_ID = "8a13aacc-a4d1-4c93-8556-fddd8f0a67a3";
+const PRODUCT_TYPE_ID = "5db3a5c5-0c8e-4c86-8b43-ecc73a95e5ff";
+const OTHER_TYPE_ID = "6761c6e5-7d35-4876-9cdc-01cee81a8c40";
+type TypeCode = "service" | "product" | "other";
+const TYPE_ID_BY_CODE: Record<TypeCode, string> = {
+  service: SERVICE_TYPE_ID,
+  product: PRODUCT_TYPE_ID,
+  other: OTHER_TYPE_ID,
+};
 const QUICK_FALLBACK_CENTER = { lat: 28.6562, lng: 77.241 };
 
 const DEMO_VENDORS: QuickMapVendor[] = [
