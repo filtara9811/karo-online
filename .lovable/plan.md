@@ -1,42 +1,29 @@
-## Problem
+## Home Screen (/quick) Refinements
 
-The home screen crashes with "Something went wrong" because `QuickPage` now calls `useQuery` (React Query) but the project has **no `QueryClientProvider` set up anywhere** — router context, root route, and `src/start.ts` never create a `QueryClient`. Console confirms: `No QueryClient set, use QueryClientProvider to set one`.
+**1. Map & Category Rail**
+- Shrink map height (~45% → ~38%) so product/recommended area gets more room.
+- Hide Google attribution/legal text overlap: add `mapTypeControl:false`, `keyboardShortcuts:false`, and CSS mask to push "Google · Keyboard shortcuts · Map data · Terms" strip below the category rail (translate map div down by ~24px inside a clipped wrapper).
+- Category circles: increase size (64→76px), add glassmorphic backdrop pill behind each (`bg-white/40 backdrop-blur-xl border border-white/50 shadow-lg`), realistic depth via inner highlight + soft drop shadow.
+- Category rail: enable **both horizontal AND vertical** scroll on expanded subcategory grid (currently vertical-only) — add horizontal chip strip as primary, grid as secondary.
 
-On top of that, the recent refactor removed several pieces of the original home flow you liked:
-- Mic FAB opens a small picker sheet instead of the full old search bar.
-- Map no longer shows floating vendor pins for the selected category (e.g. Carpenter).
-- Live geolocation + 1/2/5/10 km radius circles around the user are gone.
+**2. Type Selector Pill (Service / Product / Other)**
+- Top-left pill currently shows only active type. Convert to segmented 3-way selector (Service | Product | Other) that filters the entire category rail + recommended list live from `catalog_types` table.
+- Service → service vendors' categories; Product → product vendors; Other → other type vendors. Wire to `useActiveTypeId` (already exists globally).
 
-## Fix Plan
+**3. Subcategory Detail Card (expanded)**
+- Restore product/variation images from `catalog_items.image_url` (currently shows blank/text-only tiles like "Blazer", "Anarkali Suit").
+- Add gender/segment tabs above variation grid: **Gents · Ladies · Kids** (default = Gents). Filter variations by `catalog_items.segment` field (or tag-based fallback). Persist last selection.
+- Variation tiles: image thumbnail + name, tap to select → enables Find Vendor.
 
-### 1. Wire up React Query properly (fixes the crash)
-- `src/router.tsx`: create `QueryClient` **inside `getRouter`** (per-request), pass via `context: { queryClient }`, set `defaultPreloadStaleTime: 0`.
-- `src/routes/__root.tsx`: use `createRootRouteWithContext<{ queryClient: QueryClient }>()`, wrap `<Outlet />` in `<QueryClientProvider client={queryClient}>`.
-- Verify `@tanstack/react-query` is installed (it's already used in many hooks).
+**4. Floating Bottom Dock Scope**
+- `FloatingDockNav` (My Orders / Profile FAB / My Shops) currently renders on many routes. Restrict to home only: mount inside `/quick` route component instead of `AppShell`. Remove from all other routes (orders, profile, vendor pages, radar screen, etc.).
+- Radar (`FindingVendorOverlay`) already dims but dock still bleeds through — confirm hidden via `body[data-finder-open]` selector too.
 
-### 2. Restore the real search bar on the Mic FAB
-- In `src/routes/quick.tsx`, keep the pulsing FAB but make it open the original full `SearchOverlay` (already exists in `src/components/SearchOverlay.tsx`) — not the small type-picker sheet.
-- Speech recognition (`use-voice-input`) auto-fills the search field on open.
-- Selecting a result runs the same `createLead` → `FindingVendorOverlay` flow.
-
-### 3. Restore map behavior (Carpenter pins + live location + radius rings)
-- Reinstate `MapView` on the home screen above the categories, using `useGeolocation()` for the live center.
-- When a root/sub category is selected (e.g. Carpenter), fetch nearby vendors of that category and render them as floating pins via `markers` prop on `MapView`.
-- Overlay 1 / 2 / 5 / 10 km radius circles centered on the user (Google Maps `Circle` inside `MapView`), with a small chip strip to pick the active radius; filter vendor markers by that radius.
-- Reuse existing `quick-vendors.functions.ts` / `nearby-customers.functions.ts` patterns for the query.
-
-### 4. Data sync sanity pass
-- After Query is wired, admin-managed `categories` + `catalog_items` will actually load (they silently failed before because the hook threw). Verify tiles show admin images/emoji, sub-cards show admin items, and `/orders` still shows real leads.
-
-### 5. Verify (in build mode)
-- Reload `/`; confirm no red boundary, tiles render, mic opens the full SearchOverlay, map shows user dot + radius ring + Carpenter pins after selecting Carpenter.
-- Playwright smoke: open `/`, click mic → assert search input visible; click Carpenter → assert markers on map.
-
-### Files touched
-- `src/router.tsx` (add QueryClient to context)
-- `src/routes/__root.tsx` (add QueryClientProvider)
-- `src/routes/quick.tsx` (mic → SearchOverlay, re-add MapView + radius chips + vendor pins)
-- `src/components/MapView.tsx` (add optional `circles` prop for radius rings)
-
-### Out of scope
-Dock, profile sheet, `/orders`, admin, vendor, staff pages, backend schema.
+### Technical Notes
+- Files to modify:
+  - `src/routes/quick.tsx` — map sizing, type selector, subcategory image binding, gender tabs, mount dock locally
+  - `src/components/QuickServiceMap.tsx` — Google controls off, attribution clip, category rail styling (glass + larger)
+  - `src/components/FloatingDockNav.tsx` — remove global mount
+  - `src/components/AppShell.tsx` — strip dock from shell; expand HIDE list is not needed once dock is route-scoped
+- Data: use existing `catalog_items.image_url`; add `.segment` filter (already present in schema per prior work). No migrations needed unless segment column missing — will verify at build time.
+- No backend/RLS changes.

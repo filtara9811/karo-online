@@ -58,6 +58,14 @@ type DBItem = {
 type RecentSub = { id: string; name: string; image: string | null };
 
 const SERVICE_TYPE_ID = "8a13aacc-a4d1-4c93-8556-fddd8f0a67a3";
+const PRODUCT_TYPE_ID = "5db3a5c5-0c8e-4c86-8b43-ecc73a95e5ff";
+const OTHER_TYPE_ID = "6761c6e5-7d35-4876-9cdc-01cee81a8c40";
+type TypeCode = "service" | "product" | "other";
+const TYPE_ID_BY_CODE: Record<TypeCode, string> = {
+  service: SERVICE_TYPE_ID,
+  product: PRODUCT_TYPE_ID,
+  other: OTHER_TYPE_ID,
+};
 const QUICK_FALLBACK_CENTER = { lat: 28.6562, lng: 77.241 };
 
 const DEMO_VENDORS: QuickMapVendor[] = [
@@ -80,8 +88,9 @@ export function QuickPage() {
   const fetchNearbyVendors = useServerFn(getNearbyOnlineVendors);
   const geo = useGeolocation();
   const [, setActiveType] = useActiveTypeId();
+  const [typeCode, setTypeCode] = useState<TypeCode>("service");
 
-  useEffect(() => { setActiveType("service"); }, [setActiveType]);
+  useEffect(() => { setActiveType(typeCode); }, [typeCode, setActiveType]);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
@@ -90,6 +99,10 @@ export function QuickPage() {
   const [expandedSub, setExpandedSub] = useState<string | null>(null);
   const [variationBySub, setVariationBySub] = useState<Record<string, string>>({});
   const [variationSheet, setVariationSheet] = useState<DBCategory | null>(null);
+  const [variationGender, setVariationGender] = useState<string | null>(null);
+  useEffect(() => { setVariationGender(null); }, [variationSheet?.id]);
+
+
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<{
@@ -107,13 +120,13 @@ export function QuickPage() {
 
   /* ------------------------ Data: admin-managed catalog ------------------ */
   const catQ = useQuery({
-    queryKey: ["quick-service-categories"],
+    queryKey: ["quick-categories", typeCode],
     queryFn: async (): Promise<DBCategory[]> => {
       const { data, error } = await supabase
         .from("categories")
         .select("id,name,slug,image_url,icon,parent_id,sort_order,keywords,type_id")
         .eq("is_active", true)
-        .eq("type_id", SERVICE_TYPE_ID)
+        .eq("type_id", TYPE_ID_BY_CODE[typeCode])
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
       if (error) throw error;
@@ -125,7 +138,8 @@ export function QuickPage() {
   const rootCats = useMemo(() => (catQ.data ?? []).filter((c) => !c.parent_id), [catQ.data]);
   const allSubs = useMemo(() => (catQ.data ?? []).filter((c) => !!c.parent_id), [catQ.data]);
 
-  // Default selection to first root when data lands
+  // Reset root selection whenever the active type changes
+  useEffect(() => { setSelectedRoot(null); setExpandedSub(null); }, [typeCode]);
   useEffect(() => {
     if (!selectedRoot && rootCats.length > 0) setSelectedRoot(rootCats[0].id);
   }, [rootCats, selectedRoot]);
@@ -252,7 +266,7 @@ export function QuickPage() {
       customer_id: user.id,
       customer_name: (prof as { name?: string } | null)?.name ?? null,
       customer_phone: (prof as { phone?: string } | null)?.phone ?? null,
-      type_id: SERVICE_TYPE_ID,
+      type_id: TYPE_ID_BY_CODE[typeCode],
       root_category_id: sub.parent_id ?? selectedRoot,
       sub_category_id: sub.id,
       sub_category_name: sub.name,
@@ -358,52 +372,74 @@ export function QuickPage() {
   /* --------------------------------- UI ---------------------------------- */
   return (
     <div className="fixed inset-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
-      {/* ==================== MAP HERO (top ~45%) with GLASS overlays ==================== */}
-      <section className="relative flex-shrink-0" style={{ height: "46vh", minHeight: 320 }}>
-        {(geo.status !== "loading" || pickedLocation) ? (
-          <QuickServiceMap
-            center={mapCenter}
-            vendors={mapVendors}
-            userAvatar={profile?.avatar_url || avatarUser}
-            userLabel={shortLocation}
-            geoStatus={geo.status}
-            showControls={false}
-            radiusKm={10}
-            categoryIcon={selectedSubIcon}
-            onLocationTap={() => setLocationSheetOpen(true)}
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-b from-amber-50 to-white animate-pulse" />
-        )}
+      {/* ==================== MAP HERO — shorter + attribution clipped ==================== */}
+      <section className="relative flex-shrink-0 overflow-hidden" style={{ height: "40vh", minHeight: 290 }}>
+        {/* Inner wrapper is 30px taller than the section so Google's attribution
+            strip renders BELOW the visible clip area and never overlaps the rail. */}
+        <div className="absolute inset-x-0 top-0" style={{ height: "calc(100% + 30px)" }}>
+          {(geo.status !== "loading" || pickedLocation) ? (
+            <QuickServiceMap
+              center={mapCenter}
+              vendors={mapVendors}
+              userAvatar={profile?.avatar_url || avatarUser}
+              userLabel={shortLocation}
+              geoStatus={geo.status}
+              showControls={false}
+              radiusKm={10}
+              categoryIcon={selectedSubIcon}
+              onLocationTap={() => setLocationSheetOpen(true)}
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-b from-amber-50 to-white animate-pulse" />
+          )}
+        </div>
 
-        {/* Glass Type + Location header — floats on the map */}
-        <div className="absolute left-3 right-3 top-3 z-20 flex items-center gap-2.5">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setSearchOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
-          >
-            <Wrench className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 drop-shadow-sm">Service</span>
-            <ChevronDown className="h-4 w-4 text-slate-700" />
-          </motion.button>
+        {/* Top-right location pill */}
+        <div className="absolute right-3 top-3 z-20">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setLocationSheetOpen(true)}
-            className="flex-1 h-11 rounded-full bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-4"
+            className="h-10 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-3.5"
           >
             <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="flex-1 text-left font-bold text-[14px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
+            <span className="max-w-[110px] text-left font-bold text-[13px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
             <ChevronDown className="h-4 w-4 text-slate-700" />
           </motion.button>
         </div>
 
+        {/* Segmented Service / Product / Other selector — glass, top-left */}
+        <div className="absolute left-3 top-3 z-20">
+          <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
+            {(["service","product","other"] as TypeCode[]).map((code) => {
+              const active = typeCode === code;
+              const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
+              return (
+                <motion.button
+                  key={code}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setTypeCode(code)}
+                  className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="type-seg-active"
+                      className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">{label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Floating GLASS category rail — pinned near the bottom of the map */}
         <div className="absolute inset-x-0 bottom-2 z-20 px-2">
-            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
+            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
               {catQ.isLoading && rootCats.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="shrink-0 w-[52px] h-[68px] rounded-2xl bg-white/35 animate-pulse" />
+                  <div key={i} className="shrink-0 w-[64px] h-[80px] rounded-2xl bg-white/40 animate-pulse" />
                 ))
               ) : (
                 <>
@@ -414,25 +450,23 @@ export function QuickPage() {
                         key={c.id}
                         whileTap={{ scale: 0.94 }}
                         onClick={() => setSelectedRoot(c.id)}
-                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-0.5 transition-all ${
-                          isActive
-                            ? "w-[56px] h-[72px]"
-                            : "w-[52px] h-[68px]"
+                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-1 transition-all ${
+                          isActive ? "w-[68px] h-[82px]" : "w-[64px] h-[78px]"
                         }`}
                       >
-                        <span className={`relative h-10 w-10 rounded-2xl grid place-items-center backdrop-blur-xl border shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] ${
-                          isActive ? "bg-white/90 border-amber-400" : "bg-white/45 border-white/60"
+                        <span className={`relative h-14 w-14 rounded-full grid place-items-center backdrop-blur-2xl border-2 shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)] ${
+                          isActive ? "bg-white/95 border-amber-400" : "bg-white/60 border-white/80"
                         }`}>
                           {isActive && (
                             <motion.span
                               layoutId="root-cat-glow"
-                              className="absolute -inset-0.5 rounded-2xl ring-2 ring-amber-300/80 pointer-events-none"
+                              className="absolute -inset-1 rounded-full ring-2 ring-amber-300/80 pointer-events-none"
                               transition={{ type: "spring", stiffness: 340, damping: 28 }}
                             />
                           )}
-                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 22 : 20} />
+                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 28 : 26} />
                         </span>
-                        <span className={`w-full text-[8.5px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)] ${
+                        <span className={`w-full text-[9px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
                           isActive ? "text-orange-700" : "text-slate-900"
                         }`}>
                           {c.name}
@@ -443,18 +477,19 @@ export function QuickPage() {
                   <motion.button
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setAllCatsOpen(true)}
-                    className="shrink-0 snap-start w-[52px] h-[68px] flex flex-col items-center justify-start gap-0.5"
+                    className="shrink-0 snap-start w-[64px] h-[78px] flex flex-col items-center justify-start gap-1"
                   >
-                    <span className="h-10 w-10 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/60 grid place-items-center shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)]">
-                      <ChevronRight className="h-4 w-4 text-slate-700" />
+                    <span className="h-14 w-14 rounded-full bg-white/65 backdrop-blur-2xl border-2 border-white/80 grid place-items-center shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)]">
+                      <ChevronRight className="h-5 w-5 text-slate-700" />
                     </span>
-                    <span className="text-[8.5px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">More</span>
+                    <span className="text-[9px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
                   </motion.button>
                 </>
               )}
             </div>
         </div>
       </section>
+
 
       {/* ==================== SCROLL AREA (Recent + Sub cards) ==================== */}
       <div className="flex-1 overflow-y-auto pb-32 bg-[#f5f6f8] relative z-10">
@@ -502,6 +537,46 @@ export function QuickPage() {
           <span className="text-[11px] text-slate-400">{visibleSubs.length} services</span>
         </div>
 
+        {/* Horizontal sub-category chip strip — left/right scroll */}
+        {visibleSubs.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {visibleSubs.map((s) => {
+              const active = expandedSub === s.id;
+              const thumb = s.image_url && s.image_url.startsWith("http") ? s.image_url : null;
+              return (
+                <motion.button
+                  key={s.id}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => {
+                    setExpandedSub(s.id);
+                    // scroll the expanded card into view
+                    setTimeout(() => {
+                      document.getElementById(`sub-card-${s.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 60);
+                  }}
+                  className={`shrink-0 h-10 pl-1 pr-3 rounded-full flex items-center gap-2 border transition-all ${
+                    active
+                      ? "bg-gradient-to-r from-orange-400 to-orange-500 border-orange-500 text-white shadow-[0_6px_16px_-6px_rgba(249,115,22,0.6)]"
+                      : "bg-white border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <span className={`h-8 w-8 rounded-full grid place-items-center overflow-hidden ${active ? "bg-white/25" : "bg-slate-50"}`}>
+                    {thumb ? (
+                      <img src={thumb} alt="" className="h-full w-full object-cover" />
+                    ) : isEmojiLike(s.image_url) ? (
+                      <span className="text-base">{s.image_url}</span>
+                    ) : (
+                      <Wrench className={`h-4 w-4 ${active ? "text-white" : "text-orange-500"}`} />
+                    )}
+                  </span>
+                  <span className="text-[12px] font-bold whitespace-nowrap">{s.name}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+
+
         {/* Sub-category cards — compact by default, selected expands to premium card */}
         <div className="px-4 space-y-2.5">
           {visibleSubs.map((s) => {
@@ -514,8 +589,10 @@ export function QuickPage() {
             return (
               <motion.article
                 key={s.id}
+                id={`sub-card-${s.id}`}
                 layout
                 onClick={() => setExpandedSub(s.id)}
+
                 className={`rounded-2xl overflow-hidden bg-white cursor-pointer transition-shadow ${
                   isOpen
                     ? "border-2 border-amber-400 shadow-[0_16px_36px_-16px_rgba(217,119,6,0.55)]"
@@ -667,40 +744,88 @@ export function QuickPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)]"
             >
-              <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <div>
-                  <h3 className="font-display font-bold text-slate-900 text-lg">{variationSheet.name}</h3>
-                  <p className="text-xs text-slate-500">Select a variation</p>
-                </div>
-                <button onClick={() => setVariationSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="px-4 pb-4 grid grid-cols-2 gap-2.5 max-h-[55vh] overflow-y-auto">
-                {(itemsBySub.get(variationSheet.id) ?? []).map((it) => {
-                  const isSel = variationBySub[variationSheet.id] === it.name;
-                  return (
-                    <motion.button
-                      key={it.id}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => {
-                        setVariationBySub((prev) => ({ ...prev, [variationSheet.id]: it.name }));
-                        setVariationSheet(null);
-                      }}
-                      className={`rounded-xl border-2 py-4 px-3 text-[13px] font-semibold ${
-                        isSel ? "border-orange-400 bg-orange-50 text-orange-600" : "border-slate-200 bg-white text-slate-800"
-                      }`}
-                    >
-                      {it.name}
-                    </motion.button>
-                  );
-                })}
-                {(itemsBySub.get(variationSheet.id) ?? []).length === 0 && (
-                  <div className="col-span-2 text-center text-sm text-slate-500 py-6">
-                    No variations yet. Tap Find Vendor to send a general request.
-                  </div>
-                )}
-              </div>
+              {(() => {
+                const allItems = itemsBySub.get(variationSheet.id) ?? [];
+                const groups = Array.from(new Set(allItems.map((i) => (i.group_tag || "").trim()).filter(Boolean)));
+                const [activeGroup, setActiveGroup] = [
+                  variationGender ?? (groups[0] || null),
+                  setVariationGender,
+                ] as const;
+                const filtered = activeGroup
+                  ? allItems.filter((i) => (i.group_tag || "").trim() === activeGroup)
+                  : allItems;
+                return (
+                  <>
+                    <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                      <div>
+                        <h3 className="font-display font-bold text-slate-900 text-lg">{variationSheet.name}</h3>
+                        <p className="text-xs text-slate-500">Select a variation</p>
+                      </div>
+                      <button onClick={() => setVariationSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {groups.length > 1 && (
+                      <div className="px-4 pb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {groups.map((g) => {
+                          const isSel = activeGroup === g;
+                          return (
+                            <button
+                              key={g}
+                              onClick={() => setActiveGroup(g)}
+                              className={`shrink-0 px-3.5 h-8 rounded-full text-[12px] font-bold border transition-colors ${
+                                isSel
+                                  ? "bg-orange-500 border-orange-500 text-white"
+                                  : "bg-white border-slate-200 text-slate-700"
+                              }`}
+                            >
+                              {g}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="px-4 pb-4 grid grid-cols-3 gap-2.5 max-h-[55vh] overflow-y-auto">
+                      {filtered.map((it) => {
+                        const isSel = variationBySub[variationSheet.id] === it.name;
+                        const img = it.image_url && it.image_url.startsWith("http") ? it.image_url : null;
+                        return (
+                          <motion.button
+                            key={it.id}
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                              setVariationBySub((prev) => ({ ...prev, [variationSheet.id]: it.name }));
+                              setVariationSheet(null);
+                            }}
+                            className={`rounded-2xl border-2 overflow-hidden flex flex-col text-left transition-all ${
+                              isSel ? "border-orange-400 bg-orange-50 shadow-[0_6px_16px_-6px_rgba(249,115,22,0.5)]" : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <div className="aspect-square w-full bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden">
+                              {img ? (
+                                <img src={img} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                              ) : (
+                                <Wrench className="h-6 w-6 text-orange-400" />
+                              )}
+                            </div>
+                            <div className={`px-2 py-1.5 text-[11.5px] font-semibold leading-tight ${isSel ? "text-orange-700" : "text-slate-800"}`}>
+                              {it.name}
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                      {filtered.length === 0 && (
+                        <div className="col-span-3 text-center text-sm text-slate-500 py-6">
+                          No variations yet. Tap Find Vendor to send a general request.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+
             </motion.div>
           </motion.div>
         )}
