@@ -533,6 +533,46 @@ export function QuickPage() {
           <span className="text-[11px] text-slate-400">{visibleSubs.length} services</span>
         </div>
 
+        {/* Horizontal sub-category chip strip — left/right scroll */}
+        {visibleSubs.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {visibleSubs.map((s) => {
+              const active = expandedSub === s.id;
+              const thumb = s.image_url && s.image_url.startsWith("http") ? s.image_url : null;
+              return (
+                <motion.button
+                  key={s.id}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => {
+                    setExpandedSub(s.id);
+                    // scroll the expanded card into view
+                    setTimeout(() => {
+                      document.getElementById(`sub-card-${s.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 60);
+                  }}
+                  className={`shrink-0 h-10 pl-1 pr-3 rounded-full flex items-center gap-2 border transition-all ${
+                    active
+                      ? "bg-gradient-to-r from-orange-400 to-orange-500 border-orange-500 text-white shadow-[0_6px_16px_-6px_rgba(249,115,22,0.6)]"
+                      : "bg-white border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <span className={`h-8 w-8 rounded-full grid place-items-center overflow-hidden ${active ? "bg-white/25" : "bg-slate-50"}`}>
+                    {thumb ? (
+                      <img src={thumb} alt="" className="h-full w-full object-cover" />
+                    ) : isEmojiLike(s.image_url) ? (
+                      <span className="text-base">{s.image_url}</span>
+                    ) : (
+                      <Wrench className={`h-4 w-4 ${active ? "text-white" : "text-orange-500"}`} />
+                    )}
+                  </span>
+                  <span className="text-[12px] font-bold whitespace-nowrap">{s.name}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+
+
         {/* Sub-category cards — compact by default, selected expands to premium card */}
         <div className="px-4 space-y-2.5">
           {visibleSubs.map((s) => {
