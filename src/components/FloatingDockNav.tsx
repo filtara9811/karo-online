@@ -22,6 +22,20 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
   const { profile } = useAuth();
   const [active, setActive] = useState<SlotKey>("profile");
   const [hubOpen, setHubOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  // Hide the dock while overlays like the vendor-finder radar are open.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const sync = () => setHidden(document.body.dataset.finderOpen === "1");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.body, { attributes: true, attributeFilter: ["data-finder-open"] });
+    return () => obs.disconnect();
+  }, []);
+
+  if (hidden) return null;
+
 
   const trigger = (slot: SlotKey) => {
     setActive(slot);
