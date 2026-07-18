@@ -262,7 +262,7 @@ export function QuickPage() {
       customer_id: user.id,
       customer_name: (prof as { name?: string } | null)?.name ?? null,
       customer_phone: (prof as { phone?: string } | null)?.phone ?? null,
-      type_id: SERVICE_TYPE_ID,
+      type_id: TYPE_ID_BY_CODE[typeCode],
       root_category_id: sub.parent_id ?? selectedRoot,
       sub_category_id: sub.id,
       sub_category_name: sub.name,
