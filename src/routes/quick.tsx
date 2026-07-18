@@ -740,40 +740,88 @@ export function QuickPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)]"
             >
-              <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <div>
-                  <h3 className="font-display font-bold text-slate-900 text-lg">{variationSheet.name}</h3>
-                  <p className="text-xs text-slate-500">Select a variation</p>
-                </div>
-                <button onClick={() => setVariationSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="px-4 pb-4 grid grid-cols-2 gap-2.5 max-h-[55vh] overflow-y-auto">
-                {(itemsBySub.get(variationSheet.id) ?? []).map((it) => {
-                  const isSel = variationBySub[variationSheet.id] === it.name;
-                  return (
-                    <motion.button
-                      key={it.id}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => {
-                        setVariationBySub((prev) => ({ ...prev, [variationSheet.id]: it.name }));
-                        setVariationSheet(null);
-                      }}
-                      className={`rounded-xl border-2 py-4 px-3 text-[13px] font-semibold ${
-                        isSel ? "border-orange-400 bg-orange-50 text-orange-600" : "border-slate-200 bg-white text-slate-800"
-                      }`}
-                    >
-                      {it.name}
-                    </motion.button>
-                  );
-                })}
-                {(itemsBySub.get(variationSheet.id) ?? []).length === 0 && (
-                  <div className="col-span-2 text-center text-sm text-slate-500 py-6">
-                    No variations yet. Tap Find Vendor to send a general request.
-                  </div>
-                )}
-              </div>
+              {(() => {
+                const allItems = itemsBySub.get(variationSheet.id) ?? [];
+                const groups = Array.from(new Set(allItems.map((i) => (i.group_tag || "").trim()).filter(Boolean)));
+                const [activeGroup, setActiveGroup] = [
+                  variationGender ?? (groups[0] || null),
+                  setVariationGender,
+                ] as const;
+                const filtered = activeGroup
+                  ? allItems.filter((i) => (i.group_tag || "").trim() === activeGroup)
+                  : allItems;
+                return (
+                  <>
+                    <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                      <div>
+                        <h3 className="font-display font-bold text-slate-900 text-lg">{variationSheet.name}</h3>
+                        <p className="text-xs text-slate-500">Select a variation</p>
+                      </div>
+                      <button onClick={() => setVariationSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {groups.length > 1 && (
+                      <div className="px-4 pb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {groups.map((g) => {
+                          const isSel = activeGroup === g;
+                          return (
+                            <button
+                              key={g}
+                              onClick={() => setActiveGroup(g)}
+                              className={`shrink-0 px-3.5 h-8 rounded-full text-[12px] font-bold border transition-colors ${
+                                isSel
+                                  ? "bg-orange-500 border-orange-500 text-white"
+                                  : "bg-white border-slate-200 text-slate-700"
+                              }`}
+                            >
+                              {g}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="px-4 pb-4 grid grid-cols-3 gap-2.5 max-h-[55vh] overflow-y-auto">
+                      {filtered.map((it) => {
+                        const isSel = variationBySub[variationSheet.id] === it.name;
+                        const img = it.image_url && it.image_url.startsWith("http") ? it.image_url : null;
+                        return (
+                          <motion.button
+                            key={it.id}
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                              setVariationBySub((prev) => ({ ...prev, [variationSheet.id]: it.name }));
+                              setVariationSheet(null);
+                            }}
+                            className={`rounded-2xl border-2 overflow-hidden flex flex-col text-left transition-all ${
+                              isSel ? "border-orange-400 bg-orange-50 shadow-[0_6px_16px_-6px_rgba(249,115,22,0.5)]" : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <div className="aspect-square w-full bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden">
+                              {img ? (
+                                <img src={img} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                              ) : (
+                                <Wrench className="h-6 w-6 text-orange-400" />
+                              )}
+                            </div>
+                            <div className={`px-2 py-1.5 text-[11.5px] font-semibold leading-tight ${isSel ? "text-orange-700" : "text-slate-800"}`}>
+                              {it.name}
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                      {filtered.length === 0 && (
+                        <div className="col-span-3 text-center text-sm text-slate-500 py-6">
+                          No variations yet. Tap Find Vendor to send a general request.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+
             </motion.div>
           </motion.div>
         )}
