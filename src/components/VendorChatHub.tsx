@@ -177,7 +177,7 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
           center={mapCenter}
           vendors={mapVendors}
           userAvatar={avatarUser}
-          userLabel={geo.address ?? "Your location"}
+          userLabel={geoLabel ?? "Your location"}
           geoStatus={geo.status}
           gestureHandling="greedy"
           showControls={false}
@@ -217,14 +217,14 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
         </div>
 
         {/* Location chip bottom-center */}
-        {geo.address && (
+        {geoLabel && (
           <div className="absolute left-1/2 -translate-x-1/2 bottom-3 px-3 py-2 rounded-2xl bg-white shadow-lg flex items-center gap-2 max-w-[85%]">
             <span className="text-base">📍</span>
             <div className="min-w-0 leading-tight">
               <p className="text-[13px] font-bold text-slate-800 truncate">
-                {geo.address.split(",")[0] || "Location"}
+                {geoLabel.split(",")[0] || "Location"}
               </p>
-              <p className="text-[10px] text-slate-500 truncate">{geo.address}</p>
+              <p className="text-[10px] text-slate-500 truncate">{geoLabel}</p>
             </div>
             <ChevronDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
           </div>
