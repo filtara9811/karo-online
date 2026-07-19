@@ -917,7 +917,12 @@ export function QuickPage() {
               startedAt: Date.now(),
               vendorCount: 0,
               approved: null,
-              open: true,
+              open: false,
+            });
+            setHub({
+              leadId: finder.leadId,
+              category: finder.category,
+              categoryImage: finder.categoryImage,
             });
           }
           setFinder(null);
@@ -925,14 +930,25 @@ export function QuickPage() {
         onClose={() => setFinder(null)}
       />
 
-      <VendorListSheet
-        open={!!inquiry?.open}
-        leadId={inquiry?.leadId ?? null}
-        category={inquiry?.category ?? null}
-        productImage={inquiry?.productImage ?? null}
-        expectedVendors={5}
-        onClose={() => {}}
+      <VendorChatHub
+        open={!!hub}
+        leadId={hub?.leadId ?? null}
+        category={hub?.category ?? null}
+        productImage={hub?.categoryImage ?? null}
+        onClose={() => setHub(null)}
+        onOpenAllVendors={() => setAllVendorsOpen(true)}
       />
+
+      <VendorListSheet
+        open={allVendorsOpen || !!inquiry?.open}
+        leadId={hub?.leadId ?? inquiry?.leadId ?? null}
+        category={hub?.category ?? inquiry?.category ?? null}
+        productImage={hub?.categoryImage ?? inquiry?.productImage ?? null}
+        expectedVendors={5}
+        onClose={() => setAllVendorsOpen(false)}
+        onMinimize={() => setAllVendorsOpen(false)}
+      />
+
     </div>
   );
 }
