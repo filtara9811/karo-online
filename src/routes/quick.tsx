@@ -13,6 +13,7 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
 import { VendorListSheet } from "@/components/VendorListSheet";
+import { VendorChatHub } from "@/components/VendorChatHub";
 import { useActiveTypeId } from "@/hooks/use-active-type";
 import { useActiveInquiry, setActiveInquiry } from "@/hooks/use-active-inquiry";
 import { useGeolocation } from "@/hooks/use-geolocation";
