@@ -118,6 +118,8 @@ export function QuickPage() {
     retry: (() => void) | null;
   } | null>(null);
   const [finder, setFinder] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
+  const [hub, setHub] = useState<{ leadId: string; category: string; categoryImage: string | null } | null>(null);
+  const [allVendorsOpen, setAllVendorsOpen] = useState(false);
   const [recent, setRecent] = useState<RecentSub[]>([]);
   useEffect(() => {
     try { setRecent(JSON.parse(localStorage.getItem("ko-recent-subs") ?? "[]")); } catch { /* noop */ }
