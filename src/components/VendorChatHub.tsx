@@ -164,7 +164,8 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
     });
   }, [vendors, coords]);
 
-  const mapCenter = geo.coords ? { lat: geo.coords.lat, lng: geo.coords.lng } : null;
+  const mapCenter = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
+  const geoLabel = geo.label || "";
 
   if (!open) return null;
 
