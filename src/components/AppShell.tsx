@@ -46,7 +46,7 @@ const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", 
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
 const SHOW_BOTTOM_BAR_ON: string[] = [];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
-const SHOW_FLOATING_DOCK_ON = ["/quick", "/"];
+const SHOW_FLOATING_DOCK_ON = ["/"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
