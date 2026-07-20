@@ -53,6 +53,15 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
   const [activeVendorId, setActiveVendorId] = useState<string | null>(null);
   const seenIdsRef = useRef<Set<string>>(new Set());
 
+  // Hide the FloatingDockNav (My Orders / My Shops pill) while hub is open.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (open) {
+      document.body.dataset.finderOpen = "1";
+      return () => { delete document.body.dataset.finderOpen; };
+    }
+  }, [open]);
+
   // Load accepted vendors (RPC) + coordinates from vendors table.
   useEffect(() => {
     if (!open || !leadId) return;
