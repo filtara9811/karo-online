@@ -24,12 +24,18 @@ type AcceptedVendor = {
   price_min?: number | null;
 };
 
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
-
 function money(v?: number | null) {
   if (v == null) return null;
   return `₹${Number(v).toLocaleString("en-IN")}`;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
 }
 
 /**
@@ -176,12 +182,18 @@ export function VendorChatSheet({ open, leadId, peer, onClose }: Props) {
                       }`}
                     >
                       <div className="relative">
-                        <img
-                          src={v.avatar_url || FALLBACK_AVATAR}
-                          alt=""
-                          className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
-                          loading="lazy"
-                        />
+                        {v.avatar_url ? (
+                          <img
+                            src={v.avatar_url}
+                            alt={name}
+                            className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="h-12 w-12 rounded-full bg-orange-600 text-white grid place-items-center border-2 border-white shadow text-xs font-bold">
+                            {initials(name)}
+                          </span>
+                        )}
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
                       </div>
                       <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
