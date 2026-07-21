@@ -37,12 +37,25 @@ type Props = {
   onOpenAllVendors: () => void;
 };
 
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
-
 function money(v?: number | null) {
   if (v == null) return null;
   return `₹${Number(v).toLocaleString("en-IN")}`;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
+}
+
+function avatarDataUrl(name: string) {
+  const text = initials(name);
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="#d97706"/><text x="48" y="56" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="white">${text}</text></svg>`,
+  )}`;
 }
 
 export function VendorChatHub({ open, leadId, category, productImage, onClose, onOpenAllVendors }: Props) {
@@ -157,10 +170,11 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
   const mapVendors: QuickMapVendor[] = useMemo(() => {
     return vendors.map((v, i) => {
       const c = coords[v.vendor_id];
+      const name = v.business_name || v.owner_name || "Vendor";
       return {
         id: v.vendor_id,
-        name: v.business_name || v.owner_name || "Vendor",
-        avatar: v.avatar_url || FALLBACK_AVATAR,
+        name,
+        avatar: v.avatar_url || avatarDataUrl(name),
         x: 20 + ((i * 17) % 60),
         y: 25 + ((i * 23) % 55),
         area: v.business_name || "Nearby",
@@ -314,12 +328,18 @@ export function VendorChatHub({ open, leadId, category, productImage, onClose, o
                     }`}
                   >
                     <div className="relative">
-                      <img
-                        src={v.avatar_url || FALLBACK_AVATAR}
-                        alt=""
-                        className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
-                        loading="lazy"
-                      />
+                        {v.avatar_url ? (
+                          <img
+                            src={v.avatar_url}
+                            alt={name}
+                            className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="h-14 w-14 rounded-full bg-orange-600 text-white grid place-items-center border-2 border-white shadow text-sm font-bold">
+                            {initials(name)}
+                          </span>
+                        )}
                       <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
                     </div>
                     <p className="mt-1.5 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
