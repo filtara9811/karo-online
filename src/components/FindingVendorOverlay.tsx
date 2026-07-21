@@ -172,7 +172,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     setElapsedMs(0);
     const startedAt = Date.now();
     const tick = setInterval(() => setElapsedMs(Date.now() - startedAt), 500);
-    const t = setTimeout(() => finish(), TOTAL_MS);
+    const t = setTimeout(() => finish(false), TOTAL_MS);
     return () => { clearTimeout(t); clearInterval(tick); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -317,17 +317,15 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             }}
           />
         ) : (
-        <div className="flex-1 min-h-0 px-5 pt-3 pb-2 relative overflow-hidden">
-          {/* Radar — moves up and shrinks slightly as vendors fill the bottom */}
-          <motion.div
-            initial={{ y: 0, scale: 1 }}
-            animate={done
-              ? { y: -10, scale: 0.9 }
-              : { y: -Math.min(vendors.length, TARGET_VENDORS) * 14, scale: 1 - Math.min(vendors.length, TARGET_VENDORS) * 0.02 }
-            }
-            transition={{ type: "spring", damping: 22, stiffness: 180 }}
-            className="relative h-[260px] w-full max-w-[260px] mx-auto grid place-items-center"
-          >
+        <div className="flex-1 min-h-0 px-3 pt-2 pb-2 flex flex-col gap-2 overflow-hidden">
+          {/* Radar stays on top; chat opens below as soon as the first real vendor accepts. */}
+          <div className={`relative flex-shrink-0 ${vendors.length > 0 ? "h-[130px]" : "h-[300px]"}`}>
+            <motion.div
+              initial={{ scale: 1 }}
+              animate={done ? { scale: 0.72 } : { scale: vendors.length > 0 ? 0.64 : 1 }}
+              transition={{ type: "spring", damping: 22, stiffness: 180 }}
+              className="relative h-[260px] w-full max-w-[260px] mx-auto grid place-items-center origin-top"
+            >
             {/* Radar rings */}
             {!done && [0, 0.5, 1, 1.5].map((delay) => (
               <span
@@ -382,10 +380,10 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                 <Radar className="h-9 w-9 text-white" strokeWidth={2.2} />
               )}
             </motion.div>
-          </motion.div>
+            </motion.div>
 
-          {/* Status pill */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            {/* Status pill */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
             <AnimatePresence mode="wait">
               <motion.div
                 key={done ? "done" : "searching"}
@@ -395,54 +393,119 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                 className="px-3 py-1.5 rounded-full bg-white/95 border border-[color:oklch(0.78_0.14_82/0.5)] shadow-gold-glow font-display text-[11px] font-bold text-[color:oklch(0.30_0.05_85)] whitespace-nowrap"
               >
                 {done
-                  ? `✓ Found ${vendors.length} vendor${vendors.length === 1 ? "" : "s"}`
+                  ? `✓ Completed · ${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready`
                   : `Finding nearby vendors… ${vendors.length}/${TARGET_VENDORS}`}
               </motion.div>
             </AnimatePresence>
+            </div>
           </div>
 
-          {/* Live vendor cards rising from bottom (visible, not clickable) */}
-          <div className="absolute left-0 right-0 bottom-0 px-3 pb-2 space-y-1.5 pointer-events-none">
-            {vendors.length > 0 && !done && (
-              <p className="text-center text-[10px] font-display font-bold text-[color:oklch(0.42_0.10_82)] mb-1">
-                ✦ {vendors.length} vendor{vendors.length === 1 ? "" : "s"} aapke paas · profiles taiyaar ho rahi hain…
-              </p>
-            )}
-            <AnimatePresence initial={false}>
-              {vendors.slice(0, TARGET_VENDORS).map((v, i) => (
-                <motion.div
-                  key={v.vendor_id}
-                  initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                  animate={{
-                    opacity: done ? 1 : 0.92,
-                    y: 0,
-                    scale: 1,
-                  }}
-                  exit={{ opacity: 0, y: 30 }}
-                  transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.05 }}
-                  className="rounded-xl bg-white border border-[color:oklch(0.78_0.14_82/0.55)] shadow-[0_4px_14px_-4px_rgba(212,175,55,0.35)] px-2.5 py-1.5 flex items-center gap-2"
-                >
-                  <img
-                    src={v.avatar_url || FALLBACK_AVATAR}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0"
-                    loading="lazy"
+          {vendors.length > 0 ? (
+            <>
+              <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] px-3 py-2 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] flex-shrink-0">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <p className="text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)]">
+                    {done ? "Completed — vendors ready" : "Vendors live aa rahe hain"}
+                  </p>
+                  {activeVendor?.phone || activeVendor?.whatsapp ? (
+                    <a
+                      href={`tel:${activeVendor.phone || activeVendor.whatsapp}`}
+                      className="h-7 px-2.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold flex items-center gap-1 active:scale-95"
+                    >
+                      <Phone className="h-3 w-3" /> Call
+                    </a>
+                  ) : null}
+                </div>
+                <div className="flex gap-2 overflow-x-auto scrollbar-none snap-x pb-0.5">
+                  <AnimatePresence initial={false}>
+                    {vendors.map((v, i) => {
+                      const name = v.business_name || v.owner_name || "Vendor";
+                      const active = v.vendor_id === activeVendorId;
+                      const price = v.quoted_price ?? v.price_min;
+                      return (
+                        <motion.button
+                          key={v.vendor_id}
+                          layout
+                          initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.03 }}
+                          onClick={() => setActiveVendorId(v.vendor_id)}
+                          className={`snap-start flex-shrink-0 w-[92px] rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${
+                            active
+                              ? "border-orange-400 bg-orange-50/70 ring-2 ring-orange-200 shadow-md"
+                              : "border-slate-200 bg-white"
+                          }`}
+                        >
+                          <div className="relative h-12 w-12">
+                            {v.avatar_url ? (
+                              <img
+                                src={v.avatar_url}
+                                alt={name}
+                                className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="h-12 w-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-[13px] font-display font-bold">
+                                {initials(name)}
+                              </span>
+                            )}
+                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                          </div>
+                          <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
+                            {name.split(" ").slice(0, 2).join(" ")}
+                          </p>
+                          <div className="mt-0.5 flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
+                            <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                            {(v.rating ?? 4.8).toFixed(1)}
+                          </div>
+                          {price != null ? (
+                            <p className="text-[10px] font-bold text-slate-900 leading-tight">{money(price)}</p>
+                          ) : v.distance_km != null ? (
+                            <p className="text-[10px] text-slate-500 leading-tight">{v.distance_km.toFixed(1)} km</p>
+                          ) : (
+                            <p className="text-[10px] text-emerald-600 font-semibold leading-tight">Matched</p>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {activeVendor && (
+                <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-1.5 flex-shrink-0">
+                  <p className="text-[11px] text-slate-700 leading-tight truncate">
+                    Chat open: <span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>
+                    {activeVendor.distance_km != null ? <span> · {activeVendor.distance_km.toFixed(1)} km</span> : null}
+                    {activeVendor.vendor_note ? <span> · {activeVendor.vendor_note}</span> : null}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.40)] bg-white shadow-[0_8px_24px_-14px_rgba(0,0,0,0.4)]">
+                {leadId && peer ? (
+                  <LeadChatThread
+                    key={`${leadId}-${peer.id}`}
+                    leadId={leadId}
+                    peer={peer}
+                    myRole="customer"
+                    onBack={onClose}
+                    embedded
                   />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display text-[12px] font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
-                      {v.business_name || v.owner_name || "Vendor"}
-                    </p>
-                    <p className="text-[9px] text-emerald-700 font-semibold truncate">
-                      ✓ {done ? "Ready to connect" : "Nearby · matched"}
-                    </p>
-                  </div>
-                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold flex-shrink-0">
-                    ✓
-                  </span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <div className="mt-auto mb-3 rounded-2xl bg-white/85 border border-[color:oklch(0.78_0.14_82/0.40)] px-3 py-3 text-center flex-shrink-0">
+              <p className="text-[12px] font-display font-bold text-[color:oklch(0.30_0.05_85)]">
+                Real nearby vendor profiles yahin appear hongi.
+              </p>
+              <p className="text-[10px] text-[color:oklch(0.50_0.06_85)] mt-1">
+                First vendor accept karte hi neeche chat automatically open ho jayegi.
+              </p>
+            </div>
+          )}
         </div>
         )}
 
@@ -463,7 +526,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
               >
                 {unlocked ? (
                   <>
-                    Proceed with {vendors.length} vendor{vendors.length === 1 ? "" : "s"}
+                    Open full screen with {vendors.length} vendor{vendors.length === 1 ? "" : "s"}
                     <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
                   </>
                 ) : (
