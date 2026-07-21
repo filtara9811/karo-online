@@ -42,6 +42,7 @@ type Props = {
   peer: LeadChatPeer | null;
   myRole: "customer" | "vendor";
   onBack?: () => void;
+  embedded?: boolean;
 };
 
 const QUICK_CHIPS_CUSTOMER = [
@@ -70,7 +71,7 @@ const fmtTime = (iso: string) => {
   } catch { return ""; }
 };
 
-export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
+export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false }: Props) {
   const navigate = useNavigate();
   const [me, setMe] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -340,7 +341,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack }: Props) {
   const showVendorComplete = myRole === "vendor" && leadStatus === "approved";
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee]">
+    <div className={`${embedded ? "relative h-full w-full" : "fixed inset-0 z-[60]"} flex flex-col bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee]`}>
       {/* Header — gold accent like classic chat */}
       <header className="flex-shrink-0 bg-gradient-to-b from-[#3f4750] to-[#1a1d22] text-white shadow-md">
         <div className="flex items-center gap-2.5 px-3 py-3">

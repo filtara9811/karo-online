@@ -1,22 +1,44 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Radar, Check, ArrowRight } from "lucide-react";
+import { Sparkles, X, Radar, Check, ArrowRight, Star, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
 import { NoVendorsFallback } from "@/components/NoVendorsFallback";
+import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
 
 type AcceptedPreview = {
   vendor_id: string;
   business_name: string | null;
   owner_name: string | null;
   avatar_url: string | null;
+  whatsapp?: string | null;
+  phone?: string | null;
+  rating?: number | null;
+  total_reviews?: number | null;
+  distance_km?: number | null;
+  vendor_note?: string | null;
+  quoted_price?: number | null;
+  price_min?: number | null;
+  price_max?: number | null;
+  cover_image_url?: string | null;
 };
 
 const TOTAL_MS = 60_000; // overall radar window (60s — blueprint)
 const PROCEED_UNLOCK_MS = 30_000; // "Proceed" button enables after 30s
 const TARGET_VENDORS = 5;
-const FALLBACK_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=70";
+function money(v?: number | null) {
+  if (v == null || !Number.isFinite(Number(v))) return null;
+  return `₹${Number(v).toLocaleString("en-IN")}`;
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
+}
 
 type Props = {
   open: boolean;
@@ -33,6 +55,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   const [elapsedMs, setElapsedMs] = useState(0);
   const [currentRing, setCurrentRing] = useState(0); // 0..3 = standard rings; 4 = expanded
   const [noVendorsFinal, setNoVendorsFinal] = useState(false);
+  const [activeVendorId, setActiveVendorId] = useState<string | null>(null);
   const completedRef = useRef(false);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
   const ringLoopKey = useRef(0); // bumped on retry to cancel old loops
@@ -55,6 +78,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     seenVendorIdsRef.current = new Set();
     setDone(false);
     setVendors([]);
+    setActiveVendorId(null);
     setCurrentRing(0);
     setNoVendorsFinal(false);
 
@@ -155,17 +179,40 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
 
 
   useEffect(() => {
-    if (open && vendors.length >= TARGET_VENDORS) finish();
+    if (open && vendors.length >= TARGET_VENDORS) finish(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendors.length, open]);
 
-  function finish() {
+  useEffect(() => {
+    if (!open || vendors.length === 0) return;
+    if (activeVendorId && vendors.some((v) => v.vendor_id === activeVendorId)) return;
+    const first = [...vendors].sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))[0];
+    setActiveVendorId(first.vendor_id);
+  }, [activeVendorId, open, vendors]);
+
+  function finish(transitionToHub = true) {
     if (completedRef.current) return;
     completedRef.current = true;
     setDone(true);
-    // brief celebration before transitioning to full vendor list
-    setTimeout(() => onComplete(), 900);
+    if (transitionToHub) {
+      setTimeout(() => onComplete(), 900);
+    }
   }
+
+  const activeVendor = useMemo(
+    () => vendors.find((v) => v.vendor_id === activeVendorId) ?? null,
+    [activeVendorId, vendors],
+  );
+
+  const peer: LeadChatPeer | null = activeVendor
+    ? {
+        id: activeVendor.vendor_id,
+        name: activeVendor.business_name || activeVendor.owner_name || "Vendor",
+        avatar_url: activeVendor.avatar_url,
+        phone: activeVendor.phone || activeVendor.whatsapp,
+        subtitle: activeVendor.business_name && activeVendor.owner_name ? activeVendor.owner_name : "Verified nearby vendor",
+      }
+    : null;
 
   if (!open) return null;
 
