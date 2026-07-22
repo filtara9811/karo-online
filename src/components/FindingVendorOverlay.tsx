@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Radar, Check, ArrowRight, Star, Phone } from "lucide-react";
+import { Sparkles, X, Radar, Check, ArrowRight, Star, Phone, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { playPing } from "@/lib/lead-sound";
 import { NoVendorsFallback } from "@/components/NoVendorsFallback";
 import { LeadChatThread, type LeadChatPeer } from "@/components/LeadChatThread";
+import { LeadOrderStatusPanel } from "@/components/LeadOrderStatusPanel";
+import { setActiveInquiry } from "@/hooks/use-active-inquiry";
 
 type AcceptedPreview = {
   vendor_id: string;
@@ -56,6 +59,9 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   const [currentRing, setCurrentRing] = useState(0); // 0..3 = standard rings; 4 = expanded
   const [noVendorsFinal, setNoVendorsFinal] = useState(false);
   const [activeVendorId, setActiveVendorId] = useState<string | null>(null);
+  const [approvedVendorId, setApprovedVendorId] = useState<string | null>(null);
+  const [approvingVendorId, setApprovingVendorId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"chat" | "status">("chat");
   const completedRef = useRef(false);
   const seenVendorIdsRef = useRef<Set<string>>(new Set());
   const ringLoopKey = useRef(0); // bumped on retry to cancel old loops
@@ -79,11 +85,20 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     setDone(false);
     setVendors([]);
     setActiveVendorId(null);
+    setApprovedVendorId(null);
+    setActiveTab("chat");
     setCurrentRing(0);
     setNoVendorsFinal(false);
 
     const load = async () => {
-      const { data } = await supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId });
+      const [{ data }, { data: leadRow }] = await Promise.all([
+        supabase.rpc("get_lead_accepted_vendors", { _lead_id: leadId }),
+        supabase
+          .from("leads")
+          .select("customer_approved_vendor_id")
+          .eq("id", leadId)
+          .maybeSingle(),
+      ]);
       if (!alive) return;
       const list = (data ?? []) as AcceptedPreview[];
       const nextIds = new Set(list.map((v) => v.vendor_id));
@@ -92,6 +107,13 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
       }
       seenVendorIdsRef.current = nextIds;
       setVendors(list);
+      const approvedId = (leadRow as { customer_approved_vendor_id?: string | null } | null)?.customer_approved_vendor_id ?? null;
+      if (approvedId) {
+        completedRef.current = true;
+        setDone(true);
+        setApprovedVendorId(approvedId);
+        setActiveVendorId(approvedId);
+      }
     };
     load();
 
@@ -185,10 +207,59 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
 
   useEffect(() => {
     if (!open || vendors.length === 0) return;
+    if (approvedVendorId && vendors.some((v) => v.vendor_id === approvedVendorId)) {
+      if (activeVendorId !== approvedVendorId) setActiveVendorId(approvedVendorId);
+      return;
+    }
     if (activeVendorId && vendors.some((v) => v.vendor_id === activeVendorId)) return;
     const first = [...vendors].sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))[0];
     setActiveVendorId(first.vendor_id);
-  }, [activeVendorId, open, vendors]);
+  }, [activeVendorId, approvedVendorId, open, vendors]);
+
+  const approvedVendor = useMemo(
+    () => vendors.find((v) => v.vendor_id === approvedVendorId) ?? null,
+    [approvedVendorId, vendors],
+  );
+
+  const visibleVendors = useMemo(
+    () => (approvedVendorId ? vendors.filter((v) => v.vendor_id === approvedVendorId) : vendors),
+    [approvedVendorId, vendors],
+  );
+
+  const approveVendor = async (vendor: AcceptedPreview) => {
+    if (!leadId || approvedVendorId || approvingVendorId) return;
+    setApprovingVendorId(vendor.vendor_id);
+    const { data, error } = await supabase.rpc("customer_approve_vendor", {
+      _lead_id: leadId,
+      _vendor_id: vendor.vendor_id,
+    });
+    setApprovingVendorId(null);
+    if (error || !(data as { ok?: boolean } | null)?.ok) {
+      toast.error("Approve fail hua, dobara try karein");
+      return;
+    }
+    completedRef.current = true;
+    setDone(true);
+    setApprovedVendorId(vendor.vendor_id);
+    setActiveVendorId(vendor.vendor_id);
+    setActiveTab("chat");
+    setActiveInquiry({
+      leadId,
+      category: category ?? "Service",
+      productImage: categoryImage ?? null,
+      startedAt: Date.now(),
+      vendorCount: vendors.length,
+      approved: {
+        vendor_id: vendor.vendor_id,
+        name: vendor.business_name || vendor.owner_name || "Vendor",
+        avatar_url: vendor.avatar_url,
+        phone: vendor.phone || vendor.whatsapp,
+        quoted_price: vendor.quoted_price ?? null,
+      },
+      open: false,
+    });
+    toast.success(`${vendor.business_name || vendor.owner_name || "Vendor"} approved — chat opened`);
+  };
 
   function finish(transitionToHub = true) {
     if (completedRef.current) return;
@@ -200,8 +271,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
   }
 
   const activeVendor = useMemo(
-    () => vendors.find((v) => v.vendor_id === activeVendorId) ?? null,
-    [activeVendorId, vendors],
+    () => approvedVendor ?? vendors.find((v) => v.vendor_id === activeVendorId) ?? null,
+    [activeVendorId, approvedVendor, vendors],
   );
 
   const peer: LeadChatPeer | null = activeVendor
@@ -405,7 +476,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
               <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] px-3 py-2 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] flex-shrink-0">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <p className="text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)]">
-                    {done ? "Completed — vendors ready" : "Vendors live aa rahe hain"}
+                    {approvedVendorId ? "Approved vendor pinned" : done ? "Completed — vendors ready" : "Vendors live aa rahe hain"}
                   </p>
                   {activeVendor?.phone || activeVendor?.whatsapp ? (
                     <a
@@ -418,55 +489,73 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                 </div>
                 <div className="flex gap-2 overflow-x-auto scrollbar-none snap-x pb-0.5">
                   <AnimatePresence initial={false}>
-                    {vendors.map((v, i) => {
+                    {visibleVendors.map((v, i) => {
                       const name = v.business_name || v.owner_name || "Vendor";
                       const active = v.vendor_id === activeVendorId;
+                      const approved = v.vendor_id === approvedVendorId;
+                      const approving = v.vendor_id === approvingVendorId;
                       const price = v.quoted_price ?? v.price_min;
                       return (
-                        <motion.button
+                        <motion.div
                           key={v.vendor_id}
                           layout
                           initial={{ opacity: 0, y: 16, scale: 0.92 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
+                          exit={{ opacity: 0, x: -16, scale: 0.84 }}
                           transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.03 }}
-                          onClick={() => setActiveVendorId(v.vendor_id)}
-                          className={`snap-start flex-shrink-0 w-[92px] rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${
-                            active
-                              ? "border-orange-400 bg-orange-50/70 ring-2 ring-orange-200 shadow-md"
-                              : "border-slate-200 bg-white"
+                          className={`snap-start flex-shrink-0 w-[104px] rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${
+                            approved
+                              ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200 shadow-md"
+                              : active
+                                ? "border-orange-400 bg-orange-50/70 ring-2 ring-orange-200 shadow-md"
+                                : "border-slate-200 bg-white"
                           }`}
                         >
-                          <div className="relative h-12 w-12">
-                            {v.avatar_url ? (
-                              <img
-                                src={v.avatar_url}
-                                alt={name}
-                                className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
-                                loading="lazy"
-                              />
+                          <button type="button" onClick={() => setActiveVendorId(v.vendor_id)} className="w-full flex flex-col items-center text-center active:scale-95">
+                            <div className="relative h-12 w-12">
+                              {v.avatar_url ? (
+                                <img
+                                  src={v.avatar_url}
+                                  alt={name}
+                                  className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="h-12 w-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-[13px] font-display font-bold">
+                                  {initials(name)}
+                                </span>
+                              )}
+                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                            </div>
+                            <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
+                              {name.split(" ").slice(0, 2).join(" ")}
+                            </p>
+                            <div className="mt-0.5 flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
+                              <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                              {(v.rating ?? 4.8).toFixed(1)}
+                            </div>
+                            {price != null ? (
+                              <p className="text-[10px] font-bold text-slate-900 leading-tight">{money(price)}</p>
+                            ) : v.distance_km != null ? (
+                              <p className="text-[10px] text-slate-500 leading-tight">{v.distance_km.toFixed(1)} km</p>
                             ) : (
-                              <span className="h-12 w-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-[13px] font-display font-bold">
-                                {initials(name)}
-                              </span>
+                              <p className="text-[10px] text-emerald-600 font-semibold leading-tight">Matched</p>
                             )}
-                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                          </div>
-                          <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
-                            {name.split(" ").slice(0, 2).join(" ")}
-                          </p>
-                          <div className="mt-0.5 flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
-                            <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                            {(v.rating ?? 4.8).toFixed(1)}
-                          </div>
-                          {price != null ? (
-                            <p className="text-[10px] font-bold text-slate-900 leading-tight">{money(price)}</p>
-                          ) : v.distance_km != null ? (
-                            <p className="text-[10px] text-slate-500 leading-tight">{v.distance_km.toFixed(1)} km</p>
-                          ) : (
-                            <p className="text-[10px] text-emerald-600 font-semibold leading-tight">Matched</p>
-                          )}
-                        </motion.button>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!!approvedVendorId || approving}
+                            onClick={() => approveVendor(v)}
+                            className={`mt-1 w-full h-6 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 disabled:opacity-80 ${
+                              approved
+                                ? "bg-emerald-500 text-white"
+                                : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm"
+                            }`}
+                          >
+                            {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : approved ? <Check className="h-3 w-3" /> : null}
+                            {approved ? "Approved" : "Approve"}
+                          </button>
+                        </motion.div>
                       );
                     })}
                   </AnimatePresence>
@@ -476,15 +565,41 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
               {activeVendor && (
                 <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-1.5 flex-shrink-0">
                   <p className="text-[11px] text-slate-700 leading-tight truncate">
-                    Chat open: <span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>
+                    {approvedVendorId ? "Approved chat: " : "Chat open: "}<span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>
                     {activeVendor.distance_km != null ? <span> · {activeVendor.distance_km.toFixed(1)} km</span> : null}
                     {activeVendor.vendor_note ? <span> · {activeVendor.vendor_note}</span> : null}
                   </p>
                 </div>
               )}
 
+              {approvedVendorId && (
+                <div className="flex-shrink-0 grid grid-cols-2 gap-2 rounded-2xl bg-white border border-amber-200 p-1 shadow-sm">
+                  {(["chat", "status"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`h-9 rounded-xl text-[12px] font-display font-bold transition-all active:scale-95 ${
+                        activeTab === tab
+                          ? "bg-gradient-to-r from-[#fbbf24] to-[#d97706] text-white shadow"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      {tab === "chat" ? "Chat" : "Order Status"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-[color:oklch(0.78_0.14_82/0.40)] bg-white shadow-[0_8px_24px_-14px_rgba(0,0,0,0.4)]">
-                {leadId && peer ? (
+                {leadId && peer && activeTab === "status" ? (
+                  <LeadOrderStatusPanel
+                    leadId={leadId}
+                    vendor={peer}
+                    category={category}
+                    productImage={categoryImage}
+                    onBackToChat={() => setActiveTab("chat")}
+                  />
+                ) : leadId && peer ? (
                   <LeadChatThread
                     key={`${leadId}-${peer.id}`}
                     leadId={leadId}
@@ -510,7 +625,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         )}
 
         {/* Proceed-early CTA — unlocks after 30s OR as soon as ≥1 vendor accepts */}
-        {!done && !noVendorsFinal && (() => {
+        {!done && !noVendorsFinal && vendors.length === 0 && (() => {
           const unlocked = vendors.length >= 1 || elapsedMs >= PROCEED_UNLOCK_MS;
           const remainingSec = Math.max(0, Math.ceil((PROCEED_UNLOCK_MS - elapsedMs) / 1000));
           return (
