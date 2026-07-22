@@ -253,7 +253,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         vendor_id: vendor.vendor_id,
         name: vendor.business_name || vendor.owner_name || "Vendor",
         avatar_url: vendor.avatar_url,
-        phone: vendor.phone || vendor.whatsapp,
+        phone: vendor.phone || vendor.whatsapp || null,
         quoted_price: vendor.quoted_price ?? null,
       },
       open: false,
@@ -641,7 +641,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
               >
                 {unlocked ? (
                   <>
-                    Open full screen with {vendors.length} vendor{vendors.length === 1 ? "" : "s"}
+                    Continue to full vendor view
                     <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
                   </>
                 ) : (

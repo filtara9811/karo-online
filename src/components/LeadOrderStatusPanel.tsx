@@ -109,7 +109,7 @@ export function LeadOrderStatusPanel({ leadId, vendor, category, productImage, o
     if (status === "completed") {
       STEPS.forEach((s) => reached.add(s.key));
     }
-    const lastReached = Math.max(0, STEPS.findLastIndex((s) => reached.has(s.key)));
+    const lastReached = STEPS.reduce((last, step, index) => (reached.has(step.key) ? index : last), 0);
     return STEPS.map((step, index) => {
       const ev = step.key === "placed" ? null : eventByKey.get(step.key);
       const done = reached.has(step.key);
