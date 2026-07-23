@@ -221,6 +221,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
     [approvedVendorId, vendors],
   );
 
+  const hasVendors = vendors.length > 0;
+
   const visibleVendors = useMemo(
     () => (approvedVendorId ? vendors.filter((v) => v.vendor_id === approvedVendorId) : vendors),
     [approvedVendorId, vendors],
@@ -303,7 +305,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 320 }}
         className="relative w-full max-w-md bg-gradient-to-b from-white via-[#fffaf0] to-[#fef3c7] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.3)] pointer-events-auto pb-[env(safe-area-inset-bottom)] flex flex-col overflow-hidden"
-        style={{ height: "90vh", maxHeight: "90vh" }}
+        style={{ height: "96dvh", maxHeight: "96dvh" }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
@@ -338,8 +340,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         </div>
 
         {/* Title strip */}
-        <div className="mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2.5 flex items-center gap-2.5 shadow-gold-glow flex-shrink-0">
-          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+        <div className={`mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] ${hasVendors ? "p-2" : "p-2.5"} flex items-center gap-2.5 shadow-gold-glow flex-shrink-0`}>
+          <div className={`${hasVendors ? "h-10 w-10" : "h-12 w-12"} rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0`}>
             {categoryImage ? (
               <img src={categoryImage} alt={category ?? "service"} className="h-full w-full object-cover" />
             ) : (
@@ -352,7 +354,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             <h3 className="font-display text-sm font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
               {category ?? "Service"} | service vendor
             </h3>
-            <p className="text-[10px] text-[color:oklch(0.50_0.08_85)]">
+            <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] truncate">
               {done ? `${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready` : "Broadcasting your request to nearby vendors…"}
             </p>
           </div>
@@ -390,10 +392,10 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         ) : (
         <div className="flex-1 min-h-0 px-3 pt-2 pb-2 flex flex-col gap-2 overflow-hidden">
           {/* Radar stays on top; chat opens below as soon as the first real vendor accepts. */}
-          <div className={`relative flex-shrink-0 ${vendors.length > 0 ? "h-[130px]" : "h-[300px]"}`}>
+          <div className={`relative flex-shrink-0 ${approvedVendorId ? "h-[38px]" : vendors.length > 0 ? "h-[82px]" : "h-[300px]"}`}>
             <motion.div
               initial={{ scale: 1 }}
-              animate={done ? { scale: 0.72 } : { scale: vendors.length > 0 ? 0.64 : 1 }}
+              animate={approvedVendorId ? { scale: 0.18, opacity: 0.35 } : done ? { scale: 0.42 } : { scale: vendors.length > 0 ? 0.36 : 1 }}
               transition={{ type: "spring", damping: 22, stiffness: 180 }}
               className="relative h-[260px] w-full max-w-[260px] mx-auto grid place-items-center origin-top"
             >
@@ -473,7 +475,7 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
 
           {vendors.length > 0 ? (
             <>
-              <div className="rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] px-3 py-2 shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] flex-shrink-0">
+              <div className={`rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.45)] px-3 ${approvedVendorId ? "py-1.5" : "py-2"} shadow-[0_4px_14px_-6px_rgba(212,175,55,0.45)] flex-shrink-0`}>
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <p className="text-[11px] font-display font-bold text-[color:oklch(0.30_0.05_85)]">
                     {approvedVendorId ? "Approved vendor pinned" : done ? "Completed — vendors ready" : "Vendors live aa rahe hain"}
@@ -487,82 +489,109 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                     </a>
                   ) : null}
                 </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-none snap-x pb-0.5">
-                  <AnimatePresence initial={false}>
-                    {visibleVendors.map((v, i) => {
-                      const name = v.business_name || v.owner_name || "Vendor";
-                      const active = v.vendor_id === activeVendorId;
-                      const approved = v.vendor_id === approvedVendorId;
-                      const approving = v.vendor_id === approvingVendorId;
-                      const price = v.quoted_price ?? v.price_min;
-                      return (
-                        <motion.div
-                          key={v.vendor_id}
-                          layout
-                          initial={{ opacity: 0, y: 16, scale: 0.92 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, x: -16, scale: 0.84 }}
-                          transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.03 }}
-                          className={`snap-start flex-shrink-0 w-[104px] rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${
-                            approved
-                              ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200 shadow-md"
-                              : active
-                                ? "border-orange-400 bg-orange-50/70 ring-2 ring-orange-200 shadow-md"
-                                : "border-slate-200 bg-white"
-                          }`}
-                        >
-                          <button type="button" onClick={() => setActiveVendorId(v.vendor_id)} className="w-full flex flex-col items-center text-center active:scale-95">
-                            <div className="relative h-12 w-12">
-                              {v.avatar_url ? (
-                                <img
-                                  src={v.avatar_url}
-                                  alt={name}
-                                  className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <span className="h-12 w-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-[13px] font-display font-bold">
-                                  {initials(name)}
-                                </span>
-                              )}
-                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
-                            </div>
-                            <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
-                              {name.split(" ").slice(0, 2).join(" ")}
-                            </p>
-                            <div className="mt-0.5 flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
-                              <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                              {(v.rating ?? 4.8).toFixed(1)}
-                            </div>
-                            {price != null ? (
-                              <p className="text-[10px] font-bold text-slate-900 leading-tight">{money(price)}</p>
-                            ) : v.distance_km != null ? (
-                              <p className="text-[10px] text-slate-500 leading-tight">{v.distance_km.toFixed(1)} km</p>
-                            ) : (
-                              <p className="text-[10px] text-emerald-600 font-semibold leading-tight">Matched</p>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!!approvedVendorId || approving}
-                            onClick={() => approveVendor(v)}
-                            className={`mt-1 w-full h-6 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 disabled:opacity-80 ${
+                {approvedVendorId && activeVendor ? (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-2 py-1.5 shadow-sm"
+                  >
+                    {activeVendor.avatar_url ? (
+                      <img src={activeVendor.avatar_url} alt={activeVendor.business_name || activeVendor.owner_name || "Vendor"} className="h-11 w-11 rounded-full object-cover border-2 border-white shadow" />
+                    ) : (
+                      <span className="h-11 w-11 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-xs font-display font-bold">
+                        {initials(activeVendor.business_name || activeVendor.owner_name || "Vendor")}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-bold text-slate-900 truncate">{activeVendor.business_name || activeVendor.owner_name || "Vendor"}</p>
+                      <p className="text-[10px] text-slate-600 truncate">
+                        Approved · {activeVendor.distance_km != null ? `${activeVendor.distance_km.toFixed(1)} km` : "Matched"}
+                        {(activeVendor.quoted_price ?? activeVendor.price_min) != null ? ` · ${money(activeVendor.quoted_price ?? activeVendor.price_min)}` : ""}
+                      </p>
+                    </div>
+                    <span className="h-7 px-2 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Approved
+                    </span>
+                  </motion.div>
+                ) : (
+                  <div className="flex gap-2 overflow-x-auto scrollbar-none snap-x pb-0.5">
+                    <AnimatePresence initial={false}>
+                      {visibleVendors.map((v, i) => {
+                        const name = v.business_name || v.owner_name || "Vendor";
+                        const active = v.vendor_id === activeVendorId;
+                        const approved = v.vendor_id === approvedVendorId;
+                        const approving = v.vendor_id === approvingVendorId;
+                        const price = v.quoted_price ?? v.price_min;
+                        return (
+                          <motion.div
+                            key={v.vendor_id}
+                            layout
+                            initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: -16, scale: 0.84 }}
+                            transition={{ type: "spring", damping: 22, stiffness: 220, delay: i * 0.03 }}
+                            className={`snap-start flex-shrink-0 w-[104px] rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${
                               approved
-                                ? "bg-emerald-500 text-white"
-                                : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm"
+                                ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200 shadow-md"
+                                : active
+                                  ? "border-orange-400 bg-orange-50/70 ring-2 ring-orange-200 shadow-md"
+                                  : "border-slate-200 bg-white"
                             }`}
                           >
-                            {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : approved ? <Check className="h-3 w-3" /> : null}
-                            {approved ? "Approved" : "Approve"}
-                          </button>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
+                            <button type="button" onClick={() => setActiveVendorId(v.vendor_id)} className="w-full flex flex-col items-center text-center active:scale-95">
+                              <div className="relative h-12 w-12">
+                                {v.avatar_url ? (
+                                  <img
+                                    src={v.avatar_url}
+                                    alt={name}
+                                    className="h-12 w-12 rounded-full object-cover border-2 border-white shadow"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <span className="h-12 w-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] text-white grid place-items-center border-2 border-white shadow text-[13px] font-display font-bold">
+                                    {initials(name)}
+                                  </span>
+                                )}
+                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+                              </div>
+                              <p className="mt-1 text-[11px] font-bold text-slate-800 leading-tight line-clamp-1 w-full">
+                                {name.split(" ").slice(0, 2).join(" ")}
+                              </p>
+                              <div className="mt-0.5 flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
+                                <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                                {(v.rating ?? 4.8).toFixed(1)}
+                              </div>
+                              {price != null ? (
+                                <p className="text-[10px] font-bold text-slate-900 leading-tight">{money(price)}</p>
+                              ) : v.distance_km != null ? (
+                                <p className="text-[10px] text-slate-500 leading-tight">{v.distance_km.toFixed(1)} km</p>
+                              ) : (
+                                <p className="text-[10px] text-emerald-600 font-semibold leading-tight">Matched</p>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!!approvedVendorId || approving}
+                              onClick={() => approveVendor(v)}
+                              className={`mt-1 w-full h-6 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 disabled:opacity-80 ${
+                                approved
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm"
+                              }`}
+                            >
+                              {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : approved ? <Check className="h-3 w-3" /> : null}
+                              {approved ? "Approved" : "Approve"}
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
 
-              {activeVendor && (
+              {activeVendor && !approvedVendorId && (
                 <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-1.5 flex-shrink-0">
                   <p className="text-[11px] text-slate-700 leading-tight truncate">
                     {approvedVendorId ? "Approved chat: " : "Chat open: "}<span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>

@@ -336,19 +336,19 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
 
   const stepIndex = Math.max(0, STATUS_FLOW.findIndex((s) => s.key === leadStatus));
   const isPending = leadStatus === "pending" || leadStatus === "new" || leadStatus === "accepted";
-  const showApproveBanner = myRole === "customer" && isPending;
-  const showCompleteBanner = myRole === "customer" && (leadStatus === "approved" || leadStatus === "in_progress");
-  const showVendorComplete = myRole === "vendor" && leadStatus === "approved";
+  const showApproveBanner = !embedded && myRole === "customer" && isPending;
+  const showCompleteBanner = !embedded && myRole === "customer" && (leadStatus === "approved" || leadStatus === "in_progress");
+  const showVendorComplete = !embedded && myRole === "vendor" && leadStatus === "approved";
 
   return (
-    <div className={`${embedded ? "relative h-full w-full" : "fixed inset-0 z-[60]"} flex flex-col bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee]`}>
+    <div className={`${embedded ? "relative h-full w-full min-h-0" : "fixed inset-0 z-[60]"} flex flex-col bg-gradient-to-b from-[#f4f4f6] to-[#e9eaee]`}>
       {/* Header — gold accent like classic chat */}
       <header className="flex-shrink-0 bg-gradient-to-b from-[#3f4750] to-[#1a1d22] text-white shadow-md">
-        <div className="flex items-center gap-2.5 px-3 py-3">
+        <div className={`flex items-center gap-2.5 px-3 ${embedded ? "py-2" : "py-3"}`}>
           {peer?.avatar_url ? (
-            <img src={peer.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border-2 border-[#d4af37]/70" />
+            <img src={peer.avatar_url} alt="" className={`${embedded ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover border-2 border-[#d4af37]/70`} />
           ) : (
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#d4af37] to-[#92400e] grid place-items-center text-sm font-display font-bold border-2 border-[#d4af37]/70">
+            <div className={`${embedded ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm"} rounded-full bg-gradient-to-br from-[#d4af37] to-[#92400e] grid place-items-center font-display font-bold border-2 border-[#d4af37]/70`}>
               {peer?.name?.charAt(0)?.toUpperCase() ?? "?"}
             </div>
           )}
@@ -371,14 +371,14 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
           <button
             onClick={() => { haptic(); setTtsOn((v) => !v); toast.success(ttsOn ? "Read-aloud off" : "Read-aloud on"); }}
             aria-label="Toggle read aloud"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/10 active:scale-90"
+            className={`${embedded ? "h-8 w-8" : "h-9 w-9"} grid place-items-center rounded-full bg-white/10 active:scale-90`}
           >
             {ttsOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
           </button>
           <button
             onClick={() => { haptic(); onBack ? onBack() : navigate({ to: myRole === "vendor" ? "/vendor/dashboard" : "/quick" }); }}
             aria-label="Close"
-            className="h-9 w-9 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 active:scale-90"
+            className={`${embedded ? "h-8 w-8" : "h-9 w-9"} grid place-items-center rounded-full bg-white/15 hover:bg-white/25 active:scale-90`}
           >
             <X className="h-4 w-4" />
           </button>
@@ -386,7 +386,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
 
 
         {/* Status pipeline */}
-        <div className="px-3 pb-2.5 flex items-center gap-1.5">
+        {!embedded && <div className="px-3 pb-2.5 flex items-center gap-1.5">
           {STATUS_FLOW.map((s, i) => {
             const done = i <= stepIndex;
             const active = i === stepIndex;
@@ -408,7 +408,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
               </div>
             );
           })}
-        </div>
+        </div>}
       </header>
 
       {/* Approve / Complete action banner */}
@@ -478,7 +478,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
       )}
 
       {/* Messages */}
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+      <div ref={scrollerRef} className={`flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 ${embedded ? "py-2" : "py-3"} space-y-2`}>
         {loading ? (
           <div className="grid place-items-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-[#d97706]" />
@@ -586,7 +586,7 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
       </div>
 
       {/* Quick-reply chips */}
-      <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
+      {!embedded && <div className="flex-shrink-0 px-3 pt-1.5 pb-1 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1.5 w-max">
           {chips.map((c, i) => (
             <motion.button
@@ -600,10 +600,10 @@ export function LeadChatThread({ leadId, peer, myRole, onBack, embedded = false 
             </motion.button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Composer */}
-      <div className="flex-shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] bg-transparent">
+      <div className={`flex-shrink-0 px-3 ${embedded ? "pt-1.5 pb-2" : "pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)]"} bg-transparent`}>
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center gap-2 rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.35)] px-3 py-2 shadow-sm">
             <input
