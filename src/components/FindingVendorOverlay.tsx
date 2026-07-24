@@ -304,44 +304,87 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 320 }}
-        className="relative w-full max-w-md bg-gradient-to-b from-white via-[#fffaf0] to-[#fef3c7] rounded-t-3xl shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.3)] pointer-events-auto pb-[env(safe-area-inset-bottom)] flex flex-col overflow-hidden"
-        style={{ height: "96dvh", maxHeight: "96dvh" }}
+        className={`relative w-full max-w-md bg-gradient-to-b from-white via-[#fffaf0] to-[#fef3c7] shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.3)] pointer-events-auto pb-[env(safe-area-inset-bottom)] flex flex-col overflow-hidden ${hasVendors ? "rounded-t-xl" : "rounded-t-3xl"}`}
+        style={{ height: hasVendors ? "100dvh" : "96dvh", maxHeight: hasVendors ? "100dvh" : "96dvh" }}
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
-        </div>
+        {/* Drag handle — only while searching */}
+        {!hasVendors && (
+          <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
+            <span className="h-1.5 w-14 rounded-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent opacity-80" />
+          </div>
+        )}
 
-        {/* Phase 3 — thin ring-progress bar (0→1→2→5→10 km) */}
-        <div className="mx-4 mt-0.5 mb-1 h-1 rounded-full bg-[color:oklch(0.92_0.02_85)] overflow-hidden flex-shrink-0">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-emerald-500"
-            initial={{ width: "5%" }}
-            animate={{ width: done ? "100%" : `${Math.min(100, ((currentRing + 1) / 4) * 100)}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          />
-        </div>
+        {hasVendors ? (
+          /* Compact top bar once chat is live */
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[color:oklch(0.88_0.05_82)] bg-white/90 backdrop-blur flex-shrink-0">
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="h-8 w-8 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90 flex-shrink-0"
+            >
+              <X className="h-4 w-4 text-[color:oklch(0.30_0.05_85)]" />
+            </button>
+            <div className="h-8 w-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
+              {categoryImage ? (
+                <img src={categoryImage} alt={category ?? "service"} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full grid place-items-center">
+                  <Sparkles className="h-4 w-4 text-[color:oklch(0.42_0.10_82)]" strokeWidth={2.4} />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-[13px] font-bold text-[color:oklch(0.25_0.05_85)] leading-tight truncate">
+                {category ?? "Service"}
+              </p>
+              <p className="text-[10px] text-[color:oklch(0.50_0.08_85)] truncate">
+                {done ? `✓ ${vendors.length} vendor${vendors.length === 1 ? "" : "s"} ready` : `Finding vendors · ${vendors.length}/${TARGET_VENDORS}`}
+              </p>
+            </div>
+            <motion.div
+              animate={done ? { scale: 1 } : { scale: [1, 1.15, 1] }}
+              transition={done ? undefined : { duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+              className={`h-6 w-6 rounded-full border-2 border-white shadow grid place-items-center flex-shrink-0 ${done ? "bg-gradient-to-br from-emerald-400 to-emerald-600" : "bg-gradient-to-br from-[#fff8dc] to-[#fbbf24]"}`}
+            >
+              {done ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : <Radar className="h-3 w-3 text-white" strokeWidth={2.4} />}
+            </motion.div>
+          </div>
+        ) : (
+          <>
+            {/* Progress bar */}
+            <div className="mx-4 mt-0.5 mb-1 h-1 rounded-full bg-[color:oklch(0.92_0.02_85)] overflow-hidden flex-shrink-0">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-emerald-500"
+                initial={{ width: "5%" }}
+                animate={{ width: done ? "100%" : `${Math.min(100, ((currentRing + 1) / 4) * 100)}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+            </div>
 
-        {/* Header */}
-        <div className="px-4 pt-1 pb-2 flex items-center justify-between flex-shrink-0">
-          <span className="text-[10px] uppercase tracking-[0.25em] font-display font-bold text-[color:oklch(0.45_0.10_82)]">
-            ✦ {done ? "Found" : "Finding"} ✦
-          </span>
-          <span className="text-[11px] font-display italic text-[color:oklch(0.45_0.08_85)]">
-            Find vendor · live broadcast
-          </span>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="h-7 w-7 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
-          >
-            <X className="h-3.5 w-3.5 text-[color:oklch(0.30_0.05_85)]" />
-          </button>
-        </div>
+            {/* Header */}
+            <div className="px-4 pt-1 pb-2 flex items-center justify-between flex-shrink-0">
+              <span className="text-[10px] uppercase tracking-[0.25em] font-display font-bold text-[color:oklch(0.45_0.10_82)]">
+                ✦ {done ? "Found" : "Finding"} ✦
+              </span>
+              <span className="text-[11px] font-display italic text-[color:oklch(0.45_0.08_85)]">
+                Find vendor · live broadcast
+              </span>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="h-7 w-7 grid place-items-center rounded-full bg-white border border-[color:oklch(0.78_0.14_82/0.5)] active:scale-90"
+              >
+                <X className="h-3.5 w-3.5 text-[color:oklch(0.30_0.05_85)]" />
+              </button>
+            </div>
+          </>
+        )}
 
-        {/* Title strip */}
-        <div className={`mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] ${hasVendors ? "p-2" : "p-2.5"} flex items-center gap-2.5 shadow-gold-glow flex-shrink-0`}>
-          <div className={`${hasVendors ? "h-10 w-10" : "h-12 w-12"} rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0`}>
+
+        {/* Title strip — only in searching state */}
+        {!hasVendors && (
+        <div className="mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2.5 flex items-center gap-2.5 shadow-gold-glow flex-shrink-0">
+          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             {categoryImage ? (
               <img src={categoryImage} alt={category ?? "service"} className="h-full w-full object-cover" />
             ) : (
@@ -376,6 +419,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </motion.div>
           </div>
         </div>
+        )}
+
 
         {/* MAIN — fallback OR radar+vendor stack */}
         {noVendorsFinal && leadId ? (
@@ -390,12 +435,13 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             }}
           />
         ) : (
-        <div className="flex-1 min-h-0 px-3 pt-2 pb-2 flex flex-col gap-2 overflow-hidden">
-          {/* Radar stays on top; chat opens below as soon as the first real vendor accepts. */}
-          <div className={`relative flex-shrink-0 ${approvedVendorId ? "h-[38px]" : vendors.length > 0 ? "h-[82px]" : "h-[300px]"}`}>
+        <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${hasVendors ? "gap-2 px-2 pt-2 pb-1" : "gap-2 px-3 pt-2 pb-2"}`}>
+          {/* Radar — only in the initial searching state; compact top bar carries status once vendors arrive. */}
+          {!hasVendors && (
+          <div className="relative flex-shrink-0 h-[300px]">
             <motion.div
               initial={{ scale: 1 }}
-              animate={approvedVendorId ? { scale: 0.18, opacity: 0.35 } : done ? { scale: 0.42 } : { scale: vendors.length > 0 ? 0.36 : 1 }}
+              animate={done ? { scale: 0.42 } : { scale: 1 }}
               transition={{ type: "spring", damping: 22, stiffness: 180 }}
               className="relative h-[260px] w-full max-w-[260px] mx-auto grid place-items-center origin-top"
             >
@@ -472,6 +518,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </AnimatePresence>
             </div>
           </div>
+          )}
+
 
           {vendors.length > 0 ? (
             <>
@@ -591,15 +639,6 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                 )}
               </div>
 
-              {activeVendor && !approvedVendorId && (
-                <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-1.5 flex-shrink-0">
-                  <p className="text-[11px] text-slate-700 leading-tight truncate">
-                    {approvedVendorId ? "Approved chat: " : "Chat open: "}<span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>
-                    {activeVendor.distance_km != null ? <span> · {activeVendor.distance_km.toFixed(1)} km</span> : null}
-                    {activeVendor.vendor_note ? <span> · {activeVendor.vendor_note}</span> : null}
-                  </p>
-                </div>
-              )}
 
               {approvedVendorId && (
                 <div className="flex-shrink-0 grid grid-cols-2 gap-2 rounded-2xl bg-white border border-amber-200 p-1 shadow-sm">
