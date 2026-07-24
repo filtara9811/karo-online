@@ -435,12 +435,13 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             }}
           />
         ) : (
-        <div className="flex-1 min-h-0 px-3 pt-2 pb-2 flex flex-col gap-2 overflow-hidden">
-          {/* Radar stays on top; chat opens below as soon as the first real vendor accepts. */}
-          <div className={`relative flex-shrink-0 ${approvedVendorId ? "h-[38px]" : vendors.length > 0 ? "h-[82px]" : "h-[300px]"}`}>
+        <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${hasVendors ? "gap-2 px-2 pt-2 pb-1" : "gap-2 px-3 pt-2 pb-2"}`}>
+          {/* Radar — only in the initial searching state; compact top bar carries status once vendors arrive. */}
+          {!hasVendors && (
+          <div className="relative flex-shrink-0 h-[300px]">
             <motion.div
               initial={{ scale: 1 }}
-              animate={approvedVendorId ? { scale: 0.18, opacity: 0.35 } : done ? { scale: 0.42 } : { scale: vendors.length > 0 ? 0.36 : 1 }}
+              animate={done ? { scale: 0.42 } : { scale: 1 }}
               transition={{ type: "spring", damping: 22, stiffness: 180 }}
               className="relative h-[260px] w-full max-w-[260px] mx-auto grid place-items-center origin-top"
             >
@@ -517,6 +518,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </AnimatePresence>
             </div>
           </div>
+          )}
+
 
           {vendors.length > 0 ? (
             <>
