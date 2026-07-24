@@ -639,15 +639,6 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
                 )}
               </div>
 
-              {activeVendor && !approvedVendorId && (
-                <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-1.5 flex-shrink-0">
-                  <p className="text-[11px] text-slate-700 leading-tight truncate">
-                    {approvedVendorId ? "Approved chat: " : "Chat open: "}<span className="font-bold text-slate-900">{activeVendor.business_name || activeVendor.owner_name}</span>
-                    {activeVendor.distance_km != null ? <span> · {activeVendor.distance_km.toFixed(1)} km</span> : null}
-                    {activeVendor.vendor_note ? <span> · {activeVendor.vendor_note}</span> : null}
-                  </p>
-                </div>
-              )}
 
               {approvedVendorId && (
                 <div className="flex-shrink-0 grid grid-cols-2 gap-2 rounded-2xl bg-white border border-amber-200 p-1 shadow-sm">
