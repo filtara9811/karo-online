@@ -381,9 +381,10 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
         )}
 
 
-        {/* Title strip */}
-        <div className={`mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] ${hasVendors ? "p-2" : "p-2.5"} flex items-center gap-2.5 shadow-gold-glow flex-shrink-0`}>
-          <div className={`${hasVendors ? "h-10 w-10" : "h-12 w-12"} rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0`}>
+        {/* Title strip — only in searching state */}
+        {!hasVendors && (
+        <div className="mx-4 rounded-2xl bg-white border border-[color:oklch(0.78_0.14_82/0.4)] p-2.5 flex items-center gap-2.5 shadow-gold-glow flex-shrink-0">
+          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-[#fff8dc] to-[#fdf3c8] border border-[color:oklch(0.78_0.14_82/0.5)] flex-shrink-0">
             {categoryImage ? (
               <img src={categoryImage} alt={category ?? "service"} className="h-full w-full object-cover" />
             ) : (
@@ -418,6 +419,8 @@ export function FindingVendorOverlay({ open, category, categoryImage, leadId, on
             </motion.div>
           </div>
         </div>
+        )}
+
 
         {/* MAIN — fallback OR radar+vendor stack */}
         {noVendorsFinal && leadId ? (
