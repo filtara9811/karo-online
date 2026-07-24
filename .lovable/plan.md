@@ -1,39 +1,82 @@
+
+## Problem
+
+In `src/components/FindingVendorOverlay.tsx` the sheet renders, top-to-bottom:
+drag handle → progress bar → header row → title strip → radar block
+(82–300px) → "vendors live" card / approved-vendor strip → chat thread.
+
+On a 360×691 viewport that stack eats ~55–60% of the 96dvh sheet before the
+chat starts, so `LeadChatThread` renders in a short window near the bottom.
+That's the "chat pushed down" the user is reporting. The chat itself already
+uses `h-full min-h-0` correctly — the issue is purely the chrome above it.
+
 ## Goal
-Find Vendor complete होने के बाद ditto screenshot जैसी unified screen — top में live map (real nearby vendors + distance labels), बीच में product/service header card, नीचे horizontal vendor rail (avatars + rating + price), और by-default एक vendor के साथ chat open. Customer एक-एक करके सब vendors से बात कर सके।
 
-## Scope
-सिर्फ customer-side "post-radar" experience बदलनी है। Radar (`FindingVendorOverlay`) और chat engine (`LeadChatThread`) — दोनों untouched। Existing `VendorListSheet` अलग "manage/approve" flow के लिए बना रहेगा (approve/track/cancel के लिए), पर radar-complete पर default नया hub खुलेगा।
+Once the chat is active (first vendor accepted, or after approval), the
+`LeadChatThread` must sit directly under a single slim header row and fill
+all remaining height, on every screen size, with no layout shift when
+vendors keep arriving or when approval happens.
 
-## New component: `VendorChatHub`
-File: `src/components/VendorChatHub.tsx` (single full-screen sheet, mounted from `src/routes/quick.tsx`).
+## Changes (UI only, `src/components/FindingVendorOverlay.tsx`)
 
-Layout (top → bottom):
-1. **Map strip (~38vh)** — reuse `QuickServiceMap`-style Google Map centered on customer, with **real accepted vendors** as pins. Each pin shows a small avatar bubble + `X.X km` label. Data source: `get_lead_accepted_vendors` RPC (already returns `distance_km`, `avatar_url`) + customer location. Radius chip top-left, bell/locate buttons top-right (visual parity with screenshot).
-2. **Product header card** — image, category, price range, "N Vendors Available" green pill, call + kebab buttons. Data from active inquiry + accepted vendor prices.
-3. **Vendor rail (horizontal scroll)** — each card: avatar with online dot, name, "Online" chip, ⭐ rating, ₹ price, "Est. X min". Active vendor highlighted with orange ring. Last tile: **"All Vendors 5+"** → opens existing `VendorListSheet` for full management.
-4. **"You are chatting with X about Y" banner** + **Change Vendor** button (also switches by tapping rail card).
-5. **Chat body** — mount `LeadChatThread` with `peer = activeVendor`, `myRole="customer"`. Keyed by `vendor_id` so switching resets scroll/thread state cleanly.
+1. **Grow the sheet to full height when chat is live.**
+   Keep `96dvh` only while searching with zero vendors. Once
+   `vendors.length > 0`, switch the outer `motion.div` to
+   `height: 100dvh; max-height: 100dvh` and drop the top rounded corners
+   into a smaller radius so it reads as a full-screen chat, matching the
+   reference screenshots.
 
-Default vendor = first (closest) accepted vendor. Rail tap → swaps `activeVendor` → chat re-mounts for that peer.
+2. **Merge the top chrome into one 44px row once vendors exist.**
+   While `vendors.length > 0`:
+   - Hide the standalone progress bar, header row ("✦ Finding ✦ …"), and
+     title strip.
+   - Render one compact top bar containing: back/close button, category
+     thumbnail + name, live counter (`3/5`) or `✓ Completed`, and the
+     small pulsing radar dot already in the title strip.
+   - Keep the drag handle only in the zero-vendor state.
 
-## Wiring
-`src/routes/quick.tsx`:
-- Replace `FindingVendorOverlay.onComplete` payload — instead of `setActiveInquiry({ open: true })` (which opens `VendorListSheet`), set a new `hubOpen` state and mount `<VendorChatHub leadId={...} category={...} productImage={...} onClose={...} onManage={() => open VendorListSheet} />`.
-- `VendorListSheet` still available via "All Vendors" tile / "Change Vendor" long-press for approve/cancel actions.
+3. **Collapse the radar block into the top bar.**
+   Remove the dedicated `h-[82px]` / `h-[38px]` radar container once
+   vendors exist. The 20px pulsing badge already living in the compact
+   top bar is enough of a "still searching" cue. The full 300px radar
+   only renders in the initial zero-vendor state.
 
-## Real data guarantees
-- Map pins & rail use `get_lead_accepted_vendors` (RLS-scoped, already returns real vendor profiles + distance). Realtime subscription on `leads` + `lead_notifications` so new accepts appear live.
-- No mock avatars/prices — fallbacks stay minimal (initial letter, "—") when a field is null.
+4. **Turn the vendor rail into a slim horizontal strip above the chat.**
+   Replace the current "Vendors live aa rahe hain" card + approved-vendor
+   card with a single 72px horizontal scroller of avatar chips (same data,
+   same tap-to-switch behaviour, approved vendor gets a green ring and
+   pins to the left). No card padding, no call button in this strip — the
+   call action stays inside `LeadChatThread`'s own header.
 
-## Out of scope (this turn)
-- Approve/track UI changes (stays in `VendorListSheet`).
-- Vendor-side changes.
-- Any DB/RPC changes — existing schema already returns everything needed.
+5. **Give the chat the remaining space.**
+   Wrap the chat in `<div class="flex-1 min-h-0">` directly after the
+   avatar strip, no extra padding, so `LeadChatThread` with `embedded`
+   fills 100% of the leftover height. This is what actually fixes "chat
+   pushed down" — after steps 2–4 the leftover is the whole screen minus
+   ~44px top bar and ~72px avatar strip.
 
-## Technical notes
-- New file only: `src/components/VendorChatHub.tsx` (~350 lines).
-- Small edits in `src/routes/quick.tsx` around the finder `onComplete` handler.
-- Map: reuse `@react-google-maps/api` pattern already used in `QuickServiceMap.tsx`; custom OverlayView for avatar+distance markers.
-- Chat: reuse `LeadChatThread` unchanged; pass `peer` object built from selected `AcceptedVendor`.
+6. **Preserve existing states.**
+   - `noVendorsFinal` fallback still renders in place of the chat region.
+   - Approved state: other avatars fade to 40% opacity but stay in the
+     strip so the user can still tap; the tab switcher (Chat / Order
+     Status) stays where it is inside `LeadChatThread`'s embedded view.
+   - `onClose` still fires from the top-bar X and from the backdrop tap
+     in the zero-vendor state; once chat is live the backdrop is not
+     clickable (sheet is full-screen).
 
-Confirm करें तो implement कर देता हूँ।
+## Out of scope
+
+- No backend, RPC, or data changes.
+- No changes to `LeadChatThread.tsx`, `LeadOrderStatusPanel.tsx`, or the
+  auto-match logic — the embedded chat already handles its own scrolling
+  correctly once given full height.
+- No visual redesign of the chat bubbles or vendor cards themselves.
+
+## Verification
+
+- 360×691 (current preview), 390×844, and 412×915: after first vendor
+  accepts, chat header sits ≤120px from the top and message list
+  scrolls to the bottom safe-area inset.
+- Approving a vendor does not change the chat's top offset (no jump).
+- Zero-vendor searching state still shows the full radar and progress
+  bar as today.
