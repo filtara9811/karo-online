@@ -98,6 +98,15 @@ export function QuickPage() {
   useEffect(() => { setActiveType(typeCode); }, [typeCode, setActiveType]);
 
   const [searchOpen, setSearchOpen] = useState(false);
+  /** Home has two views: the existing content home, and the new map home. */
+  const [homeView, setHomeView] = useState<"content" | "map">("content");
+  useEffect(() => {
+    const saved = localStorage.getItem("ko-home-view");
+    if (saved === "map" || saved === "content") setHomeView(saved);
+  }, []);
+  useEffect(() => { localStorage.setItem("ko-home-view", homeView); }, [homeView]);
+  const isMapView = homeView === "map";
+
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [radiusKm, setRadiusKm] = useState(1);
