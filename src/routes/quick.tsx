@@ -558,8 +558,9 @@ export function QuickPage() {
         </div>
 
 
-        {/* Floating GLASS category rail — pinned near the bottom of the map */}
-        <div className="absolute inset-x-0 bottom-2 z-20 px-2">
+        {/* Floating GLASS category rail — pinned near the bottom of the map (content view only) */}
+        <div className={`absolute inset-x-0 bottom-2 z-20 px-2 ${isMapView ? "hidden" : ""}`}>
+
             <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
               {catQ.isLoading && rootCats.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
