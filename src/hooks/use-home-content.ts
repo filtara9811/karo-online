@@ -13,12 +13,14 @@ export type HomeBanner = {
 export type HomeVideo = {
   id: string;
   thumb_url: string;
+  video_url?: string;
   title?: string;
   subtitle?: string;
   duration?: string;
   link?: string;
   is_active?: boolean;
 };
+
 
 async function readSetting<T>(key: string): Promise<T | null> {
   const { data } = await supabase
@@ -56,7 +58,7 @@ export function useHomeVideos() {
     let alive = true;
     readSetting<{ items?: HomeVideo[] }>("home_videos").then((v) => {
       if (!alive) return;
-      setVideos((v?.items ?? []).filter((x) => x.is_active !== false && x.thumb_url));
+      setVideos((v?.items ?? []).filter((x) => x.is_active !== false && (x.thumb_url || x.video_url)));
       setLoading(false);
     });
     return () => {
