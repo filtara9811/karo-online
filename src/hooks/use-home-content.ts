@@ -13,12 +13,14 @@ export type HomeBanner = {
 export type HomeVideo = {
   id: string;
   thumb_url: string;
+  video_url?: string;
   title?: string;
   subtitle?: string;
   duration?: string;
   link?: string;
   is_active?: boolean;
 };
+
 
 async function readSetting<T>(key: string): Promise<T | null> {
   const { data } = await supabase
