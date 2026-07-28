@@ -1,16 +1,21 @@
-import { Play, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { Play, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useHomeVideos } from "@/hooks/use-home-content";
+import { useHomeVideos, type HomeVideo } from "@/hooks/use-home-content";
 
 /** Horizontally scrollable, clickable video rail (YouTube-style). Managed from Admin → Home Content. */
 export function HomeVideoRail() {
   const { videos, loading } = useHomeVideos();
   const navigate = useNavigate();
+  const [playing, setPlaying] = useState<HomeVideo | null>(null);
 
-  const open = (link?: string) => {
-    if (!link) return;
-    if (/^https?:\/\//i.test(link)) window.open(link, "_blank", "noopener,noreferrer");
-    else navigate({ to: link as string });
+  const open = (v: HomeVideo) => {
+    if (v.link) {
+      if (/^https?:\/\//i.test(v.link)) window.open(v.link, "_blank", "noopener,noreferrer");
+      else navigate({ to: v.link as string });
+      return;
+    }
+    if (v.video_url) setPlaying(v);
   };
 
   if (loading) {
@@ -36,11 +41,15 @@ export function HomeVideoRail() {
         {videos.map((v) => (
           <button
             key={v.id}
-            onClick={() => open(v.link)}
+            onClick={() => open(v)}
             className="shrink-0 w-[42%] text-left active:scale-[0.97] transition"
           >
-            <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-              <img src={v.thumb_url} alt={v.title || "Video"} className="h-full w-full object-cover" loading="lazy" />
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-[0_12px_26px_-16px_rgba(0,0,0,0.6)]">
+              {v.thumb_url ? (
+                <img src={v.thumb_url} alt={v.title || "Video"} className="h-full w-full object-cover" loading="lazy" />
+              ) : (
+                <video src={v.video_url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+              )}
               <span className="absolute inset-0 grid place-items-center">
                 <span className="h-9 w-9 rounded-full bg-black/50 backdrop-blur grid place-items-center">
                   <Play className="h-4 w-4 text-white fill-white" />
@@ -57,6 +66,26 @@ export function HomeVideoRail() {
           </button>
         ))}
       </div>
+
+      {playing?.video_url && (
+        <div className="fixed inset-0 z-[120] bg-black/90 grid place-items-center p-4" onClick={() => setPlaying(null)}>
+          <button
+            onClick={() => setPlaying(null)}
+            aria-label="Close video"
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/15 grid place-items-center"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+          <video
+            src={playing.video_url}
+            controls
+            autoPlay
+            playsInline
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl rounded-2xl"
+          />
+        </div>
+      )}
     </section>
   );
 }
