@@ -65,6 +65,7 @@ const NAV: NavItem[] = [
   { to: "/admin/branding", label: "Branding Studio", icon: Palette },
   { to: "/admin/legal", label: "Legal Pages", icon: FileText },
   { to: "/admin/web", label: "✨ Special Web (CMS)", icon: Globe },
+  { to: "/admin/home-content", label: "🏠 Home Banners & Videos", icon: LayoutDashboard },
   { to: "/admin/onboarding", label: "Onboarding Screens", icon: LayoutDashboard },
   { to: "/admin/video", label: "🎬 Onboarding Video", icon: Palette },
   { to: "/admin/settings", label: "App Settings", icon: SettingsIcon },
