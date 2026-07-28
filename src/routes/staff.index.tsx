@@ -40,6 +40,7 @@ function StaffHome() {
   const [wallet, setWallet] = useState<any>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Earning");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const promoRef = useRef<HTMLDivElement>(null);
   const [promoIdx, setPromoIdx] = useState(0);
 
