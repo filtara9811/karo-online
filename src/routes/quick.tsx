@@ -616,26 +616,20 @@ export function QuickPage() {
             </div>
         </div>
 
-        {/* Current area name under the pin (map view) */}
-        {isMapView && (
-          <div className="absolute inset-x-0 bottom-16 z-10 flex justify-center pointer-events-none">
-            <span className="px-3 py-1 rounded-full bg-white/60 backdrop-blur-md text-[12px] font-bold text-slate-700 shadow-sm">
-              {shortLocation}
-            </span>
-          </div>
-        )}
       </motion.section>
-
+      )}
 
       {/* ==================== SCROLL AREA (Recent + Sub cards) ==================== */}
       <div className="flex-1 overflow-y-auto pb-32 bg-[#f5f6f8] relative z-10">
 
-        {/* Banner carousel — map home only */}
+        {/* Banners + videos — map home only (admin managed) */}
         {isMapView && (
           <div className="pt-3">
-            <BannerCarousel />
+            <HomeBannerRail />
+            <HomeVideoRail />
           </div>
         )}
+
 
 
 
