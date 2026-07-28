@@ -398,7 +398,13 @@ export function QuickPage() {
   return (
     <div className="fixed inset-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
       {/* ==================== MAP HERO — shorter + attribution clipped ==================== */}
-      <section className="relative flex-shrink-0 overflow-hidden" style={{ height: "40vh", minHeight: 290 }}>
+      <motion.section
+        layout
+        transition={{ type: "spring", stiffness: 260, damping: 32 }}
+        className={`relative flex-shrink-0 overflow-hidden ${isMapView ? "rounded-b-[28px] shadow-[0_18px_36px_-24px_rgba(0,0,0,0.5)]" : ""}`}
+        style={{ height: isMapView ? "52vh" : "40vh", minHeight: isMapView ? 360 : 290 }}
+      >
+
         {/* Inner wrapper is 30px taller than the section so Google's attribution
             strip renders BELOW the visible clip area and never overlaps the rail. */}
         <div className="absolute inset-x-0 top-0" style={{ height: "calc(100% + 30px)" }}>
