@@ -58,7 +58,7 @@ export function useHomeVideos() {
     let alive = true;
     readSetting<{ items?: HomeVideo[] }>("home_videos").then((v) => {
       if (!alive) return;
-      setVideos((v?.items ?? []).filter((x) => x.is_active !== false && x.thumb_url));
+      setVideos((v?.items ?? []).filter((x) => x.is_active !== false && (x.thumb_url || x.video_url)));
       setLoading(false);
     });
     return () => {
