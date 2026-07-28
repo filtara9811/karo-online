@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
-import { BannerCarousel } from "@/components/BannerCarousel";
+import { HomeBannerRail } from "@/components/HomeBannerRail";
+import { HomeVideoRail } from "@/components/HomeVideoRail";
+
 
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
