@@ -1,13 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   Wrench, MapPin, ChevronDown, ChevronRight, Star, ShieldCheck, Users, Send,
-  Mic, Sparkles, X,
+  Mic, Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
 } from "lucide-react";
+
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
+import { BannerCarousel } from "@/components/BannerCarousel";
+
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
@@ -97,6 +100,15 @@ export function QuickPage() {
   useEffect(() => { setActiveType(typeCode); }, [typeCode, setActiveType]);
 
   const [searchOpen, setSearchOpen] = useState(false);
+  /** Home has two views: the existing content home, and the new map home. */
+  const [homeView, setHomeView] = useState<"content" | "map">("content");
+  useEffect(() => {
+    const saved = localStorage.getItem("ko-home-view");
+    if (saved === "map" || saved === "content") setHomeView(saved);
+  }, []);
+  useEffect(() => { localStorage.setItem("ko-home-view", homeView); }, [homeView]);
+  const isMapView = homeView === "map";
+
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [radiusKm, setRadiusKm] = useState(1);
@@ -388,7 +400,13 @@ export function QuickPage() {
   return (
     <div className="fixed inset-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
       {/* ==================== MAP HERO — shorter + attribution clipped ==================== */}
-      <section className="relative flex-shrink-0 overflow-hidden" style={{ height: "40vh", minHeight: 290 }}>
+      <motion.section
+        layout
+        transition={{ type: "spring", stiffness: 260, damping: 32 }}
+        className={`relative flex-shrink-0 overflow-hidden ${isMapView ? "rounded-b-[28px] shadow-[0_18px_36px_-24px_rgba(0,0,0,0.5)]" : ""}`}
+        style={{ height: isMapView ? "52vh" : "40vh", minHeight: isMapView ? 360 : 290 }}
+      >
+
         {/* Inner wrapper is 30px taller than the section so Google's attribution
             strip renders BELOW the visible clip area and never overlaps the rail. */}
         <div className="absolute inset-x-0 top-0" style={{ height: "calc(100% + 30px)" }}>
@@ -409,39 +427,131 @@ export function QuickPage() {
           )}
         </div>
 
-        {/* Top-right location pill */}
-        <div className="absolute right-3 top-3 z-20">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setLocationSheetOpen(true)}
-            className="h-10 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-3.5"
-          >
-            <MapPin className="h-4 w-4 text-orange-500" />
-            <span className="max-w-[110px] text-left font-bold text-[13px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
-            <ChevronDown className="h-4 w-4 text-slate-700" />
-          </motion.button>
-        </div>
+        {/* ---- MAP VIEW chrome: glass profile + Join Seller ---- */}
+        {isMapView && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+              className="absolute left-3 top-3 z-20 flex items-center gap-2 max-w-[54%]"
+            >
+              <Link to="/profile" className="shrink-0">
+                <img
+                  src={profile?.avatar_url || avatarUser}
+                  alt="Profile"
+                  className="h-11 w-11 rounded-full object-cover border-2 border-white/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
+                />
+              </Link>
+              <div className="min-w-0">
+                <Link to="/profile" className="block truncate text-[15px] font-black text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                  {profile?.name || "Guest"}
+                </Link>
+                <button
+                  onClick={() => setLocationSheetOpen(true)}
+                  className="flex items-center gap-1 min-w-0"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                  <span className="truncate text-[11.5px] font-semibold text-slate-700 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                    {effectiveLabel}
+                  </span>
+                </button>
+              </div>
+            </motion.div>
 
-        {/* Segmented Service / Product / Other selector — moved below location pill to avoid overlap */}
-        <div className="absolute left-3 top-14 z-20">
-          <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
-            {(["service","product","other"] as TypeCode[]).map((code) => {
-              const active = typeCode === code;
-              const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="absolute right-3 top-3 z-20">
+              <Link
+                to="/vendor/join"
+                className="flex items-center gap-2 h-12 pl-3 pr-3 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 shadow-[0_10px_26px_-12px_rgba(0,0,0,0.45)] active:scale-95 transition"
+              >
+                <Store className="h-5 w-5 text-orange-500" />
+                <span className="leading-tight text-left">
+                  <span className="block text-[13px] font-black text-orange-600">Join Seller</span>
+                  <span className="block text-[9.5px] font-semibold text-slate-600">Start your business</span>
+                </span>
+                <ArrowRight className="h-4 w-4 text-orange-500" />
+              </Link>
+            </motion.div>
+
+            <motion.button
+              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setLocationSheetOpen(true)}
+              className="absolute right-3 top-[68px] z-20 h-9 rounded-full bg-white/70 backdrop-blur-xl border border-white/70 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)] flex items-center gap-1.5 px-3"
+            >
+              <MapPin className="h-3.5 w-3.5 text-orange-500" />
+              <span className="max-w-[110px] truncate text-[12px] font-bold text-slate-900">{shortLocation}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-700" />
+            </motion.button>
+          </>
+        )}
+
+        {/* ---- CONTENT VIEW chrome (unchanged) ---- */}
+        {!isMapView && (
+          <>
+            {/* Top-right location pill */}
+            <div className="absolute right-3 top-3 z-20">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setLocationSheetOpen(true)}
+                className="h-10 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] flex items-center gap-2 px-3.5"
+              >
+                <MapPin className="h-4 w-4 text-orange-500" />
+                <span className="max-w-[110px] text-left font-bold text-[13px] text-slate-900 truncate drop-shadow-sm">{shortLocation}</span>
+                <ChevronDown className="h-4 w-4 text-slate-700" />
+              </motion.button>
+            </div>
+
+            {/* Segmented Service / Product / Other selector */}
+            <div className="absolute left-3 top-14 z-20">
+              <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
+                {(["service","product","other"] as TypeCode[]).map((code) => {
+                  const active = typeCode === code;
+                  const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
+                  return (
+                    <motion.button
+                      key={code}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setTypeCode(code)}
+                      className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="type-seg-active"
+                          className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative">{label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ---- View switch: Content View | Map View ---- */}
+        <div className={`absolute left-3 z-20 ${isMapView ? "bottom-3" : "bottom-[92px]"}`}>
+          <div className="inline-flex h-10 p-0.5 rounded-full bg-white/70 backdrop-blur-xl border border-white/70 shadow-[0_10px_26px_-12px_rgba(0,0,0,0.45)]">
+            {([
+              { code: "content" as const, label: "Content View", Icon: LayoutGrid },
+              { code: "map" as const, label: "Map View", Icon: MapIcon },
+            ]).map(({ code, label, Icon }) => {
+              const active = homeView === code;
               return (
                 <motion.button
                   key={code}
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => setTypeCode(code)}
-                  className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
+                  onClick={() => setHomeView(code)}
+                  className={`relative px-3 h-full rounded-full text-[12px] font-bold flex items-center gap-1.5 transition-colors ${active ? "text-white" : "text-slate-800"}`}
                 >
                   {active && (
                     <motion.span
-                      layoutId="type-seg-active"
+                      layoutId="home-view-seg"
                       className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
+                  <Icon className="relative h-3.5 w-3.5" />
                   <span className="relative">{label}</span>
                 </motion.button>
               );
@@ -449,8 +559,10 @@ export function QuickPage() {
           </div>
         </div>
 
-        {/* Floating GLASS category rail — pinned near the bottom of the map */}
-        <div className="absolute inset-x-0 bottom-2 z-20 px-2">
+
+        {/* Floating GLASS category rail — pinned near the bottom of the map (content view only) */}
+        <div className={`absolute inset-x-0 bottom-2 z-20 px-2 ${isMapView ? "hidden" : ""}`}>
+
             <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
               {catQ.isLoading && rootCats.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
@@ -503,11 +615,29 @@ export function QuickPage() {
               )}
             </div>
         </div>
-      </section>
+
+        {/* Current area name under the pin (map view) */}
+        {isMapView && (
+          <div className="absolute inset-x-0 bottom-16 z-10 flex justify-center pointer-events-none">
+            <span className="px-3 py-1 rounded-full bg-white/60 backdrop-blur-md text-[12px] font-bold text-slate-700 shadow-sm">
+              {shortLocation}
+            </span>
+          </div>
+        )}
+      </motion.section>
 
 
       {/* ==================== SCROLL AREA (Recent + Sub cards) ==================== */}
       <div className="flex-1 overflow-y-auto pb-32 bg-[#f5f6f8] relative z-10">
+
+        {/* Banner carousel — map home only */}
+        {isMapView && (
+          <div className="pt-3">
+            <BannerCarousel />
+          </div>
+        )}
+
+
 
         {/* Recent History rail */}
         {recent.length > 0 && (
