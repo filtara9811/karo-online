@@ -46,8 +46,17 @@ function StaffHome() {
   useEffect(() => {
     (async () => {
       try {
-        const [m, w] = await Promise.all([fetchMe(), fetchWallet(), fetchTasks()]);
-        setMe(m); setWallet(w.wallet);
+        // Per-call catch: ek call fail ho to baaki data phir bhi dikhe
+        const [m, w] = await Promise.all([
+          fetchMe().catch(() => null),
+          fetchWallet().catch(() => ({ wallet: null, ledger: [] })),
+          fetchTasks().catch(() => []),
+        ]);
+        setMe(m);
+        setWallet((w as { wallet: unknown })?.wallet ?? null);
+        if (!m) setLoadError("Staff profile nahi mila — admin approval pending ho sakti hai.");
+      } catch {
+        setLoadError("Data load nahi ho paya. Dobara koshish kijiye.");
       } finally { setLoading(false); }
     })();
     const ch = supabase
