@@ -96,6 +96,11 @@ function StaffHome() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
+      {loadError && (
+        <div className="mx-4 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700">
+          {loadError}
+        </div>
+      )}
       {/* Header */}
       <header className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
