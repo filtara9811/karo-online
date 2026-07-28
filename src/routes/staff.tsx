@@ -21,36 +21,106 @@ const TABS: Tab[] = [
   { to: "/staff/vendors", label: "My Team", icon: Users },
 ];
 
+/** Routes inside /staff that must render without the staff auth gate. */
+const PUBLIC_STAFF_PATHS = ["/staff/login", "/staff/onboard", "/s/onboard"];
+
+type GateState = "checking" | "ok" | "no-session" | "not-staff" | "error";
+
 function StaffLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [checking, setChecking] = useState(true);
+  const isPublicPath = PUBLIC_STAFF_PATHS.some((p) => pathname.startsWith(p));
+  const [gate, setGate] = useState<GateState>("checking");
 
   useEffect(() => {
+    if (isPublicPath) return;
     let c = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setGate("checking");
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      const uid = data.session?.user?.id;
-      if (!uid) { if (!c) navigate({ to: "/staff/login" }); return; }
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      if (c) return;
-      if (!roles?.some((r) => r.role === "staff")) {
-        await supabase.auth.signOut();
-        navigate({ to: "/staff/login" });
-        return;
+      // Never let the spinner hang forever (slow / offline network)
+      timer = setTimeout(() => { if (!c) setGate((g) => (g === "checking" ? "error" : g)); }, 8000);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const uid = data.session?.user?.id;
+        if (c) return;
+        if (!uid) {
+          setGate("no-session");
+          navigate({ to: "/staff/login" });
+          return;
+        }
+        const { data: roles, error } = await supabase
+          .from("user_roles").select("role").eq("user_id", uid);
+        if (c) return;
+        if (error) { setGate("error"); return; }
+        if (!roles?.some((r) => r.role === "staff")) {
+          setGate("not-staff");
+          return;
+        }
+        setGate("ok");
+      } catch {
+        if (!c) setGate("error");
+      } finally {
+        if (timer) clearTimeout(timer);
       }
-      setChecking(false);
     })();
-    return () => { c = true; };
-  }, [navigate]);
+    return () => { c = true; if (timer) clearTimeout(timer); };
+  }, [navigate, isPublicPath, pathname]);
 
   // Hide bottom nav on chat detail page
   const hideNav = pathname.startsWith("/staff/chat/");
 
-  if (checking) {
+  // Login / onboarding pages render without the gate and without bottom nav
+  if (isPublicPath) {
+    return (
+      <div className="min-h-screen bg-[oklch(0.985_0.008_88)] flex flex-col">
+        <main className="flex-1"><Outlet /></main>
+      </div>
+    );
+  }
+
+  if (gate === "checking" || gate === "no-session") {
     return (
       <div className="min-h-screen grid place-items-center bg-[oklch(0.98_0.01_88)]">
         <Loader2 className="h-6 w-6 animate-spin text-[color:oklch(0.55_0.16_82)]" />
+      </div>
+    );
+  }
+
+  if (gate !== "ok") {
+    const notStaff = gate === "not-staff";
+    return (
+      <div className="min-h-screen grid place-items-center bg-[oklch(0.98_0.01_88)] px-6">
+        <div className="w-full max-w-sm rounded-2xl bg-white border border-slate-200 shadow-sm p-6 text-center">
+          <h1 className="text-base font-bold text-slate-800">
+            {notStaff ? "Yeh account staff nahi hai" : "Staff panel load nahi ho paya"}
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            {notStaff
+              ? "Is account ke paas staff access nahi hai. Staff account se login kijiye."
+              : "Network ya server se connect nahi ho paya. Dobara koshish kijiye."}
+          </p>
+          <div className="mt-5 grid gap-2">
+            {notStaff ? (
+              <button
+                onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/staff/login" }); }}
+                className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold"
+              >
+                Staff login
+              </button>
+            ) : (
+              <button
+                onClick={() => setGate("checking")}
+                className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold"
+              >
+                Retry
+              </button>
+            )}
+            <Link to="/" className="w-full py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">
+              Home
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
