@@ -1,12 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   Wrench, MapPin, ChevronDown, ChevronRight, Star, ShieldCheck, Users, Send,
-  Mic, Sparkles, X,
+  Mic, Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
 } from "lucide-react";
+
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
