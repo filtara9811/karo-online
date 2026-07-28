@@ -40,14 +40,24 @@ function StaffHome() {
   const [wallet, setWallet] = useState<any>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Earning");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const promoRef = useRef<HTMLDivElement>(null);
   const [promoIdx, setPromoIdx] = useState(0);
 
   useEffect(() => {
     (async () => {
       try {
-        const [m, w] = await Promise.all([fetchMe(), fetchWallet(), fetchTasks()]);
-        setMe(m); setWallet(w.wallet);
+        // Per-call catch: ek call fail ho to baaki data phir bhi dikhe
+        const [m, w] = await Promise.all([
+          fetchMe().catch(() => null),
+          fetchWallet().catch(() => ({ wallet: null, ledger: [] })),
+          fetchTasks().catch(() => []),
+        ]);
+        setMe(m);
+        setWallet((w as { wallet: unknown })?.wallet ?? null);
+        if (!m) setLoadError("Staff profile nahi mila — admin approval pending ho sakti hai.");
+      } catch {
+        setLoadError("Data load nahi ho paya. Dobara koshish kijiye.");
       } finally { setLoading(false); }
     })();
     const ch = supabase
@@ -86,6 +96,11 @@ function StaffHome() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
+      {loadError && (
+        <div className="mx-4 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700">
+          {loadError}
+        </div>
+      )}
       {/* Header */}
       <header className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
