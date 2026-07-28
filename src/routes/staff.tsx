@@ -31,6 +31,7 @@ function StaffLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isPublicPath = PUBLIC_STAFF_PATHS.some((p) => pathname.startsWith(p));
   const [gate, setGate] = useState<GateState>("checking");
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (isPublicPath) return;
@@ -65,7 +66,7 @@ function StaffLayout() {
       }
     })();
     return () => { c = true; if (timer) clearTimeout(timer); };
-  }, [navigate, isPublicPath, pathname]);
+  }, [navigate, isPublicPath, pathname, retry]);
 
   // Hide bottom nav on chat detail page
   const hideNav = pathname.startsWith("/staff/chat/");
@@ -110,7 +111,7 @@ function StaffLayout() {
               </button>
             ) : (
               <button
-                onClick={() => setGate("checking")}
+                onClick={() => { setGate("checking"); setRetry((n) => n + 1); }}
                 className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold"
               >
                 Retry
