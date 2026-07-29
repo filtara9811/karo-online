@@ -61,39 +61,43 @@ export function TypeCategoryDeck({
   onViewAll: (root: DeckCategory) => void;
 }) {
   return (
-    <div className="flex gap-2 pl-1.5 pr-1">
-      {/* ---------------- Fixed left TYPE rail ---------------- */}
-      <div className="shrink-0 w-[54px] sticky top-1 self-start z-20">
-        <div className="flex flex-col gap-2 rounded-3xl bg-white/85 backdrop-blur-xl border border-orange-100 p-1.5 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.35)]">
-          {TYPE_TABS.map(({ code, label, sub }) => {
+    <div className="flex gap-1.5 pl-1 pr-1">
+      {/* ---------------- Fixed left TYPE rail (thin text chips) ---------------- */}
+      <div className="shrink-0 w-[58px] sticky top-1 self-start z-20">
+        <div className="flex flex-col gap-2">
+          {TYPE_TABS.map(({ code, label }) => {
             const active = typeCode === code;
             return (
               <motion.button
                 key={code}
-                whileTap={{ scale: 0.92 }}
+                whileTap={{ scale: 0.94 }}
                 onClick={() => onTypeChange(code)}
-                className={`relative h-[70px] rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                  active ? "text-white" : "text-slate-600"
+                className={`relative w-full rounded-full bg-white border px-1.5 py-1 flex items-center gap-1 justify-center transition-colors ${
+                  active
+                    ? "border-orange-300 shadow-[0_6px_14px_-8px_rgba(249,115,22,0.75)]"
+                    : "border-slate-200/80 shadow-[0_4px_10px_-8px_rgba(0,0,0,0.35)]"
                 }`}
               >
-                {active && (
-                  <motion.span
-                    layoutId="deck-type-active"
-                    className="absolute inset-0 rounded-2xl bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_8px_18px_-8px_rgba(249,115,22,0.8)]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <span className="relative grid place-items-center">
+                <span
+                  className={`text-[9.5px] font-medium leading-none tracking-tight ${
+                    active ? "text-orange-600" : "text-slate-500"
+                  }`}
+                >
+                  Tape {label}
+                </span>
+                <span
+                  className={`h-4 w-4 rounded-full grid place-items-center shrink-0 ${
+                    active ? "bg-orange-100" : "bg-slate-100"
+                  }`}
+                >
                   {code === "service" ? (
-                    <Wrench className="h-4 w-4" />
+                    <Wrench className={`h-2.5 w-2.5 ${active ? "text-orange-500" : "text-slate-400"}`} />
                   ) : code === "product" ? (
-                    <Package className="h-4 w-4" />
+                    <Package className={`h-2.5 w-2.5 ${active ? "text-orange-500" : "text-slate-400"}`} />
                   ) : (
-                    <Layers className="h-4 w-4" />
+                    <Layers className={`h-2.5 w-2.5 ${active ? "text-orange-500" : "text-slate-400"}`} />
                   )}
                 </span>
-                <span className="relative text-[9.5px] font-black leading-[1.05] text-center">{label}</span>
-                <span className={`relative text-[8px] font-bold ${active ? "text-white/80" : "text-slate-400"}`}>{sub}</span>
               </motion.button>
             );
           })}
@@ -101,7 +105,7 @@ export function TypeCategoryDeck({
       </div>
 
       {/* ---------------- Right: per-root horizontal decks ---------------- */}
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex-1 min-w-0 space-y-4">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={typeCode}
