@@ -1,26 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Package, Store } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import avatarUser from "@/assets/avatar-user.png";
+import { Package, Store, ChevronDown, Megaphone } from "lucide-react";
 import { ProfileHubSheet } from "@/components/ProfileHubSheet";
 
 /**
- * FloatingDockNav — screenshot-style pill dock with 3 slots.
- *   Left: My Orders (dispatches "ko-open-orders")
- *   Center: Profile FAB (opens ProfileHubSheet)
- *   Right: My Shops (navigates to /vendors — digital shop directory)
- *
- * The active slot lifts into a raised circle above the bar with a smooth
- * framer-motion layoutId animation. Tap gives a spring press feedback.
+ * FloatingDockNav — premium orange dock that rises from the bottom edge.
+ *   Left  : square "My Orders" button
+ *   Center: big "Digital shope.." pill → opens the Profile hub sheet
+ *   Right : round voice / announce button
  */
-type SlotKey = "orders" | "profile" | "shops";
-
 export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBadge?: number; shopsBadge?: number }) {
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  const [active, setActive] = useState<SlotKey>("profile");
   const [hubOpen, setHubOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
 
@@ -36,117 +27,70 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
 
   if (hidden) return null;
 
-
-  const trigger = (slot: SlotKey) => {
-    setActive(slot);
-    if (slot === "orders") {
-      setTimeout(() => navigate({ to: "/orders" }), 160);
-    } else if (slot === "profile") {
-      setHubOpen(true);
-    } else {
-      setTimeout(() => navigate({ to: "/vendors" }), 160);
-    }
-  };
-
   return (
     <>
-      <div
-        className="fixed inset-x-0 z-40 pb-[env(safe-area-inset-bottom)] pointer-events-none"
-        style={{ bottom: 8 }}
-      >
-        <div className="max-w-md mx-auto px-4 pointer-events-auto">
-          <div className="relative">
-            {/* the dark pill bar */}
-            <div className="relative h-16 rounded-full bg-gradient-to-b from-[#151515] to-[#0a0a0a] shadow-[0_18px_40px_-14px_rgba(0,0,0,0.6)] border border-white/5">
-              <div className="absolute inset-0 grid grid-cols-3 items-center">
-                <Slot
-                  slot="orders"
-                  active={active === "orders"}
-                  onClick={() => trigger("orders")}
-                  badge={ordersBadge}
-                >
-                  <Package className="h-5 w-5" strokeWidth={2.3} />
-                  <span className="text-[10px] font-semibold mt-0.5">My Orders</span>
-                </Slot>
+      <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
+        <div className="max-w-md mx-auto px-2 pointer-events-auto">
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 28 }}
+            className="relative rounded-t-[26px] bg-gradient-to-b from-[#ff9d2e] to-[#f97316] shadow-[0_-14px_36px_-16px_rgba(249,115,22,0.85)] border-t border-x border-white/40 px-2.5 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+10px)]"
+          >
+            <div className="flex items-center gap-2.5">
+              {/* Left — My Orders */}
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={() => navigate({ to: "/orders" })}
+                aria-label="My Orders"
+                className="relative shrink-0 h-[54px] w-[54px] rounded-[20px] bg-white/22 backdrop-blur-md border border-white/45 grid place-items-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)]"
+              >
+                <Package className="h-6 w-6 text-white" strokeWidth={2.2} />
+                {ordersBadge ? (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-white text-[9px] font-black text-orange-600 grid place-items-center shadow">
+                    {ordersBadge > 99 ? "99+" : ordersBadge}
+                  </span>
+                ) : null}
+              </motion.button>
 
-                {/* center placeholder — FAB sits above via absolute */}
-                <div />
+              {/* Center — Digital shop hub */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setHubOpen(true)}
+                className="relative flex-1 min-w-0 h-[54px] rounded-[20px] bg-white/18 backdrop-blur-md border border-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)] flex items-center gap-2 px-3"
+              >
+                <Store className="h-6 w-6 shrink-0 text-white" strokeWidth={2.2} />
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block truncate text-[17px] font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
+                    Digital shope..
+                  </span>
+                  <span className="block truncate text-[9.5px] font-semibold text-white/85">
+                    Digital shop | Vander panal | Referral
+                  </span>
+                </span>
+                <ChevronDown className="h-5 w-5 shrink-0 text-white/90" />
+                {shopsBadge ? (
+                  <span className="absolute -top-1 right-2 h-4 min-w-4 px-1 rounded-full bg-white text-[9px] font-black text-orange-600 grid place-items-center shadow">
+                    {shopsBadge > 99 ? "99+" : shopsBadge}
+                  </span>
+                ) : null}
+              </motion.button>
 
-                <Slot
-                  slot="shops"
-                  active={active === "shops"}
-                  onClick={() => trigger("shops")}
-                  badge={shopsBadge}
-                >
-                  <Store className="h-5 w-5" strokeWidth={2.3} />
-                  <span className="text-[10px] font-semibold mt-0.5">My Shops</span>
-                </Slot>
-              </div>
+              {/* Right — voice / announce */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => window.dispatchEvent(new CustomEvent("ko-open-voice"))}
+                aria-label="Voice search"
+                className="shrink-0 h-[54px] w-[54px] rounded-full bg-white/22 backdrop-blur-md border border-white/45 grid place-items-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)]"
+              >
+                <Megaphone className="h-6 w-6 text-white" strokeWidth={2.2} />
+              </motion.button>
             </div>
-
-            {/* Center raised profile FAB */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => trigger("profile")}
-              aria-label="Open menu"
-              className="absolute left-1/2 -translate-x-1/2 -top-3 h-14 w-14 rounded-full bg-white p-1 shadow-[0_10px_24px_-10px_rgba(0,0,0,0.55)] active:shadow-md"
-            >
-              <span className="block h-full w-full rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-br from-amber-300 to-orange-500">
-                <img
-                  src={profile?.avatar_url || avatarUser}
-                  alt=""
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarUser; }}
-                  className="h-full w-full object-cover"
-                />
-              </span>
-              {active === "profile" && (
-                <motion.span
-                  layoutId="dock-active-ring"
-                  className="absolute inset-0 rounded-full ring-2 ring-amber-400 pointer-events-none"
-                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                />
-              )}
-            </motion.button>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <ProfileHubSheet open={hubOpen} onClose={() => { setHubOpen(false); }} />
+      <ProfileHubSheet open={hubOpen} onClose={() => setHubOpen(false)} />
     </>
-  );
-}
-
-function Slot({
-  active, onClick, children, badge,
-}: {
-  slot: SlotKey;
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  badge?: number;
-}) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
-      className="relative h-full flex flex-col items-center justify-center gap-0"
-    >
-      {/* Animated selection blob */}
-      {active && (
-        <motion.span
-          layoutId="dock-active-blob"
-          className="absolute inset-y-2 inset-x-3 rounded-full bg-gradient-to-b from-amber-400/25 to-amber-500/10 border border-amber-300/40"
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
-        />
-      )}
-      <span className={`relative z-10 flex flex-col items-center transition-colors ${active ? "text-amber-300" : "text-white/85"}`}>
-        {children}
-      </span>
-      {badge ? (
-        <span className="absolute top-1.5 right-6 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-[9px] font-bold text-white grid place-items-center shadow">
-          {badge > 99 ? "99+" : badge}
-        </span>
-      ) : null}
-    </motion.button>
   );
 }
