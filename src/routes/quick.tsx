@@ -11,6 +11,8 @@ import {
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { HomeBannerRail } from "@/components/HomeBannerRail";
 import { HomeVideoRail } from "@/components/HomeVideoRail";
+import { TypeCategoryDeck } from "@/components/TypeCategoryDeck";
+
 
 
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
@@ -171,6 +173,20 @@ export function QuickPage() {
     () => allSubs.filter((s) => s.parent_id === selectedRoot),
     [allSubs, selectedRoot],
   );
+
+  /** Every root category → its sub-categories (drives the horizontal decks). */
+  const subsByRoot = useMemo(() => {
+    const m = new Map<string, DBCategory[]>();
+    allSubs.forEach((s) => {
+      if (!s.parent_id) return;
+      const arr = m.get(s.parent_id) ?? [];
+      arr.push(s);
+      m.set(s.parent_id, arr);
+    });
+    return m;
+  }, [allSubs]);
+
+
 
   const selectedSub = useMemo(
     () => visibleSubs.find((s) => s.id === expandedSub) ?? visibleSubs[0] ?? null,
@@ -743,173 +759,36 @@ export function QuickPage() {
           </>
         )}
 
-        {/* Recommended header */}
-        <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-          <span className="font-semibold text-[15px] text-slate-900">Recommended</span>
-          <span className="text-[11px] text-slate-400">{visibleSubs.length} services</span>
-        </div>
-
-        {/* Horizontal sub-category chip strip — left/right scroll */}
-        {visibleSubs.length > 0 && (
-          <div className="mb-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {visibleSubs.map((s) => {
-              const active = expandedSub === s.id;
-              const thumb = s.image_url && s.image_url.startsWith("http") ? s.image_url : null;
-              return (
-                <motion.button
-                  key={s.id}
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => {
-                    setExpandedSub(s.id);
-                    // scroll the expanded card into view
-                    setTimeout(() => {
-                      document.getElementById(`sub-card-${s.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 60);
-                  }}
-                  className={`shrink-0 h-10 pl-1 pr-3 rounded-full flex items-center gap-2 border transition-all ${
-                    active
-                      ? "bg-gradient-to-r from-orange-400 to-orange-500 border-orange-500 text-white shadow-[0_6px_16px_-6px_rgba(249,115,22,0.6)]"
-                      : "bg-white border-slate-200 text-slate-700"
-                  }`}
-                >
-                  <span className={`h-8 w-8 rounded-full grid place-items-center overflow-hidden ${active ? "bg-white/25" : "bg-slate-50"}`}>
-                    {thumb ? (
-                      <img src={thumb} alt="" className="h-full w-full object-cover" />
-                    ) : isEmojiLike(s.image_url) ? (
-                      <span className="text-base">{s.image_url}</span>
-                    ) : (
-                      <Wrench className={`h-4 w-4 ${active ? "text-white" : "text-orange-500"}`} />
-                    )}
-                  </span>
-                  <span className="text-[12px] font-bold whitespace-nowrap">{s.name}</span>
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
-
-
-        {/* Sub-category cards — compact by default, selected expands to premium card */}
-        <div className="px-4 space-y-2.5">
-          {visibleSubs.map((s) => {
-            const isOpen = expandedSub === s.id;
-            const variation = variationBySub[s.id];
-            const items = itemsBySub.get(s.id) ?? [];
-            const thumb = s.image_url && s.image_url.startsWith("http") ? s.image_url : null;
-            const variationRequired = items.length > 0;
-            const canFind = !variationRequired || !!variation;
-            return (
-              <motion.article
-                key={s.id}
-                id={`sub-card-${s.id}`}
-                layout
-                onClick={() => setExpandedSub(s.id)}
-
-                className={`rounded-2xl overflow-hidden bg-white cursor-pointer transition-shadow ${
-                  isOpen
-                    ? "border-2 border-amber-400 shadow-[0_16px_36px_-16px_rgba(217,119,6,0.55)]"
-                    : "border border-slate-200 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.15)]"
-                }`}
-                transition={{ layout: { type: "spring", stiffness: 340, damping: 32 } }}
-              >
-                <div className={`flex items-center gap-3 ${isOpen ? "p-3.5" : "p-2.5"}`}>
-                  <motion.div
-                    layout
-                    className={`rounded-xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0 ${
-                      isOpen ? "w-24 h-24" : "w-14 h-14"
-                    }`}
-                  >
-                    {thumb ? (
-                      <img src={thumb} alt="" className="h-full w-full object-cover" />
-                    ) : isEmojiLike(s.image_url) ? (
-                      <span className={isOpen ? "text-5xl" : "text-2xl"}>{s.image_url}</span>
-                    ) : (
-                      <img src={svcCarpenter} alt="" className="h-full w-full object-contain" />
-                    )}
-                  </motion.div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`font-display font-bold text-slate-900 leading-tight line-clamp-1 ${
-                      isOpen ? "text-[17px]" : "text-[14px]"
-                    }`}>{s.name}</h3>
-                    {isOpen ? (
-                      <>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-[12px] font-bold text-slate-800">4.8</span>
-                          <span className="text-[11px] text-slate-400">(120)</span>
-                        </div>
-                        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-600">
-                          <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-emerald-500" /><span>98 Verified</span></div>
-                          <div className="flex items-center gap-1"><Users className="h-3 w-3 text-sky-500" /><span>56 Available</span></div>
-                          <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" /><span>0.6 km</span></div>
-                          <div className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /><span>{items.length || "—"} options</span></div>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-[11px] text-slate-500 line-clamp-1">
-                        {items.length > 0 ? `${items.length} services · Tap to select` : "Tap to book"}
-                      </p>
-                    )}
-                  </div>
-                  {!isOpen && (
-                    <div className="h-7 w-7 rounded-full bg-slate-50 grid place-items-center shrink-0">
-                      <ChevronRight className="h-4 w-4 text-slate-400" />
-                    </div>
-                  )}
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                      className="overflow-hidden"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="px-3 pb-3 flex items-center gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if (variationRequired) setVariationSheet(s); }}
-                          disabled={!variationRequired}
-                          className="flex-1 h-11 rounded-xl bg-white border border-slate-200 flex items-center gap-2 px-3 active:scale-[0.98] transition-transform disabled:opacity-70"
-                        >
-                          <span className="h-6 w-6 rounded-full bg-orange-100 grid place-items-center shrink-0">
-                            <Sparkles className="h-3.5 w-3.5 text-orange-500" />
-                          </span>
-                          <span className={`flex-1 text-left text-[13px] font-semibold truncate ${
-                            variation ? "text-orange-600" : "text-slate-700"
-                          }`}>
-                            {variation || (variationRequired ? "Select variation" : "General request")}
-                          </span>
-                          {variationRequired && <ChevronDown className="h-4 w-4 text-slate-500" />}
-                        </button>
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
-                          disabled={submitting === s.id || !canFind}
-                          onClick={(e) => { e.stopPropagation(); handleFindVendor(s); }}
-                          className={`h-11 px-4 rounded-xl font-bold text-[14px] flex items-center gap-2 transition-all ${
-                            canFind
-                              ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-[0_8px_18px_-6px_rgba(249,115,22,0.55)]"
-                              : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                          } disabled:opacity-60`}
-                        >
-                          {submitting === s.id ? "Sending…" : "Find Vendor"}
-                          <Send className="h-4 w-4" />
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.article>
-            );
-          })}
-          {!catQ.isLoading && visibleSubs.length === 0 && (
-            <div className="rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
-              No sub-categories yet in this section.
+        {/* Type rail (fixed left) + per-category horizontal card decks */}
+        <div className="pt-3">
+          <TypeCategoryDeck
+            typeCode={typeCode}
+            onTypeChange={(t) => setTypeCode(t)}
+            rootCats={rootCats}
+            subsByRoot={subsByRoot}
+            itemsBySub={itemsBySub}
+            variationBySub={variationBySub}
+            submittingId={submitting}
+            onOpenSub={(s) => {
+              const full = allSubs.find((x) => x.id === s.id);
+              if (!full) return;
+              setSelectedRoot(full.parent_id);
+              setExpandedSub(full.id);
+              setVariationSheet(full);
+            }}
+            onFindVendor={(s) => {
+              const full = allSubs.find((x) => x.id === s.id);
+              if (full) handleFindVendor(full);
+            }}
+            onViewAll={(root) => { setSelectedRoot(root.id); setAllCatsOpen(true); }}
+          />
+          {!catQ.isLoading && rootCats.length === 0 && (
+            <div className="mx-4 rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
+              No categories yet in this section.
             </div>
           )}
         </div>
+
 
         <div className="h-8" />
       </div>
