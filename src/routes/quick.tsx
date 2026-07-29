@@ -174,6 +174,20 @@ export function QuickPage() {
     [allSubs, selectedRoot],
   );
 
+  /** Every root category → its sub-categories (drives the horizontal decks). */
+  const subsByRoot = useMemo(() => {
+    const m = new Map<string, DBCategory[]>();
+    allSubs.forEach((s) => {
+      if (!s.parent_id) return;
+      const arr = m.get(s.parent_id) ?? [];
+      arr.push(s);
+      m.set(s.parent_id, arr);
+    });
+    return m;
+  }, [allSubs]);
+
+
+
   const selectedSub = useMemo(
     () => visibleSubs.find((s) => s.id === expandedSub) ?? visibleSubs[0] ?? null,
     [expandedSub, visibleSubs],
