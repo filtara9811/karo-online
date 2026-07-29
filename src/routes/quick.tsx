@@ -11,6 +11,8 @@ import {
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { HomeBannerRail } from "@/components/HomeBannerRail";
 import { HomeVideoRail } from "@/components/HomeVideoRail";
+import { TypeCategoryDeck } from "@/components/TypeCategoryDeck";
+
 
 
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
