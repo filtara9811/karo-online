@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, ShieldCheck, Users, MapPin, Sparkles, Send, ChevronRight, Wrench, Package, Layers } from "lucide-react";
+import { Star, ShieldCheck, Users, MapPin, Sparkles, Send, ChevronRight, Wrench, Package, Layers, Store } from "lucide-react";
 
 export type DeckCategory = {
   id: string;
