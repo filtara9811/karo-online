@@ -434,35 +434,8 @@ export function QuickPage() {
               <ChevronRight className="h-4 w-4 text-orange-400" />
             </Link>
           </div>
-
-          {/* View switch */}
-          <div className="mt-2.5 inline-flex h-9 p-0.5 rounded-full bg-slate-100 border border-slate-200">
-            {([
-              { code: "content" as const, label: "Content View", Icon: LayoutGrid },
-              { code: "map" as const, label: "Map View", Icon: MapIcon },
-            ]).map(({ code, label, Icon }) => {
-              const active = homeView === code;
-              return (
-                <motion.button
-                  key={code}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => setHomeView(code)}
-                  className={`relative px-3 h-full rounded-full text-[12px] font-bold flex items-center gap-1.5 transition-colors ${active ? "text-white" : "text-slate-700"}`}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="home-view-seg"
-                      className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <Icon className="relative h-3.5 w-3.5" />
-                  <span className="relative">{label}</span>
-                </motion.button>
-              );
-            })}
-          </div>
         </header>
+
       )}
 
       {/* ==================== MAP HERO — content view only ==================== */}
@@ -694,7 +667,39 @@ export function QuickPage() {
         {isMapView && (
           <div className="pt-3">
             <HomeBannerRail />
+
+            {/* Tiny view toggle — right under the banner, right aligned */}
+            <div className="mt-1.5 px-4 flex justify-end">
+              <div className="inline-flex h-6 p-[2px] rounded-full bg-slate-100 border border-slate-200 shadow-sm">
+                {([
+                  { code: "content" as const, label: "Content", Icon: LayoutGrid },
+                  { code: "map" as const, label: "Map", Icon: MapIcon },
+                ]).map(({ code, label, Icon }) => {
+                  const active = homeView === code;
+                  return (
+                    <motion.button
+                      key={code}
+                      whileTap={{ scale: 0.94 }}
+                      onClick={() => setHomeView(code)}
+                      className={`relative px-2 h-full rounded-full text-[9.5px] font-bold flex items-center gap-1 transition-colors ${active ? "text-white" : "text-slate-600"}`}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="home-view-seg"
+                          className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      <Icon className="relative h-2.5 w-2.5" />
+                      <span className="relative">{label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
             <HomeVideoRail />
+
           </div>
         )}
 
