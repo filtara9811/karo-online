@@ -125,17 +125,18 @@ export function TypeCategoryDeck({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.04 * ri, type: "spring", stiffness: 300, damping: 28 }}
                 >
-                  <div className="flex items-center justify-between pr-2">
-                    <span className="inline-flex items-center h-7 px-3 rounded-full bg-orange-500 text-white text-[11px] font-black shadow-[0_6px_14px_-8px_rgba(249,115,22,0.9)]">
-                      {root.name}
-                    </span>
+                  <div className="flex justify-center pr-2">
                     <button
                       onClick={() => onViewAll(root)}
-                      className="flex items-center gap-0.5 text-[11px] font-bold text-slate-500 active:scale-95"
+                      className="inline-flex items-center gap-2 h-8 pl-4 pr-2 rounded-full bg-orange-500 text-white shadow-[0_8px_18px_-10px_rgba(249,115,22,0.95)] active:scale-95 transition"
                     >
-                      View all <ChevronRight className="h-3.5 w-3.5" />
+                      <span className="text-[12px] font-semibold tracking-tight">{root.name} · view all</span>
+                      <span className="h-6 w-6 rounded-full bg-white/20 grid place-items-center">
+                        <Store className="h-3.5 w-3.5" />
+                      </span>
                     </button>
                   </div>
+
 
                   <div className="mt-1.5 flex gap-1 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {subs.map((s) => (
