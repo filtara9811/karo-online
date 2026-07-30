@@ -1013,7 +1013,7 @@ export function QuickPage() {
                   return (
                     <button
                       key={c.id}
-                      onClick={() => { setSelectedRoot(c.id); setAllCatsOpen(false); }}
+                      onClick={() => { setSelectedRoot(c.id); setAllCatsOpen(false); setRootSheet(c); }}
                       className={`rounded-2xl p-3 flex flex-col items-center gap-1.5 border-2 ${
                         active ? "border-orange-400 bg-orange-50" : "border-slate-200 bg-white"
                       }`}
