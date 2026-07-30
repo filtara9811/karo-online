@@ -663,61 +663,11 @@ export function QuickPage() {
         </div>
 
 
-        {/* Floating GLASS category rail — pinned near the bottom of the map (content view only) */}
-        <div className={`absolute inset-x-0 bottom-2 z-20 px-2 ${isMapView ? "hidden" : ""}`}>
-
-            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
-              {catQ.isLoading && rootCats.length === 0 ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="shrink-0 w-[64px] h-[80px] rounded-2xl bg-white/40 animate-pulse" />
-                ))
-              ) : (
-                <>
-                  {rootCats.map((c) => {
-                    const isActive = selectedRoot === c.id;
-                    return (
-                      <motion.button
-                        key={c.id}
-                        whileTap={{ scale: 0.94 }}
-                        onClick={() => setSelectedRoot(c.id)}
-                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-1 transition-all ${
-                          isActive ? "w-[68px] h-[82px]" : "w-[64px] h-[78px]"
-                        }`}
-                      >
-                        <span className={`relative h-14 w-14 rounded-full grid place-items-center backdrop-blur-2xl border-2 shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)] ${
-                          isActive ? "bg-white/95 border-amber-400" : "bg-white/60 border-white/80"
-                        }`}>
-                          {isActive && (
-                            <motion.span
-                              layoutId="root-cat-glow"
-                              className="absolute -inset-1 rounded-full ring-2 ring-amber-300/80 pointer-events-none"
-                              transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                            />
-                          )}
-                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 28 : 26} />
-                        </span>
-                        <span className={`w-full text-[9px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
-                          isActive ? "text-orange-700" : "text-slate-900"
-                        }`}>
-                          {c.name}
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                  <motion.button
-                    whileTap={{ scale: 0.94 }}
-                    onClick={() => setAllCatsOpen(true)}
-                    className="shrink-0 snap-start w-[64px] h-[78px] flex flex-col items-center justify-start gap-1"
-                  >
-                    <span className="h-14 w-14 rounded-full bg-white/65 backdrop-blur-2xl border-2 border-white/80 grid place-items-center shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)]">
-                      <ChevronRight className="h-5 w-5 text-slate-700" />
-                    </span>
-                    <span className="text-[9px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
-                  </motion.button>
-                </>
-              )}
-            </div>
+        {/* Floating GLASS category rail — pinned at the very bottom of the map (content view only) */}
+        <div className={`absolute inset-x-0 bottom-0 z-20 px-2 pb-0.5 ${isMapView ? "hidden" : ""}`}>
+          {circleRail}
         </div>
+
 
       </motion.section>
       )}
