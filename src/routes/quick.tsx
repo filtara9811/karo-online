@@ -414,6 +414,51 @@ export function QuickPage() {
     }
   };
 
+  /* ---- Compact circular root-category rail (shared by both home views) ---- */
+  const circleRail = (
+    <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+      {catQ.isLoading && rootCats.length === 0 ? (
+        Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="shrink-0 w-[52px] h-[62px] rounded-2xl bg-white/40 animate-pulse" />
+        ))
+      ) : (
+        <>
+          {rootCats.map((c) => {
+            const isActive = selectedRoot === c.id;
+            return (
+              <motion.button
+                key={c.id}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => { setSelectedRoot(c.id); setRootSheet(c); }}
+                className="relative shrink-0 snap-start w-[52px] flex flex-col items-center justify-start gap-0.5"
+              >
+                <span className={`relative h-10 w-10 rounded-full grid place-items-center backdrop-blur-2xl border shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.9)] ${
+                  isActive ? "bg-white/95 border-amber-400" : "bg-white/70 border-white/80"
+                }`}>
+                  <CategoryGlyph cat={c} active={isActive} size={19} />
+                </span>
+                <span className={`w-full text-[8px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
+                  isActive ? "text-orange-700" : "text-slate-900"
+                }`}>
+                  {c.name}
+                </span>
+              </motion.button>
+            );
+          })}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setAllCatsOpen(true)}
+            className="shrink-0 snap-start w-[52px] flex flex-col items-center justify-start gap-0.5"
+          >
+            <span className="h-10 w-10 rounded-full bg-white/70 backdrop-blur-2xl border border-white/80 grid place-items-center shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.9)]">
+              <ChevronRight className="h-4 w-4 text-slate-700" />
+            </span>
+            <span className="text-[8px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
+          </motion.button>
+        </>
+      )}
+    </div>
+  );
 
   /* --------------------------------- UI ---------------------------------- */
   return (
