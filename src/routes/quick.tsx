@@ -125,6 +125,7 @@ export function QuickPage() {
 
 
   const [allCatsOpen, setAllCatsOpen] = useState(false);
+  const [rootSheet, setRootSheet] = useState<DBCategory | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<{
     phase: SubmitPhase;
@@ -413,6 +414,51 @@ export function QuickPage() {
     }
   };
 
+  /* ---- Compact circular root-category rail (shared by both home views) ---- */
+  const circleRail = (
+    <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+      {catQ.isLoading && rootCats.length === 0 ? (
+        Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="shrink-0 w-[52px] h-[62px] rounded-2xl bg-white/40 animate-pulse" />
+        ))
+      ) : (
+        <>
+          {rootCats.map((c) => {
+            const isActive = selectedRoot === c.id;
+            return (
+              <motion.button
+                key={c.id}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => { setSelectedRoot(c.id); setRootSheet(c); }}
+                className="relative shrink-0 snap-start w-[52px] flex flex-col items-center justify-start gap-0.5"
+              >
+                <span className={`relative h-10 w-10 rounded-full grid place-items-center backdrop-blur-2xl border shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.9)] ${
+                  isActive ? "bg-white/95 border-amber-400" : "bg-white/70 border-white/80"
+                }`}>
+                  <CategoryGlyph cat={c} active={isActive} size={19} />
+                </span>
+                <span className={`w-full text-[8px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
+                  isActive ? "text-orange-700" : "text-slate-900"
+                }`}>
+                  {c.name}
+                </span>
+              </motion.button>
+            );
+          })}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setAllCatsOpen(true)}
+            className="shrink-0 snap-start w-[52px] flex flex-col items-center justify-start gap-0.5"
+          >
+            <span className="h-10 w-10 rounded-full bg-white/70 backdrop-blur-2xl border border-white/80 grid place-items-center shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.9)]">
+              <ChevronRight className="h-4 w-4 text-slate-700" />
+            </span>
+            <span className="text-[8px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
+          </motion.button>
+        </>
+      )}
+    </div>
+  );
 
   /* --------------------------------- UI ---------------------------------- */
   return (
@@ -450,7 +496,11 @@ export function QuickPage() {
               <ChevronRight className="h-4 w-4 text-orange-400" />
             </Link>
           </div>
+
+          {/* Compact circular categories — same rail as content view */}
+          <div className="mt-2 -mx-1 px-1">{circleRail}</div>
         </header>
+
 
       )}
 
@@ -617,61 +667,11 @@ export function QuickPage() {
         </div>
 
 
-        {/* Floating GLASS category rail — pinned near the bottom of the map (content view only) */}
-        <div className={`absolute inset-x-0 bottom-2 z-20 px-2 ${isMapView ? "hidden" : ""}`}>
-
-            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1">
-              {catQ.isLoading && rootCats.length === 0 ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="shrink-0 w-[64px] h-[80px] rounded-2xl bg-white/40 animate-pulse" />
-                ))
-              ) : (
-                <>
-                  {rootCats.map((c) => {
-                    const isActive = selectedRoot === c.id;
-                    return (
-                      <motion.button
-                        key={c.id}
-                        whileTap={{ scale: 0.94 }}
-                        onClick={() => setSelectedRoot(c.id)}
-                        className={`relative shrink-0 snap-start flex flex-col items-center justify-start gap-1 transition-all ${
-                          isActive ? "w-[68px] h-[82px]" : "w-[64px] h-[78px]"
-                        }`}
-                      >
-                        <span className={`relative h-14 w-14 rounded-full grid place-items-center backdrop-blur-2xl border-2 shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)] ${
-                          isActive ? "bg-white/95 border-amber-400" : "bg-white/60 border-white/80"
-                        }`}>
-                          {isActive && (
-                            <motion.span
-                              layoutId="root-cat-glow"
-                              className="absolute -inset-1 rounded-full ring-2 ring-amber-300/80 pointer-events-none"
-                              transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                            />
-                          )}
-                          <CategoryGlyph cat={c} active={isActive} size={isActive ? 28 : 26} />
-                        </span>
-                        <span className={`w-full text-[9px] font-black text-center leading-[1.05] line-clamp-2 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)] ${
-                          isActive ? "text-orange-700" : "text-slate-900"
-                        }`}>
-                          {c.name}
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                  <motion.button
-                    whileTap={{ scale: 0.94 }}
-                    onClick={() => setAllCatsOpen(true)}
-                    className="shrink-0 snap-start w-[64px] h-[78px] flex flex-col items-center justify-start gap-1"
-                  >
-                    <span className="h-14 w-14 rounded-full bg-white/65 backdrop-blur-2xl border-2 border-white/80 grid place-items-center shadow-[0_10px_22px_-8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.9)]">
-                      <ChevronRight className="h-5 w-5 text-slate-700" />
-                    </span>
-                    <span className="text-[9px] font-black text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">More</span>
-                  </motion.button>
-                </>
-              )}
-            </div>
+        {/* Floating GLASS category rail — pinned at the very bottom of the map (content view only) */}
+        <div className={`absolute inset-x-0 bottom-0 z-20 px-2 pb-0.5 ${isMapView ? "hidden" : ""}`}>
+          {circleRail}
         </div>
+
 
       </motion.section>
       )}
@@ -924,6 +924,67 @@ export function QuickPage() {
         )}
       </AnimatePresence>
 
+      {/* Single category → its subcategory cards bottom sheet */}
+      <AnimatePresence>
+        {rootSheet && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-end"
+            onClick={() => setRootSheet(null)}
+          >
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 32, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)] flex flex-col"
+              style={{ maxHeight: "82vh" }}
+            >
+              <div className="pt-2 flex justify-center"><span className="h-1 w-10 rounded-full bg-slate-200" /></div>
+              <div className="flex items-center justify-between px-5 pt-2 pb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CategoryGlyph cat={rootSheet} active size={24} />
+                  <h3 className="font-display font-bold text-slate-900 text-lg truncate">{rootSheet.name}</h3>
+                </div>
+                <button onClick={() => setRootSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="px-4 pb-5 grid grid-cols-3 gap-2.5 overflow-y-auto">
+                {(subsByRoot.get(rootSheet.id) ?? []).map((s, i) => {
+                  const full = allSubs.find((x) => x.id === s.id);
+                  return (
+                    <motion.button
+                      key={s.id}
+                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.02, 0.25), type: "spring", stiffness: 320, damping: 26 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        if (!full) return;
+                        setSelectedRoot(full.parent_id);
+                        setExpandedSub(full.id);
+                        setRootSheet(null);
+                        setVariationSheet(full);
+                      }}
+                      className="rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-slate-200 bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.5)]"
+                    >
+                      <span className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden">
+                        <CategoryGlyph cat={(full ?? s) as DBCategory} active={false} size={30} />
+                      </span>
+                      <span className="text-[11px] font-semibold text-center text-slate-700 line-clamp-2">{s.name}</span>
+                    </motion.button>
+                  );
+                })}
+                {(subsByRoot.get(rootSheet.id) ?? []).length === 0 && (
+                  <div className="col-span-3 py-10 text-center text-slate-400 text-sm">No items in this category yet.</div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* All Categories bottom sheet */}
       <AnimatePresence>
         {allCatsOpen && (
@@ -952,7 +1013,7 @@ export function QuickPage() {
                   return (
                     <button
                       key={c.id}
-                      onClick={() => { setSelectedRoot(c.id); setAllCatsOpen(false); }}
+                      onClick={() => { setSelectedRoot(c.id); setAllCatsOpen(false); setRootSheet(c); }}
                       className={`rounded-2xl p-3 flex flex-col items-center gap-1.5 border-2 ${
                         active ? "border-orange-400 bg-orange-50" : "border-slate-200 bg-white"
                       }`}
