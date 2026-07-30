@@ -125,6 +125,7 @@ export function QuickPage() {
 
 
   const [allCatsOpen, setAllCatsOpen] = useState(false);
+  const [rootSheet, setRootSheet] = useState<DBCategory | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<{
     phase: SubmitPhase;
