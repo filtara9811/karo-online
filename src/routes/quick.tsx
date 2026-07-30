@@ -950,36 +950,85 @@ export function QuickPage() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="px-4 pb-5 grid grid-cols-3 gap-2.5 overflow-y-auto">
+              <div className="px-3 pb-5 space-y-2.5 overflow-y-auto overscroll-contain">
                 {(subsByRoot.get(rootSheet.id) ?? []).map((s, i) => {
-                  const full = allSubs.find((x) => x.id === s.id);
+                  const full = (allSubs.find((x) => x.id === s.id) ?? s) as DBCategory;
+                  const optionCount = (itemsBySub.get(full.id) ?? []).length;
+                  const variation = variationBySub[full.id];
+                  const busy = submitting === full.id;
+                  const openVariations = () => {
+                    setSelectedRoot(full.parent_id);
+                    setExpandedSub(full.id);
+                    setVariationSheet(full);
+                  };
                   return (
-                    <motion.button
+                    <motion.div
                       key={s.id}
-                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.02, 0.25), type: "spring", stiffness: 320, damping: 26 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        if (!full) return;
-                        setSelectedRoot(full.parent_id);
-                        setExpandedSub(full.id);
-                        setRootSheet(null);
-                        setVariationSheet(full);
-                      }}
-                      className="rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-slate-200 bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.5)]"
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.03, 0.3), type: "spring", stiffness: 300, damping: 28 }}
+                      className="relative px-2.5 py-2"
                     >
-                      <span className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden">
-                        <CategoryGlyph cat={(full ?? s) as DBCategory} active={false} size={30} />
-                      </span>
-                      <span className="text-[11px] font-semibold text-center text-slate-700 line-clamp-2">{s.name}</span>
-                    </motion.button>
+                      {/* stacked paper layers behind the card */}
+                      <span className="pointer-events-none absolute inset-y-4 left-0 right-0 rounded-[26px] bg-white border border-amber-200/70 shadow-[0_8px_18px_-14px_rgba(0,0,0,0.4)]" />
+                      <span className="pointer-events-none absolute inset-y-3 left-1.5 right-1.5 rounded-[26px] bg-white border border-amber-300/80 shadow-[0_10px_20px_-14px_rgba(0,0,0,0.45)]" />
+
+                      <motion.article
+                        whileTap={{ scale: 0.985 }}
+                        onClick={openVariations}
+                        className="relative rounded-[24px] bg-white border-2 border-amber-300 shadow-[0_16px_34px_-18px_rgba(217,119,6,0.65)] overflow-hidden cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 p-3">
+                          <div className="w-[92px] h-[92px] rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
+                            <CategoryGlyph cat={full} active={false} size={54} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-black text-slate-900 text-[17px] leading-tight line-clamp-1">{full.name}</h3>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                              <span className="text-[12px] font-bold text-slate-800">4.8</span>
+                              <span className="text-[11px] text-slate-400">(120)</span>
+                            </div>
+                            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-600">
+                              <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-emerald-500" /><span>98 Verified</span></div>
+                              <div className="flex items-center gap-1"><Users className="h-3 w-3 text-sky-500" /><span>56 Available</span></div>
+                              <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" /><span>0.6 km</span></div>
+                              <div className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /><span>{optionCount || "—"} options</span></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-3 pb-3 flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openVariations(); }}
+                            className="flex-1 h-11 rounded-2xl bg-white border border-slate-200 flex items-center gap-2 px-3 active:scale-[0.98] transition-transform"
+                          >
+                            <span className="h-6 w-6 rounded-full bg-orange-100 grid place-items-center shrink-0">
+                              <Sparkles className="h-3.5 w-3.5 text-orange-500" />
+                            </span>
+                            <span className={`flex-1 text-left text-[13px] font-semibold truncate ${variation ? "text-orange-600" : "text-slate-600"}`}>
+                              {variation || "General request"}
+                            </span>
+                          </button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            disabled={busy}
+                            onClick={(e) => { e.stopPropagation(); setRootSheet(null); handleFindVendor(full); }}
+                            className="h-11 px-4 rounded-2xl font-black text-[14px] flex items-center gap-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-[0_10px_20px_-8px_rgba(249,115,22,0.7)] disabled:opacity-60"
+                          >
+                            {busy ? "Sending…" : "Find Vendor"}
+                            <Send className="h-4 w-4" />
+                          </motion.button>
+                        </div>
+                      </motion.article>
+                    </motion.div>
                   );
                 })}
                 {(subsByRoot.get(rootSheet.id) ?? []).length === 0 && (
-                  <div className="col-span-3 py-10 text-center text-slate-400 text-sm">No items in this category yet.</div>
+                  <div className="py-10 text-center text-slate-400 text-sm">No items in this category yet.</div>
                 )}
               </div>
+
             </motion.div>
           </motion.div>
         )}
