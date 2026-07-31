@@ -281,6 +281,11 @@ export function ReferralPage() {
           />
         </section>
 
+        {/* Business-card lead collector (AI OCR) */}
+        {segment === "card" && (
+          <ReferralCardCollector shareUrl={shareUrl} shareText={shareText} />
+        )}
+
         {/* Referral list — only shown when segment = link (Referral join) */}
         {segment === "link" && (
           <section>
