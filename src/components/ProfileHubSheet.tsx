@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Menu as MenuIcon, LayoutDashboard, ChevronRight, X } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
