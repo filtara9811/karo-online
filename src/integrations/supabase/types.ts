@@ -2628,6 +2628,72 @@ export type Database = {
           },
         ]
       }
+      referral_scan_leads: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          category_hint: string | null
+          city: string | null
+          confidence: number | null
+          created_at: string
+          extracted: Json
+          id: string
+          join_mode: string | null
+          joined_at: string | null
+          owner_name: string | null
+          phone: string | null
+          reward_points: number
+          scanned_at: string
+          shared_at: string | null
+          thumbnail: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          category_hint?: string | null
+          city?: string | null
+          confidence?: number | null
+          created_at?: string
+          extracted?: Json
+          id?: string
+          join_mode?: string | null
+          joined_at?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          reward_points?: number
+          scanned_at?: string
+          shared_at?: string | null
+          thumbnail?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          category_hint?: string | null
+          city?: string | null
+          confidence?: number | null
+          created_at?: string
+          extracted?: Json
+          id?: string
+          join_mode?: string | null
+          joined_at?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          reward_points?: number
+          scanned_at?: string
+          shared_at?: string | null
+          thumbnail?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       referral_settings: {
         Row: {
           activation_fee: number
@@ -6038,6 +6104,7 @@ export type Database = {
         Returns: Json
       }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
+      sync_scan_lead_join: { Args: { _lead_id: string }; Returns: Json }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
         Returns: Json
