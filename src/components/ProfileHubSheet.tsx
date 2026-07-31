@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Menu as MenuIcon, LayoutDashboard, ChevronRight, X } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,10 +40,17 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
           <motion.div
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0.06, bottom: 0.6 }}
+            onDragEnd={(_e, info) => { if (info.offset.y > 110 || info.velocity.y > 700) onClose(); }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)]"
+            className="relative w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)] max-h-[85vh] flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <div className="pt-2 pb-1 grid place-items-center shrink-0">
+              <span className="h-1.5 w-11 rounded-full bg-black/15" />
+            </div>
+            <div className="flex items-center justify-between px-5 pt-1 pb-2 shrink-0">
               <div>
                 <h3 className="font-display text-lg text-[color:oklch(0.22_0.05_85)] font-bold">Quick Menu</h3>
                 <p className="text-xs text-[color:oklch(0.5_0.05_85)]">Where do you want to go?</p>
@@ -53,23 +60,31 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
               </button>
             </div>
 
-            <div className="px-4 pb-4 space-y-3">
+            <div className="px-4 pb-4 space-y-3 overflow-y-auto overscroll-contain">
               <HubButton
                 accent="from-amber-400 to-orange-500"
                 icon={hasVendor ? LayoutDashboard : Briefcase}
-                title={hasVendor ? "Vendor Dashboard" : "Join as Vendor"}
-                sub={hasVendor ? "Open your business panel" : "Grow your business · get leads"}
+                title={hasVendor ? "Vendor Panel" : "Join as Vendor"}
+                sub={hasVendor ? "Open your business dashboard" : "Grow your business · get leads"}
                 onClick={() => go(hasVendor ? "/vendor/dashboard" : "/vendor/register")}
               />
               <HubButton
-                accent="from-slate-800 to-slate-950"
-                icon={MenuIcon}
-                title="Menu"
-                sub="Profile · settings · orders · more"
-                onClick={() => go("/profile")}
+                accent="from-emerald-400 to-teal-600"
+                icon={Store}
+                title="Digital Shop"
+                sub="Browse all digital dukans near you"
+                onClick={() => go("/vendors")}
+              />
+              <HubButton
+                accent="from-fuchsia-500 to-purple-700"
+                icon={Gift}
+                title="All Programs"
+                sub="Referral program · downloads · rewards"
+                onClick={() => go("/referral")}
               />
             </div>
           </motion.div>
+
         </motion.div>
       )}
     </AnimatePresence>
