@@ -19,6 +19,7 @@ import { ReferralBannerCarousel } from "@/components/ReferralBannerCarousel";
 import { ReferralFilterSheet, type ReferralStatusFilter } from "@/components/ReferralFilterSheet";
 import { TrafficVisitorsSheet } from "@/components/TrafficVisitorsSheet";
 import { QrCode } from "lucide-react";
+import { ReferralCardCollector } from "@/components/ReferralCardCollector";
 
 export const Route = createFileRoute("/referral")({
   head: () => ({
