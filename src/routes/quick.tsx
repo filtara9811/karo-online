@@ -4,14 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Wrench, MapPin, ChevronDown, ChevronRight, Star, ShieldCheck, Users, Send,
-  Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
+  Wrench, MapPin, ChevronDown, ChevronRight, X, Store, ArrowRight,
+  LayoutGrid, Map as MapIcon,
 } from "lucide-react";
 
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { HomeBannerRail } from "@/components/HomeBannerRail";
 import { HomeVideoRail } from "@/components/HomeVideoRail";
-import { TypeCategoryDeck } from "@/components/TypeCategoryDeck";
+import { CategoryExplorerSheet, DEFAULT_LEAD_FILTERS, type LeadFilters } from "@/components/CategoryExplorerSheet";
 
 
 
@@ -124,6 +124,7 @@ export function QuickPage() {
   useEffect(() => { setVariationGender(null); }, [variationSheet?.id]);
 
 
+  const [leadFilters, setLeadFilters] = useState<LeadFilters>(DEFAULT_LEAD_FILTERS);
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [rootSheet, setRootSheet] = useState<DBCategory | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -293,7 +294,8 @@ export function QuickPage() {
     }));
   }, [mapVendorsQ.data, selectedSub]);
 
-  const createLead = async (sub: DBCategory, variation: string) => {
+  const createLead = async (sub: DBCategory, variation: string, filters?: LeadFilters) => {
+    const f = filters ?? leadFilters;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Please sign in"); return null; }
     const { data: prof } = await supabase
@@ -318,12 +320,12 @@ export function QuickPage() {
       address: pickedLocation?.address ?? (prof as { address?: string } | null)?.address ?? geo.label ?? null,
       lat: mapCenter.lat,
       lng: mapCenter.lng,
-      search_radius_km: radiusKm,
-      radius_km: radiusKm,
+      search_radius_km: f.radiusKm ?? radiusKm,
+      radius_km: f.radiusKm ?? radiusKm,
       max_slots: 5,
       source: "quick_home",
       status: "new",
-      vendor_types: ["wholesaler", "retailer", "manufacturer"],
+      vendor_types: f.vendorTypes.length ? f.vendorTypes : ["wholesaler", "retailer", "manufacturer"],
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").single();
@@ -361,12 +363,12 @@ export function QuickPage() {
     } catch { /* noop */ }
   };
 
-  const submitLead = async (sub: DBCategory, useVariation: string) => {
+  const submitLead = async (sub: DBCategory, useVariation: string, filters?: LeadFilters) => {
     const attempt = async () => {
       setSubmitting(sub.id);
       setSubmitState({ phase: "submitting", category: sub.name, variation: useVariation, error: null, retry: null });
       try {
-        const leadId = await createLead(sub, useVariation);
+        const leadId = await createLead(sub, useVariation, filters);
         pushRecent(sub);
         if (!leadId) throw new Error("Could not create lead");
         setSubmitState({ phase: "success", category: sub.name, variation: useVariation, error: null, retry: null });
@@ -612,32 +614,6 @@ export function QuickPage() {
               </motion.button>
             </div>
 
-            {/* Segmented Service / Product / Other selector */}
-            <div className="absolute left-3 top-14 z-20">
-              <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
-                {(["service","product","other"] as TypeCode[]).map((code) => {
-                  const active = typeCode === code;
-                  const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
-                  return (
-                    <motion.button
-                      key={code}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => setTypeCode(code)}
-                      className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
-                    >
-                      {active && (
-                        <motion.span
-                          layoutId="type-seg-active"
-                          className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                      <span className="relative">{label}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
           </>
         )}
 
@@ -764,35 +740,13 @@ export function QuickPage() {
           </>
         )}
 
-        {/* Type rail (fixed left) + per-category horizontal card decks */}
-        <div className="pt-3">
-          <TypeCategoryDeck
-            typeCode={typeCode}
-            onTypeChange={(t) => setTypeCode(t)}
-            rootCats={rootCats}
-            subsByRoot={subsByRoot}
-            itemsBySub={itemsBySub}
-            variationBySub={variationBySub}
-            submittingId={submitting}
-            onOpenSub={(s) => {
-              const full = allSubs.find((x) => x.id === s.id);
-              if (!full) return;
-              setSelectedRoot(full.parent_id);
-              setExpandedSub(full.id);
-              setVariationSheet(full);
-            }}
-            onFindVendor={(s) => {
-              const full = allSubs.find((x) => x.id === s.id);
-              if (full) handleFindVendor(full);
-            }}
-            onViewAll={(root) => { setSelectedRoot(root.id); setAllCatsOpen(true); }}
-          />
-          {!catQ.isLoading && rootCats.length === 0 && (
-            <div className="mx-4 rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
-              No categories yet in this section.
-            </div>
-          )}
-        </div>
+        {/* Empty-state when the active type has no categories */}
+        {!catQ.isLoading && rootCats.length === 0 && (
+          <div className="mx-4 mt-3 rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
+            No categories yet in this section.
+          </div>
+        )}
+
 
 
         <div className="h-8" />
@@ -928,115 +882,31 @@ export function QuickPage() {
         )}
       </AnimatePresence>
 
-      {/* Single category → its subcategory cards bottom sheet */}
-      <AnimatePresence>
-        {rootSheet && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-end"
-            onClick={() => setRootSheet(null)}
-          >
-            <motion.div
-              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 32, stiffness: 320 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md mx-auto bg-white rounded-t-3xl overflow-hidden pb-[env(safe-area-inset-bottom)] flex flex-col"
-              style={{ maxHeight: "82vh" }}
-            >
-              <div className="pt-2 flex justify-center"><span className="h-1 w-10 rounded-full bg-slate-200" /></div>
-              <div className="flex items-center justify-between px-5 pt-2 pb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <CategoryGlyph cat={rootSheet} active size={24} />
-                  <h3 className="font-display font-bold text-slate-900 text-lg truncate">{rootSheet.name}</h3>
-                </div>
-                <button onClick={() => setRootSheet(null)} className="h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="px-3 pb-5 space-y-2.5 overflow-y-auto overscroll-contain">
-                {(subsByRoot.get(rootSheet.id) ?? []).map((s, i) => {
-                  const full = (allSubs.find((x) => x.id === s.id) ?? s) as DBCategory;
-                  const optionCount = (itemsBySub.get(full.id) ?? []).length;
-                  const variation = variationBySub[full.id];
-                  const busy = submitting === full.id;
-                  const openVariations = () => {
-                    setSelectedRoot(full.parent_id);
-                    setExpandedSub(full.id);
-                    setVariationSheet(full);
-                  };
-                  return (
-                    <motion.div
-                      key={s.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.03, 0.3), type: "spring", stiffness: 300, damping: 28 }}
-                      className="relative px-2.5 py-2"
-                    >
-                      {/* stacked paper layers behind the card */}
-                      <span className="pointer-events-none absolute inset-y-4 left-0 right-0 rounded-[26px] bg-white border border-amber-200/70 shadow-[0_8px_18px_-14px_rgba(0,0,0,0.4)]" />
-                      <span className="pointer-events-none absolute inset-y-3 left-1.5 right-1.5 rounded-[26px] bg-white border border-amber-300/80 shadow-[0_10px_20px_-14px_rgba(0,0,0,0.45)]" />
+      {/* Category explorer — all sub-categories on top, variations + products below */}
+      <CategoryExplorerSheet
+        open={!!rootSheet}
+        rootName={rootSheet?.name ?? ""}
+        rootGlyph={rootSheet ? { image_url: rootSheet.image_url, icon: rootSheet.icon } : null}
+        subs={rootSheet ? (subsByRoot.get(rootSheet.id) ?? []) : []}
+        itemsBySub={itemsBySub}
+        activeSubId={expandedSub}
+        onActiveSubChange={(id) => setExpandedSub(id)}
+        submittingId={submitting}
+        filters={leadFilters}
+        onFiltersChange={setLeadFilters}
+        onClose={() => setRootSheet(null)}
+        onFindVendor={(sub, itemName, filters) => {
+          const full = allSubs.find((x) => x.id === sub.id);
+          if (!full) return;
+          setSelectedRoot(full.parent_id);
+          setExpandedSub(full.id);
+          setRadiusKm(filters.radiusKm);
+          if (itemName) setVariationBySub((prev) => ({ ...prev, [full.id]: itemName }));
+          setRootSheet(null);
+          requireAuth(async () => { await submitLead(full, itemName ?? full.name, filters); });
+        }}
+      />
 
-                      <motion.article
-                        whileTap={{ scale: 0.985 }}
-                        onClick={openVariations}
-                        className="relative rounded-[24px] bg-white border-2 border-amber-300 shadow-[0_16px_34px_-18px_rgba(217,119,6,0.65)] overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3 p-3">
-                          <div className="w-[92px] h-[92px] rounded-2xl bg-gradient-to-br from-amber-50 to-white grid place-items-center overflow-hidden shrink-0">
-                            <CategoryGlyph cat={full} active={false} size={54} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-display font-black text-slate-900 text-[17px] leading-tight line-clamp-1">{full.name}</h3>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                              <span className="text-[12px] font-bold text-slate-800">4.8</span>
-                              <span className="text-[11px] text-slate-400">(120)</span>
-                            </div>
-                            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-600">
-                              <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-emerald-500" /><span>98 Verified</span></div>
-                              <div className="flex items-center gap-1"><Users className="h-3 w-3 text-sky-500" /><span>56 Available</span></div>
-                              <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" /><span>0.6 km</span></div>
-                              <div className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /><span>{optionCount || "—"} options</span></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-3 pb-3 flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openVariations(); }}
-                            className="flex-1 h-11 rounded-2xl bg-white border border-slate-200 flex items-center gap-2 px-3 active:scale-[0.98] transition-transform"
-                          >
-                            <span className="h-6 w-6 rounded-full bg-orange-100 grid place-items-center shrink-0">
-                              <Sparkles className="h-3.5 w-3.5 text-orange-500" />
-                            </span>
-                            <span className={`flex-1 text-left text-[13px] font-semibold truncate ${variation ? "text-orange-600" : "text-slate-600"}`}>
-                              {variation || "General request"}
-                            </span>
-                          </button>
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            disabled={busy}
-                            onClick={(e) => { e.stopPropagation(); setRootSheet(null); handleFindVendor(full); }}
-                            className="h-11 px-4 rounded-2xl font-black text-[14px] flex items-center gap-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-[0_10px_20px_-8px_rgba(249,115,22,0.7)] disabled:opacity-60"
-                          >
-                            {busy ? "Sending…" : "Find Vendor"}
-                            <Send className="h-4 w-4" />
-                          </motion.button>
-                        </div>
-                      </motion.article>
-                    </motion.div>
-                  );
-                })}
-                {(subsByRoot.get(rootSheet.id) ?? []).length === 0 && (
-                  <div className="py-10 text-center text-slate-400 text-sm">No items in this category yet.</div>
-                )}
-              </div>
-
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* All Categories bottom sheet */}
       <AnimatePresence>
