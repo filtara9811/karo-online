@@ -46,7 +46,9 @@ const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", 
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
 const SHOW_BOTTOM_BAR_ON: string[] = [];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
-const SHOW_FLOATING_DOCK_ON = ["/"];
+// The orange dock stays visible across the whole customer app; only panels
+// and full-screen flows below hide it.
+const HIDE_FLOATING_DOCK_ON = ["/admin", "/staff", "/vendor", "/register", "/chat", "/checkout", "/s/onboard", "/field", "/leads"];
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
@@ -64,7 +66,7 @@ export function AppShell() {
   const hideTopHeader = isMarketing || isHome || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
-  const showFloatingDock = !isMarketing && SHOW_FLOATING_DOCK_ON.includes(location.pathname);
+  const showFloatingDock = !isMarketing && !HIDE_FLOATING_DOCK_ON.some((p) => location.pathname.startsWith(p));
   const isQuickRoute = isHome || location.pathname.startsWith("/quick");
   const isVendorRoute = location.pathname.startsWith("/vendor");
   const isChatRoute = location.pathname === "/chat" || location.pathname === "/vendor/chat";
@@ -89,6 +91,7 @@ export function AppShell() {
 
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
+        {showFloatingDock && <FloatingDockNav />}
       </AuthGate>
     );
   }
