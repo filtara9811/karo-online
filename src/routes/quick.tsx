@@ -1060,6 +1060,37 @@ export function QuickPage() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              {/* Type segment — Service / Products / Other (syncs the whole home screen) */}
+              <div className="px-4 pb-3">
+                <div className="flex items-center gap-1 p-1 rounded-full bg-slate-100 border border-slate-200">
+                  {([
+                    { code: "service" as const, label: "Tape sarvice" },
+                    { code: "product" as const, label: "Products" },
+                    { code: "other" as const, label: "Other" },
+                  ]).map(({ code, label }) => {
+                    const active = typeCode === code;
+                    return (
+                      <motion.button
+                        key={code}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setTypeCode(code)}
+                        className={`relative flex-1 h-8 rounded-full text-[12px] font-bold flex items-center justify-center transition-colors ${active ? "text-white" : "text-slate-500"}`}
+                      >
+                        {active && (
+                          <motion.span
+                            layoutId="allcats-type-seg"
+                            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                            className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_6px_14px_-8px_rgba(249,115,22,0.9)]"
+                          />
+                        )}
+                        <span className="relative">{label}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="px-4 pb-4 grid grid-cols-3 gap-2.5 overflow-y-auto">
                 {rootCats.map((c) => {
                   const active = selectedRoot === c.id;
