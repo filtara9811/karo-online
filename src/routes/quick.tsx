@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Wrench, MapPin, ChevronDown, ChevronRight, Star, ShieldCheck, Users, Send,
-  Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
+  Wrench, MapPin, ChevronDown, ChevronRight, X, Store, ArrowRight,
+  LayoutGrid, Map as MapIcon,
 } from "lucide-react";
 
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
