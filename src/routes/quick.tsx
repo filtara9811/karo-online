@@ -413,8 +413,15 @@ export function QuickPage() {
       setVariationSheet(target);
     }
   };
+  /* ---- Voice/mic button in the bottom dock opens the search overlay ---- */
+  useEffect(() => {
+    const open = () => setSearchOpen(true);
+    window.addEventListener("ko-open-voice", open);
+    return () => window.removeEventListener("ko-open-voice", open);
+  }, []);
 
   /* ---- Compact circular root-category rail (shared by both home views) ---- */
+
   const circleRail = (
     <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
       {catQ.isLoading && rootCats.length === 0 ? (
