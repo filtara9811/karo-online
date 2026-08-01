@@ -766,35 +766,13 @@ export function QuickPage() {
           </>
         )}
 
-        {/* Type rail (fixed left) + per-category horizontal card decks */}
-        <div className="pt-3">
-          <TypeCategoryDeck
-            typeCode={typeCode}
-            onTypeChange={(t) => setTypeCode(t)}
-            rootCats={rootCats}
-            subsByRoot={subsByRoot}
-            itemsBySub={itemsBySub}
-            variationBySub={variationBySub}
-            submittingId={submitting}
-            onOpenSub={(s) => {
-              const full = allSubs.find((x) => x.id === s.id);
-              if (!full) return;
-              setSelectedRoot(full.parent_id);
-              setExpandedSub(full.id);
-              setVariationSheet(full);
-            }}
-            onFindVendor={(s) => {
-              const full = allSubs.find((x) => x.id === s.id);
-              if (full) handleFindVendor(full);
-            }}
-            onViewAll={(root) => { setSelectedRoot(root.id); setAllCatsOpen(true); }}
-          />
-          {!catQ.isLoading && rootCats.length === 0 && (
-            <div className="mx-4 rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
-              No categories yet in this section.
-            </div>
-          )}
-        </div>
+        {/* Empty-state when the active type has no categories */}
+        {!catQ.isLoading && rootCats.length === 0 && (
+          <div className="mx-4 mt-3 rounded-2xl bg-white p-8 text-center text-slate-500 text-sm">
+            No categories yet in this section.
+          </div>
+        )}
+
 
 
         <div className="h-8" />
