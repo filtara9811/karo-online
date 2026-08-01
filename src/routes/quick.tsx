@@ -496,10 +496,8 @@ export function QuickPage() {
               <ChevronRight className="h-4 w-4 text-orange-400" />
             </Link>
           </div>
-
-          {/* Compact circular categories — same rail as content view */}
-          <div className="mt-2 -mx-1 px-1">{circleRail}</div>
         </header>
+
 
 
       )}
