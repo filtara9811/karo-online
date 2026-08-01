@@ -11,7 +11,7 @@ import {
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
 import { HomeBannerRail } from "@/components/HomeBannerRail";
 import { HomeVideoRail } from "@/components/HomeVideoRail";
-import { TypeCategoryDeck } from "@/components/TypeCategoryDeck";
+import { CategoryExplorerSheet, DEFAULT_LEAD_FILTERS, type LeadFilters } from "@/components/CategoryExplorerSheet";
 
 
 
@@ -124,6 +124,7 @@ export function QuickPage() {
   useEffect(() => { setVariationGender(null); }, [variationSheet?.id]);
 
 
+  const [leadFilters, setLeadFilters] = useState<LeadFilters>(DEFAULT_LEAD_FILTERS);
   const [allCatsOpen, setAllCatsOpen] = useState(false);
   const [rootSheet, setRootSheet] = useState<DBCategory | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -293,7 +294,8 @@ export function QuickPage() {
     }));
   }, [mapVendorsQ.data, selectedSub]);
 
-  const createLead = async (sub: DBCategory, variation: string) => {
+  const createLead = async (sub: DBCategory, variation: string, filters?: LeadFilters) => {
+    const f = filters ?? leadFilters;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Please sign in"); return null; }
     const { data: prof } = await supabase
@@ -318,12 +320,12 @@ export function QuickPage() {
       address: pickedLocation?.address ?? (prof as { address?: string } | null)?.address ?? geo.label ?? null,
       lat: mapCenter.lat,
       lng: mapCenter.lng,
-      search_radius_km: radiusKm,
-      radius_km: radiusKm,
+      search_radius_km: f.radiusKm ?? radiusKm,
+      radius_km: f.radiusKm ?? radiusKm,
       max_slots: 5,
       source: "quick_home",
       status: "new",
-      vendor_types: ["wholesaler", "retailer", "manufacturer"],
+      vendor_types: f.vendorTypes.length ? f.vendorTypes : ["wholesaler", "retailer", "manufacturer"],
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase.from("leads").insert(leadPayload as any).select("id").single();
@@ -361,12 +363,12 @@ export function QuickPage() {
     } catch { /* noop */ }
   };
 
-  const submitLead = async (sub: DBCategory, useVariation: string) => {
+  const submitLead = async (sub: DBCategory, useVariation: string, filters?: LeadFilters) => {
     const attempt = async () => {
       setSubmitting(sub.id);
       setSubmitState({ phase: "submitting", category: sub.name, variation: useVariation, error: null, retry: null });
       try {
-        const leadId = await createLead(sub, useVariation);
+        const leadId = await createLead(sub, useVariation, filters);
         pushRecent(sub);
         if (!leadId) throw new Error("Could not create lead");
         setSubmitState({ phase: "success", category: sub.name, variation: useVariation, error: null, retry: null });
