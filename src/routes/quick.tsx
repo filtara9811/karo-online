@@ -791,16 +791,15 @@ export function QuickPage() {
         <div className="h-8" />
       </div>
 
-      {/* Floating mic FAB (bottom-right, above dock) — opens search */}
-      <button
-        aria-label="Voice search"
-        onClick={() => setSearchOpen(true)}
-        className="fixed right-4 bottom-28 z-30 h-14 w-14 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 text-white shadow-[0_10px_24px_-8px_rgba(249,115,22,0.65)] grid place-items-center active:scale-95"
-      >
-        <span className="absolute inset-0 rounded-full bg-orange-400/60 animate-ping pointer-events-none" />
-        <span className="absolute inset-0 rounded-full ring-2 ring-orange-300/50 pointer-events-none" />
-        <Mic className="relative h-6 w-6" strokeWidth={2.3} />
-      </button>
+      {/* Bottom category rail — map view (content view has it pinned on the map) */}
+      {isMapView && (
+        <div className="fixed inset-x-0 bottom-[80px] z-30 px-2 pointer-events-none">
+          <div className="max-w-md mx-auto pointer-events-auto rounded-3xl bg-white/75 backdrop-blur-2xl border border-white/80 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.5)] px-1.5 py-1">
+            {circleRail}
+          </div>
+        </div>
+      )}
+
 
       {/* Sheets */}
       <SearchOverlay
