@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Package, Store, ChevronDown, Megaphone } from "lucide-react";
+import { Package, Store, ChevronDown, Mic } from "lucide-react";
 import { ProfileHubSheet } from "@/components/ProfileHubSheet";
 
 /**
@@ -83,7 +83,7 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
                 aria-label="Voice search"
                 className="shrink-0 h-[54px] w-[54px] rounded-full bg-white/22 backdrop-blur-md border border-white/45 grid place-items-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)]"
               >
-                <Megaphone className="h-6 w-6 text-white" strokeWidth={2.2} />
+                <Mic className="h-6 w-6 text-white" strokeWidth={2.3} />
               </motion.button>
             </div>
           </motion.div>

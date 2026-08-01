@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   Wrench, MapPin, ChevronDown, ChevronRight, Star, ShieldCheck, Users, Send,
-  Mic, Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
+  Sparkles, X, Store, ArrowRight, LayoutGrid, Map as MapIcon,
 } from "lucide-react";
 
 import { QuickServiceMap, type QuickMapVendor } from "@/components/QuickServiceMap";
@@ -413,8 +413,15 @@ export function QuickPage() {
       setVariationSheet(target);
     }
   };
+  /* ---- Voice/mic button in the bottom dock opens the search overlay ---- */
+  useEffect(() => {
+    const open = () => setSearchOpen(true);
+    window.addEventListener("ko-open-voice", open);
+    return () => window.removeEventListener("ko-open-voice", open);
+  }, []);
 
   /* ---- Compact circular root-category rail (shared by both home views) ---- */
+
   const circleRail = (
     <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
       {catQ.isLoading && rootCats.length === 0 ? (
@@ -496,10 +503,8 @@ export function QuickPage() {
               <ChevronRight className="h-4 w-4 text-orange-400" />
             </Link>
           </div>
-
-          {/* Compact circular categories — same rail as content view */}
-          <div className="mt-2 -mx-1 px-1">{circleRail}</div>
         </header>
+
 
 
       )}
@@ -793,16 +798,15 @@ export function QuickPage() {
         <div className="h-8" />
       </div>
 
-      {/* Floating mic FAB (bottom-right, above dock) — opens search */}
-      <button
-        aria-label="Voice search"
-        onClick={() => setSearchOpen(true)}
-        className="fixed right-4 bottom-28 z-30 h-14 w-14 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 text-white shadow-[0_10px_24px_-8px_rgba(249,115,22,0.65)] grid place-items-center active:scale-95"
-      >
-        <span className="absolute inset-0 rounded-full bg-orange-400/60 animate-ping pointer-events-none" />
-        <span className="absolute inset-0 rounded-full ring-2 ring-orange-300/50 pointer-events-none" />
-        <Mic className="relative h-6 w-6" strokeWidth={2.3} />
-      </button>
+      {/* Bottom category rail — map view (content view has it pinned on the map) */}
+      {isMapView && (
+        <div className="fixed inset-x-0 bottom-[80px] z-30 px-2 pointer-events-none">
+          <div className="max-w-md mx-auto pointer-events-auto rounded-3xl bg-white/75 backdrop-blur-2xl border border-white/80 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.5)] px-1.5 py-1">
+            {circleRail}
+          </div>
+        </div>
+      )}
+
 
       {/* Sheets */}
       <SearchOverlay
@@ -1056,6 +1060,37 @@ export function QuickPage() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              {/* Type segment — Service / Products / Other (syncs the whole home screen) */}
+              <div className="px-4 pb-3">
+                <div className="flex items-center gap-1 p-1 rounded-full bg-slate-100 border border-slate-200">
+                  {([
+                    { code: "service" as const, label: "Tape sarvice" },
+                    { code: "product" as const, label: "Products" },
+                    { code: "other" as const, label: "Other" },
+                  ]).map(({ code, label }) => {
+                    const active = typeCode === code;
+                    return (
+                      <motion.button
+                        key={code}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setTypeCode(code)}
+                        className={`relative flex-1 h-8 rounded-full text-[12px] font-bold flex items-center justify-center transition-colors ${active ? "text-white" : "text-slate-500"}`}
+                      >
+                        {active && (
+                          <motion.span
+                            layoutId="allcats-type-seg"
+                            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                            className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_6px_14px_-8px_rgba(249,115,22,0.9)]"
+                          />
+                        )}
+                        <span className="relative">{label}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="px-4 pb-4 grid grid-cols-3 gap-2.5 overflow-y-auto">
                 {rootCats.map((c) => {
                   const active = selectedRoot === c.id;
