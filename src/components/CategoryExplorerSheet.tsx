@@ -90,6 +90,14 @@ export function CategoryExplorerSheet({
   useEffect(() => { setGroup(null); }, [activeSub?.id]);
   const visibleItems = group ? items.filter((i) => (i.group_tag || "").trim() === group) : items;
 
+  // Hide the bottom dock while this full-height sheet is open.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (open) document.body.dataset.finderOpen = "1";
+    else delete document.body.dataset.finderOpen;
+    return () => { delete document.body.dataset.finderOpen; };
+  }, [open]);
+
   const [filterFor, setFilterFor] = useState<{ sub: ExpCat; item: string | null } | null>(null);
   const [draft, setDraft] = useState<LeadFilters>(filters);
   useEffect(() => { if (filterFor) setDraft(filters); }, [filterFor, filters]);
@@ -213,7 +221,7 @@ export function CategoryExplorerSheet({
             )}
 
             {/* 3 — Products / variations list */}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-[104px] pt-1 space-y-2.5">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-6 pt-1 space-y-2.5">
               {activeSub && visibleItems.length === 0 && (
                 <ProductRow
                   title={activeSub.name}
@@ -257,7 +265,7 @@ export function CategoryExplorerSheet({
                     initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 34, stiffness: 340 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full bg-white rounded-t-[26px] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+104px)] max-h-[88%] overflow-y-auto"
+                    className="w-full bg-white rounded-t-[26px] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[88%] overflow-y-auto"
                   >
                     <div className="flex items-center justify-between pb-3">
                       <div className="min-w-0">
