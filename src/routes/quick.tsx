@@ -614,32 +614,6 @@ export function QuickPage() {
               </motion.button>
             </div>
 
-            {/* Segmented Service / Product / Other selector */}
-            <div className="absolute left-3 top-14 z-20">
-              <div className="inline-flex h-10 p-0.5 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
-                {(["service","product","other"] as TypeCode[]).map((code) => {
-                  const active = typeCode === code;
-                  const label = code === "service" ? "Service" : code === "product" ? "Product" : "Other";
-                  return (
-                    <motion.button
-                      key={code}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => setTypeCode(code)}
-                      className={`relative px-3 h-full rounded-full text-[12px] font-bold transition-colors ${active ? "text-white" : "text-slate-800"}`}
-                    >
-                      {active && (
-                        <motion.span
-                          layoutId="type-seg-active"
-                          className="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_12px_-4px_rgba(249,115,22,0.6)]"
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                      <span className="relative">{label}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
           </>
         )}
 
