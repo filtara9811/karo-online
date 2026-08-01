@@ -213,7 +213,7 @@ export function CategoryExplorerSheet({
             )}
 
             {/* 3 — Products / variations list */}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-5 pt-1 space-y-2.5">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-[104px] pt-1 space-y-2.5">
               {activeSub && visibleItems.length === 0 && (
                 <ProductRow
                   title={activeSub.name}
@@ -234,7 +234,7 @@ export function CategoryExplorerSheet({
                 >
                   <ProductRow
                     title={it.name}
-                    glyph={{ image_url: it.image_url, icon: activeSub.icon }}
+                    glyph={{ image_url: it.image_url ?? activeSub.image_url, icon: activeSub.icon }}
                     filterLabel="Choice filter"
                     busy={submittingId === activeSub.id}
                     onFilter={() => setFilterFor({ sub: activeSub, item: it.name })}
@@ -257,7 +257,7 @@ export function CategoryExplorerSheet({
                     initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 34, stiffness: 340 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full bg-white rounded-t-[26px] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+14px)] max-h-[80%] overflow-y-auto"
+                    className="w-full bg-white rounded-t-[26px] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+104px)] max-h-[88%] overflow-y-auto"
                   >
                     <div className="flex items-center justify-between pb-3">
                       <div className="min-w-0">
