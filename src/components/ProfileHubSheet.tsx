@@ -73,6 +73,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   title: hasVendor ? "Vendor Panel" : "Join as Vendor",
                   to: hasVendor ? "/vendor/dashboard" : "/vendor/register",
                   audience: "vendor",
+                  manifest: "/manifest-vendor.json",
+                  accent: "from-amber-400 to-orange-500",
                 })}
               />
               <HubButton
@@ -81,7 +83,13 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 title="Digital Shop"
                 sub="Browse all digital dukans near you"
                 onClick={() => go("/vendors")}
-                onLongPress={() => setPressed({ title: "Digital Shop", to: "/vendors", audience: "customer" })}
+                onLongPress={() => setPressed({
+                  title: "Digital Shop",
+                  to: "/vendors",
+                  audience: "customer",
+                  manifest: "/manifest-shop.json",
+                  accent: "from-emerald-400 to-teal-600",
+                })}
               />
               <HubButton
                 accent="from-fuchsia-500 to-purple-700"
@@ -89,81 +97,24 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 title="All Programs"
                 sub="Referral program · downloads · rewards"
                 onClick={() => go("/referral")}
-                onLongPress={() => setPressed({ title: "All Programs", to: "/referral", audience: "customer" })}
+                onLongPress={() => setPressed({
+                  title: "All Programs",
+                  to: "/referral",
+                  audience: "customer",
+                  manifest: "/manifest-programs.json",
+                  accent: "from-fuchsia-500 to-purple-700",
+                })}
               />
             </div>
           </motion.div>
 
-          {/* Long-press action popup */}
+          {/* Long-press action sheet — download progress + retry */}
           <AnimatePresence>
             {pressed && (
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 z-[90] bg-black/55 backdrop-blur-sm flex items-end"
-                onClick={(e) => { e.stopPropagation(); setPressed(null); }}
-              >
-                <motion.div
-                  initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-                  transition={{ type: "spring", damping: 30, stiffness: 340 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="relative w-full max-w-md mx-auto bg-white rounded-t-3xl px-5 pt-3 pb-7 pb-[calc(1.75rem+env(safe-area-inset-bottom))]"
-                >
-                  <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-black/15" />
-                  <button
-                    onClick={() => setPressed(null)}
-                    aria-label="Close"
-                    className="absolute top-3 right-3 h-9 w-9 rounded-full grid place-items-center bg-black/5 active:scale-90"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-
-                  <h4 className="font-display text-base font-bold text-[color:oklch(0.22_0.05_85)]">{pressed.title}</h4>
-                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-black/10 bg-black/[0.03] px-3 py-2.5">
-                    <Link2 className="h-4 w-4 shrink-0 text-[color:oklch(0.5_0.05_85)]" />
-                    <span className="flex-1 truncate font-mono text-[11px] text-slate-700">{linkFor(pressed.to)}</span>
-                  </div>
-
-                  <div className="mt-4 space-y-2.5">
-                    <a
-                      href={apkUrl ?? "/download"}
-                      target={apkUrl ? "_blank" : undefined}
-                      rel="noopener noreferrer"
-                      onClick={() => setPressed(null)}
-                      className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-3.5 text-white shadow-md active:scale-[0.98] transition"
-                    >
-                      <Download className="h-5 w-5" />
-                      <span className="flex-1 text-left">
-                        <span className="block text-sm font-bold">Download APK</span>
-                        <span className="block text-[11px] opacity-90">
-                          {apkUrl ? "Install the Android app" : "Open the download page"}
-                        </span>
-                      </span>
-                      <ChevronRight className="h-5 w-5 opacity-80" />
-                    </a>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        onClick={copyLink}
-                        className="flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 active:scale-[0.97] transition"
-                      >
-                        {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-[color:oklch(0.4_0.05_85)]" />}
-                        <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">
-                          {copied ? "Copied" : "Copy link"}
-                        </span>
-                      </button>
-                      <button
-                        onClick={shareLink}
-                        className="flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-black/[0.03] px-4 py-3 active:scale-[0.97] transition"
-                      >
-                        <Share2 className="h-4 w-4 text-[color:oklch(0.4_0.05_85)]" />
-                        <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">Share</span>
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
+              <ApkDownloadSheet target={pressed} onClose={() => setPressed(null)} />
             )}
           </AnimatePresence>
+
         </motion.div>
       )}
     </AnimatePresence>
