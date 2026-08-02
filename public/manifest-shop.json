@@ -1,0 +1,23 @@
+{
+  "name": "Karo Digital Shop",
+  "short_name": "Digital Shop",
+  "id": "/karo-shop-app-v1/",
+  "start_url": "/vendors?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "theme_color": "#0f766e",
+  "background_color": "#0b1220",
+  "orientation": "portrait",
+  "lang": "en",
+  "dir": "ltr",
+  "description": "Karo Digital Shop — apne aas-paas ke digital dukan browse karein aur direct order karein.",
+  "categories": ["shopping", "business"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "prefer_related_applications": false
+}
