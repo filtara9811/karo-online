@@ -1,26 +1,19 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, Download, Copy, Check, Link2, Share2 } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-type HubTarget = {
-  title: string;
-  to: string;
-  audience: "vendor" | "customer";
-};
+import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
 
 /**
  * ProfileHubSheet — opens from the center FAB of FloatingDockNav.
  * Single tap  → navigate to the page.
- * Long press  → popup with "Download APK" + "Copy link" for that same page.
+ * Long press  → APK/app download sheet (progress + retry) for that same page only.
  */
 export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const [hasVendor, setHasVendor] = useState<boolean | null>(null);
-  const [pressed, setPressed] = useState<HubTarget | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [apkUrl, setApkUrl] = useState<string | null>(null);
+  const [pressed, setPressed] = useState<ApkTarget | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -34,47 +27,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
     })();
   }, [open]);
 
-  // Fetch the matching APK link whenever a long-press popup opens.
-  useEffect(() => {
-    if (!pressed) { setApkUrl(null); return; }
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("web_apk_releases")
-          .select("file_url, external_url, play_store_url, audience, is_current, released_at")
-          .eq("is_active", true)
-          .eq("audience", pressed.audience)
-          .order("released_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        setApkUrl(data?.file_url || data?.external_url || data?.play_store_url || null);
-      } catch { setApkUrl(null); }
-    })();
-  }, [pressed]);
-
   const go = (to: string) => { onClose(); setTimeout(() => navigate({ to }), 180); };
 
-  const linkFor = (to: string) =>
-    typeof window === "undefined" ? to : `${window.location.origin}${to}`;
-
-  const copyLink = async () => {
-    if (!pressed) return;
-    try {
-      await navigator.clipboard.writeText(linkFor(pressed.to));
-      setCopied(true);
-      try { navigator.vibrate?.(20); } catch { /* noop */ }
-      setTimeout(() => setCopied(false), 1500);
-    } catch { /* noop */ }
-  };
-
-  const shareLink = async () => {
-    if (!pressed) return;
-    const url = linkFor(pressed.to);
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title: pressed.title, text: pressed.title, url }); return; } catch { /* noop */ }
-    }
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${pressed.title}\n${url}`)}`, "_blank", "noopener,noreferrer");
-  };
 
   return (
     <AnimatePresence>
