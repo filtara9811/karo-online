@@ -13,7 +13,7 @@ export function TrafficVisitorsSheet({
   source: Source;
   shareText: string;
 }) {
-  const [rows, setRows] = useState<Array<{ id: string; created_at: string; user_agent: string | null }>>([]);
+  const [rows, setRows] = useState<Array<{ id: string; created_at: string; user_agent: string | null; visitor_name?: string | null; visitor_phone?: string | null }>>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
