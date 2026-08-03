@@ -1,9 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
+import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { useReferralOverview } from "@/hooks/use-referral";
+
 
 /**
  * ProfileHubSheet — opens from the center FAB of FloatingDockNav.
