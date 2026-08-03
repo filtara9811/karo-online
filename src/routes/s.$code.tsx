@@ -244,7 +244,9 @@ function ScanLandingPage() {
       )}
 
       <ActionSheet open={sheetUp} merchant={m} links={links} playUrl={playUrl} />
+      <ScanVisitorGate code={code} source="qr" />
     </div>
+
   );
 }
 
