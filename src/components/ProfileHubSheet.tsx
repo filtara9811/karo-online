@@ -115,6 +115,13 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-fuchsia-500 to-purple-700",
                 })}
               />
+              <HubButton
+                accent="from-sky-500 to-indigo-700"
+                icon={QrCode}
+                title="My QR Code"
+                sub="Share QR · har scan visit count hoga"
+                onClick={() => setQrOpen(true)}
+              />
             </div>
           </motion.div>
 
@@ -124,6 +131,17 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
               <ApkDownloadSheet target={pressed} onClose={() => setPressed(null)} />
             )}
           </AnimatePresence>
+
+          <div onClick={(e) => e.stopPropagation()}>
+            <QrPosterSheet
+              open={qrOpen}
+              onOpenChange={setQrOpen}
+              code={refCode}
+              shareUrl={refUrl}
+              defaultName="Karo Online"
+            />
+          </div>
+
 
         </motion.div>
       )}
