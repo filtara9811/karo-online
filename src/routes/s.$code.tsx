@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck, X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
@@ -244,7 +246,9 @@ function ScanLandingPage() {
       )}
 
       <ActionSheet open={sheetUp} merchant={m} links={links} playUrl={playUrl} />
+      <ScanVisitorGate code={code} source="qr" />
     </div>
+
   );
 }
 

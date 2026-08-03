@@ -13,7 +13,7 @@ export function TrafficVisitorsSheet({
   source: Source;
   shareText: string;
 }) {
-  const [rows, setRows] = useState<Array<{ id: string; created_at: string; user_agent: string | null }>>([]);
+  const [rows, setRows] = useState<Array<{ id: string; created_at: string; user_agent: string | null; visitor_name?: string | null; visitor_phone?: string | null }>>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -78,16 +78,25 @@ export function TrafficVisitorsSheet({
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{device}</p>
-                    <p className="text-[11px] text-slate-500">{new Date(r.created_at).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">{r.visitor_name || device}</p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {r.visitor_phone ? `+91 ${r.visitor_phone} · ` : ""}{device} · {new Date(r.created_at).toLocaleString()}
+                    </p>
                   </div>
                   <button
-                    onClick={shareToWhatsApp}
+                    onClick={() => {
+                      if (r.visitor_phone) {
+                        window.open(`https://wa.me/91${r.visitor_phone}`, "_blank");
+                        return;
+                      }
+                      shareToWhatsApp();
+                    }}
                     className="h-8 w-8 grid place-items-center rounded-full bg-emerald-50 text-emerald-600 active:scale-90"
                     aria-label="Share on WhatsApp"
                   >
                     <MessageCircle className="h-4 w-4" />
                   </button>
+
                 </li>
               );
             })}

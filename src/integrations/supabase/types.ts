@@ -2461,6 +2461,8 @@ export type Database = {
           referrer_user_id: string | null
           source: string
           user_agent: string | null
+          visitor_name: string | null
+          visitor_phone: string | null
         }
         Insert: {
           code: string
@@ -2471,6 +2473,8 @@ export type Database = {
           referrer_user_id?: string | null
           source: string
           user_agent?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
         }
         Update: {
           code?: string
@@ -2481,6 +2485,8 @@ export type Database = {
           referrer_user_id?: string | null
           source?: string
           user_agent?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
         }
         Relationships: []
       }
@@ -5697,6 +5703,8 @@ export type Database = {
           id: string
           source: string
           user_agent: string
+          visitor_name: string
+          visitor_phone: string
         }[]
       }
       has_role: {
@@ -5746,6 +5754,17 @@ export type Database = {
           _user_agent?: string
         }
         Returns: undefined
+      }
+      log_referral_visit_lead: {
+        Args: {
+          _code: string
+          _fp_hash?: string
+          _name: string
+          _phone: string
+          _source: string
+          _user_agent?: string
+        }
+        Returns: Json
       }
       lookup_customer_by_phone: {
         Args: { _phone: string }

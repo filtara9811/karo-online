@@ -1,9 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
+import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { useReferralOverview } from "@/hooks/use-referral";
+
 
 /**
  * ProfileHubSheet — opens from the center FAB of FloatingDockNav.
@@ -14,6 +17,13 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
   const navigate = useNavigate();
   const [hasVendor, setHasVendor] = useState<boolean | null>(null);
   const [pressed, setPressed] = useState<ApkTarget | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
+  const { data: refData } = useReferralOverview();
+  const refCode = refData?.code ?? "";
+  const refUrl = refCode && typeof window !== "undefined"
+    ? `${window.location.origin}/r/${encodeURIComponent(refCode)}`
+    : "";
+
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +115,13 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-fuchsia-500 to-purple-700",
                 })}
               />
+              <HubButton
+                accent="from-sky-500 to-indigo-700"
+                icon={QrCode}
+                title="My QR Code"
+                sub="Share QR · har scan visit count hoga"
+                onClick={() => setQrOpen(true)}
+              />
             </div>
           </motion.div>
 
@@ -114,6 +131,17 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
               <ApkDownloadSheet target={pressed} onClose={() => setPressed(null)} />
             )}
           </AnimatePresence>
+
+          <div onClick={(e) => e.stopPropagation()}>
+            <QrPosterSheet
+              open={qrOpen}
+              onOpenChange={setQrOpen}
+              code={refCode}
+              shareUrl={refUrl}
+              defaultName="Karo Online"
+            />
+          </div>
+
 
         </motion.div>
       )}

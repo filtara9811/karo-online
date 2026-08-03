@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
 import { supabase } from "@/integrations/supabase/client";
 import { getVisitFp } from "@/lib/visit-fp";
@@ -42,6 +44,7 @@ export const Route = createFileRoute("/r/$code")({
 
 function RefAttribution() {
   const { code } = Route.useParams();
+  const [gateDone, setGateDone] = useState(false);
 
   useEffect(() => {
     try {
@@ -56,15 +59,21 @@ function RefAttribution() {
         _user_agent: navigator.userAgent || undefined,
       });
     } catch { /* ignore */ }
+  }, [code]);
+
+  // Only auto-forward to the store once the visitor popup is resolved.
+  useEffect(() => {
+    if (!gateDone) return;
     const ua = navigator.userAgent || "";
     const isAndroid = /Android/i.test(ua);
     const isIOS = /iPhone|iPad|iPod/i.test(ua);
     const target = isAndroid ? buildPlayStoreReferrer(code) : isIOS ? APP_STORE : `/register?ref=${encodeURIComponent(code)}`;
     const timer = window.setTimeout(() => { window.location.href = target; }, 1400);
     return () => window.clearTimeout(timer);
-  }, [code]);
+  }, [code, gateDone]);
 
   return (
+
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-50 px-4 pb-10">
       <div className="max-w-md mx-auto pt-6">
         {/* Banner */}
@@ -117,7 +126,9 @@ function RefAttribution() {
           </ol>
         </div>
       </div>
+      <ScanVisitorGate code={code} source="link" onDone={() => setGateDone(true)} />
     </div>
+
   );
 }
 
