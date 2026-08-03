@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+
 import { REFERRAL_PENDING_KEY } from "@/hooks/use-referral";
 import { supabase } from "@/integrations/supabase/client";
 import { getVisitFp } from "@/lib/visit-fp";
