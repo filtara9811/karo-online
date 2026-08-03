@@ -17,6 +17,13 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
   const navigate = useNavigate();
   const [hasVendor, setHasVendor] = useState<boolean | null>(null);
   const [pressed, setPressed] = useState<ApkTarget | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
+  const { data: refData } = useReferralOverview();
+  const refCode = refData?.code ?? "";
+  const refUrl = refCode && typeof window !== "undefined"
+    ? `${window.location.origin}/r/${encodeURIComponent(refCode)}`
+    : "";
+
 
   useEffect(() => {
     if (!open) return;
