@@ -126,7 +126,9 @@ function RefAttribution() {
           </ol>
         </div>
       </div>
+      <ScanVisitorGate code={code} source="link" onDone={() => setGateDone(true)} />
     </div>
+
   );
 }
 
