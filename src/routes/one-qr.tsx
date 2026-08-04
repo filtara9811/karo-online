@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, QrCode, Loader2, Lock, Check, MessageCircle, Users,
+  ArrowLeft, QrCode, Loader2, Lock, Check, MessageCircle, Users, Phone,
   CalendarDays, Palette, Share2, Sparkles, ExternalLink, Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,18 @@ type Ad = {
 };
 
 const ACCENTS = ["#f59e0b", "#ef4444", "#059669", "#2563eb", "#a855f7", "#ec4899", "#0f172a"];
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString();
+}
 
 function QrDashboardPage() {
   const { data: refData } = useReferralOverview();
@@ -311,38 +323,74 @@ function QrDashboardPage() {
           <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-amber-700" />
             <h2 className="font-display font-bold text-sm text-slate-900">Visitors</h2>
+            <span className="ml-auto text-[11px] font-semibold text-slate-500">
+              {stats.total} scans · {stats.named} leads
+            </span>
           </div>
-          <ul className="space-y-2">
-            {(visits ?? []).map((r) => {
-              const ua = r.user_agent ?? "";
-              const device = /Android/i.test(ua) ? "📱 Android" : /iPhone|iPad/i.test(ua) ? "🍎 iOS" : "💻 Web";
-              return (
-                <li key={r.id} className="flex items-center gap-3 rounded-xl border border-black/10 bg-white px-3 py-2.5">
-                  <span className="h-8 w-8 rounded-full bg-amber-50 grid place-items-center text-amber-700">
-                    <QrCode className="h-4 w-4" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{r.visitor_name || device}</p>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {r.visitor_phone ? `+91 ${r.visitor_phone} · ` : ""}{device} · {new Date(r.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  {r.visitor_phone && (
-                    <a
-                      href={`https://wa.me/91${r.visitor_phone}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="h-8 w-8 grid place-items-center rounded-full bg-emerald-50 text-emerald-600 active:scale-90"
-                      aria-label="WhatsApp visitor"
+
+          {visits === null ? (
+            <div className="py-6 grid place-items-center">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+            </div>
+          ) : visits.length === 0 ? (
+            <p className="text-xs text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-4">
+              Abhi koi scan nahi hua — QR share karke shuru karein.
+            </p>
+          ) : (
+            <ul className="rounded-2xl border border-black/10 bg-white overflow-hidden divide-y divide-black/5">
+              {visits.map((r) => {
+                const ua = r.user_agent ?? "";
+                const device = /Android/i.test(ua) ? "Android" : /iPhone|iPad/i.test(ua) ? "iOS" : "Web";
+                const name = (r.visitor_name || "").trim();
+                const initial = (name || "?").charAt(0).toUpperCase();
+                return (
+                  <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <span
+                      className="h-11 w-11 shrink-0 rounded-full grid place-items-center text-white font-bold text-base"
+                      style={{ background: `linear-gradient(135deg, ${accent}, #f59e0b)` }}
                     >
-                      <MessageCircle className="h-4 w-4" />
-                    </a>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                      {name ? initial : <QrCode className="h-4 w-4" />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-[15px] font-semibold text-slate-900 truncate">
+                          {name || `Anonymous · ${device}`}
+                        </p>
+                        <span className="ml-auto text-[10px] text-slate-400 shrink-0">
+                          {timeAgo(r.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-slate-500 truncate">
+                        {r.visitor_phone ? `+91 ${r.visitor_phone}` : "Number nahi diya"} · {device}
+                      </p>
+                    </div>
+                    {r.visitor_phone && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <a
+                          href={`tel:+91${r.visitor_phone}`}
+                          className="h-9 w-9 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90"
+                          aria-label="Call visitor"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={`https://wa.me/91${r.visitor_phone}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-9 w-9 grid place-items-center rounded-full bg-emerald-500 text-white active:scale-90"
+                          aria-label="WhatsApp visitor"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </a>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
+
       </div>
 
       {/* Bottom action dock */}
