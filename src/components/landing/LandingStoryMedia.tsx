@@ -162,6 +162,21 @@ export function LandingStoryMedia({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
 
+      {/* sound toggle — tap to unmute / mute the playing video */}
+      {(current.type === "video" || current.type === "url") && (
+        <motion.button
+          type="button"
+          onClick={toggleSound}
+          whileTap={{ scale: 0.9 }}
+          aria-label={muted ? "Unmute video" : "Mute video"}
+          className="absolute right-3 top-9 z-30 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur"
+        >
+          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </motion.button>
+      )}
+
+
+
       {/* tap zones */}
       {total > 1 && (
         <>
