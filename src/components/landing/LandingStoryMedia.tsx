@@ -14,10 +14,10 @@ function detectProvider(url: string): "youtube" | "other" {
   return /youtu\.?be/.test(url) ? "youtube" : "other";
 }
 
-function ytEmbed(url: string): string {
+function ytEmbed(url: string, muted: boolean): string {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
   return m
-    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`
+    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`
     : url;
 }
 
