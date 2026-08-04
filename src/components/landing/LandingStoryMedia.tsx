@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Volume2, VolumeX } from "lucide-react";
 
 export type MediaItem = { type: "image" | "video" | "url"; src: string };
 
