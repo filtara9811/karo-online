@@ -1,35 +1,32 @@
-## A से Z: Staff Dashboard क्या है और कैसे चलता है
+# QR Scan Visitor Fix + Clean One QR Dashboard
 
-**Routes (सब `/staff` layout के अंदर)**
-- `src/routes/staff.tsx` — layout + auth gate + bottom nav (Home / Leads / Referral / My Team + big "+" button)
-- `src/routes/staff.index.tsx` — Home: earning card, wallet balance, tier (Bronze/Silver/Gold), sell-items grid, promo carousel
-- `src/routes/staff.tasks.tsx` — assigned leads/tasks
-- `src/routes/staff.wallet.tsx` — referral/earnings + withdrawal
-- `src/routes/staff.vendors.tsx` — my team / onboarded vendors
-- `src/routes/staff.chat.$chatId.tsx` — chat thread
-- `src/routes/staff.login.tsx` — email/password login + signup request
+## 1. "Save nahi hua" error on QR scan popup (screenshot 1)
 
-**Backend** — `src/lib/staff.functions.ts` (27 server functions, सब `requireSupabaseAuth` middleware पर): `getMyStaff`, `getMyWallet`, `listMyTasks`, `submitStaffSignup`, invites, withdrawals, chat, categories, top earners. Tables: `staff_profiles`, `staff_wallets`, `staff_wallet_ledger`, `staff_tasks`, `staff_chats`, `user_roles`.
+Confirmed root cause: the visitor-save function looks up the referral code in a column that does not exist any more (`customers.referral_code` / `vendors.referral_code`), so the call fails with a database error every time. Referral codes actually live in the `referral_codes` table.
 
-## Blank screen की असली वजह (confirmed)
+Fix (migration):
+- Rewrite `log_referral_visit_lead` to resolve the code owner from `referral_codes` (case-insensitive), falling back to no-owner instead of erroring.
+- Apply the same fix to `log_referral_visit` (plain visit counter, currently broken the same way), so every scan is counted even when the visitor skips the popup.
+- Keep the visit row saved even if the code owner can't be resolved, so no scan is lost.
 
-`src/routes/staff.tsx` का gate:
-1. session नहीं → `navigate({ to: "/staff/login" })`, पर `checking` कभी `false` नहीं होता।
-2. `/staff/login` खुद इसी `/staff` layout का child है — और layout `checking === true` पर सिर्फ spinner दिखाता है, `<Outlet />` render ही नहीं करता।
-3. नतीजा: login page कभी mount नहीं होता → हमेशा घूमता spinner (आपका screenshot)।
+After this, Submit saves name + mobile and the popup shows the success toast.
 
-यही तब भी होता है जब user logged-in तो है पर `staff` role नहीं है (customer account): code `signOut()` करके `/staff/login` भेजता है → वही अनंत spinner।
+## 2. Remove the orange bottom dock everywhere except Home (screenshots 2 & 3)
 
-## Fix plan
+- In `src/components/AppShell.tsx`, show `FloatingDockNav` only when the path is exactly `/` (Home). Remove it from the no-shell branch (public landing `/s/:code`, `/one-qr`, etc.), so the landing page's own "Continue with" buttons are fully visible and nothing is covered.
 
-1. **Login route को gate से बाहर रखें** — `staff.tsx` में: अगर `pathname === "/staff/login"` (या `/staff/s/onboard`) हो तो gate skip करके सीधे `<Outlet />` render करो, bottom nav के बिना।
-2. **Gate को हर हाल में terminate करो** — redirect करने से पहले भी `setChecking(false)` सेट करें, और `try/catch/finally` लगाएँ ताकि Supabase call fail होने पर भी spinner अटके नहीं।
-3. **Role-less user के लिए साफ़ message** — logged-in पर staff role नहीं है तो चुपचाप signOut करने के बजाय एक छोटा card: "यह account staff नहीं है" + "Staff login" / "Home" buttons (अभी main app session भी log out हो जाता है, जो side-effect है)।
-4. **Timeout guard** — 8s के बाद spinner की जगह retry वाला fallback, ताकि network hang पर भी blank न दिखे।
-5. **staff.index.tsx robustness** — `Promise.all` में कोई एक call 401/throw करे तो पूरा data गायब हो जाता है; per-call catch + error banner ("Staff profile नहीं मिला — admin approval pending") जोड़ें, ताकि pending staff को खाली screen न मिले।
-6. Fix के बाद असली flow verify: logged-out → `/staff` → login page दिखे; staff login → dashboard data (wallet/tasks) असली DB से आए।
+## 3. Clean the One QR dashboard header (screenshot 3)
+
+- Add `/one-qr` to the routes that hide the app top header, so the Welcome / search bar / rating-review strip is gone.
+- The dashboard keeps its own header row (back arrow, "One QR Business", Share QR) as the only top chrome, with correct top padding.
+
+## 4. Visitor count + WhatsApp-style visitor list
+
+- The dashboard already reads visits via `get_referral_visits`; once the save works, `Total / Today / 7 days / Leads` counts start filling in.
+- Restyle the Visitors section as a WhatsApp-like list: avatar circle with the visitor's initial, name in bold, `+91 mobile` and relative time below, and Call / WhatsApp action buttons on the right. Newest visit on top, empty state kept when there are no scans.
 
 ## Technical notes
 
-- कोई DB/schema बदलाव नहीं; सिर्फ frontend gate logic। Server functions और RLS वैसे ही रहेंगे।
-- File touched: `src/routes/staff.tsx` (मुख्य), `src/routes/staff.index.tsx` (error handling)।
+- One migration touching only the two logging functions; no schema/table change needed (`visitor_name` / `visitor_phone` columns already exist).
+- Frontend edits: `src/components/AppShell.tsx` (dock + header rules) and `src/routes/one-qr.tsx` (visitor list UI, spacing).
+- No change to the scan popup component itself beyond what the fixed function returns.
