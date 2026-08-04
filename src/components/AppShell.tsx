@@ -39,7 +39,7 @@ const TYPE_OPTIONS: ActionOption[] = STATIC_TYPES.map((t) => ({
 }));
 
 const HIDE_SHELL_ON: string[] = ["/register", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/staff", "/referral", "/r/", "/s/", "/c/", "/privacy-policy", "/terms-and-conditions", "/refund-policy", "/shipping-policy", "/blog", "/f/", "/orders", "/cart", "/checkout"];
-const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/staff", "/orders"];
+const HIDE_TOP_HEADER_ON = ["/quick", "/chat", "/status", "/vendors", "/profile", "/product", "/vendor/", "/admin", "/staff", "/orders", "/one-qr"];
 // Marketing/public website routes — render their own layout, no app chrome at all.
 const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", "/for-vendors", "/for-customers", "/download", "/contact", "/blog"]);
 // Bottom service/product picker bar ONLY shows on these routes.
