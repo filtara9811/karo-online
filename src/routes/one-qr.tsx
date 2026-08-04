@@ -131,12 +131,13 @@ function QrDashboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-white pb-32">
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-amber-100">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/referral" className="h-9 w-9 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90">
+          <Link to="/" className="h-9 w-9 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display font-bold text-[15px] text-slate-900 truncate">My QR Dashboard</h1>
+            <h1 className="font-display font-bold text-[15px] text-slate-900 truncate">One QR Business</h1>
             <p className="text-[11px] text-slate-500 truncate">{code ? `Code ${code}` : "Loading code…"}</p>
+
           </div>
           <button
             onClick={() => setPosterOpen(true)}
