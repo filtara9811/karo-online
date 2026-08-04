@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader } from "@/components/admin/AdminLayout";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { haptic } from "@/lib/format";
+import { WorkspaceAnalytics } from "@/components/admin/WorkspaceAnalytics";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -95,6 +96,8 @@ function AdminHome() {
         title="Dashboard"
         subtitle={loading ? "Loading live counts…" : "Live overview of your platform"}
       />
+
+      <WorkspaceAnalytics />
 
       {/* Live people counts — Customers / Vendors / Staff */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
