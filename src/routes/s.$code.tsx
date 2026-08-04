@@ -166,8 +166,18 @@ function ScanLandingPage() {
   const hero = mediaList[0];
   const heroIsVideo = hero.type === "video" || hero.type === "url";
 
+  const theme = data.theme ?? {};
+  const preset = theme.preset ?? "classic";
+  const accent = theme.accent_color ?? "#f59e0b";
+  const isDark = preset === "royal" || preset === "neon";
+  const ads = (data.ads ?? []).filter((a) => a.image);
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div
+      className={`min-h-screen ${isDark ? "text-white" : "text-slate-900"}`}
+      style={{ background: `linear-gradient(180deg, ${theme.bg_from ?? "#fffbeb"}, ${theme.bg_to ?? "#ffffff"})` }}
+    >
+
       {/* Full-bleed hero media. Video/embeds fill the viewport so vendor reels feel cinematic. */}
       <div className={`relative w-full ${heroIsVideo ? "h-[100svh]" : "aspect-[4/5]"} bg-black overflow-hidden`}>
         {hero.type === "video" ? (
