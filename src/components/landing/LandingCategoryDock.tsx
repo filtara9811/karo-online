@@ -105,6 +105,7 @@ export function LandingCategoryDock({
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [enquiryTile, setEnquiryTile] = useState<DockTile | null>(null);
   const active = categories.find((c) => c.key === activeKey) ?? null;
+  const isProductRail = !!active && active.key === "shop" && active.tiles.some((t) => t.image || t.price);
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
 
