@@ -84,15 +84,7 @@ const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline
 const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
 const isIOS = () => typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-function detectProvider(url: string): "youtube" | "instagram" | "video" {
-  if (/youtu\.?be/.test(url)) return "youtube";
-  if (/instagram\.com/.test(url)) return "instagram";
-  return "video";
-}
-function ytEmbed(url: string): string {
-  const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1` : url;
-}
+
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
 function readCache(code: string): Landing | null {
   try {
