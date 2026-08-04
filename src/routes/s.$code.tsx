@@ -63,7 +63,16 @@ type Landing = {
     announcement_active?: boolean;
     ios_app_url?: string;
   };
+  theme?: {
+    key?: string;
+    preset?: string;
+    accent_color?: string;
+    bg_from?: string;
+    bg_to?: string;
+  };
+  ads?: Array<{ name?: string; trade?: string | null; image?: string | null; url?: string | null }>;
 };
+
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
 const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
@@ -157,8 +166,18 @@ function ScanLandingPage() {
   const hero = mediaList[0];
   const heroIsVideo = hero.type === "video" || hero.type === "url";
 
+  const theme = data.theme ?? {};
+  const preset = theme.preset ?? "classic";
+  const accent = theme.accent_color ?? "#f59e0b";
+  const isDark = preset === "royal" || preset === "neon";
+  const ads = (data.ads ?? []).filter((a) => a.image);
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div
+      className={`min-h-screen ${isDark ? "text-white" : "text-slate-900"}`}
+      style={{ background: `linear-gradient(180deg, ${theme.bg_from ?? "#fffbeb"}, ${theme.bg_to ?? "#ffffff"})` }}
+    >
+
       {/* Full-bleed hero media. Video/embeds fill the viewport so vendor reels feel cinematic. */}
       <div className={`relative w-full ${heroIsVideo ? "h-[100svh]" : "aspect-[4/5]"} bg-black overflow-hidden`}>
         {hero.type === "video" ? (
@@ -210,7 +229,32 @@ function ScanLandingPage() {
         )}
       </div>
 
+      {/* Same-category shop ads — auto sliding rail */}
+      {ads.length > 0 && (
+        <div className="mt-3 px-3">
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {ads.map((a, i) => (
+              <a
+                key={i}
+                href={a.url ? (/^https?:\/\//i.test(a.url) ? a.url : `https://${a.url}`) : undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="relative snap-start shrink-0 w-[70%] h-28 rounded-2xl overflow-hidden border shadow-sm"
+                style={{ borderColor: accent }}
+              >
+                <img src={a.image as string} alt={a.name ?? "Shop"} loading="lazy" className="h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-1.5">
+                  <p className="text-white text-[12px] font-bold truncate">{a.name ?? "Karo Shop"}</p>
+                  <p className="text-white/80 text-[10px] truncate">{a.trade ?? "Verified shop"}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Admin-controlled top banner (renders only if configured) */}
+
       {landing.top_banner_url && (
         <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />

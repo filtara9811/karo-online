@@ -1775,6 +1775,8 @@ export type Database = {
           digital_shop_enabled: boolean
           digital_shop_url: string | null
           extra_links: Json
+          landing_theme_accent: string | null
+          landing_theme_key: string
           payment_amount_inr: number | null
           payment_enabled: boolean
           payment_label: string | null
@@ -1796,6 +1798,8 @@ export type Database = {
           digital_shop_enabled?: boolean
           digital_shop_url?: string | null
           extra_links?: Json
+          landing_theme_accent?: string | null
+          landing_theme_key?: string
           payment_amount_inr?: number | null
           payment_enabled?: boolean
           payment_label?: string | null
@@ -1817,6 +1821,8 @@ export type Database = {
           digital_shop_enabled?: boolean
           digital_shop_url?: string | null
           extra_links?: Json
+          landing_theme_accent?: string | null
+          landing_theme_key?: string
           payment_amount_inr?: number | null
           payment_enabled?: boolean
           payment_label?: string | null
@@ -2284,6 +2290,54 @@ export type Database = {
           notes?: string | null
           quantity?: number
           size_preset?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      qr_landing_themes: {
+        Row: {
+          accent_color: string
+          bg_from: string
+          bg_to: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_premium: boolean
+          key: string
+          name: string
+          preset: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          bg_from?: string
+          bg_to?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_premium?: boolean
+          key: string
+          name: string
+          preset?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          bg_from?: string
+          bg_to?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_premium?: boolean
+          key?: string
+          name?: string
+          preset?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -5694,6 +5748,7 @@ export type Database = {
         Args: { _code: string; _kind: string }
         Returns: Json
       }
+      get_qr_landing_themes: { Args: never; Returns: Json }
       get_referral_traffic_counts: { Args: never; Returns: Json }
       get_referral_visits: {
         Args: { _limit?: number; _source: string }
@@ -6120,6 +6175,10 @@ export type Database = {
           }
       set_my_lead_status: {
         Args: { _lead_id: string; _status: string }
+        Returns: Json
+      }
+      set_qr_landing_theme: {
+        Args: { _accent?: string; _key: string }
         Returns: Json
       }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
