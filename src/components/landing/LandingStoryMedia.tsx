@@ -109,9 +109,10 @@ export function LandingStoryMedia({
           {current.type === "video" ? (
             <video
               key={current.src}
+              ref={videoRef}
               src={current.src}
               autoPlay
-              muted
+              muted={muted}
               loop={total === 1}
               playsInline
               onEnded={() => go(1)}
@@ -120,7 +121,8 @@ export function LandingStoryMedia({
           ) : current.type === "url" ? (
             detectProvider(current.src) === "youtube" ? (
               <iframe
-                src={ytEmbed(current.src)}
+                key={`${current.src}-${muted ? "m" : "s"}`}
+                src={ytEmbed(current.src, muted)}
                 title={alt}
                 className="pointer-events-none absolute inset-0 h-full w-full"
                 style={{ border: 0 }}
