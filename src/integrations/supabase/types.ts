@@ -5748,6 +5748,7 @@ export type Database = {
         Args: { _code: string; _kind: string }
         Returns: Json
       }
+      get_qr_landing_themes: { Args: never; Returns: Json }
       get_referral_traffic_counts: { Args: never; Returns: Json }
       get_referral_visits: {
         Args: { _limit?: number; _source: string }
@@ -6174,6 +6175,10 @@ export type Database = {
           }
       set_my_lead_status: {
         Args: { _lead_id: string; _status: string }
+        Returns: Json
+      }
+      set_qr_landing_theme: {
+        Args: { _accent?: string; _key: string }
         Returns: Json
       }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
