@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScanVisitorGate } from "@/components/ScanVisitorGate";
