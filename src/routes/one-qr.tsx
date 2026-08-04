@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, QrCode, Loader2, Lock, Check, MessageCircle, Users,
+  ArrowLeft, QrCode, Loader2, Lock, Check, MessageCircle, Users, Phone,
   CalendarDays, Palette, Share2, Sparkles, ExternalLink, Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
