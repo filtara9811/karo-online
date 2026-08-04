@@ -229,7 +229,32 @@ function ScanLandingPage() {
         )}
       </div>
 
+      {/* Same-category shop ads — auto sliding rail */}
+      {ads.length > 0 && (
+        <div className="mt-3 px-3">
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {ads.map((a, i) => (
+              <a
+                key={i}
+                href={a.url ? (/^https?:\/\//i.test(a.url) ? a.url : `https://${a.url}`) : undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="relative snap-start shrink-0 w-[70%] h-28 rounded-2xl overflow-hidden border shadow-sm"
+                style={{ borderColor: accent }}
+              >
+                <img src={a.image as string} alt={a.name ?? "Shop"} loading="lazy" className="h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-1.5">
+                  <p className="text-white text-[12px] font-bold truncate">{a.name ?? "Karo Shop"}</p>
+                  <p className="text-white/80 text-[10px] truncate">{a.trade ?? "Verified shop"}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Admin-controlled top banner (renders only if configured) */}
+
       {landing.top_banner_url && (
         <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
