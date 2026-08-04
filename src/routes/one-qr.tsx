@@ -376,3 +376,17 @@ function StatCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+function DockBtn({
+  icon: Icon, label, onClick,
+}: { icon: typeof QrCode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-1 py-2.5 text-amber-800 active:bg-amber-50 active:scale-95 transition"
+    >
+      <Icon className="h-[18px] w-[18px]" />
+      <span className="text-[10px] font-bold">{label}</span>
+    </button>
+  );
+}
