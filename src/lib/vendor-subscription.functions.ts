@@ -12,8 +12,9 @@ export const getVendorSubscriptionSettings = createServerFn({ method: "GET" }).h
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+    // Reads the public projection view: never exposes upi_id / payment identifiers
     const { data, error } = await sb
-      .from("vendor_subscription_settings")
+      .from("vendor_subscription_public")
       .select("*")
       .eq("is_active", true)
       .order("updated_at", { ascending: false })
