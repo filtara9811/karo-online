@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, MessageCircle, PhoneCall } from "lucide-react";
 import {
   APP_CATEGORY,
   LINK_CATEGORIES,
@@ -13,7 +13,14 @@ import {
   type LinkCategoryKey,
 } from "./landing-shared";
 
-export type DockTile = { id: string; label: string; url?: string; onClick?: () => void };
+export type DockTile = {
+  id: string;
+  label: string;
+  url?: string;
+  onClick?: () => void;
+  image?: string | null;
+  price?: string | null;
+};
 
 export type DockCategory = {
   key: LinkCategoryKey | "app";
@@ -49,7 +56,13 @@ export function buildDockCategories({
   for (const cat of LINK_CATEGORIES) {
     const tiles: DockTile[] = enabled
       .filter((l) => (l.category ?? "other") === cat.key)
-      .map((l) => ({ id: l.id, label: l.label || brandOf(l.url, l.label).name, url: normalizeUrl(l.url) }));
+      .map((l) => ({
+        id: l.id,
+        label: l.label || brandOf(l.url, l.label).name,
+        url: normalizeUrl(l.url),
+        image: l.image ?? null,
+        price: l.price ?? null,
+      }));
 
     if (cat.key === "payment") {
       if (paymentEnabled && paymentUpiId) {
@@ -81,11 +94,16 @@ export function buildDockCategories({
 export function LandingCategoryDock({
   categories,
   accent,
+  merchantPhone,
+  merchantName,
 }: {
   categories: DockCategory[];
   accent: string;
+  merchantPhone?: string;
+  merchantName?: string;
 }) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [enquiryTile, setEnquiryTile] = useState<DockTile | null>(null);
   const active = categories.find((c) => c.key === activeKey) ?? null;
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
