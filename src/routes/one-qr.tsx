@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, QrCode, Loader2, Lock, Check, MessageCircle, Users,
-  CalendarDays, Palette, Share2, Sparkles, ExternalLink,
+  CalendarDays, Palette, Share2, Sparkles, ExternalLink, Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
+import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/one-qr")({
   head: () => ({

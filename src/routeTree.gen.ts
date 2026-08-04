@@ -22,6 +22,7 @@ import { Route as FieldRouteImport } from './routes/field'
 import { Route as ForCustomersRouteImport } from './routes/for-customers'
 import { Route as ForVendorsRouteImport } from './routes/for-vendors'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as OneQrRouteImport } from './routes/one-qr'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -195,6 +196,11 @@ const ForVendorsRoute = ForVendorsRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OneQrRoute = OneQrRouteImport.update({
+  id: '/one-qr',
+  path: '/one-qr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -761,6 +767,7 @@ export interface FileRoutesByFullPath {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -884,6 +891,7 @@ export interface FileRoutesByTo {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -1008,6 +1016,7 @@ export interface FileRoutesById {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -1134,6 +1143,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1257,6 +1267,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1380,6 +1391,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1505,6 +1517,7 @@ export interface RootRouteChildren {
   ForCustomersRoute: typeof ForCustomersRoute
   ForVendorsRoute: typeof ForVendorsRoute
   HomeRoute: typeof HomeRoute
+  OneQrRoute: typeof OneQrRoute
   OrdersRoute: typeof OrdersRoute
   PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
@@ -1648,6 +1661,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/one-qr': {
+      id: '/one-qr'
+      path: '/one-qr'
+      fullPath: '/one-qr'
+      preLoaderRoute: typeof OneQrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -2574,6 +2594,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForCustomersRoute: ForCustomersRoute,
   ForVendorsRoute: ForVendorsRoute,
   HomeRoute: HomeRoute,
+  OneQrRoute: OneQrRoute,
   OrdersRoute: OrdersRoute,
   PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
@@ -2628,3 +2649,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
