@@ -277,6 +277,9 @@ export function LandingCategoryDock({
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+
 
       <motion.div
         initial={{ y: 90, opacity: 0 }}
