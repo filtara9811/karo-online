@@ -120,10 +120,10 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 icon={QrCode}
                 title="My QR Code"
                 sub="QR dashboard · themes · visitor count"
-                onClick={() => go("/referral/qr")}
+                onClick={() => go("/one-qr")}
                 onLongPress={() => setPressed({
                   title: "My QR Code",
-                  to: "/referral/qr",
+                  to: "/one-qr",
                   audience: "customer",
                   manifest: "/manifest-programs.json",
                   accent: "from-sky-500 to-indigo-700",

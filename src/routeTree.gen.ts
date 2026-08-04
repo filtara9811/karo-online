@@ -22,6 +22,7 @@ import { Route as FieldRouteImport } from './routes/field'
 import { Route as ForCustomersRouteImport } from './routes/for-customers'
 import { Route as ForVendorsRouteImport } from './routes/for-vendors'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as OneQrRouteImport } from './routes/one-qr'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -60,6 +61,7 @@ import { Route as AdminLookupRouteImport } from './routes/admin.lookup'
 import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminOnboardingRouteImport } from './routes/admin.onboarding'
+import { Route as AdminOneQrRouteImport } from './routes/admin.one-qr'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminQrAssetsRouteImport } from './routes/admin.qr-assets'
@@ -195,6 +197,11 @@ const ForVendorsRoute = ForVendorsRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OneQrRoute = OneQrRouteImport.update({
+  id: '/one-qr',
+  path: '/one-qr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -385,6 +392,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
 const AdminOnboardingRoute = AdminOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOneQrRoute = AdminOneQrRouteImport.update({
+  id: '/one-qr',
+  path: '/one-qr',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
@@ -761,6 +773,7 @@ export interface FileRoutesByFullPath {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -798,6 +811,7 @@ export interface FileRoutesByFullPath {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -884,6 +898,7 @@ export interface FileRoutesByTo {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -920,6 +935,7 @@ export interface FileRoutesByTo {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -1008,6 +1024,7 @@ export interface FileRoutesById {
   '/for-customers': typeof ForCustomersRoute
   '/for-vendors': typeof ForVendorsRoute
   '/home': typeof HomeRoute
+  '/one-qr': typeof OneQrRoute
   '/orders': typeof OrdersRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
@@ -1045,6 +1062,7 @@ export interface FileRoutesById {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -1134,6 +1152,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1171,6 +1190,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1257,6 +1277,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1293,6 +1314,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1380,6 +1402,7 @@ export interface FileRouteTypes {
     | '/for-customers'
     | '/for-vendors'
     | '/home'
+    | '/one-qr'
     | '/orders'
     | '/pricing'
     | '/privacy-policy'
@@ -1417,6 +1440,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1505,6 +1529,7 @@ export interface RootRouteChildren {
   ForCustomersRoute: typeof ForCustomersRoute
   ForVendorsRoute: typeof ForVendorsRoute
   HomeRoute: typeof HomeRoute
+  OneQrRoute: typeof OneQrRoute
   OrdersRoute: typeof OrdersRoute
   PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
@@ -1648,6 +1673,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/one-qr': {
+      id: '/one-qr'
+      path: '/one-qr'
+      fullPath: '/one-qr'
+      preLoaderRoute: typeof OneQrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -1914,6 +1946,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/admin/onboarding'
       preLoaderRoute: typeof AdminOnboardingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/one-qr': {
+      id: '/admin/one-qr'
+      path: '/one-qr'
+      fullPath: '/admin/one-qr'
+      preLoaderRoute: typeof AdminOneQrRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payments': {
@@ -2438,6 +2477,7 @@ interface AdminRouteChildren {
   AdminMapsRoute: typeof AdminMapsRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOnboardingRoute: typeof AdminOnboardingRoute
+  AdminOneQrRoute: typeof AdminOneQrRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminQrAssetsRoute: typeof AdminQrAssetsRoute
@@ -2493,6 +2533,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMapsRoute: AdminMapsRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOnboardingRoute: AdminOnboardingRoute,
+  AdminOneQrRoute: AdminOneQrRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminQrAssetsRoute: AdminQrAssetsRoute,
@@ -2574,6 +2615,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForCustomersRoute: ForCustomersRoute,
   ForVendorsRoute: ForVendorsRoute,
   HomeRoute: HomeRoute,
+  OneQrRoute: OneQrRoute,
   OrdersRoute: OrdersRoute,
   PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
