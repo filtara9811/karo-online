@@ -48,7 +48,7 @@ const SHOW_BOTTOM_BAR_ON: string[] = [];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
 // The orange dock stays visible across the whole customer app; only panels
 // and full-screen flows below hide it.
-const HIDE_FLOATING_DOCK_ON = ["/admin", "/staff", "/vendor", "/register", "/chat", "/checkout", "/s/onboard", "/field", "/leads"];
+
 
 const RESELLING_OPTIONS: ActionOption[] = [
   { value: "quick", label: "Quick Service", sub: "Instant repairs · cleaning · beauty", icon: goldRepair, badge: "FAST" },
