@@ -51,11 +51,15 @@ function QrDashboardPage() {
     : "";
 
   const [posterOpen, setPosterOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
+  const themeRef = useRef<HTMLElement | null>(null);
+  const visitorsRef = useRef<HTMLElement | null>(null);
   const [themeData, setThemeData] = useState<ThemeData | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [visits, setVisits] = useState<Visit[] | null>(null);
   const [ads, setAds] = useState<Ad[]>([]);
   const [adIndex, setAdIndex] = useState(0);
+
 
   useEffect(() => {
     (async () => {
