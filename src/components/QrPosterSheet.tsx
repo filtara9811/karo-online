@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import QRCode from "qrcode";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Download, Globe, Upload, Pencil, X, Plus, Camera, Image as ImageIcon, Film, Link2 } from "lucide-react";
+import { Download, Globe, Pencil, X, Plus, Camera, Image as ImageIcon, Film, Link2, Package, Trash2, Tag, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { DownloadShareSheet } from "@/components/DownloadShareSheet";
@@ -11,11 +11,21 @@ import { useAuth } from "@/hooks/use-auth";
 import karoLogoAsset from "@/assets/karo-logo.png.asset.json";
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 
-const MAX_SLOTS = 3;
+const MAX_SLOTS = 10;
 const LOGO_URL = karoLogoAsset.url;
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 type MediaItem = { type: "image" | "video" | "url"; src: string; poster?: string };
+
+type ShopLink = {
+  id: string;
+  label: string;
+  url: string;
+  enabled: boolean;
+  category?: string;
+  image?: string | null;
+  price?: string | null;
+};
 
 function detectProvider(url: string): "youtube" | "instagram" | "video" {
   if (/youtu\.?be/.test(url)) return "youtube";
@@ -52,6 +62,9 @@ export function QrPosterSheet({
   const [chooserIdx, setChooserIdx] = useState<number | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [allLinks, setAllLinks] = useState<ShopLink[]>([]);
+  const [productDraft, setProductDraft] = useState<ShopLink | null>(null);
+  const productFileRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
   const replaceIdx = useRef<number | null>(null);
@@ -73,11 +86,12 @@ export function QrPosterSheet({
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
-        .select("poster_bg_url, poster_bg_urls, poster_media, poster_bg_transforms")
+        .select("poster_bg_url, poster_bg_urls, poster_media, poster_bg_transforms, extra_links")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      const d = data as { poster_bg_url?: string; poster_bg_urls?: string[]; poster_media?: MediaItem[]; poster_bg_transforms?: Record<number, Transform> } | null;
+      const d = data as { poster_bg_url?: string; poster_bg_urls?: string[]; poster_media?: MediaItem[]; poster_bg_transforms?: Record<number, Transform>; extra_links?: ShopLink[] } | null;
+      setAllLinks(Array.isArray(d?.extra_links) ? d!.extra_links! : []);
       const m: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
@@ -136,6 +150,38 @@ export function QrPosterSheet({
       },
     } as never);
   }, [user?.id, transforms]);
+
+  const products = allLinks.filter((l) => (l.category ?? "other") === "shop" && (l.image || l.price));
+
+  const persistLinks = useCallback(async (next: ShopLink[]) => {
+    setAllLinks(next);
+    await supabase.rpc("upsert_merchant_link_settings" as never, { _payload: { extra_links: next } } as never);
+  }, []);
+
+  const saveProduct = async () => {
+    if (!productDraft) return;
+    if (!productDraft.label.trim()) { toast.error("Product name likhein"); return; }
+    const item: ShopLink = { ...productDraft, category: "shop", enabled: true, url: productDraft.url || " " };
+    const exists = allLinks.some((l) => l.id === item.id);
+    await persistLinks(exists ? allLinks.map((l) => (l.id === item.id ? item : l)) : [...allLinks, item]);
+    setProductDraft(null);
+    toast.success("Product saved");
+  };
+
+  const removeProduct = async (id: string) => {
+    await persistLinks(allLinks.filter((l) => l.id !== id));
+    toast.success("Product removed");
+  };
+
+  const onProductImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !productDraft) return;
+    if (f.size > 6 * 1024 * 1024) { toast.error("Image too large (max 6 MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => setProductDraft((d) => (d ? { ...d, image: String(reader.result || "") } : d));
+    reader.readAsDataURL(f);
+  };
 
   const onPickFile = (idx: number, kind: "image" | "video") => {
     replaceIdx.current = idx;
