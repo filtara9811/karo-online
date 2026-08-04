@@ -61,6 +61,7 @@ import { Route as AdminLookupRouteImport } from './routes/admin.lookup'
 import { Route as AdminMapsRouteImport } from './routes/admin.maps'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminOnboardingRouteImport } from './routes/admin.onboarding'
+import { Route as AdminOneQrRouteImport } from './routes/admin.one-qr'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminQrAssetsRouteImport } from './routes/admin.qr-assets'
@@ -391,6 +392,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
 const AdminOnboardingRoute = AdminOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOneQrRoute = AdminOneQrRouteImport.update({
+  id: '/one-qr',
+  path: '/one-qr',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
@@ -805,6 +811,7 @@ export interface FileRoutesByFullPath {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -928,6 +935,7 @@ export interface FileRoutesByTo {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -1054,6 +1062,7 @@ export interface FileRoutesById {
   '/admin/maps': typeof AdminMapsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/onboarding': typeof AdminOnboardingRoute
+  '/admin/one-qr': typeof AdminOneQrRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/qr-assets': typeof AdminQrAssetsRoute
@@ -1181,6 +1190,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1304,6 +1314,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1429,6 +1440,7 @@ export interface FileRouteTypes {
     | '/admin/maps'
     | '/admin/notifications'
     | '/admin/onboarding'
+    | '/admin/one-qr'
     | '/admin/payments'
     | '/admin/profile'
     | '/admin/qr-assets'
@@ -1934,6 +1946,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/admin/onboarding'
       preLoaderRoute: typeof AdminOnboardingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/one-qr': {
+      id: '/admin/one-qr'
+      path: '/one-qr'
+      fullPath: '/admin/one-qr'
+      preLoaderRoute: typeof AdminOneQrRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payments': {
@@ -2458,6 +2477,7 @@ interface AdminRouteChildren {
   AdminMapsRoute: typeof AdminMapsRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOnboardingRoute: typeof AdminOnboardingRoute
+  AdminOneQrRoute: typeof AdminOneQrRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminQrAssetsRoute: typeof AdminQrAssetsRoute
@@ -2513,6 +2533,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMapsRoute: AdminMapsRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOnboardingRoute: AdminOnboardingRoute,
+  AdminOneQrRoute: AdminOneQrRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminQrAssetsRoute: AdminQrAssetsRoute,

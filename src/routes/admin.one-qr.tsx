@@ -36,7 +36,6 @@ type ThemeRow = {
 type MerchantRow = {
   user_id: string;
   landing_theme_key: string | null;
-  landing_accent: string | null;
   updated_at: string | null;
 };
 
@@ -60,7 +59,7 @@ function AdminOneQrPage() {
           .order("is_premium", { ascending: true }),
         supabase
           .from("merchant_link_settings")
-          .select("user_id, landing_theme_key, landing_accent, updated_at")
+          .select("user_id, landing_theme_key, updated_at")
           .order("updated_at", { ascending: false })
           .limit(200),
       ]);
