@@ -63,7 +63,16 @@ type Landing = {
     announcement_active?: boolean;
     ios_app_url?: string;
   };
+  theme?: {
+    key?: string;
+    preset?: string;
+    accent_color?: string;
+    bg_from?: string;
+    bg_to?: string;
+  };
+  ads?: Array<{ name?: string; trade?: string | null; image?: string | null; url?: string | null }>;
 };
+
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
 const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
