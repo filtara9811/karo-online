@@ -448,9 +448,21 @@ export function QrPosterSheet({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
             <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
 
-            {/* Multi-media slots */}
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {Array.from({ length: MAX_SLOTS }).map((_, i) => {
+            {/* Media strip — up to 10 photos / videos, horizontally scrollable */}
+            <div className="mt-3 flex items-center justify-between px-1">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#8b6508]">
+                Story media · {media.length}/{MAX_SLOTS}
+              </p>
+              <button
+                onClick={() => setChooserIdx(media.length)}
+                disabled={media.length >= MAX_SLOTS}
+                className="flex items-center gap-1 rounded-full bg-[#1a1208] px-3 py-1.5 text-[11px] font-bold text-amber-200 active:scale-95 disabled:opacity-40"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add
+              </button>
+            </div>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {Array.from({ length: Math.min(MAX_SLOTS, media.length + 1) }).map((_, i) => {
                 const item = media[i];
                 const isActive = i === activeIdx && !!item;
                 return (
@@ -458,7 +470,7 @@ export function QrPosterSheet({
                     key={i}
                     onClick={() => item ? setActiveIdx(i) : setChooserIdx(i)}
                     onDoubleClick={() => setChooserIdx(i)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 ${isActive ? "border-[#d4af37] ring-2 ring-[#d4af37]/40" : "border-[#d4af37]/40 border-dashed bg-white/60"}`}
+                    className={`relative h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 ${isActive ? "border-[#d4af37] ring-2 ring-[#d4af37]/40" : "border-[#d4af37]/40 border-dashed bg-white/60"}`}
                     aria-label={`Slot ${i + 1}`}
                   >
                     {item?.type === "image" ? (
@@ -481,7 +493,58 @@ export function QrPosterSheet({
                 );
               })}
             </div>
-            <p className="text-[10px] text-center text-[#8b6508]/70 mt-1">Tap a thumbnail to rotate · double-tap to replace</p>
+            <p className="text-[10px] text-center text-[#8b6508]/70 mt-1">
+              5–6 video + photos allowed · tap to preview, double-tap to replace
+            </p>
+
+            {/* Products — shown under the “my shop” button on your landing page */}
+            <div className="mt-4 rounded-3xl border-2 border-[#d4af37] bg-white/70 p-3">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#8b6508]">
+                  <Package className="h-3.5 w-3.5" /> Products
+                </p>
+                <button
+                  onClick={() => setProductDraft({ id: `prod-${Date.now()}`, label: "", url: "", enabled: true, category: "shop", image: null, price: "" })}
+                  className="flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add product
+                </button>
+              </div>
+
+              {products.length === 0 ? (
+                <p className="mt-2 text-[11px] text-[#8b6508]/80">
+                  Add photo, price and a redirect link — customers see cards with an Enquiry button.
+                </p>
+              ) : (
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {products.map((p) => (
+                    <div key={p.id} className="relative w-[110px] shrink-0 overflow-hidden rounded-2xl border border-[#d4af37]/50 bg-white shadow-sm">
+                      <div className="h-[86px] w-full bg-amber-50">
+                        {p.image ? (
+                          <img src={p.image} alt={p.label} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="grid h-full w-full place-items-center text-[#8b6508]"><ImageIcon className="h-5 w-5" /></div>
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5">
+                        <p className="truncate text-[11px] font-bold text-[#1a1208]">{p.label}</p>
+                        {p.price && <p className="text-[10px] text-[#8b6508]">₹{p.price}</p>}
+                      </div>
+                      <div className="flex divide-x divide-[#d4af37]/40 border-t border-[#d4af37]/40">
+                        <button onClick={() => setProductDraft(p)} className="flex-1 py-1.5 text-[#8b6508]" aria-label="Edit">
+                          <Pencil className="mx-auto h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => void removeProduct(p.id)} className="flex-1 py-1.5 text-rose-600" aria-label="Delete">
+                          <Trash2 className="mx-auto h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <input ref={productFileRef} type="file" accept="image/*" className="hidden" onChange={onProductImage} />
+
 
             {/* Split bottom pill — Download/Share | Link Menu */}
             <div className="mt-5 rounded-full border-2 border-[#d4af37] bg-white shadow-lg overflow-hidden grid grid-cols-2 divide-x-2 divide-[#d4af37]">
