@@ -119,9 +119,17 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 accent="from-sky-500 to-indigo-700"
                 icon={QrCode}
                 title="My QR Code"
-                sub="Share QR · har scan visit count hoga"
-                onClick={() => setQrOpen(true)}
+                sub="QR dashboard · themes · visitor count"
+                onClick={() => go("/referral/qr")}
+                onLongPress={() => setPressed({
+                  title: "My QR Code",
+                  to: "/referral/qr",
+                  audience: "customer",
+                  manifest: "/manifest-programs.json",
+                  accent: "from-sky-500 to-indigo-700",
+                })}
               />
+
             </div>
           </motion.div>
 

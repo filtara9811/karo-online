@@ -60,6 +60,7 @@ import { Route as StaffVendorsRouteImport } from './routes/staff.vendors'
 import { Route as StaffTasksRouteImport } from './routes/staff.tasks'
 import { Route as StaffLoginRouteImport } from './routes/staff.login'
 import { Route as SCodeRouteImport } from './routes/s.$code'
+import { Route as ReferralQrRouteImport } from './routes/referral.qr'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as QCodeRouteImport } from './routes/q.$code'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
@@ -385,6 +386,11 @@ const SCodeRoute = SCodeRouteImport.update({
   id: '/s/$code',
   path: '/s/$code',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralQrRoute = ReferralQrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => ReferralRoute,
 } as any)
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
@@ -760,7 +766,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
-  '/referral': typeof ReferralRoute
+  '/referral': typeof ReferralRouteWithChildren
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
@@ -815,6 +821,7 @@ export interface FileRoutesByFullPath {
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
+  '/referral/qr': typeof ReferralQrRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
   '/staff/tasks': typeof StaffTasksRoute
@@ -882,7 +889,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
-  '/referral': typeof ReferralRoute
+  '/referral': typeof ReferralRouteWithChildren
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
@@ -936,6 +943,7 @@ export interface FileRoutesByTo {
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
+  '/referral/qr': typeof ReferralQrRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
   '/staff/tasks': typeof StaffTasksRoute
@@ -1005,7 +1013,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/quick': typeof QuickRoute
-  '/referral': typeof ReferralRoute
+  '/referral': typeof ReferralRouteWithChildren
   '/refund-policy': typeof RefundPolicyRoute
   '/register': typeof RegisterRoute
   '/services': typeof ServicesRoute
@@ -1060,6 +1068,7 @@ export interface FileRoutesById {
   '/product/$id': typeof ProductIdRoute
   '/q/$code': typeof QCodeRoute
   '/r/$code': typeof RCodeRoute
+  '/referral/qr': typeof ReferralQrRoute
   '/s/$code': typeof SCodeRoute
   '/staff/login': typeof StaffLoginRoute
   '/staff/tasks': typeof StaffTasksRoute
@@ -1185,6 +1194,7 @@ export interface FileRouteTypes {
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
+    | '/referral/qr'
     | '/s/$code'
     | '/staff/login'
     | '/staff/tasks'
@@ -1306,6 +1316,7 @@ export interface FileRouteTypes {
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
+    | '/referral/qr'
     | '/s/$code'
     | '/staff/login'
     | '/staff/tasks'
@@ -1429,6 +1440,7 @@ export interface FileRouteTypes {
     | '/product/$id'
     | '/q/$code'
     | '/r/$code'
+    | '/referral/qr'
     | '/s/$code'
     | '/staff/login'
     | '/staff/tasks'
@@ -1498,7 +1510,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   QuickRoute: typeof QuickRoute
-  ReferralRoute: typeof ReferralRoute
+  ReferralRoute: typeof ReferralRouteWithChildren
   RefundPolicyRoute: typeof RefundPolicyRoute
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
@@ -1903,6 +1915,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/s/$code'
       preLoaderRoute: typeof SCodeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/referral/qr': {
+      id: '/referral/qr'
+      path: '/qr'
+      fullPath: '/referral/qr'
+      preLoaderRoute: typeof ReferralQrRouteImport
+      parentRoute: typeof ReferralRoute
     }
     '/r/$code': {
       id: '/r/$code'
@@ -2509,6 +2528,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ReferralRouteChildren {
+  ReferralQrRoute: typeof ReferralQrRoute
+}
+
+const ReferralRouteChildren: ReferralRouteChildren = {
+  ReferralQrRoute: ReferralQrRoute,
+}
+
+const ReferralRouteWithChildren = ReferralRoute._addFileChildren(
+  ReferralRouteChildren,
+)
+
 interface StaffRouteChildren {
   StaffLoginRoute: typeof StaffLoginRoute
   StaffTasksRoute: typeof StaffTasksRoute
@@ -2548,7 +2579,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   QuickRoute: QuickRoute,
-  ReferralRoute: ReferralRoute,
+  ReferralRoute: ReferralRouteWithChildren,
   RefundPolicyRoute: RefundPolicyRoute,
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
