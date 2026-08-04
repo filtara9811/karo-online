@@ -507,7 +507,7 @@ function SheetBody({
     setPicker(null);
     if (value === "quick") setTimeout(() => navigate({ to: "/quick" }), 250);
     else if (value === "vendor") setTimeout(() => navigate({ to: "/register" }), 250);
-    else if (value === "all") setTimeout(() => navigate({ to: "/vendors" }), 250);
+    else if (value === "all") setTimeout(() => navigate({ to: "/vendors", search: {} }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
   };
   const handleSetDefault = (value: string) => {
