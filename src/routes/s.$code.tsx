@@ -1,9 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck, X, Smartphone } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+import { LandingTopBar } from "@/components/landing/LandingTopBar";
+import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
+import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
+import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
+import type { ExtraLink } from "@/components/landing/landing-shared";
+
 
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
@@ -78,15 +84,7 @@ const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline
 const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
 const isIOS = () => typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-function detectProvider(url: string): "youtube" | "instagram" | "video" {
-  if (/youtu\.?be/.test(url)) return "youtube";
-  if (/instagram\.com/.test(url)) return "instagram";
-  return "video";
-}
-function ytEmbed(url: string): string {
-  const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1` : url;
-}
+
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
 function readCache(code: string): Landing | null {
   try {
@@ -120,7 +118,8 @@ function buildUpiUri(vpa: string, merchantName: string, amount: string) {
 function ScanLandingPage() {
   const { code } = Route.useParams();
   const [data, setData] = useState<Landing | null>(() => readCache(code));
-  const [sheetUp, setSheetUp] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,8 +141,7 @@ function ScanLandingPage() {
         _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       });
     });
-    const t = setTimeout(() => setSheetUp(true), 280);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => { cancelled = true; };
   }, [code]);
 
   if (!data) return <Fallback message="Loading merchant…" spinner />;
@@ -156,80 +154,58 @@ function ScanLandingPage() {
     : `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
 
   const mediaList: MediaItem[] = (links.poster_media && links.poster_media.length)
-    ? links.poster_media
+    ? links.poster_media.filter((x) => x?.src)
     : (links.poster_bg_urls?.length
         ? links.poster_bg_urls.map((src) => ({ type: "image" as const, src }))
         : (links.poster_bg_url
             ? [{ type: "image" as const, src: links.poster_bg_url }]
             : (m.cover_url ? [{ type: "image" as const, src: m.cover_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }])));
 
-  const hero = mediaList[0];
-  const heroIsVideo = hero.type === "video" || hero.type === "url";
-
   const theme = data.theme ?? {};
   const preset = theme.preset ?? "classic";
   const accent = theme.accent_color ?? "#f59e0b";
   const isDark = preset === "royal" || preset === "neon";
   const ads = (data.ads ?? []).filter((a) => a.image);
+  const merchantName = m.shop_name || m.name || "Karo Online Merchant";
+  const pageUrl = typeof window !== "undefined"
+    ? window.location.href
+    : `https://karoonline.in/s/${encodeURIComponent(code)}`;
+
+  const categories = buildDockCategories({
+    extraLinks: (links.extra_links ?? []) as ExtraLink[],
+    paymentEnabled: links.payment_enabled,
+    paymentUpiId: links.payment_upi_id,
+    onPayment: () => setPaymentOpen(true),
+    digitalShopEnabled: links.digital_shop_enabled,
+    digitalShopUrl: links.digital_shop_url,
+    playStoreEnabled: links.play_store_enabled,
+    playUrl,
+  });
 
   return (
     <div
       className={`min-h-screen ${isDark ? "text-white" : "text-slate-900"}`}
       style={{ background: `linear-gradient(180deg, ${theme.bg_from ?? "#fffbeb"}, ${theme.bg_to ?? "#ffffff"})` }}
     >
+      <LandingTopBar
+        name={merchantName}
+        avatarUrl={m.avatar_url}
+        verified={m.verified}
+        accent={accent}
+        onProfile={() => setProfileOpen(true)}
+        onMenu={() => setProfileOpen(true)}
+      />
 
-      {/* Full-bleed hero media. Video/embeds fill the viewport so vendor reels feel cinematic. */}
-      <div className={`relative w-full ${heroIsVideo ? "h-[100svh]" : "aspect-[4/5]"} bg-black overflow-hidden`}>
-        {hero.type === "video" ? (
-          <video src={hero.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
-        ) : hero.type === "url" ? (
-          detectProvider(hero.src) === "youtube" ? (
-            <iframe
-              src={ytEmbed(hero.src)}
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              style={{ border: 0 }}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <iframe src={hero.src} className="absolute inset-0 w-full h-full" style={{ border: 0 }} allowFullScreen />
-          )
-        ) : (
-          <img src={hero.src} alt={m.shop_name || m.name || "Shop"} className="absolute inset-0 w-full h-full object-cover" loading="eager" decoding="async" />
-        )}
-
-        {/* Soft gradient at top + bottom so identity chip & announcements stay readable */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/55 to-transparent" />
-
-        {/* Floating identity chip */}
-        <div className="absolute left-3 right-3 top-3 flex items-center gap-2.5 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200 px-3 py-2 shadow-lg">
-          <div className="h-11 w-11 rounded-full overflow-hidden border border-slate-200 bg-slate-100 grid place-items-center text-base font-bold text-slate-700 flex-shrink-0">
-            {m.avatar_url
-              ? <img src={m.avatar_url} alt={m.name || "Merchant"} className="h-full w-full object-cover" loading="eager" />
-              : (m.shop_name?.[0] ?? m.name?.[0] ?? "K").toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 leading-tight">
-              <span className="truncate font-display font-bold text-[15px] text-slate-900">
-                {m.shop_name || m.name || "Karo Online Merchant"}
-              </span>
-              {m.verified && <BadgeCheck className="h-4 w-4 text-emerald-600 shrink-0" />}
-            </div>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-amber-700 mt-0.5 flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> Trusted Karo Merchant
-            </p>
-          </div>
-        </div>
-
+      {/* Status-style media: one progress segment per uploaded photo / video / link */}
+      <LandingStoryMedia media={mediaList} alt={merchantName} accent={accent} className="h-[62svh]">
         {landing.announcement_active && landing.announcement_text && (
-          <div className="absolute left-3 right-3 bottom-3 rounded-xl bg-white/90 backdrop-blur border border-amber-200 px-3 py-2 text-xs text-slate-800 shadow">
+          <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
             📣 {landing.announcement_text}
           </div>
         )}
-      </div>
+      </LandingStoryMedia>
 
-      {/* Same-category shop ads — auto sliding rail */}
+      {/* Same-category shop ads — swipeable rail */}
       {ads.length > 0 && (
         <div className="mt-3 px-3">
           <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -253,169 +229,49 @@ function ScanLandingPage() {
         </div>
       )}
 
-      {/* Admin-controlled top banner (renders only if configured) */}
-
+      {/* Admin-controlled banners (render only if configured) */}
       {landing.top_banner_url && (
         <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
-      {/* Secondary media tiles (slots 2 & 3) shown as a thin gallery if vendor uploaded extras */}
-      {mediaList.length > 1 && (
-        <div className="px-3 mt-3 grid grid-cols-2 gap-2">
-          {mediaList.slice(1, 3).map((item, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 aspect-square">
-              {item.type === "video" ? (
-                <video src={item.src} autoPlay muted loop playsInline className="w-full h-full object-cover" />
-              ) : item.type === "url" ? (
-                detectProvider(item.src) === "youtube"
-                  ? <iframe src={ytEmbed(item.src)} className="w-full h-full" style={{ border: 0 }} allow="autoplay; encrypted-media" />
-                  : <iframe src={item.src} className="w-full h-full" style={{ border: 0 }} />
-              ) : (
-                <img src={item.src} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Bottom spacer so the bottom sheet doesn't cover content */}
-      <div className="h-[360px]" />
-
       {landing.bottom_banner_url && (
-        <a href={landing.bottom_banner_link || "#"} className="fixed inset-x-3 bottom-[340px] z-30 block rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
+        <a href={landing.bottom_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.bottom_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
-      <ActionSheet open={sheetUp} merchant={m} links={links} playUrl={playUrl} />
+      <p className="mt-4 text-center text-[10px] text-slate-500">
+        Powered by <Link to="/" className="font-bold underline" style={{ color: accent }}>Karo Online</Link>
+      </p>
+
+      {/* Space for the fixed category dock */}
+      <div className="h-28" />
+
+      <LandingCategoryDock categories={categories} accent={accent} />
+
+      <LandingProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        accent={accent}
+        merchant={m}
+        pageUrl={pageUrl}
+      />
+
+      <UpiPaymentModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        merchantName={merchantName}
+        upiId={links.payment_upi_id ?? ""}
+        defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
+      />
+
       <ScanVisitorGate code={code} source="qr" />
     </div>
-
   );
 }
 
-function ActionSheet({
-  open, merchant, links, playUrl,
-}: {
-  open: boolean;
-  merchant: NonNullable<Landing["merchant"]>;
-  links: NonNullable<Landing["links"]>;
-  playUrl: string;
-}) {
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const merchantName = merchant.shop_name || merchant.name || "Karo Online Merchant";
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 240 }}
-            className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-amber-200 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.15)]"
-          >
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 mt-2.5" />
-            <div className="px-5 pt-3 pb-6 space-y-2.5 max-w-md mx-auto">
-              <p className="text-center text-[10px] uppercase tracking-[0.25em] text-amber-700 font-semibold">
-                Continue with
-              </p>
-
-            {links.payment_enabled && links.payment_upi_id && (
-              <PillButton
-                onClick={() => setPaymentOpen(true)}
-                icon={<CreditCard className="h-5 w-5" />}
-                title="Make Trusted Payment"
-                subtitle={`UPI App · ${links.payment_upi_id}`}
-                gradient="from-orange-500 via-orange-600 to-amber-700"
-              />
-            )}
-
-            {links.digital_shop_enabled && links.digital_shop_url && (
-              <PillButton
-                href={/^https?:\/\//i.test(links.digital_shop_url) ? links.digital_shop_url : `https://${links.digital_shop_url}`}
-                icon={<Store className="h-5 w-5" />}
-                title="Visit Digital Shop"
-                subtitle={links.digital_shop_url}
-                gradient="from-emerald-500 via-emerald-600 to-emerald-800"
-              />
-            )}
-
-            {(links.extra_links ?? []).filter((l) => l.enabled && l.url).map((l) => (
-              <PillButton
-                key={l.id}
-                href={/^https?:\/\//i.test(l.url) ? l.url : `https://${l.url}`}
-                icon={<ExternalLink className="h-5 w-5" />}
-                title={l.label || "Link"}
-                subtitle={l.url}
-                gradient="from-indigo-500 via-indigo-600 to-purple-700"
-              />
-            ))}
-
-            {(links.play_store_enabled ?? true) && (
-              <PillButton
-                href={playUrl}
-                icon={<Download className="h-5 w-5" />}
-                title="Download Mobile App"
-                subtitle="Install Karo Online · Free"
-                gradient="from-slate-800 via-slate-900 to-black"
-              />
-            )}
-
-            <p className="text-center text-[10px] text-slate-500 pt-1">
-              Powered by <Link to="/" className="font-bold text-amber-700 underline">Karo Online</Link>
-            </p>
-          </div>
-
-          </motion.div>
-
-          <UpiPaymentModal
-            open={paymentOpen}
-            onClose={() => setPaymentOpen(false)}
-            merchantName={merchantName}
-            upiId={links.payment_upi_id ?? ""}
-            defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
-          />
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function PillButton({
-  href, onClick, icon, title, subtitle, gradient,
-}: {
-  href?: string; onClick?: () => void; icon: React.ReactNode; title: string; subtitle: string; gradient: string;
-}) {
-  const className = `flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left shadow-md active:scale-[0.98] transition bg-gradient-to-r ${gradient} text-white`;
-  const inner = (
-    <>
-      <div className="h-10 w-10 grid place-items-center rounded-full bg-white/20 shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className="font-bold leading-tight text-sm">{title}</div>
-        <div className="text-[11px] truncate opacity-90">{subtitle}</div>
-      </div>
-    </>
-  );
-
-  if (!href) {
-    return <button type="button" onClick={onClick} className={className}>{inner}</button>;
-  }
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-    >
-      {inner}
-    </a>
-  );
-}
 
 function UpiPaymentModal({
   open, onClose, merchantName, upiId, defaultAmount,
