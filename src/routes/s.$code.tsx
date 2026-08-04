@@ -249,7 +249,12 @@ function ScanLandingPage() {
       {/* Space for the fixed category dock */}
       <div className="h-28" />
 
-      <LandingCategoryDock categories={categories} accent={accent} />
+      <LandingCategoryDock
+        categories={categories}
+        accent={accent}
+        merchantPhone={(m as { phone?: string }).phone}
+        merchantName={merchantName}
+      />
 
       <LandingProfileSheet
         open={profileOpen}

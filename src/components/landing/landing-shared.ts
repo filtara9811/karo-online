@@ -24,6 +24,8 @@ export type ExtraLink = {
   enabled: boolean;
   category?: string;
   icon?: string | null;
+  image?: string | null;
+  price?: string | null;
 };
 
 export type LinkCategoryKey =

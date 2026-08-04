@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Volume2, VolumeX } from "lucide-react";
 
 export type MediaItem = { type: "image" | "video" | "url"; src: string };
 
@@ -13,10 +14,10 @@ function detectProvider(url: string): "youtube" | "other" {
   return /youtu\.?be/.test(url) ? "youtube" : "other";
 }
 
-function ytEmbed(url: string): string {
+function ytEmbed(url: string, muted: boolean): string {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
   return m
-    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`
+    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`
     : url;
 }
 
@@ -41,8 +42,22 @@ export function LandingStoryMedia({
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const startedAt = useRef<number>(0);
   const elapsed = useRef<number>(0);
+
+  const toggleSound = useCallback(() => {
+    setMuted((m) => {
+      const next = !m;
+      const el = videoRef.current;
+      if (el) {
+        el.muted = next;
+        if (!next) void el.play().catch(() => undefined);
+      }
+      return next;
+    });
+  }, []);
 
   const current = items[Math.min(index, Math.max(items.length - 1, 0))];
   const total = items.length;
@@ -108,9 +123,10 @@ export function LandingStoryMedia({
           {current.type === "video" ? (
             <video
               key={current.src}
+              ref={videoRef}
               src={current.src}
               autoPlay
-              muted
+              muted={muted}
               loop={total === 1}
               playsInline
               onEnded={() => go(1)}
@@ -119,7 +135,8 @@ export function LandingStoryMedia({
           ) : current.type === "url" ? (
             detectProvider(current.src) === "youtube" ? (
               <iframe
-                src={ytEmbed(current.src)}
+                key={`${current.src}-${muted ? "m" : "s"}`}
+                src={ytEmbed(current.src, muted)}
                 title={alt}
                 className="pointer-events-none absolute inset-0 h-full w-full"
                 style={{ border: 0 }}
@@ -144,6 +161,21 @@ export function LandingStoryMedia({
       {/* readability gradients */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
+
+      {/* sound toggle — tap to unmute / mute the playing video */}
+      {(current.type === "video" || current.type === "url") && (
+        <motion.button
+          type="button"
+          onClick={toggleSound}
+          whileTap={{ scale: 0.9 }}
+          aria-label={muted ? "Unmute video" : "Mute video"}
+          className="absolute right-3 top-9 z-30 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur"
+        >
+          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </motion.button>
+      )}
+
+
 
       {/* tap zones */}
       {total > 1 && (

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import QRCode from "qrcode";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Download, Globe, Upload, Pencil, X, Plus, Camera, Image as ImageIcon, Film, Link2 } from "lucide-react";
+import { Download, Globe, Pencil, X, Plus, Camera, Image as ImageIcon, Film, Link2, Package, Trash2, Tag, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { DownloadShareSheet } from "@/components/DownloadShareSheet";
@@ -11,11 +11,21 @@ import { useAuth } from "@/hooks/use-auth";
 import karoLogoAsset from "@/assets/karo-logo.png.asset.json";
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 
-const MAX_SLOTS = 3;
+const MAX_SLOTS = 10;
 const LOGO_URL = karoLogoAsset.url;
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 type MediaItem = { type: "image" | "video" | "url"; src: string; poster?: string };
+
+type ShopLink = {
+  id: string;
+  label: string;
+  url: string;
+  enabled: boolean;
+  category?: string;
+  image?: string | null;
+  price?: string | null;
+};
 
 function detectProvider(url: string): "youtube" | "instagram" | "video" {
   if (/youtu\.?be/.test(url)) return "youtube";
@@ -52,6 +62,9 @@ export function QrPosterSheet({
   const [chooserIdx, setChooserIdx] = useState<number | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [allLinks, setAllLinks] = useState<ShopLink[]>([]);
+  const [productDraft, setProductDraft] = useState<ShopLink | null>(null);
+  const productFileRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
   const replaceIdx = useRef<number | null>(null);
@@ -73,11 +86,12 @@ export function QrPosterSheet({
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
-        .select("poster_bg_url, poster_bg_urls, poster_media, poster_bg_transforms")
+        .select("poster_bg_url, poster_bg_urls, poster_media, poster_bg_transforms, extra_links")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      const d = data as { poster_bg_url?: string; poster_bg_urls?: string[]; poster_media?: MediaItem[]; poster_bg_transforms?: Record<number, Transform> } | null;
+      const d = data as { poster_bg_url?: string; poster_bg_urls?: string[]; poster_media?: MediaItem[]; poster_bg_transforms?: Record<number, Transform>; extra_links?: ShopLink[] } | null;
+      setAllLinks(Array.isArray(d?.extra_links) ? d!.extra_links! : []);
       const m: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
@@ -136,6 +150,38 @@ export function QrPosterSheet({
       },
     } as never);
   }, [user?.id, transforms]);
+
+  const products = allLinks.filter((l) => (l.category ?? "other") === "shop" && (l.image || l.price));
+
+  const persistLinks = useCallback(async (next: ShopLink[]) => {
+    setAllLinks(next);
+    await supabase.rpc("upsert_merchant_link_settings" as never, { _payload: { extra_links: next } } as never);
+  }, []);
+
+  const saveProduct = async () => {
+    if (!productDraft) return;
+    if (!productDraft.label.trim()) { toast.error("Product name likhein"); return; }
+    const item: ShopLink = { ...productDraft, category: "shop", enabled: true, url: productDraft.url || " " };
+    const exists = allLinks.some((l) => l.id === item.id);
+    await persistLinks(exists ? allLinks.map((l) => (l.id === item.id ? item : l)) : [...allLinks, item]);
+    setProductDraft(null);
+    toast.success("Product saved");
+  };
+
+  const removeProduct = async (id: string) => {
+    await persistLinks(allLinks.filter((l) => l.id !== id));
+    toast.success("Product removed");
+  };
+
+  const onProductImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !productDraft) return;
+    if (f.size > 6 * 1024 * 1024) { toast.error("Image too large (max 6 MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => setProductDraft((d) => (d ? { ...d, image: String(reader.result || "") } : d));
+    reader.readAsDataURL(f);
+  };
 
   const onPickFile = (idx: number, kind: "image" | "video") => {
     replaceIdx.current = idx;
@@ -402,9 +448,21 @@ export function QrPosterSheet({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
             <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
 
-            {/* Multi-media slots */}
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {Array.from({ length: MAX_SLOTS }).map((_, i) => {
+            {/* Media strip — up to 10 photos / videos, horizontally scrollable */}
+            <div className="mt-3 flex items-center justify-between px-1">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#8b6508]">
+                Story media · {media.length}/{MAX_SLOTS}
+              </p>
+              <button
+                onClick={() => setChooserIdx(media.length)}
+                disabled={media.length >= MAX_SLOTS}
+                className="flex items-center gap-1 rounded-full bg-[#1a1208] px-3 py-1.5 text-[11px] font-bold text-amber-200 active:scale-95 disabled:opacity-40"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add
+              </button>
+            </div>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {Array.from({ length: Math.min(MAX_SLOTS, media.length + 1) }).map((_, i) => {
                 const item = media[i];
                 const isActive = i === activeIdx && !!item;
                 return (
@@ -412,7 +470,7 @@ export function QrPosterSheet({
                     key={i}
                     onClick={() => item ? setActiveIdx(i) : setChooserIdx(i)}
                     onDoubleClick={() => setChooserIdx(i)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 ${isActive ? "border-[#d4af37] ring-2 ring-[#d4af37]/40" : "border-[#d4af37]/40 border-dashed bg-white/60"}`}
+                    className={`relative h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 ${isActive ? "border-[#d4af37] ring-2 ring-[#d4af37]/40" : "border-[#d4af37]/40 border-dashed bg-white/60"}`}
                     aria-label={`Slot ${i + 1}`}
                   >
                     {item?.type === "image" ? (
@@ -435,7 +493,58 @@ export function QrPosterSheet({
                 );
               })}
             </div>
-            <p className="text-[10px] text-center text-[#8b6508]/70 mt-1">Tap a thumbnail to rotate · double-tap to replace</p>
+            <p className="text-[10px] text-center text-[#8b6508]/70 mt-1">
+              5–6 video + photos allowed · tap to preview, double-tap to replace
+            </p>
+
+            {/* Products — shown under the “my shop” button on your landing page */}
+            <div className="mt-4 rounded-3xl border-2 border-[#d4af37] bg-white/70 p-3">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#8b6508]">
+                  <Package className="h-3.5 w-3.5" /> Products
+                </p>
+                <button
+                  onClick={() => setProductDraft({ id: `prod-${Date.now()}`, label: "", url: "", enabled: true, category: "shop", image: null, price: "" })}
+                  className="flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add product
+                </button>
+              </div>
+
+              {products.length === 0 ? (
+                <p className="mt-2 text-[11px] text-[#8b6508]/80">
+                  Add photo, price and a redirect link — customers see cards with an Enquiry button.
+                </p>
+              ) : (
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {products.map((p) => (
+                    <div key={p.id} className="relative w-[110px] shrink-0 overflow-hidden rounded-2xl border border-[#d4af37]/50 bg-white shadow-sm">
+                      <div className="h-[86px] w-full bg-amber-50">
+                        {p.image ? (
+                          <img src={p.image} alt={p.label} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="grid h-full w-full place-items-center text-[#8b6508]"><ImageIcon className="h-5 w-5" /></div>
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5">
+                        <p className="truncate text-[11px] font-bold text-[#1a1208]">{p.label}</p>
+                        {p.price && <p className="text-[10px] text-[#8b6508]">₹{p.price}</p>}
+                      </div>
+                      <div className="flex divide-x divide-[#d4af37]/40 border-t border-[#d4af37]/40">
+                        <button onClick={() => setProductDraft(p)} className="flex-1 py-1.5 text-[#8b6508]" aria-label="Edit">
+                          <Pencil className="mx-auto h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => void removeProduct(p.id)} className="flex-1 py-1.5 text-rose-600" aria-label="Delete">
+                          <Trash2 className="mx-auto h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <input ref={productFileRef} type="file" accept="image/*" className="hidden" onChange={onProductImage} />
+
 
             {/* Split bottom pill — Download/Share | Link Menu */}
             <div className="mt-5 rounded-full border-2 border-[#d4af37] bg-white shadow-lg overflow-hidden grid grid-cols-2 divide-x-2 divide-[#d4af37]">
@@ -485,6 +594,65 @@ export function QrPosterSheet({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Product editor */}
+      <Drawer open={!!productDraft} onOpenChange={(v) => !v && setProductDraft(null)}>
+        <DrawerContent className="bg-gradient-to-b from-[#fdf6e3] to-[#f4e9c8] border-t-2 border-[#d4af37]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-[#1a1208] font-display text-lg">Product details</DrawerTitle>
+          </DrawerHeader>
+          <div className="space-y-3 px-4 pb-6">
+            <button
+              onClick={() => productFileRef.current?.click()}
+              className="relative h-36 w-full overflow-hidden rounded-2xl border-2 border-dashed border-[#d4af37] bg-white/70"
+            >
+              {productDraft?.image ? (
+                <img src={productDraft.image} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="grid h-full w-full place-items-center gap-1 text-[#8b6508]">
+                  <Camera className="mx-auto h-6 w-6" />
+                  <span className="text-xs font-bold">Upload product photo</span>
+                </span>
+              )}
+            </button>
+            <input
+              value={productDraft?.label ?? ""}
+              onChange={(e) => setProductDraft((d) => (d ? { ...d, label: e.target.value } : d))}
+              placeholder="Product name"
+              className="w-full rounded-xl border border-[#d4af37]/50 bg-white px-3 py-2.5 text-sm"
+            />
+            <div className="flex gap-2">
+              <div className="flex flex-1 items-center rounded-xl border border-[#d4af37]/50 bg-white px-3">
+                <Tag className="h-4 w-4 text-[#8b6508]" />
+                <input
+                  value={productDraft?.price ?? ""}
+                  onChange={(e) => setProductDraft((d) => (d ? { ...d, price: e.target.value.replace(/[^0-9.]/g, "") } : d))}
+                  inputMode="decimal"
+                  placeholder="Price ₹"
+                  className="ml-2 w-full bg-transparent py-2.5 text-sm outline-none"
+                />
+              </div>
+              <div className="flex flex-1 items-center rounded-xl border border-[#d4af37]/50 bg-white px-3">
+                <ArrowUpRight className="h-4 w-4 text-[#8b6508]" />
+                <input
+                  value={productDraft?.url ?? ""}
+                  onChange={(e) => setProductDraft((d) => (d ? { ...d, url: e.target.value } : d))}
+                  placeholder="Redirect link"
+                  className="ml-2 w-full bg-transparent py-2.5 text-sm outline-none"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => void saveProduct()}
+              className="w-full rounded-full bg-amber-600 py-3.5 text-sm font-extrabold text-white active:scale-[0.98]"
+            >
+              Save product
+            </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
 
       <DownloadShareSheet
         open={shareOpen}
