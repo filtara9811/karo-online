@@ -5335,6 +5335,57 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_subscription_public: {
+        Row: {
+          auto_deduct_after_trial: boolean | null
+          features: Json | null
+          headline: string | null
+          id: string | null
+          is_active: boolean | null
+          original_price_paise: number | null
+          payment_gateway: string | null
+          plan_name: string | null
+          price_paise: number | null
+          sub_headline: string | null
+          trial_days: number | null
+          trial_enabled: boolean | null
+          trial_price_paise: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_deduct_after_trial?: boolean | null
+          features?: Json | null
+          headline?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          original_price_paise?: number | null
+          payment_gateway?: string | null
+          plan_name?: string | null
+          price_paise?: number | null
+          sub_headline?: string | null
+          trial_days?: number | null
+          trial_enabled?: boolean | null
+          trial_price_paise?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_deduct_after_trial?: boolean | null
+          features?: Json | null
+          headline?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          original_price_paise?: number | null
+          payment_gateway?: string | null
+          plan_name?: string | null
+          price_paise?: number | null
+          sub_headline?: string | null
+          trial_days?: number | null
+          trial_enabled?: boolean | null
+          trial_price_paise?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       vendors_public: {
         Row: {
           avatar_url: string | null
