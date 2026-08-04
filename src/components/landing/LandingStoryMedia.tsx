@@ -42,8 +42,22 @@ export function LandingStoryMedia({
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const startedAt = useRef<number>(0);
   const elapsed = useRef<number>(0);
+
+  const toggleSound = useCallback(() => {
+    setMuted((m) => {
+      const next = !m;
+      const el = videoRef.current;
+      if (el) {
+        el.muted = next;
+        if (!next) void el.play().catch(() => undefined);
+      }
+      return next;
+    });
+  }, []);
 
   const current = items[Math.min(index, Math.max(items.length - 1, 0))];
   const total = items.length;
