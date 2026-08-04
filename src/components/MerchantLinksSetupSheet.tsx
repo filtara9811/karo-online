@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { VpaScannerSheet } from "@/components/VpaScannerSheet";
-
-type ExtraLink = { id: string; label: string; url: string; icon?: string | null; enabled: boolean };
+import { SOCIAL_PRESETS, brandOf, type ExtraLink } from "@/components/landing/landing-shared";
 
 type Settings = {
   play_store_enabled: boolean;
@@ -45,6 +44,17 @@ const PROVIDERS = [
   { v: "other", label: "Other (custom)" },
 ];
 
+type TabKey = "social" | "payment" | "shop" | "website" | "contact" | "other";
+
+const TABS: Array<{ key: TabKey; label: string }> = [
+  { key: "social", label: "Social Media" },
+  { key: "payment", label: "Payment" },
+  { key: "shop", label: "Shop" },
+  { key: "website", label: "Website" },
+  { key: "contact", label: "Contact" },
+  { key: "other", label: "More" },
+];
+
 export function MerchantLinksSetupSheet({
   open,
   onOpenChange,
@@ -54,6 +64,7 @@ export function MerchantLinksSetupSheet({
 }) {
   const { profile, user } = useAuth();
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
+  const [tab, setTab] = useState<TabKey>("social");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -115,24 +126,37 @@ export function MerchantLinksSetupSheet({
     });
   };
 
-  const addExtra = () => {
-    const next = {
-      ...settings,
-      extra_links: [
-        ...settings.extra_links,
-        { id: crypto.randomUUID(), label: "New Link", url: "", enabled: true },
-      ],
-    };
+  const setLinks = (nextLinks: ExtraLink[]) => {
+    const next = { ...settings, extra_links: nextLinks };
     setSettings(next);
     void save(next, { silent: true });
   };
 
-  const removeExtra = (id: string) => {
-    if (!confirm("Delete this link?")) return;
-    const next = { ...settings, extra_links: settings.extra_links.filter((l) => l.id !== id) };
-    setSettings(next);
-    void save(next, { silent: true });
+  /** Upsert a preset social row by its stable id. */
+  const setPreset = (id: string, label: string, url: string) => {
+    const exists = settings.extra_links.some((l) => l.id === id);
+    const nextLinks = exists
+      ? settings.extra_links.map((l) => (l.id === id ? { ...l, url, label, category: "social", enabled: true } : l))
+      : [...settings.extra_links, { id, label, url, enabled: true, category: "social" }];
+    setLinks(nextLinks);
   };
+
+  const addCustom = (category: TabKey) => {
+    setLinks([
+      ...settings.extra_links,
+      { id: crypto.randomUUID(), label: "New Link", url: "", enabled: true, category },
+    ]);
+  };
+
+  const removeLink = (id: string) => {
+    if (!confirm("Delete this link?")) return;
+    setLinks(settings.extra_links.filter((l) => l.id !== id));
+  };
+
+  const customLinks = useMemo(
+    () => settings.extra_links.filter((l) => (l.category ?? "other") === tab && !l.id.startsWith("social-")),
+    [settings.extra_links, tab],
+  );
 
   const startPremium = async () => {
     setPaying(true);
@@ -176,144 +200,210 @@ export function MerchantLinksSetupSheet({
           </div>
         </DrawerHeader>
 
+        {/* Category tabs */}
+        <div className="px-4 pb-2">
+          <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                  tab === t.key
+                    ? "border-[#d4af37] bg-[#1a1208] text-[#f4e9c8]"
+                    : "border-[#d4af37]/40 bg-white/70 text-[#8b6508]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="px-4 pb-6 overflow-y-auto space-y-3">
           {loading ? (
             <div className="grid place-items-center py-12 text-[#8b6508]"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (
             <>
-              {/* Play Store — always on */}
-              <Row
-                icon={<PlayCircle className="h-5 w-5" />}
-                color="bg-emerald-600"
-                title="Play Store"
-                enabled={settings.play_store_enabled}
-                onToggle={(v) => update({ play_store_enabled: v })}
-              />
+              {tab === "social" && (
+                <>
+                  <p className="text-[11px] text-[#8b6508]">
+                    Paste your profile links — customers see them under the “social media” button.
+                  </p>
+                  {SOCIAL_PRESETS.map((p) => {
+                    const existing = settings.extra_links.find((l) => l.id === p.id);
+                    const brand = brandOf(p.hint, p.label);
+                    const Icon = brand.icon;
+                    return (
+                      <div key={p.id} className="rounded-2xl border border-[#d4af37]/40 bg-white/70 p-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="h-9 w-9 shrink-0 grid place-items-center rounded-full"
+                            style={{ background: `${brand.color}1f`, color: brand.color }}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 text-sm font-bold text-[#1a1208]">{p.label}</div>
+                          {existing?.url && (
+                            <button
+                              onClick={() => removeLink(p.id)}
+                              aria-label={`Remove ${p.label}`}
+                              className="h-8 w-8 grid place-items-center rounded-full bg-rose-100 text-rose-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          value={existing?.url ?? ""}
+                          onChange={(e) => setPreset(p.id, p.label, e.target.value)}
+                          placeholder={p.hint}
+                          inputMode="url"
+                          className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                        />
+                      </div>
+                    );
+                  })}
+                </>
+              )}
 
-              {/* Payment */}
-              <Row
-                icon={<CreditCard className="h-5 w-5" />}
-                color="bg-amber-600"
-                title="Payment (UPI · PhonePe · Paytm)"
-                enabled={settings.payment_enabled}
-                onToggle={(v) => update({ payment_enabled: v })}
-              >
-                <select
-                  value={settings.payment_provider}
-                  onChange={(e) => setSettings((s) => ({ ...s, payment_provider: e.target.value }))}
-                  className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208]"
+              {tab === "payment" && (
+                <Row
+                  icon={<CreditCard className="h-5 w-5" />}
+                  color="bg-amber-600"
+                  title="Payment (UPI · PhonePe · Paytm)"
+                  enabled={settings.payment_enabled}
+                  onToggle={(v) => update({ payment_enabled: v })}
                 >
-                  {PROVIDERS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
-                </select>
-                <div className="relative mt-2">
+                  <select
+                    value={settings.payment_provider}
+                    onChange={(e) => setSettings((s) => ({ ...s, payment_provider: e.target.value }))}
+                    className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208]"
+                  >
+                    {PROVIDERS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
+                  </select>
+                  <div className="relative mt-2">
+                    <input
+                      value={settings.payment_upi_id}
+                      onChange={(e) => setSettings((s) => ({ ...s, payment_upi_id: e.target.value }))}
+                      placeholder={settings.payment_provider === "other" ? "Paste custom URL or payload" : "merchant@upi"}
+                      inputMode={settings.payment_provider === "other" ? "text" : "email"}
+                      className="w-full rounded-lg border border-[#d4af37]/40 bg-white/80 pl-2 pr-11 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                    />
+                    {settings.payment_provider !== "other" && (
+                      <button
+                        type="button"
+                        onClick={() => setScannerOpen(true)}
+                        aria-label="Scan counter QR"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-md bg-amber-600 text-white shadow active:scale-95"
+                      >
+                        <ScanLine className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                   <input
-                    value={settings.payment_upi_id}
-                    onChange={(e) => setSettings((s) => ({ ...s, payment_upi_id: e.target.value }))}
-                    placeholder={settings.payment_provider === "other" ? "Paste custom URL or payload" : "merchant@upi"}
-                    inputMode={settings.payment_provider === "other" ? "text" : "email"}
-                    className="w-full rounded-lg border border-[#d4af37]/40 bg-white/80 pl-2 pr-11 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                    value={settings.payment_amount_inr}
+                    onChange={(e) => setSettings((s) => ({ ...s, payment_amount_inr: e.target.value.replace(/[^0-9.]/g, "") }))}
+                    placeholder="Default amount, e.g. 50"
+                    inputMode="decimal"
+                    className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
                   />
-                  {settings.payment_provider !== "other" && (
-                    <button
-                      type="button"
-                      onClick={() => setScannerOpen(true)}
-                      aria-label="Scan counter QR"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-md bg-amber-600 text-white shadow active:scale-95"
-                    >
-                      <ScanLine className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                <input
-                  value={settings.payment_amount_inr}
-                  onChange={(e) => setSettings((s) => ({ ...s, payment_amount_inr: e.target.value.replace(/[^0-9.]/g, "") }))}
-                  placeholder="Default amount, e.g. 50"
-                  inputMode="decimal"
-                  className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
-                />
-                <button
-                  onClick={() => save(settings)}
-                  disabled={saving}
-                  className="w-full mt-2 rounded-lg bg-amber-600 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
-                >
-                  {saving ? "Updating…" : "Update Payment Details"}
-                </button>
-                <p className="mt-1 text-[10px] text-[#8b6508]">
-                  Customers tap → opens {settings.payment_provider.toUpperCase()} → your Sound Box rings.
-                </p>
-              </Row>
+                  <button
+                    onClick={() => save(settings)}
+                    disabled={saving}
+                    className="w-full mt-2 rounded-lg bg-amber-600 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
+                  >
+                    {saving ? "Updating…" : "Update Payment Details"}
+                  </button>
+                  <p className="mt-1 text-[10px] text-[#8b6508]">
+                    Customers tap → opens {settings.payment_provider.toUpperCase()} → your Sound Box rings.
+                  </p>
+                </Row>
+              )}
 
-              {/* Digital Shop */}
-              <Row
-                icon={<Store className="h-5 w-5" />}
-                color="bg-emerald-700"
-                title="Digital Shop"
-                enabled={settings.digital_shop_enabled}
-                onToggle={(v) => update({ digital_shop_enabled: v })}
-              >
-                <input
-                  value={settings.digital_shop_url}
-                  onChange={(e) => setSettings((s) => ({ ...s, digital_shop_url: e.target.value }))}
-                  placeholder="https://yourshop.com"
-                  inputMode="url"
-                  className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
-                />
-                <button
-                  onClick={() => save(settings)}
-                  disabled={saving}
-                  className="w-full mt-2 rounded-lg bg-emerald-700 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
+              {tab === "shop" && (
+                <Row
+                  icon={<Store className="h-5 w-5" />}
+                  color="bg-emerald-700"
+                  title="Digital Shop"
+                  enabled={settings.digital_shop_enabled}
+                  onToggle={(v) => update({ digital_shop_enabled: v })}
                 >
-                  {saving ? "Updating…" : "Update Shop Link"}
-                </button>
-              </Row>
+                  <input
+                    value={settings.digital_shop_url}
+                    onChange={(e) => setSettings((s) => ({ ...s, digital_shop_url: e.target.value }))}
+                    placeholder="https://yourshop.com"
+                    inputMode="url"
+                    className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
+                  />
+                  <button
+                    onClick={() => save(settings)}
+                    disabled={saving}
+                    className="w-full mt-2 rounded-lg bg-emerald-700 text-white font-bold text-sm py-2 active:scale-95 disabled:opacity-60"
+                  >
+                    {saving ? "Updating…" : "Update Shop Link"}
+                  </button>
+                </Row>
+              )}
 
-              {/* Extra links */}
-              {settings.extra_links.map((link) => (
+              {tab === "other" && (
+                <Row
+                  icon={<PlayCircle className="h-5 w-5" />}
+                  color="bg-emerald-600"
+                  title="Play Store"
+                  enabled={settings.play_store_enabled}
+                  onToggle={(v) => update({ play_store_enabled: v })}
+                />
+              )}
+
+              {/* Custom links inside the selected category */}
+              {customLinks.map((link) => (
                 <div key={link.id} className="rounded-2xl border border-dashed border-[#d4af37]/60 bg-white/60 p-3">
                   <div className="flex items-center gap-2">
                     <input
                       value={link.label}
-                      onChange={(e) => {
-                        const next = { ...settings, extra_links: settings.extra_links.map((l) => l.id === link.id ? { ...l, label: e.target.value } : l) };
-                        setSettings(next); void save(next, { silent: true });
-                      }}
+                      onChange={(e) =>
+                        setLinks(settings.extra_links.map((l) => (l.id === link.id ? { ...l, label: e.target.value } : l)))
+                      }
                       placeholder="Label"
                       className="flex-1 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm font-bold text-[#1a1208]"
                     />
-                    <button onClick={() => removeExtra(link.id)} className="h-8 w-8 grid place-items-center rounded-full bg-rose-100 text-rose-700">
+                    <button onClick={() => removeLink(link.id)} className="h-8 w-8 grid place-items-center rounded-full bg-rose-100 text-rose-700">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <input
                     value={link.url}
-                    onChange={(e) => {
-                      const next = { ...settings, extra_links: settings.extra_links.map((l) => l.id === link.id ? { ...l, url: e.target.value } : l) };
-                      setSettings(next); void save(next, { silent: true });
-                    }}
+                    onChange={(e) =>
+                      setLinks(settings.extra_links.map((l) => (l.id === link.id ? { ...l, url: e.target.value } : l)))
+                    }
                     placeholder="https://..."
                     className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
                   />
                 </div>
               ))}
 
-              {/* + Add link */}
-              {settings.premium_unlocked ? (
-                <button
-                  onClick={addExtra}
-                  className="w-full rounded-2xl border-2 border-dashed border-[#d4af37] bg-white/60 py-5 grid place-items-center text-[#8b6508] font-bold active:scale-95"
-                >
-                  <Plus className="h-6 w-6" />
-                  <span className="text-xs mt-1 uppercase tracking-widest">Add another link</span>
-                </button>
-              ) : (
-                <button
-                  onClick={startPremium}
-                  disabled={paying}
-                  className="w-full rounded-2xl border-2 border-[#d4af37] bg-gradient-to-r from-[#fdf6e3] to-[#f4e9c8] py-5 grid place-items-center text-[#1a1208] font-bold active:scale-95 disabled:opacity-60"
-                >
-                  {paying ? <Loader2 className="h-6 w-6 animate-spin" /> : <Lock className="h-6 w-6 text-[#b45309]" />}
-                  <span className="text-xs mt-1 uppercase tracking-widest text-[#b45309]">Unlock Premium · Add more links</span>
-                </button>
+              {tab !== "payment" && (
+                settings.premium_unlocked ? (
+                  <button
+                    onClick={() => addCustom(tab)}
+                    className="w-full rounded-2xl border-2 border-dashed border-[#d4af37] bg-white/60 py-5 grid place-items-center text-[#8b6508] font-bold active:scale-95"
+                  >
+                    <Plus className="h-6 w-6" />
+                    <span className="text-xs mt-1 uppercase tracking-widest">
+                      Add link in {TABS.find((t) => t.key === tab)?.label}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={startPremium}
+                    disabled={paying}
+                    className="w-full rounded-2xl border-2 border-[#d4af37] bg-gradient-to-r from-[#fdf6e3] to-[#f4e9c8] py-5 grid place-items-center text-[#1a1208] font-bold active:scale-95 disabled:opacity-60"
+                  >
+                    {paying ? <Loader2 className="h-6 w-6 animate-spin" /> : <Lock className="h-6 w-6 text-[#b45309]" />}
+                    <span className="text-xs mt-1 uppercase tracking-widest text-[#b45309]">Unlock Premium · Add more links</span>
+                  </button>
+                )
               )}
 
               {saving && <p className="text-center text-[10px] text-[#8b6508]">Saving…</p>}
