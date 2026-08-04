@@ -1,9 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, CreditCard, Store, BadgeCheck, ExternalLink, ShieldCheck, X, Smartphone } from "lucide-react";
+import { X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+import { LandingTopBar } from "@/components/landing/LandingTopBar";
+import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
+import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
+import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
+import type { ExtraLink } from "@/components/landing/landing-shared";
+
 
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
