@@ -195,7 +195,8 @@ function QrDashboardPage() {
         </section>
 
         {/* Theme picker */}
-        <section>
+        <section ref={themeRef} className="scroll-mt-20">
+
           <div className="flex items-center gap-2 mb-2">
             <Palette className="h-4 w-4 text-amber-700" />
             <h2 className="font-display font-bold text-sm text-slate-900">Landing page theme</h2>
