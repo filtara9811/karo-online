@@ -306,7 +306,8 @@ function QrDashboardPage() {
         </section>
 
         {/* Visitors */}
-        <section>
+        <section ref={visitorsRef} className="scroll-mt-20">
+
           <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-amber-700" />
             <h2 className="font-display font-bold text-sm text-slate-900">Visitors</h2>
