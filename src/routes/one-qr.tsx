@@ -345,6 +345,16 @@ function QrDashboardPage() {
         </section>
       </div>
 
+      {/* Bottom action dock */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-md mx-auto m-3 rounded-2xl border border-amber-200 bg-white/90 backdrop-blur-xl shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)] grid grid-cols-4 overflow-hidden">
+          <DockBtn icon={Palette} label="Theme" onClick={() => themeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+          <DockBtn icon={Link2} label="Links" onClick={() => setLinksOpen(true)} />
+          <DockBtn icon={QrCode} label="Poster" onClick={() => setPosterOpen(true)} />
+          <DockBtn icon={Users} label="Visitors" onClick={() => visitorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+        </div>
+      </nav>
+
       <QrPosterSheet
         open={posterOpen}
         onOpenChange={setPosterOpen}
@@ -352,7 +362,9 @@ function QrDashboardPage() {
         shareUrl={shareUrl}
         defaultName="Karo Online"
       />
+      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} />
     </div>
+
   );
 }
 
