@@ -32,6 +32,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { ActionAlertBanner } from "@/components/ActionAlertBanner";
 import { FloatingPhoneMockup } from "@/components/marketing/FloatingPhoneMockup";
+import { WorkspaceProvider } from "./workspaces";
+import { WorkspaceTabs } from "./WorkspaceTabs";
 
 type NavItem = { to: string; label: string; icon: typeof Crown };
 
@@ -257,6 +259,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
   );
 
   return (
+    <WorkspaceProvider>
     <div
       className="min-h-screen flex"
       style={{ background: GOLD_BG }}
@@ -278,6 +281,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile topbar */}
+        <WorkspaceTabs />
         <header
           className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b backdrop-blur-xl"
           style={{
@@ -327,6 +331,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
       </div>
       {!isEmbed && <FloatingPhoneMockup />}
     </div>
+    </WorkspaceProvider>
   );
 }
 
