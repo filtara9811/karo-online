@@ -595,6 +595,65 @@ export function QrPosterSheet({
         </DrawerContent>
       </Drawer>
 
+      {/* Product editor */}
+      <Drawer open={!!productDraft} onOpenChange={(v) => !v && setProductDraft(null)}>
+        <DrawerContent className="bg-gradient-to-b from-[#fdf6e3] to-[#f4e9c8] border-t-2 border-[#d4af37]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-[#1a1208] font-display text-lg">Product details</DrawerTitle>
+          </DrawerHeader>
+          <div className="space-y-3 px-4 pb-6">
+            <button
+              onClick={() => productFileRef.current?.click()}
+              className="relative h-36 w-full overflow-hidden rounded-2xl border-2 border-dashed border-[#d4af37] bg-white/70"
+            >
+              {productDraft?.image ? (
+                <img src={productDraft.image} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="grid h-full w-full place-items-center gap-1 text-[#8b6508]">
+                  <Camera className="mx-auto h-6 w-6" />
+                  <span className="text-xs font-bold">Upload product photo</span>
+                </span>
+              )}
+            </button>
+            <input
+              value={productDraft?.label ?? ""}
+              onChange={(e) => setProductDraft((d) => (d ? { ...d, label: e.target.value } : d))}
+              placeholder="Product name"
+              className="w-full rounded-xl border border-[#d4af37]/50 bg-white px-3 py-2.5 text-sm"
+            />
+            <div className="flex gap-2">
+              <div className="flex flex-1 items-center rounded-xl border border-[#d4af37]/50 bg-white px-3">
+                <Tag className="h-4 w-4 text-[#8b6508]" />
+                <input
+                  value={productDraft?.price ?? ""}
+                  onChange={(e) => setProductDraft((d) => (d ? { ...d, price: e.target.value.replace(/[^0-9.]/g, "") } : d))}
+                  inputMode="decimal"
+                  placeholder="Price ₹"
+                  className="ml-2 w-full bg-transparent py-2.5 text-sm outline-none"
+                />
+              </div>
+              <div className="flex flex-1 items-center rounded-xl border border-[#d4af37]/50 bg-white px-3">
+                <ArrowUpRight className="h-4 w-4 text-[#8b6508]" />
+                <input
+                  value={productDraft?.url ?? ""}
+                  onChange={(e) => setProductDraft((d) => (d ? { ...d, url: e.target.value } : d))}
+                  placeholder="Redirect link"
+                  className="ml-2 w-full bg-transparent py-2.5 text-sm outline-none"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => void saveProduct()}
+              className="w-full rounded-full bg-amber-600 py-3.5 text-sm font-extrabold text-white active:scale-[0.98]"
+            >
+              Save product
+            </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
+
       <DownloadShareSheet
         open={shareOpen}
         onOpenChange={setShareOpen}
