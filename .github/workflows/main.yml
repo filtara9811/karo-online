@@ -208,7 +208,7 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           set +e
-          ./gradlew --no-daemon --console=plain :app:assembleRelease :app:bundleRelease --stacktrace --warning-mode all 2>&1 | tee build.log
+          ./gradlew --no-daemon --console=plain :app:assembleRelease :app:bundleRelease --stacktrace --info --warning-mode all 2>&1 | tee build.log
           GRADLE_EXIT=${PIPESTATUS[0]}
           set -e
           echo "::group::Last 200 lines of full Gradle log"
