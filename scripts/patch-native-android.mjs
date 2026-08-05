@@ -707,7 +707,7 @@ for (const gf of gradleFiles) {
   txt = modernizeGradleAssignmentSyntax(txt);
   if (txt !== before) {
     fs.writeFileSync(gf, txt);
-    console.log("🛠️  Normalized Gradle DSL / Java 17 in", path.relative(root, gf));
+    console.log("🛠️  Normalized Gradle DSL in", path.relative(root, gf));
   }
 }
 
