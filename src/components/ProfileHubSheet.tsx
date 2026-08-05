@@ -130,7 +130,9 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 })}
               />
 
+              <OtherAppsRail />
             </div>
+
           </motion.div>
 
           {/* Long-press action sheet — download progress + retry */}
