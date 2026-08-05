@@ -43,7 +43,7 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
               {/* Left — My Orders */}
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={() => navigate({ to: variant.dock.left.to })}
+                onClick={() => navigate({ to: variant.dock.left.to as never })}
                 aria-label={variant.dock.left.label}
                 className="relative shrink-0 h-[54px] w-[54px] rounded-[20px] bg-white/22 backdrop-blur-md border border-white/45 grid place-items-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)]"
               >
