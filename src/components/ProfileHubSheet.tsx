@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
+import { OtherAppsRail } from "@/components/OtherAppsRail";
+
 
 
 /**
