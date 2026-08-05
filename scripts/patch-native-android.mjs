@@ -470,15 +470,17 @@ if (fs.existsSync(manifestPath)) {
 
     </application>`);
   }
-  if (!manifest.includes('android:host="karoonline.in"')) {
+  if (!manifest.includes('android:host="www.karoonline.in"')) {
     manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="karoonline.in" />
+                <data android:scheme="https" android:host="www.karoonline.in" />
             </intent-filter>`);
   }
+
   if (!manifest.includes('android:scheme="karo"')) {
     manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
             <intent-filter>
