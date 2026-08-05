@@ -43,6 +43,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile || bun install
 
+      - name: Resolve app variant identity
+        run: |
+          set -e
+          VARIANT="${{ github.event.inputs.variant || 'customer' }}"
+          echo "Building variant: $VARIANT"
+          node scripts/variant-env.mjs "$VARIANT" | tee -a "$GITHUB_ENV"
+          cp "capacitor.config.$VARIANT.ts" capacitor.config.ts
+          echo "✅ Using capacitor.config.$VARIANT.ts"
+
       - name: Build web bundle
         run: bun run build
         env:
@@ -55,6 +64,7 @@ jobs:
         run: node scripts/patch-native-android.mjs
         env:
           APP_VERSION_CODE: ${{ github.run_number }}
+
 
       - name: Verify launcher icons present in every mipmap density
         run: |
