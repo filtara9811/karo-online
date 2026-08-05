@@ -353,7 +353,7 @@ if (fs.existsSync(manifestPath)) {
       .replace(/\sandroid:roundIcon="[^"]*"/g, "")
       .replace(/\sandroid:label="[^"]*"/g, "")
       .replace(/\sandroid:usesCleartextTraffic="[^"]*"/g, "");
-    return `<application${next}\n        android:label="Karo Online"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"\n        android:usesCleartextTraffic="false">`;
+    return `<application${next}\n        android:label="${process.env.KARO_APP_NAME || "Karo Online"}"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"\n        android:usesCleartextTraffic="false">`;
   });
   manifest = manifest.replace(/<activity([\s\S]*?)>/, (m, attrs) => {
     let next = attrs
@@ -456,6 +456,8 @@ console.log("📐 Wrote android/variables.gradle with compileSdkVersion=35");
   const envCode = parseInt(process.env.APP_VERSION_CODE || "", 10);
   const versionCode = Number.isFinite(envCode) && envCode > 0 ? envCode + BASE_VERSION_CODE : BASE_VERSION_CODE;
   const versionName = process.env.APP_VERSION_NAME || `1.0.${versionCode}`;
+  // Variant support: java namespace stays app.karoonline.twa, only applicationId changes.
+  const applicationId = process.env.KARO_APP_ID || "app.karoonline.twa";
 
   const buildGradle = `apply plugin: 'com.android.application'
 
@@ -470,7 +472,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.karoonline.twa"
+        applicationId = "${applicationId}"
         minSdk = 26
         targetSdk = 35
         versionCode = ${versionCode}

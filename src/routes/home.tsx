@@ -150,7 +150,7 @@ function HomePage() {
             Recommended <span className="font-light italic">| vendor</span>
           </h3>
         </div>
-        <Link to="/vendors" search={{}} className="block">
+        <Link to="/vendors" search={{ shopId: undefined, productId: undefined }} className="block">
           <article className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#fff8dc] via-[#fdf3c8] to-[#f5e9b8] border border-[color:oklch(0.78_0.14_82/0.6)] p-4 shadow-gold-glow">
             <div className="flex items-center gap-3">
               <img src={vendorDelivery} alt="" className="h-28 w-24 object-contain" />

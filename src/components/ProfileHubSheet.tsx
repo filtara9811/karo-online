@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
+import { OtherAppsRail } from "@/components/OtherAppsRail";
+
 
 
 /**
@@ -130,7 +132,9 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 })}
               />
 
+              <OtherAppsRail />
             </div>
+
           </motion.div>
 
           {/* Long-press action sheet — download progress + retry */}

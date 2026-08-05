@@ -21,6 +21,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { FloatingInquiryWidget } from "@/components/FloatingInquiryWidget";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { FloatingDockNav } from "@/components/FloatingDockNav";
+import { getVariantConfig } from "@/lib/app-variant";
 import { SiteFooter } from "@/components/SiteFooter";
 
 /** Static 3 catalog types — no DB fetch (avoids loading delays). */
@@ -62,7 +63,8 @@ export function AppShell() {
   useFcmToken();
   const isMarketing = MARKETING_EXACT.has(location.pathname);
   const hideShell = isMarketing || HIDE_SHELL_ON.some((p) => location.pathname.startsWith(p));
-  const isHome = location.pathname === "/";
+  const variant = getVariantConfig();
+  const isHome = location.pathname === "/" || location.pathname === variant.home;
   const hideTopHeader = isMarketing || isHome || HIDE_TOP_HEADER_ON.some((p) => location.pathname.startsWith(p));
   const showBottomBar = !isMarketing && SHOW_BOTTOM_BAR_ON.includes(location.pathname);
   const hideBottomBar = !showBottomBar;
@@ -261,7 +263,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
       } catch {}
       setTimeout(() => navigate({ to: "/vendor/register" }), 250);
     }
-    else if (value === "all") setTimeout(() => navigate({ to: "/vendors", search: {} }), 250);
+    else if (value === "all") setTimeout(() => navigate({ to: "/vendors", search: { shopId: undefined, productId: undefined } }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
   };
 
