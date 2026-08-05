@@ -3,6 +3,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      variant:
+        description: "Which app to build"
+        required: true
+        default: customer
+        type: choice
+        options: [customer, vendor, staff, oneqr, shop, referral]
+
 
 jobs:
   build:
@@ -35,6 +43,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile || bun install
 
+      - name: Resolve app variant identity
+        run: |
+          set -e
+          VARIANT="${{ github.event.inputs.variant || 'customer' }}"
+          echo "Building variant: $VARIANT"
+          node scripts/variant-env.mjs "$VARIANT" | tee -a "$GITHUB_ENV"
+          cp "capacitor.config.$VARIANT.ts" capacitor.config.ts
+          echo "✅ Using capacitor.config.$VARIANT.ts"
+
       - name: Build web bundle
         run: bun run build
         env:
@@ -47,6 +64,7 @@ jobs:
         run: node scripts/patch-native-android.mjs
         env:
           APP_VERSION_CODE: ${{ github.run_number }}
+
 
       - name: Verify launcher icons present in every mipmap density
         run: |
@@ -81,8 +99,14 @@ jobs:
               exit 1
             fi
           fi
-          PKG=$(grep -o '"package_name"[^"]*"[^"]*"' android/app/google-services.json | tail -1)
-          echo "🔥 google-services.json present. $PKG"
+          if ! grep -q "\"$KARO_APP_ID\"" android/app/google-services.json; then
+            echo "❌ Firebase: package $KARO_APP_ID is not registered in google-services.json."
+            echo "   Register it in Firebase Console → Project settings → Add app → Android,"
+            echo "   then re-download the merged google-services.json and commit it at repo root."
+            exit 1
+          fi
+          echo "🔥 google-services.json present and contains $KARO_APP_ID"
+
           # Mirror for both buildTypes so processDebug/ReleaseGoogleServices always finds it.
           mkdir -p android/app/src/debug android/app/src/release
           cp android/app/google-services.json android/app/src/debug/google-services.json
@@ -150,7 +174,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: karo-online-apk
+          name: karo-${{ env.KARO_VARIANT }}-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
@@ -158,22 +182,37 @@ jobs:
       - name: Upload Play Store AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: karo-online-playstore-aab
+          name: karo-${{ env.KARO_VARIANT }}-playstore-aab
           path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Play Store listing assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: karo-${{ env.KARO_VARIANT }}-store-assets
+          path: |
+            public/store/${{ env.KARO_VARIANT }}-*
+            public/store/${{ env.KARO_VARIANT }}/**
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Add one-click download links to build summary
         run: |
           {
-            echo "## ✅ Karo Online Android build ready"
+            echo "## ✅ $KARO_APP_NAME Android build ready"
             echo ""
-            echo "Download buttons are available in this workflow run's **Artifacts** section:"
-            echo "- **karo-online-apk** → installable APK"
-            echo "- **karo-online-playstore-aab** → Play Store upload AAB"
+            echo "- Variant: \`$KARO_VARIANT\`"
+            echo "- Package: \`$KARO_APP_ID\`"
+            echo ""
+            echo "Artifacts section of this run:"
+            echo "- **karo-$KARO_VARIANT-apk** → installable APK"
+            echo "- **karo-$KARO_VARIANT-playstore-aab** → Play Store upload AAB"
+            echo "- **karo-$KARO_VARIANT-store-assets** → icon + feature graphic (if present)"
             echo ""
             echo "Open this run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
 
       - name: Upload Gradle log on failure
         if: failure()

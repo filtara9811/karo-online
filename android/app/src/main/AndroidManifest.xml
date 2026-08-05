@@ -40,6 +40,10 @@
        
        
        
+       
+       
+       
+       
         android:label="Karo Online"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -64,9 +68,19 @@
            
            
            
+           
+           
+           
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:screenOrientation="portrait"
             android:hardwareAccelerated="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="karoonline.in" />
+                <data android:scheme="https" android:host="www.karoonline.in" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

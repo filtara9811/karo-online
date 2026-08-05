@@ -30,9 +30,10 @@ if (!fs.existsSync(androidDir)) {
 {
   const dst = path.join(appDir, "google-services.json");
   const rootCopy = path.join(root, "google-services.json");
+  const wantedPackage = process.env.KARO_APP_ID || "app.karoonline.twa";
   fs.mkdirSync(appDir, { recursive: true });
   if (fs.existsSync(dst)) {
-    console.log("🔥 google-services.json already at android/app/ — keeping Appflow/native upload.");
+    console.log("🔥 google-services.json already at android/app/ — keeping native upload.");
   } else if (fs.existsSync(rootCopy)) {
     fs.copyFileSync(rootCopy, dst);
     console.log("🔥 Copied google-services.json from project root → android/app/");
@@ -47,7 +48,7 @@ if (!fs.existsSync(androidDir)) {
         {
           client_info: {
             mobilesdk_app_id: "1:000000000000:android:0000000000000000000000",
-            android_client_info: { package_name: "app.karoonline.twa" },
+            android_client_info: { package_name: wantedPackage },
           },
           oauth_client: [],
           api_key: [{ current_key: "AIzaSyDUMMYPLACEHOLDERKEYDONOTUSE0000000" }],
@@ -57,9 +58,39 @@ if (!fs.existsSync(androidDir)) {
       configuration_version: "1",
     };
     fs.writeFileSync(dst, JSON.stringify(placeholder, null, 2));
-    console.warn("⚠️  Wrote PLACEHOLDER google-services.json. Upload real file via Appflow → Native Configs for FCM to work.");
+    console.warn("⚠️  Wrote PLACEHOLDER google-services.json — FCM will not work until the real file is committed at project root.");
+  }
+
+  // Validate that THIS variant's package is registered in the Firebase project.
+  // The Google Services Gradle plugin hard-fails with "No matching client found for
+  // package name ..." — this check gives a readable instruction instead.
+  try {
+    const gs = JSON.parse(read(dst));
+    const packages = (gs.client || [])
+      .map((c) => c?.client_info?.android_client_info?.package_name)
+      .filter(Boolean);
+    if (!packages.includes(wantedPackage)) {
+      console.error(
+        [
+          `❌ Firebase: package "${wantedPackage}" is NOT registered in google-services.json.`,
+          `   Registered packages: ${packages.join(", ") || "(none)"}`,
+          "",
+          "   Fix (Firebase Console → Project settings → Your apps → Add app → Android):",
+          "     1. Android package name: " + wantedPackage,
+          "     2. Add the release + upload SHA-1/SHA-256 fingerprints of the signing keystore",
+          "     3. Download the merged google-services.json (it contains ALL registered packages)",
+          "     4. Commit it at the project root as google-services.json",
+        ].join("\n"),
+      );
+      process.exit(1);
+    }
+    console.log(`🔥 Firebase client verified for ${wantedPackage} (project ${gs?.project_info?.project_id}).`);
+  } catch (e) {
+    console.error("❌ google-services.json is not valid JSON:", e?.message || e);
+    process.exit(1);
   }
 }
+
 
 
 // 1) Native loud alert sound channel asset.
@@ -74,13 +105,20 @@ if (fs.existsSync(srcSound)) fs.copyFileSync(srcSound, dstSound);
 //    a) Copy the source icon into every mipmap density as ic_launcher / _round / _foreground.
 //    b) Delete the adaptive-icon XMLs + v24 vector foreground so AAPT just uses the PNG.
 //    c) Consolidate launcher background color into values/colors.xml (no duplicates).
+// Variant-aware icon: KARO_APP_ICON wins, else per-variant icon, else generic Karo icon.
+const VARIANT_ICONS = {
+  "app.karoonline.oneqr": "public/icon-oneqr-512.png",
+  "app.karoonline.vendor": "public/icon-vendor-512.png",
+};
+const appIdForIcon = process.env.KARO_APP_ID || "app.karoonline.twa";
 const iconCandidates = [
+  process.env.KARO_APP_ICON ? path.join(root, process.env.KARO_APP_ICON) : null,
+  VARIANT_ICONS[appIdForIcon] ? path.join(root, VARIANT_ICONS[appIdForIcon]) : null,
   path.join(root, "public/icon-512.png"),
   path.join(root, "public/icon-192.png"),
-  path.join(root, "public/icon-vendor-512.png"),
-  path.join(root, "public/icon-vendor-192.png"),
   path.join(root, "src/assets/karo-logo.png"),
-];
+].filter(Boolean);
+
 const iconSource = iconCandidates.find((p) => fs.existsSync(p));
 if (!iconSource) {
   console.error("❌ No launcher icon source found. Looked for:", iconCandidates.join(", "));
@@ -124,14 +162,16 @@ for (const dir of ["mipmap-anydpi-v26", "drawable-v24"]) {
   const p = path.join(resDir, dir);
   try { if (fs.existsSync(p) && fs.readdirSync(p).length === 0) fs.rmdirSync(p); } catch {}
 }
+const themeColor = process.env.KARO_THEME_COLOR || "#D4AF37";
 write(path.join(resDir, "values/colors.xml"), `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
-    <color name="colorPrimary">#D4AF37</color>
-    <color name="colorPrimaryDark">#B8941F</color>
-    <color name="colorAccent">#D4AF37</color>
+    <color name="colorPrimary">${themeColor}</color>
+    <color name="colorPrimaryDark">${themeColor}</color>
+    <color name="colorAccent">${themeColor}</color>
 </resources>
 `);
+
 
 // 3) MainActivity true fullscreen / immersive bridge stability.
 const mainActivityPath = path.join(javaDir, "MainActivity.java");
@@ -307,15 +347,23 @@ public class LeadAlertService extends Service {
 }
 `);
 
-ensureFile(path.join(javaDir, "KaroFirebaseMessagingService.java"), `package app.karoonline.twa;
+// Always rewrite: notification tap must deep-link into the right in-app route.
+write(path.join(javaDir, "KaroFirebaseMessagingService.java"), `package app.karoonline.twa;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
 
 public class KaroFirebaseMessagingService extends FirebaseMessagingService {
+  private static final String CHANNEL_ID = "karo_general_v1";
+
   @Override public void onMessageReceived(RemoteMessage message) {
     Map<String, String> data = message.getData();
     String kind = data.get("kind");
@@ -324,11 +372,55 @@ public class KaroFirebaseMessagingService extends FirebaseMessagingService {
       svc.putExtra("lead_id", data.get("lead_id"));
       svc.putExtra("title", data.containsKey("title") ? data.get("title") : "🔔 New Lead");
       svc.putExtra("body", data.containsKey("body") ? data.get("body") : "Aapko ek lead receive hui hai");
+      svc.putExtra("deep_link", resolveDeepLink(data));
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(svc); else startService(svc);
+      return;
     }
+    showDeepLinkNotification(
+      data.containsKey("title") ? data.get("title") : "Karo Online",
+      data.containsKey("body") ? data.get("body") : "",
+      resolveDeepLink(data)
+    );
+  }
+
+  /** data.deep_link → data.url/action_url → data.path → app home. */
+  private String resolveDeepLink(Map<String, String> data) {
+    String[] keys = new String[] { "deep_link", "url", "action_url", "path", "route" };
+    for (String k : keys) {
+      String v = data.get(k);
+      if (v == null || v.length() == 0) continue;
+      if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("karo://")) return v;
+      return "https://karoonline.in" + (v.startsWith("/") ? v : "/" + v);
+    }
+    String leadId = data.get("lead_id");
+    if (leadId != null) return "https://karoonline.in/vendor/lead/" + leadId;
+    return "https://karoonline.in/";
+  }
+
+  private void showDeepLinkNotification(String title, String body, String link) {
+    NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
+      NotificationChannel ch = new NotificationChannel(CHANNEL_ID, "Karo Updates", NotificationManager.IMPORTANCE_HIGH);
+      nm.createNotificationChannel(ch);
+    }
+    Intent open = new Intent(this, MainActivity.class);
+    open.setAction(Intent.ACTION_VIEW);
+    open.setData(Uri.parse(link));
+    open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+    PendingIntent pi = PendingIntent.getActivity(this, link.hashCode(), open, flags);
+    NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
+      .setSmallIcon(android.R.drawable.ic_dialog_info)
+      .setContentTitle(title)
+      .setContentText(body)
+      .setAutoCancel(true)
+      .setContentIntent(pi);
+    if (nm != null) nm.notify((int) (System.currentTimeMillis() % 100000), b.build());
   }
 }
 `);
+
 
 // 5) Manifest permissions + services + deep link.
 if (fs.existsSync(manifestPath)) {
@@ -378,15 +470,17 @@ if (fs.existsSync(manifestPath)) {
 
     </application>`);
   }
-  if (!manifest.includes('android:host="karoonline.in"')) {
+  if (!manifest.includes('android:host="www.karoonline.in"')) {
     manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="karoonline.in" />
+                <data android:scheme="https" android:host="www.karoonline.in" />
             </intent-filter>`);
   }
+
   if (!manifest.includes('android:scheme="karo"')) {
     manifest = manifest.replace(/<activity([\s\S]*?)>/, (m) => `${m}
             <intent-filter>
