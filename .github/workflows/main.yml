@@ -3,6 +3,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      variant:
+        description: "Which app to build"
+        required: true
+        default: customer
+        type: choice
+        options: [customer, vendor, staff, oneqr, shop, referral]
+
 
 jobs:
   build:
