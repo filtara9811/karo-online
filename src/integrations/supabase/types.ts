@@ -6285,6 +6285,7 @@ export type Database = {
           scan_count: number
         }[]
       }
+      web_form_is_active: { Args: { _form_id: string }; Returns: boolean }
       wipe_all_test_data: { Args: never; Returns: Json }
     }
     Enums: {
