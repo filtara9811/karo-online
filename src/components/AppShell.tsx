@@ -261,7 +261,7 @@ function BottomActionBar({ loading }: { loading: boolean }) {
       } catch {}
       setTimeout(() => navigate({ to: "/vendor/register" }), 250);
     }
-    else if (value === "all") setTimeout(() => navigate({ to: "/vendors", search: {} }), 250);
+    else if (value === "all") setTimeout(() => navigate({ to: "/vendors", search: { shopId: undefined, productId: undefined } }), 250);
     else setTimeout(() => navigate({ to: "/" }), 250);
   };
 
