@@ -353,7 +353,7 @@ if (fs.existsSync(manifestPath)) {
       .replace(/\sandroid:roundIcon="[^"]*"/g, "")
       .replace(/\sandroid:label="[^"]*"/g, "")
       .replace(/\sandroid:usesCleartextTraffic="[^"]*"/g, "");
-    return `<application${next}\n        android:label="Karo Online"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"\n        android:usesCleartextTraffic="false">`;
+    return `<application${next}\n        android:label="${process.env.KARO_APP_NAME || "Karo Online"}"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"\n        android:usesCleartextTraffic="false">`;
   });
   manifest = manifest.replace(/<activity([\s\S]*?)>/, (m, attrs) => {
     let next = attrs
