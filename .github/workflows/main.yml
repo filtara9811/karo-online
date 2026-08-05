@@ -99,8 +99,14 @@ jobs:
               exit 1
             fi
           fi
-          PKG=$(grep -o '"package_name"[^"]*"[^"]*"' android/app/google-services.json | tail -1)
-          echo "🔥 google-services.json present. $PKG"
+          if ! grep -q "\"$KARO_APP_ID\"" android/app/google-services.json; then
+            echo "❌ Firebase: package $KARO_APP_ID is not registered in google-services.json."
+            echo "   Register it in Firebase Console → Project settings → Add app → Android,"
+            echo "   then re-download the merged google-services.json and commit it at repo root."
+            exit 1
+          fi
+          echo "🔥 google-services.json present and contains $KARO_APP_ID"
+
           # Mirror for both buildTypes so processDebug/ReleaseGoogleServices always finds it.
           mkdir -p android/app/src/debug android/app/src/release
           cp android/app/google-services.json android/app/src/debug/google-services.json
