@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:242509372770:android:798606eba40eb4d7c5203b",
+        "android_client_info": {
+          "package_name": "app.karoonline.oneqr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAT8RYq_9bcyZBko0cqcVKRMFC-LIVWWeI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:242509372770:android:93843c74d910c686c5203b",
         "android_client_info": {
           "package_name": "app.karoonline.twa"
