@@ -30,9 +30,10 @@ if (!fs.existsSync(androidDir)) {
 {
   const dst = path.join(appDir, "google-services.json");
   const rootCopy = path.join(root, "google-services.json");
+  const wantedPackage = process.env.KARO_APP_ID || "app.karoonline.twa";
   fs.mkdirSync(appDir, { recursive: true });
   if (fs.existsSync(dst)) {
-    console.log("🔥 google-services.json already at android/app/ — keeping Appflow/native upload.");
+    console.log("🔥 google-services.json already at android/app/ — keeping native upload.");
   } else if (fs.existsSync(rootCopy)) {
     fs.copyFileSync(rootCopy, dst);
     console.log("🔥 Copied google-services.json from project root → android/app/");
@@ -47,7 +48,7 @@ if (!fs.existsSync(androidDir)) {
         {
           client_info: {
             mobilesdk_app_id: "1:000000000000:android:0000000000000000000000",
-            android_client_info: { package_name: "app.karoonline.twa" },
+            android_client_info: { package_name: wantedPackage },
           },
           oauth_client: [],
           api_key: [{ current_key: "AIzaSyDUMMYPLACEHOLDERKEYDONOTUSE0000000" }],
@@ -57,9 +58,39 @@ if (!fs.existsSync(androidDir)) {
       configuration_version: "1",
     };
     fs.writeFileSync(dst, JSON.stringify(placeholder, null, 2));
-    console.warn("⚠️  Wrote PLACEHOLDER google-services.json. Upload real file via Appflow → Native Configs for FCM to work.");
+    console.warn("⚠️  Wrote PLACEHOLDER google-services.json — FCM will not work until the real file is committed at project root.");
+  }
+
+  // Validate that THIS variant's package is registered in the Firebase project.
+  // The Google Services Gradle plugin hard-fails with "No matching client found for
+  // package name ..." — this check gives a readable instruction instead.
+  try {
+    const gs = JSON.parse(read(dst));
+    const packages = (gs.client || [])
+      .map((c) => c?.client_info?.android_client_info?.package_name)
+      .filter(Boolean);
+    if (!packages.includes(wantedPackage)) {
+      console.error(
+        [
+          `❌ Firebase: package "${wantedPackage}" is NOT registered in google-services.json.`,
+          `   Registered packages: ${packages.join(", ") || "(none)"}`,
+          "",
+          "   Fix (Firebase Console → Project settings → Your apps → Add app → Android):",
+          "     1. Android package name: " + wantedPackage,
+          "     2. Add the release + upload SHA-1/SHA-256 fingerprints of the signing keystore",
+          "     3. Download the merged google-services.json (it contains ALL registered packages)",
+          "     4. Commit it at the project root as google-services.json",
+        ].join("\n"),
+      );
+      process.exit(1);
+    }
+    console.log(`🔥 Firebase client verified for ${wantedPackage} (project ${gs?.project_info?.project_id}).`);
+  } catch (e) {
+    console.error("❌ google-services.json is not valid JSON:", e?.message || e);
+    process.exit(1);
   }
 }
+
 
 
 // 1) Native loud alert sound channel asset.
@@ -74,13 +105,20 @@ if (fs.existsSync(srcSound)) fs.copyFileSync(srcSound, dstSound);
 //    a) Copy the source icon into every mipmap density as ic_launcher / _round / _foreground.
 //    b) Delete the adaptive-icon XMLs + v24 vector foreground so AAPT just uses the PNG.
 //    c) Consolidate launcher background color into values/colors.xml (no duplicates).
+// Variant-aware icon: KARO_APP_ICON wins, else per-variant icon, else generic Karo icon.
+const VARIANT_ICONS = {
+  "app.karoonline.oneqr": "public/icon-oneqr-512.png",
+  "app.karoonline.vendor": "public/icon-vendor-512.png",
+};
+const appIdForIcon = process.env.KARO_APP_ID || "app.karoonline.twa";
 const iconCandidates = [
+  process.env.KARO_APP_ICON ? path.join(root, process.env.KARO_APP_ICON) : null,
+  VARIANT_ICONS[appIdForIcon] ? path.join(root, VARIANT_ICONS[appIdForIcon]) : null,
   path.join(root, "public/icon-512.png"),
   path.join(root, "public/icon-192.png"),
-  path.join(root, "public/icon-vendor-512.png"),
-  path.join(root, "public/icon-vendor-192.png"),
   path.join(root, "src/assets/karo-logo.png"),
-];
+].filter(Boolean);
+
 const iconSource = iconCandidates.find((p) => fs.existsSync(p));
 if (!iconSource) {
   console.error("❌ No launcher icon source found. Looked for:", iconCandidates.join(", "));
@@ -124,14 +162,16 @@ for (const dir of ["mipmap-anydpi-v26", "drawable-v24"]) {
   const p = path.join(resDir, dir);
   try { if (fs.existsSync(p) && fs.readdirSync(p).length === 0) fs.rmdirSync(p); } catch {}
 }
+const themeColor = process.env.KARO_THEME_COLOR || "#D4AF37";
 write(path.join(resDir, "values/colors.xml"), `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
-    <color name="colorPrimary">#D4AF37</color>
-    <color name="colorPrimaryDark">#B8941F</color>
-    <color name="colorAccent">#D4AF37</color>
+    <color name="colorPrimary">${themeColor}</color>
+    <color name="colorPrimaryDark">${themeColor}</color>
+    <color name="colorAccent">${themeColor}</color>
 </resources>
 `);
+
 
 // 3) MainActivity true fullscreen / immersive bridge stability.
 const mainActivityPath = path.join(javaDir, "MainActivity.java");
