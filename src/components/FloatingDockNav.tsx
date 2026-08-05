@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Package, Store, ChevronDown, Mic } from "lucide-react";
 import { ProfileHubSheet } from "@/components/ProfileHubSheet";
+import { getVariantConfig } from "@/lib/app-variant";
 
 /**
  * FloatingDockNav — premium orange dock that rises from the bottom edge.
@@ -14,6 +15,7 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
   const navigate = useNavigate();
   const [hubOpen, setHubOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const variant = getVariantConfig();
 
   // Hide the dock while overlays like the vendor-finder radar are open.
   useEffect(() => {
@@ -41,8 +43,8 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
               {/* Left — My Orders */}
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={() => navigate({ to: "/orders" })}
-                aria-label="My Orders"
+                onClick={() => navigate({ to: variant.dock.left.to })}
+                aria-label={variant.dock.left.label}
                 className="relative shrink-0 h-[54px] w-[54px] rounded-[20px] bg-white/22 backdrop-blur-md border border-white/45 grid place-items-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_-10px_rgba(0,0,0,0.5)]"
               >
                 <Package className="h-6 w-6 text-white" strokeWidth={2.2} />
@@ -62,10 +64,10 @@ export function FloatingDockNav({ ordersBadge = 0, shopsBadge = 0 }: { ordersBad
                 <Store className="h-6 w-6 shrink-0 text-white" strokeWidth={2.2} />
                 <span className="min-w-0 flex-1 text-left">
                   <span className="block truncate text-[17px] font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
-                    Digital shope..
+                    {variant.dock.center.title}
                   </span>
                   <span className="block truncate text-[9.5px] font-semibold text-white/85">
-                    Digital shop | Vander panal | Referral
+                    {variant.dock.center.sub}
                   </span>
                 </span>
                 <ChevronDown className="h-5 w-5 shrink-0 text-white/90" />
