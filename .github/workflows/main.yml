@@ -5,11 +5,11 @@ on:
   workflow_dispatch:
     inputs:
       variant:
-        description: "Which app to build"
+        description: "Which app to build (Phase 1 = oneqr)"
         required: true
-        default: customer
+        default: oneqr
         type: choice
-        options: [customer, vendor, staff, oneqr, shop, referral]
+        options: [oneqr, customer, vendor, staff, shop, referral]
 
 
 jobs:
