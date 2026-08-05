@@ -18,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Set up Node.js
@@ -137,19 +137,70 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
-            echo "❌ Play Store release signing secrets are missing. Required: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS."
+            echo "::error::Play Store release signing secrets are missing. Required: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS."
             exit 1
           fi
           KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
-          keytool -list -keystore android/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
-          cat > android/key.properties <<EOF
-          storeFile=upload-keystore.jks
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          keyPassword=${KEY_PASSWORD}
-          EOF
-          echo "✅ Release keystore decoded and alias verified."
+          mkdir -p /tmp/oneqr-signing
+          if ! printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks 2>/tmp/oneqr-signing/base64-error.txt; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > android/upload-keystore.jks
+          fi
+          KEYSTORE_SIZE=$(stat -c%s android/upload-keystore.jks)
+          if [ "$KEYSTORE_SIZE" -lt 100 ]; then
+            echo "::error::Decoded keystore is too small. ANDROID_KEYSTORE_BASE64 is corrupt or incomplete."
+            exit 1
+          fi
+          if ! keytool -list -keystore android/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" >/tmp/oneqr-signing/aliases.txt 2>/tmp/oneqr-signing/store-error.txt; then
+            echo "::error::ANDROID_KEYSTORE_PASSWORD is incorrect or the keystore file is invalid."
+            sed -E 's/(password|pass)[^[:space:]]*/[redacted]/gi' /tmp/oneqr-signing/store-error.txt
+            exit 1
+          fi
+          if ! keytool -list -keystore android/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>/tmp/oneqr-signing/alias-error.txt; then
+            echo "::error::ANDROID_KEY_ALIAS was not found in the release keystore."
+            exit 1
+          fi
+          if ! keytool -certreq -keystore android/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" -keypass "$KEY_PASSWORD" -file /tmp/oneqr-signing/key-password-check.csr >/dev/null 2>/tmp/oneqr-signing/key-error.txt; then
+            echo "::error::ANDROID_KEY_PASSWORD is incorrect for ANDROID_KEY_ALIAS. If it equals the store password, remove ANDROID_KEY_PASSWORD or set it to the same value."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          def prop(value: str) -> str:
+              return (value.replace('\\', '\\\\')
+                           .replace('\n', '\\n')
+                           .replace('\r', '\\r')
+                           .replace('\t', '\\t')
+                           .replace('=', '\\=')
+                           .replace(':', '\\:')
+                           .replace('#', '\\#')
+                           .replace('!', '\\!'))
+
+          store_password = os.environ['ANDROID_KEYSTORE_PASSWORD']
+          key_password = os.environ.get('ANDROID_KEY_PASSWORD') or store_password
+          values = {
+              'storeFile': 'upload-keystore.jks',
+              'storePassword': store_password,
+              'keyAlias': os.environ['ANDROID_KEY_ALIAS'],
+              'keyPassword': key_password,
+          }
+          Path('android/key.properties').write_text(
+              ''.join(f'{key}={prop(value)}\n' for key, value in values.items()),
+              encoding='utf-8',
+          )
+          PY
+          echo "✅ Release keystore, store password, alias and private-key password verified."
+
+      - name: Verify OneQR release identity
+        run: |
+          set -euo pipefail
+          test "$KARO_VARIANT" = "oneqr" || { echo "::error::Phase 1 build must resolve to variant oneqr."; exit 1; }
+          test "$KARO_APP_ID" = "app.karoonline.oneqr" || { echo "::error::Unexpected OneQR package: $KARO_APP_ID"; exit 1; }
+          grep -Fq 'applicationId = "app.karoonline.oneqr"' android/app/build.gradle || { echo "::error::Android applicationId is not app.karoonline.oneqr after native patching."; exit 1; }
+          grep -Fq 'app.karoonline.oneqr' android/app/google-services.json || { echo "::error::Firebase config has no OneQR client."; exit 1; }
+          test -s android/key.properties || { echo "::error::Release signing properties were not generated."; exit 1; }
+          echo "✅ OneQR package, Firebase client and release signing are aligned."
 
       - name: Build signed release APK & Play Store AAB
         working-directory: android
@@ -157,7 +208,7 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           set +e
-          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease --stacktrace --warning-mode all 2>&1 | tee build.log
+          ./gradlew --no-daemon --console=plain :app:assembleRelease :app:bundleRelease --stacktrace --info --warning-mode all 2>&1 | tee build.log
           GRADLE_EXIT=${PIPESTATUS[0]}
           set -e
           echo "::group::Last 200 lines of full Gradle log"
@@ -165,8 +216,16 @@ jobs:
           echo "::endgroup::"
           if [ "$GRADLE_EXIT" -ne 0 ]; then
             echo "::group::Detected Gradle failure details"
-            grep -n -B4 -A30 -E "FAILURE:|What went wrong|Execution failed|invalid source release|Keystore|keystore|AAPT|resource .* not found|error:" build.log | tail -300 || true
+            grep -n -B8 -A45 -E "FAILURE:|What went wrong|Execution failed|Task .* failed|invalid source release|Keystore|keystore|signing|AAPT|resource .* not found|error:|Caused by:" build.log | tail -400 || true
             echo "::endgroup::"
+            {
+              echo "## ❌ OneQR Android release build failed"
+              echo ""
+              echo '```text'
+              grep -B5 -A30 -E "What went wrong|Execution failed|Task .* failed|invalid source release|Keystore|keystore|signing|AAPT|resource .* not found|error:|Caused by:" build.log | tail -180 || tail -100 build.log
+              echo '```'
+              echo "Full log is available in the android-gradle-build-log artifact."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$GRADLE_EXIT"
 

@@ -597,8 +597,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
@@ -637,12 +637,9 @@ try {
   console.log(`📦 Wrote android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName})`);
 }
 
-// 8) Force Java 17 in every Gradle file that participates in the Android build.
-//    Capacitor 8 ships `@capacitor/android/capacitor/build.gradle` from node_modules
-//    as project `:capacitor-android`, and that file defaults to Java 21. The GitHub
-//    runner intentionally uses JDK 17, so patching only android/app/build.gradle is
-//    not enough; `:capacitor-android:compileReleaseJavaWithJavac` still fails with
-//    "invalid source release: 21" unless the node_modules Gradle file is patched too.
+// 8) Normalize modern Gradle assignment syntax while preserving Java 21.
+//    Capacitor 8 and its current native plugins target Java 21, so the workflow uses
+//    JDK 21 rather than mutating third-party dependencies down to Java 17.
 function walk(dir) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
@@ -708,20 +705,16 @@ for (const gf of gradleFiles) {
   let txt = fs.readFileSync(gf, "utf8");
   const before = txt;
   txt = modernizeGradleAssignmentSyntax(txt);
-  txt = txt.replace(/JavaVersion\.VERSION_(?:19|20|21|22|23|24)\b/g, "JavaVersion.VERSION_17");
-  txt = txt.replace(/JvmTarget\.JVM_(?:19|20|21|22|23|24)\b/g, "JvmTarget.JVM_17");
-  txt = txt.replace(/jvmTarget\s*=\s*["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
-  txt = txt.replace(/jvmTarget\s+["'](?:19|20|21|22|23|24)["']/g, 'jvmTarget = "17"');
   if (txt !== before) {
     fs.writeFileSync(gf, txt);
-    console.log("🛠️  Normalized Gradle DSL / Java 17 in", path.relative(root, gf));
+    console.log("🛠️  Normalized Gradle DSL in", path.relative(root, gf));
   }
 }
 
-const remainingJava21 = gradleFiles.filter((gf) => /JavaVersion\.VERSION_21|JvmTarget\.JVM_21|jvmTarget\s*(=\s*)?["']21["']/.test(fs.readFileSync(gf, "utf8")));
-if (remainingJava21.length > 0) {
-  console.error("Java 21 settings remain in Gradle files:");
-  for (const gf of remainingJava21) console.error(" -", path.relative(root, gf));
+const appGradleText = fs.readFileSync(buildGradlePath, "utf8");
+if (!appGradleText.includes("sourceCompatibility = JavaVersion.VERSION_21") ||
+    !appGradleText.includes("targetCompatibility = JavaVersion.VERSION_21")) {
+  console.error("android/app/build.gradle is not configured for Java 21.");
   process.exit(1);
 }
 
@@ -740,6 +733,6 @@ if (remainingOldSyntax.length > 0) {
   for (const line of remainingOldSyntax) console.error(" -", line);
   process.exit(1);
 }
-console.log("✅ Gradle DSL syntax normalized for Gradle 8.14+/9 compatibility.");
+console.log("✅ Gradle DSL normalized and Java 21 preserved for Capacitor 8 compatibility.");
 
 console.log("✅ Native Android patches applied: foreground lead service, FCM data alerts, immersive mode, signing, cache-safe release.");
