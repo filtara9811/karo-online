@@ -52,13 +52,19 @@ jobs:
           cp "capacitor.config.$VARIANT.ts" capacitor.config.ts
           echo "✅ Using capacitor.config.$VARIANT.ts"
 
+      - name: Show runner memory (build diagnostics)
+        run: free -h || true
+
       - name: Build web bundle
         run: bun run build
         env:
           NODE_ENV: production
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - name: Capacitor sync (android)
         run: bunx cap sync android
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - name: Apply native Android patches
         run: node scripts/patch-native-android.mjs
