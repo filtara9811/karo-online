@@ -189,36 +189,46 @@ export function CategoryExplorerSheet({
             {/* 2 — Variation groups (Gents / Ladies / Kids …) */}
             {groups.length > 0 && (
               <div className="shrink-0 px-3 pb-1.5">
-                <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
-                  <button
+                <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
                     onClick={() => setGroup(null)}
-                    className={`shrink-0 h-9 px-3.5 rounded-full text-[12px] font-bold border-2 transition-colors ${
-                      group === null ? "bg-orange-500 border-orange-500 text-white" : "bg-white border-amber-100 text-slate-700"
+                    className={`shrink-0 h-11 px-4 rounded-2xl text-[12.5px] font-black border-2 transition-colors ${
+                      group === null ? "bg-orange-500 border-orange-500 text-white shadow-[0_10px_22px_-12px_rgba(249,115,22,0.9)]" : "bg-white border-amber-100 text-slate-700"
                     }`}
                   >
                     All
-                  </button>
+                  </motion.button>
                   {groups.map((g) => {
                     const on = group === g;
+                    const sample = items.find((i) => (i.group_tag || "").trim() === g);
                     return (
-                      <button
+                      <motion.button
                         key={g}
+                        whileTap={{ scale: 0.94 }}
                         onClick={() => setGroup(g)}
-                        className={`shrink-0 h-9 pl-1.5 pr-3.5 rounded-full text-[12px] font-bold border-2 flex items-center gap-2 transition-colors ${
-                          on ? "bg-orange-500 border-orange-500 text-white" : "bg-white border-amber-100 text-slate-700"
+                        className={`shrink-0 h-11 pl-1.5 pr-3.5 rounded-2xl text-[12.5px] font-black border-2 flex items-center gap-2 transition-colors ${
+                          on ? "bg-orange-500 border-orange-500 text-white shadow-[0_10px_22px_-12px_rgba(249,115,22,0.9)]" : "bg-white border-amber-100 text-slate-700"
                         }`}
                       >
-                        <span className="h-6 w-6 rounded-full overflow-hidden grid place-items-center bg-amber-50">
-                          <Glyph cat={activeSub ?? { image_url: null, icon: null }} size={14} />
+                        <span className="h-8 w-8 rounded-xl overflow-hidden grid place-items-center bg-amber-50 border border-amber-100">
+                          <Glyph
+                            cat={{
+                              image_url: sample?.image_url ?? activeSub?.image_url ?? null,
+                              icon: activeSub?.icon ?? null,
+                            }}
+                            size={16}
+                          />
                         </span>
                         {g}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
                 <p className="pl-1 text-[10.5px] font-semibold text-slate-400">Variation..</p>
               </div>
             )}
+
 
             {/* 3 — Products / variations list */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-6 pt-1 space-y-2.5">
