@@ -188,6 +188,17 @@ export function QuickPage() {
     return m;
   }, [allSubs]);
 
+  /** Open the premium category explorer with a given sub-category pre-selected. */
+  const openSubExplorer = (sub: DBCategory) => {
+    const root = rootCats.find((c) => c.id === sub.parent_id) ?? null;
+    if (!root) return;
+    setSelectedRoot(root.id);
+    setExpandedSub(sub.id);
+    setRootSheet(root);
+  };
+
+
+
 
 
   const selectedSub = useMemo(
