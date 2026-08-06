@@ -403,7 +403,7 @@ export function QuickPage() {
     requireAuth(async () => {
       const items = itemsBySub.get(sub.id) ?? [];
       const variation = variationBySub[sub.id];
-      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
+      if (!variation && items.length > 0) { openSubExplorer(sub); return; }
       await submitLead(sub, variation ?? sub.name);
     });
   };
