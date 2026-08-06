@@ -188,6 +188,17 @@ export function QuickPage() {
     return m;
   }, [allSubs]);
 
+  /** Open the premium category explorer with a given sub-category pre-selected. */
+  const openSubExplorer = (sub: DBCategory) => {
+    const root = rootCats.find((c) => c.id === sub.parent_id) ?? null;
+    if (!root) return;
+    setSelectedRoot(root.id);
+    setExpandedSub(sub.id);
+    setRootSheet(root);
+  };
+
+
+
 
 
   const selectedSub = useMemo(
@@ -392,7 +403,7 @@ export function QuickPage() {
     requireAuth(async () => {
       const items = itemsBySub.get(sub.id) ?? [];
       const variation = variationBySub[sub.id];
-      if (!variation && items.length > 0) { setVariationSheet(sub); return; }
+      if (!variation && items.length > 0) { openSubExplorer(sub); return; }
       await submitLead(sub, variation ?? sub.name);
     });
   };
@@ -748,7 +759,8 @@ export function QuickPage() {
                     </div>
                     <div className="mt-3 pt-2.5 border-t border-dashed border-orange-100 flex items-center gap-2">
                       <button
-                        onClick={() => { if (full) setVariationSheet(full); }}
+                        onClick={() => { if (full) openSubExplorer(full); }}
+
                         className="min-w-0 flex-1 h-9 px-3 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-between gap-1"
                       >
                         <span className="truncate text-[12px] font-semibold text-slate-700">{variation ?? "Select option"}</span>
