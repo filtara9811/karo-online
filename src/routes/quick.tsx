@@ -759,7 +759,8 @@ export function QuickPage() {
                     </div>
                     <div className="mt-3 pt-2.5 border-t border-dashed border-orange-100 flex items-center gap-2">
                       <button
-                        onClick={() => { if (full) setVariationSheet(full); }}
+                        onClick={() => { if (full) openSubExplorer(full); }}
+
                         className="min-w-0 flex-1 h-9 px-3 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-between gap-1"
                       >
                         <span className="truncate text-[12px] font-semibold text-slate-700">{variation ?? "Select option"}</span>
