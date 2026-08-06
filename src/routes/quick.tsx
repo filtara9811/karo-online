@@ -703,11 +703,11 @@ export function QuickPage() {
 
 
 
-        {/* Recent History rail */}
+        {/* Recent History — premium cards */}
         {recent.length > 0 && (
           <>
             <div className="px-4 pt-4 flex items-center justify-between">
-              <span className="font-semibold text-[14px] text-slate-800">Recent</span>
+              <span className="font-semibold text-[15px] text-slate-900">Recent</span>
               <button
                 onClick={() => { localStorage.removeItem("ko-recent-subs"); setRecent([]); }}
                 className="text-orange-500 text-xs font-semibold"
@@ -715,29 +715,125 @@ export function QuickPage() {
                 Clear
               </button>
             </div>
-            <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-2 flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden overscroll-x-contain">
               {recent.map((r) => {
                 const full = allSubs.find((s) => s.id === r.id);
+                const variation = variationBySub[r.id];
                 return (
-                  <motion.button
+                  <article
                     key={r.id}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => { if (full) { setExpandedSub(full.id); setTimeout(() => handleFindVendor(full), 40); } }}
-                    className="shrink-0 h-9 px-3 rounded-full bg-white border border-slate-200 flex items-center gap-2 shadow-sm"
+                    className="shrink-0 w-[78%] max-w-[300px] snap-start rounded-3xl bg-white border border-orange-100 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.45)] p-3"
                   >
-                    {r.image && r.image.startsWith("http") ? (
-                      <img src={r.image} alt="" className="h-6 w-6 rounded-full object-cover" />
-                    ) : isEmojiLike(r.image) ? (
-                      <span className="text-base">{r.image}</span>
-                    ) : (
-                      <Wrench className="h-3.5 w-3.5 text-orange-500" />
-                    )}
-                    <span className="text-[12px] font-semibold text-slate-700 whitespace-nowrap">{r.name}</span>
-                  </motion.button>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-14 w-14 shrink-0 rounded-2xl overflow-hidden bg-orange-50 grid place-items-center border border-orange-100">
+                        {r.image && r.image.startsWith("http") ? (
+                          <img src={r.image} alt={r.name} className="h-full w-full object-cover" loading="lazy" />
+                        ) : isEmojiLike(r.image) ? (
+                          <span className="text-2xl">{r.image}</span>
+                        ) : (
+                          <Wrench className="h-6 w-6 text-orange-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[14px] font-bold text-slate-900 truncate">{r.name}</p>
+                        <p className="text-[11.5px] text-slate-500 truncate">
+                          {(itemsBySub.get(r.id) ?? []).length > 0
+                            ? `${(itemsBySub.get(r.id) ?? []).length} options available`
+                            : "Tap to request nearby vendors"}
+                        </p>
+                        <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600">
+                          <MapPin className="h-3 w-3" /> Within {radiusKm} km
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2.5 border-t border-dashed border-orange-100 flex items-center gap-2">
+                      <button
+                        onClick={() => { if (full) setVariationSheet(full); }}
+                        className="min-w-0 flex-1 h-9 px-3 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-between gap-1"
+                      >
+                        <span className="truncate text-[12px] font-semibold text-slate-700">{variation ?? "Select option"}</span>
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => { if (full) { setExpandedSub(full.id); handleFindVendor(full); } }}
+                        disabled={submitting === r.id}
+                        className="shrink-0 h-9 px-4 rounded-full bg-gradient-to-b from-orange-400 to-orange-600 text-white text-[12px] font-bold shadow-md active:scale-95 transition disabled:opacity-60"
+                      >
+                        {submitting === r.id ? "Sending…" : "Find vendor"}
+                      </button>
+                    </div>
+                  </article>
                 );
               })}
             </div>
           </>
+        )}
+
+        {/* Popular services rail — real categories */}
+        {allSubs.length > 0 && (
+          <section className="pt-4">
+            <div className="px-4 pb-2 flex items-center justify-between">
+              <span className="font-semibold text-[15px] text-slate-900">Recommended for you</span>
+              <button onClick={() => setAllCatsOpen(true)} className="text-orange-500 text-[12px] font-semibold flex items-center">
+                See All <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden overscroll-x-contain">
+              {allSubs.slice(0, 12).map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setExpandedSub(s.id); handleFindVendor(s); }}
+                  className="shrink-0 w-[44%] max-w-[170px] snap-start text-left rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-[0_12px_26px_-20px_rgba(0,0,0,0.5)] active:scale-[0.97] transition"
+                >
+                  <div className="aspect-[4/3] bg-orange-50 grid place-items-center overflow-hidden">
+                    {s.image_url && s.image_url.startsWith("http") ? (
+                      <img src={s.image_url} alt={s.name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : isEmojiLike(s.image_url) || isEmojiLike(s.icon) ? (
+                      <span className="text-3xl">{s.image_url ?? s.icon}</span>
+                    ) : (
+                      <Wrench className="h-7 w-7 text-orange-400" />
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-[12.5px] font-bold text-slate-900 truncate">{s.name}</p>
+                    <p className="text-[11px] text-orange-600 font-semibold">Find vendor ›</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* All categories grid */}
+        {rootCats.length > 0 && (
+          <section className="pt-4">
+            <div className="px-4 pb-2 flex items-center justify-between">
+              <span className="font-semibold text-[15px] text-slate-900">All Categories</span>
+              <button onClick={() => setAllCatsOpen(true)} className="text-orange-500 text-[12px] font-semibold flex items-center">
+                See All <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="mx-4 grid grid-cols-4 gap-2.5">
+              {rootCats.slice(0, 8).map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setSelectedRoot(c.id); setRootSheet(c); }}
+                  className="rounded-2xl bg-white border border-slate-200 p-2 flex flex-col items-center gap-1.5 shadow-sm active:scale-95 transition"
+                >
+                  <span className="h-11 w-11 rounded-full overflow-hidden bg-orange-50 grid place-items-center border border-orange-100">
+                    {c.image_url && c.image_url.startsWith("http") ? (
+                      <img src={c.image_url} alt={c.name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : isEmojiLike(c.image_url) || isEmojiLike(c.icon) ? (
+                      <span className="text-xl">{c.image_url ?? c.icon}</span>
+                    ) : (
+                      <Wrench className="h-5 w-5 text-orange-400" />
+                    )}
+                  </span>
+                  <span className="text-[9.5px] font-semibold text-slate-700 text-center leading-tight line-clamp-2">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Empty-state when the active type has no categories */}
