@@ -231,7 +231,7 @@ export function CategoryExplorerSheet({
 
 
             {/* 3 — Products / variations list */}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-6 pt-1 space-y-2.5">
+            <div key={`${activeSub?.id ?? "none"}-${group ?? "all"}`} className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-3 pb-6 pt-1 space-y-2.5">
               {activeSub && visibleItems.length === 0 && (
                 <ProductRow
                   title={activeSub.name}
