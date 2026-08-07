@@ -66,7 +66,7 @@ function QrDashboardPage() {
   const [posterFor, setPosterFor] = useState<QrProject | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
 
-  const ads = useSponsoredAds(refData?.code ? null : null);
+  const ads = useSponsoredAds();
 
   const loadProjects = useCallback(async (uid: string) => {
     const { data } = await supabase

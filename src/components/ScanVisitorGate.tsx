@@ -12,10 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 export function ScanVisitorGate({
   code,
   source = "qr",
+  project,
   onDone,
 }: {
   code: string;
   source?: "qr" | "link" | "card";
+  project?: string | null;
   onDone?: () => void;
 }) {
   const storageKey = `ko-scan-visitor:${source}:${code}`;
@@ -53,6 +55,7 @@ export function ScanVisitorGate({
       _phone: digits.slice(-10),
       _fp_hash: null,
       _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      _project: project ?? null,
     } as never);
     setBusy(false);
     const res = data as { ok?: boolean } | null;
