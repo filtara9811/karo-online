@@ -2342,6 +2342,51 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_projects: {
+        Row: {
+          accent_color: string | null
+          ad_budget_inr: number
+          ad_clicks: number
+          ads_enabled: boolean
+          created_at: string
+          id: string
+          links: Json
+          slug: string
+          theme_key: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string | null
+          ad_budget_inr?: number
+          ad_clicks?: number
+          ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          links?: Json
+          slug: string
+          theme_key?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_color?: string | null
+          ad_budget_inr?: number
+          ad_clicks?: number
+          ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          links?: Json
+          slug?: string
+          theme_key?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qr_scans: {
         Row: {
           customer_identity_id: string | null
@@ -2512,6 +2557,7 @@ export type Database = {
           fp_hash: string | null
           id: string
           ip_hash: string | null
+          project_slug: string | null
           referrer_user_id: string | null
           source: string
           user_agent: string | null
@@ -2524,6 +2570,7 @@ export type Database = {
           fp_hash?: string | null
           id?: string
           ip_hash?: string | null
+          project_slug?: string | null
           referrer_user_id?: string | null
           source: string
           user_agent?: string | null
@@ -2536,6 +2583,7 @@ export type Database = {
           fp_hash?: string | null
           id?: string
           ip_hash?: string | null
+          project_slug?: string | null
           referrer_user_id?: string | null
           source?: string
           user_agent?: string | null
@@ -5807,6 +5855,7 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          project_slug: string
           source: string
           user_agent: string
           visitor_name: string
@@ -5861,17 +5910,30 @@ export type Database = {
         }
         Returns: undefined
       }
-      log_referral_visit_lead: {
-        Args: {
-          _code: string
-          _fp_hash?: string
-          _name: string
-          _phone: string
-          _source: string
-          _user_agent?: string
-        }
-        Returns: Json
-      }
+      log_referral_visit_lead:
+        | {
+            Args: {
+              _code: string
+              _fp_hash?: string
+              _name: string
+              _phone: string
+              _source: string
+              _user_agent?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _code: string
+              _fp_hash?: string
+              _name: string
+              _phone: string
+              _project?: string
+              _source: string
+              _user_agent?: string
+            }
+            Returns: Json
+          }
       lookup_customer_by_phone: {
         Args: { _phone: string }
         Returns: {
