@@ -292,24 +292,8 @@ export function QrProjectCard({
         )}
       </div>
 
-      {/* Live preview */}
-      <div className="mt-3 mx-4 mb-4">
-        <button
-          onClick={() => setPreviewOpen((v) => !v)}
-          className="w-full h-10 rounded-2xl border border-amber-300 bg-white text-[12px] font-bold text-amber-900 inline-flex items-center justify-center gap-1.5 active:scale-95"
-        >
-          <Eye className="h-4 w-4" /> {previewOpen ? "Hide customer preview" : "Live customer preview"}
-        </button>
-        {previewOpen && landingUrl && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 420 }}
-            className="mt-2 rounded-3xl overflow-hidden border border-amber-200 bg-slate-50"
-          >
-            <iframe src={landingUrl} title={`${project.title} preview`} className="h-[420px] w-full" />
-          </motion.div>
-        )}
-      </div>
+      <div className="mb-4" />
+
 
       {/* QR preview modal */}
       <AnimatePresence>
