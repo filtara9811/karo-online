@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Share2, Link2, Smartphone, Check, X, Apple } from "lucide-react";
+import { Download, Share2, Link2, Check, X, Apple } from "lucide-react";
 import { toast } from "sonner";
 import { needsLightText } from "./landing-shared";
 
@@ -17,7 +17,6 @@ export function LandingMenuSheet({
   installed,
   isIOS,
   onInstall,
-  appUrl,
 }: {
   open: boolean;
   onClose: () => void;
@@ -28,7 +27,6 @@ export function LandingMenuSheet({
   installed: boolean;
   isIOS: boolean;
   onInstall: () => Promise<"accepted" | "dismissed" | "unavailable">;
-  appUrl?: string;
 }) {
   const fg = needsLightText(accent) ? "#ffffff" : "#1a1208";
 
@@ -102,7 +100,7 @@ export function LandingMenuSheet({
               >
                 {isIOS ? <Apple className="h-5 w-5" /> : <Download className="h-5 w-5" />}
                 <span className="min-w-0">
-                  <span className="block text-sm">Download this shop app</span>
+                  <span className="block text-sm">Download {merchantName} app</span>
                   <span className="block text-[11px] font-medium opacity-80">
                     {canInstall ? "Install on home screen" : isIOS ? "Share ▸ Add to Home Screen" : "Browser menu ▸ Install app"}
                   </span>
@@ -127,17 +125,6 @@ export function LandingMenuSheet({
                 <Link2 className="h-4 w-4 text-slate-500" />
                 <span className="text-sm font-semibold">Copy link</span>
               </button>
-              {appUrl && (
-                <a
-                  href={appUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 active:scale-[0.99]"
-                >
-                  <Smartphone className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm font-semibold">Get Karo Online app</span>
-                </a>
-              )}
             </div>
           </motion.div>
         </>

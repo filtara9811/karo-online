@@ -28,31 +28,22 @@ export function useLandingInstall({
   useEffect(() => {
     if (typeof window === "undefined") return;
     setInstalled(window.matchMedia("(display-mode: standalone)").matches);
+    void name;
+    void icon;
 
-    const manifest = {
-      name: `${name} · Karo Online`,
-      short_name: name.slice(0, 12) || "Karo",
-      start_url: `/s/${encodeURIComponent(code)}`,
-      scope: `/s/${encodeURIComponent(code)}`,
-      display: "standalone",
-      background_color: "#ffffff",
-      theme_color: accent,
-      icons: [
-        {
-          src: icon || "/manifest-icon-192.png",
-          sizes: "192x192",
-          type: "image/png",
-          purpose: "any",
-        },
-      ],
-    };
+    // Same-origin manifest — Chrome ignores blob/data manifests, so the install
+    // prompt only appears when the merchant manifest is served from a real URL.
+    const params = new URLSearchParams(window.location.search);
+    const project = params.get("p");
+    const href =
+      `/api/public/manifest/${encodeURIComponent(code)}` +
+      `?accent=${encodeURIComponent(accent)}${project ? `&p=${encodeURIComponent(project)}` : ""}`;
 
-    const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" }));
     const prev = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     const prevHref = prev?.getAttribute("href") ?? null;
     const link = prev ?? document.createElement("link");
     link.rel = "manifest";
-    link.setAttribute("href", url);
+    link.setAttribute("href", href);
     if (!prev) document.head.appendChild(link);
 
     const onBip = (e: Event) => {
@@ -72,9 +63,9 @@ export function useLandingInstall({
       window.removeEventListener("appinstalled", onInstalled);
       if (prevHref) link.setAttribute("href", prevHref);
       else link.remove();
-      URL.revokeObjectURL(url);
     };
   }, [code, name, icon, accent]);
+
 
   const install = useCallback(async (): Promise<"accepted" | "dismissed" | "unavailable"> => {
     const p = promptRef.current;
