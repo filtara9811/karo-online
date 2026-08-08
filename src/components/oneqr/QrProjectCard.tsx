@@ -256,35 +256,38 @@ export function QrProjectCard({
               </div>
               <canvas ref={bigCanvasRef} className="mx-auto mt-3 h-[220px] w-[220px]" />
               <p className="mt-2 text-[10px] text-slate-500 break-all">{landingUrl}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <button onClick={share} className="h-10 rounded-2xl bg-amber-500 text-white text-[12px] font-extrabold active:scale-95">Share</button>
                 <button onClick={() => { setQrOpen(false); onPoster(); }} className="h-10 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-extrabold active:scale-95">Poster</button>
+                <button onClick={() => { setQrOpen(false); setFlipped(true); }} className="h-10 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-[12px] font-extrabold active:scale-95">Live check</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-      <ThemePreviewSheet
-        open={themePreviewOpen}
-        onClose={() => setThemePreviewOpen(false)}
-        title={project.title}
-        landingUrl={landingUrl}
-        themes={themes}
-        currentKey={project.theme_key}
-        accent={accent}
-        premium={premium}
-        saving={saving}
-        onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
-        onAccent={(color) => onPatch({ accent_color: color })}
-        onLinks={onLinks}
-        onPoster={onPoster}
-        onCampaign={onCampaign}
-      />
+        </motion.article>
 
-    </motion.article>
-
+        {/* Back: live customer preview */}
+        <div className="flip-3d-face flip-3d-back">
+          <LivePreviewFace
+            title={project.title}
+            landingUrl={landingUrl}
+            themes={themes}
+            currentKey={project.theme_key}
+            accent={accent}
+            premium={premium}
+            saving={saving}
+            onFlipBack={() => setFlipped(false)}
+            onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
+            onAccent={(color) => onPatch({ accent_color: color })}
+            onLinks={onLinks}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
+
 
 function MenuItem({
   icon: Icon, label, onClick, danger,
