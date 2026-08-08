@@ -124,10 +124,17 @@ function QrDashboardPage() {
     };
   }, [visits]);
 
+  const projectVisits = useCallback(
+    (p: QrProject): VisitorRow[] => {
+      const rows = (visits ?? []).filter((r) => (r.project_slug ?? "") === p.slug);
+      return rows.length > 0 ? rows : (projects?.length ?? 0) <= 1 ? (visits ?? []) : [];
+    },
+    [visits, projects],
+  );
+
   const projectStats = useCallback(
     (p: QrProject) => {
-      const rows = (visits ?? []).filter((r) => (r.project_slug ?? "") === p.slug);
-      const scoped = rows.length > 0 ? rows : (projects?.length ?? 0) <= 1 ? (visits ?? []) : [];
+      const scoped = projectVisits(p);
       const today = new Date().toDateString();
       return {
         total: scoped.length,
@@ -136,8 +143,9 @@ function QrDashboardPage() {
         clicks: p.ad_clicks,
       };
     },
-    [visits, projects],
+    [projectVisits],
   );
+
 
   const createProject = async () => {
     if (!userId) { toast.error("Login karein phir project banayein"); return; }
