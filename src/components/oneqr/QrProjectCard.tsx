@@ -3,11 +3,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import {
   QrCode, Share2, Download, Users, Eye, MousePointerClick, Palette, Link2,
-  Megaphone, Check, Lock, Sparkles, Trash2, Loader2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
+  Megaphone, Trash2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
-import { ThemePreviewSheet } from "./ThemePreviewSheet";
+import { LivePreviewFace } from "./LivePreviewFace";
 import type { VisitorRow } from "./VisitorChatSheet";
+
 
 export type QrProject = {
   id: string;
@@ -59,11 +60,10 @@ export function QrProjectCard({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bigCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [themeOpen, setThemeOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [themePreviewOpen, setThemePreviewOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+
   const accent = project.accent_color || themes.find((t) => t.key === project.theme_key)?.accent_color || "#f59e0b";
   const theme = themes.find((t) => t.key === project.theme_key);
 
@@ -88,19 +88,28 @@ export function QrProjectCard({
   };
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
-      style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
-    >
+    <div className="flip-3d">
+      <div className={`flip-3d-inner ${flipped ? "is-flipped" : ""}`}>
+        <motion.article
+          layout
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 26 }}
+          className="flip-3d-face relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
+          style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
+        >
       {/* Banner */}
       <div
         className="relative h-28"
         style={{ background: `linear-gradient(150deg, ${theme?.bg_from ?? "#fde68a"}, ${theme?.bg_to ?? "#fef3c7"})` }}
       >
+        <button
+          onClick={() => setFlipped(true)}
+          aria-label="Live customer preview"
+          className="absolute top-3 right-[52px] h-9 w-9 grid place-items-center rounded-full bg-white/85 backdrop-blur text-emerald-700 active:scale-90"
+        >
+          <Eye className="h-4 w-4" />
+        </button>
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Project options"
@@ -108,6 +117,7 @@ export function QrProjectCard({
         >
           <MoreVertical className="h-4 w-4" />
         </button>
+
         <AnimatePresence>
           {menuOpen && (
             <motion.div
@@ -116,8 +126,10 @@ export function QrProjectCard({
               exit={{ opacity: 0, scale: 0.94, y: -6 }}
               className="absolute top-14 right-3 z-20 w-48 rounded-2xl bg-white border border-black/10 shadow-xl overflow-hidden"
             >
-              <MenuItem icon={EyeIcon} label="Preview landing page" onClick={() => { setMenuOpen(false); setPreviewOpen(true); }} />
-              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setThemePreviewOpen(true); }} />
+              <MenuItem icon={EyeIcon} label="Live customer preview" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
+              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
+              <MenuItem icon={Megaphone} label="Add campaign" onClick={() => { setMenuOpen(false); onCampaign(); }} />
+
               <MenuItem icon={Link2} label="Manage links" onClick={() => { setMenuOpen(false); onLinks(); }} />
               <MenuItem icon={Download} label="Download poster" onClick={() => { setMenuOpen(false); onPoster(); }} />
               <MenuItem icon={Trash2} label="Delete project" danger onClick={() => { setMenuOpen(false); onDelete(); }} />
@@ -162,16 +174,8 @@ export function QrProjectCard({
         <QrAnalyticsChart visits={visits} accent={accent} />
       </div>
 
-      {/* Theme preview — the fastest way to see what the customer gets */}
-      <div className="mt-3 mx-4">
-        <button
-          onClick={() => setThemePreviewOpen(true)}
-          className="w-full h-12 rounded-2xl text-white text-[13px] font-extrabold inline-flex items-center justify-center gap-2 active:scale-[0.98]"
-          style={{ background: `linear-gradient(135deg, ${accent}, #f97316)` }}
-        >
-          <Eye className="h-4 w-4" /> Preview & change theme
-        </button>
-      </div>
+
+
 
 
 
@@ -255,35 +259,38 @@ export function QrProjectCard({
               </div>
               <canvas ref={bigCanvasRef} className="mx-auto mt-3 h-[220px] w-[220px]" />
               <p className="mt-2 text-[10px] text-slate-500 break-all">{landingUrl}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <button onClick={share} className="h-10 rounded-2xl bg-amber-500 text-white text-[12px] font-extrabold active:scale-95">Share</button>
                 <button onClick={() => { setQrOpen(false); onPoster(); }} className="h-10 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-extrabold active:scale-95">Poster</button>
+                <button onClick={() => { setQrOpen(false); setFlipped(true); }} className="h-10 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-[12px] font-extrabold active:scale-95">Live check</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-      <ThemePreviewSheet
-        open={themePreviewOpen}
-        onClose={() => setThemePreviewOpen(false)}
-        title={project.title}
-        landingUrl={landingUrl}
-        themes={themes}
-        currentKey={project.theme_key}
-        accent={accent}
-        premium={premium}
-        saving={saving}
-        onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
-        onAccent={(color) => onPatch({ accent_color: color })}
-        onLinks={onLinks}
-        onPoster={onPoster}
-        onCampaign={onCampaign}
-      />
+        </motion.article>
 
-    </motion.article>
-
+        {/* Back: live customer preview */}
+        <div className="flip-3d-face flip-3d-back">
+          <LivePreviewFace
+            title={project.title}
+            landingUrl={landingUrl}
+            themes={themes}
+            currentKey={project.theme_key}
+            accent={accent}
+            premium={premium}
+            saving={saving}
+            onFlipBack={() => setFlipped(false)}
+            onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
+            onAccent={(color) => onPatch({ accent_color: color })}
+            onLinks={onLinks}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
+
 
 function MenuItem({
   icon: Icon, label, onClick, danger,
