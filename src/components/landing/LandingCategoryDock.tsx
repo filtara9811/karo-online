@@ -102,9 +102,11 @@ export function LandingCategoryDock({
   merchantPhone?: string;
   merchantName?: string;
 }) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const defaultKey = String((categories.find((c) => c.tiles.length) ?? categories[0])?.key ?? "");
+  const [activeKey, setActiveKey] = useState<string | null>(defaultKey || null);
   const [enquiryTile, setEnquiryTile] = useState<DockTile | null>(null);
   const active = categories.find((c) => c.key === activeKey) ?? null;
+
   const isProductRail = !!active && active.key === "shop" && active.tiles.some((t) => t.image || t.price);
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
