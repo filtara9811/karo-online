@@ -4,7 +4,7 @@ import { User, Phone, ShieldCheck, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getVisitFp } from "@/lib/visit-fp";
-import { recognizeVisitor, trackQrEvent } from "@/lib/qr-track";
+import { recognizeVisitor } from "@/lib/qr-track";
 
 
 /**
