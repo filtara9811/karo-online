@@ -1,4 +1,4 @@
-import { MoreVertical, BadgeCheck } from "lucide-react";
+import { MoreVertical, BadgeCheck, MonitorSmartphone, Check } from "lucide-react";
 import { needsLightText, shade, withAlpha } from "./landing-shared";
 
 /**
@@ -12,6 +12,8 @@ export function LandingTopBar({
   accent,
   onProfile,
   onMenu,
+  onInstall,
+  installed,
 }: {
   name: string;
   avatarUrl?: string | null;
@@ -19,7 +21,10 @@ export function LandingTopBar({
   accent: string;
   onProfile: () => void;
   onMenu: () => void;
+  onInstall?: () => void;
+  installed?: boolean;
 }) {
+
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
 
