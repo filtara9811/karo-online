@@ -522,6 +522,18 @@ function QrDashboardPage() {
         defaultName={posterFor?.title ?? "Karo Online"}
       />
       <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} />
+      <AdServicesSheet
+        open={!!campaignFor}
+        onOpenChange={(v) => !v && setCampaignFor(null)}
+        projectTitle={campaignFor?.title ?? ""}
+      />
+      <VisitorChatSheet
+        open={!!visitorOpen}
+        onOpenChange={(v) => !v && setVisitorOpen(null)}
+        visitor={visitorOpen}
+        accent={themeData?.accent || "#f59e0b"}
+      />
+
     </div>
   );
 }
