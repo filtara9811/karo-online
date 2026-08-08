@@ -126,8 +126,10 @@ export function QrProjectCard({
               exit={{ opacity: 0, scale: 0.94, y: -6 }}
               className="absolute top-14 right-3 z-20 w-48 rounded-2xl bg-white border border-black/10 shadow-xl overflow-hidden"
             >
-              <MenuItem icon={EyeIcon} label="Preview landing page" onClick={() => { setMenuOpen(false); setPreviewOpen(true); }} />
-              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setThemePreviewOpen(true); }} />
+              <MenuItem icon={EyeIcon} label="Live customer preview" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
+              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
+              <MenuItem icon={Megaphone} label="Add campaign" onClick={() => { setMenuOpen(false); onCampaign(); }} />
+
               <MenuItem icon={Link2} label="Manage links" onClick={() => { setMenuOpen(false); onLinks(); }} />
               <MenuItem icon={Download} label="Download poster" onClick={() => { setMenuOpen(false); onPoster(); }} />
               <MenuItem icon={Trash2} label="Delete project" danger onClick={() => { setMenuOpen(false); onDelete(); }} />
