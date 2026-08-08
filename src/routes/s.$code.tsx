@@ -9,6 +9,8 @@ import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
+import { trackQrEvent } from "@/lib/qr-track";
+
 
 
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
