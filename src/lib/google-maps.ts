@@ -336,15 +336,30 @@ export async function staticMapUrl(opts: {
 
 // ─── JS SDK loader ────────────────────────────────────────────────────────
 let _sdkPromise: Promise<any> | null = null;
+
+/** With `loading=async`, google.maps.Map only exists after importLibrary("maps"). */
+async function ensureMapsLibrary(google: any): Promise<any> {
+  if (!google?.maps) return google ?? null;
+  if (google.maps.Map) return google;
+  try {
+    if (typeof google.maps.importLibrary === "function") {
+      await google.maps.importLibrary("maps");
+    }
+  } catch { /* noop */ }
+  return google.maps.Map ? google : google;
+}
+
 export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   if (typeof window === "undefined") return Promise.resolve(null);
   if (window.location.hostname.endsWith(".lovableproject.com")) return Promise.resolve(null);
-  if ((window as any).google?.maps) return Promise.resolve((window as any).google);
+  if ((window as any).google?.maps?.Map) return Promise.resolve((window as any).google);
+  if ((window as any).google?.maps) return ensureMapsLibrary((window as any).google);
   if (_sdkPromise) return _sdkPromise;
+
   _sdkPromise = (async () => {
     const key = await getGoogleMapsKey();
     if (!key) return null;
-    return new Promise((resolve) => {
+    const google = await new Promise<any>((resolve) => {
       let settled = false;
       const resolveOnce = (value: any) => {
         if (settled) return;
@@ -370,7 +385,10 @@ export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
       document.head.appendChild(s);
       window.setTimeout(() => resolveOnce((window as any).google?.maps ? (window as any).google : null), 12000);
     });
+    if (!google) return null;
+    return ensureMapsLibrary(google);
   })();
+
   return _sdkPromise;
 }
 

@@ -9,6 +9,8 @@ import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
+import { trackQrEvent } from "@/lib/qr-track";
+
 
 
 import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
@@ -131,6 +133,7 @@ function ScanLandingPage() {
       setData(next);
       if (next.ok) writeCache(code, next);
     })();
+    const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
     // Log visit (QR scans land here)
     import("@/lib/visit-fp").then(({ getVisitFp }) => {
       supabase.rpc("log_referral_visit", {
@@ -141,8 +144,12 @@ function ScanLandingPage() {
         _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       });
     });
-    return () => { cancelled = true; };
+    trackQrEvent("STORE_VIEW", { code, project });
+    const onInstalled = () => trackQrEvent("PWA_INSTALL", { code, project });
+    window.addEventListener("appinstalled", onInstalled);
+    return () => { cancelled = true; window.removeEventListener("appinstalled", onInstalled); };
   }, [code]);
+
 
   if (!data) return <Fallback message="Loading merchant…" spinner />;
 

@@ -2294,6 +2294,57 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_events: {
+        Row: {
+          amount_inr: number | null
+          code: string | null
+          created_at: string
+          device_fp: string | null
+          event_type: Database["public"]["Enums"]["qr_event_type"]
+          id: string
+          identity_id: string | null
+          meta: Json
+          owner_user_id: string | null
+          project_slug: string | null
+          ref_id: string | null
+          user_agent: string | null
+          visitor_name: string | null
+          visitor_phone: string | null
+        }
+        Insert: {
+          amount_inr?: number | null
+          code?: string | null
+          created_at?: string
+          device_fp?: string | null
+          event_type: Database["public"]["Enums"]["qr_event_type"]
+          id?: string
+          identity_id?: string | null
+          meta?: Json
+          owner_user_id?: string | null
+          project_slug?: string | null
+          ref_id?: string | null
+          user_agent?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Update: {
+          amount_inr?: number | null
+          code?: string | null
+          created_at?: string
+          device_fp?: string | null
+          event_type?: Database["public"]["Enums"]["qr_event_type"]
+          id?: string
+          identity_id?: string | null
+          meta?: Json
+          owner_user_id?: string | null
+          project_slug?: string | null
+          ref_id?: string | null
+          user_agent?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Relationships: []
+      }
       qr_landing_themes: {
         Row: {
           accent_color: string
@@ -5995,6 +6046,10 @@ export type Database = {
         Args: { _vendor_user_id: string }
         Returns: Json
       }
+      remember_customer_device: {
+        Args: { _fp_hash: string; _name?: string; _phone?: string }
+        Returns: Json
+      }
       resolve_qr: { Args: { p_code: string }; Returns: Json }
       save_customer_profile: {
         Args: {
@@ -6296,6 +6351,19 @@ export type Database = {
       }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
       sync_scan_lead_join: { Args: { _lead_id: string }; Returns: Json }
+      track_qr_event: {
+        Args: {
+          _amount?: number
+          _code?: string
+          _event: string
+          _fp_hash?: string
+          _meta?: Json
+          _project?: string
+          _ref?: string
+          _user_agent?: string
+        }
+        Returns: Json
+      }
       transfer_coins: {
         Args: { _coins: number; _note?: string; _receiver_id: string }
         Returns: Json
@@ -6358,6 +6426,20 @@ export type Database = {
         | "support"
         | "field_executive"
         | "staff"
+      qr_event_type:
+        | "QR_SCAN"
+        | "STORE_VIEW"
+        | "PRODUCT_VIEW"
+        | "PRODUCT_ENQUIRY"
+        | "WHATSAPP_CLICK"
+        | "CALL_CLICK"
+        | "ORDER_CREATED"
+        | "PAYMENT_COMPLETED"
+        | "REVIEW_SUBMITTED"
+        | "CAMPAIGN_CLICK"
+        | "AD_CLICK"
+        | "PWA_INSTALL"
+        | "CHAT"
       staff_chat_type: "direct" | "group" | "vendor_thread" | "broadcast"
       staff_ledger_kind:
         | "task_earned"
@@ -6513,6 +6595,21 @@ export const Constants = {
         "support",
         "field_executive",
         "staff",
+      ],
+      qr_event_type: [
+        "QR_SCAN",
+        "STORE_VIEW",
+        "PRODUCT_VIEW",
+        "PRODUCT_ENQUIRY",
+        "WHATSAPP_CLICK",
+        "CALL_CLICK",
+        "ORDER_CREATED",
+        "PAYMENT_COMPLETED",
+        "REVIEW_SUBMITTED",
+        "CAMPAIGN_CLICK",
+        "AD_CLICK",
+        "PWA_INSTALL",
+        "CHAT",
       ],
       staff_chat_type: ["direct", "group", "vendor_thread", "broadcast"],
       staff_ledger_kind: [

@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { User, Phone, ShieldCheck, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
+import { recognizeVisitor } from "@/lib/qr-track";
+
 
 /**
  * ScanVisitorGate — popup shown when someone opens a QR / referral landing page.
@@ -32,10 +35,35 @@ export function ScanVisitorGate({
     let already = false;
     try { already = !!window.sessionStorage.getItem(storageKey); } catch { /* ignore */ }
     if (already) { onDone?.(); return; }
-    const t = window.setTimeout(() => setOpen(true), 500);
-    return () => window.clearTimeout(t);
+
+    let cancelled = false;
+    let timer = 0;
+    (async () => {
+      // Returning customer on this device → no form, details already known.
+      const known = await recognizeVisitor();
+      if (cancelled) return;
+      if (known?.mobile) {
+        await supabase.rpc("log_referral_visit_lead" as never, {
+          _code: code,
+          _source: source,
+          _name: known.name ?? "Karo customer",
+          _phone: known.mobile,
+          _fp_hash: getVisitFp(),
+          _user_agent: navigator.userAgent,
+          _project: project ?? null,
+        } as never);
+        if (cancelled) return;
+        try { window.sessionStorage.setItem(storageKey, "1"); } catch { /* ignore */ }
+        toast.success(`Welcome back${known.name ? `, ${known.name}` : ""}!`);
+        onDone?.();
+        return;
+      }
+      timer = window.setTimeout(() => setOpen(true), 500);
+    })();
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, storageKey]);
+
 
   const close = (mark: boolean) => {
     if (mark) { try { window.sessionStorage.setItem(storageKey, "1"); } catch { /* ignore */ } }
@@ -53,7 +81,7 @@ export function ScanVisitorGate({
       _source: source,
       _name: name.trim(),
       _phone: digits.slice(-10),
-      _fp_hash: null,
+      _fp_hash: getVisitFp(),
       _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       _project: project ?? null,
     } as never);
