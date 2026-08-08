@@ -12,6 +12,7 @@ import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { SponsoredAdsRail, useSponsoredAds } from "@/components/oneqr/SponsoredAdsRail";
 import { QrProjectCard, type QrProject, type LandingTheme } from "@/components/oneqr/QrProjectCard";
+import { OneQrGuideSheet } from "@/components/oneqr/OneQrGuideSheet";
 import { AdServicesSheet } from "@/components/oneqr/AdServicesSheet";
 import { VisitorChatSheet, type VisitorRow } from "@/components/oneqr/VisitorChatSheet";
 import { toast } from "sonner";
@@ -63,6 +64,7 @@ function QrDashboardPage() {
   const [tab, setTab] = useState<Tab>("projects");
   const [userId, setUserId] = useState<string | null>(null);
   const [themeData, setThemeData] = useState<ThemeData | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [visits, setVisits] = useState<Visit[] | null>(null);
   const [projects, setProjects] = useState<QrProject[] | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -231,6 +233,14 @@ function QrDashboardPage() {
               </button>
             ))}
           </div>
+
+          <button
+            aria-label="One QR guide"
+            onClick={() => setGuideOpen(true)}
+            className="h-11 w-11 shrink-0 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </button>
 
           <button
             aria-label="Notifications"
@@ -557,6 +567,8 @@ function StatCard({ label, value }: { label: string; value: number }) {
     <div className="rounded-2xl border border-black/10 bg-white px-2 py-3 text-center shadow-sm">
       <p className="text-lg font-extrabold text-slate-900 leading-none">{value}</p>
       <p className="text-[10px] text-slate-500 mt-1">{label}</p>
+      <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
+
     </div>
   );
 }
