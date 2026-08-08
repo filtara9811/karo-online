@@ -60,11 +60,10 @@ export function QrProjectCard({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bigCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [themeOpen, setThemeOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [themePreviewOpen, setThemePreviewOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+
   const accent = project.accent_color || themes.find((t) => t.key === project.theme_key)?.accent_color || "#f59e0b";
   const theme = themes.find((t) => t.key === project.theme_key);
 
