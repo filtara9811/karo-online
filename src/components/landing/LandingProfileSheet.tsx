@@ -18,6 +18,9 @@ export function LandingProfileSheet({
   accent,
   merchant,
   pageUrl,
+  visitCode,
+  project,
+
 }: {
   open: boolean;
   onClose: () => void;
