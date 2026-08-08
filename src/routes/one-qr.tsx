@@ -439,7 +439,7 @@ function QrDashboardPage() {
                         const device = /Android/i.test(ua) ? "Android" : /iPhone|iPad/i.test(ua) ? "iOS" : "Web";
                         const name = (r.visitor_name || "").trim();
                         return (
-                          <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">
+                          <li key={r.id} onClick={() => setVisitorOpen(r)} className="flex items-center gap-3 px-3 py-2.5 active:bg-amber-50/70">
                             <span
                               className="h-11 w-11 shrink-0 rounded-full grid place-items-center text-white font-bold text-base"
                               style={{ background: `linear-gradient(135deg, ${themeData?.accent || "#f59e0b"}, #f59e0b)` }}
