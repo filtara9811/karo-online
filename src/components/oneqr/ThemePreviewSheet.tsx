@@ -117,49 +117,83 @@ export function ThemePreviewSheet({
                   </a>
                 )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {themes.map((t) => {
-                  const locked = t.is_premium && !premium;
-                  const isActive = t.key === currentKey;
-                  return (
-                    <motion.button
-                      key={t.key}
-                      whileTap={{ scale: 0.96 }}
-                      disabled={locked || saving}
-                      onClick={() => {
-                        onApply(t);
-                        setTimeout(() => setNonce((n) => n + 1), 700);
-                      }}
-                      className={`relative w-[128px] shrink-0 overflow-hidden rounded-2xl border text-left ${isActive ? "border-amber-500 ring-2 ring-amber-300" : "border-black/10"} ${locked ? "opacity-70" : ""}`}
-                    >
-                      <div className="h-16 p-2 flex flex-col justify-end" style={{ background: `linear-gradient(160deg, ${t.bg_from}, ${t.bg_to})` }}>
-                        <span className="mb-1 h-4 w-4 rounded-full" style={{ background: t.accent_color }} />
-                        <span className="block h-1.5 w-10 rounded-full bg-black/15" />
-                      </div>
-                      <div className="bg-white px-2 py-1.5">
-                        <p className="truncate text-[11.5px] font-bold text-slate-900">{t.name}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                          {t.style === "chat" ? "Chat style" : t.style === "reels" ? "Reels style" : "Shop style"}
-                        </p>
-                      </div>
-                      {t.is_premium && (
-                        <span className={`absolute right-1.5 top-1.5 inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-[8.5px] font-bold text-white ${locked ? "bg-black/70" : "bg-purple-600"}`}>
-                          {locked ? <Lock className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />} PRO
-                        </span>
-                      )}
-                      {isActive && (
-                        <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-amber-500 text-white">
-                          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                        </span>
-                      )}
-                    </motion.button>
-                  );
-                })}
+              <AnimatePresence initial={false}>
+                {showThemes && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {themes.map((t) => {
+                        const locked = t.is_premium && !premium;
+                        const isActive = t.key === currentKey;
+                        return (
+                          <motion.button
+                            key={t.key}
+                            whileTap={{ scale: 0.96 }}
+                            disabled={locked || saving}
+                            onClick={() => onApply(t)}
+                            className={`relative w-[128px] shrink-0 overflow-hidden rounded-2xl border text-left ${isActive ? "border-amber-500 ring-2 ring-amber-300" : "border-black/10"} ${locked ? "opacity-70" : ""}`}
+                          >
+                            <div className="h-16 p-2 flex flex-col justify-end" style={{ background: `linear-gradient(160deg, ${t.bg_from}, ${t.bg_to})` }}>
+                              <span className="mb-1 h-4 w-4 rounded-full" style={{ background: t.accent_color }} />
+                              <span className="block h-1.5 w-10 rounded-full bg-black/15" />
+                            </div>
+                            <div className="bg-white px-2 py-1.5">
+                              <p className="truncate text-[11.5px] font-bold text-slate-900">{t.name}</p>
+                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                                {t.style === "chat" ? "Chat style" : t.style === "reels" ? "Reels style" : "Shop style"}
+                              </p>
+                            </div>
+                            {t.is_premium && (
+                              <span className={`absolute right-1.5 top-1.5 inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-[8.5px] font-bold text-white ${locked ? "bg-black/70" : "bg-purple-600"}`}>
+                                {locked ? <Lock className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />} PRO
+                              </span>
+                            )}
+                            {isActive && (
+                              <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-amber-500 text-white">
+                                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                              </span>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Inline editor toolbar — sab kuch isi preview ke andar */}
+              <div className="mt-2 flex items-center gap-2 overflow-x-auto rounded-full border border-amber-200 bg-amber-50/80 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button
+                  type="button"
+                  onClick={() => colorRef.current?.click()}
+                  className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white shadow active:scale-95"
+                  style={{ background: accent }}
+                  aria-label="Brand colour"
+                >
+                  <Palette className="h-4 w-4 text-white drop-shadow" />
+                  <input
+                    ref={colorRef}
+                    type="color"
+                    value={/^#[0-9a-f]{6}$/i.test(accent) ? accent : "#f59e0b"}
+                    onChange={(e) => onAccent(e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </button>
+                <ToolChip active={showThemes} label="Theme" icon={Sparkles} onClick={() => setShowThemes((v) => !v)} />
+                <ToolChip label="Links | add" icon={Link2} onClick={onLinks} />
+                <ToolChip label="Product | add" icon={Link2} onClick={onLinks} />
+                <ToolChip label="Poster" icon={Download} onClick={onPoster} />
+                <ToolChip label="Campaign" icon={Megaphone} onClick={onCampaign} />
               </div>
               <p className="mt-1.5 px-1 text-[10px] text-slate-500">
-                Tap koi bhi style — turant customer landing page par apply ho jayega.
+                Koi bhi change karein — preview turant update ho jayega.
               </p>
             </div>
+
           </motion.div>
         </motion.div>
       )}
