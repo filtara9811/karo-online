@@ -81,7 +81,7 @@ export function ScanVisitorGate({
       _source: source,
       _name: name.trim(),
       _phone: digits.slice(-10),
-      _fp_hash: null,
+      _fp_hash: getVisitFp(),
       _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       _project: project ?? null,
     } as never);
