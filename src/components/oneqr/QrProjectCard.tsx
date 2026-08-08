@@ -270,10 +270,16 @@ export function QrProjectCard({
         landingUrl={landingUrl}
         themes={themes}
         currentKey={project.theme_key}
+        accent={accent}
         premium={premium}
         saving={saving}
         onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
+        onAccent={(color) => onPatch({ accent_color: color })}
+        onLinks={onLinks}
+        onPoster={onPoster}
+        onCampaign={onCampaign}
       />
+
     </motion.article>
 
   );
