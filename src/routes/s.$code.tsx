@@ -224,8 +224,9 @@ function ScanLandingPage() {
         verified={m.verified}
         accent={accent}
         onProfile={() => setProfileOpen(true)}
-        onMenu={() => setProfileOpen(true)}
+        onMenu={() => setMenuOpen(true)}
       />
+
 
       {/* Status-style media: one progress segment per uploaded photo / video / link */}
       <LandingStoryMedia media={mediaList} alt={merchantName} accent={accent} className="h-[62svh]">
