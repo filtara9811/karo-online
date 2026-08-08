@@ -340,7 +340,7 @@ export function QrProjectCard({
           </motion.div>
         )}
       </AnimatePresence>
-          <ThemePreviewSheet
+      <ThemePreviewSheet
         open={themePreviewOpen}
         onClose={() => setThemePreviewOpen(false)}
         title={project.title}
@@ -351,8 +351,8 @@ export function QrProjectCard({
         saving={saving}
         onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
       />
+    </motion.article>
 
-</motion.article>
   );
 }
 
