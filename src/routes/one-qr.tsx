@@ -524,15 +524,15 @@ function QrDashboardPage() {
       <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} />
       <AdServicesSheet
         open={!!campaignFor}
-        onOpenChange={(v) => !v && setCampaignFor(null)}
+        onOpenChange={(v) => { if (!v) setCampaignFor(null); }}
         projectTitle={campaignFor?.title ?? ""}
+        onRequest={({ category, service }) => {
+          setCampaignFor(null);
+          toast.success(`${service} (${category}) campaign request bhej diya`);
+        }}
       />
-      <VisitorChatSheet
-        open={!!visitorOpen}
-        onOpenChange={(v) => !v && setVisitorOpen(null)}
-        visitor={visitorOpen}
-        accent={themeData?.accent || "#f59e0b"}
-      />
+      <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
+
 
     </div>
   );
