@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft, QrCode, Loader2, MessageCircle, Users, Phone, Plus,
+  ArrowLeft, QrCode, Loader2, MessageCircle, Users, Phone, Plus, HelpCircle,
   LayoutGrid, Megaphone, Settings as SettingsIcon, CalendarDays, Palette,
   Bell, Star, MapPin, Store, X,
 } from "lucide-react";
@@ -567,8 +567,6 @@ function StatCard({ label, value }: { label: string; value: number }) {
     <div className="rounded-2xl border border-black/10 bg-white px-2 py-3 text-center shadow-sm">
       <p className="text-lg font-extrabold text-slate-900 leading-none">{value}</p>
       <p className="text-[10px] text-slate-500 mt-1">{label}</p>
-      <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
-
     </div>
   );
 }
