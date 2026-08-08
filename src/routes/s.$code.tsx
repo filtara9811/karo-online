@@ -300,7 +300,7 @@ function ScanLandingPage() {
       </p>
 
       {/* Space for the fixed category dock */}
-      <div className="h-28" />
+      <div className="h-36" />
 
       <LandingCategoryDock
         categories={categories}
