@@ -163,16 +163,8 @@ export function QrProjectCard({
         <QrAnalyticsChart visits={visits} accent={accent} />
       </div>
 
-      {/* Theme preview — the fastest way to see what the customer gets */}
-      <div className="mt-3 mx-4">
-        <button
-          onClick={() => setThemePreviewOpen(true)}
-          className="w-full h-12 rounded-2xl text-white text-[13px] font-extrabold inline-flex items-center justify-center gap-2 active:scale-[0.98]"
-          style={{ background: `linear-gradient(135deg, ${accent}, #f97316)` }}
-        >
-          <Eye className="h-4 w-4" /> Preview & change theme
-        </button>
-      </div>
+
+
 
 
 
