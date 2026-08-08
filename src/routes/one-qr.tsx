@@ -69,6 +69,10 @@ function QrDashboardPage() {
   const [creating, setCreating] = useState(false);
   const [posterFor, setPosterFor] = useState<QrProject | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
+  const [adsPage, setAdsPage] = useState(false);
+  const [campaignFor, setCampaignFor] = useState<QrProject | null>(null);
+  const [visitorOpen, setVisitorOpen] = useState<VisitorRow | null>(null);
+
 
   const ads = useSponsoredAds();
 
