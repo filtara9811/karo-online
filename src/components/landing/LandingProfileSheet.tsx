@@ -141,6 +141,9 @@ export function LandingProfileSheet({
                 </div>
               )}
 
+              {visitCode && <MyDetailsCard accent={accent} code={visitCode} project={project ?? null} />}
+
+
               <div className="rounded-3xl border p-4 text-center" style={{ borderColor: accent }}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.25em]" style={{ color: shade(accent, -0.25) }}>
                   Scan · Save · Share
