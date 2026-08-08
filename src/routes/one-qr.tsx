@@ -187,19 +187,117 @@ function QrDashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-white pb-32">
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-amber-100">
-        <div className="max-w-md mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/" className="h-9 w-9 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90">
-            <ArrowLeft className="h-4 w-4" />
+        <div className="max-w-md mx-auto px-3 h-16 flex items-center gap-2.5">
+          <Link
+            to="/"
+            aria-label="Back to home"
+            className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 grid place-items-center text-white font-extrabold ring-2 ring-white active:scale-90"
+          >
+            {code ? code.charAt(0).toUpperCase() : <ArrowLeft className="h-4 w-4" />}
           </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display font-bold text-[15px] text-slate-900 truncate">One QR Business</h1>
-            <p className="text-[11px] text-slate-500 truncate">{code ? `Code ${code}` : "Loading code…"}</p>
+
+          <div className="flex-1 min-w-0 h-11 rounded-full border border-amber-200 bg-amber-50/70 p-1 grid grid-cols-2">
+            {[
+              { key: false, label: "My project" },
+              { key: true, label: "All sponsored ads" },
+            ].map((s) => (
+              <button
+                key={String(s.key)}
+                onClick={() => setAdsPage(s.key)}
+                className={`relative rounded-full text-[12px] font-bold truncate px-2 ${adsPage === s.key ? "text-white" : "text-amber-800/70"}`}
+              >
+                {adsPage === s.key && (
+                  <motion.span
+                    layoutId="oneqr-seg"
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+                    transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                  />
+                )}
+                <span className="relative">{s.label}</span>
+              </button>
+            ))}
           </div>
-          <span className="h-9 px-3 rounded-full bg-amber-100 text-amber-800 text-[11px] font-extrabold inline-flex items-center">
-            {stats.total} scans
-          </span>
+
+          <button
+            aria-label="Notifications"
+            className="relative h-11 w-11 shrink-0 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90"
+          >
+            <Bell className="h-5 w-5" />
+            {stats.leads > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold grid place-items-center">
+                {stats.leads}
+              </span>
+            )}
+          </button>
         </div>
       </header>
+
+      <AnimatePresence>
+        {adsPage && (
+          <motion.section
+            initial={{ x: "100%", opacity: 0.6 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0.6 }}
+            transition={{ type: "spring", stiffness: 260, damping: 30 }}
+            className="fixed inset-x-0 top-16 bottom-0 z-20 bg-gradient-to-b from-amber-50 to-white overflow-y-auto"
+          >
+            <div className="max-w-md mx-auto px-4 py-4 space-y-3 pb-28">
+              <div className="flex items-center gap-2">
+                <Megaphone className="h-4 w-4 text-amber-700" />
+                <h2 className="font-display font-bold text-[15px] text-slate-900">All sponsored ads</h2>
+                <button
+                  onClick={() => setAdsPage(false)}
+                  aria-label="Close sponsored ads"
+                  className="ml-auto h-9 w-9 grid place-items-center rounded-full bg-slate-100 text-slate-600 active:scale-90"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {ads.length === 0 ? (
+                <p className="text-xs text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-4">
+                  Nearby koi sponsored ad nahi mila.
+                </p>
+              ) : (
+                ads.map((a, i) => (
+                  <motion.article
+                    key={a.user_id + i}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                    className="rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-[0_14px_34px_-24px_rgba(180,120,20,0.55)]"
+                  >
+                    <div className="relative h-36">
+                      <img
+                        src={(a.cover_image_url || a.avatar_url) as string}
+                        alt={a.business_name ?? "Sponsored shop"}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      {a.distanceKm != null && (
+                        <span className="absolute top-2 right-2 h-7 px-2.5 rounded-full bg-white/90 text-[10px] font-extrabold text-slate-800 inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-amber-600" /> {a.distanceKm.toFixed(1)} km
+                        </span>
+                      )}
+                    </div>
+                    <div className="px-3.5 py-3">
+                      <p className="font-display font-bold text-[14px] text-slate-900 truncate">{a.business_name ?? "Karo Shop"}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{a.trade ?? a.deals_in ?? "Verified shop"}</p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="h-7 px-2 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-amber-500 text-amber-500" /> 4.8
+                        </span>
+                        <span className="ml-auto h-9 px-4 rounded-full bg-amber-500 text-white text-[11px] font-extrabold inline-flex items-center gap-1.5">
+                          <Store className="h-3.5 w-3.5" /> Shop Visit
+                        </span>
+                      </div>
+                    </div>
+                  </motion.article>
+                ))
+              )}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       <div className="max-w-md mx-auto px-4 pt-4">
         <AnimatePresence mode="wait">
@@ -237,6 +335,7 @@ function QrDashboardPage() {
                         key={p.id}
                         project={p}
                         stats={projectStats(p)}
+                        visits={projectVisits(p)}
                         themes={themes}
                         premium={premium}
                         saving={savingId === p.id}
@@ -245,12 +344,15 @@ function QrDashboardPage() {
                         onDelete={() => deleteProject(p.id)}
                         onPoster={() => setPosterFor(p)}
                         onLinks={() => setLinksOpen(true)}
+                        onCampaign={() => setCampaignFor(p)}
+                        onVisitor={(v) => setVisitorOpen(v)}
                       />
                     ))}
                   </div>
                 )}
               </>
             )}
+
 
             {tab === "ads" && (
               <>
