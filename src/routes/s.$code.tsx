@@ -294,7 +294,23 @@ function ScanLandingPage() {
         accent={accent}
         merchant={m}
         pageUrl={pageUrl}
+        visitCode={code}
+        project={project}
       />
+
+      <LandingMenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        accent={accent}
+        merchantName={merchantName}
+        pageUrl={pageUrl}
+        canInstall={installer.canInstall}
+        installed={installer.installed}
+        isIOS={installer.isIOS}
+        onInstall={installer.install}
+        appUrl={playUrl}
+      />
+
 
       <UpiPaymentModal
         open={paymentOpen}
