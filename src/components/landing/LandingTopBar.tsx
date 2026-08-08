@@ -62,7 +62,21 @@ export function LandingTopBar({
         </p>
       </button>
 
+      {onInstall && (
+        <button
+          type="button"
+          onClick={onInstall}
+          aria-label={installed ? "App installed" : "Install shop app"}
+          className="h-9 shrink-0 grid grid-flow-col items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wide transition active:scale-95"
+          style={{ background: withAlpha(light ? "#ffffff" : "#000000", 0.18), color: fg }}
+        >
+          {installed ? <Check className="h-4 w-4" /> : <MonitorSmartphone className="h-4 w-4" />}
+          <span>{installed ? "Installed" : "App"}</span>
+        </button>
+      )}
+
       <button
+
         type="button"
         onClick={onMenu}
         aria-label="More"
