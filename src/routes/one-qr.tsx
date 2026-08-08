@@ -174,6 +174,20 @@ function QrDashboardPage() {
     setProjects((p) => (p ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)));
     setSavingId(id);
     const { error } = await supabase.from("qr_projects").update(patch as never).eq("id", id);
+    // Theme choice must reach the customer landing page, which reads the merchant setting.
+    if (patch.theme_key) {
+      const { data: res } = await supabase.rpc("set_qr_landing_theme" as never, {
+        _key: patch.theme_key,
+        _accent: patch.accent_color ?? null,
+      } as never);
+      const ok = (res as { ok?: boolean } | null)?.ok !== false;
+      if (ok) {
+        setThemeData((t) => (t ? { ...t, current: patch.theme_key as string, accent: patch.accent_color ?? t.accent } : t));
+        toast.success("Theme customer ke landing page par lag gaya");
+      } else {
+        toast.error("Yeh theme premium hai — unlock karein");
+      }
+    }
     setSavingId(null);
     if (error) toast.error("Save nahi hua");
   };
