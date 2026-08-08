@@ -288,20 +288,21 @@ export function LandingCategoryDock({
         initial={{ y: 90, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 28, stiffness: 220, delay: 0.15 }}
-        className="fixed inset-x-2 bottom-3 z-50 rounded-full border px-2 py-2 shadow-2xl"
+        className="fixed inset-x-3 bottom-3 z-50 rounded-full border px-1.5 py-1.5 shadow-xl"
         style={{
           background: `linear-gradient(135deg, ${accent}, ${shade(accent, light ? 0.2 : -0.14)})`,
           borderColor: withAlpha(light ? "#ffffff" : "#000000", 0.35),
         }}
       >
-        <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => {
             const Icon = c.icon;
             const isActive = activeKey === c.key;
             return (
-              <button
+              <motion.button
                 key={c.key}
                 type="button"
+                whileTap={{ scale: 0.92 }}
                 onClick={() => {
                   if (c.action) {
                     c.action();
@@ -309,25 +310,27 @@ export function LandingCategoryDock({
                   }
                   setActiveKey((k) => (k === c.key ? null : String(c.key)));
                 }}
-                className="flex w-[68px] shrink-0 flex-col items-center gap-1 rounded-full py-1 transition active:scale-95"
+                className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 transition"
+                style={{
+                  background: isActive ? (light ? "#ffffff" : "#1a1208") : withAlpha(light ? "#ffffff" : "#000000", 0.16),
+                  color: isActive ? accent : fg,
+                }}
               >
-                <span
-                  className="grid h-11 w-11 place-items-center rounded-full transition"
-                  style={{
-                    background: isActive ? (light ? "#ffffff" : "#1a1208") : withAlpha(light ? "#ffffff" : "#000000", 0.18),
-                    color: isActive ? accent : fg,
-                    boxShadow: isActive ? `0 0 0 2px ${withAlpha(light ? "#ffffff" : "#000000", 0.45)}` : "none",
-                  }}
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="w-full truncate px-0.5 text-center text-[9px] font-semibold lowercase" style={{ color: fg, opacity: 0.9 }}>
-                  {c.label}
-                </span>
-              </button>
+                <Icon className="h-4 w-4 shrink-0" />
+                {isActive && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: "auto" }}
+                    className="max-w-[86px] truncate text-[10px] font-bold uppercase tracking-wide"
+                  >
+                    {c.label}
+                  </motion.span>
+                )}
+              </motion.button>
             );
           })}
         </div>
+
       </motion.div>
     </>
   );
