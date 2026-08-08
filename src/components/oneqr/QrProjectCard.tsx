@@ -3,11 +3,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import {
   QrCode, Share2, Download, Users, Eye, MousePointerClick, Palette, Link2,
-  Megaphone, Check, Lock, Sparkles, Trash2, Loader2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
+  Megaphone, Trash2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
-import { ThemePreviewSheet } from "./ThemePreviewSheet";
+import { LivePreviewFace } from "./LivePreviewFace";
 import type { VisitorRow } from "./VisitorChatSheet";
+
 
 export type QrProject = {
   id: string;
