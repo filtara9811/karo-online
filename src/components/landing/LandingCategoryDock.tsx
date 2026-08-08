@@ -133,8 +133,8 @@ export function LandingCategoryDock({
               transition={{ type: "spring", damping: 26, stiffness: 300 }}
               className={
                 isProductRail
-                  ? "fixed inset-x-0 bottom-[104px] z-50 px-2"
-                  : "fixed inset-x-2 bottom-[104px] z-50 rounded-3xl border bg-white/95 p-3 shadow-2xl backdrop-blur-md"
+                  ? "fixed inset-x-0 bottom-[74px] z-50 px-2"
+                  : "fixed inset-x-2 bottom-[74px] z-50 rounded-3xl border bg-white/95 p-3 shadow-2xl backdrop-blur-md"
               }
               style={isProductRail ? undefined : { borderColor: withAlpha(accent, 0.5) }}
             >
