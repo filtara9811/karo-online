@@ -173,69 +173,8 @@ export function QrProjectCard({
         </button>
       </div>
 
-      {/* Theme accordion */}
-      <div className="mt-3 mx-4 rounded-2xl border border-black/10 overflow-hidden">
-        <button
-          onClick={() => setThemeOpen((v) => !v)}
-          className="w-full h-11 px-3 flex items-center gap-2 bg-amber-50/70 active:scale-[0.99]"
-        >
-          <Palette className="h-4 w-4 text-amber-700" />
-          <span className="text-[12px] font-bold text-slate-800">Landing page theme</span>
-          <span className="ml-auto text-[11px] text-slate-500">{theme?.name ?? project.theme_key}</span>
-        </button>
-        <motion.div initial={false} animate={{ height: themeOpen ? "auto" : 0 }} className="overflow-hidden">
-          <div className="p-3 grid grid-cols-2 gap-2.5 bg-white">
-            {themes.map((t) => {
-              const locked = t.is_premium && !premium;
-              const active = project.theme_key === t.key;
-              return (
-                <motion.button
-                  key={t.key}
-                  whileTap={{ scale: 0.97 }}
-                  disabled={locked || saving}
-                  onClick={() => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
-                  className={`relative rounded-2xl overflow-hidden border text-left ${active ? "border-amber-500 ring-2 ring-amber-300" : "border-black/10"} ${locked ? "opacity-70" : ""}`}
-                >
-                  <div className="h-20 p-2.5 flex flex-col justify-end" style={{ background: `linear-gradient(160deg, ${t.bg_from}, ${t.bg_to})` }}>
-                    <span className="h-5 w-5 rounded-full mb-1.5" style={{ background: t.accent_color }} />
-                    <span className="block h-1.5 w-12 rounded-full bg-black/15" />
-                  </div>
-                  <div className="px-2.5 py-2 bg-white">
-                    <p className="text-[12px] font-bold text-slate-900 truncate">{t.name}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{t.description ?? t.preset}</p>
-                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                      {t.style === "chat" ? "Chat style" : t.style === "reels" ? "Reels style" : "Shop style"}
-                    </p>
-                  </div>
-                  {t.is_premium && (
-                    <span className={`absolute top-2 right-2 h-6 px-1.5 rounded-full text-white text-[9px] font-bold inline-flex items-center gap-1 ${locked ? "bg-black/70" : "bg-purple-600"}`}>
-                      {locked ? <Lock className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />} PRO
-                    </span>
-                  )}
-                  {active && (
-                    <span className="absolute top-2 left-2 h-6 w-6 rounded-full bg-amber-500 text-white grid place-items-center">
-                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    </span>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-        </motion.div>
-      </div>
 
-      {/* Ads */}
-      <div className="mt-3 mx-4 grid grid-cols-2 gap-2">
-        <button onClick={onPoster} className="h-11 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-extrabold inline-flex items-center justify-center gap-1.5 active:scale-95">
-          <Download className="h-4 w-4" /> Poster
-        </button>
-        <button
-          onClick={onCampaign}
-          className={`h-11 rounded-2xl text-[12px] font-extrabold inline-flex items-center justify-center gap-1.5 active:scale-95 ${project.ads_enabled ? "bg-amber-500 text-white" : "border border-amber-300 bg-amber-50 text-amber-900"}`}
-        >
-          <Megaphone className="h-4 w-4" /> {project.ads_enabled ? "Ads running" : "Add campaign"}
-        </button>
-      </div>
+
 
       {project.ads_enabled && (
         <div className="mt-2 mx-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
@@ -292,24 +231,8 @@ export function QrProjectCard({
         )}
       </div>
 
-      {/* Live preview */}
-      <div className="mt-3 mx-4 mb-4">
-        <button
-          onClick={() => setPreviewOpen((v) => !v)}
-          className="w-full h-10 rounded-2xl border border-amber-300 bg-white text-[12px] font-bold text-amber-900 inline-flex items-center justify-center gap-1.5 active:scale-95"
-        >
-          <Eye className="h-4 w-4" /> {previewOpen ? "Hide customer preview" : "Live customer preview"}
-        </button>
-        {previewOpen && landingUrl && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 420 }}
-            className="mt-2 rounded-3xl overflow-hidden border border-amber-200 bg-slate-50"
-          >
-            <iframe src={landingUrl} title={`${project.title} preview`} className="h-[420px] w-full" />
-          </motion.div>
-        )}
-      </div>
+      <div className="mb-4" />
+
 
       {/* QR preview modal */}
       <AnimatePresence>
@@ -347,10 +270,16 @@ export function QrProjectCard({
         landingUrl={landingUrl}
         themes={themes}
         currentKey={project.theme_key}
+        accent={accent}
         premium={premium}
         saving={saving}
         onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
+        onAccent={(color) => onPatch({ accent_color: color })}
+        onLinks={onLinks}
+        onPoster={onPoster}
+        onCampaign={onCampaign}
       />
+
     </motion.article>
 
   );
