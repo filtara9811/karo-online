@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { User, Phone, ShieldCheck, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
+import { recognizeVisitor, trackQrEvent } from "@/lib/qr-track";
+
 
 /**
  * ScanVisitorGate — popup shown when someone opens a QR / referral landing page.
