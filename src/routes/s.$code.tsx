@@ -7,9 +7,13 @@ import { ScanVisitorGate } from "@/components/ScanVisitorGate";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
+import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
+import { LandingSkeleton } from "@/components/landing/LandingSkeleton";
+import { useLandingInstall } from "@/components/landing/use-landing-install";
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
+
 
 
 
@@ -121,7 +125,18 @@ function ScanLandingPage() {
   const { code } = Route.useParams();
   const [data, setData] = useState<Landing | null>(() => readCache(code));
   const [profileOpen, setProfileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
+
+  const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
+  const shopName = data?.merchant?.shop_name || data?.merchant?.name || "Karo Online Merchant";
+  const installer = useLandingInstall({
+    code,
+    name: shopName,
+    icon: data?.merchant?.avatar_url ?? null,
+    accent: themeAccent,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -133,25 +148,34 @@ function ScanLandingPage() {
       setData(next);
       if (next.ok) writeCache(code, next);
     })();
-    const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
-    // Log visit (QR scans land here)
-    import("@/lib/visit-fp").then(({ getVisitFp }) => {
-      supabase.rpc("log_referral_visit", {
-        _code: code,
-        _source: "qr",
-        _fp_hash: getVisitFp(),
-        _ip_hash: undefined,
-        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+
+    // Analytics is deferred so it never competes with first paint.
+    const idle = (fn: () => void) =>
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(fn, { timeout: 2500 })
+        : window.setTimeout(fn, 1200);
+    idle(() => {
+      import("@/lib/visit-fp").then(({ getVisitFp }) => {
+        supabase.rpc("log_referral_visit", {
+          _code: code,
+          _source: "qr",
+          _fp_hash: getVisitFp(),
+          _ip_hash: undefined,
+          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        });
       });
+      trackQrEvent("STORE_VIEW", { code, project });
     });
-    trackQrEvent("STORE_VIEW", { code, project });
+
     const onInstalled = () => trackQrEvent("PWA_INSTALL", { code, project });
     window.addEventListener("appinstalled", onInstalled);
     return () => { cancelled = true; window.removeEventListener("appinstalled", onInstalled); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
 
-  if (!data) return <Fallback message="Loading merchant…" spinner />;
+  if (!data) return <LandingSkeleton accent={themeAccent} />;
+
 
   const m = data.merchant ?? {};
   const links = data.links ?? {};
@@ -200,8 +224,9 @@ function ScanLandingPage() {
         verified={m.verified}
         accent={accent}
         onProfile={() => setProfileOpen(true)}
-        onMenu={() => setProfileOpen(true)}
+        onMenu={() => setMenuOpen(true)}
       />
+
 
       {/* Status-style media: one progress segment per uploaded photo / video / link */}
       <LandingStoryMedia media={mediaList} alt={merchantName} accent={accent} className="h-[62svh]">
@@ -269,7 +294,23 @@ function ScanLandingPage() {
         accent={accent}
         merchant={m}
         pageUrl={pageUrl}
+        visitCode={code}
+        project={project}
       />
+
+      <LandingMenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        accent={accent}
+        merchantName={merchantName}
+        pageUrl={pageUrl}
+        canInstall={installer.canInstall}
+        installed={installer.installed}
+        isIOS={installer.isIOS}
+        onInstall={installer.install}
+        appUrl={playUrl}
+      />
+
 
       <UpiPaymentModal
         open={paymentOpen}

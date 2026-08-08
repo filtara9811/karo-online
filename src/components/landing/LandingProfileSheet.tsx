@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "qrcode";
-import { X, BadgeCheck, Phone, MapPin, Store, Download, ShieldCheck } from "lucide-react";
+import { X, BadgeCheck, Phone, MapPin, Store, Download, ShieldCheck, UserPlus, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
+import { trackQrEvent } from "@/lib/qr-track";
 import { needsLightText, shade } from "./landing-shared";
+
 
 /**
  * Simple & sober merchant profile sheet with a downloadable QR of this page.
@@ -13,6 +18,9 @@ export function LandingProfileSheet({
   accent,
   merchant,
   pageUrl,
+  visitCode,
+  project,
+
 }: {
   open: boolean;
   onClose: () => void;
@@ -28,7 +36,10 @@ export function LandingProfileSheet({
     code?: string;
   };
   pageUrl: string;
+  visitCode?: string;
+  project?: string | null;
 }) {
+
   const [qr, setQr] = useState<string>("");
   const name = merchant.shop_name || merchant.name || "Karo Online Merchant";
   const light = needsLightText(accent);
@@ -130,6 +141,9 @@ export function LandingProfileSheet({
                 </div>
               )}
 
+              {visitCode && <MyDetailsCard accent={accent} code={visitCode} project={project ?? null} />}
+
+
               <div className="rounded-3xl border p-4 text-center" style={{ borderColor: accent }}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.25em]" style={{ color: shade(accent, -0.25) }}>
                   Scan · Save · Share
@@ -160,5 +174,100 @@ export function LandingProfileSheet({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Lets the visiting customer add their own details so the shop can reach them. */
+function MyDetailsCard({ accent, code, project }: { accent: string; code: string; project: string | null }) {
+  const [openForm, setOpenForm] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const fg = needsLightText(accent) ? "#ffffff" : "#1a1208";
+  const field =
+    "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-slate-400";
+
+  const save = async () => {
+    const digits = phone.replace(/\D/g, "");
+    if (name.trim().length < 2) { toast.error("Apna naam likhein"); return; }
+    if (digits.length < 10) { toast.error("10 digit mobile number likhein"); return; }
+    setBusy(true);
+    const { data, error } = await supabase.rpc("log_referral_visit_lead" as never, {
+      _code: code,
+      _source: "qr",
+      _name: name.trim(),
+      _phone: digits.slice(-10),
+      _fp_hash: getVisitFp(),
+      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      _project: project,
+    } as never);
+    setBusy(false);
+    const res = data as { ok?: boolean } | null;
+    if (error || !res?.ok) { toast.error("Save nahi hua, dubara try karein"); return; }
+    void trackQrEvent("CHAT", {
+      code,
+      project,
+      meta: { kind: "customer_details", email: email.trim() || null, city: city.trim() || null, note: note.trim() || null },
+    });
+    setSaved(true);
+    toast.success("Details saved — shop aapse contact karega");
+  };
+
+  if (saved) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+        <Check className="h-4 w-4 text-emerald-600" />
+        <p className="text-sm font-semibold text-emerald-800">Your details are with the shop</p>
+      </div>
+    );
+  }
+
+  if (!openForm) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpenForm(true)}
+        className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left font-bold shadow active:scale-[0.99]"
+        style={{ background: accent, color: fg }}
+      >
+        <UserPlus className="h-4 w-4" />
+        <span className="min-w-0">
+          <span className="block text-sm">Add my details</span>
+          <span className="block text-[11px] font-medium opacity-80">Name, mobile & more — shop turant reply karega</span>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-2xl border p-3" style={{ borderColor: accent }}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: shade(accent, -0.25) }}>
+        My details
+      </p>
+      <input className={field} placeholder="Your name*" value={name} onChange={(e) => setName(e.target.value)} />
+      <input
+        className={field}
+        placeholder="Mobile number*"
+        inputMode="numeric"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 12))}
+      />
+      <input className={field} placeholder="Email (optional)" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <input className={field} placeholder="City / area (optional)" value={city} onChange={(e) => setCity(e.target.value)} />
+      <textarea className={field} rows={2} placeholder="What do you need? (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+      <button
+        type="button"
+        onClick={save}
+        disabled={busy}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold active:scale-95 disabled:opacity-60"
+        style={{ background: accent, color: fg }}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save details
+      </button>
+    </div>
   );
 }
