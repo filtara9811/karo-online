@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, ChevronUp } from "lucide-react";
 
 export type MediaItem = { type: "image" | "video" | "url"; src: string };
 
@@ -22,8 +22,8 @@ function ytEmbed(url: string, muted: boolean): string {
 }
 
 /**
- * Instagram-status style media viewer: one progress segment per uploaded item,
- * auto advance, tap left/right to seek, press-and-hold to pause.
+ * Reels/TikTok style media viewer: vertical swipe up/down to change media,
+ * one progress segment per item, sound ON by default (tap to mute).
  */
 export function LandingStoryMedia({
   media,
@@ -40,9 +40,10 @@ export function LandingStoryMedia({
 }) {
   const items = media.length ? media : [];
   const [index, setIndex] = useState(0);
+  const [dir, setDir] = useState<1 | -1>(1);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const startedAt = useRef<number>(0);
   const elapsed = useRef<number>(0);
@@ -63,13 +64,14 @@ export function LandingStoryMedia({
   const total = items.length;
 
   const go = useCallback(
-    (dir: 1 | -1) => {
+    (d: 1 | -1) => {
       if (total <= 1) {
         setProgress(0);
         elapsed.current = 0;
         return;
       }
-      setIndex((i) => (i + dir + total) % total);
+      setDir(d);
+      setIndex((i) => (i + d + total) % total);
       setProgress(0);
       elapsed.current = 0;
     },
@@ -80,6 +82,18 @@ export function LandingStoryMedia({
     setProgress(0);
     elapsed.current = 0;
   }, [index]);
+
+  // Autoplay with sound; browsers that block it fall back to muted playback.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = muted;
+    void el.play().catch(() => {
+      el.muted = true;
+      setMuted(true);
+      void el.play().catch(() => undefined);
+    });
+  }, [index, muted, current?.src]);
 
   useEffect(() => {
     if (!current || total === 0) return;
@@ -111,14 +125,24 @@ export function LandingStoryMedia({
 
   return (
     <div className={`relative w-full overflow-hidden bg-black ${className}`}>
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="popLayout" custom={dir}>
         <motion.div
           key={`${index}-${current.src}`}
-          initial={{ opacity: 0, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-          className="absolute inset-0"
+          custom={dir}
+          initial={{ y: dir === 1 ? "100%" : "-100%", opacity: 0.6 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: dir === 1 ? "-100%" : "100%", opacity: 0.4 }}
+          transition={{ type: "spring", damping: 30, stiffness: 260 }}
+          drag={total > 1 ? "y" : false}
+          dragElastic={0.18}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          onDragStart={() => setPaused(true)}
+          onDragEnd={(_, info) => {
+            setPaused(false);
+            if (info.offset.y < -60 || info.velocity.y < -400) go(1);
+            else if (info.offset.y > 60 || info.velocity.y > 400) go(-1);
+          }}
+          className="absolute inset-0 touch-pan-x"
         >
           {current.type === "video" ? (
             <video
@@ -162,7 +186,7 @@ export function LandingStoryMedia({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
 
-      {/* sound toggle — tap to unmute / mute the playing video */}
+      {/* sound toggle — sound is ON by default, tap to mute */}
       {(current.type === "video" || current.type === "url") && (
         <motion.button
           type="button"
@@ -175,30 +199,16 @@ export function LandingStoryMedia({
         </motion.button>
       )}
 
-
-
-      {/* tap zones */}
+      {/* swipe hint */}
       {total > 1 && (
-        <>
-          <button
-            type="button"
-            aria-label="Previous"
-            onClick={() => go(-1)}
-            onPointerDown={() => setPaused(true)}
-            onPointerUp={() => setPaused(false)}
-            onPointerLeave={() => setPaused(false)}
-            className="absolute left-0 top-0 h-full w-1/3"
-          />
-          <button
-            type="button"
-            aria-label="Next"
-            onClick={() => go(1)}
-            onPointerDown={() => setPaused(true)}
-            onPointerUp={() => setPaused(false)}
-            onPointerLeave={() => setPaused(false)}
-            className="absolute right-0 top-0 h-full w-1/3"
-          />
-        </>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: [0.35, 0.9, 0.35], y: [6, 0, 6] }}
+          transition={{ duration: 2.2, repeat: Infinity }}
+          className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/85"
+        >
+          <ChevronUp className="h-3.5 w-3.5" /> swipe
+        </motion.div>
       )}
 
       {/* progress segments — one per uploaded item */}
