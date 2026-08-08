@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import {
-  QrCode, Share2, Download, Users, Eye, MousePointerClick, Palette, Link2,
-  Megaphone, Trash2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
+  QrCode, Share2, Download, Users, Megaphone, Trash2, MoreVertical,
+  Settings as SettingsIcon, Link2, HelpCircle, Phone, MessageCircle, Store,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
-import { LivePreviewFace } from "./LivePreviewFace";
 import type { VisitorRow } from "./VisitorChatSheet";
-
 
 export type QrProject = {
   id: string;
@@ -29,6 +27,13 @@ export type LandingTheme = {
 
 export type ProjectStats = { total: number; today: number; leads: number; clicks: number };
 
+export type CardProfile = {
+  business_name?: string | null;
+  shop_bio?: string | null;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
+};
+
 function timeAgo(iso: string) {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (m < 1) return "just now";
@@ -40,44 +45,41 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString();
 }
 
+/**
+ * Clean One QR project card: cover + identity + exactly four action tiles
+ * (QR, campaign, landing page editor, links) then analytics and visitors.
+ */
 export function QrProjectCard({
-  project, stats, themes, premium, landingUrl, saving, visits,
-  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor,
+  project, stats, themes, landingUrl, visits, profile,
+  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide,
 }: {
   project: QrProject;
   stats: ProjectStats;
   themes: LandingTheme[];
-  premium: boolean;
   landingUrl: string;
-  saving: boolean;
   visits: VisitorRow[];
+  profile?: CardProfile | null;
   onPatch: (patch: Partial<QrProject>) => void;
   onDelete: () => void;
   onPoster: () => void;
   onLinks: () => void;
   onCampaign: () => void;
   onVisitor: (v: VisitorRow) => void;
+  onQr: () => void;
+  onPreview: () => void;
+  onGuide: () => void;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const bigCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [flipped, setFlipped] = useState(false);
+  const qrTileRef = useRef<HTMLCanvasElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [qrOpen, setQrOpen] = useState(false);
 
   const accent = project.accent_color || themes.find((t) => t.key === project.theme_key)?.accent_color || "#f59e0b";
   const theme = themes.find((t) => t.key === project.theme_key);
 
   useEffect(() => {
-    if (!canvasRef.current || !landingUrl) return;
-    QRCode.toCanvas(canvasRef.current, landingUrl, { width: 168, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
+    if (!qrTileRef.current || !landingUrl) return;
+    QRCode.toCanvas(qrTileRef.current, landingUrl, { width: 96, margin: 0, color: { dark: "#0f172a", light: "#ffffff" } })
       .catch(() => { /* ignore */ });
   }, [landingUrl]);
-
-  useEffect(() => {
-    if (!qrOpen || !bigCanvasRef.current || !landingUrl) return;
-    QRCode.toCanvas(bigCanvasRef.current, landingUrl, { width: 260, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
-      .catch(() => { /* ignore */ });
-  }, [qrOpen, landingUrl]);
 
   const share = async () => {
     if (!landingUrl) return;
@@ -88,34 +90,28 @@ export function QrProjectCard({
   };
 
   return (
-    <div className="flip-3d">
-      <div className={`flip-3d-inner ${flipped ? "is-flipped" : ""}`}>
-        <motion.article
-          layout
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 260, damping: 26 }}
-          className="flip-3d-face relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
-          style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
-        >
-      {/* Banner */}
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      className="relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
+      style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
+    >
+      {/* Cover */}
       <div
-        className="relative h-28"
+        className="relative h-36"
         style={{ background: `linear-gradient(150deg, ${theme?.bg_from ?? "#fde68a"}, ${theme?.bg_to ?? "#fef3c7"})` }}
       >
-        <button
-          onClick={() => setFlipped(true)}
-          aria-label="Live customer preview"
-          className="absolute top-3 right-[52px] h-9 w-9 grid place-items-center rounded-full bg-white/85 backdrop-blur text-emerald-700 active:scale-90"
-        >
-          <Eye className="h-4 w-4" />
-        </button>
+        {profile?.cover_image_url && (
+          <img src={profile.cover_image_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
+        )}
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Project options"
-          className="absolute top-3 right-3 h-9 w-9 grid place-items-center rounded-full bg-white/85 backdrop-blur text-slate-700 active:scale-90"
+          className="absolute top-3 right-3 h-10 w-10 grid place-items-center rounded-full bg-white/85 backdrop-blur text-slate-700 active:scale-90"
         >
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-4.5 w-4.5" />
         </button>
 
         <AnimatePresence>
@@ -126,59 +122,52 @@ export function QrProjectCard({
               exit={{ opacity: 0, scale: 0.94, y: -6 }}
               className="absolute top-14 right-3 z-20 w-48 rounded-2xl bg-white border border-black/10 shadow-xl overflow-hidden"
             >
-              <MenuItem icon={EyeIcon} label="Live customer preview" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
-              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setFlipped(true); }} />
-              <MenuItem icon={Megaphone} label="Add campaign" onClick={() => { setMenuOpen(false); onCampaign(); }} />
-
-              <MenuItem icon={Link2} label="Manage links" onClick={() => { setMenuOpen(false); onLinks(); }} />
+              <MenuItem icon={Share2} label="Share link" onClick={() => { setMenuOpen(false); share(); }} />
               <MenuItem icon={Download} label="Download poster" onClick={() => { setMenuOpen(false); onPoster(); }} />
+              <MenuItem icon={HelpCircle} label="Help & guide" onClick={() => { setMenuOpen(false); onGuide(); }} />
               <MenuItem icon={Trash2} label="Delete project" danger onClick={() => { setMenuOpen(false); onDelete(); }} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Identity row with QR avatar */}
-      <div className="px-4 -mt-8 flex items-end gap-3">
-        <motion.button
-          whileTap={{ scale: 0.94 }}
-          onClick={() => setQrOpen(true)}
-          aria-label="Preview QR code"
-          className="h-16 w-16 shrink-0 rounded-full bg-slate-900 grid place-items-center ring-4 ring-white overflow-hidden"
+      {/* Identity */}
+      <div className="px-4 -mt-7 flex items-end gap-3">
+        <span
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-amber-50 ring-4 ring-white grid place-items-center"
+          style={{ color: accent }}
         >
-          <canvas ref={canvasRef} className="h-12 w-12 rounded-md bg-white" />
-        </motion.button>
+          {profile?.avatar_url
+            ? <img src={profile.avatar_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
+            : <Store className="h-6 w-6" />}
+        </span>
         <div className="flex-1 min-w-0 pb-1">
           <input
             value={project.title}
             onChange={(e) => onPatch({ title: e.target.value })}
+            aria-label="Project name"
             className="w-full bg-transparent font-display font-bold text-[16px] text-slate-900 outline-none focus:bg-amber-50/70 rounded-lg px-1 -ml-1"
           />
-          <p className="text-[11px] text-slate-500 truncate px-1 -ml-1">/{project.slug}</p>
+          <p className="truncate px-1 -ml-1 text-[11.5px] text-slate-500">
+            {profile?.shop_bio || `/${project.slug}`}
+          </p>
         </div>
-        <button onClick={share} className="mb-1 h-9 px-3 rounded-full bg-amber-500 text-white text-[11px] font-extrabold inline-flex items-center gap-1.5 active:scale-95">
-          <Share2 className="h-3.5 w-3.5" /> Share
-        </button>
       </div>
 
-      {/* Quick action tiles */}
+      {/* Four action tiles */}
       <div className="mt-3.5 mx-4 grid grid-cols-4 gap-2">
-        <Tile icon={Users} value={stats.total} label="QR visitor" accent={accent} />
-        <Tile icon={Megaphone} value={stats.clicks} label="Add campaign" accent={accent} onClick={onCampaign} highlight />
-        <Tile icon={MousePointerClick} value={stats.leads} label="Leads" accent={accent} />
-        <Tile icon={Link2} label="Add | link" accent={accent} onClick={onLinks} />
+        <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr}>
+          <canvas ref={qrTileRef} className="h-6 w-6 rounded-[3px] bg-white" />
+        </Tile>
+        <Tile accent={accent} value={stats.clicks} label="Add campaign" onClick={onCampaign} icon={Megaphone} />
+        <Tile accent={accent} label="My landing page" onClick={onPreview} icon={SettingsIcon} />
+        <Tile accent={accent} label="Add | link" onClick={onLinks} icon={Link2} />
       </div>
 
-      {/* Analytics chart */}
+      {/* Analytics */}
       <div className="mt-3 mx-4">
         <QrAnalyticsChart visits={visits} accent={accent} />
       </div>
-
-
-
-
-
-
 
       {project.ads_enabled && (
         <div className="mt-2 mx-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
@@ -193,7 +182,7 @@ export function QrProjectCard({
         </div>
       )}
 
-      {/* Visitors — WhatsApp style */}
+      {/* Visitors */}
       <div className="mt-3.5 mx-4">
         <p className="text-[11px] font-bold text-slate-600 mb-1.5 inline-flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5 text-amber-600" /> Landing page visitors
@@ -236,61 +225,9 @@ export function QrProjectCard({
       </div>
 
       <div className="mb-4" />
-
-
-      {/* QR preview modal */}
-      <AnimatePresence>
-        {qrOpen && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-black/60 grid place-items-center p-6"
-            onClick={() => setQrOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 12 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-xs rounded-[28px] bg-white p-5 text-center"
-            >
-              <div className="flex items-center">
-                <p className="font-display font-bold text-[15px] text-slate-900 truncate">{project.title}</p>
-                <button onClick={() => setQrOpen(false)} aria-label="Close QR preview" className="ml-auto h-8 w-8 grid place-items-center rounded-full bg-slate-100 text-slate-600">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <canvas ref={bigCanvasRef} className="mx-auto mt-3 h-[220px] w-[220px]" />
-              <p className="mt-2 text-[10px] text-slate-500 break-all">{landingUrl}</p>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <button onClick={share} className="h-10 rounded-2xl bg-amber-500 text-white text-[12px] font-extrabold active:scale-95">Share</button>
-                <button onClick={() => { setQrOpen(false); onPoster(); }} className="h-10 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-extrabold active:scale-95">Poster</button>
-                <button onClick={() => { setQrOpen(false); setFlipped(true); }} className="h-10 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-[12px] font-extrabold active:scale-95">Live check</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-        </motion.article>
-
-        {/* Back: live customer preview */}
-        <div className="flip-3d-face flip-3d-back">
-          <LivePreviewFace
-            title={project.title}
-            landingUrl={landingUrl}
-            themes={themes}
-            currentKey={project.theme_key}
-            accent={accent}
-            premium={premium}
-            saving={saving}
-            onFlipBack={() => setFlipped(false)}
-            onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
-            onAccent={(color) => onPatch({ accent_color: color })}
-            onLinks={onLinks}
-          />
-        </div>
-      </div>
-    </div>
+    </motion.article>
   );
 }
-
 
 function MenuItem({
   icon: Icon, label, onClick, danger,
@@ -306,19 +243,22 @@ function MenuItem({
 }
 
 function Tile({
-  icon: Icon, value, label, accent, onClick, highlight,
-}: { icon: typeof Users; value?: number; label: string; accent: string; onClick?: () => void; highlight?: boolean }) {
-  const Comp = onClick ? motion.button : motion.div;
+  icon: Icon, value, label, accent, onClick, children,
+}: {
+  icon?: typeof Users; value?: number; label: string; accent: string;
+  onClick: () => void; children?: React.ReactNode;
+}) {
   return (
-    <Comp
-      whileTap={onClick ? { scale: 0.95 } : undefined}
+    <motion.button
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`rounded-2xl border px-1.5 py-2.5 text-center ${highlight ? "border-transparent" : "border-black/10"} bg-amber-50/70`}
-      style={highlight ? { boxShadow: `0 0 0 2px ${accent}` } : undefined}
+      className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
     >
-      <Icon className="h-4 w-4 mx-auto" style={{ color: accent }} />
-      {value != null && <p className="text-[15px] font-extrabold text-slate-900 leading-none mt-1">{value}</p>}
+      <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
+        {children ?? (Icon ? <Icon className="h-4 w-4" style={{ color: accent }} /> : null)}
+      </span>
+      {value != null && <p className="text-[15px] font-extrabold text-slate-900 leading-none mt-1.5">{value}</p>}
       <p className="text-[9px] text-slate-500 mt-1 truncate">{label}</p>
-    </Comp>
+    </motion.button>
   );
 }
