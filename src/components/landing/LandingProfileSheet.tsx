@@ -33,7 +33,10 @@ export function LandingProfileSheet({
     code?: string;
   };
   pageUrl: string;
+  visitCode?: string;
+  project?: string | null;
 }) {
+
   const [qr, setQr] = useState<string>("");
   const name = merchant.shop_name || merchant.name || "Karo Online Merchant";
   const light = needsLightText(accent);
