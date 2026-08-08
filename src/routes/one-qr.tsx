@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, QrCode, Loader2, MessageCircle, Users, Phone, Plus,
   LayoutGrid, Megaphone, Settings as SettingsIcon, CalendarDays, Palette,
+  Bell, Star, MapPin, Store, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
@@ -11,7 +12,10 @@ import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { SponsoredAdsRail, useSponsoredAds } from "@/components/oneqr/SponsoredAdsRail";
 import { QrProjectCard, type QrProject, type LandingTheme } from "@/components/oneqr/QrProjectCard";
+import { AdServicesSheet } from "@/components/oneqr/AdServicesSheet";
+import { VisitorChatSheet, type VisitorRow } from "@/components/oneqr/VisitorChatSheet";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/one-qr")({
   head: () => ({
