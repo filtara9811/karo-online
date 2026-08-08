@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "qrcode";
-import { X, BadgeCheck, Phone, MapPin, Store, Download, ShieldCheck } from "lucide-react";
+import { X, BadgeCheck, Phone, MapPin, Store, Download, ShieldCheck, UserPlus, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { getVisitFp } from "@/lib/visit-fp";
+import { trackQrEvent } from "@/lib/qr-track";
 import { needsLightText, shade } from "./landing-shared";
+
 
 /**
  * Simple & sober merchant profile sheet with a downloadable QR of this page.
