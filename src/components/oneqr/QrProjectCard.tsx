@@ -21,7 +21,7 @@ export type QrProject = {
 };
 
 export type LandingTheme = {
-  key: string; name: string; description: string | null; preset: string;
+  key: string; name: string; description: string | null; preset: string; style?: string;
   accent_color: string; bg_from: string; bg_to: string; is_premium: boolean;
 };
 
@@ -190,6 +190,9 @@ export function QrProjectCard({
                   <div className="px-2.5 py-2 bg-white">
                     <p className="text-[12px] font-bold text-slate-900 truncate">{t.name}</p>
                     <p className="text-[10px] text-slate-500 truncate">{t.description ?? t.preset}</p>
+                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                      {t.style === "chat" ? "Chat style" : t.style === "reels" ? "Reels style" : "Shop style"}
+                    </p>
                   </div>
                   {t.is_premium && (
                     <span className={`absolute top-2 right-2 h-6 px-1.5 rounded-full text-white text-[9px] font-bold inline-flex items-center gap-1 ${locked ? "bg-black/70" : "bg-purple-600"}`}>

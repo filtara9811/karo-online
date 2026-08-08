@@ -7,6 +7,7 @@ import { ScanVisitorGate } from "@/components/ScanVisitorGate";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
+import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
 import { LandingSkeleton } from "@/components/landing/LandingSkeleton";
 import { useLandingInstall } from "@/components/landing/use-landing-install";
@@ -78,6 +79,7 @@ type Landing = {
   theme?: {
     key?: string;
     preset?: string;
+    style?: string;
     accent_color?: string;
     bg_from?: string;
     bg_to?: string;
@@ -195,7 +197,10 @@ function ScanLandingPage() {
   const theme = data.theme ?? {};
   const preset = theme.preset ?? "classic";
   const accent = theme.accent_color ?? "#f59e0b";
-  const isDark = preset === "royal" || preset === "neon";
+  const layoutStyle: "shop" | "chat" | "reels" =
+    (theme.style as "shop" | "chat" | "reels" | undefined) ??
+    (preset === "royal" || preset === "neon" ? "reels" : preset === "fresh" ? "chat" : "shop");
+  const isDark = layoutStyle === "reels" || preset === "royal" || preset === "neon";
   const ads = (data.ads ?? []).filter((a) => a.image);
   const merchantName = m.shop_name || m.name || "Karo Online Merchant";
   const pageUrl = typeof window !== "undefined"
@@ -229,7 +234,12 @@ function ScanLandingPage() {
 
 
       {/* Status-style media: one progress segment per uploaded photo / video / link */}
-      <LandingStoryMedia media={mediaList} alt={merchantName} accent={accent} className="h-[62svh]">
+      <LandingStoryMedia
+        media={mediaList}
+        alt={merchantName}
+        accent={accent}
+        className={layoutStyle === "reels" ? "h-[100svh]" : layoutStyle === "chat" ? "h-[38svh]" : "h-[62svh]"}
+      >
         {landing.announcement_active && landing.announcement_text && (
           <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
             📣 {landing.announcement_text}
@@ -237,8 +247,12 @@ function ScanLandingPage() {
         )}
       </LandingStoryMedia>
 
+      {layoutStyle === "chat" && (
+        <LandingChatWelcome accent={accent} name={merchantName} links={(links.extra_links ?? []) as ExtraLink[]} />
+      )}
+
       {/* Same-category shop ads — swipeable rail */}
-      {ads.length > 0 && (
+      {layoutStyle !== "reels" && ads.length > 0 && (
         <div className="mt-3 px-3">
           <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {ads.map((a, i) => (
@@ -262,19 +276,19 @@ function ScanLandingPage() {
       )}
 
       {/* Admin-controlled banners (render only if configured) */}
-      {landing.top_banner_url && (
+      {layoutStyle !== "reels" && landing.top_banner_url && (
         <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
-      {landing.bottom_banner_url && (
+      {layoutStyle !== "reels" && landing.bottom_banner_url && (
         <a href={landing.bottom_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img src={landing.bottom_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
-      <p className="mt-4 text-center text-[10px] text-slate-500">
+      <p className={`mt-4 text-center text-[10px] ${layoutStyle === "reels" ? "hidden" : "text-slate-500"}`}>
         Powered by <Link to="/" className="font-bold underline" style={{ color: accent }}>Karo Online</Link>
       </p>
 
@@ -308,7 +322,6 @@ function ScanLandingPage() {
         installed={installer.installed}
         isIOS={installer.isIOS}
         onInstall={installer.install}
-        appUrl={playUrl}
       />
 
 

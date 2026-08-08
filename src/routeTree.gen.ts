@@ -128,6 +128,7 @@ import { Route as SOnboardTokenRouteImport } from './routes/s.onboard.$token'
 import { Route as StaffChatChatIdRouteImport } from './routes/staff.chat.$chatId'
 import { Route as VendorLeadIdRouteImport } from './routes/vendor.lead.$id'
 import { Route as ApiPublicHooksLeadWhatsappRouteImport } from './routes/api/public/hooks.lead-whatsapp'
+import { Route as ApiPublicManifestCodeRouteImport } from './routes/api.public.manifest.$code'
 import { Route as ApiPublicPushSendLeadRouteImport } from './routes/api/public/push/send-lead'
 import { Route as ApiPublicVcardCodeRouteImport } from './routes/api.public.vcard.$code'
 import { Route as ApiPublicWhatsappSendLeadRouteImport } from './routes/api/public/whatsapp.send-lead'
@@ -730,6 +731,11 @@ const ApiPublicHooksLeadWhatsappRoute =
     path: '/api/public/hooks/lead-whatsapp',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicManifestCodeRoute = ApiPublicManifestCodeRouteImport.update({
+  id: '/api/public/manifest/$code',
+  path: '/api/public/manifest/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPushSendLeadRoute = ApiPublicPushSendLeadRouteImport.update({
   id: '/api/public/push/send-lead',
   path: '/api/public/push/send-lead',
@@ -879,6 +885,7 @@ export interface FileRoutesByFullPath {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
+  '/api/public/manifest/$code': typeof ApiPublicManifestCodeRoute
   '/api/public/push/send-lead': typeof ApiPublicPushSendLeadRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/whatsapp/send-lead': typeof ApiPublicWhatsappSendLeadRoute
@@ -1003,6 +1010,7 @@ export interface FileRoutesByTo {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
+  '/api/public/manifest/$code': typeof ApiPublicManifestCodeRoute
   '/api/public/push/send-lead': typeof ApiPublicPushSendLeadRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/whatsapp/send-lead': typeof ApiPublicWhatsappSendLeadRoute
@@ -1130,6 +1138,7 @@ export interface FileRoutesById {
   '/vendor/lead/$id': typeof VendorLeadIdRoute
   '/admin/web/': typeof AdminWebIndexRoute
   '/api/public/hooks/lead-whatsapp': typeof ApiPublicHooksLeadWhatsappRoute
+  '/api/public/manifest/$code': typeof ApiPublicManifestCodeRoute
   '/api/public/push/send-lead': typeof ApiPublicPushSendLeadRoute
   '/api/public/vcard/$code': typeof ApiPublicVcardCodeRoute
   '/api/public/whatsapp/send-lead': typeof ApiPublicWhatsappSendLeadRoute
@@ -1258,6 +1267,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
+    | '/api/public/manifest/$code'
     | '/api/public/push/send-lead'
     | '/api/public/vcard/$code'
     | '/api/public/whatsapp/send-lead'
@@ -1382,6 +1392,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web'
     | '/api/public/hooks/lead-whatsapp'
+    | '/api/public/manifest/$code'
     | '/api/public/push/send-lead'
     | '/api/public/vcard/$code'
     | '/api/public/whatsapp/send-lead'
@@ -1508,6 +1519,7 @@ export interface FileRouteTypes {
     | '/vendor/lead/$id'
     | '/admin/web/'
     | '/api/public/hooks/lead-whatsapp'
+    | '/api/public/manifest/$code'
     | '/api/public/push/send-lead'
     | '/api/public/vcard/$code'
     | '/api/public/whatsapp/send-lead'
@@ -1575,6 +1587,7 @@ export interface RootRouteChildren {
   SOnboardTokenRoute: typeof SOnboardTokenRoute
   VendorLeadIdRoute: typeof VendorLeadIdRoute
   ApiPublicHooksLeadWhatsappRoute: typeof ApiPublicHooksLeadWhatsappRoute
+  ApiPublicManifestCodeRoute: typeof ApiPublicManifestCodeRoute
   ApiPublicPushSendLeadRoute: typeof ApiPublicPushSendLeadRoute
   ApiPublicVcardCodeRoute: typeof ApiPublicVcardCodeRoute
   ApiPublicWhatsappSendLeadRoute: typeof ApiPublicWhatsappSendLeadRoute
@@ -2417,6 +2430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksLeadWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/manifest/$code': {
+      id: '/api/public/manifest/$code'
+      path: '/api/public/manifest/$code'
+      fullPath: '/api/public/manifest/$code'
+      preLoaderRoute: typeof ApiPublicManifestCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/push/send-lead': {
       id: '/api/public/push/send-lead'
       path: '/api/public/push/send-lead'
@@ -2661,6 +2681,7 @@ const rootRouteChildren: RootRouteChildren = {
   SOnboardTokenRoute: SOnboardTokenRoute,
   VendorLeadIdRoute: VendorLeadIdRoute,
   ApiPublicHooksLeadWhatsappRoute: ApiPublicHooksLeadWhatsappRoute,
+  ApiPublicManifestCodeRoute: ApiPublicManifestCodeRoute,
   ApiPublicPushSendLeadRoute: ApiPublicPushSendLeadRoute,
   ApiPublicVcardCodeRoute: ApiPublicVcardCodeRoute,
   ApiPublicWhatsappSendLeadRoute: ApiPublicWhatsappSendLeadRoute,
