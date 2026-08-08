@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Check, Lock, Sparkles, RefreshCw, Loader2, ExternalLink } from "lucide-react";
+import { X, Check, Lock, Sparkles, RefreshCw, Loader2, ExternalLink, Palette, Link2, Download, Megaphone } from "lucide-react";
 import type { LandingTheme } from "./QrProjectCard";
 
 /**
  * Full-screen theme preview: the merchant sees the real customer landing page
- * inside a phone frame and can switch styles live.
+ * inside a phone frame and can switch styles / colours / links live.
  */
 export function ThemePreviewSheet({
   open,
@@ -14,9 +14,14 @@ export function ThemePreviewSheet({
   landingUrl,
   themes,
   currentKey,
+  accent,
   premium,
   saving,
   onApply,
+  onAccent,
+  onLinks,
+  onPoster,
+  onCampaign,
 }: {
   open: boolean;
   onClose: () => void;
@@ -24,13 +29,28 @@ export function ThemePreviewSheet({
   landingUrl: string;
   themes: LandingTheme[];
   currentKey: string;
+  accent: string;
   premium: boolean;
   saving: boolean;
   onApply: (t: LandingTheme) => void;
+  onAccent: (color: string) => void;
+  onLinks: () => void;
+  onPoster: () => void;
+  onCampaign: () => void;
 }) {
   const [nonce, setNonce] = useState(0);
+  const [showThemes, setShowThemes] = useState(true);
+  const colorRef = useRef<HTMLInputElement | null>(null);
   const active = themes.find((t) => t.key === currentKey);
   const src = landingUrl ? `${landingUrl}${landingUrl.includes("?") ? "&" : "?"}preview=${nonce}` : "";
+
+  // Any theme/colour change reflects instantly in the frame
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => setNonce((n) => n + 1), 600);
+    return () => clearTimeout(t);
+  }, [currentKey, accent, open]);
+
 
   return (
     <AnimatePresence>
