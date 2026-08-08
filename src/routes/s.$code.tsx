@@ -230,7 +230,14 @@ function ScanLandingPage() {
         accent={accent}
         onProfile={() => setProfileOpen(true)}
         onMenu={() => setMenuOpen(true)}
+        installed={installer.installed}
+        onInstall={async () => {
+          if (installer.installed) return;
+          const r = await installer.install();
+          if (r === "unavailable") setMenuOpen(true);
+        }}
       />
+
 
 
       {/* Status-style media: one progress segment per uploaded photo / video / link */}
@@ -293,7 +300,7 @@ function ScanLandingPage() {
       </p>
 
       {/* Space for the fixed category dock */}
-      <div className="h-28" />
+      <div className="h-36" />
 
       <LandingCategoryDock
         categories={categories}

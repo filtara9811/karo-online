@@ -6,6 +6,7 @@ import {
   Megaphone, Check, Lock, Sparkles, Trash2, Loader2, MoreVertical, Eye as EyeIcon, X, Phone, MessageCircle,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
+import { ThemePreviewSheet } from "./ThemePreviewSheet";
 import type { VisitorRow } from "./VisitorChatSheet";
 
 export type QrProject = {
@@ -60,6 +61,7 @@ export function QrProjectCard({
   const bigCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [themeOpen, setThemeOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [themePreviewOpen, setThemePreviewOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const accent = project.accent_color || themes.find((t) => t.key === project.theme_key)?.accent_color || "#f59e0b";
@@ -115,7 +117,7 @@ export function QrProjectCard({
               className="absolute top-14 right-3 z-20 w-48 rounded-2xl bg-white border border-black/10 shadow-xl overflow-hidden"
             >
               <MenuItem icon={EyeIcon} label="Preview landing page" onClick={() => { setMenuOpen(false); setPreviewOpen(true); }} />
-              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setThemeOpen(true); }} />
+              <MenuItem icon={Palette} label="Change theme" onClick={() => { setMenuOpen(false); setThemePreviewOpen(true); }} />
               <MenuItem icon={Link2} label="Manage links" onClick={() => { setMenuOpen(false); onLinks(); }} />
               <MenuItem icon={Download} label="Download poster" onClick={() => { setMenuOpen(false); onPoster(); }} />
               <MenuItem icon={Trash2} label="Delete project" danger onClick={() => { setMenuOpen(false); onDelete(); }} />
@@ -158,6 +160,17 @@ export function QrProjectCard({
       {/* Analytics chart */}
       <div className="mt-3 mx-4">
         <QrAnalyticsChart visits={visits} accent={accent} />
+      </div>
+
+      {/* Theme preview — the fastest way to see what the customer gets */}
+      <div className="mt-3 mx-4">
+        <button
+          onClick={() => setThemePreviewOpen(true)}
+          className="w-full h-12 rounded-2xl text-white text-[13px] font-extrabold inline-flex items-center justify-center gap-2 active:scale-[0.98]"
+          style={{ background: `linear-gradient(135deg, ${accent}, #f97316)` }}
+        >
+          <Eye className="h-4 w-4" /> Preview & change theme
+        </button>
       </div>
 
       {/* Theme accordion */}
@@ -327,7 +340,19 @@ export function QrProjectCard({
           </motion.div>
         )}
       </AnimatePresence>
+      <ThemePreviewSheet
+        open={themePreviewOpen}
+        onClose={() => setThemePreviewOpen(false)}
+        title={project.title}
+        landingUrl={landingUrl}
+        themes={themes}
+        currentKey={project.theme_key}
+        premium={premium}
+        saving={saving}
+        onApply={(t) => onPatch({ theme_key: t.key, accent_color: t.accent_color })}
+      />
     </motion.article>
+
   );
 }
 

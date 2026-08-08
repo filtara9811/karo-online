@@ -288,13 +288,13 @@ export function LandingCategoryDock({
         initial={{ y: 90, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 28, stiffness: 220, delay: 0.15 }}
-        className="fixed inset-x-3 bottom-3 z-50 rounded-full border px-1.5 py-1.5 shadow-xl"
+        className="fixed inset-x-3 bottom-3 z-50 rounded-[28px] border px-2 py-2 shadow-xl"
         style={{
           background: `linear-gradient(135deg, ${accent}, ${shade(accent, light ? 0.2 : -0.14)})`,
           borderColor: withAlpha(light ? "#ffffff" : "#000000", 0.35),
         }}
       >
-        <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => {
             const Icon = c.icon;
             const isActive = activeKey === c.key;
@@ -310,18 +310,18 @@ export function LandingCategoryDock({
                   }
                   setActiveKey((k) => (k === c.key ? null : String(c.key)));
                 }}
-                className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 transition"
+                className="flex h-12 shrink-0 items-center gap-2 rounded-[20px] px-3.5 transition"
                 style={{
                   background: isActive ? (light ? "#ffffff" : "#1a1208") : withAlpha(light ? "#ffffff" : "#000000", 0.16),
                   color: isActive ? accent : fg,
                 }}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-5 w-5 shrink-0" />
                 {isActive && (
                   <motion.span
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: "auto" }}
-                    className="max-w-[86px] truncate text-[10px] font-bold uppercase tracking-wide"
+                    className="max-w-[96px] truncate text-[11px] font-extrabold uppercase tracking-wide"
                   >
                     {c.label}
                   </motion.span>

@@ -1,4 +1,4 @@
-import { MoreVertical, BadgeCheck } from "lucide-react";
+import { MoreVertical, BadgeCheck, MonitorSmartphone, Check } from "lucide-react";
 import { needsLightText, shade, withAlpha } from "./landing-shared";
 
 /**
@@ -12,6 +12,8 @@ export function LandingTopBar({
   accent,
   onProfile,
   onMenu,
+  onInstall,
+  installed,
 }: {
   name: string;
   avatarUrl?: string | null;
@@ -19,7 +21,10 @@ export function LandingTopBar({
   accent: string;
   onProfile: () => void;
   onMenu: () => void;
+  onInstall?: () => void;
+  installed?: boolean;
 }) {
+
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
 
@@ -57,7 +62,21 @@ export function LandingTopBar({
         </p>
       </button>
 
+      {onInstall && (
+        <button
+          type="button"
+          onClick={onInstall}
+          aria-label={installed ? "App installed" : "Install shop app"}
+          className="h-9 shrink-0 grid grid-flow-col items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wide transition active:scale-95"
+          style={{ background: withAlpha(light ? "#ffffff" : "#000000", 0.18), color: fg }}
+        >
+          {installed ? <Check className="h-4 w-4" /> : <MonitorSmartphone className="h-4 w-4" />}
+          <span>{installed ? "Installed" : "App"}</span>
+        </button>
+      )}
+
       <button
+
         type="button"
         onClick={onMenu}
         aria-label="More"
