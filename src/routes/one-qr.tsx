@@ -556,6 +556,8 @@ function QrDashboardPage() {
         }}
       />
       <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
+      <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
+
 
 
     </div>
