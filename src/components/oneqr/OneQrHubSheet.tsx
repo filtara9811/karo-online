@@ -158,7 +158,7 @@ export function OneQrHubSheet({
                 </div>
                 <a
                   href="/vendor/wallet"
-                  className="h-13 flex h-13 items-center justify-center gap-2 rounded-2xl bg-amber-500 py-3.5 text-[13px] font-extrabold text-white active:scale-[0.98]"
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[13px] font-extrabold text-white active:scale-[0.98]"
                 >
                   <Plus className="h-4 w-4" strokeWidth={3} /> Add fund
                 </a>
