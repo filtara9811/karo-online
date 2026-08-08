@@ -456,7 +456,7 @@ function QrDashboardPage() {
                               </p>
                             </div>
                             {r.visitor_phone && (
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <a href={`tel:+91${r.visitor_phone}`} aria-label="Call visitor" className="h-9 w-9 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90">
                                   <Phone className="h-4 w-4" />
                                 </a>
