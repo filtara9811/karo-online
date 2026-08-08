@@ -89,19 +89,28 @@ export function QrProjectCard({
   };
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
-      style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
-    >
+    <div className="flip-3d">
+      <div className={`flip-3d-inner ${flipped ? "is-flipped" : ""}`}>
+        <motion.article
+          layout
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 26 }}
+          className="flip-3d-face relative rounded-[28px] bg-white/95 border border-amber-200/80 overflow-hidden"
+          style={{ boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px -26px rgba(180,120,20,0.55)` }}
+        >
       {/* Banner */}
       <div
         className="relative h-28"
         style={{ background: `linear-gradient(150deg, ${theme?.bg_from ?? "#fde68a"}, ${theme?.bg_to ?? "#fef3c7"})` }}
       >
+        <button
+          onClick={() => setFlipped(true)}
+          aria-label="Live customer preview"
+          className="absolute top-3 right-[52px] h-9 w-9 grid place-items-center rounded-full bg-white/85 backdrop-blur text-emerald-700 active:scale-90"
+        >
+          <Eye className="h-4 w-4" />
+        </button>
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Project options"
@@ -109,6 +118,7 @@ export function QrProjectCard({
         >
           <MoreVertical className="h-4 w-4" />
         </button>
+
         <AnimatePresence>
           {menuOpen && (
             <motion.div
