@@ -359,7 +359,7 @@ export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   _sdkPromise = (async () => {
     const key = await getGoogleMapsKey();
     if (!key) return null;
-    return new Promise((resolve) => {
+    const google = await new Promise<any>((resolve) => {
       let settled = false;
       const resolveOnce = (value: any) => {
         if (settled) return;
@@ -385,7 +385,10 @@ export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
       document.head.appendChild(s);
       window.setTimeout(() => resolveOnce((window as any).google?.maps ? (window as any).google : null), 12000);
     });
+    if (!google) return null;
+    return ensureMapsLibrary(google);
   })();
+
   return _sdkPromise;
 }
 
