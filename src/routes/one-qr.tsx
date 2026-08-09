@@ -540,9 +540,11 @@ function QrDashboardPage() {
         selected={selected}
         priceInr={PROJECT_PRICE_INR}
         busy={creating}
-        onToggle={(id) =>
-          persistSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
-        }
+        onToggle={(id) => {
+          persistSelected([id]);
+          setPickerOpen(false);
+        }}
+
         onNew={() => setNewOpen(true)}
       />
       <NewProjectSheet
