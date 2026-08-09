@@ -13,6 +13,7 @@ import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
 import { LandingSkeleton } from "@/components/landing/LandingSkeleton";
 import { useLandingInstall } from "@/components/landing/use-landing-install";
+import { LandingInstallPrompt } from "@/components/landing/LandingInstallPrompt";
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
@@ -141,6 +142,15 @@ function ScanLandingPage() {
     icon: data?.merchant?.avatar_url ?? null,
     accent: themeAccent,
   });
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
+
+  // Auto-offer the white-label install once per shop, shortly after load.
+  const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
+  useEffect(() => {
+    if (!canOfferInstall) return;
+    const t = window.setTimeout(() => setInstallPromptOpen(true), 1500);
+    return () => window.clearTimeout(t);
+  }, [canOfferInstall]);
 
   // Store the sharer's referral code so signup credits the right wallet.
   useEffect(() => {
@@ -363,6 +373,17 @@ function ScanLandingPage() {
         title={landingExtras.gate_title}
         message={landingExtras.gate_message}
       />
+
+      <LandingInstallPrompt
+        open={installPromptOpen}
+        name={installer.appName || merchantName}
+        icon={installer.appIcon || m.avatar_url || null}
+        accent={accent}
+        isIOS={installer.isIOS}
+        onClose={() => { installer.markSeen(); setInstallPromptOpen(false); }}
+        onInstall={installer.install}
+      />
+
 
     </div>
   );
