@@ -351,7 +351,15 @@ function ScanLandingPage() {
         defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
       />
 
-      <ScanVisitorGate code={code} source="qr" project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null} />
+      <ScanVisitorGate
+        code={code}
+        source="qr"
+        project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null}
+        enabled={landingExtras.gate_enabled}
+        title={landingExtras.gate_title}
+        message={landingExtras.gate_message}
+      />
+
     </div>
   );
 }
