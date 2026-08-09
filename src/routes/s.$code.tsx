@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+import { readExtras } from "@/components/oneqr/landing-extras";
+
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
@@ -193,6 +195,8 @@ function ScanLandingPage() {
   const m = data.merchant ?? {};
   const links = data.links ?? {};
   const landing = data.landing ?? {};
+  const landingExtras = readExtras((links.extra_links ?? []) as ExtraLink[]);
+
   const playUrl = isIOS()
     ? (landing.ios_app_url || APP_STORE_FALLBACK)
     : `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
@@ -351,7 +355,15 @@ function ScanLandingPage() {
         defaultAmount={normalizeAmount(links.payment_amount_inr ?? links.payment_label)}
       />
 
-      <ScanVisitorGate code={code} source="qr" project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null} />
+      <ScanVisitorGate
+        code={code}
+        source="qr"
+        project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null}
+        enabled={landingExtras.gate_enabled}
+        title={landingExtras.gate_title}
+        message={landingExtras.gate_message}
+      />
+
     </div>
   );
 }

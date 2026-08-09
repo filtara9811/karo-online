@@ -17,11 +17,17 @@ export function ScanVisitorGate({
   source = "qr",
   project,
   onDone,
+  enabled = true,
+  title,
+  message,
 }: {
   code: string;
   source?: "qr" | "link" | "card";
   project?: string | null;
   onDone?: () => void;
+  enabled?: boolean;
+  title?: string;
+  message?: string;
 }) {
   const storageKey = `ko-scan-visitor:${source}:${code}`;
   const [open, setOpen] = useState(false);
@@ -32,6 +38,8 @@ export function ScanVisitorGate({
 
   useEffect(() => {
     if (!code) return;
+    if (!enabled) { onDone?.(); return; }
+
     let already = false;
     try { already = !!window.sessionStorage.getItem(storageKey); } catch { /* ignore */ }
     if (already) { onDone?.(); return; }
@@ -109,8 +117,9 @@ export function ScanVisitorGate({
           >
             <div className="bg-gradient-to-r from-[#b45309] via-[#d97706] to-[#f59e0b] px-5 py-4 text-white">
               <p className="text-[10px] uppercase tracking-[0.25em] font-bold opacity-90">Karo Online</p>
-              <h2 className="font-display text-xl font-bold leading-tight mt-0.5">Aap kaun hain?</h2>
-              <p className="text-[12px] opacity-90 mt-0.5">Naam aur mobile number dijiye — aapko best vendors se jodenge.</p>
+              <h2 className="font-display text-xl font-bold leading-tight mt-0.5">{title?.trim() || "Aap kaun hain?"}</h2>
+              <p className="text-[12px] opacity-90 mt-0.5">{message?.trim() || "Naam aur mobile number dijiye — aapko best vendors se jodenge."}</p>
+
             </div>
 
             <div className="p-5 space-y-3">
