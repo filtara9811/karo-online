@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { X, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScanVisitorGate } from "@/components/ScanVisitorGate";
+import { readExtras } from "@/components/oneqr/landing-extras";
+
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
