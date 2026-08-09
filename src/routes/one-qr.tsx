@@ -199,7 +199,7 @@ function QrDashboardPage() {
     if (error || !data) { toast.error(error?.message ?? "Project ban nahi paya"); return; }
     const row = data as unknown as QrProject;
     setProjects((p) => [...(p ?? []), row]);
-    persistSelected([...selected, row.id]);
+    persistSelected([row.id]);
     setNewOpen(false);
     setPickerOpen(false);
     toast.success("Naya QR project ban gaya");
