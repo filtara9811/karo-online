@@ -78,16 +78,35 @@ export function LivePreviewFace({
         </button>
       </div>
 
-      {/* Phone frame */}
+      {/* Realistic phone frame — renders a true 390px viewport, scaled down */}
       <div className="min-h-0 flex-1 px-4 pt-3">
-        <div className="mx-auto h-full w-full max-w-[250px] overflow-hidden rounded-[26px] border-[6px] border-slate-900 bg-white">
-          {src ? (
-            <iframe key={nonce} src={src} title="Landing preview" className="h-full w-full" />
-          ) : (
-            <div className="grid h-full place-items-center text-[11px] text-slate-500">Preview loading…</div>
-          )}
+        <div className="mx-auto h-full w-full max-w-[258px]">
+          <div className="relative mx-auto h-full w-full rounded-[38px] bg-slate-900 p-[7px] shadow-[0_18px_40px_-18px_rgba(15,23,42,0.65)] ring-1 ring-white/10">
+            {/* side buttons */}
+            <span className="absolute -left-[2px] top-[92px] h-9 w-[3px] rounded-l bg-slate-700" />
+            <span className="absolute -left-[2px] top-[136px] h-14 w-[3px] rounded-l bg-slate-700" />
+            <span className="absolute -right-[2px] top-[116px] h-16 w-[3px] rounded-r bg-slate-700" />
+            <div className="relative h-full w-full overflow-hidden rounded-[32px] bg-white">
+              {/* dynamic island */}
+              <span className="pointer-events-none absolute left-1/2 top-1.5 z-10 h-[14px] w-[62px] -translate-x-1/2 rounded-full bg-slate-900" />
+              {src ? (
+                <iframe
+                  key={nonce}
+                  src={src}
+                  title="Landing preview"
+                  className="h-full w-full origin-top-left border-0"
+                  style={{ width: 390, height: "calc(100% / 0.626)", transform: "scale(0.626)" }}
+                />
+              ) : (
+                <div className="grid h-full place-items-center text-[11px] text-slate-500">Preview loading…</div>
+              )}
+              {/* home indicator */}
+              <span className="pointer-events-none absolute bottom-1.5 left-1/2 h-[3px] w-16 -translate-x-1/2 rounded-full bg-slate-900/25" />
+            </div>
+          </div>
         </div>
       </div>
+
 
       {/* Editor */}
       <div className="shrink-0 px-3 pb-3 pt-2.5">
