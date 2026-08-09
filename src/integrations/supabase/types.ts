@@ -2402,9 +2402,16 @@ export type Database = {
           ad_budget_inr: number
           ad_clicks: number
           ads_enabled: boolean
+          avatar_url: string | null
+          business_name: string | null
+          category: string | null
+          contact_phone: string | null
+          cover_image_url: string | null
           created_at: string
           id: string
+          is_paid: boolean
           links: Json
+          price_inr: number
           slug: string
           theme_key: string
           title: string
@@ -2416,9 +2423,16 @@ export type Database = {
           ad_budget_inr?: number
           ad_clicks?: number
           ads_enabled?: boolean
+          avatar_url?: string | null
+          business_name?: string | null
+          category?: string | null
+          contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
+          is_paid?: boolean
           links?: Json
+          price_inr?: number
           slug: string
           theme_key?: string
           title: string
@@ -2430,9 +2444,16 @@ export type Database = {
           ad_budget_inr?: number
           ad_clicks?: number
           ads_enabled?: boolean
+          avatar_url?: string | null
+          business_name?: string | null
+          category?: string | null
+          contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
+          is_paid?: boolean
           links?: Json
+          price_inr?: number
           slug?: string
           theme_key?: string
           title?: string
