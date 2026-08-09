@@ -276,6 +276,8 @@ function QrDashboardPage() {
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
                         onGuide={() => setGuideOpen(true)}
+                        onProfile={() => setProfileOpen(true)}
+
                       />
                     ))}
                   </div>
