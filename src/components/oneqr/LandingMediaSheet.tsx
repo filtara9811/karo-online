@@ -94,7 +94,7 @@ export function LandingMediaSheet({
     if (!v) return;
     if (media.length >= MAX_SLOTS) { toast.error(`Max ${MAX_SLOTS} media`); return; }
     setUrlInput("");
-    void persist([...media, { type: "url", src: v }].slice(0, MAX_SLOTS));
+    void persist([...media, { type: "url" as const, src: v }].slice(0, MAX_SLOTS));
     toast.success("Video link add ho gaya");
   };
 
