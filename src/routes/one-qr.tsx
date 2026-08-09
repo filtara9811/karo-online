@@ -215,6 +215,15 @@ function QrDashboardPage() {
             <p className="truncate text-[10.5px] text-slate-500">{profile?.business_name || "My digital shop"}</p>
           </div>
 
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setHubOpen(true)}
+            aria-label="Wallet and business profile"
+            className="h-11 w-11 shrink-0 grid place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_10px_22px_-12px_rgba(245,158,11,0.95)]"
+          >
+            <LayoutGrid className="h-5 w-5" />
+          </motion.button>
+
           <button
             aria-label="Notifications"
             className="relative h-11 w-11 shrink-0 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90"
@@ -226,6 +235,7 @@ function QrDashboardPage() {
               </span>
             )}
           </button>
+
         </div>
       </header>
 
