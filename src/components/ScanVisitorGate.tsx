@@ -17,11 +17,17 @@ export function ScanVisitorGate({
   source = "qr",
   project,
   onDone,
+  enabled = true,
+  title,
+  message,
 }: {
   code: string;
   source?: "qr" | "link" | "card";
   project?: string | null;
   onDone?: () => void;
+  enabled?: boolean;
+  title?: string;
+  message?: string;
 }) {
   const storageKey = `ko-scan-visitor:${source}:${code}`;
   const [open, setOpen] = useState(false);
