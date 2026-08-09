@@ -140,6 +140,17 @@ function ScanLandingPage() {
     accent: themeAccent,
   });
 
+  // Store the sharer's referral code so signup credits the right wallet.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) {
+      import("@/hooks/use-referral").then(({ REFERRAL_PENDING_KEY }) => {
+        window.localStorage.setItem(REFERRAL_PENDING_KEY, ref);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
