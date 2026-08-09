@@ -214,17 +214,18 @@ function Tool({
   label, icon: Icon, onClick, active,
 }: { label: string; icon: typeof Link2; onClick: () => void; active?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex min-w-0 flex-col items-center gap-0.5">
       <motion.button
         type="button"
         whileTap={{ scale: 0.94 }}
         onClick={onClick}
         aria-label={label}
-        className={`grid h-10 w-10 place-items-center rounded-full border transition ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white text-amber-800 border-amber-200"}`}
+        className={`grid h-8 w-8 place-items-center rounded-full border transition ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white text-amber-800 border-amber-200"}`}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </motion.button>
-      <span className="text-[8.5px] font-bold text-slate-500">{label}</span>
+      <span className="text-[8px] font-bold text-slate-500">{label}</span>
+
     </div>
   );
 }
