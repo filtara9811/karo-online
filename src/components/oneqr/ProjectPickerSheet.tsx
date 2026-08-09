@@ -36,7 +36,8 @@ export function ProjectPickerSheet({
             <div className="sticky top-0 z-10 bg-white/95 backdrop-blur px-4 pt-3 pb-2.5 border-b border-black/5 flex items-center gap-2">
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-[15px] text-slate-900">My QR projects</p>
-                <p className="text-[11px] text-slate-500">Jo select karenge wahi home screen par dikhega</p>
+                <p className="text-[11px] text-slate-500">Ek project select karein — wahi home screen par dikhega</p>
+
               </div>
               <button onClick={onClose} aria-label="Close" className="h-9 w-9 grid place-items-center rounded-full bg-slate-100 text-slate-600 active:scale-90">
                 <X className="h-4 w-4" />
