@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft, QrCode, Loader2, Users, Plus, Megaphone, Bell, Star, MapPin, Store, LayoutGrid,
+  ArrowLeft, QrCode, Loader2, Users, Plus, Megaphone, Bell, Star, MapPin, Store, LayoutGrid, ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
