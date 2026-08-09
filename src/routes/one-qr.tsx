@@ -16,6 +16,8 @@ import { VisitorChatSheet, type VisitorRow } from "@/components/oneqr/VisitorCha
 import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 import { LandingEditorSheet } from "@/components/oneqr/LandingEditorSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
+import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/one-qr")({
