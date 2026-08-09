@@ -18,7 +18,15 @@ export type QrProject = {
   ads_enabled: boolean;
   ad_budget_inr: number;
   ad_clicks: number;
+  business_name?: string | null;
+  contact_phone?: string | null;
+  category?: string | null;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
+  is_paid?: boolean | null;
+  price_inr?: number | null;
 };
+
 
 export type LandingTheme = {
   key: string; name: string; description: string | null; preset: string; style?: string;
