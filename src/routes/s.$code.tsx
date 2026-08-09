@@ -141,6 +141,15 @@ function ScanLandingPage() {
     icon: data?.merchant?.avatar_url ?? null,
     accent: themeAccent,
   });
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
+
+  // Auto-offer the white-label install once per shop, shortly after load.
+  const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
+  useEffect(() => {
+    if (!canOfferInstall) return;
+    const t = window.setTimeout(() => setInstallPromptOpen(true), 1500);
+    return () => window.clearTimeout(t);
+  }, [canOfferInstall]);
 
   // Store the sharer's referral code so signup credits the right wallet.
   useEffect(() => {
