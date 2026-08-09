@@ -72,7 +72,7 @@ export function useReferralContext(): ReferralContext {
   if (pathname.startsWith("/vendor")) return VENDOR;
   if (pathname.startsWith("/vendors") || pathname.startsWith("/product") || pathname.startsWith("/orders"))
     return SHOP;
-  if (variant.key === "oneqr") return ONEQR;
-  if (variant.key === "vendor" || variant.key === "shop") return VENDOR;
+  if (variant.id === "oneqr") return ONEQR;
+  if (variant.id === "vendor" || variant.id === "shop") return VENDOR;
   return CUSTOMER;
 }
