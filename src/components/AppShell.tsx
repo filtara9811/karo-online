@@ -70,6 +70,11 @@ export function AppShell() {
   const hideBottomBar = !showBottomBar;
   // Orange dock is Home-only — never on landing pages, dashboards or panels.
   const showFloatingDock = !isMarketing && isHome;
+  // Referral FAB: every in-app surface (quick service, One QR, vendor, shop),
+  // never on public landing pages, admin/staff panels or the referral page itself.
+  const showReferralFab =
+    !isMarketing &&
+    !NO_REFERRAL_FAB_ON.some((p) => location.pathname.startsWith(p));
   const isQuickRoute = isHome || location.pathname.startsWith("/quick");
   const isVendorRoute = location.pathname.startsWith("/vendor");
   const isChatRoute = location.pathname === "/chat" || location.pathname === "/vendor/chat";
