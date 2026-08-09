@@ -331,12 +331,17 @@ function QrDashboardPage() {
             {tab === "projects" && (
               <>
                 <button
-                  onClick={createProject}
+                  onClick={() => setPickerOpen(true)}
                   disabled={creating}
                   className="w-full h-14 rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display font-extrabold text-[15px] inline-flex items-center justify-center gap-2 shadow-[0_16px_34px_-16px_rgba(245,158,11,0.9)] active:scale-[0.98]"
                 >
                   {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
                   Create New Project / QR
+                  {(projects?.length ?? 0) > 0 && (
+                    <span className="ml-1 h-6 min-w-6 px-1.5 rounded-full bg-white/25 text-[11px] font-extrabold grid place-items-center">
+                      {projects?.length}
+                    </span>
+                  )}
                 </button>
 
                 {projects === null ? (
@@ -346,8 +351,8 @@ function QrDashboardPage() {
                     Abhi koi QR project nahi hai — Shop Gate QR, Counter QR ya Table QR banakar shuru karein.
                   </p>
                 ) : (
-                  <div className="space-y-4">
-                    {projects.map((p) => (
+                  <div className="space-y-6">
+                    {visibleProjects.map((p) => (
                       <QrProjectCard
                         key={p.id}
                         project={p}
@@ -361,7 +366,7 @@ function QrDashboardPage() {
                         onPoster={() => setPosterFor(p)}
                         onLinks={() => setLinksOpen(true)}
                         onCampaign={() => setCampaignFor(p)}
-                        onVisitor={(v) => setVisitorOpen(v)}
+                        onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
                         onGuide={() => setGuideOpen(true)}
@@ -371,6 +376,7 @@ function QrDashboardPage() {
                     ))}
                   </div>
                 )}
+
               </>
             )}
 
