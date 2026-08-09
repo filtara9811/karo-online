@@ -46,6 +46,12 @@ const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", 
 // Bottom service/product picker bar ONLY shows on these routes.
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
 const SHOW_BOTTOM_BAR_ON: string[] = [];
+// Referral floating button is hidden on public landings, panels and the referral page.
+const NO_REFERRAL_FAB_ON: string[] = [
+  "/referral", "/r/", "/s/", "/c/", "/f/", "/admin", "/staff", "/register",
+  "/chat", "/vendor/chat", "/privacy-policy", "/terms-and-conditions",
+  "/refund-policy", "/shipping-policy", "/blog", "/checkout",
+];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
 // The orange dock stays visible across the whole customer app; only panels
 // and full-screen flows below hide it.
