@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+type Proj = {
+  business_name: string | null;
+  title: string | null;
+  avatar_url: string | null;
+  accent_color: string | null;
+};
+
 /**
  * Per-merchant web app manifest.
  * Served same-origin (blob/data manifests are ignored by Chrome), so installing
@@ -40,12 +47,7 @@ export const Route = createFileRoute("/api/public/manifest/$code")({
 
           // 2) The One QR project — this is the white-label identity we prefer.
           const cols = "business_name, title, avatar_url, accent_color";
-          let proj: {
-            business_name: string | null;
-            title: string | null;
-            avatar_url: string | null;
-            accent_color: string | null;
-          } | null = null;
+          let proj: Proj | null = null;
 
           if (project) {
             const bySlug = await supabaseAdmin
@@ -53,14 +55,14 @@ export const Route = createFileRoute("/api/public/manifest/$code")({
               .select(cols)
               .eq("slug", project)
               .maybeSingle();
-            proj = (bySlug.data as typeof proj) ?? null;
+            proj = (bySlug.data as Proj | null) ?? null;
             if (!proj && /^[0-9a-f-]{36}$/i.test(project)) {
               const byId = await supabaseAdmin
                 .from("qr_projects")
                 .select(cols)
                 .eq("id", project)
                 .maybeSingle();
-              proj = (byId.data as typeof proj) ?? null;
+              proj = (byId.data as Proj | null) ?? null;
             }
           }
 
@@ -72,7 +74,7 @@ export const Route = createFileRoute("/api/public/manifest/$code")({
               .order("created_at", { ascending: true })
               .limit(1)
               .maybeSingle();
-            proj = (first.data as typeof proj) ?? null;
+            proj = (first.data as Proj | null) ?? null;
           }
 
           if (proj) {
