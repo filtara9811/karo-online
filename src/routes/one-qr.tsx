@@ -564,6 +564,90 @@ function QrDashboardPage() {
   );
 }
 
+/** Selected project bar: logo, name, available credit + recharge, picker chevron. */
+function SelectedProjectBar({
+  project, count, credit, busy, onOpen, onRecharge,
+}: {
+  project: QrProject | null;
+  count: number;
+  credit: number;
+  busy?: boolean;
+  onOpen: () => void;
+  onRecharge: () => void;
+}) {
+  if (!project) {
+    return (
+      <button
+        onClick={onOpen}
+        disabled={busy}
+        className="w-full h-14 rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display font-extrabold text-[15px] inline-flex items-center justify-center gap-2 shadow-[0_16px_34px_-16px_rgba(245,158,11,0.9)] active:scale-[0.98]"
+      >
+        {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
+        Create New Project / QR
+      </button>
+    );
+  }
+
+  return (
+    <motion.div
+      whileTap={{ scale: 0.99 }}
+      className="w-full rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-2.5 flex items-center gap-2.5 shadow-[0_16px_34px_-16px_rgba(245,158,11,0.9)]"
+    >
+      <button
+        onClick={onOpen}
+        aria-label="Switch project"
+        className="h-12 w-12 shrink-0 rounded-2xl overflow-hidden bg-white/25 grid place-items-center text-white active:scale-95"
+      >
+        {project.avatar_url
+          ? <img src={project.avatar_url} alt="" className="h-full w-full object-cover" />
+          : <Store className="h-5 w-5" />}
+      </button>
+
+      <button onClick={onOpen} className="flex-1 min-w-0 text-left active:scale-[0.99]">
+        <p className="truncate font-display font-extrabold text-[15px] text-white">
+          {project.business_name || project.title}
+        </p>
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5">
+            <Users className="h-3 w-3 text-emerald-600" />
+            <span className="text-[10.5px] font-extrabold leading-none text-emerald-700">
+              {credit}
+              <span className="ml-1 font-semibold text-[8.5px] text-slate-500">Available credit</span>
+            </span>
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onRecharge(); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onRecharge(); } }}
+            className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 active:scale-95"
+          >
+            <QrCode className="h-3 w-3 text-slate-700" />
+            <span className="text-[10.5px] font-extrabold leading-none text-slate-800">
+              {credit}
+              <span className="ml-1 font-semibold text-[8.5px] text-slate-500">Recharge</span>
+            </span>
+          </span>
+        </div>
+      </button>
+
+      <button
+        onClick={onOpen}
+        aria-label="All projects"
+        className="relative h-10 w-10 shrink-0 rounded-full bg-white text-orange-600 grid place-items-center active:scale-90"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-5 w-5" strokeWidth={3} />}
+        {count > 1 && (
+          <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-slate-900 text-white text-[9px] font-extrabold grid place-items-center">
+            {count}
+          </span>
+        )}
+      </button>
+    </motion.div>
+  );
+}
+
+
 function PillBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
