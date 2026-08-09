@@ -38,6 +38,8 @@ export function ScanVisitorGate({
 
   useEffect(() => {
     if (!code) return;
+    if (!enabled) { onDone?.(); return; }
+
     let already = false;
     try { already = !!window.sessionStorage.getItem(storageKey); } catch { /* ignore */ }
     if (already) { onDone?.(); return; }
