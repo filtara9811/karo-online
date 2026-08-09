@@ -48,8 +48,22 @@ type Visit = {
 };
 type Tab = "projects" | "vendors" | "ads";
 
+const PROJECT_COLS =
+  "id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks, business_name, contact_phone, category, avatar_url, cover_image_url, is_paid, price_inr";
+const PROJECT_PRICE_INR = 599;
+const SELECTED_KEY = "oneqr.selectedProjects.v1";
+
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || `qr-${Date.now()}`;
+}
+
+function readSelected(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(window.localStorage.getItem(SELECTED_KEY) || "[]") as string[];
+  } catch {
+    return [];
+  }
 }
 
 function QrDashboardPage() {
@@ -75,18 +89,28 @@ function QrDashboardPage() {
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
+  useEffect(() => setSelected(readSelected()), []);
+
+  const persistSelected = useCallback((ids: string[]) => {
+    setSelected(ids);
+    try { window.localStorage.setItem(SELECTED_KEY, JSON.stringify(ids)); } catch { /* full */ }
+  }, []);
 
   const ads = useSponsoredAds();
 
   const loadProjects = useCallback(async (uid: string) => {
     const { data } = await supabase
       .from("qr_projects")
-      .select("id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks")
+      .select(PROJECT_COLS)
       .eq("user_id", uid)
       .order("created_at", { ascending: true });
-    setProjects((data as QrProject[]) ?? []);
+    setProjects((data as unknown as QrProject[]) ?? []);
   }, []);
+
 
   useEffect(() => {
     (async () => {
