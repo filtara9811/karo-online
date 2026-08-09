@@ -164,12 +164,16 @@ function QrDashboardPage() {
     [projectVisits],
   );
 
-  /** Only the projects the merchant selected are shown on the home screen. */
+  /** Wallet balance shown as "available credit" on the project bar. */
+  const walletTotal = refData?.wallet?.total ?? 0;
+
+  /** Exactly one project is shown on the home screen. */
   const visibleProjects = useMemo(() => {
     const all = projects ?? [];
-    const picked = all.filter((p) => selected.includes(p.id));
-    return picked.length > 0 ? picked : all.slice(0, 1);
+    const picked = all.find((p) => selected.includes(p.id));
+    return picked ? [picked] : all.slice(0, 1);
   }, [projects, selected]);
+
 
   const insertProject = async (draft: NewProjectDraft, paid: boolean) => {
     if (!userId) return;
