@@ -373,6 +373,17 @@ function ScanLandingPage() {
         message={landingExtras.gate_message}
       />
 
+      <LandingInstallPrompt
+        open={installPromptOpen}
+        name={merchantName}
+        icon={m.avatar_url ?? null}
+        accent={accent}
+        isIOS={installer.isIOS}
+        onClose={() => { installer.markSeen(); setInstallPromptOpen(false); }}
+        onInstall={installer.install}
+      />
+
+
     </div>
   );
 }
