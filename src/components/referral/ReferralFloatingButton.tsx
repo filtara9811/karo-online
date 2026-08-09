@@ -16,6 +16,7 @@ export function ReferralFloatingButton({ shopCode }: { shopCode?: string | null 
   const { data } = useReferralOverview();
   const [open, setOpen] = useState(false);
   const pressTimer = useRef<number | null>(null);
+  const longPressed = useRef(false);
 
   const code = data?.code ?? "";
   const link = code ? ctx.buildLink(code, shopCode) : "";
@@ -24,8 +25,10 @@ export function ReferralFloatingButton({ shopCode }: { shopCode?: string | null 
   useEffect(() => () => { if (pressTimer.current) window.clearTimeout(pressTimer.current); }, []);
 
   const startPress = () => {
+    longPressed.current = false;
     pressTimer.current = window.setTimeout(async () => {
       pressTimer.current = null;
+      longPressed.current = true;
       if (!link) return;
       try {
         await navigator.clipboard.writeText(link);
@@ -35,11 +38,10 @@ export function ReferralFloatingButton({ shopCode }: { shopCode?: string | null 
       }
     }, 500);
   };
-  const endPress = () => {
+  const clearPress = () => {
     if (pressTimer.current) {
       window.clearTimeout(pressTimer.current);
       pressTimer.current = null;
-      setOpen(true);
     }
   };
 
@@ -49,18 +51,18 @@ export function ReferralFloatingButton({ shopCode }: { shopCode?: string | null 
         type="button"
         aria-label={ctx.label}
         onPointerDown={startPress}
-        onPointerUp={endPress}
-        onPointerLeave={() => {
-          if (pressTimer.current) {
-            window.clearTimeout(pressTimer.current);
-            pressTimer.current = null;
-          }
+        onPointerUp={clearPress}
+        onPointerCancel={clearPress}
+        onPointerLeave={clearPress}
+        onClick={() => {
+          if (longPressed.current) { longPressed.current = false; return; }
+          setOpen(true);
         }}
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         whileTap={{ scale: 0.92 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="fixed right-3 z-[70] rounded-full pl-2.5 pr-3.5 py-2.5 flex items-center gap-2"
+        className="fixed right-3 z-[90] rounded-full pl-2.5 pr-3.5 py-2.5 flex items-center gap-2"
         style={{
           bottom: "calc(6.5rem + env(safe-area-inset-bottom))",
           background: `linear-gradient(160deg, ${ctx.accentSoft}, ${ctx.accent} 55%, rgba(0,0,0,0.35))`,
