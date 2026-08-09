@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  RotateCcw, RefreshCw, ExternalLink, Sparkles, Link2, Package, Video, Check, Lock, Loader2, Palette,
+  RotateCcw, RefreshCw, ExternalLink, Sparkles, Link2, Package, Video, Check, Lock, Loader2, Palette, Settings,
 } from "lucide-react";
 import type { LandingTheme } from "./QrProjectCard";
 
@@ -22,6 +22,9 @@ export function LivePreviewFace({
   onApply,
   onAccent,
   onLinks,
+  onProducts,
+  onVideos,
+  onSettings,
 }: {
   title: string;
   landingUrl: string;
@@ -34,6 +37,9 @@ export function LivePreviewFace({
   onApply: (t: LandingTheme) => void;
   onAccent: (color: string) => void;
   onLinks: () => void;
+  onProducts?: () => void;
+  onVideos?: () => void;
+  onSettings?: () => void;
 }) {
   const [nonce, setNonce] = useState(0);
   const [showThemes, setShowThemes] = useState(false);
@@ -46,6 +52,7 @@ export function LivePreviewFace({
     const t = setTimeout(() => setNonce((n) => n + 1), 600);
     return () => clearTimeout(t);
   }, [currentKey, accent]);
+
 
   return (
     <div className="flex h-full flex-col rounded-[28px] bg-white border border-amber-200/80 overflow-hidden">
