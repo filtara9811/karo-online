@@ -15,6 +15,13 @@ type Proj = {
   accent_color: string | null;
 };
 
+type Cust = {
+  name: string | null;
+  shop_name: string | null;
+  avatar_url: string | null;
+  shop_logo_url: string | null;
+};
+
 const PROJ_COLS = "business_name, title, avatar_url, accent_color";
 
 export async function resolveShopIdentity(
@@ -34,9 +41,7 @@ export async function resolveShopIdentity(
       .maybeSingle();
     userId = (rc.data as { user_id: string } | null)?.user_id ?? null;
 
-    let customer:
-      | { name: string | null; shop_name: string | null; avatar_url: string | null; shop_logo_url: string | null }
-      | null = null;
+    let customer: Cust | null = null;
 
     if (userId) {
       const c = await supabaseAdmin
@@ -44,14 +49,14 @@ export async function resolveShopIdentity(
         .select("name, shop_name, avatar_url, shop_logo_url")
         .eq("id", userId)
         .maybeSingle();
-      customer = (c.data as typeof customer) ?? null;
+      customer = (c.data as Cust | null) ?? null;
     } else {
       const c = await supabaseAdmin
         .from("customers")
         .select("id, name, shop_name, avatar_url, shop_logo_url")
         .ilike("referral_code", code)
         .maybeSingle();
-      const row = c.data as (NonNullable<typeof customer> & { id: string }) | null;
+      const row = c.data as (Cust & { id: string }) | null;
       if (row) {
         userId = row.id;
         customer = row;
