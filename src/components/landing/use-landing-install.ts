@@ -5,6 +5,8 @@ type BipEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ out
 export const isIOSDevice = () =>
   typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+const seenKey = (code: string) => `ko-pwa-seen-${code}`;
+
 /**
  * Makes the merchant landing page installable as its own mini-app:
  * injects a per-merchant web app manifest and captures the install prompt so
@@ -23,11 +25,22 @@ export function useLandingInstall({
 }) {
   const [canInstall, setCanInstall] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [standalone, setStandalone] = useState(false);
+  const [seen, setSeen] = useState(true);
   const promptRef = useRef<BipEvent | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setInstalled(window.matchMedia("(display-mode: standalone)").matches);
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+    setStandalone(isStandalone);
+    setInstalled(isStandalone);
+    try {
+      setSeen(window.localStorage.getItem(seenKey(code)) === "1");
+    } catch {
+      setSeen(false);
+    }
     void name;
     void icon;
 
@@ -66,6 +79,10 @@ export function useLandingInstall({
     };
   }, [code, name, icon, accent]);
 
+  const markSeen = useCallback(() => {
+    setSeen(true);
+    try { window.localStorage.setItem(seenKey(code), "1"); } catch { /* ignore */ }
+  }, [code]);
 
   const install = useCallback(async (): Promise<"accepted" | "dismissed" | "unavailable"> => {
     const p = promptRef.current;
@@ -77,5 +94,5 @@ export function useLandingInstall({
     return choice.outcome === "accepted" ? "accepted" : "dismissed";
   }, []);
 
-  return { canInstall, installed, install, isIOS: isIOSDevice() };
+  return { canInstall, installed, standalone, seen, markSeen, install, isIOS: isIOSDevice() };
 }
