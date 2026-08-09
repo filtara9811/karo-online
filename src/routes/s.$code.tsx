@@ -193,6 +193,8 @@ function ScanLandingPage() {
   const m = data.merchant ?? {};
   const links = data.links ?? {};
   const landing = data.landing ?? {};
+  const landingExtras = readExtras((links.extra_links ?? []) as ExtraLink[]);
+
   const playUrl = isIOS()
     ? (landing.ios_app_url || APP_STORE_FALLBACK)
     : `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
