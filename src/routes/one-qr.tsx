@@ -164,28 +164,76 @@ function QrDashboardPage() {
     [projectVisits],
   );
 
-  const createProject = async () => {
-    if (!userId) { toast.error("Login karein phir project banayein"); return; }
-    setCreating(true);
-    const n = (projects?.length ?? 0) + 1;
-    const title = `QR Project ${n}`;
+  /** Only the projects the merchant selected are shown on the home screen. */
+  const visibleProjects = useMemo(() => {
+    const all = projects ?? [];
+    const picked = all.filter((p) => selected.includes(p.id));
+    return picked.length > 0 ? picked : all.slice(0, 1);
+  }, [projects, selected]);
+
+  const insertProject = async (draft: NewProjectDraft, paid: boolean) => {
+    if (!userId) return;
     const fallbackTheme = themes[0]?.key ?? "classic-amber";
     const { data, error } = await supabase
       .from("qr_projects")
       .insert({
         user_id: userId,
-        title,
-        slug: slugify(`${title}-${Date.now().toString(36)}`),
+        title: draft.title,
+        slug: slugify(`${draft.business_name || draft.title}-${Date.now().toString(36)}`),
         theme_key: themeData?.current ?? fallbackTheme,
         accent_color: themeData?.accent ?? themes[0]?.accent_color ?? "#f59e0b",
-      })
-      .select("id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks")
+        business_name: draft.business_name,
+        contact_phone: draft.contact_phone,
+        category: draft.category || null,
+        avatar_url: draft.avatar_url,
+        cover_image_url: draft.cover_image_url,
+        is_paid: paid,
+        price_inr: paid ? PROJECT_PRICE_INR : 0,
+      } as never)
+      .select(PROJECT_COLS)
       .single();
-    setCreating(false);
     if (error || !data) { toast.error(error?.message ?? "Project ban nahi paya"); return; }
-    setProjects((p) => [...(p ?? []), data as QrProject]);
+    const row = data as unknown as QrProject;
+    setProjects((p) => [...(p ?? []), row]);
+    persistSelected([...selected, row.id]);
+    setNewOpen(false);
+    setPickerOpen(false);
     toast.success("Naya QR project ban gaya");
   };
+
+  const createProject = async (draft: NewProjectDraft) => {
+    if (!userId) { toast.error("Login karein phir project banayein"); return; }
+    const paid = (projects?.length ?? 0) >= 1;
+    setCreating(true);
+    try {
+      if (!paid) {
+        await insertProject(draft, false);
+        return;
+      }
+      // Extra projects are chargeable — Cashfree checkout, then create on success.
+      const order = await createCashfreeOrder({
+        data: { amount_inr: PROJECT_PRICE_INR, purpose: "leadx_purchase", coins: 0 },
+      });
+      if (!order?.ok || !order.payment_session_id) {
+        toast.error(order?.error ?? "Payment start nahi ho paya");
+        return;
+      }
+      await openCashfreeCheckout(order.payment_session_id, order.mode ?? "sandbox", { redirectTarget: "_modal" });
+      const check = await verifyCashfreeOrder({
+        data: { order_id: order.order_id, purpose: "leadx_purchase" },
+      });
+      if (!check?.ok || check.status !== "PAID") {
+        toast.error("Payment complete nahi hua — project create nahi kiya");
+        return;
+      }
+      await insertProject(draft, true);
+    } catch (e) {
+      toast.error(getPaymentError(e));
+    } finally {
+      setCreating(false);
+    }
+  };
+
 
   const patchProject = async (id: string, patch: Partial<QrProject>) => {
     setProjects((p) => (p ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)));
