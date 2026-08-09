@@ -222,10 +222,11 @@ function QrDashboardPage() {
       const check = await verifyCashfreeOrder({
         data: { order_id: order.order_id, purpose: "leadx_purchase" },
       });
-      if (!check?.ok || check.status !== "PAID") {
+      if (!check?.ok) {
         toast.error("Payment complete nahi hua — project create nahi kiya");
         return;
       }
+
       await insertProject(draft, true);
     } catch (e) {
       toast.error(getPaymentError(e));
