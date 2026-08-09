@@ -376,15 +376,9 @@ function QrDashboardPage() {
       <nav className="fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto m-3 flex h-14 items-center rounded-full bg-slate-900 px-1.5 text-white shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)]">
           <PillBtn label="My Project" active={tab === "projects"} onClick={() => setTab("projects")} />
-          <button
-            onClick={() => setHubOpen(true)}
-            aria-label="Wallet and business profile"
-            className="mx-1 h-11 w-11 shrink-0 grid place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white active:scale-90"
-          >
-            <LayoutGrid className="h-5 w-5" />
-          </button>
           <PillBtn label="Vendors" active={tab === "vendors"} onClick={() => setTab("vendors")} />
           <PillBtn label="Ads" active={tab === "ads"} onClick={() => setTab("ads")} />
+
         </div>
       </nav>
 
