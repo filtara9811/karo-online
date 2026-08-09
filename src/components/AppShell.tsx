@@ -137,6 +137,7 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
         {showFloatingDock && <FloatingDockNav />}
+        {showReferralFab && <ReferralFloatingButton />}
 
         {!isMarketing && <VendorLeadAlerts />}
         {(hideTopHeader || isVendorRoute) && !isChatRoute && <GlobalNotificationEffects />}
