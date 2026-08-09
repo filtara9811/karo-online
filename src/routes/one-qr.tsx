@@ -436,6 +436,19 @@ function QrDashboardPage() {
         onClose={() => setHubOpen(false)}
         onProfileSaved={(p) => setProfile(p)}
       />
+      <BusinessProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onSaved={(p: BusinessProfileForm) =>
+          setProfile({
+            business_name: p.business_name,
+            shop_bio: p.shop_bio || p.trade,
+            avatar_url: p.avatar_url,
+            cover_image_url: p.cover_image_url,
+          })
+        }
+      />
+
       <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
       <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
