@@ -16,6 +16,8 @@ import { VisitorChatSheet, type VisitorRow } from "@/components/oneqr/VisitorCha
 import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 import { LandingEditorSheet } from "@/components/oneqr/LandingEditorSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
+import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/one-qr")({
@@ -66,6 +68,8 @@ function QrDashboardPage() {
   const [qrFor, setQrFor] = useState<QrProject | null>(null);
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
 
   const ads = useSponsoredAds();
 
@@ -211,6 +215,15 @@ function QrDashboardPage() {
             <p className="truncate text-[10.5px] text-slate-500">{profile?.business_name || "My digital shop"}</p>
           </div>
 
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setHubOpen(true)}
+            aria-label="Wallet and business profile"
+            className="h-11 w-11 shrink-0 grid place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_10px_22px_-12px_rgba(245,158,11,0.95)]"
+          >
+            <LayoutGrid className="h-5 w-5" />
+          </motion.button>
+
           <button
             aria-label="Notifications"
             className="relative h-11 w-11 shrink-0 grid place-items-center rounded-full bg-amber-50 text-amber-700 active:scale-90"
@@ -222,6 +235,7 @@ function QrDashboardPage() {
               </span>
             )}
           </button>
+
         </div>
       </header>
 
@@ -272,6 +286,8 @@ function QrDashboardPage() {
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
                         onGuide={() => setGuideOpen(true)}
+                        onProfile={() => setProfileOpen(true)}
+
                       />
                     ))}
                   </div>
@@ -370,15 +386,9 @@ function QrDashboardPage() {
       <nav className="fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto m-3 flex h-14 items-center rounded-full bg-slate-900 px-1.5 text-white shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)]">
           <PillBtn label="My Project" active={tab === "projects"} onClick={() => setTab("projects")} />
-          <button
-            onClick={() => setHubOpen(true)}
-            aria-label="Wallet and business profile"
-            className="mx-1 h-11 w-11 shrink-0 grid place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white active:scale-90"
-          >
-            <LayoutGrid className="h-5 w-5" />
-          </button>
           <PillBtn label="Vendors" active={tab === "vendors"} onClick={() => setTab("vendors")} />
           <PillBtn label="Ads" active={tab === "ads"} onClick={() => setTab("ads")} />
+
         </div>
       </nav>
 
@@ -426,6 +436,19 @@ function QrDashboardPage() {
         onClose={() => setHubOpen(false)}
         onProfileSaved={(p) => setProfile(p)}
       />
+      <BusinessProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onSaved={(p: BusinessProfileForm) =>
+          setProfile({
+            business_name: p.business_name,
+            shop_bio: p.shop_bio || p.trade,
+            avatar_url: p.avatar_url,
+            cover_image_url: p.cover_image_url,
+          })
+        }
+      />
+
       <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
       <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>

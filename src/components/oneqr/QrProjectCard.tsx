@@ -51,7 +51,7 @@ function timeAgo(iso: string) {
  */
 export function QrProjectCard({
   project, stats, themes, landingUrl, visits, profile,
-  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide,
+  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile,
 }: {
   project: QrProject;
   stats: ProjectStats;
@@ -68,6 +68,7 @@ export function QrProjectCard({
   onQr: () => void;
   onPreview: () => void;
   onGuide: () => void;
+  onProfile: () => void;
 }) {
   const qrTileRef = useRef<HTMLCanvasElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -77,9 +78,10 @@ export function QrProjectCard({
 
   useEffect(() => {
     if (!qrTileRef.current || !landingUrl) return;
-    QRCode.toCanvas(qrTileRef.current, landingUrl, { width: 96, margin: 0, color: { dark: "#0f172a", light: "#ffffff" } })
+    QRCode.toCanvas(qrTileRef.current, landingUrl, { width: 72, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
       .catch(() => { /* ignore */ });
   }, [landingUrl]);
+
 
   const share = async () => {
     if (!landingUrl) return;
@@ -131,38 +133,44 @@ export function QrProjectCard({
         </AnimatePresence>
       </div>
 
-      {/* Identity */}
-      <div className="px-4 -mt-7 flex items-end gap-3">
-        <span
-          className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-amber-50 ring-4 ring-white grid place-items-center"
+      {/* Identity — tap to open the full business profile form */}
+      <div className="px-4 pt-3 pb-1 flex items-center gap-3">
+        <motion.button
+          whileTap={{ scale: 0.94 }}
+          onClick={onProfile}
+          aria-label="Edit business profile"
+          className="relative -mt-11 h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-amber-50 ring-4 ring-white grid place-items-center"
           style={{ color: accent }}
         >
           {profile?.avatar_url
             ? <img src={profile.avatar_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
             : <Store className="h-6 w-6" />}
-        </span>
-        <div className="flex-1 min-w-0 pb-1">
-          <input
-            value={project.title}
-            onChange={(e) => onPatch({ title: e.target.value })}
-            aria-label="Project name"
-            className="w-full bg-transparent font-display font-bold text-[16px] text-slate-900 outline-none focus:bg-amber-50/70 rounded-lg px-1 -ml-1"
-          />
-          <p className="truncate px-1 -ml-1 text-[11.5px] text-slate-500">
+        </motion.button>
+        <button
+          onClick={onProfile}
+          className="flex-1 min-w-0 text-left active:opacity-70"
+        >
+          <p className="truncate font-display font-bold text-[16px] text-slate-900">
+            {profile?.business_name || project.title}
+          </p>
+          <p className="truncate text-[11.5px] text-slate-500">
             {profile?.shop_bio || `/${project.slug}`}
           </p>
-        </div>
+        </button>
       </div>
 
       {/* Four action tiles */}
-      <div className="mt-3.5 mx-4 grid grid-cols-4 gap-2">
-        <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr}>
-          <canvas ref={qrTileRef} className="h-6 w-6 rounded-[3px] bg-white" />
+      <div className="mt-2.5 mx-4 grid grid-cols-4 gap-2">
+        <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr} pulse>
+          <span className="grid h-6 w-6 place-items-center overflow-hidden rounded-[4px] bg-white">
+            <canvas ref={qrTileRef} className="h-6 w-6" />
+          </span>
         </Tile>
         <Tile accent={accent} value={stats.clicks} label="Add campaign" onClick={onCampaign} icon={Megaphone} />
         <Tile accent={accent} label="My landing page" onClick={onPreview} icon={SettingsIcon} />
         <Tile accent={accent} label="Add | link" onClick={onLinks} icon={Link2} />
       </div>
+
 
       {/* Analytics */}
       <div className="mt-3 mx-4">
@@ -243,18 +251,28 @@ function MenuItem({
 }
 
 function Tile({
-  icon: Icon, value, label, accent, onClick, children,
+  icon: Icon, value, label, accent, onClick, children, pulse,
 }: {
   icon?: typeof Users; value?: number; label: string; accent: string;
-  onClick: () => void; children?: React.ReactNode;
+  onClick: () => void; children?: React.ReactNode; pulse?: boolean;
 }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.94 }}
+      transition={{ type: "spring", stiffness: 420, damping: 22 }}
       onClick={onClick}
-      className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
+      className="relative rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
     >
-      <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
+      <span className="relative mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
+        {pulse && (
+          <motion.span
+            aria-hidden
+            animate={{ scale: [1, 1.35], opacity: [0.45, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{ boxShadow: `0 0 0 2px ${accent}` }}
+          />
+        )}
         {children ?? (Icon ? <Icon className="h-4 w-4" style={{ color: accent }} /> : null)}
       </span>
       {value != null && <p className="text-[15px] font-extrabold text-slate-900 leading-none mt-1.5">{value}</p>}
@@ -262,3 +280,4 @@ function Tile({
     </motion.button>
   );
 }
+
