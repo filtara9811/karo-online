@@ -376,8 +376,8 @@ function ScanLandingPage() {
 
       <LandingInstallPrompt
         open={installPromptOpen}
-        name={merchantName}
-        icon={m.avatar_url ?? null}
+        name={installer.appName || merchantName}
+        icon={installer.appIcon || m.avatar_url || null}
         accent={accent}
         isIOS={installer.isIOS}
         onClose={() => { installer.markSeen(); setInstallPromptOpen(false); }}

@@ -27,6 +27,8 @@ export function useLandingInstall({
   const [installed, setInstalled] = useState(false);
   const [standalone, setStandalone] = useState(false);
   const [seen, setSeen] = useState(true);
+  const [appName, setAppName] = useState<string | null>(null);
+  const [appIcon, setAppIcon] = useState<string | null>(null);
   const promptRef = useRef<BipEvent | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,18 @@ export function useLandingInstall({
       setInstalled(true);
       setCanInstall(false);
     };
+    // Mirror the manifest identity (One QR project name/icon) in the UI so the
+    // popup promises exactly what lands on the home screen.
+    fetch(href)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m: { name?: string; icons?: { src: string }[] } | null) => {
+        if (!m) return;
+        if (m.name) setAppName(m.name);
+        const src = m.icons?.[0]?.src;
+        if (src && !src.startsWith("/icon-")) setAppIcon(src);
+      })
+      .catch(() => { /* keep fallbacks */ });
+
     window.addEventListener("beforeinstallprompt", onBip);
     window.addEventListener("appinstalled", onInstalled);
 
@@ -94,5 +108,5 @@ export function useLandingInstall({
     return choice.outcome === "accepted" ? "accepted" : "dismissed";
   }, []);
 
-  return { canInstall, installed, standalone, seen, markSeen, install, isIOS: isIOSDevice() };
+  return { canInstall, installed, standalone, seen, markSeen, install, appName, appIcon, isIOS: isIOSDevice() };
 }
