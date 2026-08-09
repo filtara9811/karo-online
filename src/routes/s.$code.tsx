@@ -13,6 +13,7 @@ import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
 import { LandingSkeleton } from "@/components/landing/LandingSkeleton";
 import { useLandingInstall } from "@/components/landing/use-landing-install";
+import { LandingInstallPrompt } from "@/components/landing/LandingInstallPrompt";
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
