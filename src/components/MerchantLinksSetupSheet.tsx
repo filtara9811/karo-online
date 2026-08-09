@@ -190,7 +190,7 @@ export function MerchantLinksSetupSheet({
   return (
     <>
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-gradient-to-b from-[#fdf6e3] via-[#f4e9c8] to-[#fdf6e3] border-t-2 border-[#d4af37] max-h-[92vh]">
+      <DrawerContent className="z-[210] bg-gradient-to-b from-[#fdf6e3] via-[#f4e9c8] to-[#fdf6e3] border-t-2 border-[#d4af37] max-h-[92vh]">
         <DrawerHeader className="pb-2">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-[#1a1208] font-display text-lg">Setup Scan Actions</DrawerTitle>
