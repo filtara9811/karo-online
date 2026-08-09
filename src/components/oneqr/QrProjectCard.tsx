@@ -51,7 +51,7 @@ function timeAgo(iso: string) {
  */
 export function QrProjectCard({
   project, stats, themes, landingUrl, visits, profile,
-  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide,
+  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile,
 }: {
   project: QrProject;
   stats: ProjectStats;
@@ -68,6 +68,7 @@ export function QrProjectCard({
   onQr: () => void;
   onPreview: () => void;
   onGuide: () => void;
+  onProfile: () => void;
 }) {
   const qrTileRef = useRef<HTMLCanvasElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -77,9 +78,10 @@ export function QrProjectCard({
 
   useEffect(() => {
     if (!qrTileRef.current || !landingUrl) return;
-    QRCode.toCanvas(qrTileRef.current, landingUrl, { width: 96, margin: 0, color: { dark: "#0f172a", light: "#ffffff" } })
+    QRCode.toCanvas(qrTileRef.current, landingUrl, { width: 72, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
       .catch(() => { /* ignore */ });
   }, [landingUrl]);
+
 
   const share = async () => {
     if (!landingUrl) return;
