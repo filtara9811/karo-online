@@ -17,8 +17,14 @@ import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 import { LandingEditorSheet } from "@/components/oneqr/LandingEditorSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
 import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
+import { ProjectPickerSheet } from "@/components/oneqr/ProjectPickerSheet";
+import { NewProjectSheet, type NewProjectDraft } from "@/components/oneqr/NewProjectSheet";
+import { markVisitorSeen, visitorKey } from "@/components/oneqr/visitor-groups";
+import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
+import { openCashfreeCheckout, getPaymentError } from "@/lib/cashfree-client";
 
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/one-qr")({
   head: () => ({
@@ -42,8 +48,22 @@ type Visit = {
 };
 type Tab = "projects" | "vendors" | "ads";
 
+const PROJECT_COLS =
+  "id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks, business_name, contact_phone, category, avatar_url, cover_image_url, is_paid, price_inr";
+const PROJECT_PRICE_INR = 599;
+const SELECTED_KEY = "oneqr.selectedProjects.v1";
+
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || `qr-${Date.now()}`;
+}
+
+function readSelected(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(window.localStorage.getItem(SELECTED_KEY) || "[]") as string[];
+  } catch {
+    return [];
+  }
 }
 
 function QrDashboardPage() {
@@ -69,18 +89,28 @@ function QrDashboardPage() {
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
+  useEffect(() => setSelected(readSelected()), []);
+
+  const persistSelected = useCallback((ids: string[]) => {
+    setSelected(ids);
+    try { window.localStorage.setItem(SELECTED_KEY, JSON.stringify(ids)); } catch { /* full */ }
+  }, []);
 
   const ads = useSponsoredAds();
 
   const loadProjects = useCallback(async (uid: string) => {
     const { data } = await supabase
       .from("qr_projects")
-      .select("id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks")
+      .select(PROJECT_COLS)
       .eq("user_id", uid)
       .order("created_at", { ascending: true });
-    setProjects((data as QrProject[]) ?? []);
+    setProjects((data as unknown as QrProject[]) ?? []);
   }, []);
+
 
   useEffect(() => {
     (async () => {
@@ -134,28 +164,77 @@ function QrDashboardPage() {
     [projectVisits],
   );
 
-  const createProject = async () => {
-    if (!userId) { toast.error("Login karein phir project banayein"); return; }
-    setCreating(true);
-    const n = (projects?.length ?? 0) + 1;
-    const title = `QR Project ${n}`;
+  /** Only the projects the merchant selected are shown on the home screen. */
+  const visibleProjects = useMemo(() => {
+    const all = projects ?? [];
+    const picked = all.filter((p) => selected.includes(p.id));
+    return picked.length > 0 ? picked : all.slice(0, 1);
+  }, [projects, selected]);
+
+  const insertProject = async (draft: NewProjectDraft, paid: boolean) => {
+    if (!userId) return;
     const fallbackTheme = themes[0]?.key ?? "classic-amber";
     const { data, error } = await supabase
       .from("qr_projects")
       .insert({
         user_id: userId,
-        title,
-        slug: slugify(`${title}-${Date.now().toString(36)}`),
+        title: draft.title,
+        slug: slugify(`${draft.business_name || draft.title}-${Date.now().toString(36)}`),
         theme_key: themeData?.current ?? fallbackTheme,
         accent_color: themeData?.accent ?? themes[0]?.accent_color ?? "#f59e0b",
-      })
-      .select("id, title, slug, theme_key, accent_color, links, ads_enabled, ad_budget_inr, ad_clicks")
+        business_name: draft.business_name,
+        contact_phone: draft.contact_phone,
+        category: draft.category || null,
+        avatar_url: draft.avatar_url,
+        cover_image_url: draft.cover_image_url,
+        is_paid: paid,
+        price_inr: paid ? PROJECT_PRICE_INR : 0,
+      } as never)
+      .select(PROJECT_COLS)
       .single();
-    setCreating(false);
     if (error || !data) { toast.error(error?.message ?? "Project ban nahi paya"); return; }
-    setProjects((p) => [...(p ?? []), data as QrProject]);
+    const row = data as unknown as QrProject;
+    setProjects((p) => [...(p ?? []), row]);
+    persistSelected([...selected, row.id]);
+    setNewOpen(false);
+    setPickerOpen(false);
     toast.success("Naya QR project ban gaya");
   };
+
+  const createProject = async (draft: NewProjectDraft) => {
+    if (!userId) { toast.error("Login karein phir project banayein"); return; }
+    const paid = (projects?.length ?? 0) >= 1;
+    setCreating(true);
+    try {
+      if (!paid) {
+        await insertProject(draft, false);
+        return;
+      }
+      // Extra projects are chargeable — Cashfree checkout, then create on success.
+      const order = await createCashfreeOrder({
+        data: { amount_inr: PROJECT_PRICE_INR, purpose: "leadx_purchase", coins: 0 },
+      });
+      if (!order?.ok || !order.payment_session_id) {
+        toast.error(order?.error ?? "Payment start nahi ho paya");
+        return;
+      }
+      await openCashfreeCheckout(order.payment_session_id, order.mode ?? "sandbox", { redirectTarget: "_modal" });
+      const check = await verifyCashfreeOrder({
+        data: { order_id: order.order_id, purpose: "leadx_purchase" },
+      });
+      if (!check?.ok) {
+        toast.error("Payment complete nahi hua — project create nahi kiya");
+        return;
+      }
+
+      await insertProject(draft, true);
+    } catch (e) {
+      toast.error(getPaymentError(e));
+    } finally {
+      setCreating(false);
+    }
+  };
+
 
   const patchProject = async (id: string, patch: Partial<QrProject>) => {
     setProjects((p) => (p ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -252,12 +331,17 @@ function QrDashboardPage() {
             {tab === "projects" && (
               <>
                 <button
-                  onClick={createProject}
+                  onClick={() => setPickerOpen(true)}
                   disabled={creating}
                   className="w-full h-14 rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display font-extrabold text-[15px] inline-flex items-center justify-center gap-2 shadow-[0_16px_34px_-16px_rgba(245,158,11,0.9)] active:scale-[0.98]"
                 >
                   {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
                   Create New Project / QR
+                  {(projects?.length ?? 0) > 0 && (
+                    <span className="ml-1 h-6 min-w-6 px-1.5 rounded-full bg-white/25 text-[11px] font-extrabold grid place-items-center">
+                      {projects?.length}
+                    </span>
+                  )}
                 </button>
 
                 {projects === null ? (
@@ -267,8 +351,8 @@ function QrDashboardPage() {
                     Abhi koi QR project nahi hai — Shop Gate QR, Counter QR ya Table QR banakar shuru karein.
                   </p>
                 ) : (
-                  <div className="space-y-4">
-                    {projects.map((p) => (
+                  <div className="space-y-6">
+                    {visibleProjects.map((p) => (
                       <QrProjectCard
                         key={p.id}
                         project={p}
@@ -282,7 +366,7 @@ function QrDashboardPage() {
                         onPoster={() => setPosterFor(p)}
                         onLinks={() => setLinksOpen(true)}
                         onCampaign={() => setCampaignFor(p)}
-                        onVisitor={(v) => setVisitorOpen(v)}
+                        onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
                         onGuide={() => setGuideOpen(true)}
@@ -292,6 +376,7 @@ function QrDashboardPage() {
                     ))}
                   </div>
                 )}
+
               </>
             )}
 
@@ -448,9 +533,31 @@ function QrDashboardPage() {
           })
         }
       />
+      <ProjectPickerSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        projects={projects ?? []}
+        selected={selected}
+        priceInr={PROJECT_PRICE_INR}
+        busy={creating}
+        onToggle={(id) =>
+          persistSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+        }
+        onNew={() => setNewOpen(true)}
+      />
+      <NewProjectSheet
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        userId={userId}
+        paid={(projects?.length ?? 0) >= 1}
+        priceInr={PROJECT_PRICE_INR}
+        busy={creating}
+        onSubmit={createProject}
+      />
 
       <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
       <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
+
     </div>
   );
 }

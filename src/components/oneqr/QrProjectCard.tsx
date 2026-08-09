@@ -6,7 +6,9 @@ import {
   Settings as SettingsIcon, Link2, HelpCircle, Phone, MessageCircle, Store,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
+import { groupVisitors } from "./visitor-groups";
 import type { VisitorRow } from "./VisitorChatSheet";
+
 
 export type QrProject = {
   id: string;
@@ -18,7 +20,15 @@ export type QrProject = {
   ads_enabled: boolean;
   ad_budget_inr: number;
   ad_clicks: number;
+  business_name?: string | null;
+  contact_phone?: string | null;
+  category?: string | null;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
+  is_paid?: boolean | null;
+  price_inr?: number | null;
 };
+
 
 export type LandingTheme = {
   key: string; name: string; description: string | null; preset: string; style?: string;
@@ -91,7 +101,17 @@ export function QrProjectCard({
     } catch { /* dismissed */ }
   };
 
+  const coverUrl = project.cover_image_url || profile?.cover_image_url || null;
+  const avatarUrl = project.avatar_url || profile?.avatar_url || null;
+  const displayName = project.business_name || profile?.business_name || project.title;
+  const displaySub = project.contact_phone
+    ? `+91 ${project.contact_phone}`
+    : profile?.shop_bio || `/${project.slug}`;
+
+  const groups = groupVisitors(visits);
+
   return (
+    <div className="space-y-3">
     <motion.article
       layout
       initial={{ opacity: 0, y: 14 }}
@@ -105,9 +125,10 @@ export function QrProjectCard({
         className="relative h-36"
         style={{ background: `linear-gradient(150deg, ${theme?.bg_from ?? "#fde68a"}, ${theme?.bg_to ?? "#fef3c7"})` }}
       >
-        {profile?.cover_image_url && (
-          <img src={profile.cover_image_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
+        {coverUrl && (
+          <img src={coverUrl} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
         )}
+
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Project options"
@@ -142,8 +163,8 @@ export function QrProjectCard({
           className="relative -mt-11 h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-amber-50 ring-4 ring-white grid place-items-center"
           style={{ color: accent }}
         >
-          {profile?.avatar_url
-            ? <img src={profile.avatar_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
+          {avatarUrl
+            ? <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
             : <Store className="h-6 w-6" />}
         </motion.button>
         <button
@@ -151,16 +172,16 @@ export function QrProjectCard({
           className="flex-1 min-w-0 text-left active:opacity-70"
         >
           <p className="truncate font-display font-bold text-[16px] text-slate-900">
-            {profile?.business_name || project.title}
+            {displayName}
           </p>
           <p className="truncate text-[11.5px] text-slate-500">
-            {profile?.shop_bio || `/${project.slug}`}
+            {displaySub}
           </p>
         </button>
       </div>
 
       {/* Four action tiles */}
-      <div className="mt-2.5 mx-4 grid grid-cols-4 gap-2">
+      <div className="mt-2.5 mx-4 mb-4 grid grid-cols-4 gap-2">
         <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr} pulse>
           <span className="grid h-6 w-6 place-items-center overflow-hidden rounded-[4px] bg-white">
             <canvas ref={qrTileRef} className="h-6 w-6" />
@@ -170,72 +191,84 @@ export function QrProjectCard({
         <Tile accent={accent} label="My landing page" onClick={onPreview} icon={SettingsIcon} />
         <Tile accent={accent} label="Add | link" onClick={onLinks} icon={Link2} />
       </div>
+    </motion.article>
 
+    {/* Analytics — outside the card container */}
+    <QrAnalyticsChart visits={visits} accent={accent} />
 
-      {/* Analytics */}
-      <div className="mt-3 mx-4">
-        <QrAnalyticsChart visits={visits} accent={accent} />
+    {project.ads_enabled && (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
+        <p className="text-[11px] font-bold text-amber-900 mb-1.5">Daily ad budget (₹)</p>
+        <input
+          type="number"
+          min={0}
+          value={project.ad_budget_inr}
+          onChange={(e) => onPatch({ ad_budget_inr: Math.max(0, Number(e.target.value) || 0) })}
+          className="w-full h-10 rounded-xl border border-amber-300 bg-white px-3 text-[13px] font-bold text-slate-900 outline-none"
+        />
       </div>
+    )}
 
-      {project.ads_enabled && (
-        <div className="mt-2 mx-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
-          <p className="text-[11px] font-bold text-amber-900 mb-1.5">Daily ad budget (₹)</p>
-          <input
-            type="number"
-            min={0}
-            value={project.ad_budget_inr}
-            onChange={(e) => onPatch({ ad_budget_inr: Math.max(0, Number(e.target.value) || 0) })}
-            className="w-full h-10 rounded-xl border border-amber-300 bg-white px-3 text-[13px] font-bold text-slate-900 outline-none"
-          />
-        </div>
-      )}
-
-      {/* Visitors */}
-      <div className="mt-3.5 mx-4">
-        <p className="text-[11px] font-bold text-slate-600 mb-1.5 inline-flex items-center gap-1.5">
-          <Users className="h-3.5 w-3.5 text-amber-600" /> Landing page visitors
+    {/* Visitors — one row per number, WhatsApp-style unread badge */}
+    <div>
+      <p className="text-[11px] font-bold text-slate-600 mb-1.5 inline-flex items-center gap-1.5">
+        <Users className="h-3.5 w-3.5 text-amber-600" /> Landing page visitors
+      </p>
+      {groups.length === 0 ? (
+        <p className="text-[11px] text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-3">
+          Abhi koi visitor nahi — QR share karke shuru karein.
         </p>
-        {visits.length === 0 ? (
-          <p className="text-[11px] text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-3">
-            Abhi koi visitor nahi — QR share karke shuru karein.
-          </p>
-        ) : (
-          <ul className="rounded-2xl border border-black/10 bg-white overflow-hidden divide-y divide-black/5">
-            {visits.slice(0, 6).map((r) => {
-              const name = (r.visitor_name || "").trim();
-              return (
-                <li key={r.id}>
-                  <button onClick={() => onVisitor(r)} className="w-full flex items-center gap-3 px-3 py-2.5 text-left active:bg-amber-50">
-                    <span className="h-10 w-10 shrink-0 rounded-full grid place-items-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${accent}, #f59e0b)` }}>
-                      {name ? name.charAt(0).toUpperCase() : <QrCode className="h-4 w-4" />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-[14px] font-semibold text-slate-900 truncate">{name || "Anonymous visitor"}</p>
-                        <span className="ml-auto text-[10px] text-slate-400 shrink-0">{timeAgo(r.created_at)}</span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-500 truncate">
-                        {r.visitor_phone ? `+91 ${r.visitor_phone}` : "Number nahi diya"}
-                      </p>
+      ) : (
+        <ul className="rounded-2xl border border-black/10 bg-white overflow-hidden divide-y divide-black/5">
+          {groups.slice(0, 8).map((g) => {
+            const r = g.latest;
+            const name = (r.visitor_name || "").trim();
+            return (
+              <li key={g.key}>
+                <button onClick={() => onVisitor(r)} className="w-full flex items-center gap-3 px-3 py-2.5 text-left active:bg-amber-50">
+                  <span className="h-10 w-10 shrink-0 rounded-full grid place-items-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${accent}, #f59e0b)` }}>
+                    {name ? name.charAt(0).toUpperCase() : <QrCode className="h-4 w-4" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-[14px] font-semibold text-slate-900 truncate">{name || "Anonymous visitor"}</p>
+                      <span className={`ml-auto text-[10px] shrink-0 ${g.unread > 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}>
+                        {timeAgo(r.created_at)}
+                      </span>
                     </div>
+                    <p className="text-[11.5px] text-slate-500 truncate">
+                      {r.visitor_phone ? `+91 ${r.visitor_phone}` : "Number nahi diya"}
+                      {g.total > 1 && ` · ${g.total} visits`}
+                    </p>
+                  </div>
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {g.unread > 0 && (
+                      <motion.span
+                        initial={{ scale: 0.7 }}
+                        animate={{ scale: 1 }}
+                        className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold grid place-items-center"
+                      >
+                        {g.unread}
+                      </motion.span>
+                    )}
                     {r.visitor_phone && (
-                      <span className="flex items-center gap-1.5 shrink-0">
+                      <>
                         <span className="h-8 w-8 grid place-items-center rounded-full bg-amber-50 text-amber-700"><Phone className="h-3.5 w-3.5" /></span>
                         <span className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white"><MessageCircle className="h-3.5 w-3.5" /></span>
-                      </span>
+                      </>
                     )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      <div className="mb-4" />
-    </motion.article>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+    </div>
   );
 }
+
 
 function MenuItem({
   icon: Icon, label, onClick, danger,
