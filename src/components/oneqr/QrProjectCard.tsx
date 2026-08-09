@@ -6,7 +6,9 @@ import {
   Settings as SettingsIcon, Link2, HelpCircle, Phone, MessageCircle, Store,
 } from "lucide-react";
 import { QrAnalyticsChart } from "./QrAnalyticsChart";
+import { groupVisitors } from "./visitor-groups";
 import type { VisitorRow } from "./VisitorChatSheet";
+
 
 export type QrProject = {
   id: string;
