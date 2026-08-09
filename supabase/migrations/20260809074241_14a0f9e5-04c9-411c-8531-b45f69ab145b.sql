@@ -1,0 +1,1 @@
+ALTER TABLE public.vendors ADD COLUMN IF NOT EXISTS business_addresses jsonb NOT NULL DEFAULT '[]'::jsonb;
