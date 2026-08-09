@@ -330,19 +330,15 @@ function QrDashboardPage() {
           >
             {tab === "projects" && (
               <>
-                <button
-                  onClick={() => setPickerOpen(true)}
-                  disabled={creating}
-                  className="w-full h-14 rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display font-extrabold text-[15px] inline-flex items-center justify-center gap-2 shadow-[0_16px_34px_-16px_rgba(245,158,11,0.9)] active:scale-[0.98]"
-                >
-                  {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
-                  Create New Project / QR
-                  {(projects?.length ?? 0) > 0 && (
-                    <span className="ml-1 h-6 min-w-6 px-1.5 rounded-full bg-white/25 text-[11px] font-extrabold grid place-items-center">
-                      {projects?.length}
-                    </span>
-                  )}
-                </button>
+                <SelectedProjectBar
+                  project={visibleProjects[0] ?? null}
+                  count={projects?.length ?? 0}
+                  credit={walletTotal}
+                  busy={creating}
+                  onOpen={() => setPickerOpen(true)}
+                  onRecharge={() => setHubOpen(true)}
+                />
+
 
                 {projects === null ? (
                   <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-amber-600" /></div>
