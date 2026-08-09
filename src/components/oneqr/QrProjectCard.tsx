@@ -251,18 +251,28 @@ function MenuItem({
 }
 
 function Tile({
-  icon: Icon, value, label, accent, onClick, children,
+  icon: Icon, value, label, accent, onClick, children, pulse,
 }: {
   icon?: typeof Users; value?: number; label: string; accent: string;
-  onClick: () => void; children?: React.ReactNode;
+  onClick: () => void; children?: React.ReactNode; pulse?: boolean;
 }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.94 }}
+      transition={{ type: "spring", stiffness: 420, damping: 22 }}
       onClick={onClick}
-      className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
+      className="relative rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
     >
-      <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
+      <span className="relative mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
+        {pulse && (
+          <motion.span
+            aria-hidden
+            animate={{ scale: [1, 1.35], opacity: [0.45, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{ boxShadow: `0 0 0 2px ${accent}` }}
+          />
+        )}
         {children ?? (Icon ? <Icon className="h-4 w-4" style={{ color: accent }} /> : null)}
       </span>
       {value != null && <p className="text-[15px] font-extrabold text-slate-900 leading-none mt-1.5">{value}</p>}
@@ -270,3 +280,4 @@ function Tile({
     </motion.button>
   );
 }
+
