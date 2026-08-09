@@ -21,6 +21,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { FloatingInquiryWidget } from "@/components/FloatingInquiryWidget";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { FloatingDockNav } from "@/components/FloatingDockNav";
+import { ReferralFloatingButton } from "@/components/referral/ReferralFloatingButton";
 import { getVariantConfig } from "@/lib/app-variant";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -46,6 +47,12 @@ const MARKETING_EXACT = new Set(["/welcome", "/about", "/features", "/pricing", 
 // Bottom service/product picker bar ONLY shows on these routes.
 // Bottom Quick/Digital pill bar only on the Quick Service home and Digital Shop home.
 const SHOW_BOTTOM_BAR_ON: string[] = [];
+// Referral floating button is hidden on public landings, panels and the referral page.
+const NO_REFERRAL_FAB_ON: string[] = [
+  "/referral", "/r/", "/s/", "/c/", "/f/", "/admin", "/staff", "/register",
+  "/chat", "/vendor/chat", "/privacy-policy", "/terms-and-conditions",
+  "/refund-policy", "/shipping-policy", "/blog", "/checkout",
+];
 // Routes that get the new floating 3-button dock (My Orders / Profile / My Shops)
 // The orange dock stays visible across the whole customer app; only panels
 // and full-screen flows below hide it.
@@ -70,6 +77,11 @@ export function AppShell() {
   const hideBottomBar = !showBottomBar;
   // Orange dock is Home-only — never on landing pages, dashboards or panels.
   const showFloatingDock = !isMarketing && isHome;
+  // Referral FAB: every in-app surface (quick service, One QR, vendor, shop),
+  // never on public landing pages, admin/staff panels or the referral page itself.
+  const showReferralFab =
+    !isMarketing &&
+    !NO_REFERRAL_FAB_ON.some((p) => location.pathname.startsWith(p));
   const isQuickRoute = isHome || location.pathname.startsWith("/quick");
   const isVendorRoute = location.pathname.startsWith("/vendor");
   const isChatRoute = location.pathname === "/chat" || location.pathname === "/vendor/chat";
@@ -95,6 +107,7 @@ export function AppShell() {
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
         {showFloatingDock && <FloatingDockNav />}
+        {showReferralFab && <ReferralFloatingButton />}
       </AuthGate>
     );
   }
@@ -124,6 +137,7 @@ export function AppShell() {
 
         {!hideBottomBar && <BottomActionBar loading={isLoading} />}
         {showFloatingDock && <FloatingDockNav />}
+        {showReferralFab && <ReferralFloatingButton />}
 
         {!isMarketing && <VendorLeadAlerts />}
         {(hideTopHeader || isVendorRoute) && !isChatRoute && <GlobalNotificationEffects />}
