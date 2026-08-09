@@ -133,38 +133,44 @@ export function QrProjectCard({
         </AnimatePresence>
       </div>
 
-      {/* Identity */}
-      <div className="px-4 -mt-7 flex items-end gap-3">
-        <span
-          className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-amber-50 ring-4 ring-white grid place-items-center"
+      {/* Identity — tap to open the full business profile form */}
+      <div className="px-4 pt-3 pb-1 flex items-center gap-3">
+        <motion.button
+          whileTap={{ scale: 0.94 }}
+          onClick={onProfile}
+          aria-label="Edit business profile"
+          className="relative -mt-11 h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-amber-50 ring-4 ring-white grid place-items-center"
           style={{ color: accent }}
         >
           {profile?.avatar_url
             ? <img src={profile.avatar_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
             : <Store className="h-6 w-6" />}
-        </span>
-        <div className="flex-1 min-w-0 pb-1">
-          <input
-            value={project.title}
-            onChange={(e) => onPatch({ title: e.target.value })}
-            aria-label="Project name"
-            className="w-full bg-transparent font-display font-bold text-[16px] text-slate-900 outline-none focus:bg-amber-50/70 rounded-lg px-1 -ml-1"
-          />
-          <p className="truncate px-1 -ml-1 text-[11.5px] text-slate-500">
+        </motion.button>
+        <button
+          onClick={onProfile}
+          className="flex-1 min-w-0 text-left active:opacity-70"
+        >
+          <p className="truncate font-display font-bold text-[16px] text-slate-900">
+            {profile?.business_name || project.title}
+          </p>
+          <p className="truncate text-[11.5px] text-slate-500">
             {profile?.shop_bio || `/${project.slug}`}
           </p>
-        </div>
+        </button>
       </div>
 
       {/* Four action tiles */}
-      <div className="mt-3.5 mx-4 grid grid-cols-4 gap-2">
-        <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr}>
-          <canvas ref={qrTileRef} className="h-6 w-6 rounded-[3px] bg-white" />
+      <div className="mt-2.5 mx-4 grid grid-cols-4 gap-2">
+        <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr} pulse>
+          <span className="grid h-6 w-6 place-items-center overflow-hidden rounded-[4px] bg-white">
+            <canvas ref={qrTileRef} className="h-6 w-6" />
+          </span>
         </Tile>
         <Tile accent={accent} value={stats.clicks} label="Add campaign" onClick={onCampaign} icon={Megaphone} />
         <Tile accent={accent} label="My landing page" onClick={onPreview} icon={SettingsIcon} />
         <Tile accent={accent} label="Add | link" onClick={onLinks} icon={Link2} />
       </div>
+
 
       {/* Analytics */}
       <div className="mt-3 mx-4">
