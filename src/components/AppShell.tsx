@@ -106,6 +106,7 @@ export function AppShell() {
         {!isMarketing && <PermissionsGate />}
         {!isMarketing && <FeedbackWidget />}
         {showFloatingDock && <FloatingDockNav />}
+        {showReferralFab && <ReferralFloatingButton />}
       </AuthGate>
     );
   }
