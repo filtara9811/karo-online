@@ -21,6 +21,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { FloatingInquiryWidget } from "@/components/FloatingInquiryWidget";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { FloatingDockNav } from "@/components/FloatingDockNav";
+import { ReferralFloatingButton } from "@/components/referral/ReferralFloatingButton";
 import { getVariantConfig } from "@/lib/app-variant";
 import { SiteFooter } from "@/components/SiteFooter";
 
