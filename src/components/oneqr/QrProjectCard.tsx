@@ -99,7 +99,17 @@ export function QrProjectCard({
     } catch { /* dismissed */ }
   };
 
+  const coverUrl = project.cover_image_url || profile?.cover_image_url || null;
+  const avatarUrl = project.avatar_url || profile?.avatar_url || null;
+  const displayName = project.business_name || profile?.business_name || project.title;
+  const displaySub = project.contact_phone
+    ? `+91 ${project.contact_phone}`
+    : profile?.shop_bio || `/${project.slug}`;
+
+  const groups = groupVisitors(visits);
+
   return (
+    <div className="space-y-3">
     <motion.article
       layout
       initial={{ opacity: 0, y: 14 }}
@@ -113,9 +123,10 @@ export function QrProjectCard({
         className="relative h-36"
         style={{ background: `linear-gradient(150deg, ${theme?.bg_from ?? "#fde68a"}, ${theme?.bg_to ?? "#fef3c7"})` }}
       >
-        {profile?.cover_image_url && (
-          <img src={profile.cover_image_url} alt={profile.business_name ?? project.title} className="h-full w-full object-cover" loading="lazy" />
+        {coverUrl && (
+          <img src={coverUrl} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
         )}
+
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Project options"
