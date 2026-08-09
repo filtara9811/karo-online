@@ -178,16 +178,16 @@ export function LivePreviewFace({
         </AnimatePresence>
 
         {/* Clean round tool row */}
-        <div className="flex items-start justify-between gap-1 rounded-[22px] border border-amber-200 bg-amber-50/70 px-2.5 py-2">
-          <div className="flex flex-col items-center gap-1">
+        <div className="flex items-start justify-between gap-0.5 rounded-[20px] border border-amber-200 bg-amber-50/70 px-2 py-1.5">
+          <div className="flex min-w-0 flex-col items-center gap-0.5">
             <button
               type="button"
               onClick={() => colorRef.current?.click()}
-              className="relative grid h-10 w-10 place-items-center rounded-full border-2 border-white shadow active:scale-95"
+              className="relative grid h-8 w-8 place-items-center rounded-full border-2 border-white shadow active:scale-95"
               style={{ background: accent }}
               aria-label="Brand colour"
             >
-              <Palette className="h-4 w-4 text-white drop-shadow" />
+              <Palette className="h-3.5 w-3.5 text-white drop-shadow" />
               <input
                 ref={colorRef}
                 type="color"
@@ -196,13 +196,15 @@ export function LivePreviewFace({
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               />
             </button>
-            <span className="text-[8.5px] font-bold text-slate-500">Colour</span>
+            <span className="text-[8px] font-bold text-slate-500">Colour</span>
           </div>
           <Tool label="Theme" icon={Sparkles} active={showThemes} onClick={() => setShowThemes((v) => !v)} />
-          <Tool label="Links | add" icon={Link2} onClick={onLinks} />
-          <Tool label="Product | add" icon={Package} onClick={onLinks} />
-          <Tool label="Videos | add" icon={Video} onClick={onLinks} />
+          <Tool label="Links" icon={Link2} onClick={onLinks} />
+          <Tool label="Product" icon={Package} onClick={onProducts ?? onLinks} />
+          <Tool label="Videos" icon={Video} onClick={onVideos ?? onLinks} />
+          <Tool label="Setting" icon={Settings} onClick={onSettings ?? onLinks} />
         </div>
+
       </div>
     </div>
   );
