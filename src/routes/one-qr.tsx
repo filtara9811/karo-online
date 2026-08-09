@@ -68,6 +68,8 @@ function QrDashboardPage() {
   const [qrFor, setQrFor] = useState<QrProject | null>(null);
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
 
   const ads = useSponsoredAds();
 
