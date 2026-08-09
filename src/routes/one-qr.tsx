@@ -533,9 +533,31 @@ function QrDashboardPage() {
           })
         }
       />
+      <ProjectPickerSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        projects={projects ?? []}
+        selected={selected}
+        priceInr={PROJECT_PRICE_INR}
+        busy={creating}
+        onToggle={(id) =>
+          persistSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+        }
+        onNew={() => setNewOpen(true)}
+      />
+      <NewProjectSheet
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        userId={userId}
+        paid={(projects?.length ?? 0) >= 1}
+        priceInr={PROJECT_PRICE_INR}
+        busy={creating}
+        onSubmit={createProject}
+      />
 
       <VisitorChatSheet visitor={visitorOpen} onClose={() => setVisitorOpen(null)} />
       <OneQrGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />
+
     </div>
   );
 }
