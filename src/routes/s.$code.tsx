@@ -17,6 +17,9 @@ import { LandingInstallPrompt } from "@/components/landing/LandingInstallPrompt"
 import { LandingCategoryDock, buildDockCategories } from "@/components/landing/LandingCategoryDock";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
+import { getLandingPayload } from "@/lib/landing.functions";
+import type { LandingPayload, LandingMediaItem } from "@/lib/landing-types";
+import { optimizedImage, IMG } from "@/lib/img";
 
 
 
@@ -25,7 +28,9 @@ import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
-  head: ({ params }) => {
+  // Server-rendered shell: name, avatar, theme and first media arrive in the HTML.
+  loader: ({ params }) => getLandingPayload({ data: { code: params.code } }),
+  head: ({ params, loaderData }) => {
     const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
     return {
@@ -43,7 +48,12 @@ export const Route = createFileRoute("/s/$code")({
         { property: "og:image:type", content: "image/svg+xml" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: [
+        { rel: "canonical", href: url },
+        ...(firstLandingImage(loaderData)
+          ? [{ rel: "preload", as: "image", href: firstLandingImage(loaderData)!, fetchpriority: "high" }]
+          : []),
+      ],
     };
   },
   component: ScanLandingPage,
@@ -51,50 +61,23 @@ export const Route = createFileRoute("/s/$code")({
   notFoundComponent: () => <Fallback message="This merchant page was not found." />,
 });
 
-type MediaItem = { type: "image" | "video" | "url"; src: string };
+type MediaItem = LandingMediaItem;
 
-type Landing = {
-  ok: boolean;
-  merchant?: { name?: string; shop_name?: string; avatar_url?: string; verified?: boolean; code?: string; cover_url?: string };
-  links?: {
-    poster_bg_url?: string;
-    poster_bg_urls?: string[];
-    poster_media?: MediaItem[];
-    play_store_enabled?: boolean;
-    payment_enabled?: boolean;
-    payment_provider?: string;
-    payment_upi_id?: string;
-    payment_label?: string;
-    payment_amount_inr?: number | string | null;
-    digital_shop_enabled?: boolean;
-    digital_shop_url?: string;
-    extra_links?: Array<{ id: string; label: string; url: string; enabled: boolean }>;
-  };
-  landing?: {
-    top_banner_url?: string;
-    top_banner_link?: string;
-    bottom_banner_url?: string;
-    bottom_banner_link?: string;
-    announcement_text?: string;
-    announcement_active?: boolean;
-    ios_app_url?: string;
-  };
-  theme?: {
-    key?: string;
-    preset?: string;
-    style?: string;
-    accent_color?: string;
-    bg_from?: string;
-    bg_to?: string;
-  };
-  ads?: Array<{ name?: string; trade?: string | null; image?: string | null; url?: string | null }>;
-};
+type Landing = LandingPayload;
 
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.karoonline.twa";
 const APP_STORE_FALLBACK = "https://apps.apple.com/app/karo-online/id0000000000";
 const isIOS = () => typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+
+/** First above-the-fold image (optimised) used for the preload hint. */
+function firstLandingImage(d?: LandingPayload): string | undefined {
+  if (!d?.ok) return undefined;
+  const media = d.links?.poster_media?.find((m) => m?.type === "image" && m.src)?.src;
+  const src = media ?? d.links?.poster_bg_urls?.[0] ?? d.links?.poster_bg_url ?? d.merchant?.cover_url;
+  return optimizedImage(src, IMG.hero);
+}
 
 const CACHE_KEY = (c: string) => `karo-landing:${c}`;
 function readCache(code: string): Landing | null {
@@ -128,7 +111,8 @@ function buildUpiUri(vpa: string, merchantName: string, amount: string) {
 
 function ScanLandingPage() {
   const { code } = Route.useParams();
-  const [data, setData] = useState<Landing | null>(() => readCache(code));
+  const initial = Route.useLoaderData() as Landing | undefined;
+  const [data, setData] = useState<Landing | null>(() => initial ?? readCache(code));
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -211,13 +195,18 @@ function ScanLandingPage() {
     ? (landing.ios_app_url || APP_STORE_FALLBACK)
     : `${PLAY_STORE}&referrer=${encodeURIComponent(`code=${m.code ?? code}`)}`;
 
-  const mediaList: MediaItem[] = (links.poster_media && links.poster_media.length)
+  const rawMedia: MediaItem[] = (links.poster_media && links.poster_media.length)
     ? links.poster_media.filter((x) => x?.src)
     : (links.poster_bg_urls?.length
         ? links.poster_bg_urls.map((src) => ({ type: "image" as const, src }))
         : (links.poster_bg_url
             ? [{ type: "image" as const, src: links.poster_bg_url }]
             : (m.cover_url ? [{ type: "image" as const, src: m.cover_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }])));
+
+  // Compressed, resized variants for images; videos/links pass through.
+  const mediaList: MediaItem[] = rawMedia.map((item) =>
+    item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
+  );
 
   const theme = data.theme ?? {};
   const preset = theme.preset ?? "classic";
@@ -250,7 +239,7 @@ function ScanLandingPage() {
     >
       <LandingTopBar
         name={merchantName}
-        avatarUrl={m.avatar_url}
+        avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
         verified={m.verified}
         accent={accent}
         onProfile={() => setProfileOpen(true)}
@@ -296,7 +285,7 @@ function ScanLandingPage() {
                 className="relative snap-start shrink-0 w-[70%] h-28 rounded-2xl overflow-hidden border shadow-sm"
                 style={{ borderColor: accent }}
               >
-                <img src={a.image as string} alt={a.name ?? "Shop"} loading="lazy" className="h-full w-full object-cover" />
+                <img src={optimizedImage(a.image, IMG.card)} alt={a.name ?? "Shop"} loading="lazy" className="h-full w-full object-cover" />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-1.5">
                   <p className="text-white text-[12px] font-bold truncate">{a.name ?? "Karo Shop"}</p>
                   <p className="text-white/80 text-[10px] truncate">{a.trade ?? "Verified shop"}</p>
@@ -310,13 +299,13 @@ function ScanLandingPage() {
       {/* Admin-controlled banners (render only if configured) */}
       {layoutStyle !== "reels" && landing.top_banner_url && (
         <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-          <img src={landing.top_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
+          <img src={optimizedImage(landing.top_banner_url, IMG.card)} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
       {layoutStyle !== "reels" && landing.bottom_banner_url && (
         <a href={landing.bottom_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-          <img src={landing.bottom_banner_url} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
+          <img src={optimizedImage(landing.bottom_banner_url, IMG.card)} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
         </a>
       )}
 
