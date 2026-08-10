@@ -5,7 +5,9 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
-export async function fetchPublicLanding(code: string): Promise<unknown> {
+export type LandingPayload = Record<string, unknown> & { ok?: boolean };
+
+export async function fetchPublicLanding(code: string): Promise<LandingPayload> {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) return { ok: false, error: "not_configured" };
@@ -24,5 +26,5 @@ export async function fetchPublicLanding(code: string): Promise<unknown> {
 
   const { data, error } = await client.rpc("get_public_landing", { _code: code });
   if (error) return { ok: false, error: error.message };
-  return data ?? { ok: false };
+  return (data as LandingPayload) ?? { ok: false };
 }
