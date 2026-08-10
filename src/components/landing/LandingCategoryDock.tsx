@@ -1,3 +1,4 @@
+import { optimizedImage, IMG } from "@/lib/img";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, MessageCircle, PhoneCall } from "lucide-react";
@@ -166,7 +167,7 @@ export function LandingCategoryDock({
                       <a href={t.url} target="_blank" rel="noopener noreferrer" className="block">
                         <div className="h-[130px] w-full bg-slate-100">
                           {t.image ? (
-                            <img src={t.image} alt={t.label} loading="lazy" className="h-full w-full object-cover" />
+                            <img src={optimizedImage(t.image, IMG.tile)} alt={t.label} loading="lazy" className="h-full w-full object-cover" />
                           ) : (
                             <div className="grid h-full w-full place-items-center text-[11px] font-semibold text-slate-400">
                               {t.label}
@@ -244,7 +245,7 @@ export function LandingCategoryDock({
             >
               <div className="flex items-center gap-3">
                 {enquiryTile.image && (
-                  <img src={enquiryTile.image} alt={enquiryTile.label} className="h-14 w-14 rounded-xl object-cover" />
+                  <img src={optimizedImage(enquiryTile.image, IMG.tile)} alt={enquiryTile.label} loading="lazy" decoding="async" className="h-14 w-14 rounded-xl object-cover" />
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-extrabold text-slate-900">{enquiryTile.label}</p>

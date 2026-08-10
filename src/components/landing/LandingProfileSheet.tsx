@@ -1,3 +1,4 @@
+import { optimizedImage, IMG } from "@/lib/img";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "qrcode";
@@ -97,7 +98,7 @@ export function LandingProfileSheet({
               <div className="flex flex-col items-center pt-2">
                 <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-white bg-white shadow-lg grid place-items-center text-3xl font-bold text-slate-700">
                   {merchant.avatar_url ? (
-                    <img src={merchant.avatar_url} alt={name} className="h-full w-full object-cover" />
+                    <img src={optimizedImage(merchant.avatar_url, IMG.avatarLg)} alt={name} className="h-full w-full object-cover" />
                   ) : (
                     (name[0] ?? "K").toUpperCase()
                   )}
