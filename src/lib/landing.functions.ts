@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
-import { fetchPublicLanding, type LandingPayload } from "./landing.server";
+import { fetchPublicLanding } from "./landing.server";
+import type { LandingPayload } from "./landing-types";
 
 /**
  * Public, edge-cacheable landing payload for /s/$code.

@@ -4,8 +4,7 @@
  * shop shell can be server-rendered instead of waiting on client JS.
  */
 import { createClient } from "@supabase/supabase-js";
-
-export type LandingPayload = Record<string, unknown> & { ok?: boolean };
+import type { LandingPayload } from "./landing-types";
 
 export async function fetchPublicLanding(code: string): Promise<LandingPayload> {
   const url = process.env["SUPABASE_URL"];
