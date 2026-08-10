@@ -175,6 +175,7 @@ export function LandingStoryMedia({
               src={current.src}
               alt={alt}
               loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "auto"}
               decoding="async"
               className="absolute inset-0 h-full w-full object-cover"
             />
