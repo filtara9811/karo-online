@@ -294,7 +294,7 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
               <span className="block text-[11px] opacity-90">
                 {!lookupDone ? "Checking latest release…"
                   : apkUrl ? "Direct download — progress dikhega"
-                  : `${target.title} ka alag icon banega`}
+                  : `APK abhi publish nahi hua — ${target.title} app install hoga`}
               </span>
             </span>
           </button>
