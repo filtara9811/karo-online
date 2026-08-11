@@ -101,7 +101,14 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
     const tick = setInterval(() => setProgress((p) => (p < 92 ? p + Math.random() * 9 + 2 : p)), 180);
     try {
       const bip = bipRef.current;
-      if (!bip) throw new Error("Browser install prompt available nahi hai — Chrome menu (⋮) → \"Install app\" use karein.");
+      if (!bip) {
+        const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+        throw new Error(
+          inFrame
+            ? "Preview ke andar install kaam nahi karta — live site (karoonline.in) par kholein, phir Install dabayein."
+            : "Install prompt ready nahi hai — Chrome ⋮ menu → \"Install app\" / \"Add to Home screen\" use karein.",
+        );
+      }
       await bip.prompt();
       const choice = await bip.userChoice;
       bipRef.current = null;
