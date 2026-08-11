@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, ChevronUp } from "lucide-react";
+import type { LandingMediaItem } from "@/lib/landing-types";
 
-export type MediaItem = { type: "image" | "video" | "url"; src: string };
+export type MediaItem = LandingMediaItem;
 
-const DURATION: Record<MediaItem["type"], number> = {
-  image: 4200,
-  video: 12000,
-  url: 14000,
-};
+const IMAGE_DURATION = 4200;
 
 function detectProvider(url: string): "youtube" | "other" {
   return /youtu\.?be/.test(url) ? "youtube" : "other";
@@ -17,25 +14,29 @@ function detectProvider(url: string): "youtube" | "other" {
 function ytEmbed(url: string, muted: boolean): string {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
   return m
-    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`
+    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&controls=1&modestbranding=1&rel=0`
     : url;
 }
 
 /**
  * Reels/TikTok style media viewer: vertical swipe up/down to change media,
  * one progress segment per item, sound ON by default (tap to mute).
+ * Videos play their full length — progress follows real playback time and the
+ * next item starts only when the video actually ends.
  */
 export function LandingStoryMedia({
   media,
   alt,
   accent,
   className = "",
+  onIndexChange,
   children,
 }: {
   media: MediaItem[];
   alt: string;
   accent: string;
   className?: string;
+  onIndexChange?: (index: number) => void;
   children?: React.ReactNode;
 }) {
   const items = media.length ? media : [];
@@ -81,7 +82,8 @@ export function LandingStoryMedia({
   useEffect(() => {
     setProgress(0);
     elapsed.current = 0;
-  }, [index]);
+    onIndexChange?.(index);
+  }, [index, onIndexChange]);
 
   // Autoplay with sound; browsers that block it fall back to muted playback.
   useEffect(() => {
@@ -95,10 +97,11 @@ export function LandingStoryMedia({
     });
   }, [index, muted, current?.src]);
 
+  // Timer only drives images. Videos use their own timeupdate/ended events, and
+  // embedded links (YouTube / Instagram) are left to the viewer to swipe.
   useEffect(() => {
-    if (!current || total === 0) return;
+    if (!current || total === 0 || current.type !== "image") return;
     let raf = 0;
-    const duration = DURATION[current.type] ?? 4200;
     startedAt.current = performance.now() - elapsed.current;
 
     const tick = (now: number) => {
@@ -108,7 +111,7 @@ export function LandingStoryMedia({
         return;
       }
       elapsed.current = now - startedAt.current;
-      const p = Math.min(1, elapsed.current / duration);
+      const p = Math.min(1, elapsed.current / IMAGE_DURATION);
       setProgress(p);
       if (p >= 1) {
         elapsed.current = 0;
@@ -153,6 +156,10 @@ export function LandingStoryMedia({
               muted={muted}
               loop={total === 1}
               playsInline
+              onTimeUpdate={(e) => {
+                const el = e.currentTarget;
+                if (el.duration > 0) setProgress(Math.min(1, el.currentTime / el.duration));
+              }}
               onEnded={() => go(1)}
               className="absolute inset-0 h-full w-full object-cover"
             />
@@ -162,7 +169,7 @@ export function LandingStoryMedia({
                 key={`${current.src}-${muted ? "m" : "s"}`}
                 src={ytEmbed(current.src, muted)}
                 title={alt}
-                className="pointer-events-none absolute inset-0 h-full w-full"
+                className="absolute inset-0 h-full w-full"
                 style={{ border: 0 }}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
@@ -188,7 +195,7 @@ export function LandingStoryMedia({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
 
       {/* sound toggle — sound is ON by default, tap to mute */}
-      {(current.type === "video" || current.type === "url") && (
+      {current.type === "video" && (
         <motion.button
           type="button"
           onClick={toggleSound}

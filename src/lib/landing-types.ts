@@ -1,6 +1,23 @@
 /** JSON shape returned by the public `get_public_landing` RPC. Shared by the
  * server function, the route loader and the storefront components. */
-export type LandingMediaItem = { type: "image" | "video" | "url"; src: string };
+/** A product attached to one video / media slot. */
+export type VideoProduct = {
+  id: string;
+  name: string;
+  price?: string | null;
+  image?: string | null;
+  description?: string | null;
+  enquiry?: string | null;
+  url?: string | null;
+  rating?: number | null;
+};
+
+export type LandingMediaItem = {
+  type: "image" | "video" | "url";
+  src: string;
+  poster?: string | null;
+  products?: VideoProduct[];
+};
 
 export type LandingPayload = {
   ok: boolean;

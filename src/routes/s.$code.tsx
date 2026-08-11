@@ -18,7 +18,9 @@ import { LandingCategoryDock, buildDockCategories } from "@/components/landing/L
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
 import { getLandingPayload } from "@/lib/landing.functions";
-import type { LandingPayload, LandingMediaItem } from "@/lib/landing-types";
+import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landing-types";
+import { LandingProductRail } from "@/components/landing/LandingProductRail";
+import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -116,6 +118,8 @@ function ScanLandingPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [activeMedia, setActiveMedia] = useState(0);
+  const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
@@ -259,6 +263,7 @@ function ScanLandingPage() {
         media={mediaList}
         alt={merchantName}
         accent={accent}
+        onIndexChange={setActiveMedia}
         className={layoutStyle === "reels" ? "h-[100svh]" : layoutStyle === "chat" ? "h-[38svh]" : "h-[62svh]"}
       >
         {landing.announcement_active && landing.announcement_text && (
@@ -267,6 +272,21 @@ function ScanLandingPage() {
           </div>
         )}
       </LandingStoryMedia>
+
+      {/* Products attached to the video that is currently playing */}
+      <LandingProductRail
+        products={mediaList[activeMedia]?.products ?? []}
+        accent={accent}
+        onOpen={setOpenProduct}
+      />
+
+      <LandingProductSheet
+        product={openProduct}
+        accent={accent}
+        shopName={merchantName}
+        phone={m.phone}
+        onClose={() => setOpenProduct(null)}
+      />
 
       {layoutStyle === "chat" && (
         <LandingChatWelcome accent={accent} name={merchantName} links={(links.extra_links ?? []) as ExtraLink[]} />
