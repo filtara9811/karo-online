@@ -263,6 +263,7 @@ function ScanLandingPage() {
         media={mediaList}
         alt={merchantName}
         accent={accent}
+        onIndexChange={setActiveMedia}
         className={layoutStyle === "reels" ? "h-[100svh]" : layoutStyle === "chat" ? "h-[38svh]" : "h-[62svh]"}
       >
         {landing.announcement_active && landing.announcement_text && (
@@ -271,6 +272,21 @@ function ScanLandingPage() {
           </div>
         )}
       </LandingStoryMedia>
+
+      {/* Products attached to the video that is currently playing */}
+      <LandingProductRail
+        products={mediaList[activeMedia]?.products ?? []}
+        accent={accent}
+        onOpen={setOpenProduct}
+      />
+
+      <LandingProductSheet
+        product={openProduct}
+        accent={accent}
+        shopName={merchantName}
+        phone={m.phone}
+        onClose={() => setOpenProduct(null)}
+      />
 
       {layoutStyle === "chat" && (
         <LandingChatWelcome accent={accent} name={merchantName} links={(links.extra_links ?? []) as ExtraLink[]} />
