@@ -24,6 +24,7 @@ export const Route = createFileRoute("/admin/web/apk")({
           { key: "audience", label: "Audience", type: "select", options: [
             { value: "customer", label: "Customer App" },
             { value: "vendor", label: "Vendor App" },
+            { value: "oneqr", label: "One QR App" },
           ]},
           { key: "version", label: "Version (e.g. 1.4.0)", type: "text" },
           { key: "build_number", label: "Build Number", type: "number" },
