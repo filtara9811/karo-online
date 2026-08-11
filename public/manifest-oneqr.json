@@ -1,0 +1,23 @@
+{
+  "name": "Karo One QR",
+  "short_name": "One QR",
+  "id": "/karo-one-qr-app-v1/",
+  "start_url": "/one-qr?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "theme_color": "#0ea5e9",
+  "background_color": "#0f172a",
+  "orientation": "portrait",
+  "lang": "en",
+  "dir": "ltr",
+  "description": "Karo One QR — QR projects, landing themes, visitors aur ads ek hi dashboard me.",
+  "categories": ["business", "utilities"],
+  "icons": [
+    { "src": "/icon-oneqr-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-oneqr-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-oneqr-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-oneqr-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "prefer_related_applications": false
+}

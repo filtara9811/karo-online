@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Download, Copy, Check, Link2, Share2, X, RefreshCw, AlertTriangle, Smartphone } from "lucide-react";
+import { Download, Copy, Check, Link2, Share2, X, RefreshCw, AlertTriangle, Smartphone, QrCode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 
 export type ApkTarget = {
   title: string;
   to: string;
-  audience: "vendor" | "customer";
+  audience: "vendor" | "customer" | "oneqr";
   /** Dedicated manifest so the installed app opens ONLY this section. */
   manifest: string;
   accent: string;
@@ -31,24 +32,29 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bipRef = useRef<(Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null>(null);
 
-  // Look up the published APK for this audience.
+  // Look up the published APK for this audience, falling back to the generic
+  // customer release when this section has no dedicated build yet.
   useEffect(() => {
     let alive = true;
     (async () => {
+      const wanted = target.audience === "oneqr" ? ["oneqr", "customer"] : [target.audience];
       try {
         const { data } = await supabase
           .from("web_apk_releases")
-          .select("file_url, external_url, play_store_url, released_at")
+          .select("audience, file_url, external_url, play_store_url, released_at")
           .eq("is_active", true)
-          .eq("audience", target.audience)
-          .order("released_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .in("audience", wanted)
+          .order("released_at", { ascending: false });
         if (!alive) return;
-        setApkUrl(data?.file_url || data?.external_url || data?.play_store_url || null);
+        const rows = data ?? [];
+        const pick = (a: string) =>
+          rows.find((r) => r.audience === a && (r.file_url || r.external_url || r.play_store_url));
+        const row = wanted.map(pick).find(Boolean) ?? null;
+        setApkUrl(row ? row.file_url || row.external_url || row.play_store_url || null : null);
       } catch {
         if (alive) setApkUrl(null);
       } finally {
@@ -57,6 +63,7 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
     })();
     return () => { alive = false; abortRef.current?.abort(); };
   }, [target.audience]);
+
 
   // Swap in this section's manifest so an install creates a separate app.
   useEffect(() => {
@@ -94,7 +101,14 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
     const tick = setInterval(() => setProgress((p) => (p < 92 ? p + Math.random() * 9 + 2 : p)), 180);
     try {
       const bip = bipRef.current;
-      if (!bip) throw new Error("Browser install prompt available nahi hai — Chrome menu (⋮) → \"Install app\" use karein.");
+      if (!bip) {
+        const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+        throw new Error(
+          inFrame
+            ? "Preview ke andar install kaam nahi karta — live site (karoonline.in) par kholein, phir Install dabayein."
+            : "Install prompt ready nahi hai — Chrome ⋮ menu → \"Install app\" / \"Add to Home screen\" use karein.",
+        );
+      }
       await bip.prompt();
       const choice = await bip.userChoice;
       bipRef.current = null;
@@ -280,7 +294,7 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
               <span className="block text-[11px] opacity-90">
                 {!lookupDone ? "Checking latest release…"
                   : apkUrl ? "Direct download — progress dikhega"
-                  : `${target.title} ka alag icon banega`}
+                  : `APK abhi publish nahi hua — ${target.title} app install hoga`}
               </span>
             </span>
           </button>
@@ -303,6 +317,27 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
               <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">Share</span>
             </button>
           </div>
+
+          <button
+            onClick={() => setQrOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 active:scale-[0.97] transition"
+          >
+            <QrCode className="h-4 w-4 text-[color:oklch(0.4_0.05_85)]" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">
+              QR code — print &amp; paste
+            </span>
+          </button>
+        </div>
+
+        <div onClick={(e) => e.stopPropagation()}>
+          <QrCodeSheet
+            open={qrOpen}
+            onClose={() => setQrOpen(false)}
+            title={target.title}
+            landingUrl={linkFor(target.to)}
+            onPoster={shareLink}
+            onShare={shareLink}
+          />
         </div>
       </motion.div>
     </motion.div>
