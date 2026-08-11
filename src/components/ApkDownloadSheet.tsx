@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Download, Copy, Check, Link2, Share2, X, RefreshCw, AlertTriangle, Smartphone } from "lucide-react";
+import { Download, Copy, Check, Link2, Share2, X, RefreshCw, AlertTriangle, Smartphone, QrCode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 
 export type ApkTarget = {
   title: string;
   to: string;
-  audience: "vendor" | "customer";
+  audience: "vendor" | "customer" | "oneqr";
   /** Dedicated manifest so the installed app opens ONLY this section. */
   manifest: string;
   accent: string;
