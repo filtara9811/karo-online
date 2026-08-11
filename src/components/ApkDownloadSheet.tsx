@@ -32,24 +32,29 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bipRef = useRef<(Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null>(null);
 
-  // Look up the published APK for this audience.
+  // Look up the published APK for this audience, falling back to the generic
+  // customer release when this section has no dedicated build yet.
   useEffect(() => {
     let alive = true;
     (async () => {
+      const wanted = target.audience === "oneqr" ? ["oneqr", "customer"] : [target.audience];
       try {
         const { data } = await supabase
           .from("web_apk_releases")
-          .select("file_url, external_url, play_store_url, released_at")
+          .select("audience, file_url, external_url, play_store_url, released_at")
           .eq("is_active", true)
-          .eq("audience", target.audience)
-          .order("released_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .in("audience", wanted)
+          .order("released_at", { ascending: false });
         if (!alive) return;
-        setApkUrl(data?.file_url || data?.external_url || data?.play_store_url || null);
+        const rows = data ?? [];
+        const pick = (a: string) =>
+          rows.find((r) => r.audience === a && (r.file_url || r.external_url || r.play_store_url));
+        const row = wanted.map(pick).find(Boolean) ?? null;
+        setApkUrl(row ? row.file_url || row.external_url || row.play_store_url || null : null);
       } catch {
         if (alive) setApkUrl(null);
       } finally {
@@ -58,6 +63,7 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
     })();
     return () => { alive = false; abortRef.current?.abort(); };
   }, [target.audience]);
+
 
   // Swap in this section's manifest so an install creates a separate app.
   useEffect(() => {
