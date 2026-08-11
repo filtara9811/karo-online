@@ -126,8 +126,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                 onLongPress={() => setPressed({
                   title: "My QR Code",
                   to: "/one-qr",
-                  audience: "customer",
-                  manifest: "/manifest-programs.json",
+                  audience: "oneqr",
+                  manifest: "/manifest-oneqr.json",
                   accent: "from-sky-500 to-indigo-700",
                 })}
               />
