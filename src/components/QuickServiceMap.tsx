@@ -184,10 +184,11 @@ export function QuickServiceMap({
       }
       const g = await loadMapsSdk(["places"]);
       if (cancel) return;
-      if (!g || !ref.current) {
+      if (!g?.maps?.Map || !ref.current) {
         setStatus("error");
         return;
       }
+
       const c = center ?? DEFAULT_CENTER;
       const controlPosition = g.maps.ControlPosition?.RIGHT_BOTTOM ?? 12;
       mapRef.current = new g.maps.Map(ref.current, {

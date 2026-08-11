@@ -344,10 +344,15 @@ async function ensureMapsLibrary(google: any): Promise<any> {
   try {
     if (typeof google.maps.importLibrary === "function") {
       await google.maps.importLibrary("maps");
+      // importLibrary resolves the library namespace; wait for the global too.
+      for (let i = 0; i < 40 && !google.maps.Map; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
     }
   } catch { /* noop */ }
-  return google.maps.Map ? google : google;
+  return google;
 }
+
 
 export function loadMapsSdk(libs: string[] = ["places"]): Promise<any> {
   if (typeof window === "undefined") return Promise.resolve(null);
