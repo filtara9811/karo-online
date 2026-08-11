@@ -317,6 +317,27 @@ export function ApkDownloadSheet({ target, onClose }: { target: ApkTarget; onClo
               <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">Share</span>
             </button>
           </div>
+
+          <button
+            onClick={() => setQrOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 active:scale-[0.97] transition"
+          >
+            <QrCode className="h-4 w-4 text-[color:oklch(0.4_0.05_85)]" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-[color:oklch(0.3_0.05_85)]">
+              QR code — print &amp; paste
+            </span>
+          </button>
+        </div>
+
+        <div onClick={(e) => e.stopPropagation()}>
+          <QrCodeSheet
+            open={qrOpen}
+            onClose={() => setQrOpen(false)}
+            title={target.title}
+            landingUrl={linkFor(target.to)}
+            onPoster={shareLink}
+            onShare={shareLink}
+          />
         </div>
       </motion.div>
     </motion.div>
