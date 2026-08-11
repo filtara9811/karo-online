@@ -39,10 +39,11 @@ export function MapView({
     (async () => {
       const g = await loadMapsSdk();
       if (cancel) return;
-      if (!g || !ref.current) {
+      if (!g?.maps?.Map || !ref.current) {
         setStatus("error");
         return;
       }
+
       mapRef.current = new g.maps.Map(ref.current, {
         center,
         zoom,
