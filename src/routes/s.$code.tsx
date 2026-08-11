@@ -116,6 +116,8 @@ function ScanLandingPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [activeMedia, setActiveMedia] = useState(0);
+  const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
