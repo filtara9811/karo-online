@@ -18,7 +18,9 @@ import { LandingCategoryDock, buildDockCategories } from "@/components/landing/L
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
 import { getLandingPayload } from "@/lib/landing.functions";
-import type { LandingPayload, LandingMediaItem } from "@/lib/landing-types";
+import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landing-types";
+import { LandingProductRail } from "@/components/landing/LandingProductRail";
+import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
