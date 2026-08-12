@@ -130,17 +130,6 @@ function ScanLandingPage() {
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
   }, []);
 
-  // Real engagement counters for the stats bar.
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .rpc("get_public_landing_stats" as never, { _code: code } as never)
-      .then(({ data: res, error }) => {
-        console.log("[stats]", JSON.stringify(res), error?.message);
-        if (!cancelled && res) setStats(res as unknown as LandingStats);
-      });
-    return () => { cancelled = true; };
-  }, [code]);
 
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
