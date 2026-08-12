@@ -63,18 +63,16 @@ function KycReviewPage() {
   useEffect(() => { load(); }, [filter]);
 
   const decide = async (row: Row, decision: "verified" | "rejected", notes?: string) => {
-    const { error } = await supabase
-      .from("kyc_verifications")
-      .update({
-        status: decision,
-        reviewer_notes: notes ?? null,
-        verified_at: decision === "verified" ? new Date().toISOString() : null,
-      })
-      .eq("id", row.id);
+    const { error } = await supabase.rpc("admin_set_kyc_status" as never, {
+      _kyc_id: row.id,
+      _status: decision,
+      _notes: notes ?? null,
+    } as never);
     if (error) return toast.error(error.message);
     toast.success(decision === "verified" ? "Approved ✓" : "Rejected");
     load();
   };
+
 
   return (
     <AdminLayout>

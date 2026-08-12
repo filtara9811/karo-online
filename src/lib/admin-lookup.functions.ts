@@ -332,17 +332,13 @@ export const setKycStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await ensureAdmin(supabase, userId);
-    const { error } = await supabase
-      .from("kyc_verifications")
-      .update({
-        status: data.status,
-        reviewer_notes: data.notes,
-        reviewer_id: userId,
-        verified_at: data.status === "approved" ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.kycId);
+    const { error } = await supabase.rpc("admin_set_kyc_status", {
+      _kyc_id: data.kycId,
+      _status: data.status,
+      _notes: data.notes ?? null,
+    });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
