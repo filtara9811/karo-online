@@ -30,9 +30,9 @@ export function LandingTopBar({
 
   return (
     <div
-      className="sticky top-0 z-40 flex items-center gap-3 px-3 py-2.5 shadow-lg"
+      className="absolute inset-x-0 top-0 z-40 grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 px-3 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
       style={{
-        background: `linear-gradient(135deg, ${accent}, ${shade(accent, light ? 0.18 : -0.12)})`,
+        background: `linear-gradient(180deg, ${withAlpha("#000000", 0.68)}, transparent)`,
         color: fg,
       }}
     >
@@ -62,16 +62,16 @@ export function LandingTopBar({
         </p>
       </button>
 
-      {onInstall && (
+      {onInstall && !installed && (
         <button
           type="button"
           onClick={onInstall}
-          aria-label={installed ? "App installed" : "Install shop app"}
-          className="h-9 shrink-0 grid grid-flow-col items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wide transition active:scale-95"
-          style={{ background: withAlpha(light ? "#ffffff" : "#000000", 0.18), color: fg }}
+          aria-label="Download shop app"
+          className="h-9 shrink-0 grid grid-flow-col items-center gap-1 rounded-full border border-emerald-400 px-2.5 text-[10px] font-extrabold transition active:scale-95"
+          style={{ background: withAlpha("#000000", 0.34), color: "#4ade80" }}
         >
-          {installed ? <Check className="h-4 w-4" /> : <MonitorSmartphone className="h-4 w-4" />}
-          <span>{installed ? "Installed" : "App"}</span>
+          <MonitorSmartphone className="h-4 w-4" />
+          <span>Download App</span>
         </button>
       )}
 

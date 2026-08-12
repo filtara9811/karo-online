@@ -21,6 +21,7 @@ import { getLandingPayload } from "@/lib/landing.functions";
 import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landing-types";
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
+import { LandingReelsOverlay } from "@/components/landing/LandingReelsOverlay";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -264,8 +265,20 @@ function ScanLandingPage() {
         alt={merchantName}
         accent={accent}
         onIndexChange={setActiveMedia}
-        className={layoutStyle === "reels" ? "h-[100svh]" : layoutStyle === "chat" ? "h-[38svh]" : "h-[62svh]"}
+        className={layoutStyle === "chat" ? "h-[38svh]" : "h-[100svh]"}
       >
+        {layoutStyle !== "chat" && (
+          <LandingReelsOverlay
+            code={code}
+            project={project}
+            shopName={merchantName}
+            avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+            verified={m.verified}
+            products={mediaList[activeMedia]?.products ?? []}
+            accent={accent}
+            onOpenProduct={setOpenProduct}
+          />
+        )}
         {landing.announcement_active && landing.announcement_text && (
           <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
             📣 {landing.announcement_text}
@@ -274,11 +287,7 @@ function ScanLandingPage() {
       </LandingStoryMedia>
 
       {/* Products attached to the video that is currently playing */}
-      <LandingProductRail
-        products={mediaList[activeMedia]?.products ?? []}
-        accent={accent}
-        onOpen={setOpenProduct}
-      />
+      {layoutStyle === "chat" && <LandingProductRail products={mediaList[activeMedia]?.products ?? []} accent={accent} onOpen={setOpenProduct} />}
 
       <LandingProductSheet
         product={openProduct}
