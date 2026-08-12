@@ -97,8 +97,8 @@ export function LandingStoryMedia({
     });
   }, [index, muted, current?.src]);
 
-  // Timer only drives images. Videos use their own timeupdate/ended events, and
-  // embedded links (YouTube / Instagram) are left to the viewer to swipe.
+  // Images get a gentle progress sweep, but nothing auto-advances any more —
+  // the viewer swipes manually to reach the next video.
   useEffect(() => {
     if (!current || total === 0 || current.type !== "image") return;
     let raf = 0;
@@ -111,18 +111,13 @@ export function LandingStoryMedia({
         return;
       }
       elapsed.current = now - startedAt.current;
-      const p = Math.min(1, elapsed.current / IMAGE_DURATION);
-      setProgress(p);
-      if (p >= 1) {
-        elapsed.current = 0;
-        if (total > 1) setIndex((i) => (i + 1) % total);
-        startedAt.current = now;
-      }
+      setProgress(Math.min(1, elapsed.current / IMAGE_DURATION));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [current, paused, total, index]);
+
 
   if (!current) return null;
 
@@ -154,15 +149,15 @@ export function LandingStoryMedia({
               src={current.src}
               autoPlay
               muted={muted}
-              loop={total === 1}
+              loop
               playsInline
               onTimeUpdate={(e) => {
                 const el = e.currentTarget;
                 if (el.duration > 0) setProgress(Math.min(1, el.currentTime / el.duration));
               }}
-              onEnded={() => go(1)}
               className="absolute inset-0 h-full w-full object-cover"
             />
+
           ) : current.type === "url" ? (
             detectProvider(current.src) === "youtube" ? (
               <iframe
@@ -219,23 +214,24 @@ export function LandingStoryMedia({
         </motion.div>
       )}
 
-      {/* progress segments — one per uploaded item */}
+      {/* single progress bar for the item currently playing */}
       {total > 0 && (
-        <div className="pointer-events-none absolute inset-x-3 top-2 z-20 flex gap-1.5">
-          {items.map((_, i) => (
-            <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
-              <motion.div
-                className="h-full rounded-full"
-                style={{
-                  background: accent,
-                  width: i < index ? "100%" : i === index ? `${progress * 100}%` : "0%",
-                }}
-                transition={{ ease: "linear", duration: 0.1 }}
-              />
-            </div>
-          ))}
+        <div className="pointer-events-none absolute inset-x-3 top-2 z-20">
+          <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/30">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: accent, width: `${progress * 100}%` }}
+              transition={{ ease: "linear", duration: 0.1 }}
+            />
+          </div>
+          {total > 1 && (
+            <p className="mt-1 text-right text-[9px] font-bold text-white/70">
+              {index + 1}/{total}
+            </p>
+          )}
         </div>
       )}
+
 
       {children}
     </div>

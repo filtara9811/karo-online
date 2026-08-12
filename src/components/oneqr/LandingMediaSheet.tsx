@@ -5,8 +5,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
+import { jsonBytes, sanitizeMediaList, sanitizeProduct, uploadImage, withTimeout } from "@/lib/media-upload";
+import { ProductEditor } from "@/components/ProductEditor";
+import { fromEditorProduct, toEditorProduct } from "./video-product-adapter";
 import { SheetShell } from "./SheetShell";
-import { VideoProductSheet } from "./VideoProductSheet";
+
 
 type MediaItem = LandingMediaItem;
 
@@ -51,13 +54,14 @@ export function LandingMediaSheet({
 
   useEffect(() => {
     if (!open || !user?.id) return;
+    const uid = user.id;
     let cancelled = false;
     setLoading(true);
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
         .select("poster_media, poster_bg_urls, poster_bg_url")
-        .eq("user_id", user.id)
+        .eq("user_id", uid)
         .maybeSingle();
       if (cancelled) return;
       const d = data as { poster_media?: MediaItem[]; poster_bg_urls?: string[]; poster_bg_url?: string } | null;
@@ -65,30 +69,56 @@ export function LandingMediaSheet({
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
             .map((src) => ({ type: "image" as const, src }));
-      setMedia(list.slice(0, MAX_SLOTS));
+
+      // Legacy rows carry base64 images inside JSONB (multi-MB) which makes every
+      // publish time out. Move them to storage once, then keep only URLs.
+      const { items, changed } = await sanitizeMediaList(uid, list.slice(0, MAX_SLOTS));
+      if (cancelled) return;
+      setMedia(items);
       setActive(0);
-      setDirty(false);
+      setDirty(changed);
       setLoading(false);
-    })();
+      if (changed) toast.info("Purani heavy images storage me shift kar di — Publish dabayein");
+    })().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => { cancelled = true; };
   }, [open, user?.id]);
 
   const persist = useCallback(async (next: MediaItem[]) => {
+    if (!user?.id) { toast.error("Login karein"); return false; }
     setSaving(true);
-    const images = next.filter((x) => x.type === "image").map((x) => x.src);
-    const { error } = await supabase.rpc("upsert_merchant_link_settings" as never, {
-      _payload: {
-        poster_media: next,
+    try {
+      const { items } = await sanitizeMediaList(user.id, next);
+      const images = items.filter((x) => x.type === "image").map((x) => x.src);
+      const payload = {
+        poster_media: items,
         poster_bg_urls: images,
         poster_bg_url: images[0] ?? null,
-      },
-    } as never);
-    setSaving(false);
-    if (error) { toast.error("Save nahi hua: " + error.message); return false; }
-    setDirty(false);
-    onSaved?.();
-    return true;
-  }, [onSaved]);
+      };
+      const size = jsonBytes(payload);
+      if (size > 512 * 1024) {
+        toast.error("Media data bahut bada hai — kuch items hata kar dobara try karein");
+        return false;
+      }
+      const { error } = await withTimeout(
+        supabase.rpc("upsert_merchant_link_settings" as never, { _payload: payload } as never) as unknown as Promise<{ error: { message: string } | null }>,
+        12_000,
+        "Server slow hai — dobara Publish dabayein",
+      );
+      if (error) { toast.error("Save nahi hua: " + error.message); return false; }
+      setMedia(items);
+      setDirty(false);
+      onSaved?.();
+      toast.success("Live ho gaya ✅");
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Publish fail hua");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [onSaved, user?.id]);
 
   const update = (next: MediaItem[]) => {
     setMedia(next.slice(0, MAX_SLOTS));
@@ -107,37 +137,40 @@ export function LandingMediaSheet({
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+    if (!user?.id) { toast.error("Login karein"); return; }
     if (media.length >= MAX_SLOTS) { toast.error(`Max ${MAX_SLOTS} media`); return; }
     const isVideo = kindRef.current === "video";
-    const limit = isVideo ? 90 * 1024 * 1024 : 8 * 1024 * 1024;
+    const limit = isVideo ? 90 * 1024 * 1024 : 12 * 1024 * 1024;
     if (f.size > limit) { toast.error(`File bahut badi hai (max ${Math.round(limit / 1024 / 1024)} MB)`); return; }
 
-    if (isVideo && user?.id) {
-      // Videos go to storage (public URL) so landing pages stay fast.
-      setSaving(true);
-      const path = `${user.id}/video-${Date.now()}.${(f.name.split(".").pop() || "mp4").toLowerCase()}`;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, f, {
-        upsert: false,
-        contentType: f.type || "video/mp4",
-        cacheControl: "31536000",
-      });
+    setSaving(true);
+    try {
+      if (isVideo) {
+        const path = `${user.id}/video-${Date.now()}.${(f.name.split(".").pop() || "mp4").toLowerCase()}`;
+        const { error } = await supabase.storage.from(BUCKET).upload(path, f, {
+          upsert: false,
+          contentType: f.type || "video/mp4",
+          cacheControl: "31536000",
+        });
+        if (error) throw new Error(error.message);
+        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+        update([...media, { type: "video", src: data.publicUrl, products: [] }]);
+        setActive(media.length);
+        toast.success("Video add ho gaya — ab products link karein");
+      } else {
+        // Photos also go to storage (compressed) — never base64 in the database.
+        const url = await uploadImage(user.id, f);
+        update([...media, { type: "image", src: url, products: [] }]);
+        setActive(media.length);
+        toast.success("Photo add ho gaya");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload fail hua");
+    } finally {
       setSaving(false);
-      if (error) { toast.error("Video upload fail: " + error.message); return; }
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      update([...media, { type: "video", src: data.publicUrl, products: [] }]);
-      setActive(media.length);
-      toast.success("Video add ho gaya — ab products link karein");
-      return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      update([...media, { type: kindRef.current, src: String(reader.result || ""), products: [] }]);
-      setActive(media.length);
-      toast.success("Media add ho gaya");
-    };
-    reader.readAsDataURL(f);
   };
+
 
   const addUrl = () => {
     const v = urlInput.trim();
@@ -244,25 +277,34 @@ export function LandingMediaSheet({
                 <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <AnimatePresence initial={false}>
                     {products.map((p) => (
-                      <motion.button
+                      <motion.div
                         key={p.id}
                         layout
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        onClick={() => setEditing(p)}
                         className="relative h-24 w-[74px] shrink-0 overflow-hidden rounded-2xl border border-white/50 bg-white/10 backdrop-blur"
                       >
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="grid h-full w-full place-items-center text-white/80"><Tag className="h-4 w-4" /></span>
-                        )}
-                        <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 py-0.5 text-[8.5px] font-bold text-white">
+                        <button onClick={() => setEditing(p)} className="absolute inset-0">
+                          {p.image ? (
+                            <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="grid h-full w-full place-items-center text-white/80"><Tag className="h-4 w-4" /></span>
+                          )}
+                        </button>
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 py-0.5 text-[8.5px] font-bold text-white">
                           {p.name || "Product"}
                         </span>
-                      </motion.button>
+                        <button
+                          onClick={() => setProducts(products.filter((x) => x.id !== p.id))}
+                          aria-label={`Remove ${p.name || "product"}`}
+                          className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/65 text-white active:scale-90"
+                        >
+                          <Trash2 className="h-2.5 w-2.5" />
+                        </button>
+                      </motion.div>
                     ))}
+
                   </AnimatePresence>
                   {products.length < MAX_PRODUCTS && (
                     <button
@@ -322,25 +364,52 @@ export function LandingMediaSheet({
                 )}
               </div>
             </div>
+
+            {/* Buy / redirect links per linked product */}
+            {products.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Buy / redirect links</p>
+                <div className="space-y-2">
+                  {products.map((p) => (
+                    <div key={`link-${p.id}`} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-amber-400">
+                      <span className="max-w-[86px] shrink-0 truncate text-[11px] font-bold text-slate-600">{p.name || "Product"}</span>
+                      <input
+                        value={p.url ?? ""}
+                        onChange={(e) => setProducts(products.map((x) => (x.id === p.id ? { ...x, url: e.target.value } : x)))}
+                        placeholder="https://wa.me/91… ya website link"
+                        className="min-w-0 flex-1 bg-transparent text-[12px] text-slate-900 outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </SheetShell>
 
-      <VideoProductSheet
-        open={!!editing}
-        product={editing}
-        onClose={() => setEditing(null)}
-        onSave={(p) => {
-          const exists = products.some((x) => x.id === p.id);
-          setProducts(exists ? products.map((x) => (x.id === p.id ? p : x)) : [...products, p].slice(0, MAX_PRODUCTS));
-          setEditing(null);
-          toast.success("Product linked — Publish dabayein");
-        }}
-        onDelete={(id) => {
-          setProducts(products.filter((x) => x.id !== id));
-          setEditing(null);
-        }}
-      />
+      {editing && (
+        <div className="fixed inset-0 z-[95]">
+          <ProductEditor
+            product={toEditorProduct(editing)}
+            onClose={() => setEditing(null)}
+            onSave={async (ep) => {
+              const base = fromEditorProduct(editing, ep);
+              if (!base.name.trim()) { toast.error("Product ka naam likhein"); return; }
+              const clean = user?.id ? await sanitizeProduct(user.id, base).catch(() => base) : base;
+              const exists = products.some((x) => x.id === clean.id);
+              setProducts(
+                exists
+                  ? products.map((x) => (x.id === clean.id ? clean : x))
+                  : [...products, clean].slice(0, MAX_PRODUCTS),
+              );
+              setEditing(null);
+              toast.success("Product linked — Publish dabayein");
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }
+
