@@ -149,15 +149,15 @@ export function LandingStoryMedia({
               src={current.src}
               autoPlay
               muted={muted}
-              loop={total === 1}
+              loop
               playsInline
               onTimeUpdate={(e) => {
                 const el = e.currentTarget;
                 if (el.duration > 0) setProgress(Math.min(1, el.currentTime / el.duration));
               }}
-              onEnded={() => go(1)}
               className="absolute inset-0 h-full w-full object-cover"
             />
+
           ) : current.type === "url" ? (
             detectProvider(current.src) === "youtube" ? (
               <iframe
