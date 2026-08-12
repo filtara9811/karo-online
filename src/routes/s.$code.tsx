@@ -133,11 +133,12 @@ function ScanLandingPage() {
   // Real engagement counters for the stats bar.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data: res } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
-      console.log("[stats]", JSON.stringify(res));
-      if (!cancelled && res) setStats(res as unknown as LandingStats);
-    })();
+    supabase
+      .rpc("get_public_landing_stats" as never, { _code: code } as never)
+      .then(({ data: res, error }) => {
+        console.log("[stats]", JSON.stringify(res), error?.message);
+        if (!cancelled && res) setStats(res as unknown as LandingStats);
+      });
     return () => { cancelled = true; };
   }, [code]);
 
