@@ -355,25 +355,52 @@ export function LandingMediaSheet({
                 )}
               </div>
             </div>
+
+            {/* Buy / redirect links per linked product */}
+            {products.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Buy / redirect links</p>
+                <div className="space-y-2">
+                  {products.map((p) => (
+                    <div key={`link-${p.id}`} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-amber-400">
+                      <span className="max-w-[86px] shrink-0 truncate text-[11px] font-bold text-slate-600">{p.name || "Product"}</span>
+                      <input
+                        value={p.url ?? ""}
+                        onChange={(e) => setProducts(products.map((x) => (x.id === p.id ? { ...x, url: e.target.value } : x)))}
+                        placeholder="https://wa.me/91… ya website link"
+                        className="min-w-0 flex-1 bg-transparent text-[12px] text-slate-900 outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </SheetShell>
 
-      <VideoProductSheet
-        open={!!editing}
-        product={editing}
-        onClose={() => setEditing(null)}
-        onSave={(p) => {
-          const exists = products.some((x) => x.id === p.id);
-          setProducts(exists ? products.map((x) => (x.id === p.id ? p : x)) : [...products, p].slice(0, MAX_PRODUCTS));
-          setEditing(null);
-          toast.success("Product linked — Publish dabayein");
-        }}
-        onDelete={(id) => {
-          setProducts(products.filter((x) => x.id !== id));
-          setEditing(null);
-        }}
-      />
+      {editing && (
+        <div className="fixed inset-0 z-[95]">
+          <ProductEditor
+            product={toEditorProduct(editing)}
+            onClose={() => setEditing(null)}
+            onSave={async (ep) => {
+              const base = fromEditorProduct(editing, ep);
+              if (!base.name.trim()) { toast.error("Product ka naam likhein"); return; }
+              const clean = user?.id ? await sanitizeProduct(user.id, base).catch(() => base) : base;
+              const exists = products.some((x) => x.id === clean.id);
+              setProducts(
+                exists
+                  ? products.map((x) => (x.id === clean.id ? clean : x))
+                  : [...products, clean].slice(0, MAX_PRODUCTS),
+              );
+              setEditing(null);
+              toast.success("Product linked — Publish dabayein");
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }
+
