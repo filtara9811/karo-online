@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole } from "lucide-react";
+import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
