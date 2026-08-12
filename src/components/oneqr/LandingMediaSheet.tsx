@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag } from "lucide-react";
+import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -49,6 +49,8 @@ export function LandingMediaSheet({
   const [dirty, setDirty] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [editing, setEditing] = useState<VideoProduct | null>(null);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [unlockOpen, setUnlockOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const kindRef = useRef<"image" | "video">("video");
 
@@ -125,7 +127,9 @@ export function LandingMediaSheet({
     setDirty(true);
   };
 
-  const pick = (kind: "image" | "video") => {
+  const pick = (kind: "image" | "video", replacing?: number) => {
+    if (media.length >= MAX_SLOTS && replacing === undefined) { setUnlockOpen(true); return; }
+    setReplaceIndex(replacing ?? null);
     kindRef.current = kind;
     if (fileRef.current) {
       fileRef.current.accept = kind === "video" ? "video/*" : "image/*";
@@ -138,7 +142,7 @@ export function LandingMediaSheet({
     e.target.value = "";
     if (!f) return;
     if (!user?.id) { toast.error("Login karein"); return; }
-    if (media.length >= MAX_SLOTS) { toast.error(`Max ${MAX_SLOTS} media`); return; }
+    if (media.length >= MAX_SLOTS && replaceIndex === null) { setUnlockOpen(true); return; }
     const isVideo = kindRef.current === "video";
     const limit = isVideo ? 90 * 1024 * 1024 : 12 * 1024 * 1024;
     if (f.size > limit) { toast.error(`File bahut badi hai (max ${Math.round(limit / 1024 / 1024)} MB)`); return; }
@@ -154,19 +158,22 @@ export function LandingMediaSheet({
         });
         if (error) throw new Error(error.message);
         const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        update([...media, { type: "video", src: data.publicUrl, products: [] }]);
-        setActive(media.length);
+         const item: MediaItem = { type: "video", src: data.publicUrl, products: replaceIndex === null ? [] : (media[replaceIndex]?.products ?? []) };
+         if (replaceIndex === null) { update([...media, item]); setActive(media.length); }
+         else { update(media.map((m, i) => i === replaceIndex ? item : m)); setActive(replaceIndex); }
         toast.success("Video add ho gaya — ab products link karein");
       } else {
         // Photos also go to storage (compressed) — never base64 in the database.
         const url = await uploadImage(user.id, f);
-        update([...media, { type: "image", src: url, products: [] }]);
-        setActive(media.length);
+         const item: MediaItem = { type: "image", src: url, products: replaceIndex === null ? [] : (media[replaceIndex]?.products ?? []) };
+         if (replaceIndex === null) { update([...media, item]); setActive(media.length); }
+         else { update(media.map((m, i) => i === replaceIndex ? item : m)); setActive(replaceIndex); }
         toast.success("Photo add ho gaya");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload fail hua");
     } finally {
+      setReplaceIndex(null);
       setSaving(false);
     }
   };
@@ -187,12 +194,6 @@ export function LandingMediaSheet({
 
   const setProducts = (list: VideoProduct[]) => {
     update(media.map((m, i) => (i === active ? { ...m, products: list } : m)));
-  };
-
-  const removeMedia = (i: number) => {
-    const next = media.filter((_, idx) => idx !== i);
-    update(next);
-    setActive((a) => Math.max(0, Math.min(a, next.length - 1)));
   };
 
   return (
@@ -342,16 +343,12 @@ export function LandingMediaSheet({
                     <span className="pointer-events-none absolute bottom-1 left-1 rounded-full bg-black/65 px-1.5 text-[9px] font-bold text-white">
                       {(m.products?.length ?? 0)} · {i + 1}
                     </span>
-                    <button
-                      onClick={() => removeMedia(i)}
-                      aria-label="Remove media"
-                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/65 text-white active:scale-90"
-                    >
-                      <Trash2 className="h-3 w-3" />
+                    <button onClick={() => pick(m.type === "image" ? "image" : "video", i)} aria-label="Replace media" className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/65 text-white active:scale-90">
+                      <Replace className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
-                {media.length < MAX_SLOTS && (
+                {media.length < MAX_SLOTS ? (
                   <button
                     onClick={() => pick("video")}
                     className="grid h-28 w-[86px] shrink-0 place-items-center rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/60 text-amber-700 active:scale-95"
@@ -361,6 +358,8 @@ export function LandingMediaSheet({
                       <span className="text-[9px] font-extrabold">Add new</span>
                     </span>
                   </button>
+                ) : (
+                  <button onClick={() => setUnlockOpen(true)} className="grid h-28 w-[86px] shrink-0 place-items-center rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 text-amber-800 active:scale-95"><span className="flex flex-col items-center gap-1"><LockKeyhole className="h-5 w-5"/><span className="text-[9px] font-extrabold">Unlock more</span></span></button>
                 )}
               </div>
             </div>
@@ -389,7 +388,7 @@ export function LandingMediaSheet({
       </SheetShell>
 
       {editing && (
-        <div className="fixed inset-0 z-[95]">
+        <div className="fixed inset-0 z-[240]">
           <ProductEditor
             product={toEditorProduct(editing)}
             onClose={() => setEditing(null)}
@@ -407,6 +406,17 @@ export function LandingMediaSheet({
               toast.success("Product linked — Publish dabayein");
             }}
           />
+        </div>
+      )}
+      {unlockOpen && (
+        <div className="fixed inset-0 z-[260] grid place-items-end bg-black/60 p-3 backdrop-blur-sm" onClick={() => setUnlockOpen(false)}>
+          <div className="w-full max-w-md rounded-3xl bg-white p-5 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700"><LockKeyhole className="h-6 w-6"/></div>
+            <h3 className="mt-3 text-lg font-extrabold text-slate-900">10 more videos unlock karein</h3>
+            <p className="mt-1 text-sm text-slate-500">₹500 per pack · sirf ₹50 per additional video</p>
+            <a href="/vendor/wallet" className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-amber-500 font-extrabold text-white">Recharge & Unlock</a>
+            <button onClick={() => setUnlockOpen(false)} className="mt-2 h-10 w-full text-sm font-bold text-slate-500">Not now</button>
+          </div>
         </div>
       )}
     </>

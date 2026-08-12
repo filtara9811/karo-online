@@ -21,6 +21,8 @@ import { getLandingPayload } from "@/lib/landing.functions";
 import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landing-types";
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
+import { LandingReelsOverlay } from "@/components/landing/LandingReelsOverlay";
+import { LandingReelsDock } from "@/components/landing/LandingReelsDock";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -132,6 +134,11 @@ function ScanLandingPage() {
   });
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
 
+  useEffect(() => {
+    if (!data?.ok) return;
+    void trackQrEvent("PRODUCT_VIEW", { code, project, meta: { media_index: activeMedia, surface: "reels" } });
+  }, [activeMedia, code, data?.ok, project]);
+
   // Auto-offer the white-label install once per shop, shortly after load.
   const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
   useEffect(() => {
@@ -224,6 +231,7 @@ function ScanLandingPage() {
   const pageUrl = typeof window !== "undefined"
     ? window.location.href
     : `https://karoonline.in/s/${encodeURIComponent(code)}`;
+  const reelsMode = layoutStyle !== "chat";
 
   const categories = buildDockCategories({
     extraLinks: (links.extra_links ?? []) as ExtraLink[],
@@ -264,9 +272,24 @@ function ScanLandingPage() {
         alt={merchantName}
         accent={accent}
         onIndexChange={setActiveMedia}
-        className={layoutStyle === "reels" ? "h-[100svh]" : layoutStyle === "chat" ? "h-[38svh]" : "h-[62svh]"}
+        className={layoutStyle === "chat" ? "h-[38svh]" : "h-[100svh]"}
       >
-        {landing.announcement_active && landing.announcement_text && (
+        {layoutStyle !== "chat" && (
+          <LandingReelsOverlay
+            code={code}
+            project={project}
+            shopName={merchantName}
+            avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+            verified={m.verified}
+            products={mediaList[activeMedia]?.products ?? []}
+            accent={accent}
+            onOpenProduct={(product) => {
+              setOpenProduct(product);
+              void trackQrEvent("PRODUCT_VIEW", { code, project, ref: product.id, meta: { action: "open_product" } });
+            }}
+          />
+        )}
+        {layoutStyle === "chat" && landing.announcement_active && landing.announcement_text && (
           <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
             📣 {landing.announcement_text}
           </div>
@@ -274,11 +297,7 @@ function ScanLandingPage() {
       </LandingStoryMedia>
 
       {/* Products attached to the video that is currently playing */}
-      <LandingProductRail
-        products={mediaList[activeMedia]?.products ?? []}
-        accent={accent}
-        onOpen={setOpenProduct}
-      />
+      {layoutStyle === "chat" && <LandingProductRail products={mediaList[activeMedia]?.products ?? []} accent={accent} onOpen={setOpenProduct} />}
 
       <LandingProductSheet
         product={openProduct}
@@ -336,12 +355,26 @@ function ScanLandingPage() {
       {/* Space for the fixed category dock */}
       <div className="h-36" />
 
-      <LandingCategoryDock
-        categories={categories}
-        accent={accent}
-        merchantPhone={(m as { phone?: string }).phone}
-        merchantName={merchantName}
-      />
+      {reelsMode ? (
+        <LandingReelsDock
+          canDownload={!installer.installed && !installer.standalone}
+          onShare={async () => {
+            try {
+              if (navigator.share) await navigator.share({ title: merchantName, url: pageUrl });
+              else await navigator.clipboard.writeText(pageUrl);
+              void trackQrEvent("CAMPAIGN_CLICK", { code, project, meta: { action: "share_dock" } });
+            } catch { /* cancelled */ }
+          }}
+          onShop={() => mediaList[activeMedia]?.products?.[0] && setOpenProduct(mediaList[activeMedia].products?.[0] ?? null)}
+          onLinks={() => setMenuOpen(true)}
+          onDownload={async () => {
+            const result = await installer.install();
+            if (result === "unavailable") setInstallPromptOpen(true);
+          }}
+        />
+      ) : (
+        <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
+      )}
 
       <LandingProfileSheet
         open={profileOpen}

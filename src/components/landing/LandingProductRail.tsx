@@ -12,10 +12,12 @@ export function LandingProductRail({
   products,
   accent,
   onOpen,
+  compact = false,
 }: {
   products: VideoProduct[];
   accent: string;
   onOpen: (p: VideoProduct) => void;
+  compact?: boolean;
 }) {
   const [paused, setPaused] = useState(false);
   if (!products.length) return null;
@@ -23,13 +25,13 @@ export function LandingProductRail({
   const loop = products.length > 2 ? [...products, ...products] : products;
 
   return (
-    <section className="px-3 pt-3">
+    <section className={compact ? "px-3 pt-2" : "px-3 pt-3"}>
       <div className="mb-1.5 flex items-center justify-between px-1">
-        <h3 className="text-[12px] font-extrabold uppercase tracking-wider" style={{ color: accent }}>
-          ✦ Top Products
+        <h3 className="text-[12px] font-extrabold" style={{ color: compact ? "white" : accent }}>
+          Shop Our Collection
         </h3>
         <span className="text-[9px] font-bold uppercase tracking-wider opacity-60">
-          {products.length} in this video
+          View All ›
         </span>
       </div>
       <div
@@ -48,10 +50,10 @@ export function LandingProductRail({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 260, damping: 26 }}
                 onClick={() => onOpen(p)}
-                className="relative w-[124px] shrink-0 overflow-hidden rounded-2xl border bg-white/95 shadow-sm backdrop-blur"
+                className={`relative shrink-0 overflow-hidden border shadow-sm backdrop-blur ${compact ? "w-[108px] rounded-xl bg-white/85" : "w-[124px] rounded-2xl bg-white/95"}`}
                 style={{ borderColor: `${accent}55` }}
               >
-                <div className="relative h-[104px] overflow-hidden bg-slate-100">
+                <div className={`relative overflow-hidden bg-slate-100 ${compact ? "h-[68px]" : "h-[104px]"}`}>
                   {p.image ? (
                     <img
                       src={optimizedImage(p.image, IMG.tile) ?? p.image}
