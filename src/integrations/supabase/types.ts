@@ -5658,6 +5658,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_set_kyc_status: {
+        Args: { _kyc_id: string; _notes?: string; _status: string }
+        Returns: undefined
+      }
       admin_test_notification: {
         Args: { _trigger_id: string; _user_id?: string }
         Returns: Json

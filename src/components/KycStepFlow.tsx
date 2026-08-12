@@ -106,9 +106,18 @@ export function KycStepFlow({
       request_payload: payload.request_payload ?? {},
     };
     if (existing?.id) {
+      // Applicants may only rewrite their own submitted document fields.
       const { error } = await supabase
-        .from("kyc_verifications").update(body).eq("id", existing.id);
+        .from("kyc_verifications")
+        .update({
+          status: "submitted",
+          document_number: body.document_number,
+          document_urls: body.document_urls,
+          request_payload: body.request_payload,
+        })
+        .eq("id", existing.id);
       if (error) throw error;
+
     } else {
       const { data, error } = await supabase
         .from("kyc_verifications").insert(body).select("*").single();
