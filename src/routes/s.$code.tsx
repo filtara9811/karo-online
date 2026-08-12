@@ -186,6 +186,10 @@ function ScanLandingPage() {
       if (error) console.error("[landing] rpc", error);
       setData(next);
       if (next.ok) writeCache(code, next);
+
+      // Real engagement counters for the stats bar.
+      const { data: s } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
+      if (!cancelled && s) setStats(s as unknown as LandingStats);
     })();
 
     // Analytics is deferred so it never competes with first paint.
