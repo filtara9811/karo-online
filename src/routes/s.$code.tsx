@@ -18,11 +18,10 @@ import { LandingCategoryDock, buildDockCategories } from "@/components/landing/L
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
 import { getLandingPayload } from "@/lib/landing.functions";
-import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landing-types";
+import type { LandingPayload, LandingMediaItem, LandingStats, VideoProduct } from "@/lib/landing-types";
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
-import { LandingReelsOverlay } from "@/components/landing/LandingReelsOverlay";
-import { LandingReelsDock } from "@/components/landing/LandingReelsDock";
+import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -122,7 +121,26 @@ function ScanLandingPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeMedia, setActiveMedia] = useState(0);
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
+  const [stats, setStats] = useState<LandingStats | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
+  // Shared links carry ?m=<index> so the exact video opens first.
+  const sharedIndex = useMemo(() => {
+    if (typeof window === "undefined") return 0;
+    const raw = Number(new URLSearchParams(window.location.search).get("m"));
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+  }, []);
+
+  // Real engagement counters for the stats bar.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: res } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
+      console.log("[stats]", JSON.stringify(res));
+      if (!cancelled && res) setStats(res as unknown as LandingStats);
+    })();
+    return () => { cancelled = true; };
+  }, [code]);
+
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
   const shopName = data?.merchant?.shop_name || data?.merchant?.name || "Karo Online Merchant";
@@ -232,6 +250,30 @@ function ScanLandingPage() {
     ? window.location.href
     : `https://karoonline.in/s/${encodeURIComponent(code)}`;
   const reelsMode = layoutStyle !== "chat";
+  const activeProducts = mediaList[activeMedia]?.products ?? [];
+
+  // Google Business shortcut, if the merchant configured one in their links.
+  const gmbUrl = ((links.extra_links ?? []) as ExtraLink[]).find(
+    (l) => l.enabled !== false && /google|gmb|maps/i.test(`${l.label} ${l.url}`),
+  )?.url;
+
+  const openProductCard = (p: VideoProduct) => {
+    setOpenProduct(p);
+    void trackQrEvent("PRODUCT_VIEW", { code, project, ref: p.id, meta: { action: "open_product" } });
+  };
+
+  /** Share the exact video currently playing (?m=index) with its own poster. */
+  const shareCurrent = async () => {
+    const base = pageUrl.split("#")[0].split("?")[0];
+    const qs = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    qs.set("m", String(activeMedia));
+    const url = `${base}?${qs.toString()}`;
+    try {
+      if (navigator.share) await navigator.share({ title: merchantName, text: `Dekhiye ${merchantName}`, url });
+      else await navigator.clipboard.writeText(url);
+      void trackQrEvent("CAMPAIGN_CLICK", { code, project, meta: { action: "share_video", media_index: activeMedia } });
+    } catch { /* cancelled */ }
+  };
 
   const categories = buildDockCategories({
     extraLinks: (links.extra_links ?? []) as ExtraLink[],
@@ -244,6 +286,7 @@ function ScanLandingPage() {
     playUrl,
   });
 
+
   return (
     <div
       className={`min-h-screen ${isDark ? "text-white" : "text-slate-900"}`}
@@ -251,43 +294,49 @@ function ScanLandingPage() {
     >
       <LandingTopBar
         name={merchantName}
+        tagline={m.trade}
         avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
         verified={m.verified}
         accent={accent}
+        gmbUrl={gmbUrl}
         onProfile={() => setProfileOpen(true)}
         onMenu={() => setMenuOpen(true)}
-        installed={installer.installed}
+        installed={installer.installed || installer.standalone}
         onInstall={async () => {
           if (installer.installed) return;
           const r = await installer.install();
-          if (r === "unavailable") setMenuOpen(true);
+          if (r === "unavailable") setInstallPromptOpen(true);
         }}
       />
 
-
-
-      {/* Status-style media: one progress segment per uploaded photo / video / link */}
+      {/* Full-screen media: swipe vertically, press and hold to pause */}
       <LandingStoryMedia
         media={mediaList}
         alt={merchantName}
         accent={accent}
+        initialIndex={sharedIndex}
         onIndexChange={setActiveMedia}
         className={layoutStyle === "chat" ? "h-[38svh]" : "h-[100svh]"}
       >
         {layoutStyle !== "chat" && (
-          <LandingReelsOverlay
-            code={code}
-            project={project}
-            shopName={merchantName}
-            avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
-            verified={m.verified}
-            products={mediaList[activeMedia]?.products ?? []}
-            accent={accent}
-            onOpenProduct={(product) => {
-              setOpenProduct(product);
-              void trackQrEvent("PRODUCT_VIEW", { code, project, ref: product.id, meta: { action: "open_product" } });
-            }}
-          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-[118px] z-20 space-y-2">
+            <LandingStatsBar
+              stats={stats}
+              productCount={activeProducts.length}
+              accent={accent}
+              onTag={shareCurrent}
+              onShare={shareCurrent}
+              onProducts={() => activeProducts[0] && setOpenProduct(activeProducts[0])}
+            />
+            <LandingProductRail
+              products={activeProducts}
+              accent={accent}
+              shopName={merchantName}
+              phone={m.phone}
+              onOpen={openProductCard}
+              onCta={(p) => void trackQrEvent("PRODUCT_ENQUIRY", { code, project, ref: p.id, meta: { action: "cta" } })}
+            />
+          </div>
         )}
         {layoutStyle === "chat" && landing.announcement_active && landing.announcement_text && (
           <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
@@ -297,7 +346,15 @@ function ScanLandingPage() {
       </LandingStoryMedia>
 
       {/* Products attached to the video that is currently playing */}
-      {layoutStyle === "chat" && <LandingProductRail products={mediaList[activeMedia]?.products ?? []} accent={accent} onOpen={setOpenProduct} />}
+      {layoutStyle === "chat" && (
+        <LandingProductRail
+          products={activeProducts}
+          accent={accent}
+          shopName={merchantName}
+          phone={m.phone}
+          onOpen={openProductCard}
+        />
+      )}
 
       <LandingProductSheet
         product={openProduct}
@@ -355,26 +412,7 @@ function ScanLandingPage() {
       {/* Space for the fixed category dock */}
       <div className="h-36" />
 
-      {reelsMode ? (
-        <LandingReelsDock
-          canDownload={!installer.installed && !installer.standalone}
-          onShare={async () => {
-            try {
-              if (navigator.share) await navigator.share({ title: merchantName, url: pageUrl });
-              else await navigator.clipboard.writeText(pageUrl);
-              void trackQrEvent("CAMPAIGN_CLICK", { code, project, meta: { action: "share_dock" } });
-            } catch { /* cancelled */ }
-          }}
-          onShop={() => mediaList[activeMedia]?.products?.[0] && setOpenProduct(mediaList[activeMedia].products?.[0] ?? null)}
-          onLinks={() => setMenuOpen(true)}
-          onDownload={async () => {
-            const result = await installer.install();
-            if (result === "unavailable") setInstallPromptOpen(true);
-          }}
-        />
-      ) : (
-        <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
-      )}
+      <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
 
       <LandingProfileSheet
         open={profileOpen}

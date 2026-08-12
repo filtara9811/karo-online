@@ -5921,6 +5921,7 @@ export type Database = {
         }[]
       }
       get_public_landing: { Args: { _code: string }; Returns: Json }
+      get_public_landing_stats: { Args: { _code: string }; Returns: Json }
       get_public_share_preview: {
         Args: { _code: string; _kind: string }
         Returns: Json

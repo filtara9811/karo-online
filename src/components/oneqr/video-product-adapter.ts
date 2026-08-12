@@ -9,16 +9,17 @@ function parsePrice(v?: string | null): number {
 /** VideoProduct → the rich POS editor draft. */
 export function toEditorProduct(p: VideoProduct): EditorProduct {
   const price = parsePrice(p.price);
+  const mrp = parsePrice(p.mrp) || price;
   return {
     id: p.id,
     name: p.name ?? "",
     tagline: p.enquiry ?? "",
     description: p.description ?? "",
     price,
-    mrp: price,
+    mrp,
     image: p.image ?? "",
     rating: p.rating ?? 4.8,
-    reviews: 0,
+    reviews: p.reviews ?? 0,
     seller: "",
     category: "",
     sellingPrice: price,
@@ -38,15 +39,21 @@ export function fromEditorProduct(original: VideoProduct, e: EditorProduct): Vid
     e.saleType && e.saleType !== "retail" ? `Sale: ${e.saleType}` : "",
   ].filter(Boolean);
   const description = [e.description?.trim(), ...extras].filter(Boolean).join("\n");
+  const mrp = e.mrp && e.mrp > price ? `₹${e.mrp}` : (original.mrp ?? null);
   return {
     ...original,
     id: original.id,
     name: e.name?.trim() || original.name,
     price: price ? `₹${price}` : (original.price ?? ""),
+    mrp,
     image,
     description,
     enquiry: e.tagline?.trim() || original.enquiry || "",
     url: original.url ?? "",
     rating: e.rating ?? original.rating ?? 4.8,
+    reviews: e.reviews ?? original.reviews ?? null,
+    quantity: original.quantity ?? null,
+    cta: original.cta ?? null,
   };
 }
+
