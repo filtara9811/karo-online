@@ -5,8 +5,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
+import { jsonBytes, sanitizeMediaList, sanitizeProduct, uploadImage, withTimeout } from "@/lib/media-upload";
+import { ProductEditor } from "@/components/ProductEditor";
+import { fromEditorProduct, toEditorProduct } from "./video-product-adapter";
 import { SheetShell } from "./SheetShell";
-import { VideoProductSheet } from "./VideoProductSheet";
+
 
 type MediaItem = LandingMediaItem;
 
