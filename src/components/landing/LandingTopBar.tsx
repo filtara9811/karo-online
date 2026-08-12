@@ -1,5 +1,5 @@
-import { MoreVertical, BadgeCheck, MonitorSmartphone, Check } from "lucide-react";
-import { needsLightText, shade, withAlpha } from "./landing-shared";
+import { MoreVertical, BadgeCheck, MonitorSmartphone } from "lucide-react";
+import { needsLightText, withAlpha } from "./landing-shared";
 
 /**
  * Themed identity bar: shop logo + name in the merchant's chosen accent colour.

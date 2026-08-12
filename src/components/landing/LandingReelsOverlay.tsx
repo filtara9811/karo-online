@@ -37,6 +37,14 @@ export function LandingReelsOverlay({
     } catch { /* cancelled */ }
   };
 
+  const toggleFollow = () => {
+    setFollowed((value) => {
+      const next = !value;
+      void trackQrEvent("CAMPAIGN_CLICK", { code, project, meta: { action: next ? "follow" : "unfollow" } });
+      return next;
+    });
+  };
+
   const action = "grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-white/95 text-slate-950 shadow-xl backdrop-blur active:scale-90";
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
@@ -52,7 +60,7 @@ export function LandingReelsOverlay({
         <Action icon={<MessageCircle className="h-5 w-5" />} label="Comments" value="0" className={action} />
         <Action icon={<Share2 className="h-5 w-5" />} label="Share" value="0" className={action} onClick={share} />
         <Action icon={<ShoppingBag className="h-5 w-5" />} label="Products" value={String(products.length)} className={action} />
-        <button onClick={() => setFollowed((v) => !v)} className="mt-1 flex flex-col items-center gap-1" aria-label={followed ? "Following" : "Follow"}>
+        <button onClick={toggleFollow} className="mt-1 flex flex-col items-center gap-1" aria-label={followed ? "Following" : "Follow"}>
           <span className="grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-black/45 text-white backdrop-blur">
             <UserPlus className="h-5 w-5" />
           </span>
@@ -72,7 +80,7 @@ export function LandingReelsOverlay({
             <div className="flex items-center gap-1"><span className="truncate text-[12px] font-extrabold">{shopName}</span>{verified && <BadgeCheck className="h-3.5 w-3.5 text-amber-400" />}</div>
             <span className="text-[10px] text-white/75">Trusted Karo Online</span>
           </div>
-          <button onClick={() => setFollowed((v) => !v)} className="pointer-events-auto rounded-lg bg-white px-3 py-2 text-[11px] font-extrabold text-slate-950 active:scale-95">
+          <button onClick={toggleFollow} className="pointer-events-auto rounded-lg bg-white px-3 py-2 text-[11px] font-extrabold text-slate-950 active:scale-95">
             {followed ? "Following" : "Follow"}
           </button>
         </div>

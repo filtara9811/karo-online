@@ -133,6 +133,11 @@ function ScanLandingPage() {
   });
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
 
+  useEffect(() => {
+    if (!data?.ok) return;
+    void trackQrEvent("PRODUCT_VIEW", { code, project, meta: { media_index: activeMedia, surface: "reels" } });
+  }, [activeMedia, code, data?.ok, project]);
+
   // Auto-offer the white-label install once per shop, shortly after load.
   const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
   useEffect(() => {
@@ -276,7 +281,10 @@ function ScanLandingPage() {
             verified={m.verified}
             products={mediaList[activeMedia]?.products ?? []}
             accent={accent}
-            onOpenProduct={setOpenProduct}
+            onOpenProduct={(product) => {
+              setOpenProduct(product);
+              void trackQrEvent("PRODUCT_VIEW", { code, project, ref: product.id, meta: { action: "open_product" } });
+            }}
           />
         )}
         {landing.announcement_active && landing.announcement_text && (
