@@ -54,13 +54,14 @@ export function LandingMediaSheet({
 
   useEffect(() => {
     if (!open || !user?.id) return;
+    const uid = user.id;
     let cancelled = false;
     setLoading(true);
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
         .select("poster_media, poster_bg_urls, poster_bg_url")
-        .eq("user_id", user.id)
+        .eq("user_id", uid)
         .maybeSingle();
       if (cancelled) return;
       const d = data as { poster_media?: MediaItem[]; poster_bg_urls?: string[]; poster_bg_url?: string } | null;
@@ -68,30 +69,56 @@ export function LandingMediaSheet({
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
             .map((src) => ({ type: "image" as const, src }));
-      setMedia(list.slice(0, MAX_SLOTS));
+
+      // Legacy rows carry base64 images inside JSONB (multi-MB) which makes every
+      // publish time out. Move them to storage once, then keep only URLs.
+      const { items, changed } = await sanitizeMediaList(uid, list.slice(0, MAX_SLOTS));
+      if (cancelled) return;
+      setMedia(items);
       setActive(0);
-      setDirty(false);
+      setDirty(changed);
       setLoading(false);
-    })();
+      if (changed) toast.info("Purani heavy images storage me shift kar di — Publish dabayein");
+    })().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => { cancelled = true; };
   }, [open, user?.id]);
 
   const persist = useCallback(async (next: MediaItem[]) => {
+    if (!user?.id) { toast.error("Login karein"); return false; }
     setSaving(true);
-    const images = next.filter((x) => x.type === "image").map((x) => x.src);
-    const { error } = await supabase.rpc("upsert_merchant_link_settings" as never, {
-      _payload: {
-        poster_media: next,
+    try {
+      const { items } = await sanitizeMediaList(user.id, next);
+      const images = items.filter((x) => x.type === "image").map((x) => x.src);
+      const payload = {
+        poster_media: items,
         poster_bg_urls: images,
         poster_bg_url: images[0] ?? null,
-      },
-    } as never);
-    setSaving(false);
-    if (error) { toast.error("Save nahi hua: " + error.message); return false; }
-    setDirty(false);
-    onSaved?.();
-    return true;
-  }, [onSaved]);
+      };
+      const size = jsonBytes(payload);
+      if (size > 512 * 1024) {
+        toast.error("Media data bahut bada hai — kuch items hata kar dobara try karein");
+        return false;
+      }
+      const { error } = await withTimeout(
+        supabase.rpc("upsert_merchant_link_settings" as never, { _payload: payload } as never) as unknown as Promise<{ error: { message: string } | null }>,
+        12_000,
+        "Server slow hai — dobara Publish dabayein",
+      );
+      if (error) { toast.error("Save nahi hua: " + error.message); return false; }
+      setMedia(items);
+      setDirty(false);
+      onSaved?.();
+      toast.success("Live ho gaya ✅");
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Publish fail hua");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [onSaved, user?.id]);
 
   const update = (next: MediaItem[]) => {
     setMedia(next.slice(0, MAX_SLOTS));
@@ -110,37 +137,40 @@ export function LandingMediaSheet({
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+    if (!user?.id) { toast.error("Login karein"); return; }
     if (media.length >= MAX_SLOTS) { toast.error(`Max ${MAX_SLOTS} media`); return; }
     const isVideo = kindRef.current === "video";
-    const limit = isVideo ? 90 * 1024 * 1024 : 8 * 1024 * 1024;
+    const limit = isVideo ? 90 * 1024 * 1024 : 12 * 1024 * 1024;
     if (f.size > limit) { toast.error(`File bahut badi hai (max ${Math.round(limit / 1024 / 1024)} MB)`); return; }
 
-    if (isVideo && user?.id) {
-      // Videos go to storage (public URL) so landing pages stay fast.
-      setSaving(true);
-      const path = `${user.id}/video-${Date.now()}.${(f.name.split(".").pop() || "mp4").toLowerCase()}`;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, f, {
-        upsert: false,
-        contentType: f.type || "video/mp4",
-        cacheControl: "31536000",
-      });
+    setSaving(true);
+    try {
+      if (isVideo) {
+        const path = `${user.id}/video-${Date.now()}.${(f.name.split(".").pop() || "mp4").toLowerCase()}`;
+        const { error } = await supabase.storage.from(BUCKET).upload(path, f, {
+          upsert: false,
+          contentType: f.type || "video/mp4",
+          cacheControl: "31536000",
+        });
+        if (error) throw new Error(error.message);
+        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+        update([...media, { type: "video", src: data.publicUrl, products: [] }]);
+        setActive(media.length);
+        toast.success("Video add ho gaya — ab products link karein");
+      } else {
+        // Photos also go to storage (compressed) — never base64 in the database.
+        const url = await uploadImage(user.id, f);
+        update([...media, { type: "image", src: url, products: [] }]);
+        setActive(media.length);
+        toast.success("Photo add ho gaya");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload fail hua");
+    } finally {
       setSaving(false);
-      if (error) { toast.error("Video upload fail: " + error.message); return; }
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      update([...media, { type: "video", src: data.publicUrl, products: [] }]);
-      setActive(media.length);
-      toast.success("Video add ho gaya — ab products link karein");
-      return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      update([...media, { type: kindRef.current, src: String(reader.result || ""), products: [] }]);
-      setActive(media.length);
-      toast.success("Media add ho gaya");
-    };
-    reader.readAsDataURL(f);
   };
+
 
   const addUrl = () => {
     const v = urlInput.trim();
