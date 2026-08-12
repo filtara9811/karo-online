@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
+import { ServicesPluginsSheet } from "@/components/oneqr/ServicesPluginsSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { SponsoredAdsRail, useSponsoredAds } from "@/components/oneqr/SponsoredAdsRail";
 import { QrProjectCard, type QrProject, type LandingTheme, type CardProfile } from "@/components/oneqr/QrProjectCard";
@@ -83,6 +84,7 @@ function QrDashboardPage() {
   const [creating, setCreating] = useState(false);
   const [posterFor, setPosterFor] = useState<QrProject | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
+  const [servicesFor, setServicesFor] = useState<QrProject | null>(null);
   const [campaignFor, setCampaignFor] = useState<QrProject | null>(null);
   const [visitorOpen, setVisitorOpen] = useState<VisitorRow | null>(null);
   const [qrFor, setQrFor] = useState<QrProject | null>(null);
@@ -364,7 +366,7 @@ function QrDashboardPage() {
                         onPatch={(patch) => patchProject(p.id, patch)}
                         onDelete={() => deleteProject(p.id)}
                         onPoster={() => setPosterFor(p)}
-                        onLinks={() => setLinksOpen(true)}
+                        onLinks={() => setServicesFor(p)}
                         onCampaign={() => setCampaignFor(p)}
                         onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
@@ -485,6 +487,14 @@ function QrDashboardPage() {
         defaultName={posterFor?.title ?? "Karo Online"}
       />
       <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} />
+      <ServicesPluginsSheet
+        open={!!servicesFor}
+        onClose={() => setServicesFor(null)}
+        projectId={servicesFor?.id ?? ""}
+        projectTitle={servicesFor?.title ?? ""}
+        accent={servicesFor?.accent_color || themeData?.accent || "#f59e0b"}
+        onManageLinks={() => { setServicesFor(null); setTimeout(() => setLinksOpen(true), 220); }}
+      />
       <AdServicesSheet
         open={!!campaignFor}
         onOpenChange={(v) => { if (!v) setCampaignFor(null); }}
