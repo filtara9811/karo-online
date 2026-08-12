@@ -277,25 +277,34 @@ export function LandingMediaSheet({
                 <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <AnimatePresence initial={false}>
                     {products.map((p) => (
-                      <motion.button
+                      <motion.div
                         key={p.id}
                         layout
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        onClick={() => setEditing(p)}
                         className="relative h-24 w-[74px] shrink-0 overflow-hidden rounded-2xl border border-white/50 bg-white/10 backdrop-blur"
                       >
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="grid h-full w-full place-items-center text-white/80"><Tag className="h-4 w-4" /></span>
-                        )}
-                        <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 py-0.5 text-[8.5px] font-bold text-white">
+                        <button onClick={() => setEditing(p)} className="absolute inset-0">
+                          {p.image ? (
+                            <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="grid h-full w-full place-items-center text-white/80"><Tag className="h-4 w-4" /></span>
+                          )}
+                        </button>
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 py-0.5 text-[8.5px] font-bold text-white">
                           {p.name || "Product"}
                         </span>
-                      </motion.button>
+                        <button
+                          onClick={() => setProducts(products.filter((x) => x.id !== p.id))}
+                          aria-label={`Remove ${p.name || "product"}`}
+                          className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/65 text-white active:scale-90"
+                        >
+                          <Trash2 className="h-2.5 w-2.5" />
+                        </button>
+                      </motion.div>
                     ))}
+
                   </AnimatePresence>
                   {products.length < MAX_PRODUCTS && (
                     <button
