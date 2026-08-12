@@ -97,8 +97,8 @@ export function LandingStoryMedia({
     });
   }, [index, muted, current?.src]);
 
-  // Timer only drives images. Videos use their own timeupdate/ended events, and
-  // embedded links (YouTube / Instagram) are left to the viewer to swipe.
+  // Images get a gentle progress sweep, but nothing auto-advances any more —
+  // the viewer swipes manually to reach the next video.
   useEffect(() => {
     if (!current || total === 0 || current.type !== "image") return;
     let raf = 0;
@@ -111,18 +111,13 @@ export function LandingStoryMedia({
         return;
       }
       elapsed.current = now - startedAt.current;
-      const p = Math.min(1, elapsed.current / IMAGE_DURATION);
-      setProgress(p);
-      if (p >= 1) {
-        elapsed.current = 0;
-        if (total > 1) setIndex((i) => (i + 1) % total);
-        startedAt.current = now;
-      }
+      setProgress(Math.min(1, elapsed.current / IMAGE_DURATION));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [current, paused, total, index]);
+
 
   if (!current) return null;
 
