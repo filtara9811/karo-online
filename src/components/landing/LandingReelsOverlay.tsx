@@ -48,7 +48,7 @@ export function LandingReelsOverlay({
   const action = "grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-white/95 text-slate-950 shadow-xl backdrop-blur active:scale-90";
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
-      <aside className="pointer-events-auto absolute bottom-[262px] right-2.5 flex flex-col items-center gap-2.5">
+      <aside className="pointer-events-auto absolute bottom-[338px] right-2.5 flex flex-col items-center gap-2.5">
         <Action icon={<Eye className="h-5 w-5" />} label="Views" value="—" className={action} />
         <Action
           icon={<Heart className={`h-5 w-5 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />}
@@ -68,7 +68,7 @@ export function LandingReelsOverlay({
         </button>
       </aside>
 
-      <div className="absolute inset-x-0 bottom-[150px] bg-gradient-to-t from-black/90 via-black/65 to-transparent px-3 pb-2 pt-20 pr-16">
+      <div className="absolute inset-x-0 bottom-[226px] bg-gradient-to-t from-black/90 via-black/65 to-transparent px-3 pb-2 pt-20 pr-16">
         <h2 className="font-sans text-[18px] font-extrabold text-white">{lead?.name || "Featured Collection"} ✨</h2>
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-white/90">{caption}</p>
         <p className="mt-1.5 text-[11px] font-bold" style={{ color: accent }}>#ShopLocal&nbsp;&nbsp; #NewCollection&nbsp;&nbsp; #KaroOnline</p>
@@ -86,7 +86,7 @@ export function LandingReelsOverlay({
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 h-[150px] bg-black/70 pt-1 backdrop-blur-md">
+      <div className="pointer-events-auto absolute inset-x-0 bottom-[76px] h-[150px] bg-black/70 pt-1 backdrop-blur-md">
         <LandingProductRail products={products} accent={accent} onOpen={onOpenProduct} compact />
       </div>
     </div>

@@ -22,6 +22,7 @@ import type { LandingPayload, LandingMediaItem, VideoProduct } from "@/lib/landi
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingReelsOverlay } from "@/components/landing/LandingReelsOverlay";
+import { LandingReelsDock } from "@/components/landing/LandingReelsDock";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -230,6 +231,7 @@ function ScanLandingPage() {
   const pageUrl = typeof window !== "undefined"
     ? window.location.href
     : `https://karoonline.in/s/${encodeURIComponent(code)}`;
+  const reelsMode = layoutStyle !== "chat";
 
   const categories = buildDockCategories({
     extraLinks: (links.extra_links ?? []) as ExtraLink[],
@@ -353,12 +355,26 @@ function ScanLandingPage() {
       {/* Space for the fixed category dock */}
       <div className="h-36" />
 
-      <LandingCategoryDock
-        categories={categories}
-        accent={accent}
-        merchantPhone={(m as { phone?: string }).phone}
-        merchantName={merchantName}
-      />
+      {reelsMode ? (
+        <LandingReelsDock
+          canDownload={!installer.installed && !installer.standalone}
+          onShare={async () => {
+            try {
+              if (navigator.share) await navigator.share({ title: merchantName, url: pageUrl });
+              else await navigator.clipboard.writeText(pageUrl);
+              void trackQrEvent("CAMPAIGN_CLICK", { code, project, meta: { action: "share_dock" } });
+            } catch { /* cancelled */ }
+          }}
+          onShop={() => mediaList[activeMedia]?.products?.[0] && setOpenProduct(mediaList[activeMedia].products?.[0] ?? null)}
+          onLinks={() => setMenuOpen(true)}
+          onDownload={async () => {
+            const result = await installer.install();
+            if (result === "unavailable") setInstallPromptOpen(true);
+          }}
+        />
+      ) : (
+        <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
+      )}
 
       <LandingProfileSheet
         open={profileOpen}
