@@ -8,6 +8,7 @@ import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
 import { jsonBytes, sanitizeMediaList, sanitizeProduct, uploadImage, withTimeout } from "@/lib/media-upload";
 import { ProductEditor } from "@/components/ProductEditor";
 import { fromEditorProduct, toEditorProduct } from "./video-product-adapter";
+import { CTA_PRESETS } from "@/components/landing/product-cta";
 import { SheetShell } from "./SheetShell";
 
 
@@ -364,22 +365,59 @@ export function LandingMediaSheet({
               </div>
             </div>
 
-            {/* Buy / redirect links per linked product */}
+            {/* Button, link and stock for every linked product */}
             {products.length > 0 && (
               <div>
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Buy / redirect links</p>
-                <div className="space-y-2">
-                  {products.map((p) => (
-                    <div key={`link-${p.id}`} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-amber-400">
-                      <span className="max-w-[86px] shrink-0 truncate text-[11px] font-bold text-slate-600">{p.name || "Product"}</span>
-                      <input
-                        value={p.url ?? ""}
-                        onChange={(e) => setProducts(products.map((x) => (x.id === p.id ? { ...x, url: e.target.value } : x)))}
-                        placeholder="https://wa.me/91… ya website link"
-                        className="min-w-0 flex-1 bg-transparent text-[12px] text-slate-900 outline-none"
-                      />
-                    </div>
-                  ))}
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Button, link & stock</p>
+                <div className="space-y-2.5">
+                  {products.map((p) => {
+                    const presetId = p.cta?.preset ?? "inquiry";
+                    return (
+                      <div key={`link-${p.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
+                        <p className="mb-1.5 truncate text-[11px] font-extrabold text-slate-700">{p.name || "Product"}</p>
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {CTA_PRESETS.map((preset) => (
+                            <button
+                              key={preset.id}
+                              onClick={() => setProducts(products.map((x) => (x.id === p.id
+                                ? { ...x, cta: { ...(x.cta ?? {}), preset: preset.id, label: preset.label, color: preset.color } }
+                                : x)))}
+                              className="h-7 shrink-0 rounded-full px-2.5 text-[10.5px] font-extrabold text-white transition active:scale-95"
+                              style={{ background: preset.color, opacity: presetId === preset.id ? 1 : 0.35 }}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 focus-within:border-amber-400">
+                          <Link2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <input
+                            value={p.cta?.url ?? p.url ?? ""}
+                            onChange={(e) => setProducts(products.map((x) => (x.id === p.id
+                              ? { ...x, url: e.target.value, cta: { ...(x.cta ?? {}), url: e.target.value } }
+                              : x)))}
+                            placeholder="Amazon / Flipkart / website link (khaali = WhatsApp)"
+                            className="min-w-0 flex-1 bg-transparent text-[12px] text-slate-900 outline-none"
+                          />
+                        </div>
+                        <div className="mt-1.5 flex gap-2">
+                          <input
+                            value={p.quantity ?? ""}
+                            onChange={(e) => setProducts(products.map((x) => (x.id === p.id ? { ...x, quantity: e.target.value } : x)))}
+                            inputMode="numeric"
+                            placeholder="Stock qty"
+                            className="h-9 w-1/2 rounded-xl border border-slate-200 bg-white px-2.5 text-[12px] text-slate-900 outline-none focus:border-amber-400"
+                          />
+                          <input
+                            value={p.badge ?? ""}
+                            onChange={(e) => setProducts(products.map((x) => (x.id === p.id ? { ...x, badge: e.target.value } : x)))}
+                            placeholder="Badge (New / Bestseller)"
+                            className="h-9 w-1/2 rounded-xl border border-slate-200 bg-white px-2.5 text-[12px] text-slate-900 outline-none focus:border-amber-400"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
