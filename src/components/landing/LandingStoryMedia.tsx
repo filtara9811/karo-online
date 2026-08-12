@@ -214,23 +214,24 @@ export function LandingStoryMedia({
         </motion.div>
       )}
 
-      {/* progress segments — one per uploaded item */}
+      {/* single progress bar for the item currently playing */}
       {total > 0 && (
-        <div className="pointer-events-none absolute inset-x-3 top-2 z-20 flex gap-1.5">
-          {items.map((_, i) => (
-            <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
-              <motion.div
-                className="h-full rounded-full"
-                style={{
-                  background: accent,
-                  width: i < index ? "100%" : i === index ? `${progress * 100}%` : "0%",
-                }}
-                transition={{ ease: "linear", duration: 0.1 }}
-              />
-            </div>
-          ))}
+        <div className="pointer-events-none absolute inset-x-3 top-2 z-20">
+          <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/30">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: accent, width: `${progress * 100}%` }}
+              transition={{ ease: "linear", duration: 0.1 }}
+            />
+          </div>
+          {total > 1 && (
+            <p className="mt-1 text-right text-[9px] font-bold text-white/70">
+              {index + 1}/{total}
+            </p>
+          )}
         </div>
       )}
+
 
       {children}
     </div>
