@@ -26,7 +26,7 @@ export function LandingTopBar({
 }) {
 
   const light = needsLightText(accent);
-  const fg = light ? "#ffffff" : "#1a1208";
+  const fg = "#ffffff";
 
   return (
     <div

@@ -289,7 +289,7 @@ function ScanLandingPage() {
             }}
           />
         )}
-        {landing.announcement_active && landing.announcement_text && (
+        {layoutStyle === "chat" && landing.announcement_active && landing.announcement_text && (
           <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl border border-white/40 bg-white/90 px-3 py-2 text-xs text-slate-800 shadow backdrop-blur">
             📣 {landing.announcement_text}
           </div>
