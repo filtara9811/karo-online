@@ -24,9 +24,8 @@ import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
 import { LandingOrdersFab } from "@/components/landing/LandingOrdersFab";
-import { listShopThreads } from "@/lib/shop-chat";
 import { LandingChatSheet } from "@/components/landing/LandingChatSheet";
-import { startShopThread } from "@/lib/shop-chat";
+import { listShopThreads, startShopThread } from "@/lib/shop-chat";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
