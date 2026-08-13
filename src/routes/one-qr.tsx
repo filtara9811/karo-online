@@ -204,7 +204,7 @@ function QrDashboardPage() {
     let row = data as unknown as QrProject;
     // is_paid/price_inr are backend-only (payment verified server-side).
     if (paid && orderId) {
-      const res = await markProjectPaid({ data: { project_id: row.id, order_id: orderId, price_inr: PROJECT_PRICE_INR } });
+      const res = await markQrProjectPaid({ data: { project_id: row.id, order_id: orderId, price_inr: PROJECT_PRICE_INR } });
       if (res?.ok) row = { ...row, is_paid: true, price_inr: PROJECT_PRICE_INR };
       else toast.error(res?.error ?? "Payment confirm nahi hua");
     }
