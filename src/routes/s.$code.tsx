@@ -22,6 +22,9 @@ import type { LandingPayload, LandingMediaItem, LandingStats, VideoProduct } fro
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
+import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
+import { LandingChatSheet } from "@/components/landing/LandingChatSheet";
+import { startShopThread } from "@/lib/shop-chat";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -122,6 +125,12 @@ function ScanLandingPage() {
   const [activeMedia, setActiveMedia] = useState(0);
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
   const [stats, setStats] = useState<LandingStats | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [chatThread, setChatThread] = useState<string | null>(null);
+  const [chatHeadline, setChatHeadline] = useState<string | null>(null);
+  const [chatImage, setChatImage] = useState<string | null>(null);
+  const [threadBusy, setThreadBusy] = useState(false);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
   // Shared links carry ?m=<index> so the exact video opens first.
   const sharedIndex = useMemo(() => {
@@ -179,6 +188,11 @@ function ScanLandingPage() {
       // Real engagement counters for the stats bar.
       const { data: s } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
       if (!cancelled && s) setStats(s as unknown as LandingStats);
+
+      // Support contact details (email) for the drawer.
+      const { data: c } = await supabase.rpc("get_public_landing_contact" as never, { _code: code } as never);
+      const contact = c as unknown as { email?: string | null } | null;
+      if (!cancelled && contact?.email) setContactEmail(contact.email);
     })();
 
     // Analytics is deferred so it never competes with first paint.
@@ -238,7 +252,7 @@ function ScanLandingPage() {
     (theme.style as "shop" | "chat" | "reels" | undefined) ??
     (preset === "royal" || preset === "neon" ? "reels" : preset === "fresh" ? "chat" : "shop");
   const isDark = layoutStyle === "reels" || preset === "royal" || preset === "neon";
-  const ads = (data.ads ?? []).filter((a) => a.image);
+  
   const merchantName = m.shop_name || m.name || "Karo Online Merchant";
   const pageUrl = typeof window !== "undefined"
     ? window.location.href
@@ -254,6 +268,30 @@ function ScanLandingPage() {
   const openProductCard = (p: VideoProduct) => {
     setOpenProduct(p);
     void trackQrEvent("PRODUCT_VIEW", { code, project, ref: p.id, meta: { action: "open_product" } });
+  };
+
+  /** Start (or reuse) an in-app chat thread for an inquiry / order. */
+  const startThread = async (kind: "inquiry" | "order", p: VideoProduct, qty: number) => {
+    setThreadBusy(true);
+    const message = kind === "order"
+      ? `Order: ${p.name} × ${qty}${p.price ? ` (${p.price})` : ""}`
+      : (p.enquiry?.trim() || `Hi ${merchantName}, mujhe "${p.name}" ke baare me jaankari chahiye.`);
+    const id = await startShopThread({
+      code,
+      kind,
+      quantity: qty,
+      message,
+      product: { id: p.id, name: p.name, image: p.image, price: p.price },
+    });
+    setThreadBusy(false);
+    if (!id) return;
+    void trackQrEvent(kind === "order" ? "ORDER_CREATED" : "PRODUCT_ENQUIRY", {
+      code, project, ref: p.id, meta: { action: kind, quantity: qty },
+    });
+    setChatHeadline(`${p.name}${qty > 1 ? ` × ${qty}` : ""}`);
+    setChatImage(p.image ?? null);
+    setOpenProduct(null);
+    setChatThread(id);
   };
 
   /** Share the exact video currently playing (?m=index) with its own poster. */
@@ -293,7 +331,8 @@ function ScanLandingPage() {
         verified={m.verified}
         accent={accent}
         gmbUrl={gmbUrl}
-        onProfile={() => setProfileOpen(true)}
+        onProfile={() => setDrawerOpen(true)}
+        onShopDetails={() => setProfileOpen(true)}
         onMenu={() => setMenuOpen(true)}
         installed={installer.installed || installer.standalone}
         onInstall={async () => {
@@ -354,37 +393,17 @@ function ScanLandingPage() {
         product={openProduct}
         accent={accent}
         shopName={merchantName}
-        phone={m.phone}
+        busy={threadBusy}
         onClose={() => setOpenProduct(null)}
+        onInquiry={(p, q) => void startThread("inquiry", p, q)}
+        onOrder={(p, q) => void startThread("order", p, q)}
       />
 
       {layoutStyle === "chat" && (
         <LandingChatWelcome accent={accent} name={merchantName} links={(links.extra_links ?? []) as ExtraLink[]} />
       )}
 
-      {/* Same-category shop ads — swipeable rail */}
-      {layoutStyle !== "reels" && ads.length > 0 && (
-        <div className="mt-3 px-3">
-          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {ads.map((a, i) => (
-              <a
-                key={i}
-                href={a.url ? (/^https?:\/\//i.test(a.url) ? a.url : `https://${a.url}`) : undefined}
-                target="_blank"
-                rel="noreferrer"
-                className="relative snap-start shrink-0 w-[70%] h-28 rounded-2xl overflow-hidden border shadow-sm"
-                style={{ borderColor: accent }}
-              >
-                <img src={optimizedImage(a.image, IMG.card)} alt={a.name ?? "Shop"} loading="lazy" className="h-full w-full object-cover" />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-1.5">
-                  <p className="text-white text-[12px] font-bold truncate">{a.name ?? "Karo Shop"}</p>
-                  <p className="text-white/80 text-[10px] truncate">{a.trade ?? "Verified shop"}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Admin-controlled banners (render only if configured) */}
       {layoutStyle !== "reels" && landing.top_banner_url && (
@@ -408,6 +427,37 @@ function ScanLandingPage() {
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
 
+      <LandingShopDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        accent={accent}
+        code={code}
+        shopName={merchantName}
+        avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+        phone={m.phone}
+        email={contactEmail}
+        pageUrl={pageUrl}
+        canInstall={installer.canInstall}
+        installed={installer.installed || installer.standalone}
+        isIOS={installer.isIOS}
+        onInstall={installer.install}
+        onOpenThread={(t) => {
+          setChatHeadline(t.product_name ?? null);
+          setChatImage(t.product_image ?? null);
+          setChatThread(t.id);
+        }}
+      />
+
+      <LandingChatSheet
+        threadId={chatThread}
+        accent={accent}
+        shopName={merchantName}
+        avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+        headline={chatHeadline}
+        productImage={chatImage}
+        onClose={() => setChatThread(null)}
+      />
+
       <LandingProfileSheet
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
@@ -417,6 +467,7 @@ function ScanLandingPage() {
         visitCode={code}
         project={project}
       />
+
 
       <LandingMenuSheet
         open={menuOpen}

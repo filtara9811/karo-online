@@ -67,12 +67,24 @@ export function LandingStoryMedia({
   const current = items[Math.min(index, Math.max(items.length - 1, 0))];
   const total = items.length;
 
+  /** Keeps only the newest mounted <video> so the outgoing frame can be silenced. */
+  const setVideo = useCallback((el: HTMLVideoElement | null) => {
+    if (el) videoRef.current = el;
+  }, []);
+
   const go = useCallback(
     (d: 1 | -1) => {
       if (total <= 1) {
         setProgress(0);
         elapsed.current = 0;
         return;
+      }
+      // Silence + freeze the outgoing video: otherwise both frames play sound
+      // together while they cross-fade.
+      const prev = videoRef.current;
+      if (prev) {
+        prev.muted = true;
+        prev.pause();
       }
       setDir(d);
       setIndex((i) => (i + d + total) % total);
@@ -81,6 +93,7 @@ export function LandingStoryMedia({
     },
     [total],
   );
+
 
   useEffect(() => {
     setProgress(0);
@@ -146,7 +159,7 @@ export function LandingStoryMedia({
       {current.type !== "url" && (
         <div
           aria-hidden
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-70 blur-2xl"
+          className="absolute inset-0 scale-105 bg-cover bg-center opacity-40"
           style={{ backgroundImage: `url(${current.poster || (current.type === "image" ? current.src : "")})` }}
         />
       )}
@@ -159,7 +172,7 @@ export function LandingStoryMedia({
           initial={{ y: dir === 1 ? "18%" : "-18%", opacity: 0, scale: 1.02 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: dir === 1 ? "-8%" : "8%", opacity: 0, scale: 1.01 }}
-          transition={{ duration: 0.42, ease: [0.22, 0.61, 0.36, 1] }}
+          transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
           drag={total > 1 ? "y" : false}
           dragElastic={0.18}
           dragConstraints={{ top: 0, bottom: 0 }}
@@ -177,7 +190,7 @@ export function LandingStoryMedia({
           {current.type === "video" ? (
             <video
               key={current.src}
-              ref={videoRef}
+              ref={setVideo}
               src={current.src}
               poster={current.poster ?? undefined}
               autoPlay
@@ -228,7 +241,7 @@ export function LandingStoryMedia({
           onClick={toggleSound}
           whileTap={{ scale: 0.9 }}
           aria-label={muted ? "Unmute video" : "Mute video"}
-          className="absolute right-3 top-[86px] z-30 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur"
+          className="absolute right-3 top-[86px] z-30 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white shadow-lg"
         >
           {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </motion.button>

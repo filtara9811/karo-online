@@ -3003,6 +3003,92 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_thread_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_thread_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "shop_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_threads: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          kind: string
+          last_message_at: string
+          merchant_user_id: string
+          product_id: string | null
+          product_image: string | null
+          product_name: string | null
+          product_price: string | null
+          quantity: number
+          status: string
+          visitor_name: string | null
+          visitor_phone: string | null
+          visitor_token: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          kind?: string
+          last_message_at?: string
+          merchant_user_id: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_price?: string | null
+          quantity?: number
+          status?: string
+          visitor_name?: string | null
+          visitor_phone?: string | null
+          visitor_token: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          last_message_at?: string
+          merchant_user_id?: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_price?: string | null
+          quantity?: number
+          status?: string
+          visitor_name?: string | null
+          visitor_phone?: string | null
+          visitor_token?: string
+        }
+        Relationships: []
+      }
       sms_gateways: {
         Row: {
           config: Json
@@ -5925,6 +6011,7 @@ export type Database = {
         }[]
       }
       get_public_landing: { Args: { _code: string }; Returns: Json }
+      get_public_landing_contact: { Args: { _code: string }; Returns: Json }
       get_public_landing_stats: { Args: { _code: string }; Returns: Json }
       get_public_share_preview: {
         Args: { _code: string; _kind: string }
@@ -6082,6 +6169,7 @@ export type Database = {
         Args: { _fp_hash: string; _name?: string; _phone?: string }
         Returns: Json
       }
+      resolve_merchant_by_code: { Args: { _code: string }; Returns: string }
       resolve_qr: { Args: { p_code: string }; Returns: Json }
       save_customer_profile: {
         Args: {
@@ -6381,6 +6469,39 @@ export type Database = {
       }
       set_qr_landing_theme: {
         Args: { _accent?: string; _key: string }
+        Returns: Json
+      }
+      shop_thread_list: {
+        Args: { _code: string; _token: string }
+        Returns: Json
+      }
+      shop_thread_messages_for_visitor: {
+        Args: { _thread: string; _token: string }
+        Returns: Json
+      }
+      shop_thread_reply: {
+        Args: { _body: string; _thread: string }
+        Returns: Json
+      }
+      shop_thread_send: {
+        Args: { _body: string; _thread: string; _token: string }
+        Returns: Json
+      }
+      shop_thread_start: {
+        Args: {
+          _code: string
+          _kind: string
+          _message: string
+          _name: string
+          _phone: string
+          _product: Json
+          _quantity: number
+          _token: string
+        }
+        Returns: Json
+      }
+      shop_thread_update_visitor: {
+        Args: { _name: string; _phone: string; _token: string }
         Returns: Json
       }
       start_lead_work: { Args: { _lead_id: string }; Returns: Json }
