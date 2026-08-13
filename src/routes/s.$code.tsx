@@ -129,6 +129,10 @@ function ScanLandingPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
   const [threadCount, setThreadCount] = useState(0);
+  useEffect(() => {
+    void listShopThreads(code).then((t) => setThreadCount(t.length));
+  }, [code, chatThread]);
+
   const [chatThread, setChatThread] = useState<string | null>(null);
   const [chatHeadline, setChatHeadline] = useState<string | null>(null);
   const [chatImage, setChatImage] = useState<string | null>(null);
