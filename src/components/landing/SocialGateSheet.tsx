@@ -116,6 +116,7 @@ export function SocialGateSheet({
   const frameSrc = useMemo(() => (target ? embedUrl(target.url) : null), [target]);
   const isYouTube = /youtu/i.test(target?.url ?? "");
   const actionLabel = isYouTube ? "Subscribe" : "Follow";
+  const doneLabel = isYouTube ? "Subscribed" : "Following";
 
   useEffect(() => {
     if (!target) return;
@@ -123,9 +124,7 @@ export function SocialGateSheet({
     setFrameReady(false);
     setFrameFailed(!frameSrc);
     freezeMedia(true);
-    const t = frameSrc ? window.setTimeout(() => setFrameFailed((f) => f || !frameReady), 3000) : undefined;
     return () => {
-      if (t) window.clearTimeout(t);
       freezeMedia(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,8 +138,9 @@ export function SocialGateSheet({
       /* private mode — session-only unlock */
     }
     setUnlocked(true);
-    window.open(target.url, "_blank", "noopener,noreferrer");
+    window.open(followUrl(target.url), "_blank", "noopener,noreferrer");
   }, [target, shopCode]);
+
 
   const openInApp = useCallback(() => {
     if (!target || !unlocked) return;
