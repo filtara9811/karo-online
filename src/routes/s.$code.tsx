@@ -265,6 +265,30 @@ function ScanLandingPage() {
     void trackQrEvent("PRODUCT_VIEW", { code, project, ref: p.id, meta: { action: "open_product" } });
   };
 
+  /** Start (or reuse) an in-app chat thread for an inquiry / order. */
+  const startThread = async (kind: "inquiry" | "order", p: VideoProduct, qty: number) => {
+    setThreadBusy(true);
+    const message = kind === "order"
+      ? `Order: ${p.name} × ${qty}${p.price ? ` (${p.price})` : ""}`
+      : (p.enquiry?.trim() || `Hi ${merchantName}, mujhe "${p.name}" ke baare me jaankari chahiye.`);
+    const id = await startShopThread({
+      code,
+      kind,
+      quantity: qty,
+      message,
+      product: { id: p.id, name: p.name, image: p.image, price: p.price },
+    });
+    setThreadBusy(false);
+    if (!id) return;
+    void trackQrEvent(kind === "order" ? "ORDER_CREATED" : "PRODUCT_ENQUIRY", {
+      code, project, ref: p.id, meta: { action: kind, quantity: qty },
+    });
+    setChatHeadline(`${p.name}${qty > 1 ? ` × ${qty}` : ""}`);
+    setChatImage(p.image ?? null);
+    setOpenProduct(null);
+    setChatThread(id);
+  };
+
   /** Share the exact video currently playing (?m=index) with its own poster. */
   const shareCurrent = async () => {
     const base = pageUrl.split("#")[0].split("?")[0];
