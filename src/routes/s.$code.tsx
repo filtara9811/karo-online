@@ -129,14 +129,14 @@ function ScanLandingPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
   const [threadCount, setThreadCount] = useState(0);
-  useEffect(() => {
-    void listShopThreads(code).then((t) => setThreadCount(t.length));
-  }, [code, chatThread]);
 
   const [chatThread, setChatThread] = useState<string | null>(null);
   const [chatHeadline, setChatHeadline] = useState<string | null>(null);
   const [chatImage, setChatImage] = useState<string | null>(null);
   const [threadBusy, setThreadBusy] = useState(false);
+  useEffect(() => {
+    void listShopThreads(code).then((t) => setThreadCount(t.length));
+  }, [code, chatThread]);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
   // Shared links carry ?m=<index> so the exact video opens first.
