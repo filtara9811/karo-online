@@ -24,6 +24,7 @@ import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
 import { LandingOrdersFab } from "@/components/landing/LandingOrdersFab";
+import { listShopThreads } from "@/lib/shop-chat";
 import { LandingChatSheet } from "@/components/landing/LandingChatSheet";
 import { startShopThread } from "@/lib/shop-chat";
 import { optimizedImage, IMG } from "@/lib/img";
@@ -128,6 +129,7 @@ function ScanLandingPage() {
   const [stats, setStats] = useState<LandingStats | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
+  const [threadCount, setThreadCount] = useState(0);
   const [chatThread, setChatThread] = useState<string | null>(null);
   const [chatHeadline, setChatHeadline] = useState<string | null>(null);
   const [chatImage, setChatImage] = useState<string | null>(null);
@@ -429,7 +431,7 @@ function ScanLandingPage() {
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
 
-      <LandingOrdersFab accent={accent} count={0} onOpen={() => { setDrawerTab("orders"); setDrawerOpen(true); }} />
+      <LandingOrdersFab accent={accent} count={threadCount} onOpen={() => { setDrawerTab("orders"); setDrawerOpen(true); }} />
 
       <LandingShopDrawer
         open={drawerOpen}

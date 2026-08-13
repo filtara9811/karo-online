@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Send, Store, Package } from "lucide-react";
 import { loadShopMessages, sendShopMessage, type ShopMessage } from "@/lib/shop-chat";
+import { useShopChatRealtime } from "@/hooks/realtime/use-shop-chat-realtime";
 import { needsLightText, withAlpha } from "./landing-shared";
 import { optimizedImage, IMG } from "@/lib/img";
 
@@ -42,6 +43,8 @@ export function LandingChatSheet({
     }, 6000);
     return () => window.clearInterval(id);
   }, [threadId, refresh]);
+
+  useShopChatRealtime(threadId, refresh, threadId);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });

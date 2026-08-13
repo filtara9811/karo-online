@@ -478,6 +478,7 @@ function QrDashboardPage() {
           <PillBtn label="My Project" active={tab === "projects"} onClick={() => setTab("projects")} />
           <PillBtn label="Vendors" active={tab === "vendors"} onClick={() => setTab("vendors")} />
           <PillBtn label="Ads" active={tab === "ads"} onClick={() => setTab("ads")} />
+          <PillBtn label="Chats" active={chatsOpen} onClick={() => setChatsOpen(true)} />
 
         </div>
       </nav>
