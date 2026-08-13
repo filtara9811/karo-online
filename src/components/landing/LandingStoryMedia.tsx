@@ -159,7 +159,7 @@ export function LandingStoryMedia({
       {current.type !== "url" && (
         <div
           aria-hidden
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-70 blur-2xl"
+          className="absolute inset-0 scale-105 bg-cover bg-center opacity-40"
           style={{ backgroundImage: `url(${current.poster || (current.type === "image" ? current.src : "")})` }}
         />
       )}
