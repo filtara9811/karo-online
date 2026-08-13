@@ -408,6 +408,37 @@ function ScanLandingPage() {
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
 
+      <LandingShopDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        accent={accent}
+        code={code}
+        shopName={merchantName}
+        avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+        phone={m.phone}
+        email={contactEmail}
+        pageUrl={pageUrl}
+        canInstall={installer.canInstall}
+        installed={installer.installed || installer.standalone}
+        isIOS={installer.isIOS}
+        onInstall={installer.install}
+        onOpenThread={(t) => {
+          setChatHeadline(t.product_name ?? null);
+          setChatImage(t.product_image ?? null);
+          setChatThread(t.id);
+        }}
+      />
+
+      <LandingChatSheet
+        threadId={chatThread}
+        accent={accent}
+        shopName={merchantName}
+        avatarUrl={optimizedImage(m.avatar_url, IMG.avatarSm)}
+        headline={chatHeadline}
+        productImage={chatImage}
+        onClose={() => setChatThread(null)}
+      />
+
       <LandingProfileSheet
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
@@ -417,6 +448,7 @@ function ScanLandingPage() {
         visitCode={code}
         project={project}
       />
+
 
       <LandingMenuSheet
         open={menuOpen}
