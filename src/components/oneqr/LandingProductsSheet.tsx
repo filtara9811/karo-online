@@ -94,6 +94,7 @@ export function LandingProductsSheet({
 
   return (
     <SheetShell
+      section="products"
       open={open}
       onClose={onClose}
       title="Products"

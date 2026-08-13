@@ -91,6 +91,7 @@ export function ServiceDetailSheet({
 
   return (
     <SheetShell
+      section="services"
       open
       onClose={onClose}
       title={`${service.emoji}  ${service.name}`}

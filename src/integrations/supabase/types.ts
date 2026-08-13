@@ -2125,6 +2125,42 @@ export type Database = {
         }
         Relationships: []
       }
+      oneqr_tutorial_videos: {
+        Row: {
+          caption: string
+          created_at: string
+          id: string
+          is_active: boolean
+          section: string
+          title: string
+          updated_at: string
+          video_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          caption?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          section: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          caption?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          section?: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           attempts: number

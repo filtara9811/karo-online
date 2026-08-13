@@ -200,6 +200,7 @@ export function LandingMediaSheet({
   return (
     <>
       <SheetShell
+      section="videos"
         open={open}
         onClose={onClose}
         title="Video studio"

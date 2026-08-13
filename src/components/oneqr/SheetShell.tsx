@@ -1,16 +1,19 @@
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { SheetVideoIntro } from "./SheetVideoIntro";
 
 /**
  * Bottom sheet shell for the One QR live-preview editor tools.
  * Sits above the live preview sheet (z-[160]) so it is always visible.
+ * `section` pins the admin-configured tutorial video at the very top.
  */
 export function SheetShell({
   open,
   onClose,
   title,
   subtitle,
+  section,
   children,
   footer,
 }: {
@@ -18,9 +21,11 @@ export function SheetShell({
   onClose: () => void;
   title: string;
   subtitle?: string;
+  section?: string;
   children: ReactNode;
   footer?: ReactNode;
 }) {
+
   return (
     <AnimatePresence>
       {open && (
@@ -52,7 +57,11 @@ export function SheetShell({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+              <SheetVideoIntro section={section} />
+              {children}
+            </div>
+
             {footer && <div className="border-t border-black/5 px-4 py-3">{footer}</div>}
           </motion.div>
         </motion.div>

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { QrCode, Loader2, Users, Palette, Link2, MessageCircle } from "lucide-react";
+import { QrCode, Loader2, Users, Palette, Link2, MessageCircle, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, PageHeader, GoldButton } from "@/components/admin/AdminLayout";
+import { TutorialVideosPanel } from "@/components/admin/TutorialVideosPanel";
 
 export const Route = createFileRoute("/admin/one-qr")({
   head: () => ({
@@ -155,6 +156,17 @@ function AdminOneQrPage() {
                 <p className="text-xs text-[#f5d97a]/60">Koi theme configured nahi hai.</p>
               )}
             </div>
+          </GoldCard>
+
+          <GoldCard className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Video className="h-4 w-4 text-[#d4af37]" />
+              <h3 className="font-display font-bold text-[#fff8dc]">Sheet tutorial videos</h3>
+            </div>
+            <p className="mb-3 text-[11px] text-[#f5d97a]/60">
+              Har config sheet ke top par shopkeeper ko yeh video dikhega — YouTube link ya MP4 upload.
+            </p>
+            <TutorialVideosPanel />
           </GoldCard>
 
           <GoldCard className="p-5">
