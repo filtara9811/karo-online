@@ -331,7 +331,8 @@ function ScanLandingPage() {
         verified={m.verified}
         accent={accent}
         gmbUrl={gmbUrl}
-        onProfile={() => setProfileOpen(true)}
+        onProfile={() => setDrawerOpen(true)}
+        onShopDetails={() => setProfileOpen(true)}
         onMenu={() => setMenuOpen(true)}
         installed={installer.installed || installer.standalone}
         onInstall={async () => {
