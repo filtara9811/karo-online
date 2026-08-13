@@ -125,6 +125,12 @@ function ScanLandingPage() {
   const [activeMedia, setActiveMedia] = useState(0);
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
   const [stats, setStats] = useState<LandingStats | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [chatThread, setChatThread] = useState<string | null>(null);
+  const [chatHeadline, setChatHeadline] = useState<string | null>(null);
+  const [chatImage, setChatImage] = useState<string | null>(null);
+  const [threadBusy, setThreadBusy] = useState(false);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
   // Shared links carry ?m=<index> so the exact video opens first.
   const sharedIndex = useMemo(() => {
