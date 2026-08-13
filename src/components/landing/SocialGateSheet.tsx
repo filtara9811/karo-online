@@ -243,7 +243,7 @@ export function SocialGateSheet({
                   style={{ background: `linear-gradient(135deg, ${brand.color}, ${shade(brand.color, -0.22)})` }}
                 >
                   <BellRing className="h-4 w-4" />
-                  {unlocked ? `${actionLabel}d ✓` : actionLabel}
+                  {unlocked ? `${doneLabel} ✓` : actionLabel}
                 </motion.button>
                 <motion.button
                   type="button"
