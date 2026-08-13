@@ -188,6 +188,11 @@ function ScanLandingPage() {
       // Real engagement counters for the stats bar.
       const { data: s } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
       if (!cancelled && s) setStats(s as unknown as LandingStats);
+
+      // Support contact details (email) for the drawer.
+      const { data: c } = await supabase.rpc("get_public_landing_contact" as never, { _code: code } as never);
+      const contact = c as unknown as { email?: string | null } | null;
+      if (!cancelled && contact?.email) setContactEmail(contact.email);
     })();
 
     // Analytics is deferred so it never competes with first paint.
