@@ -252,7 +252,7 @@ function ScanLandingPage() {
     (theme.style as "shop" | "chat" | "reels" | undefined) ??
     (preset === "royal" || preset === "neon" ? "reels" : preset === "fresh" ? "chat" : "shop");
   const isDark = layoutStyle === "reels" || preset === "royal" || preset === "neon";
-  const ads = (data.ads ?? []).filter((a) => a.image);
+  
   const merchantName = m.shop_name || m.name || "Karo Online Merchant";
   const pageUrl = typeof window !== "undefined"
     ? window.location.href
