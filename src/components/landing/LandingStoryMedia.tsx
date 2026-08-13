@@ -67,12 +67,24 @@ export function LandingStoryMedia({
   const current = items[Math.min(index, Math.max(items.length - 1, 0))];
   const total = items.length;
 
+  /** Keeps only the newest mounted <video> so the outgoing frame can be silenced. */
+  const setVideo = useCallback((el: HTMLVideoElement | null) => {
+    if (el) videoRef.current = el;
+  }, []);
+
   const go = useCallback(
     (d: 1 | -1) => {
       if (total <= 1) {
         setProgress(0);
         elapsed.current = 0;
         return;
+      }
+      // Silence + freeze the outgoing video: otherwise both frames play sound
+      // together while they cross-fade.
+      const prev = videoRef.current;
+      if (prev) {
+        prev.muted = true;
+        prev.pause();
       }
       setDir(d);
       setIndex((i) => (i + d + total) % total);
@@ -81,6 +93,7 @@ export function LandingStoryMedia({
     },
     [total],
   );
+
 
   useEffect(() => {
     setProgress(0);
