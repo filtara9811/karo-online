@@ -22,6 +22,7 @@ import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/one
 import { ProjectPickerSheet } from "@/components/oneqr/ProjectPickerSheet";
 import { NewProjectSheet, type NewProjectDraft } from "@/components/oneqr/NewProjectSheet";
 import { markVisitorSeen, visitorKey } from "@/components/oneqr/visitor-groups";
+import { markQrProjectPaid } from "@/lib/qr-projects.functions";
 import { createCashfreeOrder, verifyCashfreeOrder } from "@/lib/cashfree.functions";
 import { openCashfreeCheckout, getPaymentError } from "@/lib/cashfree-client";
 
@@ -180,7 +181,7 @@ function QrDashboardPage() {
   }, [projects, selected]);
 
 
-  const insertProject = async (draft: NewProjectDraft, paid: boolean) => {
+  const insertProject = async (draft: NewProjectDraft, paid: boolean, orderId?: string) => {
     if (!userId) return;
     const fallbackTheme = themes[0]?.key ?? "classic-amber";
     const { data, error } = await supabase
@@ -196,13 +197,17 @@ function QrDashboardPage() {
         category: draft.category || null,
         avatar_url: draft.avatar_url,
         cover_image_url: draft.cover_image_url,
-        is_paid: paid,
-        price_inr: paid ? PROJECT_PRICE_INR : 0,
       } as never)
       .select(PROJECT_COLS)
       .single();
     if (error || !data) { toast.error(error?.message ?? "Project ban nahi paya"); return; }
-    const row = data as unknown as QrProject;
+    let row = data as unknown as QrProject;
+    // is_paid/price_inr are backend-only (payment verified server-side).
+    if (paid && orderId) {
+      const res = await markQrProjectPaid({ data: { project_id: row.id, order_id: orderId, price_inr: PROJECT_PRICE_INR } });
+      if (res?.ok) row = { ...row, is_paid: true, price_inr: PROJECT_PRICE_INR };
+      else toast.error(res?.error ?? "Payment confirm nahi hua");
+    }
     setProjects((p) => [...(p ?? []), row]);
     persistSelected([row.id]);
     setNewOpen(false);
@@ -236,7 +241,7 @@ function QrDashboardPage() {
         return;
       }
 
-      await insertProject(draft, true);
+      await insertProject(draft, true, order.order_id);
     } catch (e) {
       toast.error(getPaymentError(e));
     } finally {

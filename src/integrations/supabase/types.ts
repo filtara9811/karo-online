@@ -6081,6 +6081,7 @@ export type Database = {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
       }
+      is_service_role_request: { Args: never; Returns: boolean }
       link_qr_to_vendor: {
         Args: { p_code: string; p_vendor_id: string }
         Returns: Json
