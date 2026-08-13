@@ -47,10 +47,14 @@ export function LandingTopBar({
         type="button"
         onClick={onProfile}
         aria-label="Shop menu"
-        className="relative h-11 w-11 shrink-0 grid place-items-center rounded-2xl border-2 transition active:scale-95"
+        className="relative h-11 w-11 shrink-0 grid place-items-center overflow-hidden rounded-2xl border-2 transition active:scale-95"
         style={{ borderColor: withAlpha(accent, 0.9), background: withAlpha(light ? "#ffffff" : "#000000", 0.2), color: fg }}
       >
-        <Store className="h-5 w-5" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={name} className="h-full w-full object-cover" loading="eager" />
+        ) : (
+          <Store className="h-5 w-5" />
+        )}
         <span
           className="absolute -bottom-1 -right-1 grid h-4.5 w-4.5 place-items-center rounded-full"
           style={{ width: 18, height: 18, background: accent, color: needsLightText(accent) ? "#ffffff" : "#111827" }}
