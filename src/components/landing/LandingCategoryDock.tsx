@@ -195,14 +195,8 @@ export function LandingCategoryDock({
                   {active.tiles.map((t) => {
                     const brand = brandOf(t.url ?? "", t.label);
                     const Icon = brand.icon;
-                    return (
-                      <a
-                        key={t.id}
-                        href={t.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex w-[104px] shrink-0 snap-start flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 shadow-sm transition active:scale-95"
-                      >
+                    const inner = (
+                      <>
                         <span
                           className="grid h-14 w-14 place-items-center rounded-2xl"
                           style={{ background: withAlpha(brand.color, 0.12), color: brand.color }}
@@ -212,10 +206,32 @@ export function LandingCategoryDock({
                         <span className="line-clamp-2 text-center text-[11px] font-semibold leading-tight text-slate-700">
                           {t.label}
                         </span>
+                      </>
+                    );
+                    const cls =
+                      "flex w-[104px] shrink-0 snap-start flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 shadow-sm transition active:scale-95";
+
+                    if (active.key === "social" && t.url) {
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setGateTarget({ id: t.id, label: t.label, url: t.url! })}
+                          className={cls}
+                        >
+                          {inner}
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <a key={t.id} href={t.url} target="_blank" rel="noopener noreferrer" className={cls}>
+                        {inner}
                       </a>
                     );
                   })}
                 </div>
+
               )}
               {!isProductRail && (
                 <p className="pt-1 text-center text-[10px] text-slate-400">Swipe for more · tap to open</p>
