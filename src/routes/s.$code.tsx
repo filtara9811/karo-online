@@ -22,6 +22,9 @@ import type { LandingPayload, LandingMediaItem, LandingStats, VideoProduct } fro
 import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
+import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
+import { LandingChatSheet } from "@/components/landing/LandingChatSheet";
+import { startShopThread } from "@/lib/shop-chat";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
