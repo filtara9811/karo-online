@@ -412,25 +412,9 @@ function ScanLandingPage() {
 
 
 
-      {/* Admin-controlled banners (render only if configured) */}
-      {layoutStyle !== "reels" && landing.top_banner_url && (
-        <a href={landing.top_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-          <img src={optimizedImage(landing.top_banner_url, IMG.card)} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
-        </a>
-      )}
-
-      {layoutStyle !== "reels" && landing.bottom_banner_url && (
-        <a href={landing.bottom_banner_link || "#"} className="block mx-3 mt-3 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-          <img src={optimizedImage(landing.bottom_banner_url, IMG.card)} alt="Promotion" loading="lazy" decoding="async" className="w-full h-auto block" />
-        </a>
-      )}
-
-      <p className={`mt-4 text-center text-[10px] ${layoutStyle === "reels" ? "hidden" : "text-slate-500"}`}>
-        Powered by <Link to="/" className="font-bold underline" style={{ color: accent }}>Karo Online</Link>
-      </p>
-
       {/* Space for the fixed category dock */}
-      <div className="h-36" />
+      <div className="h-28" />
+
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} shopCode={code} />
 
