@@ -432,7 +432,7 @@ function ScanLandingPage() {
       {/* Space for the fixed category dock */}
       <div className="h-36" />
 
-      <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
+      <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} shopCode={code} />
 
       <LandingOrdersFab accent={accent} count={threadCount} onOpen={() => { setDrawerTab("orders"); setDrawerOpen(true); }} />
 

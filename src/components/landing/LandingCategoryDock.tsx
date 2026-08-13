@@ -13,6 +13,7 @@ import {
   type ExtraLink,
   type LinkCategoryKey,
 } from "./landing-shared";
+import { SocialGateSheet, type GateTarget } from "./SocialGateSheet";
 
 export type DockTile = {
   id: string;
@@ -304,6 +305,14 @@ export function LandingCategoryDock({
       </AnimatePresence>
 
 
+
+      <SocialGateSheet
+        target={gateTarget}
+        accent={accent}
+        shopName={merchantName ?? "Shop"}
+        shopCode={shopCode}
+        onClose={() => setGateTarget(null)}
+      />
 
       <motion.div
         initial={{ y: 90, opacity: 0 }}
