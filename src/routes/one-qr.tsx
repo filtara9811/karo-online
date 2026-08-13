@@ -16,6 +16,7 @@ import { AdServicesSheet } from "@/components/oneqr/AdServicesSheet";
 import { VisitorChatSheet, type VisitorRow } from "@/components/oneqr/VisitorChatSheet";
 import { QrCodeSheet } from "@/components/oneqr/QrCodeSheet";
 import { LandingEditorSheet } from "@/components/oneqr/LandingEditorSheet";
+import { ShopChatsSheet } from "@/components/oneqr/ShopChatsSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
 import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
 import { ProjectPickerSheet } from "@/components/oneqr/ProjectPickerSheet";
@@ -84,6 +85,8 @@ function QrDashboardPage() {
   const [creating, setCreating] = useState(false);
   const [posterFor, setPosterFor] = useState<QrProject | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
+  const [chatsOpen, setChatsOpen] = useState(false);
+  const [linksNonce, setLinksNonce] = useState(0);
   const [servicesFor, setServicesFor] = useState<QrProject | null>(null);
   const [campaignFor, setCampaignFor] = useState<QrProject | null>(null);
   const [visitorOpen, setVisitorOpen] = useState<VisitorRow | null>(null);
@@ -486,7 +489,8 @@ function QrDashboardPage() {
         shareUrl={projectUrl(posterFor)}
         defaultName={posterFor?.title ?? "Karo Online"}
       />
-      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} />
+      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} onSaved={() => setLinksNonce((n) => n + 1)} />
+      <ShopChatsSheet open={chatsOpen} onClose={() => setChatsOpen(false)} />
       <ServicesPluginsSheet
         open={!!servicesFor}
         onClose={() => setServicesFor(null)}
@@ -525,6 +529,7 @@ function QrDashboardPage() {
         onApply={(t) => editorFor && patchProject(editorFor.id, { theme_key: t.key, accent_color: t.accent_color })}
         onAccent={(color) => editorFor && patchProject(editorFor.id, { accent_color: color })}
         onLinks={() => setLinksOpen(true)}
+        refreshKey={linksNonce}
       />
       <OneQrHubSheet
         open={hubOpen}

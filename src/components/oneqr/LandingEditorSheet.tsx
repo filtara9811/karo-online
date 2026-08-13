@@ -23,6 +23,7 @@ export function LandingEditorSheet({
   onApply,
   onAccent,
   onLinks,
+  refreshKey = 0,
 }: {
   open: boolean;
   onClose: () => void;
@@ -36,6 +37,7 @@ export function LandingEditorSheet({
   onApply: (t: LandingTheme) => void;
   onAccent: (color: string) => void;
   onLinks: () => void;
+  refreshKey?: number;
 }) {
   const [tool, setTool] = useState<"products" | "videos" | "settings" | null>(null);
   const [refresh, setRefresh] = useState(0);
@@ -60,7 +62,7 @@ export function LandingEditorSheet({
               className="w-full max-w-md mx-auto h-[92vh] overflow-hidden rounded-t-[30px] bg-white pb-[env(safe-area-inset-bottom)]"
             >
               <LivePreviewFace
-                key={refresh}
+                key={`${refresh}-${refreshKey}`}
                 title={title}
                 landingUrl={landingUrl}
                 themes={themes}
