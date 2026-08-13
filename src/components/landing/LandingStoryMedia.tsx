@@ -172,7 +172,7 @@ export function LandingStoryMedia({
           initial={{ y: dir === 1 ? "18%" : "-18%", opacity: 0, scale: 1.02 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: dir === 1 ? "-8%" : "8%", opacity: 0, scale: 1.01 }}
-          transition={{ duration: 0.42, ease: [0.22, 0.61, 0.36, 1] }}
+          transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
           drag={total > 1 ? "y" : false}
           dragElastic={0.18}
           dragConstraints={{ top: 0, bottom: 0 }}
