@@ -93,10 +93,24 @@ export const verifyPremiumLinks = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Signature verification failed" };
     }
 
-    const { error } = await context.supabase.rpc(
-      "mark_premium_links_unlocked" as never,
-      { _payment_ref: data.razorpay_payment_id } as never,
-    );
+    // Payment columns are frozen against client writes by a DB trigger, so the
+    // unlock is applied with the service-role client after signature verification.
+    const admin = await getAdmin();
+    const { error } = await (admin as unknown as {
+      from: (t: string) => {
+        upsert: (v: Record<string, unknown>, o: { onConflict: string }) => Promise<{ error: { message: string } | null }>;
+      };
+    })
+      .from("merchant_link_settings")
+      .upsert(
+        {
+          user_id: context.userId,
+          premium_unlocked: true,
+          premium_paid_at: new Date().toISOString(),
+          premium_payment_ref: data.razorpay_payment_id,
+        },
+        { onConflict: "user_id" },
+      );
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
   });

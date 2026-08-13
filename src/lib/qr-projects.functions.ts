@@ -37,8 +37,9 @@ export const markQrProjectPaid = createServerFn({ method: "POST" })
       }
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { error } = await (supabaseAdmin as never as ReturnType<typeof Object>)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const admin = supabaseAdmin as any;
+      const { error } = await admin
         .from("qr_projects")
         .update({ is_paid: true, price_inr: data.price_inr })
         .eq("id", data.project_id)
