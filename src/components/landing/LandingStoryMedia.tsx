@@ -190,7 +190,7 @@ export function LandingStoryMedia({
           {current.type === "video" ? (
             <video
               key={current.src}
-              ref={videoRef}
+              ref={setVideo}
               src={current.src}
               poster={current.poster ?? undefined}
               autoPlay
