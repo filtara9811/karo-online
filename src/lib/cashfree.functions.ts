@@ -33,7 +33,7 @@ async function logSys(
   } catch {}
 }
 
-async function pickService(use: AssignedUse) {
+export async function pickService(use: AssignedUse) {
   // 1) Try exact assigned_use match
   const exact = await (supabaseAdmin as any)
     .from("cashfree_services")
@@ -96,7 +96,7 @@ async function pickService(use: AssignedUse) {
   return null;
 }
 
-function cfBase(testMode: boolean) {
+export function cfBase(testMode: boolean) {
   return testMode ? "https://sandbox.cashfree.com/pg" : "https://api.cashfree.com/pg";
 }
 
