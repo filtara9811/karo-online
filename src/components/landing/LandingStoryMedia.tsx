@@ -12,11 +12,14 @@ function detectProvider(url: string): "youtube" | "other" {
 }
 
 function ytEmbed(url: string, muted: boolean): string {
-  const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/);
-  return m
-    ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&controls=1&modestbranding=1&rel=0`
-    : url;
+  const m = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{6,})/);
+  if (!m) return url;
+  const id = m[1];
+  // loop=1 needs playlist=<id> for single videos, otherwise the player stops
+  // at the end and shows the circular replay overlay.
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&controls=0&loop=1&playlist=${id}&modestbranding=1&rel=0&iv_load_policy=3`;
 }
+
 
 /**
  * Vertical media viewer: swipe up/down to change media, sound ON by default.

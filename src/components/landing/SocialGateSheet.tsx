@@ -18,24 +18,66 @@ function readGate(shopCode: string, id: string) {
   }
 }
 
-/** Best-effort embeddable variant of a social URL (YouTube videos embed cleanly). */
+/** Real in-page embed URL for the platform (profile timelines included). */
 function embedUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    const host = u.hostname.replace(/^www\./, "");
-    if (host === "youtu.be") return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    const host = u.hostname.replace(/^www\.|^m\.|^mobile\./, "");
+    const path = u.pathname.replace(/\/+$/, "");
+
+    if (host === "youtu.be") return `https://www.youtube.com/embed/${path.slice(1)}?autoplay=1&loop=1&playlist=${path.slice(1)}&playsinline=1`;
     if (host.endsWith("youtube.com")) {
       const v = u.searchParams.get("v");
-      if (v) return `https://www.youtube.com/embed/${v}`;
-      const shorts = u.pathname.match(/\/shorts\/([^/?]+)/);
-      if (shorts) return `https://www.youtube.com/embed/${shorts[1]}`;
+      const shorts = path.match(/\/shorts\/([^/?]+)/);
+      const id = v || shorts?.[1];
+      if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&playsinline=1`;
+      const channelId = path.match(/\/channel\/(UC[\w-]+)/)?.[1];
+      // Channel uploads playlist: UC… -> UU…
+      if (channelId) return `https://www.youtube.com/embed/videoseries?list=UU${channelId.slice(2)}&autoplay=1&playsinline=1`;
+      const handle = path.match(/\/(?:@|c\/|user\/)([^/?]+)/)?.[1];
+      if (handle) return `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(handle)}&autoplay=1&playsinline=1`;
       return null;
     }
+
+    if (host.endsWith("instagram.com")) {
+      const post = path.match(/\/(?:p|reel|reels|tv)\/([^/?]+)/)?.[1];
+      if (post) return `https://www.instagram.com/p/${post}/embed`;
+      const user = path.split("/").filter(Boolean)[0];
+      if (user) return `https://www.instagram.com/${user}/embed`;
+      return null;
+    }
+
+    if (host.endsWith("facebook.com") || host.endsWith("fb.com") || host.endsWith("fb.me")) {
+      return `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(url)}&tabs=timeline&width=500&height=1000&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
+    }
+
+    if (host.endsWith("twitter.com") || host.endsWith("x.com")) {
+      const user = path.split("/").filter(Boolean)[0];
+      if (user) return `https://syndication.twitter.com/srv/timeline-profile/screen-name/${user}?dnt=true`;
+      return null;
+    }
+
     return null;
   } catch {
     return null;
   }
 }
+
+/** Platform-native follow/subscribe intent for the given profile URL. */
+function followUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\.|^m\.|^mobile\./, "");
+    if (host.endsWith("youtube.com") || host === "youtu.be") {
+      u.searchParams.set("sub_confirmation", "1");
+      return u.toString();
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 
 /** Pause + silence every video on the page while the gate is open. */
 function freezeMedia(freeze: boolean) {
@@ -74,6 +116,7 @@ export function SocialGateSheet({
   const frameSrc = useMemo(() => (target ? embedUrl(target.url) : null), [target]);
   const isYouTube = /youtu/i.test(target?.url ?? "");
   const actionLabel = isYouTube ? "Subscribe" : "Follow";
+  const doneLabel = isYouTube ? "Subscribed" : "Following";
 
   useEffect(() => {
     if (!target) return;
@@ -81,9 +124,7 @@ export function SocialGateSheet({
     setFrameReady(false);
     setFrameFailed(!frameSrc);
     freezeMedia(true);
-    const t = frameSrc ? window.setTimeout(() => setFrameFailed((f) => f || !frameReady), 3000) : undefined;
     return () => {
-      if (t) window.clearTimeout(t);
       freezeMedia(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,8 +138,9 @@ export function SocialGateSheet({
       /* private mode — session-only unlock */
     }
     setUnlocked(true);
-    window.open(target.url, "_blank", "noopener,noreferrer");
+    window.open(followUrl(target.url), "_blank", "noopener,noreferrer");
   }, [target, shopCode]);
+
 
   const openInApp = useCallback(() => {
     if (!target || !unlocked) return;
@@ -157,9 +199,11 @@ export function SocialGateSheet({
                   src={frameSrc}
                   title={`${brand.name} · ${shopName}`}
                   onLoad={() => setFrameReady(true)}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                  onError={() => setFrameFailed(true)}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
                   allowFullScreen
-                  className="absolute inset-0 h-full w-full border-0"
+                  scrolling="yes"
+                  className="absolute inset-0 h-full w-full border-0 bg-white"
                 />
               )}
               {frameSrc && !frameReady && !frameFailed && (
@@ -180,12 +224,12 @@ export function SocialGateSheet({
                       {shopName} on {brand.name}
                     </p>
                     <p className="mt-1 text-[12px] leading-relaxed text-white/60">
-                      {brand.name} does not allow in-page preview. Tap {actionLabel} below to open the official
-                      page, then come back here.
+                      Tap {actionLabel} below to open the official page.
                     </p>
                   </div>
                 </div>
               )}
+
             </div>
 
             {/* Control layer */}
@@ -199,7 +243,7 @@ export function SocialGateSheet({
                   style={{ background: `linear-gradient(135deg, ${brand.color}, ${shade(brand.color, -0.22)})` }}
                 >
                   <BellRing className="h-4 w-4" />
-                  {unlocked ? `${actionLabel}d ✓` : actionLabel}
+                  {unlocked ? `${doneLabel} ✓` : actionLabel}
                 </motion.button>
                 <motion.button
                   type="button"
