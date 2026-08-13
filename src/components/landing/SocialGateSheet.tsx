@@ -199,9 +199,11 @@ export function SocialGateSheet({
                   src={frameSrc}
                   title={`${brand.name} · ${shopName}`}
                   onLoad={() => setFrameReady(true)}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                  onError={() => setFrameFailed(true)}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
                   allowFullScreen
-                  className="absolute inset-0 h-full w-full border-0"
+                  scrolling="yes"
+                  className="absolute inset-0 h-full w-full border-0 bg-white"
                 />
               )}
               {frameSrc && !frameReady && !frameFailed && (
@@ -222,12 +224,12 @@ export function SocialGateSheet({
                       {shopName} on {brand.name}
                     </p>
                     <p className="mt-1 text-[12px] leading-relaxed text-white/60">
-                      {brand.name} does not allow in-page preview. Tap {actionLabel} below to open the official
-                      page, then come back here.
+                      Tap {actionLabel} below to open the official page.
                     </p>
                   </div>
                 </div>
               )}
+
             </div>
 
             {/* Control layer */}
