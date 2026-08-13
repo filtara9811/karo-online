@@ -9,6 +9,8 @@ import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { VpaScannerSheet } from "@/components/VpaScannerSheet";
 import { SOCIAL_PRESETS, brandOf, type ExtraLink } from "@/components/landing/landing-shared";
+import { SheetVideoIntro } from "@/components/oneqr/SheetVideoIntro";
+import { SOCIAL_PLATFORMS, buildSocialUrl, handleFromUrl, isValidSocialUrl } from "@/lib/social-connect";
 
 type Settings = {
   play_store_enabled: boolean;
@@ -58,9 +60,11 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 export function MerchantLinksSetupSheet({
   open,
   onOpenChange,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSaved?: () => void;
 }) {
   const { profile, user } = useAuth();
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
@@ -115,8 +119,11 @@ export function MerchantLinksSetupSheet({
     } as never);
     setSaving(false);
     if (error) toast.error("Couldn't save: " + error.message);
-    else if (!opts?.silent) toast.success("Saved");
-  }, []);
+    else {
+      onSaved?.();
+      if (!opts?.silent) toast.success("Saved");
+    }
+  }, [onSaved]);
 
   const update = (patch: Partial<Settings>) => {
     setSettings((s) => {
@@ -221,6 +228,7 @@ export function MerchantLinksSetupSheet({
         </div>
 
         <div className="px-4 pb-6 overflow-y-auto space-y-3">
+          <SheetVideoIntro section="links" />
           {loading ? (
             <div className="grid place-items-center py-12 text-[#8b6508]"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (
@@ -228,42 +236,19 @@ export function MerchantLinksSetupSheet({
               {tab === "social" && (
                 <>
                   <p className="text-[11px] text-[#8b6508]">
-                    Paste your profile links — customers see them under the “social media” button.
+                    Username daaliye ya poora link paste kariye — “Connect” dabane par customer page par turant live ho jata hai.
                   </p>
-                  {SOCIAL_PRESETS.map((p) => {
-                    const existing = settings.extra_links.find((l) => l.id === p.id);
-                    const brand = brandOf(p.hint, p.label);
-                    const Icon = brand.icon;
-                    return (
-                      <div key={p.id} className="rounded-2xl border border-[#d4af37]/40 bg-white/70 p-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="h-9 w-9 shrink-0 grid place-items-center rounded-full"
-                            style={{ background: `${brand.color}1f`, color: brand.color }}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div className="flex-1 text-sm font-bold text-[#1a1208]">{p.label}</div>
-                          {existing?.url && (
-                            <button
-                              onClick={() => removeLink(p.id)}
-                              aria-label={`Remove ${p.label}`}
-                              className="h-8 w-8 grid place-items-center rounded-full bg-rose-100 text-rose-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          value={existing?.url ?? ""}
-                          onChange={(e) => setPreset(p.id, p.label, e.target.value)}
-                          placeholder={p.hint}
-                          inputMode="url"
-                          className="w-full mt-2 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm text-[#1a1208] placeholder:text-[#8b6508]/50"
-                        />
-                      </div>
-                    );
-                  })}
+                  {SOCIAL_PRESETS.map((p) => (
+                    <SocialConnectRow
+                      key={p.id}
+                      id={p.id}
+                      label={p.label}
+                      hint={p.hint}
+                      value={settings.extra_links.find((l) => l.id === p.id)?.url ?? ""}
+                      onConnect={(url) => setPreset(p.id, p.label, url)}
+                      onRemove={() => removeLink(p.id)}
+                    />
+                  ))}
                 </>
               )}
 
@@ -451,6 +436,101 @@ function Row({
         </button>
       </div>
       {enabled && children}
+    </div>
+  );
+}
+
+
+/** One social platform row: username / paste-link modes plus a Connect action. */
+function SocialConnectRow({
+  id,
+  label,
+  hint,
+  value,
+  onConnect,
+  onRemove,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  value: string;
+  onConnect: (url: string) => void;
+  onRemove: () => void;
+}) {
+  const platform = SOCIAL_PLATFORMS[id];
+  const isPhone = platform?.mode === "phone";
+  const [mode, setMode] = useState<"username" | "manual">(isPhone ? "username" : "username");
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    setDraft(mode === "manual" ? value : handleFromUrl(id, value));
+  }, [id, value, mode]);
+
+  const brand = brandOf(hint, label);
+  const Icon = brand.icon;
+  const built = mode === "manual" ? (draft.trim() ? (/^https?:\/\//i.test(draft.trim()) ? draft.trim() : `https://${draft.trim()}`) : "") : buildSocialUrl(id, draft);
+  const ready = isValidSocialUrl(built);
+  const connected = !!value;
+
+  return (
+    <div className="rounded-2xl border border-[#d4af37]/40 bg-white/70 p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 shrink-0 grid place-items-center rounded-full" style={{ background: `${brand.color}1f`, color: brand.color }}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-[#1a1208]">{label}</p>
+          <p className="truncate text-[10px] text-[#8b6508]">{connected ? value : "Not connected"}</p>
+        </div>
+        {connected && (
+          <button onClick={onRemove} aria-label={`Remove ${label}`} className="h-8 w-8 shrink-0 grid place-items-center rounded-full bg-rose-100 text-rose-700">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="mt-2 flex gap-1.5">
+        {(isPhone
+          ? ([{ k: "username", t: "Phone number" }] as const)
+          : ([{ k: "username", t: "Username" }, { k: "manual", t: "Paste link" }] as const)
+        ).map((m) => (
+          <button
+            key={m.k}
+            type="button"
+            onClick={() => setMode(m.k)}
+            className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${
+              mode === m.k ? "bg-[#1a1208] text-[#f4e9c8]" : "bg-white/70 text-[#8b6508] border border-[#d4af37]/40"
+            }`}
+          >
+            {m.t}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center rounded-lg border border-[#d4af37]/40 bg-white/80 px-2">
+          {mode === "username" && !isPhone && platform?.prefix && (
+            <span className="shrink-0 text-[10.5px] text-[#8b6508]/70">{platform.prefix.replace("https://", "")}</span>
+          )}
+          {isPhone && <span className="shrink-0 text-[10.5px] text-[#8b6508]/70">+91</span>}
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={mode === "manual" ? hint : (platform?.hint ?? "yourshop")}
+            inputMode={isPhone ? "tel" : "url"}
+            className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm text-[#1a1208] outline-none placeholder:text-[#8b6508]/50"
+          />
+        </div>
+        <button
+          type="button"
+          disabled={!ready}
+          onClick={() => onConnect(built)}
+          className="h-9 shrink-0 rounded-lg px-3 text-[11.5px] font-extrabold text-white active:scale-95 disabled:opacity-45"
+          style={{ background: brand.color }}
+        >
+          {connected ? "Update" : "Connect"}
+        </button>
+      </div>
     </div>
   );
 }
