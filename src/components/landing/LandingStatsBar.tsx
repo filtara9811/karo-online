@@ -1,4 +1,4 @@
-import { Eye, Forward, Package, MessageSquare, ShoppingBag, Tag, ChevronRight } from "lucide-react";
+import { Eye, Forward, Package, MessageSquare, ShoppingBag, Tag } from "lucide-react";
 import type { LandingStats } from "@/lib/landing-types";
 
 function fmt(n: number): string {
@@ -8,8 +8,8 @@ function fmt(n: number): string {
 }
 
 /**
- * Clean horizontal engagement bar shown right under the playing video, plus the
- * red "Tag Karo" row above it. Only real, tracked counts are rendered.
+ * Thin translucent engagement strip under the playing video plus a small
+ * right-aligned "Tag Karo" pill. Kept see-through so the video stays visible.
  */
 export function LandingStatsBar({
   stats,
@@ -41,36 +41,29 @@ export function LandingStatsBar({
   if (!items.length) return null;
 
   return (
-    <div className="pointer-events-auto space-y-2 px-3">
-      <button
-        onClick={onTag}
-        className="flex w-full items-center gap-3 rounded-2xl bg-white/95 px-3 py-2.5 text-left shadow-lg backdrop-blur active:scale-[0.99]"
-      >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600">
-          <Tag className="h-4 w-4" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-extrabold text-slate-900">Tag Karo</span>
-          <span className="block text-[11px] font-bold text-rose-600">
-            {stats ? `${fmt(stats.tags)} ne tag kiya` : "Tag karke share karein"}
-          </span>
-        </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
-      </button>
+    <div className="pointer-events-auto space-y-1.5 px-3">
+      <div className="flex justify-end">
+        <button
+          onClick={onTag}
+          className="flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-white backdrop-blur-sm active:scale-95"
+        >
+          <Tag className="h-3 w-3" style={{ color: "#fda4af" }} />
+          <span className="text-[10.5px] font-bold">Tag Karo</span>
+          {stats ? <span className="text-[10px] font-semibold text-white/70">{fmt(stats.tags)}</span> : null}
+        </button>
+      </div>
 
-      <div className="flex items-stretch justify-between gap-1 rounded-2xl bg-white/95 px-2 py-2 shadow-lg backdrop-blur">
-        {items.map(({ key, icon: Icon, value, label, action }, i) => (
+      <div className="flex items-center justify-between gap-1 rounded-full bg-black/32 px-2.5 py-1.5 backdrop-blur-sm">
+        {items.map(({ key, icon: Icon, value, label, action }) => (
           <button
             key={key}
             onClick={action}
             disabled={!action}
-            className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 ${i > 0 ? "border-l border-slate-200" : ""}`}
+            className="flex min-w-0 flex-1 items-center justify-center gap-1"
           >
-            <Icon className="h-4 w-4 shrink-0" style={{ color: accent }} />
-            <span className="min-w-0 text-left">
-              <span className="block truncate text-[12px] font-extrabold leading-tight text-slate-900">{value}</span>
-              <span className="block truncate text-[9px] font-semibold leading-tight text-slate-500">{label}</span>
-            </span>
+            <Icon className="h-3 w-3 shrink-0" style={{ color: accent }} />
+            <span className="truncate text-[10.5px] font-extrabold text-white">{value}</span>
+            <span className="truncate text-[9px] font-semibold text-white/65">{label}</span>
           </button>
         ))}
       </div>
