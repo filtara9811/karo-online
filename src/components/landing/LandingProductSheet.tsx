@@ -114,7 +114,7 @@ export function LandingProductSheet({
               <p className="mt-3 text-[11px] text-slate-400">{shopName}</p>
             </div>
 
-            <div className="flex gap-2 border-t border-black/5 px-4 py-3">
+            <div className="flex gap-1.5 border-t border-black/5 px-4 py-2.5">
               <button
                 onClick={() => onInquiry(product, qty)}
                 disabled={busy}

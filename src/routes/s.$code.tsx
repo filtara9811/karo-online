@@ -23,8 +23,9 @@ import { LandingProductRail } from "@/components/landing/LandingProductRail";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
+import { LandingOrdersFab } from "@/components/landing/LandingOrdersFab";
 import { LandingChatSheet } from "@/components/landing/LandingChatSheet";
-import { startShopThread } from "@/lib/shop-chat";
+import { listShopThreads, startShopThread } from "@/lib/shop-chat";
 import { optimizedImage, IMG } from "@/lib/img";
 
 
@@ -126,10 +127,16 @@ function ScanLandingPage() {
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
   const [stats, setStats] = useState<LandingStats | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
+  const [threadCount, setThreadCount] = useState(0);
+
   const [chatThread, setChatThread] = useState<string | null>(null);
   const [chatHeadline, setChatHeadline] = useState<string | null>(null);
   const [chatImage, setChatImage] = useState<string | null>(null);
   const [threadBusy, setThreadBusy] = useState(false);
+  useEffect(() => {
+    void listShopThreads(code).then((t) => setThreadCount(t.length));
+  }, [code, chatThread]);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
   const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
   // Shared links carry ?m=<index> so the exact video opens first.
@@ -331,7 +338,7 @@ function ScanLandingPage() {
         verified={m.verified}
         accent={accent}
         gmbUrl={gmbUrl}
-        onProfile={() => setDrawerOpen(true)}
+        onProfile={() => { setDrawerTab("menu"); setDrawerOpen(true); }}
         onShopDetails={() => setProfileOpen(true)}
         onMenu={() => setMenuOpen(true)}
         installed={installer.installed || installer.standalone}
@@ -352,7 +359,7 @@ function ScanLandingPage() {
         className={layoutStyle === "chat" ? "h-[38svh]" : "h-[100svh]"}
       >
         {layoutStyle !== "chat" && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[118px] z-20 space-y-2">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[80px] z-20 space-y-1.5">
             <LandingStatsBar
               stats={stats}
               productCount={activeProducts.length}
@@ -427,8 +434,11 @@ function ScanLandingPage() {
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} />
 
+      <LandingOrdersFab accent={accent} count={threadCount} onOpen={() => { setDrawerTab("orders"); setDrawerOpen(true); }} />
+
       <LandingShopDrawer
         open={drawerOpen}
+        initialTab={drawerTab}
         onClose={() => setDrawerOpen(false)}
         accent={accent}
         code={code}

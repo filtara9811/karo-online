@@ -16,6 +16,7 @@ type Tab = "menu" | "orders" | "profile";
 export function LandingShopDrawer({
   open,
   onClose,
+  initialTab = "menu",
   accent,
   code,
   shopName,
@@ -31,6 +32,7 @@ export function LandingShopDrawer({
 }: {
   open: boolean;
   onClose: () => void;
+  initialTab?: "menu" | "orders";
   accent: string;
   code: string;
   shopName: string;
@@ -52,10 +54,10 @@ export function LandingShopDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setTab("menu");
+    setTab(initialTab);
     setProfile(getVisitorProfile());
     void listShopThreads(code).then(setThreads);
-  }, [open, code]);
+  }, [open, code, initialTab]);
 
   const saveProfile = async () => {
     setVisitorProfile(profile);

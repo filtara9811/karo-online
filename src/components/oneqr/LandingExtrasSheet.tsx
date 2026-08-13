@@ -57,6 +57,7 @@ export function LandingExtrasSheet({
 
   return (
     <SheetShell
+      section="settings"
       open={open}
       onClose={onClose}
       title="Landing settings"

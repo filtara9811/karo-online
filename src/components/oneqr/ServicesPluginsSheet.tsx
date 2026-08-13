@@ -42,6 +42,7 @@ export function ServicesPluginsSheet({
   return (
     <>
       <SheetShell
+      section="services"
         open={open}
         onClose={onClose}
         title="Services & Plugins"
