@@ -241,7 +241,7 @@ export function LandingStoryMedia({
           onClick={toggleSound}
           whileTap={{ scale: 0.9 }}
           aria-label={muted ? "Unmute video" : "Mute video"}
-          className="absolute right-3 top-[86px] z-30 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur"
+          className="absolute right-3 top-[86px] z-30 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white shadow-lg"
         >
           {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </motion.button>
