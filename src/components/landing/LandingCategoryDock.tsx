@@ -97,15 +97,18 @@ export function LandingCategoryDock({
   accent,
   merchantPhone,
   merchantName,
+  shopCode = "shop",
 }: {
   categories: DockCategory[];
   accent: string;
   merchantPhone?: string;
   merchantName?: string;
+  shopCode?: string;
 }) {
   const defaultKey = String((categories.find((c) => c.tiles.length) ?? categories[0])?.key ?? "");
   const [activeKey, setActiveKey] = useState<string | null>(defaultKey || null);
   const [enquiryTile, setEnquiryTile] = useState<DockTile | null>(null);
+  const [gateTarget, setGateTarget] = useState<GateTarget | null>(null);
   const active = categories.find((c) => c.key === activeKey) ?? null;
 
   const isProductRail = !!active && active.key === "shop" && active.tiles.some((t) => t.image || t.price);
@@ -113,6 +116,7 @@ export function LandingCategoryDock({
   const fg = light ? "#ffffff" : "#1a1208";
 
   if (!categories.length) return null;
+
 
   return (
     <>
