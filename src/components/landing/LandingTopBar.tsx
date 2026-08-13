@@ -56,8 +56,8 @@ export function LandingTopBar({
           <Store className="h-5 w-5" />
         )}
         <span
-          className="absolute -bottom-1 -right-1 grid h-4.5 w-4.5 place-items-center rounded-full"
-          style={{ width: 18, height: 18, background: accent, color: needsLightText(accent) ? "#ffffff" : "#111827" }}
+          className="pointer-events-none absolute inset-x-0 bottom-0 grid h-3.5 place-items-center"
+          style={{ background: withAlpha("#000000", 0.45), color: fg }}
         >
           <Menu className="h-2.5 w-2.5" />
         </span>
