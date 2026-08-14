@@ -9,7 +9,7 @@ import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { ServicesPluginsSheet } from "@/components/oneqr/ServicesPluginsSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
-import { SponsoredAdsRail, useSponsoredAds } from "@/components/oneqr/SponsoredAdsRail";
+import { SponsoredAdsRail, useSponsoredAds, shopHref } from "@/components/oneqr/SponsoredAdsRail";
 import type { VisitorFeedRow } from "@/components/oneqr/VisitorFeed";
 import type { DashboardAnalytics } from "@/components/oneqr/QrAnalyticsChart";
 import { QrProjectCard, type QrProject, type LandingTheme, type CardProfile } from "@/components/oneqr/QrProjectCard";
@@ -425,12 +425,14 @@ function QrDashboardPage() {
                     </p>
                   ) : (
                     ads.map((a, i) => (
-                      <motion.article
+                      <motion.a
                         key={a.user_id + i}
+                        href={shopHref(a) || undefined}
+                        {...(/^https?:/i.test(shopHref(a)) ? { target: "_blank", rel: "noreferrer" } : {})}
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                        className="rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-[0_14px_34px_-24px_rgba(180,120,20,0.55)]"
+                        className="block rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-[0_14px_34px_-24px_rgba(180,120,20,0.55)] active:scale-[0.99] transition"
                       >
                         <div className="relative h-36">
                           <img
@@ -457,7 +459,7 @@ function QrDashboardPage() {
                             </span>
                           </div>
                         </div>
-                      </motion.article>
+                      </motion.a>
                     ))
                   )}
                 </section>
@@ -504,7 +506,6 @@ function QrDashboardPage() {
           <PillBtn label="My Project" active={tab === "projects"} onClick={() => setTab("projects")} />
           <PillBtn label="Vendors" active={tab === "vendors"} onClick={() => setTab("vendors")} />
           <PillBtn label="Ads" active={tab === "ads"} onClick={() => setTab("ads")} />
-          <PillBtn label="Chats" active={chatsOpen} onClick={() => setChatsOpen(true)} />
 
         </div>
       </nav>

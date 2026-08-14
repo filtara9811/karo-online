@@ -15,7 +15,14 @@ export type SponsoredAd = {
   is_premium: boolean | null;
   lat: number | null;
   lng: number | null;
+  referral_code: string | null;
 };
+
+/** Shop landing page for a vendor (falls back to their website). */
+export function shopHref(ad: Pick<SponsoredAd, "referral_code" | "website">) {
+  if (ad.referral_code) return `/s/${encodeURIComponent(ad.referral_code)}`;
+  return normUrl(ad.website) ?? "";
+}
 
 function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const R = 6371;
@@ -47,7 +54,7 @@ export function useSponsoredAds(category?: string | null) {
     (async () => {
       const { data } = await supabase
         .from("vendors")
-        .select("user_id, business_name, trade, deals_in, cover_image_url, avatar_url, website, is_premium, lat, lng")
+        .select("user_id, business_name, trade, deals_in, cover_image_url, avatar_url, website, is_premium, lat, lng, referral_code")
         .eq("verified", true)
         .eq("is_blocked", false)
         .limit(60);
@@ -165,7 +172,7 @@ export function SponsoredAdsRail({ ads }: { ads: AdWithDistance[] }) {
 
 function AdCard({ ad, className = "" }: { ad: AdWithDistance; className?: string }) {
   const img = (ad.cover_image_url || ad.avatar_url) as string;
-  const href = normUrl(ad.website);
+  const href = shopHref(ad);
   const rating = pseudoRating(ad.user_id);
   return (
     <article
@@ -197,8 +204,7 @@ function AdCard({ ad, className = "" }: { ad: AdWithDistance; className?: string
           </span>
           <a
             href={href}
-            target="_blank"
-            rel="noreferrer"
+            {...(/^https?:/i.test(href) ? { target: "_blank", rel: "noreferrer" } : {})}
             className={`ml-auto h-9 px-4 rounded-full bg-amber-500 text-white text-[11px] font-extrabold inline-flex items-center gap-1.5 active:scale-95 ${href ? "" : "opacity-50 pointer-events-none"}`}
           >
             <Store className="h-3.5 w-3.5" /> Shop Visit
