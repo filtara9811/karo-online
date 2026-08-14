@@ -10,6 +10,8 @@ import { MerchantLinksSetupSheet } from "@/components/MerchantLinksSetupSheet";
 import { ServicesPluginsSheet } from "@/components/oneqr/ServicesPluginsSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { SponsoredAdsRail, useSponsoredAds } from "@/components/oneqr/SponsoredAdsRail";
+import type { VisitorFeedRow } from "@/components/oneqr/VisitorFeed";
+import type { DashboardAnalytics } from "@/components/oneqr/QrAnalyticsChart";
 import { QrProjectCard, type QrProject, type LandingTheme, type CardProfile } from "@/components/oneqr/QrProjectCard";
 import { OneQrGuideSheet } from "@/components/oneqr/OneQrGuideSheet";
 import { AdServicesSheet } from "@/components/oneqr/AdServicesSheet";
@@ -107,6 +109,18 @@ function QrDashboardPage() {
   }, []);
 
   const ads = useSponsoredAds();
+  const [feed, setFeed] = useState<VisitorFeedRow[] | null>(null);
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [rangeDays, setRangeDays] = useState(7);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("get_qr_dashboard_analytics" as never, { _days: rangeDays } as never);
+      if (!cancelled) setAnalytics((data as unknown as DashboardAnalytics) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [rangeDays]);
 
   const loadProjects = useCallback(async (uid: string) => {
     const { data } = await supabase
@@ -140,6 +154,10 @@ function QrDashboardPage() {
     (async () => {
       const { data } = await supabase.rpc("get_referral_visits", { _source: "qr", _limit: 200 });
       setVisits((data as unknown as Visit[]) ?? []);
+    })();
+    (async () => {
+      const { data } = await supabase.rpc("get_qr_visitor_feed" as never, { _limit: 40 } as never);
+      setFeed((data as unknown as VisitorFeedRow[]) ?? []);
     })();
   }, [loadProjects]);
 
@@ -368,6 +386,9 @@ function QrDashboardPage() {
                         project={p}
                         stats={projectStats(p)}
                         visits={projectVisits(p)}
+                        analytics={analytics}
+                        feed={feed}
+                        onRange={setRangeDays}
                         themes={themes}
                         profile={profile}
                         landingUrl={projectUrl(p)}
