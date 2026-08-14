@@ -66,3 +66,8 @@ export function groupVisitors(rows: VisitorRow[]): VisitorGroup[] {
   }
   return groups.sort((a, b) => +new Date(b.latest.created_at) - +new Date(a.latest.created_at));
 }
+
+/** Last time the merchant opened this visitor's thread (ISO) or null. */
+export function lastSeenAt(key: string): string | null {
+  return readSeen()[key] ?? null;
+}

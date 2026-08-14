@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { detectMedium } from "@/lib/traffic-source";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { X, Smartphone } from "lucide-react";
@@ -209,13 +210,14 @@ function ScanLandingPage() {
         : window.setTimeout(fn, 1200);
     idle(() => {
       import("@/lib/visit-fp").then(({ getVisitFp }) => {
-        supabase.rpc("log_referral_visit", {
+        supabase.rpc("log_referral_visit" as never, ({
           _code: code,
           _source: "qr",
+          _medium: detectMedium(),
           _fp_hash: getVisitFp(),
           _ip_hash: undefined,
           _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-        });
+        }) as never);
       });
       trackQrEvent("STORE_VIEW", { code, project });
     });
