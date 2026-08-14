@@ -65,6 +65,9 @@ function timeAgo(iso: string) {
 export function QrProjectCard({
   project, stats, themes, landingUrl, visits, profile,
   onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile,
+export function QrProjectCard({
+  project, stats, themes, landingUrl, visits, profile, analytics, feed,
+  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile, onRange,
 }: {
   project: QrProject;
   stats: ProjectStats;
@@ -72,6 +75,8 @@ export function QrProjectCard({
   landingUrl: string;
   visits: VisitorRow[];
   profile?: CardProfile | null;
+  analytics?: DashboardAnalytics | null;
+  feed?: VisitorFeedRow[] | null;
   onPatch: (patch: Partial<QrProject>) => void;
   onDelete: () => void;
   onPoster: () => void;
@@ -82,9 +87,11 @@ export function QrProjectCard({
   onPreview: () => void;
   onGuide: () => void;
   onProfile: () => void;
+  onRange?: (days: number) => void;
 }) {
   const qrTileRef = useRef<HTMLCanvasElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
 
   const accent = project.accent_color || themes.find((t) => t.key === project.theme_key)?.accent_color || "#f59e0b";
   const theme = themes.find((t) => t.key === project.theme_key);
