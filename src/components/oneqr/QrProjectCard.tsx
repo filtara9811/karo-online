@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import {
   QrCode, Share2, Download, Users, Megaphone, Trash2, MoreVertical,
-  Settings as SettingsIcon, Link2, HelpCircle, Phone, MessageCircle, Store,
+  Settings as SettingsIcon, Link2, HelpCircle, Store,
 } from "lucide-react";
-import { QrAnalyticsChart } from "./QrAnalyticsChart";
+import { QrAnalyticsChart, type DashboardAnalytics } from "./QrAnalyticsChart";
 import { groupVisitors } from "./visitor-groups";
+import { VisitorFeed, type VisitorFeedRow } from "./VisitorFeed";
+import { taggedUrl } from "@/lib/traffic-source";
 import type { VisitorRow } from "./VisitorChatSheet";
+
 
 
 export type QrProject = {
