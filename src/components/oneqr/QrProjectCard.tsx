@@ -194,7 +194,13 @@ export function QrProjectCard({
     </motion.article>
 
     {/* Analytics — outside the card container */}
-    <QrAnalyticsChart visits={visits} accent={accent} />
+    <QrAnalyticsChart
+      visits={visits}
+      accent={accent}
+      analytics={analytics}
+      onRange={onRange}
+      onGuide={onGuide}
+    />
 
     {project.ads_enabled && (
       <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
@@ -209,62 +215,9 @@ export function QrProjectCard({
       </div>
     )}
 
-    {/* Visitors — one row per number, WhatsApp-style unread badge */}
-    <div>
-      <p className="text-[11px] font-bold text-slate-600 mb-1.5 inline-flex items-center gap-1.5">
-        <Users className="h-3.5 w-3.5 text-amber-600" /> Landing page visitors
-      </p>
-      {groups.length === 0 ? (
-        <p className="text-[11px] text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-3">
-          Abhi koi visitor nahi — QR share karke shuru karein.
-        </p>
-      ) : (
-        <ul className="rounded-2xl border border-black/10 bg-white overflow-hidden divide-y divide-black/5">
-          {groups.slice(0, 8).map((g) => {
-            const r = g.latest;
-            const name = (r.visitor_name || "").trim();
-            return (
-              <li key={g.key}>
-                <button onClick={() => onVisitor(r)} className="w-full flex items-center gap-3 px-3 py-2.5 text-left active:bg-amber-50">
-                  <span className="h-10 w-10 shrink-0 rounded-full grid place-items-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${accent}, #f59e0b)` }}>
-                    {name ? name.charAt(0).toUpperCase() : <QrCode className="h-4 w-4" />}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-[14px] font-semibold text-slate-900 truncate">{name || "Anonymous visitor"}</p>
-                      <span className={`ml-auto text-[10px] shrink-0 ${g.unread > 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}>
-                        {timeAgo(r.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-[11.5px] text-slate-500 truncate">
-                      {r.visitor_phone ? `+91 ${r.visitor_phone}` : "Number nahi diya"}
-                      {g.total > 1 && ` · ${g.total} visits`}
-                    </p>
-                  </div>
-                  <span className="flex items-center gap-1.5 shrink-0">
-                    {g.unread > 0 && (
-                      <motion.span
-                        initial={{ scale: 0.7 }}
-                        animate={{ scale: 1 }}
-                        className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold grid place-items-center"
-                      >
-                        {g.unread}
-                      </motion.span>
-                    )}
-                    {r.visitor_phone && (
-                      <>
-                        <span className="h-8 w-8 grid place-items-center rounded-full bg-amber-50 text-amber-700"><Phone className="h-3.5 w-3.5" /></span>
-                        <span className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white"><MessageCircle className="h-3.5 w-3.5" /></span>
-                      </>
-                    )}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+    {/* Visitors — activity feed with real source icons + inquiry products */}
+    <VisitorFeed rows={feedRows} accent={accent} onVisitor={onVisitor} />
+
     </div>
   );
 }
