@@ -115,7 +115,12 @@ export function QrProjectCard({
     ? `+91 ${project.contact_phone}`
     : profile?.shop_bio || `/${project.slug}`;
 
-  const groups = groupVisitors(visits);
+  /** Prefer the server feed (source + inquiry products); fall back to raw visits. */
+  const feedRows = useMemo<VisitorFeedRow[]>(() => {
+    if (feed && feed.length) return feed;
+    return groupVisitors(visits).map((g) => ({ ...g.latest, visits: g.total }));
+  }, [feed, visits]);
+
 
   return (
     <div className="space-y-3">
