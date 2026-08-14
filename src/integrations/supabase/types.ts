@@ -2663,11 +2663,13 @@ export type Database = {
       }
       referral_link_visits: {
         Row: {
+          city: string | null
           code: string
           created_at: string
           fp_hash: string | null
           id: string
           ip_hash: string | null
+          medium: string | null
           project_slug: string | null
           referrer_user_id: string | null
           source: string
@@ -2676,11 +2678,13 @@ export type Database = {
           visitor_phone: string | null
         }
         Insert: {
+          city?: string | null
           code: string
           created_at?: string
           fp_hash?: string | null
           id?: string
           ip_hash?: string | null
+          medium?: string | null
           project_slug?: string | null
           referrer_user_id?: string | null
           source: string
@@ -2689,11 +2693,13 @@ export type Database = {
           visitor_phone?: string | null
         }
         Update: {
+          city?: string | null
           code?: string
           created_at?: string
           fp_hash?: string | null
           id?: string
           ip_hash?: string | null
+          medium?: string | null
           project_slug?: string | null
           referrer_user_id?: string | null
           source?: string
@@ -6053,7 +6059,15 @@ export type Database = {
         Args: { _code: string; _kind: string }
         Returns: Json
       }
+      get_qr_dashboard_analytics: {
+        Args: { _days?: number; _project?: string }
+        Returns: Json
+      }
       get_qr_landing_themes: { Args: never; Returns: Json }
+      get_qr_visitor_feed: {
+        Args: { _limit?: number; _project?: string }
+        Returns: Json
+      }
       get_referral_traffic_counts: { Args: never; Returns: Json }
       get_referral_visits: {
         Args: { _limit?: number; _source: string }
@@ -6107,16 +6121,28 @@ export type Database = {
           sub_category_name: string
         }[]
       }
-      log_referral_visit: {
-        Args: {
-          _code: string
-          _fp_hash?: string
-          _ip_hash?: string
-          _source: string
-          _user_agent?: string
-        }
-        Returns: undefined
-      }
+      log_referral_visit:
+        | {
+            Args: {
+              _code: string
+              _fp_hash?: string
+              _ip_hash?: string
+              _source: string
+              _user_agent?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _code: string
+              _fp_hash?: string
+              _ip_hash?: string
+              _medium?: string
+              _source: string
+              _user_agent?: string
+            }
+            Returns: undefined
+          }
       log_referral_visit_lead:
         | {
             Args: {
