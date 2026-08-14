@@ -54,11 +54,19 @@ export function useSponsoredAds(category?: string | null) {
     (async () => {
       const { data } = await supabase
         .from("vendors")
-        .select("user_id, business_name, trade, deals_in, cover_image_url, avatar_url, website, is_premium, lat, lng, referral_code")
+        .select("user_id, business_name, trade, deals_in, cover_image_url, avatar_url, website, is_premium, lat, lng")
         .eq("verified", true)
         .eq("is_blocked", false)
         .limit(60);
-      setAds(((data as SponsoredAd[]) ?? []).filter((v) => v.cover_image_url || v.avatar_url));
+      const rows = ((data as Omit<SponsoredAd, "referral_code">[]) ?? []).filter(
+        (v) => v.cover_image_url || v.avatar_url,
+      );
+      const { data: codes } = await supabase
+        .from("referral_codes")
+        .select("user_id, code")
+        .in("user_id", rows.map((r) => r.user_id));
+      const byUser = new Map((codes ?? []).map((c) => [c.user_id, c.code]));
+      setAds(rows.map((r) => ({ ...r, referral_code: byUser.get(r.user_id) ?? null })));
     })();
   }, []);
 
