@@ -158,6 +158,11 @@ export function QrProjectCard({
               className="absolute top-14 right-3 z-20 w-48 rounded-2xl bg-white border border-black/10 shadow-xl overflow-hidden"
             >
               <MenuItem icon={Share2} label="Share link" onClick={() => { setMenuOpen(false); share(); }} />
+              <MenuItem icon={Instagram} label="Copy link for Instagram" onClick={() => { setMenuOpen(false); copyTagged("instagram"); }} />
+              <MenuItem icon={Youtube} label="Copy link for YouTube" onClick={() => { setMenuOpen(false); copyTagged("youtube"); }} />
+              <MenuItem icon={Facebook} label="Copy link for Facebook" onClick={() => { setMenuOpen(false); copyTagged("facebook"); }} />
+              <MenuItem icon={MessageCircle} label="Share on WhatsApp" onClick={() => { setMenuOpen(false); shareWhatsapp(); }} />
+
               <MenuItem icon={Download} label="Download poster" onClick={() => { setMenuOpen(false); onPoster(); }} />
               <MenuItem icon={HelpCircle} label="Help & guide" onClick={() => { setMenuOpen(false); onGuide(); }} />
               <MenuItem icon={Trash2} label="Delete project" danger onClick={() => { setMenuOpen(false); onDelete(); }} />
