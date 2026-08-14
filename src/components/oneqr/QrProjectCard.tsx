@@ -109,6 +109,19 @@ export function QrProjectCard({
     } catch { /* dismissed */ }
   };
 
+  /** Tagged links so the dashboard can show the real traffic source later. */
+  const copyTagged = async (medium: "instagram" | "youtube" | "facebook") => {
+    if (!landingUrl) return;
+    try { await navigator.clipboard.writeText(taggedUrl(landingUrl, medium)); } catch { /* denied */ }
+  };
+
+  const shareWhatsapp = () => {
+    if (!landingUrl) return;
+    const url = taggedUrl(landingUrl, "whatsapp");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${project.title}\n${url}`)}`, "_blank");
+  };
+
+
   const coverUrl = project.cover_image_url || profile?.cover_image_url || null;
   const avatarUrl = project.avatar_url || profile?.avatar_url || null;
   const displayName = project.business_name || profile?.business_name || project.title;
