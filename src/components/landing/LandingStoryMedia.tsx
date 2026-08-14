@@ -157,7 +157,24 @@ export function LandingStoryMedia({
   if (!current) return null;
 
   return (
-    <div className={`relative w-full overflow-hidden bg-black ${className}`}>
+    <motion.div
+      className={`relative w-full touch-pan-x overflow-hidden bg-black ${className}`}
+      drag={total > 1 ? "y" : false}
+      dragDirectionLock
+      dragElastic={0.14}
+      dragSnapToOrigin
+      dragConstraints={{ top: 0, bottom: 0 }}
+      onPointerDown={holdStart}
+      onPointerUp={holdEnd}
+      onPointerCancel={holdEnd}
+      onDragStart={() => { setPaused(true); holdEnd(); }}
+      onDragEnd={(_, info) => {
+        setPaused(false);
+        // Wraps around: last → first and first → last, so the reel never stops.
+        if (info.offset.y < -50 || info.velocity.y < -350) go(1);
+        else if (info.offset.y > 50 || info.velocity.y > 350) go(-1);
+      }}
+    >
       {/* Blurred still of the active frame keeps the backdrop filled during swipes */}
       {current.type !== "url" && (
         <div
@@ -176,20 +193,9 @@ export function LandingStoryMedia({
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: dir === 1 ? "-8%" : "8%", opacity: 0, scale: 1.01 }}
           transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-          drag={total > 1 ? "y" : false}
-          dragElastic={0.18}
-          dragConstraints={{ top: 0, bottom: 0 }}
-          onPointerDown={holdStart}
-          onPointerUp={holdEnd}
-          onPointerCancel={holdEnd}
-          onDragStart={() => { setPaused(true); holdEnd(); }}
-          onDragEnd={(_, info) => {
-            setPaused(false);
-            if (info.offset.y < -60 || info.velocity.y < -400) go(1);
-            else if (info.offset.y > 60 || info.velocity.y > 400) go(-1);
-          }}
-          className="absolute inset-0 touch-pan-x"
+          className="absolute inset-0"
         >
+
           {current.type === "video" ? (
             <video
               key={current.src}
@@ -295,6 +301,7 @@ export function LandingStoryMedia({
       )}
 
       {children}
-    </div>
+    </motion.div>
+
   );
 }

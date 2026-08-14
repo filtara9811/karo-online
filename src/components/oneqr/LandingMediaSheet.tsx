@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
+import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
 import { jsonBytes, sanitizeMediaList, sanitizeProduct, uploadImage, withTimeout } from "@/lib/media-upload";
@@ -52,6 +55,34 @@ export function LandingMediaSheet({
   const [editing, setEditing] = useState<VideoProduct | null>(null);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const startOrder = useServerFn(createPremiumLinksOrder);
+  const verifyOrder = useServerFn(verifyPremiumLinks);
+
+  /** Razorpay checkout for the extra-video pack; unlocks instantly on success. */
+  const payToUnlock = async () => {
+    if (paying) return;
+    setPaying(true);
+    try {
+      const order = await startOrder();
+      if (!order.ok) { toast.error(order.error ?? "Payment start nahi hua"); return; }
+      const resp = await openRazorpayCheckout({
+        key_id: order.key_id,
+        order_id: order.order_id,
+        amount: order.amount,
+        name: "Karo Online",
+        description: `Video pack unlock · ₹${order.amount_inr}`,
+      });
+      const ver = await verifyOrder({ data: { ...resp, amount_inr: order.amount_inr } });
+      if (!ver.ok) { toast.error(ver.error ?? "Verification fail"); return; }
+      toast.success("Unlock ho gaya — ab zyada videos add karein");
+      setUnlockOpen(false);
+    } catch (e) {
+      toast.error((e as Error).message || "Payment cancel ho gaya");
+    } finally {
+      setPaying(false);
+    }
+  };
   const fileRef = useRef<HTMLInputElement | null>(null);
   const kindRef = useRef<"image" | "video">("video");
 
@@ -453,7 +484,14 @@ export function LandingMediaSheet({
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700"><LockKeyhole className="h-6 w-6"/></div>
             <h3 className="mt-3 text-lg font-extrabold text-slate-900">10 more videos unlock karein</h3>
             <p className="mt-1 text-sm text-slate-500">₹500 per pack · sirf ₹50 per additional video</p>
-            <a href="/vendor/wallet" className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-amber-500 font-extrabold text-white">Recharge & Unlock</a>
+            <button
+              type="button"
+              onClick={payToUnlock}
+              disabled={paying}
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
+            >
+              {paying ? "Payment khul raha hai…" : "Pay & Unlock"}
+            </button>
             <button onClick={() => setUnlockOpen(false)} className="mt-2 h-10 w-full text-sm font-bold text-slate-500">Not now</button>
           </div>
         </div>
