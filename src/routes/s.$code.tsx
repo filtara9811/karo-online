@@ -217,7 +217,7 @@ function ScanLandingPage() {
           _fp_hash: getVisitFp(),
           _ip_hash: undefined,
           _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-        });
+        }) as never);
       });
       trackQrEvent("STORE_VIEW", { code, project });
     });
