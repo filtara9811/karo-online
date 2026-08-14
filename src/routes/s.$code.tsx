@@ -210,7 +210,7 @@ function ScanLandingPage() {
         : window.setTimeout(fn, 1200);
     idle(() => {
       import("@/lib/visit-fp").then(({ getVisitFp }) => {
-        supabase.rpc("log_referral_visit" as never, {
+        supabase.rpc("log_referral_visit" as never, ({
           _code: code,
           _source: "qr",
           _medium: detectMedium(),
