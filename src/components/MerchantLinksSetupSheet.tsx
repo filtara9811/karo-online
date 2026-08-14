@@ -193,7 +193,7 @@ export function MerchantLinksSetupSheet({
   };
 
   const customLinks = useMemo(
-    () => settings.extra_links.filter((l) => (l.category ?? "other") === tab && !l.id.startsWith("social-")),
+    () => settings.extra_links.filter((l) => (l.category ?? "other") === tab && !l.id.startsWith("social-") && !l.id.startsWith("pay-") && l.id !== "payment-gateway"),
     [settings.extra_links, tab],
   );
 
