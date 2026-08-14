@@ -414,8 +414,8 @@ function ScanLandingPage() {
 
 
 
-      {/* Space for the fixed category dock */}
-      <div className="h-28" />
+      {/* Space for the fixed category dock (only when the page scrolls) */}
+      {layoutStyle === "chat" && <div className="h-28" />}
 
 
       <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} shopCode={code} />

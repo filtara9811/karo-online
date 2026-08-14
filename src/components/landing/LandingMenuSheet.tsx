@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Share2, Link2, Check, X, Apple } from "lucide-react";
+import { Download, Share2, Link2, Check, X, Apple, QrCode, Store } from "lucide-react";
+import { LinkQrSheet } from "@/components/LinkQrSheet";
 import { toast } from "sonner";
 import { needsLightText } from "./landing-shared";
 
@@ -29,6 +31,7 @@ export function LandingMenuSheet({
   onInstall: () => Promise<"accepted" | "dismissed" | "unavailable">;
 }) {
   const fg = needsLightText(accent) ? "#ffffff" : "#1a1208";
+  const [qrOpen, setQrOpen] = useState(false);
 
   const share = async () => {
     try {
@@ -119,13 +122,37 @@ export function LandingMenuSheet({
               </button>
               <button
                 type="button"
+                onClick={() => setQrOpen(true)}
+                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left active:scale-[0.99]"
+              >
+                <QrCode className="h-4 w-4 text-slate-500" />
+                <span className="text-sm font-semibold">Dynamic QR code</span>
+              </button>
+              <button
+                type="button"
                 onClick={copy}
                 className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left active:scale-[0.99]"
               >
                 <Link2 className="h-4 w-4 text-slate-500" />
                 <span className="text-sm font-semibold">Copy link</span>
               </button>
+              <a
+                href="/register?role=vendor"
+                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left active:scale-[0.99]"
+              >
+                <Store className="h-4 w-4 text-slate-500" />
+                <span className="text-sm font-semibold">Become a Vendor</span>
+              </a>
             </div>
+
+            <LinkQrSheet
+              open={qrOpen}
+              onClose={() => setQrOpen(false)}
+              title={merchantName}
+              subtitle="Shop page QR"
+              url={pageUrl}
+              accent={accent}
+            />
           </motion.div>
         </>
       )}

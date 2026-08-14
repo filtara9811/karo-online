@@ -39,17 +39,17 @@ export function LandingProductRail({
         return (
           <article
             key={p.id}
-            className="relative w-[118px] shrink-0 overflow-hidden rounded-xl bg-white shadow-lg"
+            className="relative w-[108px] shrink-0 overflow-hidden rounded-xl bg-white shadow-lg"
           >
             <button onClick={() => onOpen(p)} className="block w-full text-left">
-              <div className="relative h-[96px] w-full overflow-hidden bg-slate-100">
+              <div className="relative h-[74px] w-full overflow-hidden bg-slate-100">
                 {p.image ? (
                   <img
                     src={optimizedImage(p.image, IMG.tile) ?? p.image}
                     alt={p.name}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-center"
                   />
                 ) : (
                   <span className="grid h-full w-full place-items-center text-slate-400">
@@ -83,7 +83,7 @@ export function LandingProductRail({
               target={cta.external ? "_blank" : undefined}
               rel="noreferrer"
               onClick={() => onCta?.(p)}
-              className="mx-2 mb-2 mt-1 flex h-7 items-center justify-center rounded-lg text-[10.5px] font-extrabold text-white active:scale-[0.98]"
+              className="mx-2 mb-1.5 mt-1 flex h-[26px] items-center justify-center rounded-lg text-[10.5px] font-extrabold text-white active:scale-[0.98]"
               style={{ background: cta.color }}
             >
               {cta.label}

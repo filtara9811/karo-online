@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2, ScanLine } from "lucide-react";
+import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2, ScanLine, MoreVertical, QrCode, Copy, Check } from "lucide-react";
+import { LinkQrSheet } from "@/components/LinkQrSheet";
+import { useReferralOverview } from "@/hooks/use-referral";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -74,6 +76,12 @@ export function MerchantLinksSetupSheet({
   const [paying, setPaying] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const createOrder = useServerFn(createPremiumLinksOrder);
+  const { data: refData } = useReferralOverview();
+  const shopUrl = refData?.code && typeof window !== "undefined"
+    ? `${window.location.origin}/s/${encodeURIComponent(refData.code)}`
+    : "";
+  const [qrTarget, setQrTarget] = useState<{ title: string; subtitle?: string; url: string } | null>(null);
+  const [payDraft, setPayDraft] = useState({ provider: "phonepe", vpa: "" });
   const verifyOrder = useServerFn(verifyPremiumLinks);
 
   useEffect(() => {
@@ -158,6 +166,30 @@ export function MerchantLinksSetupSheet({
   const removeLink = (id: string) => {
     if (!confirm("Delete this link?")) return;
     setLinks(settings.extra_links.filter((l) => l.id !== id));
+  };
+
+  const paymentMethods = useMemo(
+    () => settings.extra_links.filter((l) => l.id.startsWith("pay-")),
+    [settings.extra_links],
+  );
+
+  const addPaymentMethod = () => {
+    const vpa = payDraft.vpa.trim();
+    if (!vpa) { toast.error("UPI ID daaliye"); return; }
+    const id = `pay-${crypto.randomUUID()}`;
+    setLinks([...settings.extra_links, { id, label: payDraft.provider, url: vpa, enabled: false, category: "payment" }]);
+    setPayDraft({ provider: payDraft.provider, vpa: "" });
+    toast.success("Payment method add ho gaya");
+  };
+
+  const gatewayEnabled = settings.extra_links.some((l) => l.id === "payment-gateway" && l.enabled);
+  const toggleGateway = (v: boolean) => {
+    const exists = settings.extra_links.some((l) => l.id === "payment-gateway");
+    setLinks(
+      exists
+        ? settings.extra_links.map((l) => (l.id === "payment-gateway" ? { ...l, enabled: v } : l))
+        : [...settings.extra_links, { id: "payment-gateway", label: "Pay online", url: "/pay", enabled: v, category: "payment" }],
+    );
   };
 
   const customLinks = useMemo(
@@ -247,6 +279,9 @@ export function MerchantLinksSetupSheet({
                       value={settings.extra_links.find((l) => l.id === p.id)?.url ?? ""}
                       onConnect={(url) => setPreset(p.id, p.label, url)}
                       onRemove={() => removeLink(p.id)}
+                      onQr={(url) =>
+                        setQrTarget({ title: p.label, subtitle: "Scan → aapka profile khulega", url: url || shopUrl })
+                      }
                     />
                   ))}
                 </>
@@ -306,6 +341,101 @@ export function MerchantLinksSetupSheet({
                 </Row>
               )}
 
+              {tab === "payment" && (
+                <>
+                  <div className="rounded-2xl border border-[#d4af37]/40 bg-white/70 p-3">
+                    <p className="text-[12px] font-extrabold text-[#1a1208]">Saved payment methods</p>
+                    <p className="mt-0.5 text-[10.5px] text-[#8b6508]">
+                      Ek se zyada method add karein — jise “Active” karenge wahi customer page par dikhega.
+                    </p>
+
+                    <div className="mt-2 space-y-2">
+                      {paymentMethods.length === 0 && (
+                        <p className="rounded-xl bg-white/70 px-2.5 py-2 text-[11px] text-[#8b6508]">
+                          Abhi koi method save nahi hai.
+                        </p>
+                      )}
+                      {paymentMethods.map((mth) => {
+                        const active =
+                          settings.payment_enabled &&
+                          settings.payment_upi_id.trim().toLowerCase() === (mth.url ?? "").trim().toLowerCase();
+                        return (
+                          <div key={mth.id} className="flex items-center gap-2 rounded-xl border border-[#d4af37]/40 bg-white/80 px-2.5 py-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                update({
+                                  payment_enabled: true,
+                                  payment_provider: mth.label || "upi",
+                                  payment_upi_id: mth.url ?? "",
+                                })
+                              }
+                              aria-label={`Set ${mth.label} active`}
+                              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${active ? "border-emerald-600 bg-emerald-600 text-white" : "border-[#d4af37]/60 text-transparent"}`}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[12px] font-bold text-[#1a1208]">
+                                {(mth.label || "UPI").toUpperCase()}
+                                {active && <span className="ml-1.5 text-[9.5px] font-extrabold text-emerald-700">ACTIVE</span>}
+                              </p>
+                              <p className="truncate text-[10.5px] text-[#8b6508]">{mth.url}</p>
+                            </div>
+                            <RowMenu
+                              onQr={() =>
+                                setQrTarget({
+                                  title: `${(mth.label || "UPI").toUpperCase()} payment`,
+                                  subtitle: mth.url ?? "",
+                                  url: `upi://pay?pa=${encodeURIComponent(mth.url ?? "")}&pn=${encodeURIComponent(profile?.name ?? "Karo Merchant")}&cu=INR`,
+                                })
+                              }
+                              onCopy={() => { void navigator.clipboard.writeText(mth.url ?? ""); toast.success("UPI ID copy ho gaya"); }}
+                              onDelete={() => removeLink(mth.id)}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 flex gap-1.5">
+                      <select
+                        value={payDraft.provider}
+                        onChange={(e) => setPayDraft((d) => ({ ...d, provider: e.target.value }))}
+                        className="w-[38%] rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-[12px] text-[#1a1208]"
+                      >
+                        {PROVIDERS.map((pv) => <option key={pv.v} value={pv.v}>{pv.label}</option>)}
+                      </select>
+                      <input
+                        value={payDraft.vpa}
+                        onChange={(e) => setPayDraft((d) => ({ ...d, vpa: e.target.value }))}
+                        placeholder="merchant@upi"
+                        className="min-w-0 flex-1 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-[12px] text-[#1a1208] placeholder:text-[#8b6508]/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={addPaymentMethod}
+                        className="shrink-0 rounded-lg bg-amber-600 px-3 text-[11.5px] font-extrabold text-white active:scale-95"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  <Row
+                    icon={<CreditCard className="h-5 w-5" />}
+                    color="bg-indigo-600"
+                    title="Online payment gateway (card · netbanking)"
+                    enabled={gatewayEnabled}
+                    onToggle={toggleGateway}
+                  >
+                    <p className="mt-2 text-[10.5px] text-[#8b6508]">
+                      Customer page par “Pay online” tile lagega — Razorpay checkout se card, netbanking aur wallet chalega.
+                    </p>
+                  </Row>
+                </>
+              )}
+
               {tab === "shop" && (
                 <Row
                   icon={<Store className="h-5 w-5" />}
@@ -353,9 +483,11 @@ export function MerchantLinksSetupSheet({
                       placeholder="Label"
                       className="flex-1 rounded-lg border border-[#d4af37]/40 bg-white/80 px-2 py-1.5 text-sm font-bold text-[#1a1208]"
                     />
-                    <button onClick={() => removeLink(link.id)} className="h-8 w-8 grid place-items-center rounded-full bg-rose-100 text-rose-700">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <RowMenu
+                      onQr={() => setQrTarget({ title: link.label || "Link", url: link.url || shopUrl })}
+                      onCopy={() => { void navigator.clipboard.writeText(link.url || shopUrl); toast.success("Copy ho gaya"); }}
+                      onDelete={() => removeLink(link.id)}
+                    />
                   </div>
                   <input
                     value={link.url}
@@ -397,6 +529,13 @@ export function MerchantLinksSetupSheet({
         </div>
       </DrawerContent>
     </Drawer>
+    <LinkQrSheet
+      open={!!qrTarget}
+      onClose={() => setQrTarget(null)}
+      title={qrTarget?.title ?? ""}
+      subtitle={qrTarget?.subtitle}
+      url={qrTarget?.url ?? ""}
+    />
     <VpaScannerSheet
       open={scannerOpen}
       onOpenChange={setScannerOpen}
@@ -449,6 +588,7 @@ function SocialConnectRow({
   value,
   onConnect,
   onRemove,
+  onQr,
 }: {
   id: string;
   label: string;
@@ -456,6 +596,7 @@ function SocialConnectRow({
   value: string;
   onConnect: (url: string) => void;
   onRemove: () => void;
+  onQr: (url: string) => void;
 }) {
   const platform = SOCIAL_PLATFORMS[id];
   const isPhone = platform?.mode === "phone";
@@ -483,9 +624,11 @@ function SocialConnectRow({
           <p className="truncate text-[10px] text-[#8b6508]">{connected ? value : "Not connected"}</p>
         </div>
         {connected && (
-          <button onClick={onRemove} aria-label={`Remove ${label}`} className="h-8 w-8 shrink-0 grid place-items-center rounded-full bg-rose-100 text-rose-700">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <RowMenu
+            onQr={() => onQr(value)}
+            onCopy={() => { void navigator.clipboard.writeText(value); toast.success("Link copy ho gaya"); }}
+            onDelete={onRemove}
+          />
         )}
       </div>
 
@@ -532,5 +675,51 @@ function SocialConnectRow({
         </button>
       </div>
     </div>
+  );
+}
+
+
+/** Three-dot menu for a saved link: dynamic QR, copy or delete. */
+function RowMenu({
+  onQr, onCopy, onDelete,
+}: { onQr: () => void; onCopy: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const act = (fn: () => void) => { setOpen(false); fn(); };
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Link options"
+        className="grid h-8 w-8 place-items-center rounded-full bg-white/80 text-[#8b6508] shadow-sm active:scale-90"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {open && (
+        <>
+          <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="fixed inset-0 z-[10] cursor-default" />
+          <div className="absolute right-0 top-9 z-[20] w-44 overflow-hidden rounded-2xl border border-[#d4af37]/50 bg-white shadow-2xl">
+            <MenuItem icon={<QrCode className="h-4 w-4" />} label="Dynamic QR code" onClick={() => act(onQr)} />
+            <MenuItem icon={<Copy className="h-4 w-4" />} label="Copy link" onClick={() => act(onCopy)} />
+            <MenuItem icon={<Trash2 className="h-4 w-4 text-rose-600" />} label="Delete" danger onClick={() => act(onDelete)} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({
+  icon, label, onClick, danger,
+}: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[12.5px] font-bold active:scale-[0.99] ${danger ? "text-rose-700" : "text-[#1a1208]"}`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
