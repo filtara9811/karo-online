@@ -260,9 +260,13 @@ function ScanLandingPage() {
             : (m.cover_url ? [{ type: "image" as const, src: m.cover_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }])));
 
   // Compressed, resized variants for images; videos/links pass through.
-  const mediaList: MediaItem[] = rawMedia.map((item) =>
-    item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
-  );
+  // Synced YouTube videos append after the merchant's own uploads (hybrid feed).
+  const mediaList: MediaItem[] = [
+    ...rawMedia.map((item) =>
+      item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
+    ),
+    ...youtube.items,
+  ];
 
   const theme = data.theme ?? {};
   const preset = theme.preset ?? "classic";
