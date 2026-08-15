@@ -376,9 +376,18 @@ function ScanLandingPage() {
               onShare={shareCurrent}
               onProducts={() => activeProducts[0] && setOpenProduct(activeProducts[0])}
             />
+            {activeProducts.length > 0 && (
+              <LandingProductSectionHeader
+                variant={railVariant}
+                count={allProducts.length}
+                onToggle={() => setRailVariant((v) => (v === "cards" ? "wide" : "cards"))}
+                onSeeAll={() => setAllProductsOpen(true)}
+              />
+            )}
             <LandingProductRail
               products={activeProducts}
               accent={accent}
+              variant={railVariant}
               shopName={merchantName}
               phone={m.phone}
               onOpen={openProductCard}
