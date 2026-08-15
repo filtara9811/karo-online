@@ -413,6 +413,17 @@ function ScanLandingPage() {
         />
       )}
 
+      <LandingAllProductsSheet
+        open={allProductsOpen}
+        products={allProducts}
+        accent={accent}
+        shopName={merchantName}
+        phone={m.phone}
+        onClose={() => setAllProductsOpen(false)}
+        onOpen={(p) => { setAllProductsOpen(false); openProductCard(p); }}
+        onCta={(p) => void trackQrEvent("PRODUCT_ENQUIRY", { code, project, ref: p.id, meta: { action: "cta_catalog" } })}
+      />
+
       <LandingProductSheet
         product={openProduct}
         accent={accent}
