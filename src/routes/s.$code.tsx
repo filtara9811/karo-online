@@ -20,7 +20,9 @@ import type { ExtraLink } from "@/components/landing/landing-shared";
 import { trackQrEvent } from "@/lib/qr-track";
 import { getLandingPayload } from "@/lib/landing.functions";
 import type { LandingPayload, LandingMediaItem, LandingStats, VideoProduct } from "@/lib/landing-types";
-import { LandingProductRail } from "@/components/landing/LandingProductRail";
+import { LandingProductRail, type RailVariant } from "@/components/landing/LandingProductRail";
+import { LandingProductSectionHeader } from "@/components/landing/LandingProductSectionHeader";
+import { LandingAllProductsSheet } from "@/components/landing/LandingAllProductsSheet";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
@@ -126,6 +128,8 @@ function ScanLandingPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeMedia, setActiveMedia] = useState(0);
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
+  const [railVariant, setRailVariant] = useState<RailVariant>("cards");
+  const [allProductsOpen, setAllProductsOpen] = useState(false);
   const [stats, setStats] = useState<LandingStats | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
@@ -268,6 +272,8 @@ function ScanLandingPage() {
     : `https://karoonline.in/s/${encodeURIComponent(code)}`;
   const reelsMode = layoutStyle !== "chat";
   const activeProducts = mediaList[activeMedia]?.products ?? [];
+  /** Every product across all videos — used by the "See All" catalog. */
+  const allProducts: VideoProduct[] = mediaList.flatMap((mi) => mi.products ?? []);
 
   // Google Business shortcut, if the merchant configured one in their links.
   const gmbUrl = ((links.extra_links ?? []) as ExtraLink[]).find(
@@ -370,9 +376,18 @@ function ScanLandingPage() {
               onShare={shareCurrent}
               onProducts={() => activeProducts[0] && setOpenProduct(activeProducts[0])}
             />
+            {activeProducts.length > 0 && (
+              <LandingProductSectionHeader
+                variant={railVariant}
+                count={allProducts.length}
+                onToggle={() => setRailVariant((v) => (v === "cards" ? "wide" : "cards"))}
+                onSeeAll={() => setAllProductsOpen(true)}
+              />
+            )}
             <LandingProductRail
               products={activeProducts}
               accent={accent}
+              variant={railVariant}
               shopName={merchantName}
               phone={m.phone}
               onOpen={openProductCard}
@@ -397,6 +412,17 @@ function ScanLandingPage() {
           onOpen={openProductCard}
         />
       )}
+
+      <LandingAllProductsSheet
+        open={allProductsOpen}
+        products={allProducts}
+        accent={accent}
+        shopName={merchantName}
+        phone={m.phone}
+        onClose={() => setAllProductsOpen(false)}
+        onOpen={(p) => { setAllProductsOpen(false); openProductCard(p); }}
+        onCta={(p) => void trackQrEvent("PRODUCT_ENQUIRY", { code, project, ref: p.id, meta: { action: "cta_catalog" } })}
+      />
 
       <LandingProductSheet
         product={openProduct}
