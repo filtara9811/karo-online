@@ -272,6 +272,8 @@ function ScanLandingPage() {
     : `https://karoonline.in/s/${encodeURIComponent(code)}`;
   const reelsMode = layoutStyle !== "chat";
   const activeProducts = mediaList[activeMedia]?.products ?? [];
+  /** Every product across all videos — used by the "See All" catalog. */
+  const allProducts: VideoProduct[] = mediaList.flatMap((mi) => mi.products ?? []);
 
   // Google Business shortcut, if the merchant configured one in their links.
   const gmbUrl = ((links.extra_links ?? []) as ExtraLink[]).find(
