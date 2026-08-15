@@ -150,7 +150,12 @@ function ScanLandingPage() {
     const raw = Number(new URLSearchParams(window.location.search).get("m"));
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
   }, []);
-
+  // Dynamic YouTube channel / playlist feed (hybrid with uploaded media).
+  const youtube = useYoutubeFeed({
+    source: data?.links?.yt_source ?? null,
+    enabled: !!data?.links?.yt_enabled,
+    products: data?.links?.yt_products ?? null,
+  });
 
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
