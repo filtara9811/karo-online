@@ -128,6 +128,8 @@ function ScanLandingPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeMedia, setActiveMedia] = useState(0);
   const [openProduct, setOpenProduct] = useState<VideoProduct | null>(null);
+  const [railVariant, setRailVariant] = useState<RailVariant>("cards");
+  const [allProductsOpen, setAllProductsOpen] = useState(false);
   const [stats, setStats] = useState<LandingStats | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"menu" | "orders">("menu");
