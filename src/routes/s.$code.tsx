@@ -174,6 +174,15 @@ function ScanLandingPage() {
     void trackQrEvent("PRODUCT_VIEW", { code, project, meta: { media_index: activeMedia, surface: "reels" } });
   }, [activeMedia, code, data?.ok, project]);
 
+  // Infinite feed: pull the next YouTube page as the viewer nears the end.
+  useEffect(() => {
+    const uploaded = data?.links?.poster_media?.length ?? 0;
+    const total = uploaded + youtube.items.length;
+    if (total > 0 && activeMedia >= total - 3) youtube.loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMedia, youtube.items.length]);
+
+
   // Auto-offer the white-label install once per shop, shortly after load.
   const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
   useEffect(() => {
