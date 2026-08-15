@@ -49,14 +49,14 @@ export function LandingProductRail({
               key={p.id}
               className="relative flex w-[236px] shrink-0 items-center gap-2 overflow-hidden rounded-xl bg-white p-1.5 shadow-lg"
             >
-              <button onClick={() => onOpen(p)} className="relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-lg bg-slate-100">
+              <button onClick={() => onOpen(p)} className="product-thumb-frame h-[54px] w-[54px] shrink-0 rounded-lg">
                 {p.image ? (
                   <img
                     src={optimizedImage(p.image, IMG.tile) ?? p.image}
                     alt={p.name}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover object-center"
+                    className="product-thumb-image"
                   />
                 ) : (
                   <span className="grid h-full w-full place-items-center text-slate-400">
@@ -64,6 +64,7 @@ export function LandingProductRail({
                   </span>
                 )}
               </button>
+
               <div className="min-w-0 flex-1">
                 <button onClick={() => onOpen(p)} className="block w-full text-left">
                   <h5 className="truncate text-[11px] font-bold text-slate-900">{p.name}</h5>
@@ -95,17 +96,18 @@ export function LandingProductRail({
             className="relative w-[108px] shrink-0 overflow-hidden rounded-xl bg-white shadow-lg"
           >
             <button onClick={() => onOpen(p)} className="block w-full text-left">
-              <div className="relative h-[74px] w-full overflow-hidden bg-slate-100">
+              <div className="product-thumb-frame h-[74px]">
                 {p.image ? (
                   <img
                     src={optimizedImage(p.image, IMG.tile) ?? p.image}
                     alt={p.name}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover object-center"
+                    className="product-thumb-image"
                   />
                 ) : (
                   <span className="grid h-full w-full place-items-center text-slate-400">
+
                     <Tag className="h-4 w-4" />
                   </span>
                 )}

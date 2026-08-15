@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, ChevronUp } from "lucide-react";
 import type { LandingMediaItem } from "@/lib/landing-types";
@@ -20,11 +20,12 @@ function ytEmbed(url: string, muted: boolean): string {
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&controls=0&loop=1&playlist=${id}&modestbranding=1&rel=0&iv_load_policy=3`;
 }
 
-
 /**
- * Vertical media viewer: swipe up/down to change media, sound ON by default.
- * Frames cross-fade while both stay painted, so no black flash appears between
- * two videos. Press and hold pauses playback; releasing resumes it.
+ * Vertical reel feed built on native scroll-snap: a vertical swipe starting
+ * anywhere on the screen moves to the next media, including on top of YouTube
+ * iframes (they are pointer-events:none, a transparent tap layer sits above).
+ * Only the active slide and its neighbours mount a player, and only the active
+ * slide is allowed to make sound.
  */
 export function LandingStoryMedia({
   media,
@@ -44,111 +45,127 @@ export function LandingStoryMedia({
   children?: React.ReactNode;
 }) {
   const items = media.length ? media : [];
-  const [index, setIndex] = useState(() => Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0)));
-  const [dir, setDir] = useState<1 | -1>(1);
+  const total = items.length;
+  const startIndex = Math.min(Math.max(initialIndex, 0), Math.max(total - 1, 0));
+  const [index, setIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [holding, setHolding] = useState(false);
   const [muted, setMuted] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const startedAt = useRef<number>(0);
-  const elapsed = useRef<number>(0);
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const holdTimer = useRef<number | null>(null);
+  const elapsed = useRef(0);
+  const startedAt = useRef(0);
+  const jumping = useRef(false);
 
-  const toggleSound = useCallback(() => {
-    setMuted((m) => {
-      const next = !m;
-      const el = videoRef.current;
-      if (el) {
-        el.muted = next;
-        if (!next) void el.play().catch(() => undefined);
-      }
-      return next;
-    });
+  /** Trailing clone of the first item makes last -> first a seamless loop. */
+  const slides = useMemo(() => (total > 1 ? [...items, items[0]] : items), [items, total]);
+  const current = items[Math.min(index, Math.max(total - 1, 0))];
+
+  const registerVideo = useCallback((i: number, el: HTMLVideoElement | null) => {
+    if (el) videoRefs.current.set(i, el);
+    else videoRefs.current.delete(i);
   }, []);
 
-  const current = items[Math.min(index, Math.max(items.length - 1, 0))];
-  const total = items.length;
-
-  /** Keeps only the newest mounted <video> so the outgoing frame can be silenced. */
-  const setVideo = useCallback((el: HTMLVideoElement | null) => {
-    if (el) videoRef.current = el;
+  // Scroll to the requested starting slide once.
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || startIndex === 0) return;
+    el.scrollTo({ top: startIndex * el.clientHeight, behavior: "auto" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const go = useCallback(
-    (d: 1 | -1) => {
-      if (total <= 1) {
-        setProgress(0);
-        elapsed.current = 0;
-        return;
-      }
-      // Silence + freeze the outgoing video: otherwise both frames play sound
-      // together while they cross-fade.
-      const prev = videoRef.current;
-      if (prev) {
-        prev.muted = true;
-        prev.pause();
-      }
-      setDir(d);
-      setIndex((i) => (i + d + total) % total);
-      setProgress(0);
-      elapsed.current = 0;
-    },
-    [total],
-  );
+  // Track the visible slide; jump back to the top when the clone appears.
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const nodes = Array.from(el.querySelectorAll<HTMLElement>("[data-slide]"));
+    if (!nodes.length) return;
 
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting || e.intersectionRatio < 0.6) continue;
+          const i = Number((e.target as HTMLElement).dataset.slide);
+          if (total > 1 && i === total) {
+            if (jumping.current) return;
+            jumping.current = true;
+            el.scrollTo({ top: 0, behavior: "auto" });
+            setIndex(0);
+            window.setTimeout(() => { jumping.current = false; }, 260);
+            return;
+          }
+          setIndex(i);
+        }
+      },
+      { root: el, threshold: [0.6] },
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [slides.length, total]);
 
+  // Single audio owner: everything except the active slide is paused + muted.
   useEffect(() => {
     setProgress(0);
     elapsed.current = 0;
-    onIndexChange?.(index);
-  }, [index, onIndexChange]);
-
-  // Autoplay with sound; browsers that block it fall back to muted playback.
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    el.muted = muted;
-    void el.play().catch(() => {
+    videoRefs.current.forEach((el, i) => {
+      if (i === index) return;
       el.muted = true;
-      setMuted(true);
-      void el.play().catch(() => undefined);
+      el.pause();
     });
-  }, [index, muted, current?.src]);
+    const active = videoRefs.current.get(index);
+    if (active) {
+      active.muted = muted;
+      void active.play().catch(() => {
+        active.muted = true;
+        setMuted(true);
+        void active.play().catch(() => undefined);
+      });
+    }
+    onIndexChange?.(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
-  // Images get a gentle progress sweep, but nothing auto-advances any more —
-  // the viewer swipes manually to reach the next video.
+  // Applies the mute preference to whichever slide is active.
   useEffect(() => {
-    if (!current || total === 0 || current.type !== "image") return;
+    const active = videoRefs.current.get(index);
+    if (!active) return;
+    active.muted = muted;
+    if (!muted) void active.play().catch(() => undefined);
+  }, [muted, index]);
+
+  const toggleSound = useCallback(() => setMuted((m) => !m), []);
+
+  // Gentle progress sweep for images (videos report their own time).
+  useEffect(() => {
+    if (!current || current.type !== "image") return;
     let raf = 0;
     startedAt.current = performance.now() - elapsed.current;
-
     const tick = (now: number) => {
-      if (paused || holding) {
-        startedAt.current = now - elapsed.current;
-        raf = requestAnimationFrame(tick);
-        return;
+      if (holding) startedAt.current = now - elapsed.current;
+      else {
+        elapsed.current = now - startedAt.current;
+        setProgress(Math.min(1, elapsed.current / IMAGE_DURATION));
       }
-      elapsed.current = now - startedAt.current;
-      setProgress(Math.min(1, elapsed.current / IMAGE_DURATION));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [current, paused, holding, total, index]);
+  }, [current, holding, index]);
 
   const holdStart = () => {
     if (holdTimer.current) window.clearTimeout(holdTimer.current);
     holdTimer.current = window.setTimeout(() => {
       setHolding(true);
-      videoRef.current?.pause();
+      videoRefs.current.get(index)?.pause();
     }, 180);
   };
   const holdEnd = () => {
     if (holdTimer.current) window.clearTimeout(holdTimer.current);
     holdTimer.current = null;
     setHolding(false);
-    const el = videoRef.current;
+    const el = videoRefs.current.get(index);
     if (el?.paused) void el.play().catch(() => undefined);
   };
 
@@ -157,94 +174,93 @@ export function LandingStoryMedia({
   if (!current) return null;
 
   return (
-    <motion.div
-      className={`relative w-full touch-pan-x overflow-hidden bg-black ${className}`}
-      drag={total > 1 ? "y" : false}
-      dragDirectionLock
-      dragElastic={0.14}
-      dragSnapToOrigin
-      dragConstraints={{ top: 0, bottom: 0 }}
-      onPointerDown={holdStart}
-      onPointerUp={holdEnd}
-      onPointerCancel={holdEnd}
-      onDragStart={() => { setPaused(true); holdEnd(); }}
-      onDragEnd={(_, info) => {
-        setPaused(false);
-        // Wraps around: last → first and first → last, so the reel never stops.
-        if (info.offset.y < -50 || info.velocity.y < -350) go(1);
-        else if (info.offset.y > 50 || info.velocity.y > 350) go(-1);
-      }}
-    >
-      {/* Blurred still of the active frame keeps the backdrop filled during swipes */}
-      {current.type !== "url" && (
-        <div
-          aria-hidden
-          className="absolute inset-0 scale-105 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: `url(${current.poster || (current.type === "image" ? current.src : "")})` }}
-        />
-      )}
+    <div className={`relative w-full overflow-hidden bg-black ${className}`}>
+      <div
+        ref={scrollerRef}
+        className="absolute inset-0 snap-y snap-mandatory overflow-y-scroll overflow-x-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
+      >
+        {slides.map((item, i) => {
+          const isClone = total > 1 && i === total;
+          const near = Math.abs(i - index) <= 1 || (isClone && index === total - 1);
+          const active = i === index;
+          return (
+            <section
+              key={`${i}-${item.src}`}
+              data-slide={i}
+              className="relative h-full w-full shrink-0 snap-start snap-always overflow-hidden bg-black"
+            >
+              {/* Blurred still keeps the backdrop filled behind letterboxed media */}
+              {item.type !== "url" && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 scale-105 bg-cover bg-center opacity-40"
+                  style={{ backgroundImage: `url(${item.poster || (item.type === "image" ? item.src : "")})` }}
+                />
+              )}
 
-      {/* mode="sync" keeps the outgoing frame painted, so there is no black gap */}
-      <AnimatePresence mode="sync" initial={false} custom={dir}>
-        <motion.div
-          key={`${index}-${current.src}`}
-          custom={dir}
-          initial={{ y: dir === 1 ? "18%" : "-18%", opacity: 0, scale: 1.02 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: dir === 1 ? "-8%" : "8%", opacity: 0, scale: 1.01 }}
-          transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-          className="absolute inset-0"
-        >
+              {item.type === "video" ? (
+                near ? (
+                  <video
+                    ref={(el) => registerVideo(i, el)}
+                    src={item.src}
+                    poster={item.poster ?? undefined}
+                    autoPlay={active}
+                    muted={active ? muted : true}
+                    loop
+                    playsInline
+                    preload={active ? "auto" : "metadata"}
+                    onTimeUpdate={(e) => {
+                      if (!active) return;
+                      const el = e.currentTarget;
+                      if (el.duration > 0) setProgress(Math.min(1, el.currentTime / el.duration));
+                    }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : null
+              ) : item.type === "url" ? (
+                near ? (
+                  <iframe
+                    key={`${item.src}-${active ? (muted ? "m" : "s") : "idle"}`}
+                    src={detectProvider(item.src) === "youtube" ? ytEmbed(item.src, active ? muted : true) : item.src}
+                    title={alt}
+                    // pointer-events off so a swipe over the player still scrolls the feed
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    style={{ border: 0 }}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                  />
+                ) : null
+              ) : (
+                <img
+                  src={item.src}
+                  alt={alt}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
 
-          {current.type === "video" ? (
-            <video
-              key={current.src}
-              ref={setVideo}
-              src={current.src}
-              poster={current.poster ?? undefined}
-              autoPlay
-              muted={muted}
-              loop
-              playsInline
-              onTimeUpdate={(e) => {
-                const el = e.currentTarget;
-                if (el.duration > 0) setProgress(Math.min(1, el.currentTime / el.duration));
-              }}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : current.type === "url" ? (
-            detectProvider(current.src) === "youtube" ? (
-              <iframe
-                key={`${current.src}-${muted ? "m" : "s"}`}
-                src={ytEmbed(current.src, muted)}
-                title={alt}
-                className="absolute inset-0 h-full w-full"
-                style={{ border: 0 }}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
+              {/* Transparent tap layer: hold to pause, never blocks vertical scroll */}
+              <div
+                className="absolute inset-0 z-10"
+                style={{ touchAction: "pan-y" }}
+                onPointerDown={holdStart}
+                onPointerUp={holdEnd}
+                onPointerCancel={holdEnd}
+                onPointerLeave={holdEnd}
               />
-            ) : (
-              <iframe src={current.src} title={alt} className="absolute inset-0 h-full w-full" style={{ border: 0 }} allowFullScreen />
-            )
-          ) : (
-            <img
-              src={current.src}
-              alt={alt}
-              loading={index === 0 ? "eager" : "lazy"}
-              fetchPriority={index === 0 ? "high" : "auto"}
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+            </section>
+          );
+        })}
+      </div>
 
       {/* readability gradients */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/45 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[15] h-28 bg-gradient-to-b from-black/50 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-28 bg-gradient-to-t from-black/45 to-transparent" />
 
       {/* sound toggle — sound is ON by default, tap to mute */}
-      {current.type === "video" && (
+      {current.type !== "image" && (
         <motion.button
           type="button"
           onClick={toggleSound}
@@ -274,11 +290,7 @@ export function LandingStoryMedia({
       {total > 0 && (
         <div className="pointer-events-none absolute inset-x-3 top-[76px] z-20">
           <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/30">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: accent, width: `${progress * 100}%` }}
-              transition={{ ease: "linear", duration: 0.1 }}
-            />
+            <div className="h-full rounded-full transition-[width] duration-150" style={{ background: accent, width: `${progress * 100}%` }} />
           </div>
           {total > 1 && (
             <p className="mt-1 text-right text-[9px] font-bold text-white/70">
@@ -301,7 +313,6 @@ export function LandingStoryMedia({
       )}
 
       {children}
-    </motion.div>
-
+    </div>
   );
 }
