@@ -96,17 +96,18 @@ export function LandingProductRail({
             className="relative w-[108px] shrink-0 overflow-hidden rounded-xl bg-white shadow-lg"
           >
             <button onClick={() => onOpen(p)} className="block w-full text-left">
-              <div className="relative h-[74px] w-full overflow-hidden bg-slate-100">
+              <div className="product-thumb-frame h-[74px]">
                 {p.image ? (
                   <img
                     src={optimizedImage(p.image, IMG.tile) ?? p.image}
                     alt={p.name}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover object-center"
+                    className="product-thumb-image"
                   />
                 ) : (
                   <span className="grid h-full w-full place-items-center text-slate-400">
+
                     <Tag className="h-4 w-4" />
                   </span>
                 )}
