@@ -165,6 +165,9 @@ export function LandingMediaSheet({
         poster_media: items,
         poster_bg_urls: images,
         poster_bg_url: images[0] ?? null,
+        yt_source: ytSource.trim() || null,
+        yt_enabled: ytEnabled && !!ytSource.trim(),
+        yt_products: ytProducts,
       };
       const size = jsonBytes(payload);
       if (size > 512 * 1024) {
