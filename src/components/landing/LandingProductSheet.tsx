@@ -44,13 +44,14 @@ export function LandingProductSheet({
             onClick={(e) => e.stopPropagation()}
             className="mx-auto flex max-h-[92svh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-white pb-[env(safe-area-inset-bottom)]"
           >
-            <div className="relative h-[42vh] w-full shrink-0 bg-slate-100">
+            <div className="product-thumb-frame h-[42vh] w-full shrink-0">
               {product.image ? (
                 <img
                   src={optimizedImage(product.image, IMG.hero) ?? product.image}
                   alt={product.name}
-                  className="h-full w-full object-contain"
+                  className="product-thumb-image"
                 />
+
               ) : (
                 <span className="grid h-full w-full place-items-center text-slate-400"><Tag className="h-8 w-8" /></span>
               )}
