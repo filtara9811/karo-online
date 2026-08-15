@@ -64,6 +64,11 @@ export type LandingPayload = {
     digital_shop_enabled?: boolean;
     digital_shop_url?: string;
     extra_links?: Array<{ id: string; label: string; url: string; enabled: boolean }>;
+    /** Dynamic YouTube feed: channel id / @handle / playlist id or url. */
+    yt_source?: string | null;
+    yt_enabled?: boolean;
+    /** Products tagged per synced YouTube video id. */
+    yt_products?: Record<string, VideoProduct[]> | null;
   };
   landing?: {
     top_banner_url?: string;

@@ -9,6 +9,7 @@ import { readExtras } from "@/components/oneqr/landing-extras";
 
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
+import { useYoutubeFeed } from "@/components/landing/use-youtube-feed";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
 import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
@@ -150,7 +151,12 @@ function ScanLandingPage() {
     const raw = Number(new URLSearchParams(window.location.search).get("m"));
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
   }, []);
-
+  // Dynamic YouTube channel / playlist feed (hybrid with uploaded media).
+  const youtube = useYoutubeFeed({
+    source: data?.links?.yt_source ?? null,
+    enabled: !!data?.links?.yt_enabled,
+    products: data?.links?.yt_products ?? null,
+  });
 
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
@@ -167,6 +173,15 @@ function ScanLandingPage() {
     if (!data?.ok) return;
     void trackQrEvent("PRODUCT_VIEW", { code, project, meta: { media_index: activeMedia, surface: "reels" } });
   }, [activeMedia, code, data?.ok, project]);
+
+  // Infinite feed: pull the next YouTube page as the viewer nears the end.
+  useEffect(() => {
+    const uploaded = data?.links?.poster_media?.length ?? 0;
+    const total = uploaded + youtube.items.length;
+    if (total > 0 && activeMedia >= total - 3) youtube.loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMedia, youtube.items.length]);
+
 
   // Auto-offer the white-label install once per shop, shortly after load.
   const canOfferInstall = !!data?.ok && !installer.installed && !installer.standalone && !installer.seen;
@@ -254,9 +269,13 @@ function ScanLandingPage() {
             : (m.cover_url ? [{ type: "image" as const, src: m.cover_url }] : [{ type: "image" as const, src: DEFAULT_COVER_URL }])));
 
   // Compressed, resized variants for images; videos/links pass through.
-  const mediaList: MediaItem[] = rawMedia.map((item) =>
-    item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
-  );
+  // Synced YouTube videos append after the merchant's own uploads (hybrid feed).
+  const mediaList: MediaItem[] = [
+    ...rawMedia.map((item) =>
+      item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
+    ),
+    ...youtube.items,
+  ];
 
   const theme = data.theme ?? {};
   const preset = theme.preset ?? "classic";

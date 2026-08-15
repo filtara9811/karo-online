@@ -1792,6 +1792,9 @@ export type Database = {
           premium_unlocked: boolean
           updated_at: string
           user_id: string
+          yt_enabled: boolean
+          yt_products: Json
+          yt_source: string | null
         }
         Insert: {
           created_at?: string
@@ -1815,6 +1818,9 @@ export type Database = {
           premium_unlocked?: boolean
           updated_at?: string
           user_id: string
+          yt_enabled?: boolean
+          yt_products?: Json
+          yt_source?: string | null
         }
         Update: {
           created_at?: string
@@ -1838,6 +1844,9 @@ export type Database = {
           premium_unlocked?: boolean
           updated_at?: string
           user_id?: string
+          yt_enabled?: boolean
+          yt_products?: Json
+          yt_source?: string | null
         }
         Relationships: []
       }

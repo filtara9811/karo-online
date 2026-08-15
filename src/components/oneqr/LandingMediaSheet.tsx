@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole } from "lucide-react";
+import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole, Youtube, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
+import { getYoutubeFeed } from "@/lib/youtube.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
@@ -58,6 +59,31 @@ export function LandingMediaSheet({
   const [paying, setPaying] = useState(false);
   const startOrder = useServerFn(createPremiumLinksOrder);
   const verifyOrder = useServerFn(verifyPremiumLinks);
+  const loadYoutube = useServerFn(getYoutubeFeed);
+
+  // ── Dynamic YouTube channel / playlist sync ───────────────────────────
+  const [ytSource, setYtSource] = useState("");
+  const [ytEnabled, setYtEnabled] = useState(false);
+  const [ytProducts, setYtProducts] = useState<Record<string, VideoProduct[]>>({});
+  const [ytVideos, setYtVideos] = useState<{ id: string; title: string; thumbnail: string | null }[]>([]);
+  const [ytActive, setYtActive] = useState<string | null>(null);
+  const [ytBusy, setYtBusy] = useState(false);
+
+  const syncYoutube = async (silent = false) => {
+    const src = ytSource.trim();
+    if (!src) { if (!silent) toast.error("Channel ID / playlist link daalein"); return; }
+    setYtBusy(true);
+    try {
+      const res = await loadYoutube({ data: { source: src, limit: 25 } });
+      if (!res.ok) { if (!silent) toast.error(res.error ?? "YouTube se videos nahi mili"); return; }
+      setYtVideos(res.videos.map((v) => ({ id: v.id, title: v.title, thumbnail: v.thumbnail })));
+      if (!silent) toast.success(`${res.videos.length} videos mil gayi — Publish dabayein`);
+    } catch (e) {
+      if (!silent) toast.error((e as Error).message || "Sync fail hua");
+    } finally {
+      setYtBusy(false);
+    }
+  };
 
   /** Razorpay checkout for the extra-video pack; unlocks instantly on success. */
   const payToUnlock = async () => {
@@ -94,11 +120,21 @@ export function LandingMediaSheet({
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
-        .select("poster_media, poster_bg_urls, poster_bg_url")
+        .select("poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products")
         .eq("user_id", uid)
         .maybeSingle();
       if (cancelled) return;
-      const d = data as { poster_media?: MediaItem[]; poster_bg_urls?: string[]; poster_bg_url?: string } | null;
+      const d = data as {
+        poster_media?: MediaItem[];
+        poster_bg_urls?: string[];
+        poster_bg_url?: string;
+        yt_source?: string | null;
+        yt_enabled?: boolean | null;
+        yt_products?: Record<string, VideoProduct[]> | null;
+      } | null;
+      setYtSource(d?.yt_source ?? "");
+      setYtEnabled(!!d?.yt_enabled);
+      setYtProducts((d?.yt_products && typeof d.yt_products === "object" ? d.yt_products : {}) as Record<string, VideoProduct[]>);
       const list: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
@@ -129,6 +165,9 @@ export function LandingMediaSheet({
         poster_media: items,
         poster_bg_urls: images,
         poster_bg_url: images[0] ?? null,
+        yt_source: ytSource.trim() || null,
+        yt_enabled: ytEnabled && !!ytSource.trim(),
+        yt_products: ytProducts,
       };
       const size = jsonBytes(payload);
       if (size > 512 * 1024) {
@@ -152,7 +191,7 @@ export function LandingMediaSheet({
     } finally {
       setSaving(false);
     }
-  }, [onSaved, user?.id]);
+  }, [onSaved, user?.id, ytSource, ytEnabled, ytProducts]);
 
   const update = (next: MediaItem[]) => {
     setMedia(next.slice(0, MAX_SLOTS));
@@ -222,9 +261,21 @@ export function LandingMediaSheet({
   };
 
   const current = media[Math.min(active, Math.max(media.length - 1, 0))];
-  const products = useMemo(() => current?.products ?? [], [current]);
+  /**
+   * When a synced YouTube video is selected, the product editor works on that
+   * video's tag list instead of the currently selected uploaded slot.
+   */
+  const products = useMemo(
+    () => (ytActive ? (ytProducts[ytActive] ?? []) : (current?.products ?? [])),
+    [current, ytActive, ytProducts],
+  );
 
   const setProducts = (list: VideoProduct[]) => {
+    if (ytActive) {
+      setYtProducts((p) => ({ ...p, [ytActive]: list }));
+      setDirty(true);
+      return;
+    }
     update(media.map((m, i) => (i === active ? { ...m, products: list } : m)));
   };
 
@@ -283,9 +334,85 @@ export function LandingMediaSheet({
           </button>
         </div>
 
+        {/* ── Dynamic YouTube channel / playlist sync ───────────────────── */}
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-red-700">
+              <Youtube className="h-4 w-4" /> YouTube auto-feed
+            </span>
+            <button
+              type="button"
+              onClick={() => { setYtEnabled((v) => !v); setDirty(true); }}
+              className={`relative h-6 w-11 rounded-full transition ${ytEnabled ? "bg-red-500" : "bg-slate-300"}`}
+              aria-label="YouTube feed toggle"
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${ytEnabled ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-red-900/70">
+            Channel ID (UC…), @handle ya playlist link daalein — aapke saare shorts landing page par apne aap aa jayenge.
+          </p>
+          <div className="mt-2 flex items-center gap-2 rounded-xl border border-red-200 bg-white px-2.5 py-2 focus-within:border-red-400">
+            <Youtube className="h-4 w-4 shrink-0 text-red-500" />
+            <input
+              value={ytSource}
+              onChange={(e) => { setYtSource(e.target.value); setDirty(true); }}
+              placeholder="@karoonline / UC… / playlist link"
+              className="min-w-0 flex-1 bg-transparent text-[12.5px] text-slate-900 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => void syncYoutube()}
+              disabled={ytBusy}
+              className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-red-500 px-3 text-[11px] font-extrabold text-white active:scale-95 disabled:opacity-60"
+            >
+              {ytBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync
+            </button>
+          </div>
+
+          {ytVideos.length > 0 && (
+            <>
+              <p className="mt-2 text-[10px] font-bold text-red-900/70">
+                {ytVideos.length} videos · video tap karke uske products tag karein
+              </p>
+              <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {ytVideos.map((v) => {
+                  const tagged = ytProducts[v.id]?.length ?? 0;
+                  const on = ytActive === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setYtActive(on ? null : v.id)}
+                      className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? "border-red-500" : "border-transparent"}`}
+                    >
+                      {v.thumbnail ? (
+                        <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="grid h-full w-full place-items-center text-white/70"><Play className="h-5 w-5" /></span>
+                      )}
+                      <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-1.5 text-[8.5px] font-bold text-white">
+                        {tagged} <Tag className="inline h-2.5 w-2.5" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {ytActive && (
+                <p className="mt-1.5 rounded-xl bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-red-700">
+                  Selected YouTube video ke products niche edit karein · dobara tap karke band karein
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+
+
         {loading ? (
           <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-amber-600" /></div>
-        ) : !current ? (
+        ) : !current && !ytActive ? (
           <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 py-10 text-center">
             <Film className="h-6 w-6 text-amber-600" />
             <p className="text-[12px] font-bold text-slate-700">Abhi koi video nahi</p>
@@ -295,16 +422,23 @@ export function LandingMediaSheet({
           <div className="space-y-4">
             {/* Active player card */}
             <div className="relative aspect-[9/14] w-full overflow-hidden rounded-[26px] border border-black/10 bg-slate-900 shadow-lg">
-              {current.type === "image" ? (
+              {ytActive ? (
+                <img
+                  src={ytVideos.find((v) => v.id === ytActive)?.thumbnail ?? ""}
+                  alt="Selected YouTube video"
+                  className="h-full w-full object-cover"
+                />
+              ) : current?.type === "image" ? (
                 <img src={current.src} alt="Selected media" className="h-full w-full object-cover" />
-              ) : current.type === "video" ? (
+              ) : current?.type === "video" ? (
                 <video src={current.src} muted playsInline controls className="h-full w-full object-cover" />
               ) : (
                 <span className="grid h-full w-full place-items-center px-6 text-center text-[11px] font-bold text-white/80">
                   <Play className="mx-auto mb-2 h-7 w-7" />
-                  {current.src}
+                  {current?.src}
                 </span>
               )}
+
 
               {/* Product slots over the bottom of the player */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-2.5 pt-8">
