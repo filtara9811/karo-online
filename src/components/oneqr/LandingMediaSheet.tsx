@@ -59,6 +59,31 @@ export function LandingMediaSheet({
   const [paying, setPaying] = useState(false);
   const startOrder = useServerFn(createPremiumLinksOrder);
   const verifyOrder = useServerFn(verifyPremiumLinks);
+  const loadYoutube = useServerFn(getYoutubeFeed);
+
+  // ── Dynamic YouTube channel / playlist sync ───────────────────────────
+  const [ytSource, setYtSource] = useState("");
+  const [ytEnabled, setYtEnabled] = useState(false);
+  const [ytProducts, setYtProducts] = useState<Record<string, VideoProduct[]>>({});
+  const [ytVideos, setYtVideos] = useState<{ id: string; title: string; thumbnail: string | null }[]>([]);
+  const [ytActive, setYtActive] = useState<string | null>(null);
+  const [ytBusy, setYtBusy] = useState(false);
+
+  const syncYoutube = async (silent = false) => {
+    const src = ytSource.trim();
+    if (!src) { if (!silent) toast.error("Channel ID / playlist link daalein"); return; }
+    setYtBusy(true);
+    try {
+      const res = await loadYoutube({ data: { source: src, limit: 25 } });
+      if (!res.ok) { if (!silent) toast.error(res.error ?? "YouTube se videos nahi mili"); return; }
+      setYtVideos(res.videos.map((v) => ({ id: v.id, title: v.title, thumbnail: v.thumbnail })));
+      if (!silent) toast.success(`${res.videos.length} videos mil gayi — Publish dabayein`);
+    } catch (e) {
+      if (!silent) toast.error((e as Error).message || "Sync fail hua");
+    } finally {
+      setYtBusy(false);
+    }
+  };
 
   /** Razorpay checkout for the extra-video pack; unlocks instantly on success. */
   const payToUnlock = async () => {
