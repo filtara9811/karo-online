@@ -334,6 +334,82 @@ export function LandingMediaSheet({
           </button>
         </div>
 
+        {/* ── Dynamic YouTube channel / playlist sync ───────────────────── */}
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-red-700">
+              <Youtube className="h-4 w-4" /> YouTube auto-feed
+            </span>
+            <button
+              type="button"
+              onClick={() => { setYtEnabled((v) => !v); setDirty(true); }}
+              className={`relative h-6 w-11 rounded-full transition ${ytEnabled ? "bg-red-500" : "bg-slate-300"}`}
+              aria-label="YouTube feed toggle"
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${ytEnabled ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-red-900/70">
+            Channel ID (UC…), @handle ya playlist link daalein — aapke saare shorts landing page par apne aap aa jayenge.
+          </p>
+          <div className="mt-2 flex items-center gap-2 rounded-xl border border-red-200 bg-white px-2.5 py-2 focus-within:border-red-400">
+            <Youtube className="h-4 w-4 shrink-0 text-red-500" />
+            <input
+              value={ytSource}
+              onChange={(e) => { setYtSource(e.target.value); setDirty(true); }}
+              placeholder="@karoonline / UC… / playlist link"
+              className="min-w-0 flex-1 bg-transparent text-[12.5px] text-slate-900 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => void syncYoutube()}
+              disabled={ytBusy}
+              className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-red-500 px-3 text-[11px] font-extrabold text-white active:scale-95 disabled:opacity-60"
+            >
+              {ytBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync
+            </button>
+          </div>
+
+          {ytVideos.length > 0 && (
+            <>
+              <p className="mt-2 text-[10px] font-bold text-red-900/70">
+                {ytVideos.length} videos · video tap karke uske products tag karein
+              </p>
+              <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {ytVideos.map((v) => {
+                  const tagged = ytProducts[v.id]?.length ?? 0;
+                  const on = ytActive === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setYtActive(on ? null : v.id)}
+                      className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? "border-red-500" : "border-transparent"}`}
+                    >
+                      {v.thumbnail ? (
+                        <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="grid h-full w-full place-items-center text-white/70"><Play className="h-5 w-5" /></span>
+                      )}
+                      <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-1.5 text-[8.5px] font-bold text-white">
+                        {tagged} <Tag className="inline h-2.5 w-2.5" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {ytActive && (
+                <p className="mt-1.5 rounded-xl bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-red-700">
+                  Selected YouTube video ke products niche edit karein · dobara tap karke band karein
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+
+
         {loading ? (
           <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-amber-600" /></div>
         ) : !current ? (
