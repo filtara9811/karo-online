@@ -120,11 +120,21 @@ export function LandingMediaSheet({
     (async () => {
       const { data } = await supabase
         .from("merchant_link_settings" as never)
-        .select("poster_media, poster_bg_urls, poster_bg_url")
+        .select("poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products")
         .eq("user_id", uid)
         .maybeSingle();
       if (cancelled) return;
-      const d = data as { poster_media?: MediaItem[]; poster_bg_urls?: string[]; poster_bg_url?: string } | null;
+      const d = data as {
+        poster_media?: MediaItem[];
+        poster_bg_urls?: string[];
+        poster_bg_url?: string;
+        yt_source?: string | null;
+        yt_enabled?: boolean | null;
+        yt_products?: Record<string, VideoProduct[]> | null;
+      } | null;
+      setYtSource(d?.yt_source ?? "");
+      setYtEnabled(!!d?.yt_enabled);
+      setYtProducts((d?.yt_products && typeof d.yt_products === "object" ? d.yt_products : {}) as Record<string, VideoProduct[]>);
       const list: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
