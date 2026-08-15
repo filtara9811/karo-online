@@ -4,10 +4,12 @@ import type { VideoProduct } from "@/lib/landing-types";
 import { optimizedImage, IMG } from "@/lib/img";
 import { resolveCta } from "./product-cta";
 
+export type RailVariant = "cards" | "wide";
+
 /**
  * Compact shoppable carousel of the products attached to the video currently
- * playing. Cards are small enough that 2–3 stay visible without covering the
- * video, and the gaps stay transparent so the video shows through.
+ * playing. Two styles: tall mini cards ("cards") and short wide rows ("wide"),
+ * switchable from the product section header.
  */
 export function LandingProductRail({
   products,
@@ -16,6 +18,7 @@ export function LandingProductRail({
   shopName = "this shop",
   phone,
   onCta,
+  variant = "cards",
 }: {
   products: VideoProduct[];
   accent: string;
@@ -23,10 +26,13 @@ export function LandingProductRail({
   shopName?: string;
   phone?: string | null;
   onCta?: (p: VideoProduct) => void;
+  variant?: RailVariant;
 }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   if (!products.length) return null;
+
+  const wide = variant === "wide";
 
   return (
     <div
@@ -36,6 +42,53 @@ export function LandingProductRail({
     >
       {products.map((p) => {
         const cta = resolveCta(p, { shopName, phone });
+
+        if (wide) {
+          return (
+            <article
+              key={p.id}
+              className="relative flex w-[236px] shrink-0 items-center gap-2 overflow-hidden rounded-xl bg-white p-1.5 shadow-lg"
+            >
+              <button onClick={() => onOpen(p)} className="relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                {p.image ? (
+                  <img
+                    src={optimizedImage(p.image, IMG.tile) ?? p.image}
+                    alt={p.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <span className="grid h-full w-full place-items-center text-slate-400">
+                    <Tag className="h-4 w-4" />
+                  </span>
+                )}
+              </button>
+              <div className="min-w-0 flex-1">
+                <button onClick={() => onOpen(p)} className="block w-full text-left">
+                  <h5 className="truncate text-[11px] font-bold text-slate-900">{p.name}</h5>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[11.5px] font-extrabold text-slate-900">{p.price || "Ask price"}</span>
+                    {p.mrp && <span className="text-[9.5px] font-semibold text-slate-400 line-through">{p.mrp}</span>}
+                    <Star className="ml-auto h-2.5 w-2.5 fill-current" style={{ color: accent }} />
+                    <span className="text-[9.5px] font-bold text-slate-700">{p.rating ?? 4.8}</span>
+                  </div>
+                </button>
+                <a
+                  href={cta.href}
+                  target={cta.external ? "_blank" : undefined}
+                  rel="noreferrer"
+                  onClick={() => onCta?.(p)}
+                  className="mt-1 flex h-[24px] items-center justify-center rounded-lg text-[10.5px] font-extrabold text-white active:scale-[0.98]"
+                  style={{ background: cta.color }}
+                >
+                  {cta.label}
+                </a>
+              </div>
+            </article>
+          );
+        }
+
         return (
           <article
             key={p.id}
