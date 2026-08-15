@@ -261,9 +261,21 @@ export function LandingMediaSheet({
   };
 
   const current = media[Math.min(active, Math.max(media.length - 1, 0))];
-  const products = useMemo(() => current?.products ?? [], [current]);
+  /**
+   * When a synced YouTube video is selected, the product editor works on that
+   * video's tag list instead of the currently selected uploaded slot.
+   */
+  const products = useMemo(
+    () => (ytActive ? (ytProducts[ytActive] ?? []) : (current?.products ?? [])),
+    [current, ytActive, ytProducts],
+  );
 
   const setProducts = (list: VideoProduct[]) => {
+    if (ytActive) {
+      setYtProducts((p) => ({ ...p, [ytActive]: list }));
+      setDirty(true);
+      return;
+    }
     update(media.map((m, i) => (i === active ? { ...m, products: list } : m)));
   };
 
