@@ -280,7 +280,7 @@ function Tile({
       whileTap={{ scale: 0.94 }}
       transition={{ type: "spring", stiffness: 420, damping: 22 }}
       onClick={onClick}
-      className="relative rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
+      className="relative shrink-0 basis-[calc((100%-2rem)/5)] min-w-[60px] rounded-2xl border border-amber-200/80 bg-amber-50/70 px-1.5 py-2.5 text-center active:bg-amber-100/70"
     >
       <span className="relative mx-auto grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">
         {pulse && (
