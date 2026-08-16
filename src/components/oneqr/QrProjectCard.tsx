@@ -86,6 +86,7 @@ export function QrProjectCard({
   onGuide: () => void;
   onProfile: () => void;
   onRange?: (days: number) => void;
+  onPos?: () => void;
 }) {
   const qrTileRef = useRef<HTMLCanvasElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
