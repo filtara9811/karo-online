@@ -400,6 +400,7 @@ function QrDashboardPage() {
                         onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
+                        onPos={() => navigate({ to: "/vendor/shop" })}
                         onGuide={() => setGuideOpen(true)}
                         onProfile={() => setProfileOpen(true)}
 
