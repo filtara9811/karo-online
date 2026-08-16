@@ -212,8 +212,8 @@ export function QrProjectCard({
         </button>
       </div>
 
-      {/* Four action tiles */}
-      <div className="mt-2.5 mx-4 mb-4 grid grid-cols-4 gap-2">
+      {/* Action tiles — 5 up, horizontally scrollable on narrow phones */}
+      <div className="mt-2.5 mx-4 mb-4 flex gap-2 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Tile accent={accent} value={stats.total} label="Qr | visitor" onClick={onQr} pulse>
           <span className="grid h-6 w-6 place-items-center overflow-hidden rounded-[4px] bg-white">
             <canvas ref={qrTileRef} className="h-6 w-6" />
@@ -222,6 +222,7 @@ export function QrProjectCard({
         <Tile accent={accent} value={stats.clicks} label="Add campaign" onClick={onCampaign} icon={Megaphone} />
         <Tile accent={accent} label="My landing page" onClick={onPreview} icon={SettingsIcon} />
         <Tile accent={accent} label="Add | link" onClick={onLinks} icon={Link2} />
+        {onPos && <Tile accent={accent} label="POS" onClick={onPos} icon={Receipt} />}
       </div>
     </motion.article>
 
