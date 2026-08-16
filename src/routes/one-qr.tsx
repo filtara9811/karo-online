@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -72,6 +72,7 @@ function readSelected(): string[] {
 }
 
 function QrDashboardPage() {
+  const navigate = useNavigate();
   const { data: refData } = useReferralOverview();
   const code = refData?.code ?? "";
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -400,6 +401,7 @@ function QrDashboardPage() {
                         onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
+                        onPos={() => navigate({ to: "/vendor/shop" })}
                         onGuide={() => setGuideOpen(true)}
                         onProfile={() => setProfileOpen(true)}
 

@@ -99,24 +99,32 @@ export function LandingCategoryDock({
   merchantPhone,
   merchantName,
   shopCode = "shop",
+  onOpenShop,
 }: {
   categories: DockCategory[];
   accent: string;
   merchantPhone?: string;
   merchantName?: string;
   shopCode?: string;
+  /** When provided, the Shop pill opens the merchant Digital Shop sheet. */
+  onOpenShop?: () => void;
 }) {
-  const defaultKey = String((categories.find((c) => c.tiles.length) ?? categories[0])?.key ?? "");
+  const shopMeta = LINK_CATEGORIES.find((c) => c.key === "shop");
+  const list: DockCategory[] =
+    onOpenShop && shopMeta && !categories.some((c) => c.key === "shop")
+      ? [{ key: shopMeta.key, label: shopMeta.label, icon: shopMeta.icon, tiles: [] }, ...categories]
+      : categories;
+  const defaultKey = String((list.find((c) => c.tiles.length) ?? list[0])?.key ?? "");
   const [activeKey, setActiveKey] = useState<string | null>(defaultKey || null);
   const [enquiryTile, setEnquiryTile] = useState<DockTile | null>(null);
   const [gateTarget, setGateTarget] = useState<GateTarget | null>(null);
-  const active = categories.find((c) => c.key === activeKey) ?? null;
+  const active = list.find((c) => c.key === activeKey && c.key !== "shop") ?? null;
 
   const isProductRail = !!active && active.key === "shop" && active.tiles.some((t) => t.image || t.price);
   const light = needsLightText(accent);
   const fg = light ? "#ffffff" : "#1a1208";
 
-  if (!categories.length) return null;
+  if (!list.length) return null;
 
 
   return (
@@ -325,7 +333,7 @@ export function LandingCategoryDock({
         }}
       >
         <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => {
+          {list.map((c) => {
             const Icon = c.icon;
             const isActive = activeKey === c.key;
             return (
@@ -334,6 +342,11 @@ export function LandingCategoryDock({
                 type="button"
                 whileTap={{ scale: 0.92 }}
                 onClick={() => {
+                  if (c.key === "shop" && onOpenShop) {
+                    setActiveKey(null);
+                    onOpenShop();
+                    return;
+                  }
                   if (c.action) {
                     c.action();
                     return;

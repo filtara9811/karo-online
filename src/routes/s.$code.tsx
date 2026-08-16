@@ -23,7 +23,7 @@ import { getLandingPayload } from "@/lib/landing.functions";
 import type { LandingPayload, LandingMediaItem, LandingStats, VideoProduct } from "@/lib/landing-types";
 import { LandingProductRail, type RailVariant } from "@/components/landing/LandingProductRail";
 import { LandingProductSectionHeader } from "@/components/landing/LandingProductSectionHeader";
-import { LandingAllProductsSheet } from "@/components/landing/LandingAllProductsSheet";
+import { LandingDigitalShopSheet } from "@/components/landing/LandingDigitalShopSheet";
 import { LandingProductSheet } from "@/components/landing/LandingProductSheet";
 import { LandingStatsBar } from "@/components/landing/LandingStatsBar";
 import { LandingShopDrawer } from "@/components/landing/LandingShopDrawer";
@@ -432,12 +432,18 @@ function ScanLandingPage() {
         />
       )}
 
-      <LandingAllProductsSheet
+      <LandingDigitalShopSheet
         open={allProductsOpen}
         products={allProducts}
         accent={accent}
         shopName={merchantName}
+        shopCategory={m.trade}
+        avatarUrl={m.avatar_url}
+        coverUrl={m.cover_url}
         phone={m.phone}
+        stats={stats}
+        shopLinks={categories.find((c) => c.key === "shop")?.tiles ?? []}
+        onShare={shareCurrent}
         onClose={() => setAllProductsOpen(false)}
         onOpen={(p) => { setAllProductsOpen(false); openProductCard(p); }}
         onCta={(p) => void trackQrEvent("PRODUCT_ENQUIRY", { code, project, ref: p.id, meta: { action: "cta_catalog" } })}
@@ -463,7 +469,7 @@ function ScanLandingPage() {
       {layoutStyle === "chat" && <div className="h-28" />}
 
 
-      <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} shopCode={code} />
+      <LandingCategoryDock categories={categories} accent={accent} merchantPhone={(m as { phone?: string }).phone} merchantName={merchantName} shopCode={code} onOpenShop={() => setAllProductsOpen(true)} />
 
       <LandingOrdersFab accent={accent} count={threadCount} onOpen={() => { setDrawerTab("orders"); setDrawerOpen(true); }} />
 
