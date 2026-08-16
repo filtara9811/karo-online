@@ -65,7 +65,7 @@ function timeAgo(iso: string) {
  */
 export function QrProjectCard({
   project, stats, themes, landingUrl, visits, profile, analytics, feed,
-  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile, onRange,
+  onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile, onRange, onPos,
 }: {
   project: QrProject;
   stats: ProjectStats;
