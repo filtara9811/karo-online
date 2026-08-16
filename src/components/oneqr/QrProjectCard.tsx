@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import {
-  QrCode, Share2, Download, Users, Megaphone, Trash2, MoreVertical,
+  QrCode, Share2, Download, Users, Megaphone, Trash2, MoreVertical, Receipt,
   Settings as SettingsIcon, Link2, HelpCircle, Store,
   Instagram, Youtube, Facebook, MessageCircle,
 } from "lucide-react";
