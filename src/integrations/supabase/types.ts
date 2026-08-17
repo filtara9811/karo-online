@@ -1790,6 +1790,7 @@ export type Database = {
           premium_paid_at: string | null
           premium_payment_ref: string | null
           premium_unlocked: boolean
+          project_id: string | null
           updated_at: string
           user_id: string
           yt_enabled: boolean
@@ -1816,6 +1817,7 @@ export type Database = {
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
+          project_id?: string | null
           updated_at?: string
           user_id: string
           yt_enabled?: boolean
@@ -1842,13 +1844,22 @@ export type Database = {
           premium_paid_at?: string | null
           premium_payment_ref?: string | null
           premium_unlocked?: boolean
+          project_id?: string | null
           updated_at?: string
           user_id?: string
           yt_enabled?: boolean
           yt_products?: Json
           yt_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "merchant_link_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "qr_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_campaigns: {
         Row: {
@@ -2503,6 +2514,39 @@ export type Database = {
           theme_key?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qr_scan_history: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          project_slug: string | null
+          raw_value: string
+          shop_code: string | null
+          shop_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          project_slug?: string | null
+          raw_value: string
+          shop_code?: string | null
+          shop_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          project_slug?: string | null
+          raw_value?: string
+          shop_code?: string | null
+          shop_name?: string | null
           user_id?: string
         }
         Relationships: []
@@ -6061,9 +6105,15 @@ export type Database = {
           sub_category_name: string
         }[]
       }
-      get_public_landing: { Args: { _code: string }; Returns: Json }
+      get_public_landing: {
+        Args: { _code: string; _project?: string }
+        Returns: Json
+      }
       get_public_landing_contact: { Args: { _code: string }; Returns: Json }
-      get_public_landing_stats: { Args: { _code: string }; Returns: Json }
+      get_public_landing_stats: {
+        Args: { _code: string; _project?: string }
+        Returns: Json
+      }
       get_public_share_preview: {
         Args: { _code: string; _kind: string }
         Returns: Json
@@ -6129,6 +6179,10 @@ export type Database = {
           note: string
           sub_category_name: string
         }[]
+      }
+      list_public_shops: {
+        Args: { _limit?: number; _offset?: number; _q?: string }
+        Returns: Json
       }
       log_referral_visit:
         | {
@@ -6539,10 +6593,12 @@ export type Database = {
         Args: { _lead_id: string; _status: string }
         Returns: Json
       }
-      set_qr_landing_theme: {
-        Args: { _accent?: string; _key: string }
-        Returns: Json
-      }
+      set_qr_landing_theme:
+        | { Args: { _accent?: string; _key: string }; Returns: Json }
+        | {
+            Args: { _accent?: string; _key: string; _project?: string }
+            Returns: Json
+          }
       shop_thread_list: {
         Args: { _code: string; _token: string }
         Returns: Json
