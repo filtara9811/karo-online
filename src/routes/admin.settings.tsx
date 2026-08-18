@@ -110,6 +110,7 @@ function SettingsPage() {
         </GoldCard>
       )}
 
+      <div className="mt-6 max-w-2xl"><ServiceMenuCard /></div>
       <div className="mt-6 max-w-2xl"><LeadDefaultsCard /></div>
       <div className="mt-6 max-w-2xl"><NoVendorStateCard /></div>
       <div className="mt-6 max-w-2xl"><VendorAppCard /></div>
