@@ -79,71 +79,32 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <div className="px-4 pb-4 space-y-3 overflow-y-auto overscroll-contain">
-              {on("vendor_panel") && (
+              {panelOptions.map((opt) => (
+                <HubButton
+                  key={opt.key}
+                  accent={opt.accent}
+                  icon={opt.icon}
+                  title={opt.label}
+                  sub={opt.sub}
+                  onClick={() => {
+                    if (opt.serviceId) writeActiveService(opt.serviceId);
+                    go(opt.to);
+                  }}
+                  onLongPress={opt.apk ? () => setPressed(opt.apk!) : undefined}
+                />
+              ))}
+
               <HubButton
-                accent="from-amber-400 to-orange-500"
-                icon={hasVendor ? LayoutDashboard : Briefcase}
-                title={hasVendor ? "Vendor Panel" : "Join as Vendor"}
-                sub={hasVendor ? "Open your business dashboard" : "Grow your business · get leads"}
-                onClick={() => go(hasVendor ? "/vendor/dashboard" : "/vendor/register")}
-                onLongPress={() => setPressed({
-                  title: hasVendor ? "Vendor Panel" : "Join as Vendor",
-                  to: hasVendor ? "/vendor/dashboard" : "/vendor/register",
-                  audience: "vendor",
-                  manifest: "/manifest-vendor.json",
-                  accent: "from-amber-400 to-orange-500",
-                })}
-              />
-              )}
-              {on("digital_shop") && (
-              <HubButton
-                accent="from-emerald-400 to-teal-600"
+                accent="from-orange-400 to-amber-500"
                 icon={Store}
-                title="Digital Shop"
-                sub="Browse all digital dukans near you"
-                onClick={() => go("/vendors")}
-                onLongPress={() => setPressed({
-                  title: "Digital Shop",
-                  to: "/vendors",
-                  audience: "customer",
-                  manifest: "/manifest-shop.json",
-                  accent: "from-emerald-400 to-teal-600",
-                })}
+                title="Join Seller"
+                sub="Start your business · become a vendor"
+                onClick={() => go("/vendor/join")}
               />
-              )}
-              <HubButton
-                accent="from-fuchsia-500 to-purple-700"
-                icon={Gift}
-                title="All Programs"
-                sub="Referral program · downloads · rewards"
-                onClick={() => go("/referral")}
-                onLongPress={() => setPressed({
-                  title: "All Programs",
-                  to: "/referral",
-                  audience: "customer",
-                  manifest: "/manifest-programs.json",
-                  accent: "from-fuchsia-500 to-purple-700",
-                })}
-              />
-              {on("digital_qr") && (
-              <HubButton
-                accent="from-sky-500 to-indigo-700"
-                icon={QrCode}
-                title="My QR Code"
-                sub="QR dashboard · themes · visitor count"
-                onClick={() => go("/one-qr")}
-                onLongPress={() => setPressed({
-                  title: "My QR Code",
-                  to: "/one-qr",
-                  audience: "oneqr",
-                  manifest: "/manifest-oneqr.json",
-                  accent: "from-sky-500 to-indigo-700",
-                })}
-              />
-              )}
 
               <OtherAppsRail />
             </div>
+
 
             <button
               type="button"
