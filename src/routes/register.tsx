@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
 import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
+import { writeActiveService } from "@/lib/service-menu";
+
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
