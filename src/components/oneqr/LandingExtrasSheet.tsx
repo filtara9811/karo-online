@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { SheetShell } from "./SheetShell";
+import { loadLinkSettings, saveLinkSettings } from "./landing-settings";
 import { EXTRAS_DEFAULTS, readExtras, writeExtras, type LandingExtras } from "./landing-extras";
 
 /** Settings for the landing page visitor form, welcome popup and details block. */
@@ -12,10 +12,13 @@ export function LandingExtrasSheet({
   open,
   onClose,
   onSaved,
+  projectSlug = null,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  /** QR project being edited — keeps each shop's settings separate. */
+  projectSlug?: string | null;
 }) {
   const { user } = useAuth();
   const [links, setLinks] = useState<ExtraLink[]>([]);
@@ -28,26 +31,19 @@ export function LandingExtrasSheet({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("merchant_link_settings" as never)
-        .select("extra_links")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const d = await loadLinkSettings<{ extra_links?: ExtraLink[] }>(user.id, projectSlug, "extra_links");
       if (cancelled) return;
-      const d = data as { extra_links?: ExtraLink[] } | null;
       const list = Array.isArray(d?.extra_links) ? d!.extra_links! : [];
       setLinks(list);
       setCfg(readExtras(list));
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, user?.id]);
+  }, [open, user?.id, projectSlug]);
 
   const save = async () => {
     setSaving(true);
-    const { error } = await supabase.rpc("upsert_merchant_link_settings" as never, {
-      _payload: { extra_links: writeExtras(links, cfg) },
-    } as never);
+    const { error } = await saveLinkSettings({ extra_links: writeExtras(links, cfg) }, projectSlug);
     setSaving(false);
     if (error) { toast.error("Save nahi hua: " + error.message); return; }
     toast.success("Settings save ho gayi");

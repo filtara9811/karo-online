@@ -14,6 +14,7 @@ import { ProductEditor } from "@/components/ProductEditor";
 import { fromEditorProduct, toEditorProduct } from "./video-product-adapter";
 import { CTA_PRESETS } from "@/components/landing/product-cta";
 import { SheetShell } from "./SheetShell";
+import { loadLinkSettings, saveLinkSettings } from "./landing-settings";
 
 
 type MediaItem = LandingMediaItem;
@@ -41,10 +42,13 @@ export function LandingMediaSheet({
   open,
   onClose,
   onSaved,
+  projectSlug = null,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  /** QR project being edited — keeps each shop's videos separate. */
+  projectSlug?: string | null;
 }) {
   const { user } = useAuth();
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -118,20 +122,15 @@ export function LandingMediaSheet({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("merchant_link_settings" as never)
-        .select("poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products")
-        .eq("user_id", uid)
-        .maybeSingle();
-      if (cancelled) return;
-      const d = data as {
+      const d = await loadLinkSettings<{
         poster_media?: MediaItem[];
         poster_bg_urls?: string[];
         poster_bg_url?: string;
         yt_source?: string | null;
         yt_enabled?: boolean | null;
         yt_products?: Record<string, VideoProduct[]> | null;
-      } | null;
+      }>(uid, projectSlug, "poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products");
+      if (cancelled) return;
       setYtSource(d?.yt_source ?? "");
       setYtEnabled(!!d?.yt_enabled);
       setYtProducts((d?.yt_products && typeof d.yt_products === "object" ? d.yt_products : {}) as Record<string, VideoProduct[]>);
@@ -153,7 +152,7 @@ export function LandingMediaSheet({
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [open, user?.id]);
+  }, [open, user?.id, projectSlug]);
 
   const persist = useCallback(async (next: MediaItem[]) => {
     if (!user?.id) { toast.error("Login karein"); return false; }
@@ -175,7 +174,7 @@ export function LandingMediaSheet({
         return false;
       }
       const { error } = await withTimeout(
-        supabase.rpc("upsert_merchant_link_settings" as never, { _payload: payload } as never) as unknown as Promise<{ error: { message: string } | null }>,
+        saveLinkSettings(payload, projectSlug),
         12_000,
         "Server slow hai — dobara Publish dabayein",
       );
