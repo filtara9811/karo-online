@@ -48,17 +48,25 @@ export const Route = createFileRoute("/s/$code")({
   loaderDeps: ({ search }) => ({ p: search.p }),
   // Server-rendered shell: name, avatar, theme and first media arrive in the HTML.
   loader: ({ params, deps }) => getLandingPayload({ data: { code: params.code, project: deps.p ?? null } }),
-  head: ({ params, loaderData }) => {
-    const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
+  head: ({ params, loaderData, match }) => {
+    const slug = (match.search as { p?: string } | undefined)?.p;
+    const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}${slug ? `?p=${encodeURIComponent(slug)}` : ""}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
+    const shop = (loaderData as { merchant?: { shop_name?: string | null; name?: string | null } } | undefined)?.merchant;
+    const shopName = shop?.shop_name || shop?.name || params.code;
+    const project = (loaderData as { project?: { title?: string | null } } | undefined)?.project;
+    const pageName = project?.title && shop?.shop_name
+      && project.title.trim().toLowerCase() !== shop.shop_name.trim().toLowerCase()
+      ? `${shop.shop_name} · ${project.title}`
+      : shopName;
     return {
       meta: [
-        { title: `Visit ${params.code} — Karo Online` },
-        { name: "description", content: "Trusted merchant scan page on Karo Online." },
+        { title: `${pageName} — Shop online on Karo Online` },
+        { name: "description", content: `Watch ${shopName}'s latest videos, browse products and order or chat directly.` },
         { name: "theme-color", content: "#ffffff" },
         { property: "og:type", content: "website" },
-        { property: "og:title", content: "Scan & Join Karo Online" },
-        { property: "og:description", content: "Open the smart QR link for app download, vendor info, benefits and wallet rewards." },
+        { property: "og:title", content: `${pageName} — Shop online` },
+        { property: "og:description", content: `Videos, products and instant chat with ${shopName} on Karo Online.` },
         { property: "og:url", content: url },
         { property: "og:image", content: image },
         { property: "og:image:width", content: "1200" },
@@ -550,7 +558,7 @@ function ScanLandingPage() {
       <ScanVisitorGate
         code={code}
         source="qr"
-        project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null}
+        project={project}
         enabled={landingExtras.gate_enabled}
         title={landingExtras.gate_title}
         message={landingExtras.gate_message}

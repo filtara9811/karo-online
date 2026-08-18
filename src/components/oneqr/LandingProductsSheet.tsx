@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Trash2, Loader2, ImagePlus, Package } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { ExtraLink } from "@/components/landing/landing-shared";
 import { SheetShell } from "./SheetShell";
+import { loadLinkSettings, saveLinkSettings } from "./landing-settings";
 
 type Product = ExtraLink;
 
@@ -24,10 +24,13 @@ export function LandingProductsSheet({
   open,
   onClose,
   onSaved,
+  projectSlug = null,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  /** QR project being edited — keeps each shop's products separate. */
+  projectSlug?: string | null;
 }) {
   const { user } = useAuth();
   const [links, setLinks] = useState<ExtraLink[]>([]);
@@ -41,30 +44,23 @@ export function LandingProductsSheet({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("merchant_link_settings" as never)
-        .select("extra_links")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const d = await loadLinkSettings<{ extra_links?: ExtraLink[] }>(user.id, projectSlug, "extra_links");
       if (cancelled) return;
-      const d = data as { extra_links?: ExtraLink[] } | null;
       setLinks(Array.isArray(d?.extra_links) ? d!.extra_links! : []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, user?.id]);
+  }, [open, user?.id, projectSlug]);
 
   const persist = useCallback(async (next: ExtraLink[]) => {
     setSaving(true);
     setLinks(next);
-    const { error } = await supabase.rpc("upsert_merchant_link_settings" as never, {
-      _payload: { extra_links: next },
-    } as never);
+    const { error } = await saveLinkSettings({ extra_links: next }, projectSlug);
     setSaving(false);
     if (error) { toast.error("Save nahi hua: " + error.message); return false; }
     onSaved?.();
     return true;
-  }, [onSaved]);
+  }, [onSaved, projectSlug]);
 
   const products = links.filter((l) => (l.category ?? "other") === "shop" && l.id.startsWith("shop-"));
 

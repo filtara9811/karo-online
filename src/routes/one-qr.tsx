@@ -276,9 +276,11 @@ function QrDashboardPage() {
     const { error } = await supabase.from("qr_projects").update(patch as never).eq("id", id);
     // Theme choice must reach the customer landing page, which reads the merchant setting.
     if (patch.theme_key) {
+      const slug = (projects ?? []).find((p) => p.id === id)?.slug ?? null;
       const { data: res } = await supabase.rpc("set_qr_landing_theme" as never, {
         _key: patch.theme_key,
         _accent: patch.accent_color ?? null,
+        _project: slug,
       } as never);
       const ok = (res as { ok?: boolean } | null)?.ok !== false;
       if (ok) {
@@ -519,7 +521,7 @@ function QrDashboardPage() {
         shareUrl={projectUrl(posterFor)}
         defaultName={posterFor?.title ?? "Karo Online"}
       />
-      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} onSaved={() => setLinksNonce((n) => n + 1)} />
+      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} projectSlug={editorFor?.slug ?? visibleProjects[0]?.slug ?? null} onSaved={() => setLinksNonce((n) => n + 1)} />
       <ShopChatsSheet open={chatsOpen} onClose={() => setChatsOpen(false)} />
       <ServicesPluginsSheet
         open={!!servicesFor}
@@ -551,6 +553,7 @@ function QrDashboardPage() {
         onClose={() => setEditorFor(null)}
         title={editorFor?.title ?? ""}
         landingUrl={projectUrl(editorFor)}
+        projectSlug={editorFor?.slug ?? null}
         themes={themes}
         currentKey={editorFor?.theme_key ?? themeData?.current ?? ""}
         accent={editorFor?.accent_color || themeData?.accent || "#f59e0b"}

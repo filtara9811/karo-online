@@ -15,6 +15,7 @@ export function LandingEditorSheet({
   onClose,
   title,
   landingUrl,
+  projectSlug = null,
   themes,
   currentKey,
   accent,
@@ -29,6 +30,8 @@ export function LandingEditorSheet({
   onClose: () => void;
   title: string;
   landingUrl: string;
+  /** Slug of the QR project being edited — scopes all studio writes to it. */
+  projectSlug?: string | null;
   themes: LandingTheme[];
   currentKey: string;
   accent: string;
@@ -84,16 +87,19 @@ export function LandingEditorSheet({
       </AnimatePresence>
 
       <LandingProductsSheet
+        projectSlug={projectSlug}
         open={tool === "products"}
         onClose={() => setTool(null)}
         onSaved={() => setRefresh((n) => n + 1)}
       />
       <LandingMediaSheet
+        projectSlug={projectSlug}
         open={tool === "videos"}
         onClose={() => setTool(null)}
         onSaved={() => setRefresh((n) => n + 1)}
       />
       <LandingExtrasSheet
+        projectSlug={projectSlug}
         open={tool === "settings"}
         onClose={() => setTool(null)}
         onSaved={() => setRefresh((n) => n + 1)}
