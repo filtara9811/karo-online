@@ -97,18 +97,20 @@ function firstLandingImage(d?: LandingPayload): string | undefined {
   return optimizedImage(src, IMG.hero);
 }
 
-const CACHE_KEY = (c: string) => `karo-landing:${c}`;
-function readCache(code: string): Landing | null {
+// Cache is per shop (code + project slug) so two shops of the same merchant
+// never show each other's videos and products.
+const CACHE_KEY = (c: string, p?: string | null) => `karo-landing:${c}:${p ?? "default"}`;
+function readCache(code: string, project?: string | null): Landing | null {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY(code));
+    const raw = sessionStorage.getItem(CACHE_KEY(code, project));
     if (!raw) return null;
     const { t, data } = JSON.parse(raw);
     if (Date.now() - t > 5 * 60_000) return null;
     return data as Landing;
   } catch { return null; }
 }
-function writeCache(code: string, data: Landing) {
-  try { sessionStorage.setItem(CACHE_KEY(code), JSON.stringify({ t: Date.now(), data })); } catch { /* noop */ }
+function writeCache(code: string, data: Landing, project?: string | null) {
+  try { sessionStorage.setItem(CACHE_KEY(code, project), JSON.stringify({ t: Date.now(), data })); } catch { /* noop */ }
 }
 
 function normalizeAmount(value: unknown): string {
