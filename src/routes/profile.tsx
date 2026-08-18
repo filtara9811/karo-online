@@ -32,6 +32,7 @@ import goldProfile from "@/assets/gold-profile.png";
 import { useAppPrefs, LANGS, type Lang } from "@/hooks/use-app-prefs";
 import { useAuth, type CustomerProfile, type CardFieldVisibility, type CardCustomField } from "@/hooks/use-auth";
 import { ActionPicker, type ActionOption } from "@/components/ActionPicker";
+import { PanelSwitchSheet } from "@/components/PanelSwitchSheet";
 import { LegalSheet } from "@/components/LegalSheet";
 import { useSocialLinks } from "@/hooks/use-social-links";
 import { supabase } from "@/integrations/supabase/client";
@@ -680,34 +681,11 @@ export function ProfilePage({ onClose }: { onClose?: () => void } = {}) {
         </div>
       </div>
 
-      <ActionPicker
-        open={panelPicker}
-        title="Switch Panel"
-        subtitle="Choose your workspace"
-        options={PANEL_OPTIONS}
-        shareMode
-        longPressHint="Long-press to copy or share panel link"
-        onSelect={(value) => {
-          setPanelPicker(false);
-          setTimeout(() => {
-            if (value === "vendor") navigate({ to: "/vendor/dashboard" });
-            else if (value === "admin") navigate({ to: "/admin" });
-            else if (value === "customer") navigate({ to: "/" });
-            else if (value === "staff") navigate({ to: "/staff" });
-          }, 220);
-        }}
-        onClose={() => setPanelPicker(false)}
-      />
+      <PanelSwitchSheet open={panelPicker} onClose={() => setPanelPicker(false)} />
     </div>
   );
 }
 
-const PANEL_OPTIONS: ActionOption[] = [
-  { value: "customer", label: "Customer Panel", sub: "Shop · book services · orders", icon: goldProfile, shareTo: "/" },
-  { value: "vendor", label: "Vendor Panel", sub: "Manage shop · leads · orders", icon: goldBriefcase, shareTo: "/vendor/dashboard" },
-  { value: "admin", label: "Super Admin Panel", sub: "Platform-wide control", icon: goldServices, badge: "PRO", shareTo: "/admin" },
-  { value: "staff", label: "Staff Panel", sub: "Team operations & tasks", icon: goldUser, shareTo: "/staff" },
-];
 
 function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {
   const stroke = 4;
