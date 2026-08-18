@@ -64,7 +64,7 @@ function timeAgo(iso: string) {
  * (QR, campaign, landing page editor, links) then analytics and visitors.
  */
 export function QrProjectCard({
-  project, stats, themes, landingUrl, visits, profile, analytics, feed,
+  project, stats, themes, landingUrl, visits, analytics, feed,
   onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile, onRange, onPos,
 }: {
   project: QrProject;
@@ -72,7 +72,6 @@ export function QrProjectCard({
   themes: LandingTheme[];
   landingUrl: string;
   visits: VisitorRow[];
-  profile?: CardProfile | null;
   analytics?: DashboardAnalytics | null;
   feed?: VisitorFeedRow[] | null;
   onPatch: (patch: Partial<QrProject>) => void;
