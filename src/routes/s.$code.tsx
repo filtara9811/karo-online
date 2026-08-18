@@ -52,15 +52,19 @@ export const Route = createFileRoute("/s/$code")({
     const slug = (match.search as { p?: string } | undefined)?.p;
     const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}${slug ? `?p=${encodeURIComponent(slug)}` : ""}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
-    const shop = (loaderData as { merchant?: { business_name?: string | null; full_name?: string | null } } | undefined)?.merchant;
-    const shopName = shop?.business_name || shop?.full_name || params.code;
+    const shop = (loaderData as { merchant?: { shop_name?: string | null; name?: string | null } } | undefined)?.merchant;
+    const shopName = shop?.shop_name || shop?.name || params.code;
+    const project = (loaderData as { project?: { title?: string | null } } | undefined)?.project;
+    const pageName = project?.title && shop?.shop_name && project.title !== shop.shop_name
+      ? `${shop.shop_name} · ${project.title}`
+      : shopName;
     return {
       meta: [
-        { title: `${shopName} — Shop online on Karo Online` },
+        { title: `${pageName} — Shop online on Karo Online` },
         { name: "description", content: `Watch ${shopName}'s latest videos, browse products and order or chat directly.` },
         { name: "theme-color", content: "#ffffff" },
         { property: "og:type", content: "website" },
-        { property: "og:title", content: `${shopName} — Shop online` },
+        { property: "og:title", content: `${pageName} — Shop online` },
         { property: "og:description", content: `Videos, products and instant chat with ${shopName} on Karo Online.` },
         { property: "og:url", content: url },
         { property: "og:image", content: image },
