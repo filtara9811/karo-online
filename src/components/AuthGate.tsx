@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
-import { RoleChoiceScreen } from "@/components/RoleChoiceScreen";
+import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
 
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
@@ -49,7 +49,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [locallyOnboarded, setLocallyOnboarded] = useState(false);
   const pendingCb = useRef<(() => void) | null>(null);
-  const [showRoleChoice, setShowRoleChoice] = useState(false);
+  const [showServiceMenu, setShowServiceMenu] = useState(false);
   const navigate = useNavigate();
 
   const hardSkip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
@@ -121,7 +121,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
 
   return (
     <Ctx.Provider value={{ requireAuth, isReady }}>
-      {forceGate ? (
+      {forceGate || showServiceMenu ? (
         <div
           data-auth-gate
           className="fixed inset-0 z-[60]"
@@ -129,16 +129,12 @@ export function AuthGate({ children }: { children?: ReactNode }) {
             background: "linear-gradient(180deg, #fffaeb 0%, #f5e8c4 100%)",
           }}
         >
-          {showRoleChoice ? (
-            <RoleChoiceScreen
-              onBuyer={() => {
-                setShowRoleChoice(false);
+          {showServiceMenu ? (
+            <ServiceMenuScreen
+              onPick={(route) => {
+                setShowServiceMenu(false);
                 handleComplete();
-              }}
-              onSeller={() => {
-                setShowRoleChoice(false);
-                handleComplete();
-                try { navigate({ to: "/vendor/join" }); } catch { /* ignore */ }
+                try { navigate({ to: route }); } catch { /* ignore */ }
               }}
             />
           ) : (
@@ -146,7 +142,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
               transparent
               hideBack
               onBack={() => { /* cannot dismiss — forced gate */ }}
-              onComplete={() => setShowRoleChoice(true)}
+              onComplete={() => setShowServiceMenu(true)}
             />
           )}
         </div>

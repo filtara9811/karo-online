@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
-import { RoleChoiceScreen } from "@/components/RoleChoiceScreen";
+import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
@@ -26,30 +26,25 @@ function Register() {
     window.localStorage.getItem(CUSTOMER_ONBOARDED_KEY) === "true";
   const profileComplete = locallyOnboarded || (isAuthenticated && !!profile?.name);
 
-  const [showRoleChoice, setShowRoleChoice] = useState(false);
+  const [showServiceMenu, setShowServiceMenu] = useState(false);
 
-  // Already registered → go straight home (skip role choice — one-time only).
+  // Already registered → straight to the service menu picker.
   useEffect(() => {
-    if (ready && profileComplete && !showRoleChoice) {
-      navigate({ to: "/quick", replace: true });
-    }
-  }, [navigate, profileComplete, ready, showRoleChoice]);
+    if (ready && profileComplete && !showServiceMenu) setShowServiceMenu(true);
+  }, [profileComplete, ready, showServiceMenu]);
 
-  if (showRoleChoice) {
+  if (showServiceMenu) {
     return (
-      <RoleChoiceScreen
-        onBuyer={() => navigate({ to: "/quick", replace: true })}
-        onSeller={() => navigate({ to: "/vendor/join", replace: true })}
+      <ServiceMenuScreen
+        onPick={(route) => navigate({ to: route, replace: true })}
       />
     );
   }
 
-  if (ready && profileComplete) return null;
-
   return (
     <RegistrationFlow
       onBack={() => navigate({ to: "/quick" })}
-      onComplete={() => setShowRoleChoice(true)}
+      onComplete={() => setShowServiceMenu(true)}
     />
   );
 }

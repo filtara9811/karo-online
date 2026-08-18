@@ -4,6 +4,7 @@ import { Save, Loader2, Facebook, Instagram, Twitter, Send, Youtube, Linkedin, M
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminLayout, PageHeader, GoldButton, GoldCard } from "@/components/admin/AdminLayout";
+import { DEFAULT_SERVICE_ROWS, SERVICE_CATALOGUE, SERVICE_MENU_KEY, type ServiceMenuRow } from "@/lib/service-menu";
 
 type Links = {
   facebook: string;
@@ -110,6 +111,7 @@ function SettingsPage() {
         </GoldCard>
       )}
 
+      <div className="mt-6 max-w-2xl"><ServiceMenuCard /></div>
       <div className="mt-6 max-w-2xl"><LeadDefaultsCard /></div>
       <div className="mt-6 max-w-2xl"><NoVendorStateCard /></div>
       <div className="mt-6 max-w-2xl"><VendorAppCard /></div>
@@ -346,6 +348,100 @@ function NoVendorStateCard() {
         <GoldButton onClick={save} disabled={saving}>
           {saving ? <Loader2 className="h-3 w-3 inline animate-spin mr-1" /> : <Save className="h-3 w-3 inline -mt-0.5 mr-1" />}
           Save No-Vendor Screen
+        </GoldButton>
+      </div>
+    </GoldCard>
+  );
+}
+
+function ServiceMenuCard() {
+  const [rows, setRows] = useState<ServiceMenuRow[]>(DEFAULT_SERVICE_ROWS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from("app_settings").select("value").eq("key", SERVICE_MENU_KEY).maybeSingle().then(({ data }) => {
+      const arr = (data?.value as { services?: ServiceMenuRow[] } | null)?.services;
+      if (Array.isArray(arr) && arr.length) {
+        // keep catalogue order/ids authoritative, config wins for enabled/order
+        const cfg = new Map(arr.map((r) => [r.id, r]));
+        setRows(DEFAULT_SERVICE_ROWS.map((d, i) => ({
+          id: d.id,
+          enabled: cfg.get(d.id)?.enabled !== false,
+          order: cfg.get(d.id)?.order ?? i + 1,
+        })));
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const next = [...rows].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const t = idx + dir;
+    if (t < 0 || t >= next.length) return;
+    [next[idx], next[t]] = [next[t], next[idx]];
+    setRows(next.map((r, i) => ({ ...r, order: i + 1 })));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const { data: sess } = await supabase.auth.getUser();
+    const { error } = await supabase.from("app_settings").upsert({
+      key: SERVICE_MENU_KEY,
+      value: { services: rows },
+      updated_by: sess.user?.id,
+      updated_at: new Date().toISOString(),
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Service menu updated");
+  };
+
+  if (loading) return null;
+  const ordered = [...rows].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  return (
+    <GoldCard className="p-5 space-y-4">
+      <div>
+        <h3 className="text-sm uppercase tracking-widest text-[#d4af37] font-bold">Service Selection Menu</h3>
+        <p className="text-[11px] text-[#f5d97a]/60 mt-1">
+          Signup / login ke baad customer ko yahi menu dikhta hai. OFF kiya hua service bilkul chhip jayega.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {ordered.map((r, i) => {
+          const def = SERVICE_CATALOGUE.find((s) => s.id === r.id);
+          if (!def) return null;
+          return (
+            <div key={r.id} className="flex items-center gap-3 rounded-lg bg-black/30 border border-[#d4af37]/25 px-3 py-2.5">
+              <def.icon className="h-4 w-4 text-[#d4af37] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-[#fff8dc] truncate">{def.label}</p>
+                <p className="text-[10px] text-[#f5d97a]/50 truncate">{def.route}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => move(i, -1)} aria-label="Move up"
+                  className="h-6 w-6 grid place-items-center rounded bg-black/40 border border-[#d4af37]/25 text-[#d4af37] text-xs">↑</button>
+                <button onClick={() => move(i, 1)} aria-label="Move down"
+                  className="h-6 w-6 grid place-items-center rounded bg-black/40 border border-[#d4af37]/25 text-[#d4af37] text-xs">↓</button>
+              </div>
+              <button
+                onClick={() => setRows((p) => p.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)))}
+                aria-label={`${def.label} ${r.enabled ? "ON" : "OFF"}`}
+                className={`relative h-6 w-11 rounded-full transition-colors shrink-0 ${r.enabled ? "bg-emerald-500" : "bg-white/20"}`}
+              >
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${r.enabled ? "left-[22px]" : "left-0.5"}`} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-end pt-3 border-t border-[#d4af37]/20">
+        <GoldButton onClick={save} disabled={saving}>
+          {saving ? <Loader2 className="h-3 w-3 inline animate-spin mr-1" /> : <Save className="h-3 w-3 inline -mt-0.5 mr-1" />}
+          Save Service Menu
         </GoldButton>
       </div>
     </GoldCard>
