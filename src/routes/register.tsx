@@ -36,10 +36,14 @@ function Register() {
   if (showServiceMenu) {
     return (
       <ServiceMenuScreen
-        onPick={(route) => navigate({ to: route, replace: true })}
+        onPick={(route, serviceId) => {
+          writeActiveService(serviceId);
+          navigate({ to: route, replace: true });
+        }}
       />
     );
   }
+
 
   return (
     <RegistrationFlow
