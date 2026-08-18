@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.vendors_freeze_admin_fields() FROM anon, authenticated, public;
