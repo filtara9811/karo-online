@@ -151,7 +151,7 @@ function ScanLandingPage() {
     void listShopThreads(code).then((t) => setThreadCount(t.length));
   }, [code, chatThread]);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
-  const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
+  const project = Route.useSearch().p ?? null;
   // Shared links carry ?m=<index> so the exact video opens first.
   const sharedIndex = useMemo(() => {
     if (typeof window === "undefined") return 0;
