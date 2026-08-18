@@ -1,13 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode, Repeat } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Briefcase, Store, ChevronRight, X, Repeat } from "lucide-react";
+import { useRef, useState } from "react";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { OtherAppsRail } from "@/components/OtherAppsRail";
-import { useServiceMenu } from "@/hooks/use-service-menu";
 import { clearActiveService, writeActiveService } from "@/lib/service-menu";
 import { usePanelOptions } from "@/components/PanelSwitchSheet";
 
@@ -20,7 +18,6 @@ import { usePanelOptions } from "@/components/PanelSwitchSheet";
  */
 export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
-  const [hasVendor, setHasVendor] = useState<boolean | null>(null);
   const [pressed, setPressed] = useState<ApkTarget | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const { data: refData } = useReferralOverview();
@@ -30,20 +27,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
     ? `${window.location.origin}/r/${encodeURIComponent(refCode)}`
     : "";
 
+  const go = (to: string) => { onClose(); setTimeout(() => navigate({ to: to as never }), 180); };
 
-  useEffect(() => {
-    if (!open) return;
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setHasVendor(false); return; }
-        const { data } = await supabase.from("vendors").select("user_id").eq("user_id", user.id).maybeSingle();
-        setHasVendor(!!data);
-      } catch { setHasVendor(false); }
-    })();
-  }, [open]);
-
-  const go = (to: string) => { onClose(); setTimeout(() => navigate({ to }), 180); };
 
 
   return (
