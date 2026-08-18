@@ -400,12 +400,11 @@ export const sendOtp = createServerFn({ method: "POST" })
       return { ok: true, test_mode: true, test_account: true, otp_code: testAccount.otp_code };
     }
 
-    const gateway = await getActiveSmsGateway();
+    const { gateway, error: gatewayError } = await getActiveSmsGateway();
     if (!gateway) {
-      await logSystem("otp", null, "error", "No active SMS gateway configured");
       return {
         ok: false,
-        error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
+        error: gatewayError || "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
       };
     }
 
@@ -423,10 +422,11 @@ export const sendOtp = createServerFn({ method: "POST" })
       const cooldownRemaining = Number.isFinite(lastIssued)
         ? Math.max(1, 60 - Math.floor((Date.now() - lastIssued) / 1000))
         : 60;
-      await logSystem("otp", gateway.provider, "error", "OTP cooldown active", {
+      await logSystem("otp", gateway.provider, "success", "OTP cooldown active — existing code reused", {
         phone_last4: phone.slice(-4),
         cooldown_remaining: cooldownRemaining,
       });
+
       return {
         ok: true,
         test_mode: false,
