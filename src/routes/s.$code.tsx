@@ -131,8 +131,10 @@ function buildUpiUri(vpa: string, merchantName: string, amount: string) {
 
 function ScanLandingPage() {
   const { code } = Route.useParams();
+  const search = Route.useSearch();
+  const project = search.p ?? null;
   const initial = Route.useLoaderData() as Landing | undefined;
-  const [data, setData] = useState<Landing | null>(() => initial ?? readCache(code));
+  const [data, setData] = useState<Landing | null>(() => initial ?? readCache(code, project));
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
