@@ -212,15 +212,15 @@ function ScanLandingPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: res, error } = await supabase.rpc("get_public_landing" as never, { _code: code } as never);
+      const { data: res, error } = await supabase.rpc("get_public_landing" as never, ({ _code: code, _project: project ?? null }) as never);
       if (cancelled) return;
       const next = (res as unknown as Landing) ?? { ok: false };
       if (error) console.error("[landing] rpc", error);
       setData(next);
-      if (next.ok) writeCache(code, next);
+      if (next.ok) writeCache(code, next, project);
 
       // Real engagement counters for the stats bar.
-      const { data: s } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
+      const { data: s } = await supabase.rpc("get_public_landing_stats" as never, ({ _code: code, _project: project ?? null }) as never);
       if (!cancelled && s) setStats(s as unknown as LandingStats);
 
       // Support contact details (email) for the drawer.
