@@ -276,9 +276,11 @@ function QrDashboardPage() {
     const { error } = await supabase.from("qr_projects").update(patch as never).eq("id", id);
     // Theme choice must reach the customer landing page, which reads the merchant setting.
     if (patch.theme_key) {
+      const slug = (projects ?? []).find((p) => p.id === id)?.slug ?? null;
       const { data: res } = await supabase.rpc("set_qr_landing_theme" as never, {
         _key: patch.theme_key,
         _accent: patch.accent_color ?? null,
+        _project: slug,
       } as never);
       const ok = (res as { ok?: boolean } | null)?.ok !== false;
       if (ok) {
