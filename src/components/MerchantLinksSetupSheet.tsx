@@ -4,6 +4,7 @@ import { X, Plus, Store, CreditCard, PlayCircle, Lock, Trash2, Loader2, ScanLine
 import { LinkQrSheet } from "@/components/LinkQrSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { supabase } from "@/integrations/supabase/client";
+import { loadLinkSettings, saveLinkSettings } from "@/components/oneqr/landing-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -63,10 +64,13 @@ export function MerchantLinksSetupSheet({
   open,
   onOpenChange,
   onSaved,
+  projectSlug = null,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSaved?: () => void;
+  /** QR project being edited — keeps each shop's links separate. */
+  projectSlug?: string | null;
 }) {
   const { profile, user } = useAuth();
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
@@ -89,11 +93,7 @@ export function MerchantLinksSetupSheet({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("merchant_link_settings" as never)
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const data = await loadLinkSettings<Settings & { extra_links: ExtraLink[] | null }>(user.id, projectSlug, "*");
       if (cancelled) return;
       if (data) {
         const d = data as unknown as Settings & { extra_links: ExtraLink[] | null };
@@ -108,12 +108,11 @@ export function MerchantLinksSetupSheet({
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, user?.id]);
+  }, [open, user?.id, projectSlug]);
 
   const save = useCallback(async (next: Settings, opts?: { silent?: boolean }) => {
     setSaving(true);
-    const { error } = await supabase.rpc("upsert_merchant_link_settings" as never, {
-      _payload: {
+    const { error } = await saveLinkSettings({
         play_store_enabled: next.play_store_enabled,
         payment_enabled: next.payment_enabled,
         payment_provider: next.payment_provider,
@@ -123,15 +122,14 @@ export function MerchantLinksSetupSheet({
         digital_shop_enabled: next.digital_shop_enabled,
         digital_shop_url: next.digital_shop_url,
         extra_links: next.extra_links,
-      },
-    } as never);
+    }, projectSlug);
     setSaving(false);
     if (error) toast.error("Couldn't save: " + error.message);
     else {
       onSaved?.();
       if (!opts?.silent) toast.success("Saved");
     }
-  }, [onSaved]);
+  }, [onSaved, projectSlug]);
 
   const update = (patch: Partial<Settings>) => {
     setSettings((s) => {

@@ -519,7 +519,7 @@ function QrDashboardPage() {
         shareUrl={projectUrl(posterFor)}
         defaultName={posterFor?.title ?? "Karo Online"}
       />
-      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} onSaved={() => setLinksNonce((n) => n + 1)} />
+      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} projectSlug={editorFor?.slug ?? visibleProjects[0]?.slug ?? null} onSaved={() => setLinksNonce((n) => n + 1)} />
       <ShopChatsSheet open={chatsOpen} onClose={() => setChatsOpen(false)} />
       <ServicesPluginsSheet
         open={!!servicesFor}
