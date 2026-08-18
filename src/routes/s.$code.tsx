@@ -52,11 +52,11 @@ export const Route = createFileRoute("/s/$code")({
     const slug = (match.search as { p?: string } | undefined)?.p;
     const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}${slug ? `?p=${encodeURIComponent(slug)}` : ""}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
-    console.log('[head-debug]', !!loaderData, Object.keys((loaderData ?? {}) as object));
     const shop = (loaderData as { merchant?: { shop_name?: string | null; name?: string | null } } | undefined)?.merchant;
     const shopName = shop?.shop_name || shop?.name || params.code;
     const project = (loaderData as { project?: { title?: string | null } } | undefined)?.project;
-    const pageName = project?.title && shop?.shop_name && project.title !== shop.shop_name
+    const pageName = project?.title && shop?.shop_name
+      && project.title.trim().toLowerCase() !== shop.shop_name.trim().toLowerCase()
       ? `${shop.shop_name} · ${project.title}`
       : shopName;
     return {
