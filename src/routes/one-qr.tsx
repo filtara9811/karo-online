@@ -551,6 +551,7 @@ function QrDashboardPage() {
         onClose={() => setEditorFor(null)}
         title={editorFor?.title ?? ""}
         landingUrl={projectUrl(editorFor)}
+        projectSlug={editorFor?.slug ?? null}
         themes={themes}
         currentKey={editorFor?.theme_key ?? themeData?.current ?? ""}
         accent={editorFor?.accent_color || themeData?.accent || "#f59e0b"}
