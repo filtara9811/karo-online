@@ -260,13 +260,23 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     try {
       const res = await sendOtpFn({ data: { phone: digits } });
       if (!res.ok) {
-        const rawError = res.error || "Could not send OTP";
-        const friendlyError = /No active SMS gateway|SMS gateway lookup/i.test(rawError)
-          ? "OTP service temporary issue hai. Please dobara Send OTP try karein."
-          : rawError;
-        setOtpError(friendlyError);
+        // Show the real reason (gateway / config / network) instead of masking it,
+        // so a failure is actionable instead of a vague "temporary issue".
+        setOtpError(res.error || "OTP send fail hua. Dobara try karein.");
         return;
       }
+    } catch (err) {
+      console.error("[sendOtp] failed", err);
+      setOtpError((err as Error)?.message || "Server se connect nahi ho paya. Network check karke dobara try karein.");
+      return;
+    }
+    try {
+      const res = await sendOtpFn.length === 0 ? null : null;
+      void res;
+    } finally {
+      /* noop */
+    }
+
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
       const testNumber = "test_account" in res && !!res.test_account;
       const reusedOtp = "reused" in res && !!res.reused;
