@@ -265,18 +265,6 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
         setOtpError(res.error || "OTP send fail hua. Dobara try karein.");
         return;
       }
-    } catch (err) {
-      console.error("[sendOtp] failed", err);
-      setOtpError((err as Error)?.message || "Server se connect nahi ho paya. Network check karke dobara try karein.");
-      return;
-    }
-    try {
-      const res = await sendOtpFn.length === 0 ? null : null;
-      void res;
-    } finally {
-      /* noop */
-    }
-
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
       const testNumber = "test_account" in res && !!res.test_account;
       const reusedOtp = "reused" in res && !!res.reused;
@@ -288,10 +276,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
       toast.success(testNumber ? "Test number detected — auto verifying" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+    } catch (err) {
+      console.error("[sendOtp] failed", err);
+      setOtpError((err as Error)?.message || "Server se connect nahi ho paya. Network check karke dobara try karein.");
     } finally {
       otpSendInFlightRef.current = false;
       setOtpSending(false);
     }
+
   };
 
   useEffect(() => {
