@@ -131,12 +131,14 @@ export function AuthGate({ children }: { children?: ReactNode }) {
         >
           {showServiceMenu ? (
             <ServiceMenuScreen
-              onPick={(route) => {
+              onPick={(route, serviceId) => {
+                writeActiveService(serviceId);
                 setShowServiceMenu(false);
                 handleComplete();
                 try { navigate({ to: route }); } catch { /* ignore */ }
               }}
             />
+
           ) : (
             <RegistrationFlow
               transparent
