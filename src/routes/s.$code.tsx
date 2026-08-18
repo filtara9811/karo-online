@@ -550,7 +550,7 @@ function ScanLandingPage() {
       <ScanVisitorGate
         code={code}
         source="qr"
-        project={typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null}
+        project={project}
         enabled={landingExtras.gate_enabled}
         title={landingExtras.gate_title}
         message={landingExtras.gate_message}
