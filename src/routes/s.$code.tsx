@@ -255,7 +255,7 @@ function ScanLandingPage() {
     window.addEventListener("appinstalled", onInstalled);
     return () => { cancelled = true; window.removeEventListener("appinstalled", onInstalled); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, project]);
 
 
   if (!data) return <LandingSkeleton accent={themeAccent} />;
