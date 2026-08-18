@@ -180,35 +180,67 @@ async function logSystem(
   status: "success" | "error",
   message: string,
   meta: Json = {},
-) {
+): Promise<boolean> {
   try {
-    await supabaseAdmin.from("system_logs").insert({
+    const { error } = await supabaseAdmin.from("system_logs").insert({
       kind,
       provider,
       status,
       message: message.slice(0, 500),
       meta,
     });
+    if (error) {
+      console.error("[system_logs.insert] rejected", error.message);
+      return false;
+    }
+    return true;
   } catch (e) {
     console.error("[system_logs.insert] failed", e);
+    return false;
   }
 }
 
-async function getActiveSmsGateway() {
+type GatewayRow = {
+  provider: string;
+  is_active: boolean | null;
+  is_test_mode: boolean | null;
+  config: Json;
+  updated_at: string | null;
+};
+
+async function readSmsGateways(): Promise<{ rows: GatewayRow[]; error: string | null }> {
+  // One automatic retry: a transient read failure must not look like
+  // "no gateway configured" to the user.
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("sms_gateways")
+        .select("provider, is_active, is_test_mode, config, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(20);
+      if (!error) return { rows: (data ?? []) as GatewayRow[], error: null };
+      lastError = error.message;
+    } catch (e) {
+      lastError = (e as Error)?.message || "unknown error";
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 350));
+  }
+  return { rows: [], error: lastError };
+}
+
+async function getActiveSmsGateway(): Promise<{ gateway: GatewayRow | null; error: string | null }> {
   // Read the gateway list and choose in JS so short admin toggles / duplicate rows
   // cannot intermittently make OTP look unconfigured.
-  const { data, error } = await supabaseAdmin
-    .from("sms_gateways")
-    .select("provider, is_active, is_test_mode, config, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(20);
+  const { rows, error } = await readSmsGateways();
   if (error) {
-    await logSystem("otp", null, "error", `SMS gateway lookup failed: ${error.message}`);
-    throw new Error(`SMS gateway lookup failed: ${error.message}`);
+    const message = `SMS gateway lookup failed: ${error}`;
+    const logged = await logSystem("otp", null, "error", message);
+    return { gateway: null, error: logged ? message : `${message} (log write bhi fail hua)` };
   }
-  const rows = data ?? [];
+
   const active = rows.find((r) => r.is_active) ?? null;
-  if (active) return active;
+  if (active) return { gateway: active, error: null };
 
   const liveFast2sms = rows.find((r) => {
     const cfg = asSmsConfig(r.config);
@@ -218,16 +250,22 @@ async function getActiveSmsGateway() {
     await logSystem("otp", liveFast2sms.provider, "error", "No active gateway flag found; using Fast2SMS live fallback", {
       table_snapshot: asJson(rows.map((r) => ({ provider: r.provider, is_active: r.is_active, is_test_mode: r.is_test_mode }))),
     });
-    return liveFast2sms;
+    return { gateway: liveFast2sms, error: null };
   }
 
-  if (!active) {
-    await logSystem("otp", null, "error", "getActiveSmsGateway returned null", {
-      table_snapshot: asJson(rows.map((r) => ({ provider: r.provider, is_active: r.is_active, is_test_mode: r.is_test_mode }))),
-    });
-  }
-  return null;
+  const logged = await logSystem("otp", null, "error", "getActiveSmsGateway returned null", {
+    table_snapshot: asJson(rows.map((r) => ({ provider: r.provider, is_active: r.is_active, is_test_mode: r.is_test_mode }))),
+  });
+  return {
+    gateway: null,
+    error:
+      (rows.length === 0
+        ? "SMS gateway list khali aayi (server ko gateway table nahi mila)."
+        : "Koi active SMS gateway nahi mila. Admin → SMS Gateways me gateway activate karein.") +
+      (logged ? "" : " Server log write bhi fail hua — server key check karein."),
+  };
 }
+
 
 async function sendViaFast2SMS(
   phone: string,
@@ -362,12 +400,11 @@ export const sendOtp = createServerFn({ method: "POST" })
       return { ok: true, test_mode: true, test_account: true, otp_code: testAccount.otp_code };
     }
 
-    const gateway = await getActiveSmsGateway();
+    const { gateway, error: gatewayError } = await getActiveSmsGateway();
     if (!gateway) {
-      await logSystem("otp", null, "error", "No active SMS gateway configured");
       return {
         ok: false,
-        error: "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
+        error: gatewayError || "No active SMS gateway. Admin → SMS Gateways me ek gateway activate karein.",
       };
     }
 
@@ -385,10 +422,11 @@ export const sendOtp = createServerFn({ method: "POST" })
       const cooldownRemaining = Number.isFinite(lastIssued)
         ? Math.max(1, 60 - Math.floor((Date.now() - lastIssued) / 1000))
         : 60;
-      await logSystem("otp", gateway.provider, "error", "OTP cooldown active", {
+      await logSystem("otp", gateway.provider, "success", "OTP cooldown active — existing code reused", {
         phone_last4: phone.slice(-4),
         cooldown_remaining: cooldownRemaining,
       });
+
       return {
         ok: true,
         test_mode: false,

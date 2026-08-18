@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
 import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
+import { writeActiveService } from "@/lib/service-menu";
+
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
@@ -36,10 +38,14 @@ function Register() {
   if (showServiceMenu) {
     return (
       <ServiceMenuScreen
-        onPick={(route) => navigate({ to: route, replace: true })}
+        onPick={(route, serviceId) => {
+          writeActiveService(serviceId);
+          navigate({ to: route, replace: true });
+        }}
       />
     );
   }
+
 
   return (
     <RegistrationFlow

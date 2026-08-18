@@ -260,11 +260,9 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
     try {
       const res = await sendOtpFn({ data: { phone: digits } });
       if (!res.ok) {
-        const rawError = res.error || "Could not send OTP";
-        const friendlyError = /No active SMS gateway|SMS gateway lookup/i.test(rawError)
-          ? "OTP service temporary issue hai. Please dobara Send OTP try karein."
-          : rawError;
-        setOtpError(friendlyError);
+        // Show the real reason (gateway / config / network) instead of masking it,
+        // so a failure is actionable instead of a vague "temporary issue".
+        setOtpError(res.error || "OTP send fail hua. Dobara try karein.");
         return;
       }
       const testerOtp = "otp_code" in res && typeof res.otp_code === "string" ? res.otp_code : null;
@@ -278,10 +276,14 @@ export function RegistrationFlow({ transparent, onBack, onComplete, flow = "cust
       setOtpSeconds(reusedOtp ? Math.max(1, cooldownRemaining) : 45);
       goNext(2);
       toast.success(testNumber ? "Test number detected — auto verifying" : reusedOtp ? "OTP already sent — wahi OTP enter karein" : "OTP sent to " + formatIndianMobile(digits));
+    } catch (err) {
+      console.error("[sendOtp] failed", err);
+      setOtpError((err as Error)?.message || "Server se connect nahi ho paya. Network check karke dobara try karein.");
     } finally {
       otpSendInFlightRef.current = false;
       setOtpSending(false);
     }
+
   };
 
   useEffect(() => {
@@ -747,8 +749,21 @@ function PhoneStep({ initialDigits, onChangeDigits, isTestNumber, sending, error
           </p>
         </div>
       )}
-      {error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && (
+        <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+          <p className="text-xs text-red-700">{error}</p>
+          <button
+            type="button"
+            disabled={d.length !== 10 || sending}
+            onClick={() => onSubmit(d)}
+            className="mt-2 text-[11px] font-bold uppercase tracking-wider text-red-700 underline disabled:opacity-50"
+          >
+            {sending ? "Sending…" : "Send again"}
+          </button>
+        </div>
+      )}
       <NextButton disabled={d.length !== 10 || sending} label={sending ? "Sending OTP…" : "Send OTP"} onClick={() => onSubmit(d)} />
+
     </div>
   );
 }

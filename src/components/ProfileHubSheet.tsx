@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode, Repeat } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
@@ -8,6 +8,7 @@ import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { OtherAppsRail } from "@/components/OtherAppsRail";
 import { useServiceMenu } from "@/hooks/use-service-menu";
+import { clearActiveService } from "@/lib/service-menu";
 
 
 
@@ -143,6 +144,26 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
 
               <OtherAppsRail />
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                clearActiveService();
+                onClose();
+                navigate({ to: "/register" });
+              }}
+              className="mb-6 w-full rounded-2xl border border-[color:oklch(0.85_0.08_85)] bg-white/70 px-4 py-3 flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2.5">
+                <Repeat className="h-4.5 w-4.5 text-[color:oklch(0.50_0.12_75)]" strokeWidth={2.2} />
+                <span className="text-left">
+                  <span className="block text-[14px] font-display font-bold text-[color:oklch(0.22_0.03_85)]">Switch service</span>
+                  <span className="block text-[11px] text-[color:oklch(0.50_0.03_85)]">Apna home workspace badlein</span>
+                </span>
+              </span>
+              <ChevronRight className="h-4 w-4 text-[color:oklch(0.55_0.05_85)]" />
+            </button>
+
 
           </motion.div>
 

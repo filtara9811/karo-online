@@ -12,7 +12,7 @@ import type { ServiceDef } from "@/lib/service-menu";
  * registration form). Only services the Super Admin has toggled ON appear.
  * Picking a tile routes straight into that service's dashboard.
  */
-export function ServiceMenuScreen({ onPick }: { onPick: (route: string) => void }) {
+export function ServiceMenuScreen({ onPick }: { onPick: (route: string, serviceId: string) => void }) {
   const { services, loading } = useServiceMenu();
   const [hasVendor, setHasVendor] = useState<boolean | null>(null);
   const autoPicked = useRef(false);
@@ -40,7 +40,7 @@ export function ServiceMenuScreen({ onPick }: { onPick: (route: string) => void 
     if (loading || autoPicked.current) return;
     if (services.length === 1 && hasVendor !== null) {
       autoPicked.current = true;
-      onPick(routeFor(services[0]));
+      onPick(routeFor(services[0]), services[0].id);
     }
   }, [loading, services, hasVendor, onPick]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -91,7 +91,7 @@ export function ServiceMenuScreen({ onPick }: { onPick: (route: string) => void 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * i, type: "spring", damping: 22, stiffness: 260 }}
               whileTap={{ scale: 0.975 }}
-              onClick={() => onPick(routeFor(s))}
+              onClick={() => onPick(routeFor(s), s.id)}
               aria-label={s.label}
               className="w-full text-left rounded-2xl border border-white/60 bg-white/55 backdrop-blur-xl p-4 flex items-center gap-3.5 shadow-[0_10px_28px_-14px_rgba(120,90,20,0.45)]"
             >

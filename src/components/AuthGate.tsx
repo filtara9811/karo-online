@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
 import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
+import { writeActiveService } from "@/lib/service-menu";
+
 
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
@@ -131,12 +133,14 @@ export function AuthGate({ children }: { children?: ReactNode }) {
         >
           {showServiceMenu ? (
             <ServiceMenuScreen
-              onPick={(route) => {
+              onPick={(route, serviceId) => {
+                writeActiveService(serviceId);
                 setShowServiceMenu(false);
                 handleComplete();
                 try { navigate({ to: route }); } catch { /* ignore */ }
               }}
             />
+
           ) : (
             <RegistrationFlow
               transparent
