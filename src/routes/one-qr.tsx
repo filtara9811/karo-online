@@ -415,60 +415,8 @@ function QrDashboardPage() {
               </>
             )}
 
-            {tab === "vendors" && (
-              <>
-                <SponsoredAdsRail ads={ads} />
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Store className="h-4 w-4 text-amber-700" />
-                    <h2 className="font-display font-bold text-[15px] text-slate-900">Nearby sponsored vendors</h2>
-                  </div>
-                  {ads.length === 0 ? (
-                    <p className="text-xs text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-4">
-                      Nearby koi sponsored vendor nahi mila.
-                    </p>
-                  ) : (
-                    ads.map((a, i) => (
-                      <motion.a
-                        key={a.user_id + i}
-                        href={shopHref(a) || undefined}
-                        {...(/^https?:/i.test(shopHref(a)) ? { target: "_blank", rel: "noreferrer" } : {})}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                        className="block rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-[0_14px_34px_-24px_rgba(180,120,20,0.55)] active:scale-[0.99] transition"
-                      >
-                        <div className="relative h-36">
-                          <img
-                            src={(a.cover_image_url || a.avatar_url) as string}
-                            alt={a.business_name ?? "Sponsored shop"}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                          {a.distanceKm != null && (
-                            <span className="absolute top-2 right-2 h-7 px-2.5 rounded-full bg-white/90 text-[10px] font-extrabold text-slate-800 inline-flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-amber-600" /> {a.distanceKm.toFixed(1)} km
-                            </span>
-                          )}
-                        </div>
-                        <div className="px-3.5 py-3">
-                          <p className="font-display font-bold text-[14px] text-slate-900 truncate">{a.business_name ?? "Karo Shop"}</p>
-                          <p className="text-[11px] text-slate-500 truncate">{a.trade ?? a.deals_in ?? "Verified shop"}</p>
-                          <div className="mt-2.5 flex items-center gap-2">
-                            <span className="h-7 px-2 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1">
-                              <Star className="h-3 w-3 fill-amber-500 text-amber-500" /> 4.8
-                            </span>
-                            <span className="ml-auto h-9 px-4 rounded-full bg-amber-500 text-white text-[11px] font-extrabold inline-flex items-center gap-1.5">
-                              <Store className="h-3.5 w-3.5" /> Shop Visit
-                            </span>
-                          </div>
-                        </div>
-                      </motion.a>
-                    ))
-                  )}
-                </section>
-              </>
-            )}
+            {tab === "vendors" && <VendorsMarketplace />}
+
 
             {tab === "ads" && (
               <section className="rounded-3xl border border-amber-200 bg-white p-4">
