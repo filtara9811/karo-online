@@ -58,9 +58,42 @@ export const DEFAULT_SERVICE_ROWS: ServiceMenuRow[] = SERVICE_CATALOGUE.map((s, 
 
 export const SERVICE_MENU_KEY = "service_menu";
 
+/** localStorage key holding the user's chosen workspace (service id). */
+export const ACTIVE_SERVICE_KEY = "ko_active_service";
+
+export function readActiveService(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(ACTIVE_SERVICE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeActiveService(id: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ACTIVE_SERVICE_KEY, id);
+    window.dispatchEvent(new Event("ko-active-service"));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearActiveService() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ACTIVE_SERVICE_KEY);
+    window.dispatchEvent(new Event("ko-active-service"));
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Merge admin config with the code catalogue → ordered, enabled-only list. */
 export function resolveServices(rows: ServiceMenuRow[] | null | undefined): ServiceDef[] {
   const cfg = new Map((rows ?? DEFAULT_SERVICE_ROWS).map((r) => [r.id, r]));
   return SERVICE_CATALOGUE.filter((s) => cfg.get(s.id)?.enabled !== false)
     .sort((a, b) => (cfg.get(a.id)?.order ?? 99) - (cfg.get(b.id)?.order ?? 99));
 }
+
