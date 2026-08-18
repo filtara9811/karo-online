@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { CUSTOMER_ONBOARDED_KEY, RegistrationFlow } from "@/components/RegistrationFlow";
-import { RoleChoiceScreen } from "@/components/RoleChoiceScreen";
+import { ServiceMenuScreen } from "@/components/ServiceMenuScreen";
 
 /** Routes that should NEVER trigger the auth gate (admin, vendor flows). */
 const SKIP_PREFIXES = ["/admin", "/vendor", "/register"];
@@ -49,7 +49,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [locallyOnboarded, setLocallyOnboarded] = useState(false);
   const pendingCb = useRef<(() => void) | null>(null);
-  const [showRoleChoice, setShowRoleChoice] = useState(false);
+  const [showServiceMenu, setShowServiceMenu] = useState(false);
   const navigate = useNavigate();
 
   const hardSkip = SKIP_PREFIXES.some((p) => location.pathname.startsWith(p));
