@@ -23,7 +23,10 @@ export async function fetchPublicLanding(code: string, project?: string | null):
     },
   });
 
-  const { data, error } = await client.rpc("get_public_landing", { _code: code });
+  const { data, error } = await client.rpc("get_public_landing", {
+    _code: code,
+    _project: project ?? undefined,
+  });
   if (error) return { ok: false, error: error.message };
   return (data as LandingPayload) ?? { ok: false };
 }
