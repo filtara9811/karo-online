@@ -39,8 +39,15 @@ import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
+  // ?p=<project slug> selects which of the merchant's shops was scanned.
+  validateSearch: (search: Record<string, unknown>) => ({
+    p: typeof search.p === "string" && search.p.length > 0 ? search.p.slice(0, 120) : undefined,
+    m: typeof search.m === "string" || typeof search.m === "number" ? String(search.m) : undefined,
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ p: search.p }),
   // Server-rendered shell: name, avatar, theme and first media arrive in the HTML.
-  loader: ({ params }) => getLandingPayload({ data: { code: params.code } }),
+  loader: ({ params, deps }) => getLandingPayload({ data: { code: params.code, project: deps.p ?? null } }),
   head: ({ params, loaderData }) => {
     const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
@@ -90,18 +97,20 @@ function firstLandingImage(d?: LandingPayload): string | undefined {
   return optimizedImage(src, IMG.hero);
 }
 
-const CACHE_KEY = (c: string) => `karo-landing:${c}`;
-function readCache(code: string): Landing | null {
+// Cache is per shop (code + project slug) so two shops of the same merchant
+// never show each other's videos and products.
+const CACHE_KEY = (c: string, p?: string | null) => `karo-landing:${c}:${p ?? "default"}`;
+function readCache(code: string, project?: string | null): Landing | null {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY(code));
+    const raw = sessionStorage.getItem(CACHE_KEY(code, project));
     if (!raw) return null;
     const { t, data } = JSON.parse(raw);
     if (Date.now() - t > 5 * 60_000) return null;
     return data as Landing;
   } catch { return null; }
 }
-function writeCache(code: string, data: Landing) {
-  try { sessionStorage.setItem(CACHE_KEY(code), JSON.stringify({ t: Date.now(), data })); } catch { /* noop */ }
+function writeCache(code: string, data: Landing, project?: string | null) {
+  try { sessionStorage.setItem(CACHE_KEY(code, project), JSON.stringify({ t: Date.now(), data })); } catch { /* noop */ }
 }
 
 function normalizeAmount(value: unknown): string {
@@ -122,8 +131,10 @@ function buildUpiUri(vpa: string, merchantName: string, amount: string) {
 
 function ScanLandingPage() {
   const { code } = Route.useParams();
+  const search = Route.useSearch();
+  const project = search.p ?? null;
   const initial = Route.useLoaderData() as Landing | undefined;
-  const [data, setData] = useState<Landing | null>(() => initial ?? readCache(code));
+  const [data, setData] = useState<Landing | null>(() => initial ?? readCache(code, project));
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -144,12 +155,11 @@ function ScanLandingPage() {
     void listShopThreads(code).then((t) => setThreadCount(t.length));
   }, [code, chatThread]);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
-  const project = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("p") : null;
   // Shared links carry ?m=<index> so the exact video opens first.
   const sharedIndex = useMemo(() => {
-    if (typeof window === "undefined") return 0;
-    const raw = Number(new URLSearchParams(window.location.search).get("m"));
+    const raw = Number(search.m);
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Dynamic YouTube channel / playlist feed (hybrid with uploaded media).
   const youtube = useYoutubeFeed({
@@ -205,15 +215,15 @@ function ScanLandingPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: res, error } = await supabase.rpc("get_public_landing" as never, { _code: code } as never);
+      const { data: res, error } = await supabase.rpc("get_public_landing" as never, ({ _code: code, _project: project ?? null }) as never);
       if (cancelled) return;
       const next = (res as unknown as Landing) ?? { ok: false };
       if (error) console.error("[landing] rpc", error);
       setData(next);
-      if (next.ok) writeCache(code, next);
+      if (next.ok) writeCache(code, next, project);
 
       // Real engagement counters for the stats bar.
-      const { data: s } = await supabase.rpc("get_public_landing_stats" as never, { _code: code } as never);
+      const { data: s } = await supabase.rpc("get_public_landing_stats" as never, ({ _code: code, _project: project ?? null }) as never);
       if (!cancelled && s) setStats(s as unknown as LandingStats);
 
       // Support contact details (email) for the drawer.
@@ -245,7 +255,7 @@ function ScanLandingPage() {
     window.addEventListener("appinstalled", onInstalled);
     return () => { cancelled = true; window.removeEventListener("appinstalled", onInstalled); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, project]);
 
 
   if (!data) return <LandingSkeleton accent={themeAccent} />;
