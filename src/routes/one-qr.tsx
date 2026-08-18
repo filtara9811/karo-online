@@ -22,6 +22,8 @@ import { ShopChatsSheet } from "@/components/oneqr/ShopChatsSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
 import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
 import { ProjectPickerSheet } from "@/components/oneqr/ProjectPickerSheet";
+import { VendorsMarketplace } from "@/components/oneqr/VendorsMarketplace";
+import { ProjectIdentitySheet } from "@/components/oneqr/ProjectIdentitySheet";
 import { NewProjectSheet, type NewProjectDraft } from "@/components/oneqr/NewProjectSheet";
 import { markVisitorSeen, visitorKey } from "@/components/oneqr/visitor-groups";
 import { markQrProjectPaid } from "@/lib/qr-projects.functions";
@@ -98,6 +100,7 @@ function QrDashboardPage() {
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [identityFor, setIdentityFor] = useState<QrProject | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
@@ -198,6 +201,9 @@ function QrDashboardPage() {
     const picked = all.find((p) => selected.includes(p.id));
     return picked ? [picked] : all.slice(0, 1);
   }, [projects, selected]);
+
+  /** The one project every studio sheet reads and writes. */
+  const activeProject = visibleProjects[0] ?? null;
 
 
   const insertProject = async (draft: NewProjectDraft, paid: boolean, orderId?: string) => {
@@ -326,7 +332,7 @@ function QrDashboardPage() {
 
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-[16px] font-bold text-slate-900">One QR Business</h1>
-            <p className="truncate text-[10.5px] text-slate-500">{profile?.business_name || "My digital shop"}</p>
+            <p className="truncate text-[10.5px] text-slate-500">{activeProject?.business_name || activeProject?.title || "My digital shop"}</p>
           </div>
 
           <motion.button
@@ -393,7 +399,6 @@ function QrDashboardPage() {
                         feed={feed}
                         onRange={setRangeDays}
                         themes={themes}
-                        profile={profile}
                         landingUrl={projectUrl(p)}
                         onPatch={(patch) => patchProject(p.id, patch)}
                         onDelete={() => deleteProject(p.id)}
@@ -403,9 +408,9 @@ function QrDashboardPage() {
                         onVisitor={(v) => { markVisitorSeen(visitorKey(v)); setVisitorOpen(v); }}
                         onQr={() => setQrFor(p)}
                         onPreview={() => setEditorFor(p)}
-                        onPos={() => navigate({ to: "/vendor/shop" })}
+                        onPos={() => navigate({ to: "/vendor/shop", search: { p: p.slug } as never })}
                         onGuide={() => setGuideOpen(true)}
-                        onProfile={() => setProfileOpen(true)}
+                        onProfile={() => setIdentityFor(p)}
 
                       />
                     ))}
@@ -415,60 +420,8 @@ function QrDashboardPage() {
               </>
             )}
 
-            {tab === "vendors" && (
-              <>
-                <SponsoredAdsRail ads={ads} />
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Store className="h-4 w-4 text-amber-700" />
-                    <h2 className="font-display font-bold text-[15px] text-slate-900">Nearby sponsored vendors</h2>
-                  </div>
-                  {ads.length === 0 ? (
-                    <p className="text-xs text-slate-500 rounded-2xl border border-black/10 bg-white px-3 py-4">
-                      Nearby koi sponsored vendor nahi mila.
-                    </p>
-                  ) : (
-                    ads.map((a, i) => (
-                      <motion.a
-                        key={a.user_id + i}
-                        href={shopHref(a) || undefined}
-                        {...(/^https?:/i.test(shopHref(a)) ? { target: "_blank", rel: "noreferrer" } : {})}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                        className="block rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-[0_14px_34px_-24px_rgba(180,120,20,0.55)] active:scale-[0.99] transition"
-                      >
-                        <div className="relative h-36">
-                          <img
-                            src={(a.cover_image_url || a.avatar_url) as string}
-                            alt={a.business_name ?? "Sponsored shop"}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                          {a.distanceKm != null && (
-                            <span className="absolute top-2 right-2 h-7 px-2.5 rounded-full bg-white/90 text-[10px] font-extrabold text-slate-800 inline-flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-amber-600" /> {a.distanceKm.toFixed(1)} km
-                            </span>
-                          )}
-                        </div>
-                        <div className="px-3.5 py-3">
-                          <p className="font-display font-bold text-[14px] text-slate-900 truncate">{a.business_name ?? "Karo Shop"}</p>
-                          <p className="text-[11px] text-slate-500 truncate">{a.trade ?? a.deals_in ?? "Verified shop"}</p>
-                          <div className="mt-2.5 flex items-center gap-2">
-                            <span className="h-7 px-2 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1">
-                              <Star className="h-3 w-3 fill-amber-500 text-amber-500" /> 4.8
-                            </span>
-                            <span className="ml-auto h-9 px-4 rounded-full bg-amber-500 text-white text-[11px] font-extrabold inline-flex items-center gap-1.5">
-                              <Store className="h-3.5 w-3.5" /> Shop Visit
-                            </span>
-                          </div>
-                        </div>
-                      </motion.a>
-                    ))
-                  )}
-                </section>
-              </>
-            )}
+            {tab === "vendors" && <VendorsMarketplace />}
+
 
             {tab === "ads" && (
               <section className="rounded-3xl border border-amber-200 bg-white p-4">
@@ -521,7 +474,7 @@ function QrDashboardPage() {
         shareUrl={projectUrl(posterFor)}
         defaultName={posterFor?.title ?? "Karo Online"}
       />
-      <MerchantLinksSetupSheet open={linksOpen} onOpenChange={setLinksOpen} projectSlug={editorFor?.slug ?? visibleProjects[0]?.slug ?? null} onSaved={() => setLinksNonce((n) => n + 1)} />
+      <MerchantLinksSetupSheet key={`links-${activeProject?.id ?? "none"}`} open={linksOpen} onOpenChange={setLinksOpen} projectSlug={editorFor?.slug ?? activeProject?.slug ?? null} onSaved={() => setLinksNonce((n) => n + 1)} />
       <ShopChatsSheet open={chatsOpen} onClose={() => setChatsOpen(false)} />
       <ServicesPluginsSheet
         open={!!servicesFor}
@@ -549,6 +502,7 @@ function QrDashboardPage() {
         onShare={() => qrFor && shareProject(qrFor)}
       />
       <LandingEditorSheet
+        key={`editor-${editorFor?.id ?? activeProject?.id ?? "none"}`}
         open={!!editorFor}
         onClose={() => setEditorFor(null)}
         title={editorFor?.title ?? ""}
@@ -580,6 +534,27 @@ function QrDashboardPage() {
             cover_image_url: p.cover_image_url,
           })
         }
+      />
+      <ProjectIdentitySheet
+        key={`identity-${identityFor?.id ?? "none"}`}
+        open={!!identityFor}
+        onClose={() => setIdentityFor(null)}
+        projectId={identityFor?.id ?? null}
+        projectTitle={identityFor?.title ?? ""}
+        initial={{
+          business_name: identityFor?.business_name ?? "",
+          contact_phone: identityFor?.contact_phone ?? "",
+          category: identityFor?.category ?? "",
+          avatar_url: identityFor?.avatar_url ?? null,
+          cover_image_url: identityFor?.cover_image_url ?? null,
+        }}
+        onSaved={(patch) => {
+          const id = identityFor?.id;
+          if (!id) return;
+          setProjects((list) => (list ?? []).map((row) => (row.id === id
+            ? { ...row, ...patch, category: patch.category || null } as QrProject
+            : row)));
+        }}
       />
       <ProjectPickerSheet
         open={pickerOpen}

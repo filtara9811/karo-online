@@ -64,7 +64,7 @@ function timeAgo(iso: string) {
  * (QR, campaign, landing page editor, links) then analytics and visitors.
  */
 export function QrProjectCard({
-  project, stats, themes, landingUrl, visits, profile, analytics, feed,
+  project, stats, themes, landingUrl, visits, analytics, feed,
   onPatch, onDelete, onPoster, onLinks, onCampaign, onVisitor, onQr, onPreview, onGuide, onProfile, onRange, onPos,
 }: {
   project: QrProject;
@@ -72,7 +72,6 @@ export function QrProjectCard({
   themes: LandingTheme[];
   landingUrl: string;
   visits: VisitorRow[];
-  profile?: CardProfile | null;
   analytics?: DashboardAnalytics | null;
   feed?: VisitorFeedRow[] | null;
   onPatch: (patch: Partial<QrProject>) => void;
@@ -123,12 +122,13 @@ export function QrProjectCard({
   };
 
 
-  const coverUrl = project.cover_image_url || profile?.cover_image_url || null;
-  const avatarUrl = project.avatar_url || profile?.avatar_url || null;
-  const displayName = project.business_name || profile?.business_name || project.title;
+  // Each project is its own shop: identity comes only from the project row.
+  const coverUrl = project.cover_image_url || null;
+  const avatarUrl = project.avatar_url || null;
+  const displayName = project.business_name || project.title;
   const displaySub = project.contact_phone
     ? `+91 ${project.contact_phone}`
-    : profile?.shop_bio || `/${project.slug}`;
+    : project.category || "Shop profile add karein";
 
   /** Prefer the server feed (source + inquiry products); fall back to raw visits. */
   const feedRows = useMemo<VisitorFeedRow[]>(() => {
