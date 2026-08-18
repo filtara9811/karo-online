@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode } from "lucide-react";
+import { Briefcase, Store, Gift, LayoutDashboard, ChevronRight, X, QrCode, Repeat } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet";
@@ -8,6 +8,7 @@ import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { OtherAppsRail } from "@/components/OtherAppsRail";
 import { useServiceMenu } from "@/hooks/use-service-menu";
+import { clearActiveService } from "@/lib/service-menu";
 
 
 
