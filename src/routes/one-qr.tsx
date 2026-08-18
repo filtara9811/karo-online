@@ -21,6 +21,7 @@ import { LandingEditorSheet } from "@/components/oneqr/LandingEditorSheet";
 import { ShopChatsSheet } from "@/components/oneqr/ShopChatsSheet";
 import { OneQrHubSheet } from "@/components/oneqr/OneQrHubSheet";
 import { BusinessProfileSheet, type BusinessProfileForm } from "@/components/oneqr/BusinessProfileSheet";
+import { ProfileSheet } from "@/components/ProfileSheet";
 import { ProjectPickerSheet } from "@/components/oneqr/ProjectPickerSheet";
 import { VendorsMarketplace } from "@/components/oneqr/VendorsMarketplace";
 import { ProjectIdentitySheet } from "@/components/oneqr/ProjectIdentitySheet";
@@ -99,6 +100,7 @@ function QrDashboardPage() {
   const [qrFor, setQrFor] = useState<QrProject | null>(null);
   const [editorFor, setEditorFor] = useState<QrProject | null>(null);
   const [hubOpen, setHubOpen] = useState(false);
+  const [myProfileOpen, setMyProfileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [identityFor, setIdentityFor] = useState<QrProject | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -322,18 +324,23 @@ function QrDashboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-white pb-32">
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-amber-100">
         <div className="max-w-md mx-auto px-3 h-16 flex items-center gap-2.5">
-          <Link
-            to="/"
-            aria-label="Back to home"
+          <button
+            type="button"
+            onClick={() => setMyProfileOpen(true)}
+            aria-label="Open my profile"
             className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 grid place-items-center text-white font-extrabold ring-2 ring-white active:scale-90"
           >
             {code ? code.charAt(0).toUpperCase() : <ArrowLeft className="h-4 w-4" />}
-          </Link>
+          </button>
 
-          <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => setMyProfileOpen(true)}
+            className="min-w-0 flex-1 text-left active:scale-[0.99]"
+          >
             <h1 className="truncate font-display text-[16px] font-bold text-slate-900">One QR Business</h1>
             <p className="truncate text-[10.5px] text-slate-500">{activeProject?.business_name || activeProject?.title || "My digital shop"}</p>
-          </div>
+          </button>
 
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -523,6 +530,8 @@ function QrDashboardPage() {
         onClose={() => setHubOpen(false)}
         onProfileSaved={(p) => setProfile(p)}
       />
+      <ProfileSheet open={myProfileOpen} onClose={() => setMyProfileOpen(false)} />
+
       <BusinessProfileSheet
         open={profileOpen}
         onClose={() => setProfileOpen(false)}

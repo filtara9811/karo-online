@@ -16,6 +16,7 @@ import { CategoryExplorerSheet, DEFAULT_LEAD_FILTERS, type LeadFilters } from "@
 
 
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
+import { ProfileSheet } from "@/components/ProfileSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
@@ -114,6 +115,7 @@ export function QuickPage() {
   const isMapView = homeView === "map";
 
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+  const [myProfileOpen, setMyProfileOpen] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [radiusKm, setRadiusKm] = useState(1);
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
@@ -487,34 +489,23 @@ export function QuickPage() {
       {isMapView && (
         <header className="flex-shrink-0 bg-white border-b border-slate-100 px-3 pt-[calc(env(safe-area-inset-top)+10px)] pb-2.5">
           <div className="flex items-center gap-2">
-            <Link to="/profile" className="shrink-0">
+            <button type="button" onClick={() => setMyProfileOpen(true)} className="shrink-0" aria-label="Open my profile">
               <img
                 src={profile?.avatar_url || avatarUser}
                 alt="Profile"
                 className="h-11 w-11 rounded-full object-cover border-2 border-orange-200 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.4)]"
               />
-            </Link>
+            </button>
             <div className="min-w-0 flex-1">
-              <Link to="/profile" className="block truncate text-[15px] font-black text-slate-900">
+              <button type="button" onClick={() => setMyProfileOpen(true)} className="block w-full truncate text-left text-[15px] font-black text-slate-900">
                 {profile?.name || "Guest"}
-              </Link>
+              </button>
               <button onClick={() => setLocationSheetOpen(true)} className="flex items-center gap-1 min-w-0 max-w-full">
                 <MapPin className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                 <span className="truncate text-[11.5px] font-semibold text-slate-600">{effectiveLabel}</span>
                 <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
               </button>
             </div>
-            <Link
-              to="/vendor/join"
-              className="shrink-0 flex items-center gap-1.5 h-11 pl-2.5 pr-2 rounded-2xl bg-orange-50 border border-orange-200 active:scale-95 transition"
-            >
-              <Store className="h-5 w-5 text-orange-500" />
-              <span className="leading-tight text-left">
-                <span className="block text-[12.5px] font-black text-orange-600">Join Seller</span>
-                <span className="block text-[9px] font-semibold text-slate-500">Start your business</span>
-              </span>
-              <ChevronRight className="h-4 w-4 text-orange-400" />
-            </Link>
           </div>
         </header>
 
@@ -559,17 +550,18 @@ export function QuickPage() {
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
               className="absolute left-3 top-3 z-20 flex items-center gap-2 max-w-[54%]"
             >
-              <Link to="/profile" className="shrink-0">
+              <button type="button" onClick={() => setMyProfileOpen(true)} className="shrink-0" aria-label="Open my profile">
                 <img
                   src={profile?.avatar_url || avatarUser}
                   alt="Profile"
                   className="h-11 w-11 rounded-full object-cover border-2 border-white/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
                 />
-              </Link>
+              </button>
               <div className="min-w-0">
-                <Link to="/profile" className="block truncate text-[15px] font-black text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                <button type="button" onClick={() => setMyProfileOpen(true)} className="block w-full truncate text-left text-[15px] font-black text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
                   {profile?.name || "Guest"}
-                </Link>
+                </button>
+
                 <button
                   onClick={() => setLocationSheetOpen(true)}
                   className="flex items-center gap-1 min-w-0"
@@ -582,19 +574,6 @@ export function QuickPage() {
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="absolute right-3 top-3 z-20">
-              <Link
-                to="/vendor/join"
-                className="flex items-center gap-2 h-12 pl-3 pr-3 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 shadow-[0_10px_26px_-12px_rgba(0,0,0,0.45)] active:scale-95 transition"
-              >
-                <Store className="h-5 w-5 text-orange-500" />
-                <span className="leading-tight text-left">
-                  <span className="block text-[13px] font-black text-orange-600">Join Seller</span>
-                  <span className="block text-[9.5px] font-semibold text-slate-600">Start your business</span>
-                </span>
-                <ArrowRight className="h-4 w-4 text-orange-500" />
-              </Link>
-            </motion.div>
 
             <motion.button
               initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
@@ -878,6 +857,8 @@ export function QuickPage() {
         subCategories={allSubs}
         onQuickPick={handleSearchPick}
       />
+      <ProfileSheet open={myProfileOpen} onClose={() => setMyProfileOpen(false)} />
+
       <LocationPickerSheet
         open={locationSheetOpen}
         onClose={() => setLocationSheetOpen(false)}
