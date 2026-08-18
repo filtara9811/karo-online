@@ -155,12 +155,11 @@ function ScanLandingPage() {
     void listShopThreads(code).then((t) => setThreadCount(t.length));
   }, [code, chatThread]);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
-  const project = Route.useSearch().p ?? null;
   // Shared links carry ?m=<index> so the exact video opens first.
   const sharedIndex = useMemo(() => {
-    if (typeof window === "undefined") return 0;
-    const raw = Number(new URLSearchParams(window.location.search).get("m"));
+    const raw = Number(search.m);
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Dynamic YouTube channel / playlist feed (hybrid with uploaded media).
   const youtube = useYoutubeFeed({
