@@ -48,17 +48,20 @@ export const Route = createFileRoute("/s/$code")({
   loaderDeps: ({ search }) => ({ p: search.p }),
   // Server-rendered shell: name, avatar, theme and first media arrive in the HTML.
   loader: ({ params, deps }) => getLandingPayload({ data: { code: params.code, project: deps.p ?? null } }),
-  head: ({ params, loaderData }) => {
-    const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
+  head: ({ params, loaderData, match }) => {
+    const slug = (match.search as { p?: string } | undefined)?.p;
+    const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}${slug ? `?p=${encodeURIComponent(slug)}` : ""}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
+    const shop = (loaderData as { merchant?: { business_name?: string | null; full_name?: string | null } } | undefined)?.merchant;
+    const shopName = shop?.business_name || shop?.full_name || params.code;
     return {
       meta: [
-        { title: `Visit ${params.code} — Karo Online` },
-        { name: "description", content: "Trusted merchant scan page on Karo Online." },
+        { title: `${shopName} — Shop online on Karo Online` },
+        { name: "description", content: `Watch ${shopName}'s latest videos, browse products and order or chat directly.` },
         { name: "theme-color", content: "#ffffff" },
         { property: "og:type", content: "website" },
-        { property: "og:title", content: "Scan & Join Karo Online" },
-        { property: "og:description", content: "Open the smart QR link for app download, vendor info, benefits and wallet rewards." },
+        { property: "og:title", content: `${shopName} — Shop online` },
+        { property: "og:description", content: `Videos, products and instant chat with ${shopName} on Karo Online.` },
         { property: "og:url", content: url },
         { property: "og:image", content: image },
         { property: "og:image:width", content: "1200" },
