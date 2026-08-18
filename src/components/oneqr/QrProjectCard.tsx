@@ -123,12 +123,13 @@ export function QrProjectCard({
   };
 
 
-  const coverUrl = project.cover_image_url || profile?.cover_image_url || null;
-  const avatarUrl = project.avatar_url || profile?.avatar_url || null;
-  const displayName = project.business_name || profile?.business_name || project.title;
+  // Each project is its own shop: identity comes only from the project row.
+  const coverUrl = project.cover_image_url || null;
+  const avatarUrl = project.avatar_url || null;
+  const displayName = project.business_name || project.title;
   const displaySub = project.contact_phone
     ? `+91 ${project.contact_phone}`
-    : profile?.shop_bio || `/${project.slug}`;
+    : project.category || "Shop profile add karein";
 
   /** Prefer the server feed (source + inquiry products); fall back to raw visits. */
   const feedRows = useMemo<VisitorFeedRow[]>(() => {
