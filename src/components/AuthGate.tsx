@@ -121,7 +121,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
 
   return (
     <Ctx.Provider value={{ requireAuth, isReady }}>
-      {forceGate ? (
+      {forceGate || showServiceMenu ? (
         <div
           data-auth-gate
           className="fixed inset-0 z-[60]"
@@ -129,16 +129,12 @@ export function AuthGate({ children }: { children?: ReactNode }) {
             background: "linear-gradient(180deg, #fffaeb 0%, #f5e8c4 100%)",
           }}
         >
-          {showRoleChoice ? (
-            <RoleChoiceScreen
-              onBuyer={() => {
-                setShowRoleChoice(false);
+          {showServiceMenu ? (
+            <ServiceMenuScreen
+              onPick={(route) => {
+                setShowServiceMenu(false);
                 handleComplete();
-              }}
-              onSeller={() => {
-                setShowRoleChoice(false);
-                handleComplete();
-                try { navigate({ to: "/vendor/join" }); } catch { /* ignore */ }
+                try { navigate({ to: route }); } catch { /* ignore */ }
               }}
             />
           ) : (
@@ -146,7 +142,7 @@ export function AuthGate({ children }: { children?: ReactNode }) {
               transparent
               hideBack
               onBack={() => { /* cannot dismiss — forced gate */ }}
-              onComplete={() => setShowRoleChoice(true)}
+              onComplete={() => setShowServiceMenu(true)}
             />
           )}
         </div>
