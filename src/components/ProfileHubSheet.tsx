@@ -8,7 +8,8 @@ import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { OtherAppsRail } from "@/components/OtherAppsRail";
 import { useServiceMenu } from "@/hooks/use-service-menu";
-import { clearActiveService } from "@/lib/service-menu";
+import { clearActiveService, writeActiveService } from "@/lib/service-menu";
+import { usePanelOptions } from "@/components/PanelSwitchSheet";
 
 
 
@@ -23,8 +24,7 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
   const [pressed, setPressed] = useState<ApkTarget | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const { data: refData } = useReferralOverview();
-  const { services } = useServiceMenu();
-  const on = (id: string) => services.some((s) => s.id === id);
+  const { options: panelOptions } = usePanelOptions();
   const refCode = refData?.code ?? "";
   const refUrl = refCode && typeof window !== "undefined"
     ? `${window.location.origin}/r/${encodeURIComponent(refCode)}`
