@@ -16,6 +16,7 @@ import { CategoryExplorerSheet, DEFAULT_LEAD_FILTERS, type LeadFilters } from "@
 
 
 import { LocationPickerSheet, type PickedLocation } from "@/components/LocationPickerSheet";
+import { ProfileSheet } from "@/components/ProfileSheet";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { FindingVendorOverlay } from "@/components/FindingVendorOverlay";
 import { SubmittingRequestOverlay, type SubmitPhase } from "@/components/SubmittingRequestOverlay";
@@ -114,6 +115,7 @@ export function QuickPage() {
   const isMapView = homeView === "map";
 
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+  const [myProfileOpen, setMyProfileOpen] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [radiusKm, setRadiusKm] = useState(1);
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
@@ -855,6 +857,8 @@ export function QuickPage() {
         subCategories={allSubs}
         onQuickPick={handleSearchPick}
       />
+      <ProfileSheet open={myProfileOpen} onClose={() => setMyProfileOpen(false)} />
+
       <LocationPickerSheet
         open={locationSheetOpen}
         onClose={() => setLocationSheetOpen(false)}
