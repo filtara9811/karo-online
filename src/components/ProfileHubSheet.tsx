@@ -7,6 +7,7 @@ import { ApkDownloadSheet, type ApkTarget } from "@/components/ApkDownloadSheet"
 import { QrPosterSheet } from "@/components/QrPosterSheet";
 import { useReferralOverview } from "@/hooks/use-referral";
 import { OtherAppsRail } from "@/components/OtherAppsRail";
+import { useServiceMenu } from "@/hooks/use-service-menu";
 
 
 
@@ -21,6 +22,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
   const [pressed, setPressed] = useState<ApkTarget | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const { data: refData } = useReferralOverview();
+  const { services } = useServiceMenu();
+  const on = (id: string) => services.some((s) => s.id === id);
   const refCode = refData?.code ?? "";
   const refUrl = refCode && typeof window !== "undefined"
     ? `${window.location.origin}/r/${encodeURIComponent(refCode)}`
@@ -75,6 +78,7 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <div className="px-4 pb-4 space-y-3 overflow-y-auto overscroll-contain">
+              {on("vendor_panel") && (
               <HubButton
                 accent="from-amber-400 to-orange-500"
                 icon={hasVendor ? LayoutDashboard : Briefcase}
@@ -89,6 +93,8 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-amber-400 to-orange-500",
                 })}
               />
+              )}
+              {on("digital_shop") && (
               <HubButton
                 accent="from-emerald-400 to-teal-600"
                 icon={Store}
@@ -103,6 +109,7 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-emerald-400 to-teal-600",
                 })}
               />
+              )}
               <HubButton
                 accent="from-fuchsia-500 to-purple-700"
                 icon={Gift}
@@ -117,6 +124,7 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-fuchsia-500 to-purple-700",
                 })}
               />
+              {on("digital_qr") && (
               <HubButton
                 accent="from-sky-500 to-indigo-700"
                 icon={QrCode}
@@ -131,6 +139,7 @@ export function ProfileHubSheet({ open, onClose }: { open: boolean; onClose: () 
                   accent: "from-sky-500 to-indigo-700",
                 })}
               />
+              )}
 
               <OtherAppsRail />
             </div>
