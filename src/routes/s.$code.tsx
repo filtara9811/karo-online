@@ -39,8 +39,15 @@ import karoCoverAsset from "@/assets/karo-cover.png.asset.json";
 const DEFAULT_COVER_URL = karoCoverAsset.url;
 
 export const Route = createFileRoute("/s/$code")({
+  // ?p=<project slug> selects which of the merchant's shops was scanned.
+  validateSearch: (search: Record<string, unknown>) => ({
+    p: typeof search.p === "string" && search.p.length > 0 ? search.p.slice(0, 120) : undefined,
+    m: typeof search.m === "string" || typeof search.m === "number" ? String(search.m) : undefined,
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ p: search.p }),
   // Server-rendered shell: name, avatar, theme and first media arrive in the HTML.
-  loader: ({ params }) => getLandingPayload({ data: { code: params.code } }),
+  loader: ({ params, deps }) => getLandingPayload({ data: { code: params.code, project: deps.p ?? null } }),
   head: ({ params, loaderData }) => {
     const url = `https://karoonline.in/s/${encodeURIComponent(params.code)}`;
     const image = `https://karoonline.in/api/public/share-image/qr/${encodeURIComponent(params.code)}`;
