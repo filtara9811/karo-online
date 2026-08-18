@@ -554,11 +554,12 @@ export function QuickPage() {
                   alt="Profile"
                   className="h-11 w-11 rounded-full object-cover border-2 border-white/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
                 />
-              </Link>
+              </button>
               <div className="min-w-0">
-                <Link to="/profile" className="block truncate text-[15px] font-black text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                <button type="button" onClick={() => setMyProfileOpen(true)} className="block w-full truncate text-left text-[15px] font-black text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
                   {profile?.name || "Guest"}
-                </Link>
+                </button>
+
                 <button
                   onClick={() => setLocationSheetOpen(true)}
                   className="flex items-center gap-1 min-w-0"
