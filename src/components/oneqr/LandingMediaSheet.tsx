@@ -228,6 +228,12 @@ export function LandingMediaSheet({
         yt_source: ytSource.trim() || null,
         yt_enabled: ytEnabled && !!ytSource.trim(),
         yt_products: ytProducts,
+        ig_source: socialSource.ig.trim() || null,
+        ig_enabled: socialEnabled.ig && !!socialSource.ig.trim(),
+        ig_products: socialProducts.ig,
+        pin_source: socialSource.pin.trim() || null,
+        pin_enabled: socialEnabled.pin && !!socialSource.pin.trim(),
+        pin_products: socialProducts.pin,
       };
       const size = jsonBytes(payload);
       if (size > 512 * 1024) {
