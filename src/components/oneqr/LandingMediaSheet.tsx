@@ -174,11 +174,27 @@ export function LandingMediaSheet({
         yt_source?: string | null;
         yt_enabled?: boolean | null;
         yt_products?: Record<string, VideoProduct[]> | null;
-      }>(uid, projectSlug, "poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products");
+        ig_source?: string | null;
+        ig_enabled?: boolean | null;
+        ig_products?: Record<string, VideoProduct[]> | null;
+        pin_source?: string | null;
+        pin_enabled?: boolean | null;
+        pin_products?: Record<string, VideoProduct[]> | null;
+      }>(
+        uid,
+        projectSlug,
+        "poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products, ig_source, ig_enabled, ig_products, pin_source, pin_enabled, pin_products",
+      );
       if (cancelled) return;
       setYtSource(d?.yt_source ?? "");
       setYtEnabled(!!d?.yt_enabled);
       setYtProducts((d?.yt_products && typeof d.yt_products === "object" ? d.yt_products : {}) as Record<string, VideoProduct[]>);
+      const asMap = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, VideoProduct[]>) : {});
+      setSocialSource({ ig: d?.ig_source ?? "", pin: d?.pin_source ?? "" });
+      setSocialEnabled({ ig: !!d?.ig_enabled, pin: !!d?.pin_enabled });
+      setSocialProducts({ ig: asMap(d?.ig_products), pin: asMap(d?.pin_products) });
+      setSocialItems({ ig: [], pin: [] });
+      setSocialActive(null);
       const list: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
