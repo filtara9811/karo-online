@@ -10,6 +10,7 @@ import { readExtras } from "@/components/oneqr/landing-extras";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { useYoutubeFeed } from "@/components/landing/use-youtube-feed";
+import { useSocialFeed } from "@/components/landing/use-social-feed";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
 import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
