@@ -122,7 +122,9 @@ export function LandingMediaSheet({
       }
       setSocialItems((p) => ({
         ...p,
-        [key]: res.items.map((it) => ({ id: it.id, title: it.title, thumbnail: it.poster ?? (it.kind === "image" ? it.src : null) })),
+        [key]: (res.items as { id: string; title: string; kind: string; src: string; poster: string | null }[]).map(
+          (it) => ({ id: it.id, title: it.title, thumbnail: it.poster ?? (it.kind === "image" ? it.src : null) }),
+        ),
       }));
       toast.success(`${res.items.length} items mil gaye — Publish dabayein`);
     } catch (e) {
