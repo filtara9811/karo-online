@@ -332,13 +332,26 @@ export function LandingMediaSheet({
    * video's tag list instead of the currently selected uploaded slot.
    */
   const products = useMemo(
-    () => (ytActive ? (ytProducts[ytActive] ?? []) : (current?.products ?? [])),
-    [current, ytActive, ytProducts],
+    () =>
+      ytActive
+        ? (ytProducts[ytActive] ?? [])
+        : socialActive
+          ? (socialProducts[socialActive.key][socialActive.id] ?? [])
+          : (current?.products ?? []),
+    [current, socialActive, socialProducts, ytActive, ytProducts],
   );
 
   const setProducts = (list: VideoProduct[]) => {
     if (ytActive) {
       setYtProducts((p) => ({ ...p, [ytActive]: list }));
+      setDirty(true);
+      return;
+    }
+    if (socialActive) {
+      setSocialProducts((p) => ({
+        ...p,
+        [socialActive.key]: { ...p[socialActive.key], [socialActive.id]: list },
+      }));
       setDirty(true);
       return;
     }
