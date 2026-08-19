@@ -487,6 +487,80 @@ export function LandingMediaSheet({
           )}
         </div>
 
+        {(["ig", "pin"] as const).map((key) => {
+          const meta = key === "ig"
+            ? { name: "Instagram auto-feed", ring: "border-fuchsia-200 bg-fuchsia-50/70", text: "text-fuchsia-900", btn: "bg-gradient-to-r from-fuchsia-600 to-orange-500", note: "text-fuchsia-900/70", ph: "@yourshop / instagram.com/yourshop", tint: "text-fuchsia-600", sel: "border-fuchsia-500" }
+            : { name: "Pinterest auto-feed", ring: "border-rose-200 bg-rose-50/70", text: "text-rose-900", btn: "bg-rose-600", note: "text-rose-900/70", ph: "username / pinterest.com/username", tint: "text-rose-600", sel: "border-rose-500" };
+          const items = socialItems[key];
+          const map = socialProducts[key];
+          return (
+            <div key={key} className={`mt-3 rounded-2xl border p-3 ${meta.ring}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className={`text-[11px] font-extrabold uppercase tracking-wide ${meta.text}`}>{meta.name}</p>
+                <button
+                  type="button"
+                  onClick={() => { setSocialEnabled((p) => ({ ...p, [key]: !p[key] })); setDirty(true); }}
+                  className={`h-6 w-11 shrink-0 rounded-full transition-colors ${socialEnabled[key] ? (key === "ig" ? "bg-fuchsia-600" : "bg-rose-600") : "bg-slate-300"}`}
+                  aria-label="toggle"
+                >
+                  <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${socialEnabled[key] ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2 rounded-xl border border-black/10 bg-white px-2.5 py-2">
+                {key === "ig"
+                  ? <Instagram className={`h-4 w-4 shrink-0 ${meta.tint}`} />
+                  : <Pin className={`h-4 w-4 shrink-0 ${meta.tint}`} />}
+                <input
+                  value={socialSource[key]}
+                  onChange={(e) => { setSocialSource((p) => ({ ...p, [key]: e.target.value })); setDirty(true); }}
+                  placeholder={meta.ph}
+                  className="min-w-0 flex-1 bg-transparent text-[12.5px] text-slate-900 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void syncSocial(key)}
+                  disabled={socialBusy === key}
+                  className={`flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[11px] font-extrabold text-white active:scale-95 disabled:opacity-60 ${meta.btn}`}
+                >
+                  {socialBusy === key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  Sync
+                </button>
+              </div>
+
+              {items.length > 0 && (
+                <>
+                  <p className={`mt-2 text-[10px] font-bold ${meta.note}`}>
+                    {items.length} items · tap karke uske products tag karein
+                  </p>
+                  <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {items.map((v) => {
+                      const tagged = map[v.id]?.length ?? 0;
+                      const on = socialActive?.key === key && socialActive.id === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => { setYtActive(null); setSocialActive(on ? null : { key, id: v.id }); }}
+                          className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? meta.sel : "border-transparent"}`}
+                        >
+                          {v.thumbnail ? (
+                            <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="grid h-full w-full place-items-center text-white/70"><Play className="h-5 w-5" /></span>
+                          )}
+                          <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-1.5 text-[8.5px] font-bold text-white">
+                            {tagged} <Tag className="inline h-2.5 w-2.5" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+
 
 
         {loading ? (
