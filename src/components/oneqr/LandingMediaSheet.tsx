@@ -565,7 +565,7 @@ export function LandingMediaSheet({
 
         {loading ? (
           <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-amber-600" /></div>
-        ) : !current && !ytActive ? (
+        ) : !current && !ytActive && !socialActive ? (
           <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 py-10 text-center">
             <Film className="h-6 w-6 text-amber-600" />
             <p className="text-[12px] font-bold text-slate-700">Abhi koi video nahi</p>
@@ -579,6 +579,12 @@ export function LandingMediaSheet({
                 <img
                   src={ytVideos.find((v) => v.id === ytActive)?.thumbnail ?? ""}
                   alt="Selected YouTube video"
+                  className="h-full w-full object-cover"
+                />
+              ) : socialActive ? (
+                <img
+                  src={socialItems[socialActive.key].find((v) => v.id === socialActive.id)?.thumbnail ?? ""}
+                  alt="Selected social item"
                   className="h-full w-full object-cover"
                 />
               ) : current?.type === "image" ? (
