@@ -257,7 +257,7 @@ export function LandingMediaSheet({
     } finally {
       setSaving(false);
     }
-  }, [onSaved, user?.id, ytSource, ytEnabled, ytProducts]);
+  }, [onSaved, user?.id, ytSource, ytEnabled, ytProducts, socialSource, socialEnabled, socialProducts]);
 
   const update = (next: MediaItem[]) => {
     setMedia(next.slice(0, MAX_SLOTS));
