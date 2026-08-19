@@ -463,7 +463,7 @@ export function LandingMediaSheet({
                     <button
                       key={v.id}
                       type="button"
-                      onClick={() => setYtActive(on ? null : v.id)}
+                      onClick={() => { setSocialActive(null); setYtActive(on ? null : v.id); }}
                       className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? "border-red-500" : "border-transparent"}`}
                     >
                       {v.thumbnail ? (
