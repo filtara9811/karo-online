@@ -89,6 +89,48 @@ export function LandingMediaSheet({
     }
   };
 
+  // ── Dynamic Instagram / Pinterest sync (same UX as YouTube) ───────────
+  const loadInstagram = useServerFn(getInstagramFeed);
+  const loadPinterest = useServerFn(getPinterestFeed);
+
+  type SocialKey = "ig" | "pin";
+  type SocialThumb = { id: string; title: string; thumbnail: string | null };
+  const [socialSource, setSocialSource] = useState<Record<SocialKey, string>>({ ig: "", pin: "" });
+  const [socialEnabled, setSocialEnabled] = useState<Record<SocialKey, boolean>>({ ig: false, pin: false });
+  const [socialProducts, setSocialProducts] = useState<Record<SocialKey, Record<string, VideoProduct[]>>>({ ig: {}, pin: {} });
+  const [socialItems, setSocialItems] = useState<Record<SocialKey, SocialThumb[]>>({ ig: [], pin: [] });
+  const [socialBusy, setSocialBusy] = useState<SocialKey | null>(null);
+  const [socialActive, setSocialActive] = useState<{ key: SocialKey; id: string } | null>(null);
+
+  const syncSocial = async (key: SocialKey) => {
+    const src = socialSource[key].trim();
+    if (!src) { toast.error(key === "ig" ? "Instagram @handle ya link daalein" : "Pinterest username ya board link daalein"); return; }
+    setSocialBusy(key);
+    try {
+      const fetcher = key === "ig" ? loadInstagram : loadPinterest;
+      const res = await fetcher({ data: { source: src, limit: 24 } });
+      if (!res.ok) {
+        toast.error(
+          res.error === "no_media_found"
+            ? "Kuch nahi mila — account private ho sakta hai"
+            : res.error === "invalid_source"
+              ? "Link sahi nahi hai"
+              : res.error ?? "Sync fail hua",
+        );
+        return;
+      }
+      setSocialItems((p) => ({
+        ...p,
+        [key]: res.items.map((it) => ({ id: it.id, title: it.title, thumbnail: it.poster ?? (it.kind === "image" ? it.src : null) })),
+      }));
+      toast.success(`${res.items.length} items mil gaye — Publish dabayein`);
+    } catch (e) {
+      toast.error((e as Error).message || "Sync fail hua");
+    } finally {
+      setSocialBusy(null);
+    }
+  };
+
   /** Razorpay checkout for the extra-video pack; unlocks instantly on success. */
   const payToUnlock = async () => {
     if (paying) return;
