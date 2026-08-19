@@ -175,6 +175,19 @@ function ScanLandingPage() {
     enabled: !!data?.links?.yt_enabled,
     products: data?.links?.yt_products ?? null,
   });
+  // Dynamic Instagram / Pinterest auto-feeds (same hybrid behaviour).
+  const instagram = useSocialFeed({
+    provider: "instagram",
+    source: data?.links?.ig_source ?? null,
+    enabled: !!data?.links?.ig_enabled,
+    products: data?.links?.ig_products ?? null,
+  });
+  const pinterest = useSocialFeed({
+    provider: "pinterest",
+    source: data?.links?.pin_source ?? null,
+    enabled: !!data?.links?.pin_enabled,
+    products: data?.links?.pin_products ?? null,
+  });
 
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
