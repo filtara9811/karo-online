@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
 import { getYoutubeFeed } from "@/lib/youtube.functions";
+import { getInstagramFeed, getPinterestFeed } from "@/lib/social-feed.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
