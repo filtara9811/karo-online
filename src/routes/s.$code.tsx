@@ -311,6 +311,8 @@ function ScanLandingPage() {
       item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
     ),
     ...youtube.items,
+    ...instagram.items,
+    ...pinterest.items,
   ];
 
   const theme = data.theme ?? {};
