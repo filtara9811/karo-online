@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole, Youtube, RefreshCw } from "lucide-react";
+import { Loader2, Trash2, Video, ImagePlus, Link2, Film, Plus, Play, Tag, Replace, LockKeyhole, Youtube, RefreshCw, Instagram, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createPremiumLinksOrder, verifyPremiumLinks } from "@/lib/premium-links.functions";
 import { getYoutubeFeed } from "@/lib/youtube.functions";
+import { getInstagramFeed, getPinterestFeed } from "@/lib/social-feed.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { LandingMediaItem, VideoProduct } from "@/lib/landing-types";
@@ -89,6 +90,50 @@ export function LandingMediaSheet({
     }
   };
 
+  // ── Dynamic Instagram / Pinterest sync (same UX as YouTube) ───────────
+  const loadInstagram = useServerFn(getInstagramFeed);
+  const loadPinterest = useServerFn(getPinterestFeed);
+
+  type SocialKey = "ig" | "pin";
+  type SocialThumb = { id: string; title: string; thumbnail: string | null };
+  const [socialSource, setSocialSource] = useState<Record<SocialKey, string>>({ ig: "", pin: "" });
+  const [socialEnabled, setSocialEnabled] = useState<Record<SocialKey, boolean>>({ ig: false, pin: false });
+  const [socialProducts, setSocialProducts] = useState<Record<SocialKey, Record<string, VideoProduct[]>>>({ ig: {}, pin: {} });
+  const [socialItems, setSocialItems] = useState<Record<SocialKey, SocialThumb[]>>({ ig: [], pin: [] });
+  const [socialBusy, setSocialBusy] = useState<SocialKey | null>(null);
+  const [socialActive, setSocialActive] = useState<{ key: SocialKey; id: string } | null>(null);
+
+  const syncSocial = async (key: SocialKey) => {
+    const src = socialSource[key].trim();
+    if (!src) { toast.error(key === "ig" ? "Instagram @handle ya link daalein" : "Pinterest username ya board link daalein"); return; }
+    setSocialBusy(key);
+    try {
+      const fetcher = key === "ig" ? loadInstagram : loadPinterest;
+      const res = await fetcher({ data: { source: src, limit: 24 } });
+      if (!res.ok) {
+        toast.error(
+          res.error === "no_media_found"
+            ? "Kuch nahi mila — account private ho sakta hai"
+            : res.error === "invalid_source"
+              ? "Link sahi nahi hai"
+              : res.error ?? "Sync fail hua",
+        );
+        return;
+      }
+      setSocialItems((p) => ({
+        ...p,
+        [key]: (res.items as { id: string; title: string; kind: string; src: string; poster: string | null }[]).map(
+          (it) => ({ id: it.id, title: it.title, thumbnail: it.poster ?? (it.kind === "image" ? it.src : null) }),
+        ),
+      }));
+      toast.success(`${res.items.length} items mil gaye — Publish dabayein`);
+    } catch (e) {
+      toast.error((e as Error).message || "Sync fail hua");
+    } finally {
+      setSocialBusy(null);
+    }
+  };
+
   /** Razorpay checkout for the extra-video pack; unlocks instantly on success. */
   const payToUnlock = async () => {
     if (paying) return;
@@ -129,11 +174,27 @@ export function LandingMediaSheet({
         yt_source?: string | null;
         yt_enabled?: boolean | null;
         yt_products?: Record<string, VideoProduct[]> | null;
-      }>(uid, projectSlug, "poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products");
+        ig_source?: string | null;
+        ig_enabled?: boolean | null;
+        ig_products?: Record<string, VideoProduct[]> | null;
+        pin_source?: string | null;
+        pin_enabled?: boolean | null;
+        pin_products?: Record<string, VideoProduct[]> | null;
+      }>(
+        uid,
+        projectSlug,
+        "poster_media, poster_bg_urls, poster_bg_url, yt_source, yt_enabled, yt_products, ig_source, ig_enabled, ig_products, pin_source, pin_enabled, pin_products",
+      );
       if (cancelled) return;
       setYtSource(d?.yt_source ?? "");
       setYtEnabled(!!d?.yt_enabled);
       setYtProducts((d?.yt_products && typeof d.yt_products === "object" ? d.yt_products : {}) as Record<string, VideoProduct[]>);
+      const asMap = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, VideoProduct[]>) : {});
+      setSocialSource({ ig: d?.ig_source ?? "", pin: d?.pin_source ?? "" });
+      setSocialEnabled({ ig: !!d?.ig_enabled, pin: !!d?.pin_enabled });
+      setSocialProducts({ ig: asMap(d?.ig_products), pin: asMap(d?.pin_products) });
+      setSocialItems({ ig: [], pin: [] });
+      setSocialActive(null);
       const list: MediaItem[] = Array.isArray(d?.poster_media) && d!.poster_media!.length
         ? d!.poster_media!.filter((x) => x?.src)
         : (Array.isArray(d?.poster_bg_urls) ? d!.poster_bg_urls!.filter(Boolean) : (d?.poster_bg_url ? [d.poster_bg_url] : []))
@@ -167,6 +228,12 @@ export function LandingMediaSheet({
         yt_source: ytSource.trim() || null,
         yt_enabled: ytEnabled && !!ytSource.trim(),
         yt_products: ytProducts,
+        ig_source: socialSource.ig.trim() || null,
+        ig_enabled: socialEnabled.ig && !!socialSource.ig.trim(),
+        ig_products: socialProducts.ig,
+        pin_source: socialSource.pin.trim() || null,
+        pin_enabled: socialEnabled.pin && !!socialSource.pin.trim(),
+        pin_products: socialProducts.pin,
       };
       const size = jsonBytes(payload);
       if (size > 512 * 1024) {
@@ -190,7 +257,7 @@ export function LandingMediaSheet({
     } finally {
       setSaving(false);
     }
-  }, [onSaved, user?.id, ytSource, ytEnabled, ytProducts]);
+  }, [onSaved, user?.id, ytSource, ytEnabled, ytProducts, socialSource, socialEnabled, socialProducts]);
 
   const update = (next: MediaItem[]) => {
     setMedia(next.slice(0, MAX_SLOTS));
@@ -265,13 +332,26 @@ export function LandingMediaSheet({
    * video's tag list instead of the currently selected uploaded slot.
    */
   const products = useMemo(
-    () => (ytActive ? (ytProducts[ytActive] ?? []) : (current?.products ?? [])),
-    [current, ytActive, ytProducts],
+    () =>
+      ytActive
+        ? (ytProducts[ytActive] ?? [])
+        : socialActive
+          ? (socialProducts[socialActive.key][socialActive.id] ?? [])
+          : (current?.products ?? []),
+    [current, socialActive, socialProducts, ytActive, ytProducts],
   );
 
   const setProducts = (list: VideoProduct[]) => {
     if (ytActive) {
       setYtProducts((p) => ({ ...p, [ytActive]: list }));
+      setDirty(true);
+      return;
+    }
+    if (socialActive) {
+      setSocialProducts((p) => ({
+        ...p,
+        [socialActive.key]: { ...p[socialActive.key], [socialActive.id]: list },
+      }));
       setDirty(true);
       return;
     }
@@ -383,7 +463,7 @@ export function LandingMediaSheet({
                     <button
                       key={v.id}
                       type="button"
-                      onClick={() => setYtActive(on ? null : v.id)}
+                      onClick={() => { setSocialActive(null); setYtActive(on ? null : v.id); }}
                       className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? "border-red-500" : "border-transparent"}`}
                     >
                       {v.thumbnail ? (
@@ -407,11 +487,85 @@ export function LandingMediaSheet({
           )}
         </div>
 
+        {(["ig", "pin"] as const).map((key) => {
+          const meta = key === "ig"
+            ? { name: "Instagram auto-feed", ring: "border-fuchsia-200 bg-fuchsia-50/70", text: "text-fuchsia-900", btn: "bg-gradient-to-r from-fuchsia-600 to-orange-500", note: "text-fuchsia-900/70", ph: "@yourshop / instagram.com/yourshop", tint: "text-fuchsia-600", sel: "border-fuchsia-500" }
+            : { name: "Pinterest auto-feed", ring: "border-rose-200 bg-rose-50/70", text: "text-rose-900", btn: "bg-rose-600", note: "text-rose-900/70", ph: "username / pinterest.com/username", tint: "text-rose-600", sel: "border-rose-500" };
+          const items = socialItems[key];
+          const map = socialProducts[key];
+          return (
+            <div key={key} className={`mt-3 rounded-2xl border p-3 ${meta.ring}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className={`text-[11px] font-extrabold uppercase tracking-wide ${meta.text}`}>{meta.name}</p>
+                <button
+                  type="button"
+                  onClick={() => { setSocialEnabled((p) => ({ ...p, [key]: !p[key] })); setDirty(true); }}
+                  className={`h-6 w-11 shrink-0 rounded-full transition-colors ${socialEnabled[key] ? (key === "ig" ? "bg-fuchsia-600" : "bg-rose-600") : "bg-slate-300"}`}
+                  aria-label="toggle"
+                >
+                  <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${socialEnabled[key] ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2 rounded-xl border border-black/10 bg-white px-2.5 py-2">
+                {key === "ig"
+                  ? <Instagram className={`h-4 w-4 shrink-0 ${meta.tint}`} />
+                  : <Pin className={`h-4 w-4 shrink-0 ${meta.tint}`} />}
+                <input
+                  value={socialSource[key]}
+                  onChange={(e) => { setSocialSource((p) => ({ ...p, [key]: e.target.value })); setDirty(true); }}
+                  placeholder={meta.ph}
+                  className="min-w-0 flex-1 bg-transparent text-[12.5px] text-slate-900 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void syncSocial(key)}
+                  disabled={socialBusy === key}
+                  className={`flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[11px] font-extrabold text-white active:scale-95 disabled:opacity-60 ${meta.btn}`}
+                >
+                  {socialBusy === key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  Sync
+                </button>
+              </div>
+
+              {items.length > 0 && (
+                <>
+                  <p className={`mt-2 text-[10px] font-bold ${meta.note}`}>
+                    {items.length} items · tap karke uske products tag karein
+                  </p>
+                  <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {items.map((v) => {
+                      const tagged = map[v.id]?.length ?? 0;
+                      const on = socialActive?.key === key && socialActive.id === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => { setYtActive(null); setSocialActive(on ? null : { key, id: v.id }); }}
+                          className={`relative h-24 w-[72px] shrink-0 overflow-hidden rounded-2xl border-2 bg-slate-900 active:scale-95 ${on ? meta.sel : "border-transparent"}`}
+                        >
+                          {v.thumbnail ? (
+                            <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="grid h-full w-full place-items-center text-white/70"><Play className="h-5 w-5" /></span>
+                          )}
+                          <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-1.5 text-[8.5px] font-bold text-white">
+                            {tagged} <Tag className="inline h-2.5 w-2.5" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+
 
 
         {loading ? (
           <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-amber-600" /></div>
-        ) : !current && !ytActive ? (
+        ) : !current && !ytActive && !socialActive ? (
           <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 py-10 text-center">
             <Film className="h-6 w-6 text-amber-600" />
             <p className="text-[12px] font-bold text-slate-700">Abhi koi video nahi</p>
@@ -425,6 +579,12 @@ export function LandingMediaSheet({
                 <img
                   src={ytVideos.find((v) => v.id === ytActive)?.thumbnail ?? ""}
                   alt="Selected YouTube video"
+                  className="h-full w-full object-cover"
+                />
+              ) : socialActive ? (
+                <img
+                  src={socialItems[socialActive.key].find((v) => v.id === socialActive.id)?.thumbnail ?? ""}
+                  alt="Selected social item"
                   className="h-full w-full object-cover"
                 />
               ) : current?.type === "image" ? (

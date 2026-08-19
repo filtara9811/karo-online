@@ -10,6 +10,7 @@ import { readExtras } from "@/components/oneqr/landing-extras";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { LandingStoryMedia } from "@/components/landing/LandingStoryMedia";
 import { useYoutubeFeed } from "@/components/landing/use-youtube-feed";
+import { useSocialFeed } from "@/components/landing/use-social-feed";
 import { LandingProfileSheet } from "@/components/landing/LandingProfileSheet";
 import { LandingChatWelcome } from "@/components/landing/LandingChatWelcome";
 import { LandingMenuSheet } from "@/components/landing/LandingMenuSheet";
@@ -175,6 +176,19 @@ function ScanLandingPage() {
     enabled: !!data?.links?.yt_enabled,
     products: data?.links?.yt_products ?? null,
   });
+  // Dynamic Instagram / Pinterest auto-feeds (same hybrid behaviour).
+  const instagram = useSocialFeed({
+    provider: "instagram",
+    source: data?.links?.ig_source ?? null,
+    enabled: !!data?.links?.ig_enabled,
+    products: data?.links?.ig_products ?? null,
+  });
+  const pinterest = useSocialFeed({
+    provider: "pinterest",
+    source: data?.links?.pin_source ?? null,
+    enabled: !!data?.links?.pin_enabled,
+    products: data?.links?.pin_products ?? null,
+  });
 
 
   const themeAccent = data?.theme?.accent_color ?? "#f59e0b";
@@ -192,13 +206,17 @@ function ScanLandingPage() {
     void trackQrEvent("PRODUCT_VIEW", { code, project, meta: { media_index: activeMedia, surface: "reels" } });
   }, [activeMedia, code, data?.ok, project]);
 
-  // Infinite feed: pull the next YouTube page as the viewer nears the end.
+  // Infinite feed: pull the next page of each auto-feed as the viewer nears the end.
   useEffect(() => {
     const uploaded = data?.links?.poster_media?.length ?? 0;
-    const total = uploaded + youtube.items.length;
-    if (total > 0 && activeMedia >= total - 3) youtube.loadMore();
+    const total = uploaded + youtube.items.length + instagram.items.length + pinterest.items.length;
+    if (total > 0 && activeMedia >= total - 3) {
+      youtube.loadMore();
+      instagram.loadMore();
+      pinterest.loadMore();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMedia, youtube.items.length]);
+  }, [activeMedia, youtube.items.length, instagram.items.length, pinterest.items.length]);
 
 
   // Auto-offer the white-label install once per shop, shortly after load.
@@ -293,6 +311,8 @@ function ScanLandingPage() {
       item.type === "image" ? { ...item, src: optimizedImage(item.src, IMG.hero) ?? item.src } : item,
     ),
     ...youtube.items,
+    ...instagram.items,
+    ...pinterest.items,
   ];
 
   const theme = data.theme ?? {};

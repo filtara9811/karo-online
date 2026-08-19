@@ -69,6 +69,14 @@ export type LandingPayload = {
     yt_enabled?: boolean;
     /** Products tagged per synced YouTube video id. */
     yt_products?: Record<string, VideoProduct[]> | null;
+    /** Dynamic Instagram feed: @handle or profile url. */
+    ig_source?: string | null;
+    ig_enabled?: boolean;
+    ig_products?: Record<string, VideoProduct[]> | null;
+    /** Dynamic Pinterest feed: username or board url. */
+    pin_source?: string | null;
+    pin_enabled?: boolean;
+    pin_products?: Record<string, VideoProduct[]> | null;
   };
   landing?: {
     top_banner_url?: string;
