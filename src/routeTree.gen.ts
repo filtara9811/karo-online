@@ -40,6 +40,7 @@ import { Route as TestBellRouteImport } from './routes/test-bell'
 import { Route as VendorsRouteImport } from './routes/vendors'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminApiKeysRouteImport } from './routes/admin.api-keys'
 import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminCashfreeRouteImport } from './routes/admin.cashfree'
 import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
@@ -289,6 +290,11 @@ const WelcomeRoute = WelcomeRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminApiKeysRoute = AdminApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBrandingRoute = AdminBrandingRouteImport.update({
@@ -802,6 +808,7 @@ export interface FileRoutesByFullPath {
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/welcome': typeof WelcomeRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -928,6 +935,7 @@ export interface FileRoutesByTo {
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/welcome': typeof WelcomeRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -1057,6 +1065,7 @@ export interface FileRoutesById {
   '/test-bell': typeof TestBellRoute
   '/vendors': typeof VendorsRoute
   '/welcome': typeof WelcomeRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/branding': typeof AdminBrandingRoute
   '/admin/cashfree': typeof AdminCashfreeRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -1187,6 +1196,7 @@ export interface FileRouteTypes {
     | '/test-bell'
     | '/vendors'
     | '/welcome'
+    | '/admin/api-keys'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1313,6 +1323,7 @@ export interface FileRouteTypes {
     | '/test-bell'
     | '/vendors'
     | '/welcome'
+    | '/admin/api-keys'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1441,6 +1452,7 @@ export interface FileRouteTypes {
     | '/test-bell'
     | '/vendors'
     | '/welcome'
+    | '/admin/api-keys'
     | '/admin/branding'
     | '/admin/cashfree'
     | '/admin/catalog'
@@ -1825,6 +1837,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/api-keys': {
+      id: '/admin/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof AdminApiKeysRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/branding': {
@@ -2496,6 +2515,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminApiKeysRoute: typeof AdminApiKeysRoute
   AdminBrandingRoute: typeof AdminBrandingRoute
   AdminCashfreeRoute: typeof AdminCashfreeRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
@@ -2552,6 +2572,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminApiKeysRoute: AdminApiKeysRoute,
   AdminBrandingRoute: AdminBrandingRoute,
   AdminCashfreeRoute: AdminCashfreeRoute,
   AdminCatalogRoute: AdminCatalogRoute,
