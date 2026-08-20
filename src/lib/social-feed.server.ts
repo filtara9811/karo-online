@@ -3,12 +3,21 @@
  *
  * Why RapidAPI: the official Instagram Graph API needs a Business account,
  * a Facebook Page, an app and App Review per merchant; Pinterest v5 needs
- * OAuth + app approval. Shopkeepers would never get through that, so phase 1
- * just takes a pasted handle / URL.
+ * OAuth + app approval. Shopkeepers would never get through that, so we
+ * just take a pasted handle / URL.
  *
- * Everything provider-specific is isolated here — if a scraper API dies we
- * swap the host/path (env override) and the app code stays untouched.
- * `RAPIDAPI_KEY` never reaches the browser: only server functions call this.
+ * Credentials come from the admin panel (`app_settings.rapidapi_config`,
+ * admin-only readable) and fall back to the server env secrets. Nothing here
+ * ever reaches the browser: only server functions import this module.
+ *
+ * Verified live shapes (Aug 2026):
+ *  - Instagram "Instagram Scraper Stable API": POST form-urlencoded to
+ *    /get_ig_user_reels.php with `username_or_url` + `amount`; returns
+ *    { reels: [{ node: { ...media, code, pk, image_versions2 } }],
+ *      pagination_token }. The list endpoint exposes cover images only, so a
+ *    reel renders as its cover with a deep link to Instagram.
+ *  - Pinterest "Pinterest Scraper 5": GET /pins?username=<user>; returns
+ *    { data: { pins: [{ id, images, videos, grid_title, seo_title }] } }.
  */
 
 export type SocialItem = {
@@ -18,6 +27,8 @@ export type SocialItem = {
   src: string;
   poster: string | null;
   title: string;
+  /** Original post URL, used when the media can only be watched on-platform. */
+  link?: string | null;
 };
 
 export type SocialFeed = {
@@ -29,39 +40,72 @@ export type SocialFeed = {
 
 export type SocialProvider = "instagram" | "pinterest";
 
-const DEFAULTS: Record<SocialProvider, { host: string; path: string; userParam: string; cursorParam: string }> = {
-  instagram: {
-    host: "instagram-scraper-api2.p.rapidapi.com",
-    path: "/v1/reels",
-    userParam: "username_or_id_or_url",
-    cursorParam: "pagination_token",
-  },
-  pinterest: {
-    host: "pinterest-scraper-api.p.rapidapi.com",
-    path: "/user/pins",
-    userParam: "username",
-    cursorParam: "bookmark",
-  },
+export type RapidApiConfig = {
+  instagram_key: string;
+  instagram_host: string;
+  instagram_path: string;
+  pinterest_key: string;
+  pinterest_host: string;
+  pinterest_path: string;
 };
 
-function config(provider: SocialProvider) {
-  const d = DEFAULTS[provider];
-  const p = provider.toUpperCase();
-  return {
-    host: process.env[`RAPIDAPI_${p}_HOST`] || d.host,
-    path: process.env[`RAPIDAPI_${p}_PATH`] || d.path,
-    userParam: process.env[`RAPIDAPI_${p}_USER_PARAM`] || d.userParam,
-    cursorParam: process.env[`RAPIDAPI_${p}_CURSOR_PARAM`] || d.cursorParam,
+export const RAPIDAPI_DEFAULTS: RapidApiConfig = {
+  instagram_key: "",
+  instagram_host: "instagram-scraper-stable-api.p.rapidapi.com",
+  instagram_path: "/get_ig_user_reels.php",
+  pinterest_key: "",
+  pinterest_host: "pinterest-scraper5.p.rapidapi.com",
+  pinterest_path: "/pins",
+};
+
+let cached: { at: number; value: RapidApiConfig } | null = null;
+
+/** Admin-panel config first, env secrets as fallback. Cached for a minute. */
+export async function loadRapidApiConfig(force = false): Promise<RapidApiConfig> {
+  if (!force && cached && Date.now() - cached.at < 60_000) return cached.value;
+
+  const env = {
+    instagram_key: process.env["RAPIDAPI_KEY"] ?? "",
+    instagram_host: process.env["RAPIDAPI_INSTAGRAM_HOST"] || RAPIDAPI_DEFAULTS.instagram_host,
+    instagram_path: process.env["RAPIDAPI_INSTAGRAM_PATH"] || RAPIDAPI_DEFAULTS.instagram_path,
+    pinterest_key: process.env["RAPIDAPI_KEY"] ?? "",
+    pinterest_host: process.env["RAPIDAPI_PINTEREST_HOST"] || RAPIDAPI_DEFAULTS.pinterest_host,
+    pinterest_path: process.env["RAPIDAPI_PINTEREST_PATH"] || RAPIDAPI_DEFAULTS.pinterest_path,
+  } satisfies RapidApiConfig;
+
+  let db: Partial<RapidApiConfig> = {};
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "rapidapi_config")
+      .maybeSingle();
+    const v = (data as { value?: Partial<RapidApiConfig> } | null)?.value;
+    if (v && typeof v === "object") db = v;
+  } catch {
+    /* no admin client / no row — env only */
+  }
+
+  const pick = (a: unknown, b: string) => (typeof a === "string" && a.trim() ? a.trim() : b);
+  const value: RapidApiConfig = {
+    instagram_key: pick(db.instagram_key, env.instagram_key),
+    instagram_host: pick(db.instagram_host, env.instagram_host),
+    instagram_path: pick(db.instagram_path, env.instagram_path),
+    pinterest_key: pick(db.pinterest_key, env.pinterest_key),
+    pinterest_host: pick(db.pinterest_host, env.pinterest_host),
+    pinterest_path: pick(db.pinterest_path, env.pinterest_path),
   };
+  cached = { at: Date.now(), value };
+  return value;
 }
 
-function key(): string {
-  const k = process.env["RAPIDAPI_KEY"];
-  if (!k) throw new Error("RAPIDAPI_KEY is not set");
-  return k;
+/** Called by the admin panel after a save so the next fetch uses new keys. */
+export function clearRapidApiConfigCache() {
+  cached = null;
 }
 
-/** `@handle`, profile url, reel url or plain username → username. */
+/** `@handle`, profile url, reel/board url or plain username → username. */
 export function normalizeHandle(provider: SocialProvider, input: string): string {
   const raw = input.trim();
   if (!raw) throw new Error("empty_source");
@@ -75,8 +119,7 @@ export function normalizeHandle(provider: SocialProvider, input: string): string
   }
   const parts = url.pathname.split("/").filter(Boolean);
   if (provider === "pinterest") {
-    // pinterest.com/<user>/<board>
-    if (parts[0]) return parts.slice(0, 2).join("/");
+    if (parts[0]) return parts[0];
     throw new Error("invalid_source");
   }
   const skip = new Set(["p", "reel", "reels", "tv", "stories", "explore"]);
@@ -85,137 +128,172 @@ export function normalizeHandle(provider: SocialProvider, input: string): string
   return first.replace(/^@/, "");
 }
 
-async function call(provider: SocialProvider, params: Record<string, string>) {
-  const c = config(provider);
-  const qs = new URLSearchParams(params);
-  const r = await fetch(`https://${c.host}${c.path}?${qs}`, {
-    headers: { "x-rapidapi-key": key(), "x-rapidapi-host": c.host },
+function bestUrl(bag: unknown): string | null {
+  if (!bag || typeof bag !== "object") return typeof bag === "string" && /^https?:/.test(bag) ? bag : null;
+  const obj = bag as Record<string, unknown>;
+  const candidates: { w: number; url: string }[] = [];
+  const walk = (v: unknown, depth = 0) => {
+    if (depth > 4 || v == null) return;
+    if (typeof v === "string") {
+      if (/^https?:\/\//.test(v)) candidates.push({ w: 0, url: v });
+      return;
+    }
+    if (Array.isArray(v)) return v.forEach((x) => walk(x, depth + 1));
+    if (typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      if (typeof o["url"] === "string") {
+        const w = typeof o["width"] === "number" ? (o["width"] as number) : 0;
+        candidates.push({ w, url: o["url"] as string });
+        return;
+      }
+      Object.values(o).forEach((x) => walk(x, depth + 1));
+    }
+  };
+  walk(obj);
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => b.w - a.w);
+  return candidates[0]!.url;
+}
+
+/* ── Instagram ─────────────────────────────────────────────────────────── */
+
+async function fetchInstagram(
+  cfg: RapidApiConfig,
+  handle: string,
+  cursor: string | null | undefined,
+  limit: number,
+): Promise<SocialFeed> {
+  if (!cfg.instagram_key) return { ok: false, error: "missing_api_key", items: [], nextCursor: null };
+  const body = new URLSearchParams({ username_or_url: handle, amount: String(Math.min(Math.max(limit, 1), 30)) });
+  if (cursor) body.set("pagination_token", cursor);
+
+  const r = await fetch(`https://${cfg.instagram_host}${cfg.instagram_path}`, {
+    method: "POST",
+    headers: {
+      "x-rapidapi-key": cfg.instagram_key,
+      "x-rapidapi-host": cfg.instagram_host,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body,
   });
   const text = await r.text();
-  let json: unknown = null;
+  let json: Record<string, unknown> | null = null;
   try {
-    json = JSON.parse(text);
+    json = JSON.parse(text) as Record<string, unknown>;
   } catch {
-    /* non-json error body */
+    return { ok: false, error: r.ok ? "provider_busy" : `HTTP ${r.status}`, items: [], nextCursor: null };
   }
   if (!r.ok) {
-    const msg =
-      (json as { message?: string; error?: string } | null)?.message ??
-      (json as { error?: string } | null)?.error ??
-      `HTTP ${r.status}`;
-    throw new Error(String(msg).slice(0, 160));
+    return { ok: false, error: String(json?.["message"] ?? `HTTP ${r.status}`).slice(0, 160), items: [], nextCursor: null };
   }
-  return json;
+  if (typeof json?.["error"] === "string") {
+    const e = json["error"] as string;
+    return { ok: false, error: /username|exist/i.test(e) ? "invalid_source" : e.slice(0, 160), items: [], nextCursor: null };
+  }
+
+  const rows = (Array.isArray(json?.["reels"]) ? (json["reels"] as unknown[]) : Array.isArray(json?.["posts"]) ? (json["posts"] as unknown[]) : []) as Record<string, unknown>[];
+  const items: SocialItem[] = [];
+  for (const row of rows) {
+    const node = (row?.["node"] && typeof row["node"] === "object" ? row["node"] : row) as Record<string, unknown>;
+    const media = (node?.["media"] && typeof node["media"] === "object" ? node["media"] : node) as Record<string, unknown>;
+    const video = bestUrl(media["video_versions"] ?? media["video_url"]);
+    const cover =
+      bestUrl(media["image_versions2"]) ??
+      bestUrl(media["display_resources"]) ??
+      bestUrl(media["thumbnail_url"] ?? media["display_url"]) ??
+      bestUrl((media["carousel_media"] as unknown[])?.[0]);
+    const src = video ?? cover;
+    if (!src) continue;
+    const code = typeof media["code"] === "string" ? (media["code"] as string) : null;
+    const id = `instagram-${String(media["pk"] ?? media["id"] ?? code ?? items.length)}`;
+    if (items.some((i) => i.id === id)) continue;
+    const caption = media["caption"];
+    const title =
+      (caption && typeof caption === "object" && typeof (caption as Record<string, unknown>)["text"] === "string"
+        ? ((caption as Record<string, unknown>)["text"] as string)
+        : typeof caption === "string"
+          ? caption
+          : "") || "";
+    items.push({
+      id,
+      kind: video ? "video" : "image",
+      src,
+      poster: cover && cover !== src ? cover : null,
+      title: title.slice(0, 140),
+      link: code ? `https://www.instagram.com/reel/${code}/` : null,
+    });
+    if (items.length >= limit) break;
+  }
+
+  if (!items.length) return { ok: false, error: "no_media_found", items: [], nextCursor: null };
+  const token = json?.["pagination_token"];
+  return { ok: true, items, nextCursor: typeof token === "string" && token.length > 1 ? token : null };
 }
 
-const VIDEO_KEYS = ["video_url", "videoUrl", "video_versions", "video", "url_720p", "v_url", "contentUrl"];
-const IMAGE_KEYS = ["thumbnail_url", "thumbnail_src", "display_url", "image_url", "images", "thumbnail", "cover", "image"];
+/* ── Pinterest ─────────────────────────────────────────────────────────── */
 
-function firstUrl(value: unknown, depth = 0): string | null {
-  if (depth > 6 || value == null) return null;
-  if (typeof value === "string") return /^https?:\/\//.test(value) ? value : null;
-  if (Array.isArray(value)) {
-    for (const v of value) {
-      const u = firstUrl(v, depth + 1);
-      if (u) return u;
+async function fetchPinterest(cfg: RapidApiConfig, handle: string, limit: number): Promise<SocialFeed> {
+  if (!cfg.pinterest_key) return { ok: false, error: "missing_api_key", items: [], nextCursor: null };
+  const qs = new URLSearchParams({ username: handle });
+  const r = await fetch(`https://${cfg.pinterest_host}${cfg.pinterest_path}?${qs}`, {
+    headers: { "x-rapidapi-key": cfg.pinterest_key, "x-rapidapi-host": cfg.pinterest_host },
+  });
+  const text = await r.text();
+  let json: Record<string, unknown> | null = null;
+  try {
+    json = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return { ok: false, error: `HTTP ${r.status}`, items: [], nextCursor: null };
+  }
+  if (!r.ok) {
+    const detail = json?.["detail"];
+    const msg = Array.isArray(detail) ? "invalid_source" : String(json?.["message"] ?? `HTTP ${r.status}`);
+    return { ok: false, error: msg.slice(0, 160), items: [], nextCursor: null };
+  }
+
+  const data = (json?.["data"] ?? {}) as Record<string, unknown>;
+  const pins = (Array.isArray(data["pins"]) ? data["pins"] : []) as Record<string, unknown>[];
+  const items: SocialItem[] = [];
+  for (const pin of pins) {
+    const image = bestUrl(pin["images"]);
+    const videoBag = pin["videos"];
+    let video: string | null = null;
+    if (videoBag && typeof videoBag === "object") {
+      const list = (videoBag as Record<string, unknown>)["video_list"];
+      const urls: string[] = [];
+      const walk = (v: unknown, d = 0) => {
+        if (d > 4 || v == null) return;
+        if (typeof v === "string" && /^https?:\/\/.+\.(mp4|m3u8)/.test(v)) urls.push(v);
+        else if (Array.isArray(v)) v.forEach((x) => walk(x, d + 1));
+        else if (typeof v === "object") Object.values(v as Record<string, unknown>).forEach((x) => walk(x, d + 1));
+      };
+      walk(list ?? videoBag);
+      video = urls.find((u) => u.endsWith(".mp4")) ?? urls[0] ?? null;
     }
-    return null;
+    const src = video ?? image;
+    if (!src) continue;
+    const id = `pinterest-${String(pin["id"] ?? pin["node_id"] ?? items.length)}`;
+    if (items.some((i) => i.id === id)) continue;
+    const title =
+      (typeof pin["grid_title"] === "string" && (pin["grid_title"] as string)) ||
+      (typeof pin["title"] === "string" && (pin["title"] as string)) ||
+      (typeof pin["seo_title"] === "string" && (pin["seo_title"] as string)) ||
+      (typeof pin["description"] === "string" && (pin["description"] as string)) ||
+      "";
+    items.push({
+      id,
+      kind: video ? "video" : "image",
+      src,
+      poster: image && image !== src ? image : null,
+      title: String(title).slice(0, 140),
+      link: pin["id"] ? `https://www.pinterest.com/pin/${String(pin["id"])}/` : null,
+    });
+    if (items.length >= limit) break;
   }
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    for (const k of ["url", "src", "uri", "originals", "orig", "564x", "236x"]) {
-      const u = firstUrl(obj[k], depth + 1);
-      if (u) return u;
-    }
-    for (const v of Object.values(obj)) {
-      const u = firstUrl(v, depth + 1);
-      if (u) return u;
-    }
-  }
-  return null;
-}
 
-/** Pull the list of posts/pins out of whatever envelope the provider uses. */
-function findList(json: unknown, depth = 0): Record<string, unknown>[] {
-  if (depth > 5 || json == null || typeof json !== "object") return [];
-  if (Array.isArray(json)) {
-    const rows = json.filter((x) => x && typeof x === "object") as Record<string, unknown>[];
-    return rows.length ? rows : [];
-  }
-  const obj = json as Record<string, unknown>;
-  for (const k of ["items", "data", "pins", "results", "reels", "edges", "posts", "response"]) {
-    const found = findList(obj[k], depth + 1);
-    if (found.length) return found;
-  }
-  for (const v of Object.values(obj)) {
-    const found = findList(v, depth + 1);
-    if (found.length) return found;
-  }
-  return [];
-}
-
-function findCursor(json: unknown, param: string): string | null {
-  if (!json || typeof json !== "object") return null;
-  const obj = json as Record<string, unknown>;
-  const candidates = [param, "next_cursor", "nextCursor", "end_cursor", "bookmark", "pagination_token", "next_max_id", "cursor"];
-  for (const k of candidates) {
-    const v = obj[k];
-    if (typeof v === "string" && v.length > 1) return v;
-    if (Array.isArray(v) && typeof v[0] === "string" && (v[0] as string).length > 1) return v[0] as string;
-  }
-  for (const v of Object.values(obj)) {
-    if (v && typeof v === "object") {
-      const found = findCursor(v, param);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function mapItem(row: Record<string, unknown>, provider: SocialProvider, i: number): SocialItem | null {
-  const node = (row["node"] && typeof row["node"] === "object" ? (row["node"] as Record<string, unknown>) : row) as Record<string, unknown>;
-  const media = (node["media"] && typeof node["media"] === "object" ? (node["media"] as Record<string, unknown>) : node) as Record<string, unknown>;
-
-  let video: string | null = null;
-  for (const k of VIDEO_KEYS) {
-    video = firstUrl(media[k]) ?? firstUrl(node[k]);
-    if (video) break;
-  }
-  let image: string | null = null;
-  for (const k of IMAGE_KEYS) {
-    image = firstUrl(media[k]) ?? firstUrl(node[k]);
-    if (image) break;
-  }
-  const src = video ?? image;
-  if (!src) return null;
-
-  const rawId =
-    node["id"] ?? node["pk"] ?? node["code"] ?? node["shortcode"] ?? node["pin_id"] ?? node["entity_id"];
-  const id = `${provider}-${String(rawId ?? `${i}-${src.slice(-16)}`)}`;
-  const title =
-    (typeof node["title"] === "string" && node["title"]) ||
-    (typeof node["grid_title"] === "string" && node["grid_title"]) ||
-    (typeof node["description"] === "string" && node["description"]) ||
-    firstCaption(node) ||
-    "";
-
-  return {
-    id,
-    kind: video ? "video" : "image",
-    src,
-    poster: image && image !== src ? image : null,
-    title: String(title).slice(0, 140),
-  };
-}
-
-function firstCaption(node: Record<string, unknown>): string {
-  const cap = node["caption"];
-  if (typeof cap === "string") return cap;
-  if (cap && typeof cap === "object") {
-    const t = (cap as Record<string, unknown>)["text"];
-    if (typeof t === "string") return t;
-  }
-  return "";
+  if (!items.length) return { ok: false, error: "no_media_found", items: [], nextCursor: null };
+  // This provider returns one page per profile call.
+  return { ok: true, items, nextCursor: null };
 }
 
 /** One page of a merchant's Instagram reels / Pinterest pins. */
@@ -225,24 +303,15 @@ export async function fetchSocialPage(
   cursor?: string | null,
   limit = 24,
 ): Promise<SocialFeed> {
-  const c = config(provider);
-  const handle = normalizeHandle(provider, source);
-  const params: Record<string, string> = { [c.userParam]: handle };
-  if (cursor) params[c.cursorParam] = cursor;
-  const json = await call(provider, params);
-
-  const rows = findList(json);
-  const items: SocialItem[] = [];
-  const seen = new Set<string>();
-  rows.forEach((row, i) => {
-    const item = mapItem(row, provider, i);
-    if (!item || seen.has(item.id)) return;
-    seen.add(item.id);
-    if (items.length < Math.min(Math.max(limit, 1), 30)) items.push(item);
-  });
-
-  if (!items.length) {
-    return { ok: false, error: "no_media_found", items: [], nextCursor: null };
+  const cfg = await loadRapidApiConfig();
+  let handle: string;
+  try {
+    handle = normalizeHandle(provider, source);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message, items: [], nextCursor: null };
   }
-  return { ok: true, items, nextCursor: findCursor(json, c.cursorParam) };
+  const n = Math.min(Math.max(limit, 1), 30);
+  return provider === "instagram"
+    ? fetchInstagram(cfg, handle, cursor, n)
+    : fetchPinterest(cfg, handle, n);
 }

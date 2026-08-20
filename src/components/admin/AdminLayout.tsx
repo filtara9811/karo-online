@@ -58,6 +58,7 @@ const NAV: NavItem[] = [
   { to: "/admin/firebase", label: "Firebase Services", icon: Flame },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/maps", label: "Maps Providers", icon: MapIcon },
+  { to: "/admin/api-keys", label: "API Management", icon: Shield },
   { to: "/admin/system-status", label: "System Status", icon: Shield },
   { to: "/admin/devices", label: "🔓 Device Unlock", icon: Shield },
   { to: "/admin/test-accounts", label: "🧪 Test Accounts", icon: ShieldCheck },

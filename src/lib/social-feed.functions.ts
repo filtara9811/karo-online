@@ -4,6 +4,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const FeedInput = z.object({
   source: z.string().min(2).max(300),
@@ -33,3 +34,20 @@ export const getInstagramFeed = createServerFn({ method: "POST" })
 export const getPinterestFeed = createServerFn({ method: "POST" })
   .inputValidator((d: FeedInputT) => FeedInput.parse(d))
   .handler(async ({ data }) => page("pinterest", data));
+
+/** Admin "Test Connection" — verifies the saved RapidAPI keys actually work. */
+export const testSocialFeedConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { provider: "instagram" | "pinterest"; source: string }) =>
+    z.object({ provider: z.enum(["instagram", "pinterest"]), source: z.string().min(2).max(300) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: any; userId: string };
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const ok = (roles ?? []).some((r: { role: string }) => r.role === "super_admin" || r.role === "admin");
+    if (!ok) return { ok: false as const, error: "forbidden", count: 0 };
+    const { fetchSocialPage, clearRapidApiConfigCache } = await import("./social-feed.server");
+    clearRapidApiConfigCache();
+    const res = await fetchSocialPage(data.provider, data.source, null, 3);
+    return { ok: res.ok, error: res.error ?? null, count: res.items.length };
+  });
