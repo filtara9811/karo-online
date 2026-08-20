@@ -524,22 +524,22 @@ write(stylesPath, `<?xml version="1.0" encoding="utf-8"?>
 const variablesGradlePath = path.join(androidDir, "variables.gradle");
 write(variablesGradlePath, `ext {
     minSdkVersion = 26
-    compileSdkVersion = 35
-    targetSdkVersion = 35
-    androidxActivityVersion = '1.9.2'
-    androidxAppCompatVersion = '1.7.0'
-    androidxCoordinatorLayoutVersion = '1.2.0'
-    androidxCoreVersion = '1.13.1'
-    androidxFragmentVersion = '1.8.2'
-    coreSplashScreenVersion = '1.0.1'
-    androidxWebkitVersion = '1.11.0'
+    compileSdkVersion = 36
+    targetSdkVersion = 36
+    androidxActivityVersion = '1.11.0'
+    androidxAppCompatVersion = '1.7.1'
+    androidxCoordinatorLayoutVersion = '1.3.0'
+    androidxCoreVersion = '1.17.0'
+    androidxFragmentVersion = '1.8.9'
+    coreSplashScreenVersion = '1.2.0'
+    androidxWebkitVersion = '1.14.0'
     junitVersion = '4.13.2'
-    androidxJunitVersion = '1.2.1'
-    androidxEspressoCoreVersion = '3.6.1'
-    cordovaAndroidVersion = '10.1.1'
+    androidxJunitVersion = '1.3.0'
+    androidxEspressoCoreVersion = '3.7.0'
+    cordovaAndroidVersion = '14.0.1'
 }
 `);
-console.log("📐 Wrote android/variables.gradle with compileSdkVersion=35");
+console.log("📐 Wrote Android SDK 36 + Capacitor 8 dependency baseline.");
 
 // 7b) Overwrite android/app/build.gradle with a complete, known-good template.
 //     Stop patching the Capacitor-generated file with multiple regex injections
@@ -563,12 +563,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "app.karoonline.twa"
-    compileSdk = 35
+    compileSdk = rootProject.ext.compileSdkVersion
 
     defaultConfig {
         applicationId = "${applicationId}"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = rootProject.ext.minSdkVersion
+        targetSdk = rootProject.ext.targetSdkVersion
         versionCode = ${versionCode}
         versionName = "${versionName}"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -655,12 +655,10 @@ function walk(dir) {
   return out;
 }
 
-const gradlePatchRoots = [
-  androidDir,
-  path.join(root, "node_modules/@capacitor"),
-  path.join(root, "node_modules/@capacitor-community"),
-  path.join(root, "node_modules/@capgo"),
-];
+// Only normalize files owned by this repository. Never mutate installed
+// Capacitor/plugin packages: a clean install and Android Studio must resolve
+// the exact same dependency sources as CI.
+const gradlePatchRoots = [androidDir];
 
 const gradleFiles = [...new Set(gradlePatchRoots.flatMap((dir) => walk(dir)))];
 
@@ -734,5 +732,8 @@ if (remainingOldSyntax.length > 0) {
   process.exit(1);
 }
 console.log("✅ Gradle DSL normalized and Java 21 preserved for Capacitor 8 compatibility.");
+
+const validation = await import("./validate-android-toolchain.mjs");
+validation.validateAndroidToolchain({ root });
 
 console.log("✅ Native Android patches applied: foreground lead service, FCM data alerts, immersive mode, signing, cache-safe release.");

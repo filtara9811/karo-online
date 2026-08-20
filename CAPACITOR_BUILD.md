@@ -22,20 +22,20 @@ route, theme colour, bottom-dock items and Play Store URL.
 ## Build a native AAB/APK for one variant
 
 ```bash
-# 1. Point Capacitor at the right config
-cp capacitor.config.oneqr.ts capacitor.config.ts   # or .customer / .vendor / .staff / .shop / .referral
+# One command selects the identity, builds web assets, syncs Capacitor,
+# applies native settings, and validates the Android toolchain.
+bun run android:prepare oneqr
 
-# 2. Build the web bundle for that variant
-VITE_APP_VARIANT=oneqr bun run build
-
-# 3. Patch native project with the variant's identity
-KARO_APP_ID=app.karoonline.oneqr KARO_APP_NAME="Karo One QR" node scripts/patch-native-android.mjs
-
-# 4. Sync + open Android Studio
-npx cap sync android
-npx cap open android
-# Build → Generate Signed APK / AAB
+# Then open the generated project.
+bunx cap open android
 ```
+
+In Android Studio, open **Build → Generate Signed App Bundle or APK → Android
+App Bundle**. The local machine must have **Android SDK Platform 36** installed
+and Android Studio's **Gradle JDK** set to **JDK 21**.
+
+Supported variants: `customer`, `vendor`, `staff`, `oneqr`, `shop`, `referral`.
+All variants use compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3, and Java 21.
 
 Notes:
 - The Java namespace stays `app.karoonline.twa` for all variants; only
@@ -45,6 +45,8 @@ Notes:
   the merged `google-services.json` at the project root (or upload per build).
 - Backend (Lovable Cloud) is shared, so data and roles sync across all apps.
   Auth sessions are per-app (Android sandbox), same credentials everywhere.
+- Do not manually change SDK or plugin versions in Android Studio. Run
+  `bun run android:prepare <variant>` again after any Capacitor sync.
 
 ## Deep links
 

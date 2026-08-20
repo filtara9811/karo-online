@@ -49,26 +49,16 @@ jobs:
           VARIANT="${{ github.event.inputs.variant || 'customer' }}"
           echo "Building variant: $VARIANT"
           node scripts/variant-env.mjs "$VARIANT" | tee -a "$GITHUB_ENV"
-          cp "capacitor.config.$VARIANT.ts" capacitor.config.ts
-          echo "✅ Using capacitor.config.$VARIANT.ts"
+          echo "KARO_BUILD_VARIANT=$VARIANT" >> "$GITHUB_ENV"
 
       - name: Show runner memory (build diagnostics)
         run: free -h || true
 
-      - name: Build web bundle
-        run: bun run build
+      - name: Prepare Android project
+        run: bun run android:prepare "$KARO_BUILD_VARIANT"
         env:
           NODE_ENV: production
           NODE_OPTIONS: "--max-old-space-size=8192"
-
-      - name: Capacitor sync (android)
-        run: bunx cap sync android
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-
-      - name: Apply native Android patches
-        run: node scripts/patch-native-android.mjs
-        env:
           APP_VERSION_CODE: ${{ github.run_number }}
 
 
@@ -192,15 +182,14 @@ jobs:
           PY
           echo "✅ Release keystore, store password, alias and private-key password verified."
 
-      - name: Verify OneQR release identity
+      - name: Verify release identity
         run: |
           set -euo pipefail
-          test "$KARO_VARIANT" = "oneqr" || { echo "::error::Phase 1 build must resolve to variant oneqr."; exit 1; }
-          test "$KARO_APP_ID" = "app.karoonline.oneqr" || { echo "::error::Unexpected OneQR package: $KARO_APP_ID"; exit 1; }
-          grep -Fq 'applicationId = "app.karoonline.oneqr"' android/app/build.gradle || { echo "::error::Android applicationId is not app.karoonline.oneqr after native patching."; exit 1; }
-          grep -Fq 'app.karoonline.oneqr' android/app/google-services.json || { echo "::error::Firebase config has no OneQR client."; exit 1; }
+          grep -Fq "applicationId = \"$KARO_APP_ID\"" android/app/build.gradle || { echo "::error::Android applicationId does not match $KARO_APP_ID after native preparation."; exit 1; }
+          grep -Fq "$KARO_APP_ID" android/app/google-services.json || { echo "::error::Firebase config has no $KARO_APP_ID client."; exit 1; }
           test -s android/key.properties || { echo "::error::Release signing properties were not generated."; exit 1; }
-          echo "✅ OneQR package, Firebase client and release signing are aligned."
+          bun run android:validate
+          echo "✅ $KARO_VARIANT package, Firebase client and release signing are aligned."
 
       - name: Build signed release APK & Play Store AAB
         working-directory: android

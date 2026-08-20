@@ -64,14 +64,14 @@ Required repo secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
 ### B) Local machine se
 
 ```bash
-cp capacitor.config.oneqr.ts capacitor.config.ts
-eval "$(node scripts/variant-env.mjs oneqr | sed 's/^/export /')"
-bun run build
-bunx cap sync android
-node scripts/patch-native-android.mjs
+bun run android:prepare oneqr
 cd android && ./gradlew :app:bundleRelease
 # → android/app/build/outputs/bundle/release/app-release.aab
 ```
+
+Android Studio के लिए Android SDK Platform 36 install रखें और **Gradle JDK 21**
+select करें। `bun run android:prepare oneqr` के बाद `android/` folder खोलें और
+**Build → Generate Signed App Bundle or APK** से existing upload keystore चुनें।
 
 ## Upload se pehle checklist
 
