@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Save, KeyRound, Instagram, Image as ImageIcon, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Save, Instagram, Image as ImageIcon, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, GoldCard, GoldButton, PageHeader } from "@/components/admin/AdminLayout";
@@ -137,7 +137,7 @@ function ApiKeysPage() {
 
   return (
     <AdminLayout>
-      <PageHeader title="API Management" subtitle="RapidAPI keys for Instagram & Pinterest auto-feed" icon={KeyRound} />
+      <PageHeader title="API Management" subtitle="RapidAPI keys for Instagram & Pinterest auto-feed" />
       <div className="grid gap-4 md:grid-cols-2">
         {block("instagram", "Instagram Scraper", Instagram, "instagram_key", "instagram_host", "instagram_path")}
         {block("pinterest", "Pinterest Scraper", ImageIcon, "pinterest_key", "pinterest_host", "pinterest_path")}
