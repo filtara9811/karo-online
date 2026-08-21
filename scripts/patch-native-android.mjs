@@ -637,9 +637,8 @@ try {
   console.log(`📦 Wrote android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName})`);
 }
 
-// 8) Normalize modern Gradle assignment syntax while preserving Java 21.
-//    Capacitor 8 and its current native plugins target Java 21, so the workflow uses
-//    JDK 21 rather than mutating third-party dependencies down to Java 17.
+// 8) Normalize repository-owned Gradle syntax while preserving Java 21.
+//    Installed Capacitor/plugin packages are deliberately left untouched.
 function walk(dir) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
@@ -665,8 +664,7 @@ const gradleFiles = [...new Set(gradlePatchRoots.flatMap((dir) => walk(dir)))];
 function modernizeGradleAssignmentSyntax(txt) {
   // Gradle 8.14+/9 rejects property-style calls such as `compileSdk 35`,
   // `minSdkVersion 24`, `versionCode 1`, `namespace "..."`, etc.
-  // Community Capacitor plugins may still ship that old Groovy DSL syntax, so
-  // normalize every generated/plugin Gradle file before GitHub Actions builds.
+  // Normalize old Groovy DSL syntax in generated files under android/.
   const assignmentProperties = [
     "namespace",
     "applicationId",

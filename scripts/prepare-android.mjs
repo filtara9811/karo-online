@@ -1,21 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { ANDROID_VARIANTS } from "./android-variants.mjs";
 
 const root = process.cwd();
-const variants = {
-  customer: { id: "app.karoonline.twa", name: "Karo Online", theme: "#000000", icon: "public/icon-512.png" },
-  vendor: { id: "app.karoonline.vendor", name: "Karo Vendor", theme: "#0a0a0a", icon: "public/icon-vendor-512.png" },
-  staff: { id: "app.karoonline.staff", name: "Karo Staff", theme: "#fff8dc", icon: "public/icon-512.png" },
-  oneqr: { id: "app.karoonline.oneqr", name: "Karo One QR", theme: "#0EA5E9", icon: "public/icon-oneqr-512.png" },
-  shop: { id: "app.karoonline.shop", name: "Karo Digital Shop", theme: "#0f766e", icon: "public/icon-512.png" },
-  referral: { id: "app.karoonline.referral", name: "Karo Referral", theme: "#f97316", icon: "public/icon-512.png" },
-};
 
 const variant = (process.argv[2] || "customer").toLowerCase();
-const config = variants[variant];
+const config = ANDROID_VARIANTS[variant];
 if (!config) {
-  console.error(`Unknown Android variant "${variant}". Choose: ${Object.keys(variants).join(", ")}`);
+  console.error(`Unknown Android variant "${variant}". Choose: ${Object.keys(ANDROID_VARIANTS).join(", ")}`);
   process.exit(1);
 }
 
